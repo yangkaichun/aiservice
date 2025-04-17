@@ -1,312 +1,472 @@
 <!DOCTYPE html>
-<html lang="zh-TW">
+<html>
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>亞東醫院智能客服系統</title>
-    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
-    <link href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.0.0/css/all.min.css" rel="stylesheet">
     <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Microsoft JhengHei', Arial, sans-serif;
+        }
+        
         body {
-            font-family: 'Noto Sans TC', sans-serif;
+            background-color: #f0f4f8;
             height: 100vh;
-            background-color: #f0f5ff;
+            display: flex;
+            flex-direction: column;
         }
+        
+        .header {
+            background-color: white;
+            text-align: center;
+            padding: 10px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+            z-index: 10;
+        }
+        
+        .header h1 {
+            color: #1a56db;
+            font-size: 1.5rem;
+            margin: 5px 0;
+        }
+        
+        .avatar {
+            width: 80px;
+            height: 80px;
+            border-radius: 50%;
+            margin: 0 auto;
+            display: block;
+            object-fit: cover;
+            border: 3px solid #e2e8f0;
+        }
+        
         .chat-container {
-            max-height: calc(100vh - 200px);
+            flex: 1;
             overflow-y: auto;
-            scroll-behavior: smooth;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
         }
-        .bot-message {
-            background-color: #e3f2fd;
-            border-radius: 18px 18px 18px 4px;
+        
+        .message {
+            margin-bottom: 10px;
+            max-width: 80%;
+            padding: 10px;
+            border-radius: 15px;
+            line-height: 1.4;
         }
-        .user-message {
-            background-color: #1976d2;
+        
+        .system {
+            background-color: #e2e8f0;
+            align-self: flex-start;
+            border-bottom-left-radius: 5px;
+        }
+        
+        .user {
+            background-color: #1a56db;
             color: white;
-            border-radius: 18px 18px 4px 18px;
+            align-self: flex-end;
+            border-bottom-right-radius: 5px;
         }
-        .avatar-container {
-            animation: float 3s ease-in-out infinite;
+        
+        .input-area {
+            padding: 10px;
+            background-color: white;
+            display: flex;
+            align-items: center;
+            box-shadow: 0 -2px 5px rgba(0,0,0,0.1);
         }
-        @keyframes float {
-            0% { transform: translateY(0px); }
-            50% { transform: translateY(-10px); }
-            100% { transform: translateY(0px); }
+        
+        .input-field {
+            flex: 1;
+            padding: 12px 15px;
+            border: 1px solid #e2e8f0;
+            border-radius: 25px;
+            font-size: 16px;
+            outline: none;
         }
-        .pulse-button {
+        
+        .mic-button {
+            background-color: #e53e3e;
+            color: white;
+            border: none;
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            margin-left: 10px;
+            cursor: pointer;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            transition: background-color 0.3s;
+        }
+        
+        .mic-button:hover {
+            background-color: #c53030;
+        }
+        
+        .mic-button i {
+            font-size: 20px;
+        }
+        
+        .listening {
             animation: pulse 1.5s infinite;
         }
+        
         @keyframes pulse {
-            0% { box-shadow: 0 0 0 0 rgba(255, 82, 82, 0.7); }
-            70% { box-shadow: 0 0 0 10px rgba(255, 82, 82, 0); }
-            100% { box-shadow: 0 0 0 0 rgba(255, 82, 82, 0); }
+            0% {
+                box-shadow: 0 0 0 0 rgba(229, 62, 62, 0.7);
+            }
+            70% {
+                box-shadow: 0 0 0 10px rgba(229, 62, 62, 0);
+            }
+            100% {
+                box-shadow: 0 0 0 0 rgba(229, 62, 62, 0);
+            }
         }
-        .typing-indicator::after {
-            content: '...';
-            animation: typingDots 1.5s infinite;
+        
+        /* 載入中動畫 */
+        .typing {
+            display: flex;
+            align-items: center;
+            margin-bottom: 10px;
         }
-        @keyframes typingDots {
-            0%, 20% { content: '.'; }
-            40%, 60% { content: '..'; }
-            80%, 100% { content: '...'; }
+        
+        .typing-text {
+            margin-right: 5px;
+            font-size: 14px;
+            color: #718096;
         }
-        .hide-scrollbar::-webkit-scrollbar {
-            display: none;
+        
+        .typing-dots {
+            display: flex;
         }
-        .hide-scrollbar {
-            -ms-overflow-style: none;
-            scrollbar-width: none;
+        
+        .typing-dot {
+            width: 8px;
+            height: 8px;
+            margin: 0 2px;
+            background-color: #718096;
+            border-radius: 50%;
+            animation: typingDot 1.5s infinite ease-in-out;
+        }
+        
+        .typing-dot:nth-child(1) {
+            animation-delay: 0s;
+        }
+        
+        .typing-dot:nth-child(2) {
+            animation-delay: 0.2s;
+        }
+        
+        .typing-dot:nth-child(3) {
+            animation-delay: 0.4s;
+        }
+        
+        @keyframes typingDot {
+            0%, 60%, 100% {
+                transform: translateY(0);
+                opacity: 0.6;
+            }
+            30% {
+                transform: translateY(-5px);
+                opacity: 1;
+            }
         }
     </style>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.3/css/all.min.css">
 </head>
-<body class="flex flex-col h-full">
-    <!-- Header with Avatar -->
-    <header class="flex flex-col items-center p-4 bg-white shadow-md">
-        <div class="avatar-container w-24 h-24 mb-2">
-            <svg viewBox="0 0 200 200" class="w-full h-full">
-                <circle cx="100" cy="100" r="90" fill="#3498db" />
-                <circle cx="70" cy="80" r="10" fill="white" />
-                <circle cx="130" cy="80" r="10" fill="white" />
-                <circle cx="70" cy="80" r="5" fill="black" />
-                <circle cx="130" cy="80" r="5" fill="black" />
-                <path d="M 70 130 Q 100 150 130 130" stroke="white" stroke-width="5" fill="none" />
-            </svg>
-        </div>
-        <h1 class="text-xl font-bold text-blue-700">亞東醫院智能客服</h1>
-    </header>
-
-    <!-- Chat Container -->
-    <main class="flex-grow p-4 overflow-hidden">
-        <div id="chatContainer" class="chat-container hide-scrollbar pb-4">
-            <!-- Messages will be displayed here -->
-        </div>
-    </main>
-
-    <!-- Input Area -->
-    <footer class="p-4 bg-white shadow-lg border-t">
-        <div class="flex items-center">
-            <input type="text" id="userInput" placeholder="請輸入您的問題..." 
-                   class="flex-grow p-3 border rounded-l-full focus:outline-none focus:ring-2 focus:ring-blue-500" 
-                   onkeypress="if(event.key === 'Enter') sendMessage()">
-            <button id="voiceButton" class="bg-red-500 hover:bg-red-600 text-white p-3 rounded-r-full transition">
-                <i class="fas fa-microphone"></i>
-            </button>
-        </div>
-    </footer>
-
-    <!-- Loading Indicator -->
-    <div id="loadingIndicator" class="fixed top-0 left-0 w-full h-full bg-black bg-opacity-50 flex justify-center items-center hidden">
-        <div class="bg-white p-5 rounded-lg flex flex-col items-center">
-            <div class="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500"></div>
-            <p class="mt-3 text-gray-700">處理中...</p>
-        </div>
+<body>
+    <div class="header">
+        <img src="./avatar.jpg" alt="客服頭像" class="avatar">
+        <h1>亞東醫院智能客服</h1>
+    </div>
+    
+    <div class="chat-container" id="chatContainer">
+        <!-- 訊息將在這裡顯示 -->
+    </div>
+    
+    <div class="input-area">
+        <input type="text" class="input-field" id="userInput" placeholder="請輸入您的問題...">
+        <button class="mic-button" id="micButton">
+            <i class="fas fa-microphone"></i>
+        </button>
     </div>
 
     <script>
-        // Speech synthesis and recognition setup
+        // DOM 元素
+        const chatContainer = document.getElementById('chatContainer');
+        const userInput = document.getElementById('userInput');
+        const micButton = document.getElementById('micButton');
+        
+        // 語音合成
         const synth = window.speechSynthesis;
-        let recognition = null;
-        if ('SpeechRecognition' in window || 'webkitSpeechRecognition' in window) {
-            recognition = new (window.SpeechRecognition || window.webkitSpeechRecognition)();
+        
+        // 語音識別
+        let recognition;
+        try {
+            const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+            recognition = new SpeechRecognition();
             recognition.lang = 'zh-TW';
             recognition.continuous = false;
             recognition.interimResults = false;
+        } catch (e) {
+            console.error('瀏覽器不支援語音識別:', e);
         }
-
-        // Chat elements
-        const chatContainer = document.getElementById('chatContainer');
-        const userInput = document.getElementById('userInput');
-        const voiceButton = document.getElementById('voiceButton');
-        const loadingIndicator = document.getElementById('loadingIndicator');
-
-        // Initialize with welcome message
-        document.addEventListener('DOMContentLoaded', function() {
-            setTimeout(() => {
-                addBotMessage("您好，我是亞東醫院智能客服系統，您可以諮詢我相關問題，由您口述症狀，我來為您安排適合諮詢及掛號的科別，以及推薦您亞東醫院的醫師給您!");
-                speak("您好，我是亞東醫院智能客服系統，您可以諮詢我相關問題，由您口述症狀，我來為您安排適合諮詢及掛號的科別，以及推薦您亞東醫院的醫師給您!");
-            }, 500);
-        });
-
-        // Voice button functionality
-        voiceButton.addEventListener('click', function() {
-            if (recognition) {
-                recognition.start();
-                voiceButton.innerHTML = '<i class="fas fa-stop"></i>';
-                voiceButton.classList.add('pulse-button');
-                addTypingIndicator();
-            } else {
-                alert('您的瀏覽器不支持語音辨識功能，請使用文字輸入。');
-            }
-        });
-
-        // Handle speech recognition results
-        if (recognition) {
-            recognition.onresult = function(event) {
-                const transcript = event.results[0][0].transcript;
-                userInput.value = transcript;
-                sendMessage();
-            };
-
-            recognition.onend = function() {
-                voiceButton.innerHTML = '<i class="fas fa-microphone"></i>';
-                voiceButton.classList.remove('pulse-button');
-                removeTypingIndicator();
-            };
-
-            recognition.onerror = function(event) {
-                console.error('Speech recognition error', event.error);
-                voiceButton.innerHTML = '<i class="fas fa-microphone"></i>';
-                voiceButton.classList.remove('pulse-button');
-                removeTypingIndicator();
-                alert('語音辨識發生錯誤，請再試一次或使用文字輸入。');
-            };
-        }
-
-        // Function to send message
-        function sendMessage() {
-            const text = userInput.value.trim();
-            if (text === '') return;
-
-            addUserMessage(text);
+        
+        // 歡迎訊息
+        const welcomeMessage = "您好，我是亞東醫院智能客服系統，您可以諮詢我相關問題，由您口述症狀，我來為您安排適合諮詢及掛號的科別，以及推薦您亞東醫院的醫師給您!";
+        
+        // 預設知識庫
+        const knowledgeBase = {
+            "喉嚨痛": "根據您描述的症狀，喉嚨痛可能是上呼吸道感染、扁桃腺炎或咽喉炎等問題。建議您掛耳鼻喉科進行檢查。亞東醫院耳鼻喉科位於本館2樓，目前有張醫師和李醫師可預約門診。",
+            
+            "頭痛": "頭痛可能由多種原因引起，如緊張性頭痛、偏頭痛、感冒等。建議您可以先掛神經內科或家醫科進行評估。亞東醫院神經內科位於本館3樓，家醫科位於本館1樓。",
+            
+            "發燒": "發燒是身體對抗感染的一種正常反應。若體溫超過38.5度或持續超過兩天，建議掛家醫科或感染科。小孩發燒可考慮兒科。亞東醫院家醫科和感染科都有專業醫師可協助您。",
+            
+            "腹痛": "腹痛的原因很多，可能是腸胃炎、胃潰瘍、膽囊炎或其他消化系統問題。建議掛腸胃科進行評估。亞東醫院腸胃科位於本館3樓，有專業醫師團隊為您服務。",
+            
+            "咳嗽": "咳嗽可能是上呼吸道感染、過敏、氣喘或其他肺部問題。如果咳嗽持續超過兩週，建議掛胸腔內科。亞東醫院胸腔內科位於本館3樓，有專業醫師可協助診斷。",
+            
+            "皮膚問題": "皮膚問題如紅疹、搔癢、異常出疹等，建議掛皮膚科。亞東醫院皮膚科位於本館2樓，有專業醫師團隊可協助診斷與治療各類皮膚疾病。",
+            
+            "關節疼痛": "關節疼痛可能是關節炎、風濕病或運動傷害等原因引起。建議掛風濕免疫科或骨科進行評估。亞東醫院風濕免疫科位於本館3樓，骨科位於本館2樓。",
+            
+            "眼睛問題": "眼睛問題如視力模糊、眼睛發紅、分泌物增加等，建議掛眼科。亞東醫院眼科位於本館2樓，有專業醫師可協助診斷與治療各類眼科疾病。"
+        };
+        
+        // 處理用戶輸入
+        function handleUserInput(text) {
+            if (!text.trim()) return;
+            
+            // 添加用戶訊息到聊天窗
+            addMessage(text, 'user');
+            
+            // 清空輸入框
             userInput.value = '';
-            loadingIndicator.classList.remove('hidden');
-
-            // Simulate response delay (in real app, this would be an API call)
+            
+            // 顯示處理中...
+            showTyping();
+            
+            // 模擬處理時間
             setTimeout(() => {
-                getBotResponse(text);
+                // 移除處理中動畫
+                removeTyping();
+                
+                // 生成回應
+                const response = generateResponse(text);
+                
+                // 添加系統回應到聊天窗
+                addMessage(response, 'system');
+                
+                // 語音讀出回應
+                speak(response);
             }, 1000);
         }
-
-        // Function to get bot response
-        function getBotResponse(userText) {
-            // This is a simplified demo that simulates AI responses
-            // In a real application, this would call your ChatGPT or other backend API
+        
+        // 生成回應
+        function generateResponse(text) {
+            text = text.toLowerCase();
             
-            let botResponse = '';
-            
-            if (userText.includes('頭痛') || userText.includes('頭暈')) {
-                botResponse = '根據您描述的症狀，頭痛可能涉及多種原因，建議您掛神經內科進行進一步檢查。亞東醫院的神經內科陳醫師和林醫師都是這方面的專家。您需要我幫您安排掛號嗎？';
-            } else if (userText.includes('發燒') || userText.includes('感冒') || userText.includes('咳嗽')) {
-                botResponse = '發燒和咳嗽可能是感冒或其他呼吸道感染的症狀，建議您掛家醫科或耳鼻喉科。亞東醫院的張醫師本週有門診，是處理這類症狀的專家。需要我幫您查詢最近可掛號的時段嗎？';
-            } else if (userText.includes('肚子痛') || userText.includes('腹痛') || userText.includes('消化')) {
-                botResponse = '腹痛可能與消化系統問題有關，建議您掛腸胃科。亞東醫院的王醫師專長於消化系統疾病的診斷與治療。您想了解更多腸胃科的醫師資訊嗎？';
-            } else if (userText.includes('掛號')) {
-                botResponse = '亞東醫院提供多種掛號方式，包括網路掛號、電話掛號和現場掛號。您可以通過亞東醫院官方網站或APP進行網路掛號。需要我幫您查詢特定科別的掛號資訊嗎？';
-            } else if (userText.includes('營業時間') || userText.includes('開放時間')) {
-                botResponse = '亞東醫院門診時間為：週一至週五 上午8:30-12:00，下午1:30-5:00，晚上6:00-9:00。週六上午8:30-12:00。門診詳細時間可能因科別而異，建議查詢官網最新資訊。';
-            } else if (userText.includes('地址') || userText.includes('怎麼去') || userText.includes('位置')) {
-                botResponse = '亞東醫院位於新北市板橋區南雅南路二段21號。可搭乘捷運板南線至亞東醫院站下車，步行約3分鐘即可抵達。如果您開車前往，醫院設有地下停車場。';
-            } else if (userText.includes('謝謝') || userText.includes('感謝')) {
-                botResponse = '不客氣，很高興能幫到您！如果還有其他問題，隨時可以詢問我。祝您健康！';
-            } else {
-                botResponse = '感謝您的提問。要更準確地為您提供協助，請告訴我您遇到的具體症狀或需要諮詢的問題。例如：「我最近頭痛」、「想了解如何掛小兒科」等。';
+            // 檢查知識庫中是否有匹配的關鍵詞
+            for (const keyword in knowledgeBase) {
+                if (text.includes(keyword)) {
+                    return knowledgeBase[keyword];
+                }
             }
             
-            loadingIndicator.classList.add('hidden');
-            addBotMessage(botResponse);
-            speak(botResponse);
-        }
-
-        // Add user message to chat
-        function addUserMessage(text) {
-            const messageDiv = document.createElement('div');
-            messageDiv.className = 'flex justify-end mb-3';
-            messageDiv.innerHTML = `
-                <div class="user-message py-2 px-4 max-w-xs md:max-w-md lg:max-w-lg">
-                    ${text}
-                </div>
-            `;
-            chatContainer.appendChild(messageDiv);
-            scrollToBottom();
-        }
-
-        // Add bot message to chat
-        function addBotMessage(text) {
-            const messageDiv = document.createElement('div');
-            messageDiv.className = 'flex mb-3';
-            messageDiv.innerHTML = `
-                <div class="w-8 h-8 rounded-full bg-blue-500 flex items-center justify-center mr-2">
-                    <i class="fas fa-robot text-white text-sm"></i>
-                </div>
-                <div class="bot-message py-2 px-4 max-w-xs md:max-w-md lg:max-w-lg">
-                    ${text}
-                </div>
-            `;
-            chatContainer.appendChild(messageDiv);
-            scrollToBottom();
-        }
-
-        // Add typing indicator
-        function addTypingIndicator() {
-            const existingIndicator = document.getElementById('typingIndicator');
-            if (existingIndicator) return;
+            // 掛號相關詢問
+            if (text.includes('掛號') || text.includes('預約')) {
+                let dept = '';
+                
+                if (text.includes('內科')) dept = '內科';
+                else if (text.includes('外科')) dept = '外科';
+                else if (text.includes('小兒科') || text.includes('兒科')) dept = '小兒科';
+                else if (text.includes('婦產科')) dept = '婦產科';
+                else if (text.includes('耳鼻喉科')) dept = '耳鼻喉科';
+                else if (text.includes('眼科')) dept = '眼科';
+                else if (text.includes('皮膚科')) dept = '皮膚科';
+                else if (text.includes('神經科')) dept = '神經科';
+                else if (text.includes('精神科')) dept = '精神科';
+                else if (text.includes('骨科')) dept = '骨科';
+                
+                if (dept) {
+                    return `您想要掛${dept}是嗎？亞東醫院${dept}目前有多位醫師可供選擇，近期可預約的時段有週一至週五上午9點和下午2點。您想預約哪一天呢？`;
+                } else {
+                    return '您想掛哪一科呢？亞東醫院有內科、外科、小兒科、婦產科、耳鼻喉科、眼科、皮膚科、神經科、精神科、骨科等多個科別。';
+                }
+            }
             
-            const indicatorDiv = document.createElement('div');
-            indicatorDiv.id = 'typingIndicator';
-            indicatorDiv.className = 'flex mb-3';
-            indicatorDiv.innerHTML = `
-                <div class="w-8 h-8 rounded-full bg-blue-500 flex items-center justify-center mr-2">
-                    <i class="fas fa-robot text-white text-sm"></i>
-                </div>
-                <div class="bot-message py-2 px-4 typing-indicator">
-                    正在聆聽
-                </div>
-            `;
-            chatContainer.appendChild(indicatorDiv);
-            scrollToBottom();
+            // 位置相關詢問
+            if (text.includes('位置') || text.includes('在哪') || text.includes('怎麼去')) {
+                let dept = '';
+                
+                if (text.includes('內科')) dept = '內科位於本館3樓';
+                else if (text.includes('外科')) dept = '外科位於本館2樓';
+                else if (text.includes('小兒科') || text.includes('兒科')) dept = '小兒科位於本館1樓';
+                else if (text.includes('婦產科')) dept = '婦產科位於本館2樓';
+                else if (text.includes('耳鼻喉科')) dept = '耳鼻喉科位於本館2樓';
+                else if (text.includes('眼科')) dept = '眼科位於本館2樓';
+                else if (text.includes('皮膚科')) dept = '皮膚科位於本館2樓';
+                else if (text.includes('神經科')) dept = '神經科位於本館3樓';
+                else if (text.includes('精神科')) dept = '精神科位於本館5樓';
+                else if (text.includes('骨科')) dept = '骨科位於本館2樓';
+                
+                if (dept) {
+                    return `亞東醫院${dept}，您可搭乘電梯或依照醫院內的指引標誌前往。`;
+                } else {
+                    return '亞東醫院位於新北市板橋區南雅南路二段21號，鄰近板南線的亞東醫院捷運站，從捷運站1號出口步行約3分鐘即可抵達。';
+                }
+            }
+            
+            // 一般問題
+            if (text.includes('你好') || text.includes('哈囉')) {
+                return '您好！很高興為您服務。請問有什麼可以協助您的嗎？';
+            }
+            
+            if (text.includes('謝謝') || text.includes('感謝')) {
+                return '不客氣！很高興能幫助到您。還有其他問題嗎？';
+            }
+            
+            if (text.includes('再見') || text.includes('掰掰')) {
+                return '再見！祝您健康愉快，需要幫助隨時都可以來詢問。';
+            }
+            
+            // 默認回應
+            return '很抱歉，我目前無法確定您的問題。您可以描述一下您的症狀，或直接詢問特定科別的資訊，我將盡力協助您。';
         }
-
-        // Remove typing indicator
-        function removeTypingIndicator() {
-            const indicatorDiv = document.getElementById('typingIndicator');
-            if (indicatorDiv) {
-                indicatorDiv.remove();
+        
+        // 添加訊息到聊天窗
+        function addMessage(text, type) {
+            const messageDiv = document.createElement('div');
+            messageDiv.classList.add('message', type);
+            messageDiv.textContent = text;
+            chatContainer.appendChild(messageDiv);
+            
+            // 滾動到最新訊息
+            chatContainer.scrollTop = chatContainer.scrollHeight;
+        }
+        
+        // 顯示處理中動畫
+        function showTyping() {
+            const typingDiv = document.createElement('div');
+            typingDiv.classList.add('typing');
+            typingDiv.id = 'typing';
+            
+            const typingText = document.createElement('div');
+            typingText.classList.add('typing-text');
+            typingText.textContent = '處理中';
+            
+            const typingDots = document.createElement('div');
+            typingDots.classList.add('typing-dots');
+            
+            for (let i = 0; i < 3; i++) {
+                const dot = document.createElement('div');
+                dot.classList.add('typing-dot');
+                typingDots.appendChild(dot);
+            }
+            
+            typingDiv.appendChild(typingText);
+            typingDiv.appendChild(typingDots);
+            chatContainer.appendChild(typingDiv);
+            
+            // 滾動到最新訊息
+            chatContainer.scrollTop = chatContainer.scrollHeight;
+        }
+        
+        // 移除處理中動畫
+        function removeTyping() {
+            const typingDiv = document.getElementById('typing');
+            if (typingDiv) {
+                typingDiv.remove();
             }
         }
-
-        // Speak text using speech synthesis
+        
+        // 語音合成
         function speak(text) {
             if (synth.speaking) {
-                console.error('正在說話中...');
+                console.log('語音合成正在進行中...');
                 return;
             }
-
+            
             const utterance = new SpeechSynthesisUtterance(text);
             utterance.lang = 'zh-TW';
-            utterance.pitch = 1.2;  // 較高的音調，適合女聲
-            utterance.rate = 1.0;   // 正常速度
+            utterance.pitch = 1.2; // 提高音調，使聲音更女性化
+            utterance.rate = 1.0; // 正常語速
             
-            // 嘗試選擇台灣女聲
+            // 找到女聲
             let voices = synth.getVoices();
-            let taiwaneseVoice = voices.find(voice => 
-                voice.lang.includes('zh-TW') && voice.name.includes('Female')
+            let femaleVoice = voices.find(voice => 
+                voice.lang.includes('zh') && 
+                (voice.name.includes('Female') || voice.name.includes('女'))
             );
             
-            if (taiwaneseVoice) {
-                utterance.voice = taiwaneseVoice;
-            } else {
-                // 如果沒有找到台灣女聲，就選擇任何中文女聲
-                let chineseVoice = voices.find(voice => 
-                    voice.lang.includes('zh') && voice.name.includes('Female')
-                );
-                if (chineseVoice) {
-                    utterance.voice = chineseVoice;
-                }
+            if (femaleVoice) {
+                utterance.voice = femaleVoice;
             }
             
             synth.speak(utterance);
         }
-
-        // Scroll chat to bottom
-        function scrollToBottom() {
-            chatContainer.scrollTop = chatContainer.scrollHeight;
-        }
-
-        // Handle voices loading (sometimes voices are loaded asynchronously)
-        if (speechSynthesis.onvoiceschanged !== undefined) {
-            speechSynthesis.onvoiceschanged = function() {
-                console.log('Voices loaded:', speechSynthesis.getVoices().length);
+        
+        // 初始歡迎訊息
+        window.addEventListener('DOMContentLoaded', () => {
+            // 等待一秒後顯示歡迎訊息
+            setTimeout(() => {
+                addMessage(welcomeMessage, 'system');
+                speak(welcomeMessage);
+            }, 1000);
+            
+            // 確保語音可用
+            setTimeout(() => {
+                synth.getVoices();
+            }, 500);
+        });
+        
+        // 輸入框事件監聽
+        userInput.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter') {
+                handleUserInput(userInput.value);
+            }
+        });
+        
+        // 語音按鈕事件監聽
+        micButton.addEventListener('click', () => {
+            if (recognition) {
+                // 停止任何正在播放的合成語音
+                if (synth.speaking) {
+                    synth.cancel();
+                }
+                
+                try {
+                    recognition.start();
+                    micButton.classList.add('listening');
+                } catch (e) {
+                    console.error('語音識別錯誤:', e);
+                }
+            } else {
+                alert('您的瀏覽器不支援語音識別功能');
+            }
+        });
+        
+        // 語音識別結果處理
+        if (recognition) {
+            recognition.onresult = (event) => {
+                const speechResult = event.results[0][0].transcript;
+                userInput.value = speechResult;
+                handleUserInput(speechResult);
+            };
+            
+            recognition.onend = () => {
+                micButton.classList.remove('listening');
+            };
+            
+            recognition.onerror = (event) => {
+                console.error('語音識別錯誤:', event.error);
+                micButton.classList.remove('listening');
             };
         }
     </script>
