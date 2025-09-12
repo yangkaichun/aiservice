@@ -1,0 +1,467 @@
+<!DOCTYPE html>
+<html lang="zh-Hant" class="scroll-smooth">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>健康台灣整合平台藍圖</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700&display=swap" rel="stylesheet">
+    <style>
+        /* --- 整體與字體設定 --- */
+        body {
+            font-family: 'Noto Sans TC', sans-serif;
+            background-color: #f8f9fa;
+            color: #374151;
+        }
+
+        /* --- 主要導覽頁籤 --- */
+        .main-tab {
+            border-bottom: 3px solid transparent;
+            color: #6B7280;
+            transition: all 0.3s ease;
+        }
+        .main-tab-active {
+            border-bottom: 3px solid #005A9C;
+            color: #005A9C;
+            font-weight: 700;
+        }
+
+        /* --- 平台展示區塊子頁籤 --- */
+        .platform-tab {
+            border-color: transparent;
+            color: #6b7280;
+            transition: all 0.3s ease;
+        }
+        .platform-tab-active {
+            border-color: #005A9C;
+            color: #005A9C;
+            background-color: #eef5ff;
+        }
+
+        /* --- 整合架構圖示 --- */
+        .arch-box {
+            width: 100%;
+            max-width: 220px;
+            min-height: 80px;
+            padding: 1rem;
+            border-radius: 0.75rem;
+            text-align: center;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        .arch-box:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -2px rgb(0 0 0 / 0.1);
+        }
+        .arch-hospital { background-color: #607D8B; color: white; }
+        .arch-fet { background-color: #0d6efd; color: white; }
+        .arch-project { background-color: #198754; color: white; }
+        .arch-partner { background-color: #ffc107; color: #333; }
+        .modal {
+            transition: opacity 0.3s ease;
+        }
+
+        /* --- 時間軸 --- */
+        .timeline-item {
+            border-left: 3px solid #005A9C;
+        }
+        
+        /* --- KPI 圖表 --- */
+        .chart-container {
+            position: relative;
+            width: 100%;
+            max-width: 800px;
+            margin: auto;
+            height: 45vh;
+            max-height: 450px;
+        }
+        .kpi-card {
+            background-color: white;
+            border-left: 5px solid #0dcaf0;
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
+        .kpi-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+        }
+
+        /* --- 嵌入平台的通用樣式 --- */
+        .platform-container {
+            border: 1px solid #e2e8f0;
+            border-radius: 0.75rem;
+            padding: 1.5rem;
+            background-color: #ffffff;
+        }
+        .dashboard-card {
+            background-color: #ffffff;
+            border-radius: 0.75rem;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+            border: 1px solid #e5e7eb;
+        }
+        .primary-btn {
+            background-color: #005A9C;
+            color: white;
+            transition: background-color 0.3s;
+        }
+        .primary-btn:hover {
+            background-color: #004b82;
+        }
+
+        /* --- Chatbot 專用樣式 --- */
+        .chat-container {
+            height: 65vh;
+            overflow-y: auto;
+            scroll-behavior: smooth;
+        }
+        .message-bubble {
+            max-width: 85%;
+            padding: 0.75rem 1.25rem;
+            border-radius: 1.5rem;
+            margin-bottom: 1rem;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+        }
+        .bot-message {
+            background-color: #f3f4f6;
+            border-bottom-left-radius: 0.25rem;
+        }
+        .user-message {
+            background-color: #005A9C;
+            color: white;
+            border-bottom-right-radius: 0.25rem;
+        }
+        .chatbot-card {
+            background-color: #fff;
+            border: 1px solid #e5e7eb;
+            border-radius: 1rem;
+            padding: 1rem;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+        .chatbot-card:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+        }
+
+        /* --- 個人健康 APP 專用樣式 --- */
+        .app-screen {
+            background-color: #f9fafb;
+            border: 8px solid #333;
+            border-radius: 40px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+            overflow: hidden;
+            aspect-ratio: 9 / 19.5;
+            width: 100%;
+            max-width: 380px;
+            margin: auto;
+        }
+    </style>
+</head>
+<body class="bg-gray-100">
+
+    <div class="container mx-auto p-4 md:p-8">
+        <!-- Header -->
+        <header class="text-center mb-8">
+            <h1 class="text-3xl md:text-5xl font-bold text-gray-800">健康台灣：全齡健康照護整合平台</h1>
+            <p class="text-lg md:text-xl text-gray-600 mt-3">深耕計畫 整合執行藍圖</p>
+        </header>
+
+        <!-- Main Tabs -->
+        <div class="bg-white rounded-t-lg shadow-md sticky top-0 z-40">
+            <nav class="flex justify-center flex-wrap" role="tablist" aria-label="主要功能">
+                <button role="tab" aria-selected="true" aria-controls="main-content-overview" onclick="changeMainTab('overview')" id="main-tab-overview" class="whitespace-nowrap py-4 px-4 text-sm font-medium main-tab main-tab-active">計畫總覽</button>
+                <button role="tab" aria-selected="false" aria-controls="main-content-architecture" onclick="changeMainTab('architecture')" id="main-tab-architecture" class="whitespace-nowrap py-4 px-4 text-sm font-medium main-tab">整合架構</button>
+                <button role="tab" aria-selected="false" aria-controls="main-content-platforms" onclick="changeMainTab('platforms')" id="main-tab-platforms" class="whitespace-nowrap py-4 px-4 text-sm font-medium main-tab">五大平台展示</button>
+                <button role="tab" aria-selected="false" aria-controls="main-content-timeline" onclick="changeMainTab('timeline')" id="main-tab-timeline" class="whitespace-nowrap py-4 px-4 text-sm font-medium main-tab">五年執行計畫</button>
+                <button role="tab" aria-selected="false" aria-controls="main-content-kpi" onclick="changeMainTab('kpi')" id="main-tab-kpi" class="whitespace-nowrap py-4 px-4 text-sm font-medium main-tab">投資與效益</button>
+            </nav>
+        </div>
+
+        <!-- Main Content Area -->
+        <main>
+            <!-- 1. Overview Section -->
+            <div id="main-content-overview" role="tabpanel" class="main-content">
+                <div class="bg-white p-6 md:p-8 rounded-b-xl shadow-lg">
+                    <h2 class="text-2xl font-bold text-[#005A9C] mb-4">計畫願景：打造無牆醫院</h2>
+                    <p class="text-gray-700 leading-relaxed mb-6">為響應「健康台灣」國家政策，本專案旨在建構一套以社區醫療為基礎、數據驅動的全人、全齡、全方位「健康台灣：全齡健康照護整合平台系統」。此計畫不僅是一項資訊建設，更是驅動醫院服務模式根本性變革的策略引擎。我們將從傳統的被動式、片段化醫療，邁向主動式、連續性、數據驅動的全人健康管理新紀元，實現「從 EBM、精準醫療到元宇宙健康」的宏偉藍圖。</p>
+                    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mt-6">
+                        <div class="bg-blue-50 p-4 rounded-lg border-l-4 border-blue-500"><h3 class="font-bold text-blue-800">落實分級醫療</h3><p class="text-sm text-blue-700 mt-1">強化雙向轉診、遠距醫療與居家照護(HaH)的服務連續性。</p></div>
+                        <div class="bg-green-50 p-4 rounded-lg border-l-4 border-green-500"><h3 class="font-bold text-green-800">營造健康生活</h3><p class="text-sm text-green-700 mt-1">提供個人化健康處方與慢病風險警示，賦能民眾自主健康管理。</p></div>
+                        <div class="bg-yellow-50 p-4 rounded-lg border-l-4 border-yellow-500"><h3 class="font-bold text-yellow-800">發展數據應用</h3><p class="text-sm text-yellow-700 mt-1">建立健康大數據中台，發展AI應用，驅動精準健康革新。</p></div>
+                        <div class="bg-indigo-50 p-4 rounded-lg border-l-4 border-indigo-500"><h3 class="font-bold text-indigo-800">優化醫病關係</h3><p class="text-sm text-indigo-700 mt-1">提供便利的健康管理工具，提升民眾參與感與滿意度。</p></div>
+                    </div>
+                     <img src="全計畫.png" alt="計畫架構圖" class="w-full h-auto mt-6">
+                </div>
+            </div>
+
+            <!-- 2. Architecture Section -->
+            <div id="main-content-architecture" role="tabpanel" class="main-content hidden">
+                 <div class="bg-white p-6 md:p-8 rounded-b-xl shadow-lg">
+                    <h2 class="text-2xl font-bold text-center text-[#005A9C] mb-2">混合雲總體架構：整合、協作、賦能</h2>
+                    <p class="text-center text-gray-600 mb-8">本專案的核心是「整合創新」，在貴院既有數位資產上，建構統一、穩健且具彈性的應用層。點擊各區塊以了解其角色。</p>
+                    <div class="grid grid-cols-1 lg:grid-cols-3 gap-8 items-start text-center">
+                        <div class="space-y-4"><h3 class="font-semibold text-lg">民眾 & 合作夥伴</h3><div class="arch-box arch-partner mx-auto" onclick="showModal('partner')"><h4 class="font-bold">社區醫療群 (診所)</h4><p class="text-sm opacity-80">轉診協作</p></div><div class="arch-box arch-partner mx-auto" onclick="showModal('partner')"><h4 class="font-bold">服務合作機構</h4><p class="text-sm opacity-80">個案管理</p></div><div class="arch-box arch-partner mx-auto" onclick="showModal('partner')"><h4 class="font-bold">一般民眾</h4><p class="text-sm opacity-80">健康管理 / 就醫服務</p></div></div>
+                        <div class="space-y-4"><h3 class="font-semibold text-lg">本專案建置 (遠傳電信)</h3><div class="arch-box arch-fet mx-auto" onclick="showModal('fet-cloud')"><h4 class="font-bold">雲端應用服務 (Azure)</h4><p class="text-sm opacity-80">五大工項微服務化部署</p></div><div class="arch-box arch-project mx-auto" onclick="showModal('fet-platforms')"><h4 class="font-bold">五大核心平台</h4><p class="text-sm opacity-80">轉診/e照顧/AI/APP/Web</p></div><div class="arch-box arch-fet mx-auto" onclick="showModal('fet-integration')"><h4 class="font-bold">整合與數據中繼站</h4><p class="text-sm opacity-80">API閘道 / Data Lake</p></div></div>
+                        <div class="space-y-4"><h3 class="font-semibold text-lg">醫院既有系統</h3><div class="arch-box arch-hospital mx-auto" onclick="showModal('hospital-data')"><h4 class="font-bold">FHIR + 數據中台 + BI</h4><p class="text-sm opacity-80">數據核心資產</p></div><div class="arch-box arch-hospital mx-auto" onclick="showModal('hospital-ai')"><h4 class="font-bold">AI 模型發展平台</h4><p class="text-sm opacity-80">演算法與模型訓練</p></div><div class="arch-box arch-hospital mx-auto" onclick="showModal('hospital-core')"><h4 class="font-bold">核心醫療系統</h4><p class="text-sm opacity-80">HIS/EMR/掛號/總機</p></div></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 3. Platforms Section -->
+            <div id="main-content-platforms" role="tabpanel" class="main-content hidden">
+                <div class="bg-white p-6 md:p-8 rounded-b-xl shadow-lg">
+                    <div class="border-b border-gray-200 mb-6">
+                        <nav class="-mb-px flex flex-wrap justify-center gap-x-1 sm:gap-x-4" role="tablist" aria-label="五大平台">
+                            <button role="tab" aria-selected="true" aria-controls="platform-referral" class="platform-tab platform-tab-active whitespace-nowrap py-3 px-4 border-b-2 font-medium text-sm" onclick="changePlatformTab('platform-referral')">轉診平台</button>
+                            <button role="tab" aria-selected="false" aria-controls="platform-ecare" class="platform-tab whitespace-nowrap py-3 px-4 border-b-2 font-medium text-sm" onclick="changePlatformTab('platform-ecare')">e照顧平台 (HaH)</button>
+                            <button role="tab" aria-selected="false" aria-controls="platform-community" class="platform-tab whitespace-nowrap py-3 px-4 border-b-2 font-medium text-sm" onclick="changePlatformTab('platform-community')">社區健康支援網絡</button>
+                            <button role="tab" aria-selected="false" aria-controls="platform-app" class="platform-tab whitespace-nowrap py-3 px-4 border-b-2 font-medium text-sm" onclick="changePlatformTab('platform-app')">個人健康APP</button>
+                            <button role="tab" aria-selected="false" aria-controls="platform-chatbot" class="platform-tab whitespace-nowrap py-3 px-4 border-b-2 font-medium text-sm" onclick="changePlatformTab('platform-chatbot')">AI 智能助理</button>
+                        </nav>
+                    </div>
+                    <div id="platform-content-container">
+                        <!-- 3.1 Referral Platform Content -->
+                        <div id="platform-referral" role="tabpanel" class="platform-content"><h3 class="text-2xl font-bold text-gray-800 mb-1">連續照護平台 (分級轉診)</h3><p class="text-md text-gray-500 mb-4">展示對象：社區合作診所醫師 (王醫師)</p><div class="platform-container"><main class="w-full"><h1 class="text-2xl font-bold mb-6">數據總覽</h1><div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-12"><div class="dashboard-card p-6"><div class="border-b-2 border-[#005A9C] pb-3 mb-3 font-semibold text-[#005A9C]">本月轉診總數</div><div class="text-5xl font-extrabold text-gray-800">15</div><p class="text-gray-500 mt-2">較上月增加 <span class="text-green-500 font-semibold">25%</span></p></div><div class="dashboard-card p-6"><div class="border-b-2 border-[#005A9C] pb-3 mb-3 font-semibold text-[#005A9C]">平均回復時間</div><div class="text-5xl font-extrabold text-gray-800">24<span class="text-2xl ml-1">小時</span></div><p class="text-gray-500 mt-2">比健保平台平均快</p></div><div class="dashboard-card p-6"><div class="border-b-2 border-[#005A9C] pb-3 mb-3 font-semibold text-[#005A9C]">本月已完成轉診</div><div class="text-5xl font-extrabold text-gray-800">10</div><p class="text-gray-500 mt-2">已回復診療摘要</p></div></div><div id="new-referral" class="mb-12"><h2 class="text-2xl font-bold mb-4">建立新轉診單</h2><div class="dashboard-card p-6"><form class="space-y-6"><div><label for="patient-id" class="block text-sm font-medium text-gray-700 mb-1">病人身分證號 (可讀取健保卡自動帶入)</label><input type="text" id="patient-id" class="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-[#005A9C] focus:border-[#005A9C]" placeholder="輸入或掃描健保卡"></div><div><label for="reason" class="block text-sm font-medium text-gray-700 mb-1">轉診目的</label><textarea id="reason" rows="4" class="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-[#005A9C] focus:border-[#005A9C]" placeholder="請填寫簡要病史、診斷與轉診原因..."></textarea></div><button type="submit" class="w-full py-3 px-4 rounded-md font-bold primary-btn">提交轉診單</button></form></div></div><h2 class="text-2xl font-bold mb-4">我的轉診案件追蹤</h2><div class="dashboard-card p-6 overflow-x-auto"><table class="w-full whitespace-nowrap"><thead><tr class="bg-gray-50 text-left text-xs font-semibold uppercase tracking-wider text-gray-500"><th class="px-6 py-3">轉診單號</th><th class="px-6 py-3">病人姓名</th><th class="px-6 py-3">轉診科別</th><th class="px-6 py-3">狀態</th></tr></thead><tbody><tr class="border-t"><td class="px-6 py-4">AD001-20250901</td><td class="px-6 py-4">林小明</td><td class="px-6 py-4">心臟內科</td><td class="px-6 py-4"><span class="inline-block px-3 py-1 rounded-full text-xs font-semibold text-white bg-yellow-500">待受理</span></td></tr><tr class="border-t"><td class="px-6 py-4">AD001-20250825</td><td class="px-6 py-4">陳大華</td><td class="px-6 py-4">骨科</td><td class="px-6 py-4"><span class="inline-block px-3 py-1 rounded-full text-xs font-semibold text-white bg-blue-500">已受理</span></td></tr><tr class="border-t"><td class="px-6 py-4">AD001-20250810</td><td class="px-6 py-4">王麗珍</td><td class="px-6 py-4">神經內科</td><td class="px-6 py-4"><span class="inline-block px-3 py-1 rounded-full text-xs font-semibold text-white bg-green-500">已完成</span></td></tr><tr class="border-t"><td class="px-6 py-4">AD001-20250720</td><td class="px-6 py-4">李家豪</td><td class="px-6 py-4">PAC個案</td><td class="px-6 py-4"><span class="inline-block px-3 py-1 rounded-full text-xs font-semibold text-white bg-red-500">PAC轉銜中</span></td></tr></tbody></table></div></main></div></div>
+                        <!-- 3.2 eCare Platform Content -->
+                        <div id="platform-ecare" role="tabpanel" class="platform-content hidden"><h3 class="text-2xl font-bold text-gray-800">e照顧整合平台 (HaH 在宅智慧醫療)</h3><p class="text-md text-gray-500 mb-4">展示對象：院內個案管理師 (王小明)</p><div class="platform-container"><div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-8"><div class="bg-gray-100 p-6 rounded-lg text-center"><div class="text-4xl font-bold text-[#005A9C]">25</div><div class="text-sm text-gray-600 mt-1">總在宅照護個案數</div></div><div class="bg-gray-100 p-6 rounded-lg text-center"><div class="text-4xl font-bold text-red-600">3</div><div class="text-sm text-gray-600 mt-1">高風險個案</div></div><div class="bg-gray-100 p-6 rounded-lg text-center"><div class="text-4xl font-bold text-yellow-500">5</div><div class="text-sm text-gray-600 mt-1">中風險個案</div></div><div class="bg-gray-100 p-6 rounded-lg text-center"><div class="text-4xl font-bold text-gray-700">12.5%</div><div class="text-sm text-gray-600 mt-1">當日警示觸發率</div></div></div><div class="grid grid-cols-1 lg:grid-cols-3 gap-6"><div class="lg:col-span-2 bg-white p-6 rounded-xl border"><h2 class="text-xl font-semibold text-[#005A9C] mb-4">在宅照護個案列表</h2><div class="overflow-x-auto"><table class="min-w-full table-auto"><thead><tr class="bg-blue-50 text-gray-700"><th class="py-3 px-4 text-left">姓名</th><th class="py-3 px-4 text-left">疾病診斷</th><th class="py-3 px-4 text-left">風險等級</th><th class="py-3 px-4 text-left">最新紀錄</th></tr></thead><tbody><tr class="border-b"><td class="py-3 px-4">林女士</td><td class="py-3 px-4">社區型肺炎 (HAH)</td><td class="py-3 px-4"><span class="bg-yellow-100 text-yellow-800 font-bold px-3 py-1 rounded-full text-xs">中</span></td><td class="py-3 px-4 text-gray-500">體溫 38.1°C (已介入)</td></tr><tr class="border-b"><td class="py-3 px-4">陳先生</td><td class="py-3 px-4">蜂窩性組織炎</td><td class="py-3 px-4"><span class="bg-red-100 text-red-800 font-bold px-3 py-1 rounded-full text-xs">高</span></td><td class="py-3 px-4 text-gray-500">血氧 90% (警示)</td></tr><tr class="border-b"><td class="py-3 px-4">張小姐</td><td class="py-3 px-4">術後恢復 (ESD)</td><td class="py-3 px-4"><span class="bg-green-100 text-green-800 font-bold px-3 py-1 rounded-full text-xs">低</span></td><td class="py-3 px-4 text-gray-500">無異常回報</td></tr><tr><td class="py-3 px-4">李奶奶</td><td class="py-3 px-4">鬱血性心衰竭</td><td class="py-3 px-4"><span class="bg-yellow-100 text-yellow-800 font-bold px-3 py-1 rounded-full text-xs">中</span></td><td class="py-3 px-4 text-gray-500">體重增加 (待處理)</td></tr></tbody></table></div></div><div class="lg:col-span-1 space-y-6"><div class="bg-white p-6 rounded-xl border"><h2 class="text-xl font-semibold mb-4 text-[#005A9C]">待辦與警示清單</h2><div class="space-y-4" id="alerts-list"></div></div></div></div></div></div>
+                        <!-- 3.3 Community Health Platform Content -->
+                        <div id="platform-community" role="tabpanel" class="platform-content hidden"><h3 class="text-2xl font-bold text-gray-800">社區健康支援網絡</h3><p class="text-md text-gray-500 mb-4">展示對象：院內/社區個案管理師 (王曉明)</p><div class="platform-container"><header class="flex justify-between items-center mb-6"><h1 class="text-2xl font-bold text-gray-800">儀表板</h1><span class="text-gray-600">歡迎，王曉明 個案管理師</span></header><div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8"><div class="dashboard-card p-6"><div class="text-gray-500 font-medium text-sm">今日待辦新轉介</div><div class="text-3xl font-bold text-gray-900 mt-1">3 件</div><div class="text-green-500 text-sm mt-1">來自家醫科、輔導室</div></div><div class="dashboard-card p-6"><div class="text-gray-500 font-medium text-sm">需追蹤個案</div><div class="text-3xl font-bold text-gray-900 mt-1">5 位</div><div class="text-red-500 text-sm mt-1">2 個計畫即將到期</div></div><div class="dashboard-card p-6"><div class="text-gray-500 font-medium text-sm">總服務個案數</div><div class="text-3xl font-bold text-gray-900 mt-1">128 位</div><div class="text-gray-500 text-sm mt-1">本月新增 8 位</div></div><div class="dashboard-card p-6"><div class="text-gray-500 font-medium text-sm">結案率 (本月)</div><div class="text-3xl font-bold text-gray-900 mt-1">87%</div><div class="text-green-500 text-sm mt-1">達成目標</div></div></div><div class="grid grid-cols-1 lg:grid-cols-3 gap-6"><div class="lg:col-span-2 dashboard-card p-6"><h2 class="text-lg font-semibold text-gray-800 mb-4">轉介來源分布 (本月)</h2><div class="flex items-center justify-center text-gray-500"><svg class="w-full h-64" viewBox="0 0 200 100"><circle cx="50" cy="50" r="40" fill="#60a5fa"></circle><path d="M50 50 L50 10 A40 40 0 0 1 84.64 30.00 Z" fill="#34d399"></path><path d="M50 50 L84.64 30 A40 40 0 0 1 78.54 75.28 Z" fill="#facc15"></path><path d="M50 50 L78.54 75.28 A40 40 0 0 1 50 90 Z" fill="#f87171"></path><text x="130" y="30" font-size="6" fill="#60a5fa">■ 家醫科 (45%)</text><text x="130" y="45" font-size="6" fill="#34d399">■ 學校輔導室 (25%)</text><text x="130" y="60" font-size="6" fill="#facc15">■ 鄰里辦公室 (20%)</text><text x="130" y="75" font-size="6" fill="#f87171">■ 其他 (10%)</text></svg></div></div><div class="lg:col-span-1 dashboard-card p-6"><h2 class="text-lg font-semibold text-gray-800 mb-4">最近轉介個案</h2><ul class="space-y-4"><li class="p-3 bg-gray-50 rounded-lg"><div><div class="font-medium text-gray-800">李大明</div><div class="text-sm text-gray-500">高血壓追蹤 - 家醫科轉介</div></div></li><li class="p-3 bg-gray-50 rounded-lg"><div><div class="font-medium text-gray-800">陳小花</div><div class="text-sm text-gray-500">情緒困擾 - 學校輔導室轉介</div></div></li><li class="p-3 bg-gray-50 rounded-lg"><div><div class="font-medium text-gray-800">張志偉</div><div class="text-sm text-gray-500">戒菸支持 - 鄰里辦公室轉介</div></div></li></ul></div></div></div></div>
+                        <!-- 3.4 Personalized Health APP -->
+                        <div id="platform-app" role="tabpanel" class="platform-content hidden"><h3 class="text-2xl font-bold text-gray-800">大家醫平台 (個人化健康APP)</h3><p class="text-md text-gray-500 mb-4">展示對象：一般民眾 (林小明)</p><div class="platform-container"><div class="app-screen"><div class="flex flex-col h-full"><header class="p-4 bg-white border-b"><h1 class="font-bold text-center text-lg">我的健康</h1></header><main class="flex-1 p-4 overflow-y-auto space-y-4"><div class="text-center"><p class="text-sm text-gray-500">午安</p><p class="text-2xl font-bold">林小明 先生</p></div><div class="grid grid-cols-3 gap-3 text-center"><div class="bg-white p-3 rounded-lg border"><div class="text-sm text-gray-500">身高</div><div class="font-bold text-lg">175<span class="text-xs">cm</span></div></div><div class="bg-white p-3 rounded-lg border"><div class="text-sm text-gray-500">體重</div><div class="font-bold text-lg">72<span class="text-xs">kg</span></div></div><div class="bg-white p-3 rounded-lg border"><div class="text-sm text-gray-500">BMI</div><div class="font-bold text-lg">23.5</div></div></div><div class="bg-white p-4 rounded-lg border"><h4 class="font-bold mb-2">AI 健康洞察</h4><p class="text-sm text-gray-600">💡 根據您近期的紀錄，建議增加蔬菜攝取量，並維持每日健走30分鐘的習慣，有助於穩定血壓。</p></div><div class="bg-white p-4 rounded-lg border"><h4 class="font-bold mb-2">國健署風險模組</h4><div class="flex items-center justify-between"><p class="text-sm">未來10年心血管疾病風險</p><p class="font-bold text-lg text-green-600">低</p></div></div><div class="bg-white p-4 rounded-lg border"><h4 class="font-bold mb-2">今日量測</h4><div class="flex items-center justify-between"><p class="text-sm">血壓</p><p class="font-bold">125 / 82 <span class="text-xs">mmHg</span></p></div><div class="flex items-center justify-between mt-2"><p class="text-sm">血糖 (飯前)</p><p class="font-bold">98 <span class="text-xs">mg/dL</span></p></div></div></main><footer class="grid grid-cols-4 items-center text-center text-xs text-gray-500 p-2 bg-white border-t"><a href="#" class="p-2 text-[#005A9C]"><svg class="w-6 h-6 mx-auto" fill="currentColor" viewBox="0 0 20 20"><path d="M10.707 2.293a1 1 0 00-1.414 0l-7 7a1 1 0 001.414 1.414L4 10.414V17a1 1 0 001 1h2a1 1 0 001-1v-2a1 1 0 011-1h2a1 1 0 011 1v2a1 1 0 001 1h2a1 1 0 001-1v-6.586l.293.293a1 1 0 001.414-1.414l-7-7z"></path></svg>首頁</a><a href="#" class="p-2"><svg class="w-6 h-6 mx-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 012-2h2a2 2 0 012 2v6m-8-12V7a2 2 0 012-2h4a2 2 0 012 2v2m-6 12h6"></path></svg>紀錄</a><a href="#" class="p-2"><svg class="w-6 h-6 mx-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"></path></svg>衛教</a><a href="#" class="p-2"><svg class="w-6 h-6 mx-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"></path></svg>設定</a></footer></div></div></div></div>
+                        <!-- 3.5 Chatbot Platform Content -->
+                        <div id="platform-chatbot" role="tabpanel" class="platform-content hidden"><h3 class="text-2xl font-bold text-gray-800">LINE & AI 智能助理</h3><p class="text-md text-gray-500 mb-4">展示對象：一般民眾 (使用者) & 院內管理員 (張三豐)</p><div class="grid grid-cols-1 lg:grid-cols-2 gap-8"><div class="platform-container"><h4 class="text-xl font-bold text-gray-800 mb-4 text-center">民眾端體驗</h4><div class="bg-gray-100 rounded-xl shadow-inner w-full h-[80vh] flex flex-col p-4"><div class="flex items-center space-x-4 mb-4 p-2"><div class="w-12 h-12 bg-[#005A9C] rounded-full flex items-center justify-center text-white font-bold text-2xl">AI</div><div><h1 class="text-xl font-bold text-gray-800">醫院 AI 智能助理</h1><p class="text-sm text-gray-500">線上服務中</p></div></div><div id="chat-messages" class="chat-container flex-1 mb-4 space-y-4"><div><div class="flex justify-start"><div class="message-bubble bot-message"><p>您好！我是醫院的AI智能助理，請問有什麼需要協助的嗎？</p><div class="mt-4 grid grid-cols-1 gap-3"><div class="chatbot-card cursor-pointer" onclick="handleCardClick('智能掛號')"><h3 class="font-bold text-blue-600">智能掛號</h3><p class="text-sm text-gray-600">透過對話輕鬆預約門診</p></div><div class="chatbot-card cursor-pointer" onclick="handleCardClick('個人化衛教')"><h3 class="font-bold text-green-600">個人化衛教</h3><p class="text-sm text-gray-600">獲取專屬您的健康資訊</p></div></div></div></div></div></div><div class="p-2 bg-gray-200 rounded-xl"><div class="flex items-center space-x-2"><input id="user-input" type="text" class="flex-1 p-3 border border-gray-300 rounded-full focus:outline-none focus:ring-2 focus:ring-[#005A9C]" placeholder="請輸入您的問題..." onkeypress="handleKeyPress(event)"><button id="send-button" class="primary-btn rounded-full p-3 w-12 h-12 flex items-center justify-center"><svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="w-6 h-6"><path stroke-linecap="round" stroke-linejoin="round" d="M6 12L3.269 3.126A59.768 59.768 0 0121.485 12 59.77 59.77 0 013.27 20.876L5.999 12zm0 0h7.5"></path></svg></button></div></div></div></div><div class="platform-container"><h4 class="text-xl font-bold text-gray-800 mb-4 text-center">後台管理系統</h4><header class="flex justify-between items-center mb-6"><h1 class="text-2xl font-bold text-gray-900">儀表板</h1><span class="text-gray-600">管理員：張三豐</span></header><section class="grid grid-cols-1 gap-6 mb-8"><div class="bg-white rounded-xl shadow p-4 flex items-center space-x-4 border"><div class="w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center text-blue-600 font-bold">...</div><div><p class="text-sm text-gray-500">本月掛號量</p><p class="text-2xl font-bold text-gray-900">3,450</p></div></div><div class="bg-white rounded-xl shadow p-4 flex items-center space-x-4 border"><div class="w-12 h-12 bg-green-100 rounded-full flex items-center justify-center text-green-600 font-bold">...</div><div><p class="text-sm text-gray-500">衛教推播次數</p><p class="text-2xl font-bold text-gray-900">5,120</p></div></div><div class="bg-white rounded-xl shadow p-4 flex items-center space-x-4 border"><div class="w-12 h-12 bg-red-100 rounded-full flex items-center justify-center text-red-600 font-bold">...</div><div><p class="text-sm text-gray-500">風險警示數</p><p class="text-2xl font-bold text-gray-900">1,087</p></div></div></section><section class="bg-white rounded-xl shadow p-6 border"><h3 class="text-xl font-semibold mb-4 text-gray-800">最新對話服務監控</h3><table class="min-w-full divide-y divide-gray-200"><thead><tr class="bg-gray-50"><th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">使用者需求</th><th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">意圖識別</th><th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">狀態</th></tr></thead><tbody class="divide-y"><tr><td class="px-6 py-4 text-sm">我想掛皮膚科，找王醫師...</td><td class="px-6 py-4 text-sm">智能掛號</td><td class="px-6 py-4"><span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800">成功</span></td></tr><tr><td class="px-6 py-4 text-sm">請問醫院的探病時間？</td><td class="px-6 py-4 text-sm">資訊查詢</td><td class="px-6 py-4"><span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800">成功</span></td></tr><tr><td class="px-6 py-4 text-sm">我最近血糖有點高...</td><td class="px-6 py-4 text-sm">個人化衛教</td><td class="px-6 py-4"><span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800">成功</span></td></tr></tbody></table></section></div></div></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 4. Timeline Section -->
+            <div id="main-content-timeline" role="tabpanel" class="main-content hidden">
+                <div class="bg-white p-6 md:p-8 rounded-b-xl shadow-lg">
+                    <h2 class="text-2xl font-bold text-center text-[#005A9C] mb-8">五年整合執行計畫</h2>
+                    <div class="relative"><div class="mb-8 timeline-item pl-8 relative"><div class="absolute -left-1.5 top-2 w-3 h-3 bg-[#005A9C] rounded-full"></div><p class="text-sm font-semibold text-blue-600">第一年 (114)</p><h3 class="text-xl font-bold text-gray-800 mb-2">主題：基礎建設與服務驗證</h3><ul class="list-disc list-inside space-y-2 text-gray-700"><li><strong>轉診平台：</strong> 核心架構上線，銜接健保署資料，提供線上保留號。</li><li><strong>e照顧平台：</strong> 規劃系統基礎建構，定義HaH與ESD+ACAH服務流程。</li></ul></div><div class="mb-8 timeline-item pl-8 relative"><div class="absolute -left-1.5 top-2 w-3 h-3 bg-[#005A9C] rounded-full"></div><p class="text-sm font-semibold text-blue-600">第二年 (115)</p><h3 class="text-xl font-bold text-gray-800 mb-2">主題：平台擴展與深度整合</h3><ul class="list-disc list-inside space-y-2 text-gray-700"><li><strong>轉診平台：</strong> 優化平台，增加PAC轉診功能，推進HIS整合。</li><li><strong>e照顧平台：</strong> 建置醫病兩端介面，介接居家量測數據。</li><li><strong>AI 助理：</strong> 於LINE上線智能掛號功能，導入台語辨識。</li></ul></div><div class="mb-8 timeline-item pl-8 relative"><div class="absolute -left-1.5 top-2 w-3 h-3 bg-[#005A9C] rounded-full"></div><p class="text-sm font-semibold text-blue-600">第三年 (116)</p><h3 class="text-xl font-bold text-gray-800 mb-2">主題：服務智慧化與自主化</h3><ul class="list-disc list-inside space-y-2 text-gray-700"><li><strong>個人化APP：</strong> 完成核心功能開發與上線(V1.0)，通過MAS資安驗證。</li><li><strong>社區Web：</strong> 平台核心功能建置，導入社區據點試用。</li></ul></div><div class="mb-8 timeline-item pl-8 relative"><div class="absolute -left-1.5 top-2 w-3 h-3 bg-[#005A9C] rounded-full"></div><p class="text-sm font-semibold text-blue-600">第四年 (117)</p><h3 class="text-xl font-bold text-gray-800 mb-2">主題：生態系成熟與價值創造</h3><ul class="list-disc list-inside space-y-2 text-gray-700"><li><strong>個人化APP：</strong> 上線高齡友善介面，整合穿戴裝置(V2.0)。</li><li><strong>AI 助理：</strong> 正式上線「轉接專人」功能。</li></ul></div><div class="timeline-item pl-8 relative"><div class="absolute -left-1.5 top-2 w-3 h-3 bg-[#005A9C] rounded-full"></div><p class="text-sm font-semibold text-blue-600">第五年 (118)</p><h3 class="text-xl font-bold text-gray-800 mb-2">主題：全面整合與永續營運</h3><ul class="list-disc list-inside space-y-2 text-gray-700"><li><strong>e照顧平台：</strong> 建成一站式智慧平台，完成照護生態圈。</li><li><strong>個人化APP：</strong> 擴大AI應用，成為所有服務的統一入口(V3.0)。</li></ul></div></div>
+                </div>
+            </div>
+
+            <!-- 5. KPI & Budget Section -->
+            <div id="main-content-kpi" role="tabpanel" class="main-content hidden">
+                 <div class="bg-white p-6 md:p-8 rounded-b-xl shadow-lg">
+                    <div class="text-center mb-12"><h2 class="text-3xl font-bold text-gray-800">專案總投資與預期效益</h2><p class="text-lg text-gray-600 mt-4 max-w-3xl mx-auto">本計畫透過分階段的策略性投資，預期在效率、品質與滿意度上帶來顯著的量化提升。</p></div>
+                    <div class="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
+                        <div><h3 class="text-xl font-bold text-center text-[#005A9C] mb-4">五年期總預算規劃 (新台幣)</h3><div class="chart-container"><canvas id="budgetChart"></canvas></div></div>
+                        <div><h3 class="text-xl font-bold text-center text-[#005A9C] mb-4">關鍵績效指標 (KPI) 改善目標</h3><div class="space-y-4"><div class="kpi-card p-4 rounded-lg shadow-md"><h4 class="font-bold text-gray-700">轉診單電子化率</h4><div class="w-full bg-gray-200 rounded-full mt-2"><div class="bg-green-500 text-xs font-medium text-white text-center p-1 leading-none rounded-full" style="width: 95%"> > 95% </div></div></div><div class="kpi-card p-4 rounded-lg shadow-md"><h4 class="font-bold text-gray-700">30天內非計畫性再入院率</h4><div class="w-full bg-gray-200 rounded-full mt-2"><div class="bg-orange-500 text-xs font-medium text-white text-center p-1 leading-none rounded-full" style="width: 95%"> 降低 5% </div></div></div><div class="kpi-card p-4 rounded-lg shadow-md"><h4 class="font-bold text-gray-700">APP 月活躍使用者 (MAU)</h4><div class="w-full bg-gray-200 rounded-full mt-2"><div class="bg-blue-500 text-xs font-medium text-white text-center p-1 leading-none rounded-full" style="width: 100%"> > 10萬人 </div></div></div><div class="kpi-card p-4 rounded-lg shadow-md"><h4 class="font-bold text-gray-700">高風險慢病個案數據上傳率</h4><div class="w-full bg-gray-200 rounded-full mt-2"><div class="bg-yellow-500 text-xs font-medium text-gray-800 text-center p-1 leading-none rounded-full" style="width: 60%"> > 60% </div></div></div></div></div>
+                    </div>
+                 </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- Modal for Architecture Diagram -->
+    <div id="arch-modal" class="modal fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 opacity-0 pointer-events-none z-50">
+        <div id="modal-content" class="bg-white rounded-lg shadow-xl w-full max-w-md p-6 transform scale-95 transition-transform duration-300">
+            <h3 id="modal-title" class="text-2xl font-bold text-[#005A9C]"></h3>
+            <p id="modal-subtitle" class="text-sm text-gray-500 mb-4"></p>
+            <p id="modal-description" class="text-gray-700 leading-relaxed"></p>
+            <button onclick="closeModal()" class="mt-6 w-full py-2 rounded-lg primary-btn">關閉</button>
+        </div>
+    </div>
+
+    <script>
+    document.addEventListener('DOMContentLoaded', () => {
+        // --- 應用程式邏輯命名空間 ---
+        const App = {
+            // --- 屬性 ---
+            mainTabs: ['overview', 'architecture', 'platforms', 'timeline', 'kpi'],
+            platformTabs: ['platform-referral', 'platform-ecare', 'platform-community', 'platform-app', 'platform-chatbot'],
+            budgetChartInstance: null,
+            modalData: {
+                partner: { title: '使用者：民眾 & 合作夥伴', subtitle: '生態系服務的對象', description: '包含一般民眾、就醫及初診對象、慢病防治與HaH服務對象，以及社區醫療群(診所)、服務合作機構(醫院、校園)等。所有平台建設的最終目的都是為了服務這些使用者。'},
+                'fet-cloud': { title: '遠傳建置：雲端應用服務 (Azure)', subtitle: '現代化、可擴展的應用程式基礎', description: '本專案所有新建的應用程式，都將採用容器化技術，並統一部署於Azure Kubernetes Service (AKS) 叢集中，以達成環境一致性、快速部署與管理單純化的目標。'},
+                'fet-platforms': { title: '遠傳建置：五大核心平台', subtitle: '專案交付的核心功能系統', description: '包含分級轉診平台、e照顧整合平台(HaH)、AI智能助理、個人化健康APP，以及社區健康支持網絡Web。這五大工項構成了整個專案的主體。'},
+                'fet-integration': { title: '遠傳建置：整合與數據中繼站', subtitle: '串連新舊系統的數位神經中樞', description: '建立統一的API閘道，安全地管理所有對內(既有系統)與對外(合作夥伴)的數據交換。同時建立Data Lake中繼站，將新應用產生的數據進行清洗、轉換後，再載入主數據中台。'},
+                'hospital-data': { title: '既有系統：數據核心資產', subtitle: 'FHIR + 數據中台 + BI', description: '本專案將最大化利用貴院既有的數據資產。所有標準化的臨床資料交換，將全面串接貴院的FHIR伺服器；所有高階的數據分析與報表，將基於貴院的數據中台與BI工具進行延伸。'},
+                'hospital-ai': { title: '既有系統：AI 模型發展平台', subtitle: '演算法與模型訓練的核心', description: '本專案開發的應用服務，將直接呼叫貴院AI平台提供的模型API來獲取預測結果。'},
+                'hospital-core': { title: '既有系統：核心醫療系統', subtitle: 'HIS / EMR / 掛號 / 總機', description: '本專案將透過安全的API介接方式，與貴院最核心的營運系統進行整合，以實現掛號、病歷查詢、總機轉接等關鍵功能。'}
+            },
+
+            // --- 初始化方法 ---
+            init() {
+                this.bindEventListeners();
+                this.initECarePlatform();
+            },
+
+            // --- 事件綁定 ---
+            bindEventListeners() {
+                const modal = document.getElementById('arch-modal');
+                modal.addEventListener('click', (event) => { if (event.target === modal) this.closeModal(); });
+
+                const sendButton = document.getElementById('send-button');
+                sendButton.addEventListener('click', () => this.Chatbot.sendMessage());
+
+                const userInput = document.getElementById('user-input');
+                userInput.addEventListener('keypress', (e) => { if (e.key === 'Enter') this.Chatbot.sendMessage(); });
+            },
+            
+            // --- 主要頁籤切換邏輯 ---
+            changeMainTab(tabName) {
+                this.mainTabs.forEach(t => {
+                    document.getElementById(`main-content-${t}`).classList.add('hidden');
+                    const tabButton = document.getElementById(`main-tab-${t}`);
+                    tabButton.classList.remove('main-tab-active');
+                    tabButton.setAttribute('aria-selected', 'false');
+                });
+                const activeContent = document.getElementById(`main-content-${tabName}`);
+                activeContent.classList.remove('hidden');
+                const activeTabButton = document.getElementById(`main-tab-${tabName}`);
+                activeTabButton.classList.add('main-tab-active');
+                activeTabButton.setAttribute('aria-selected', 'true');
+                
+                if (tabName === 'kpi') {
+                    this.renderBudgetChart();
+                }
+            },
+
+            // --- 平台子頁籤切換邏輯 ---
+            changePlatformTab(tabName) {
+                this.platformTabs.forEach(t => {
+                    document.getElementById(t)?.classList.add('hidden');
+                    const tabButton = document.querySelector(`button[aria-controls='${t}']`);
+                    tabButton?.classList.remove('platform-tab-active');
+                    tabButton?.setAttribute('aria-selected', 'false');
+                });
+                const activeContent = document.getElementById(tabName);
+                activeContent.classList.remove('hidden');
+                const activeTabButton = document.querySelector(`button[aria-controls='${tabName}']`);
+                activeTabButton.classList.add('platform-tab-active');
+                activeTabButton.setAttribute('aria-selected', 'true');
+            },
+            
+            // --- 架構圖 Modal 邏輯 ---
+            showModal(platformKey) {
+                const data = this.modalData[platformKey];
+                document.getElementById('modal-title').innerText = data.title;
+                document.getElementById('modal-subtitle').innerText = data.subtitle;
+                document.getElementById('modal-description').innerText = data.description;
+                const modal = document.getElementById('arch-modal');
+                const modalContent = document.getElementById('modal-content');
+                modal.classList.remove('opacity-0', 'pointer-events-none');
+                modalContent.classList.remove('scale-95');
+            },
+            closeModal() {
+                const modal = document.getElementById('arch-modal');
+                const modalContent = document.getElementById('modal-content');
+                modal.classList.add('opacity-0');
+                modalContent.classList.add('scale-95');
+                setTimeout(() => modal.classList.add('pointer-events-none'), 300);
+            },
+            
+            // --- 預算圖表渲染邏輯 ---
+            renderBudgetChart() {
+                if (this.budgetChartInstance) this.budgetChartInstance.destroy();
+                const ctx = document.getElementById('budgetChart').getContext('2d');
+                const budgetData = {
+                    labels: ['114年', '115年', '116年', '117年', '118年'],
+                    datasets: [
+                        { label: '轉診平台', data: [780000, 3120000, 1950000, 0, 0], backgroundColor: 'rgba(255, 159, 64, 0.8)'},
+                        { label: 'e照顧平台', data: [1278000, 4553000, 3018540, 1365000, 1185000], backgroundColor: 'rgba(0, 90, 156, 0.8)'},
+                        { label: 'AI 助理', data: [0, 6123000, 1950000, 1285000, 1225000], backgroundColor: 'rgba(239, 68, 68, 0.8)'},
+                        { label: '大家醫 APP', data: [1600000, 1900000, 7150000, 3170000, 2570000], backgroundColor: 'rgba(59, 130, 246, 0.8)'},
+                        { label: '社區網絡', data: [300000, 2534600, 4240600, 3344400, 2174400], backgroundColor: 'rgba(16, 185, 129, 0.8)'}
+                    ]
+                };
+                this.budgetChartInstance = new Chart(ctx, {
+                    type: 'bar', data: budgetData,
+                    options: {
+                        responsive: true, maintainAspectRatio: false,
+                        plugins: { tooltip: { callbacks: { label: (context) => `${context.dataset.label}: ${new Intl.NumberFormat('zh-TW', { style: 'currency', currency: 'TWD', minimumFractionDigits: 0 }).format(context.parsed.y)}` }}},
+                        scales: { x: { stacked: true }, y: { stacked: true, beginAtZero: true, ticks: { callback: (value) => `NT$ ${value / 1000000}M` }}}
+                    }
+                });
+            },
+
+            // --- e照顧平台初始化 ---
+            initECarePlatform() {
+                const alerts = [
+                    { name: '陳先生', issue: '血氧飽和度低於92%', level: 'high', time: new Date(Date.now() - 5 * 60 * 1000) },
+                    { name: '李奶奶', issue: '體重單日增加超過1公斤', level: 'medium', time: new Date(Date.now() - 65 * 60 * 1000) },
+                    { name: '林女士', issue: '視訊通話預約 (今日下午3:00)', level: 'info', time: new Date(Date.now() - 3 * 60 * 60 * 1000) }
+                ];
+                const alertsContainer = document.getElementById('alerts-list');
+                alertsContainer.innerHTML = alerts.map(alert => this.createAlertHTML(alert)).join('');
+            },
+
+            createAlertHTML(alert) {
+                const styles = {
+                    high: { bg: 'bg-red-50', border: 'border-red-500', icon: '⚠️' },
+                    medium: { bg: 'bg-yellow-50', border: 'border-yellow-500', icon: '🔔' },
+                    info: { bg: 'bg-gray-50', border: 'border-gray-400', icon: '📞' }
+                };
+                const style = styles[alert.level];
+                return `<div class="${style.bg} p-4 rounded-lg flex items-start border-l-4 ${style.border}"><span class="text-xl mr-3">${style.icon}</span><div><div class="font-bold text-gray-800">${alert.name}</div><div class="text-sm text-gray-600">${alert.issue}</div><span class="text-xs text-gray-400 mt-1 block">${this.formatTimeAgo(alert.time)}</span></div></div>`;
+            },
+            
+            formatTimeAgo(date) {
+                const seconds = Math.floor((new Date() - date) / 1000);
+                let interval = seconds / 31536000;
+                if (interval > 1) return Math.floor(interval) + " 年前";
+                interval = seconds / 2592000;
+                if (interval > 1) return Math.floor(interval) + " 個月前";
+                interval = seconds / 86400;
+                if (interval > 1) return Math.floor(interval) + " 天前";
+                interval = seconds / 3600;
+                if (interval > 1) return Math.floor(interval) + " 小時前";
+                interval = seconds / 60;
+                if (interval > 1) return Math.floor(interval) + " 分鐘前";
+                return "剛剛";
+            },
+
+            // --- Chatbot 子模組 ---
+            Chatbot: {
+                getBotResponse(message) {
+                    if (message.includes('掛號')) return '好的，請問您想掛哪一科，或是想找哪位醫師？您也可以描述您的症狀，我會為您推薦合適的科別。';
+                    if (message.includes('衛教')) return '好的，為了提供個人化衛教資訊，請允許我們存取您的健康數據。';
+                    return '很抱歉，此為展示模型，目前我只能模擬回答關於「掛號」與「衛教」的問題。';
+                },
+                appendMessage(sender, message) {
+                    const chatMessages = document.getElementById('chat-messages');
+                    const messageDiv = document.createElement('div');
+                    messageDiv.classList.add('flex', sender === 'user' ? 'justify-end' : 'justify-start');
+                    messageDiv.innerHTML = `<div class="message-bubble ${sender === 'user' ? 'user-message' : 'bot-message'}"><p>${message}</p></div>`;
+                    chatMessages.appendChild(messageDiv);
+                    chatMessages.scrollTop = chatMessages.scrollHeight;
+                },
+                sendMessage() {
+                    const userInput = document.getElementById('user-input');
+                    const userMessage = userInput.value.trim();
+                    if (userMessage) {
+                        this.appendMessage('user', userMessage);
+                        userInput.value = '';
+                        setTimeout(() => this.appendMessage('bot', this.getBotResponse(userMessage)), 800);
+                    }
+                },
+                handleCardClick(feature) {
+                    const message = feature === '智能掛號' ? '我想掛號' : '我想查詢個人化衛教資訊';
+                    this.appendMessage('user', message);
+                    setTimeout(() => this.appendMessage('bot', this.getBotResponse(message)), 800);
+                }
+            }
+        };
+
+        // --- 全域事件綁定 (將方法暴露到 window) ---
+        window.changeMainTab = (tabName) => App.changeMainTab(tabName);
+        window.changePlatformTab = (tabName) => App.changePlatformTab(tabName);
+        window.showModal = (platformKey) => App.showModal(platformKey);
+        window.closeModal = () => App.closeModal();
+        window.handleCardClick = (feature) => App.Chatbot.handleCardClick(feature);
+        window.handleKeyPress = (e) => { if (e.key === 'Enter') App.Chatbot.sendMessage(); };
+
+        // --- 應用程式啟動 ---
+        App.init();
+    });
+    </script>
+</body>
+</html>
