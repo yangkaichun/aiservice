@@ -1,395 +1,140 @@
-<!DOCTYPE html>
-<html lang="zh-Hant">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>亞東醫院 LINE Mini App 原型</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Noto+Sans+TC:wght@400;500;700&display=swap" rel="stylesheet">
-    <style>
-        :root {
-            /* 主色系 */
-            --primary-color: #3A934E; /* Sea Green */
-            --primary-light: #9BD4B1; /* Celadon */
-            
-            /* 科技感亮色主題 */
-            --background-color: #F0F4F8; /* 淺灰藍背景 */
-            --card-background-color: rgba(255, 255, 255, 0.7); /* 半透明白色 for Glassmorphism */
-            --text-primary: #2C3E50; /* 深藍灰文字 */
-            --text-secondary: #566573; /* 次要文字 */
-            --border-color: rgba(58, 147, 78, 0.2); /* 半透明淺綠邊框 */
-            --shadow-color-light: rgba(93, 109, 126, 0.1);
-            --shadow-color-strong: rgba(93, 109, 126, 0.2);
-
-            /* 輔助色系 */
-            --accent-pink: #D391A2;  /* Puce */
-            --accent-rose: #EBBCBE;  /* Tea Rose Red */
-            --accent-blue: #3498DB; /* 亮藍色 */
-            --accent-red: #E74C3C;
-        }
-        body {
-            font-family: 'Noto Sans TC', 'Inter', sans-serif;
-            -webkit-tap-highlight-color: transparent;
-            background-color: #D6DBDF;
-        }
-        .main-container {
-            width: 100%;
-            max-width: 420px;
-            height: 100vh;
-            margin: 0 auto;
-            border-left: 1px solid #BDC3C7;
-            border-right: 1px solid #BDC3C7;
-            display: flex;
-            flex-direction: column;
-            background-color: var(--background-color);
-        }
-        .screen {
-            display: none;
-            flex-direction: column;
-            flex-grow: 1;
-            overflow-y: auto;
-            height: 100%;
-            position: relative;
-            background-color: var(--background-color);
-        }
-        .screen.active {
-            display: flex;
-        }
-        .modal {
-            display: none;
-            position: fixed;
-            z-index: 50;
-            left: 0;
-            top: 0;
-            width: 100%;
-            height: 100%;
-            overflow: auto;
-            background-color: rgba(0,0,0,0.5);
-            justify-content: center;
-            align-items: center;
-        }
-        /* 玻璃擬態效果 (亮色模式) */
-        .glass-card {
-            background: var(--card-background-color);
-            backdrop-filter: blur(12px);
-            -webkit-backdrop-filter: blur(12px);
-            border: 1px solid rgba(255, 255, 255, 0.5);
-            border-radius: 1rem;
-            box-shadow: 0 8px 32px 0 var(--shadow-color-light);
-        }
-        .modal-content {
-            background-color: var(--card-background-color);
-            margin: auto;
-            padding: 0;
-            border: 1px solid #888;
-            width: 90%;
-            max-width: 500px;
-            border-radius: 16px;
-            overflow: hidden;
-        }
-        .fade-in {
-            animation: fadeIn 0.3s ease-in-out;
-        }
-        @keyframes fadeIn {
-            from { opacity: 0; }
-            to { opacity: 1; }
-        }
-        /* Swiper-like carousel styles */
-        .carousel {
-            position: relative;
-            overflow: hidden;
-            width: 100%;
-        }
-        .carousel-wrapper {
-            display: flex;
-            transition: transform 0.3s ease-in-out;
-        }
-        .carousel-slide {
-            flex: 0 0 85%;
-            margin-right: 1rem;
-            opacity: 0.7;
-            transform: scale(0.95);
-            transition: opacity 0.3s, transform 0.3s;
-        }
-        .carousel-slide.active-slide {
-            opacity: 1;
-            transform: scale(1);
-        }
-        .main-icon-grid a:active {
-            transform: scale(0.95);
-            transition: transform 0.1s;
-        }
-        .bottom-nav a.active {
-            color: var(--primary-color);
-        }
-        .tab-button.active {
-            background-color: var(--primary-color);
-            color: white;
-            font-weight: bold;
-            box-shadow: 0 4px 15px rgba(58, 147, 78, 0.2);
-        }
-        .tab-content {
-            display: none;
-        }
-        .tab-content.active {
-            display: block;
-        }
-        .modal-tab-button.active {
-            border-color: var(--primary-color);
-            color: var(--primary-color);
-            font-weight: bold;
-        }
-        /* AI Chat Styles */
-        .chat-bubble {
-            max-width: 80%;
-            padding: 10px 15px;
-            border-radius: 20px;
-            word-wrap: break-word;
-        }
-        .chat-bubble.user {
-            background-image: linear-gradient(to right, var(--primary-color), #2e7d40);
-            color: white;
-            align-self: flex-end;
-            border-bottom-right-radius: 5px;
-        }
-        .chat-bubble.assistant {
-            background-color: #EAECEE;
-            color: var(--text-primary);
-            align-self: flex-start;
-            border-bottom-left-radius: 5px;
-        }
-        .header-tech {
-            background-image: linear-gradient(to bottom, white, #FDFEFE);
-            border-bottom: 1px solid #E5E7E9;
-        }
-    </style>
-</head>
-<body class="bg-gray-200 flex justify-center items-center h-screen">
-
-<div class="main-container">
-
-    <div id="screen1" class="screen active">
-        <header class="bg-[--primary-color] p-3 flex justify-center items-center text-white sticky top-0 z-20 shadow-lg" style="background-image: linear-gradient(to right, #3A934E, #43A047);">
-            <h2 class="font-bold text-lg">首頁</h2>
-        </header>
-        <main class="flex-grow overflow-y-auto p-4 space-y-4 flex flex-col justify-center items-center">
-            <h1 class="text-2xl font-bold text-gray-700">亞東醫院 App 原型</h1>
-            <div class="space-y-4 text-center">
-                <button onclick="navigateTo('screen2')" class="bg-blue-500 text-white font-bold py-2 px-4 rounded">
-                    前往 亞東愛健康 (王大明)
-                </button>
-                 <button onclick="navigateTo('screen3')" class="bg-green-500 text-white font-bold py-2 px-4 rounded">
-                    前往 網路掛號
-                </button>
-            </div>
-        </main>
-    </div>
-    
-    <div id="screen2" class="screen">
-        <header class="bg-[--primary-color] p-3 flex justify-between items-center text-white sticky top-0 z-20 shadow-lg" style="background-image: linear-gradient(to right, #3A934E, #43A047);">
-            <button onclick="navigateTo('screen1')" class="text-white">
-                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg>
-            </button>
-            <h2 class="font-bold text-lg">王大明 (健保測試卡)</h2>
-            <button class="text-white">
-                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06-.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
-            </button>
-        </header>
-
-        <main class="flex-grow overflow-y-auto p-4 space-y-4 pb-24">
-            <div class="glass-card p-4">
-                <h3 class="font-bold text-[--primary-color] border-b-2 border-[--primary-light] pb-2 mb-3">個人提醒</h3>
-                <div class="space-y-2">
-                    <a href="#" class="flex justify-between items-center text-text-primary py-1" onclick="openModal('modal-14day-appointment')">
-                        <span>有門診預約 (未來14天)</span>
-                        <span class="text-[--accent-blue] font-semibold text-sm">查看 &gt;</span>
-                    </a>
-                    <a href="#" class="flex justify-between items-center text-text-primary py-1" onclick="openModal('modal-checkup-schedule')">
-                        <span>有門診特殊檢查 (這兩天)</span>
-                        <span class="text-[--accent-blue] font-semibold text-sm">查看 &gt;</span>
-                    </a>
-                    <a href="#" class="flex justify-between items-center text-text-primary py-1" onclick="openModal('modal-90day-discharge')">
-                        <span>最近30天內由亞東出院</span>
-                        <span class="text-[--accent-blue] font-semibold text-sm">查看 &gt;</span>
-                    </a>
-                </div>
-            </div>
-
-            <div class="glass-card p-4">
-                <h3 class="font-bold text-[--primary-color] border-b-2 border-[--primary-light] pb-2 mb-3">醫療個案專區</h3>
-                <a href="#" class="flex items-center space-x-3 text-text-primary py-1" onclick="navigateTo('screen7')">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7V4a2 2 0 0 1 2-2h8.5L20 7.5V20a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2v-3"/><polyline points="14 2 14 8 20 8"/><path d="M9 15h.01"/><path d="M9 12h.01"/><path d="M9 9h.01"/></svg>
-                    <span>醫療個案專區</span>
-                </a>
-            </div>
-
-            <div class="glass-card p-4">
-                <h3 class="font-bold text-[--primary-color] border-b-2 border-[--primary-light] pb-2 mb-3">門診</h3>
-                <div class="space-y-1">
-                    <a href="#" class="flex items-center space-x-3 py-2 border-b border-gray-200 text-text-primary" onclick="openModal('modal-clinic-query')">
-                        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="18" height="18" x="3" y="4" rx="2" ry="2"/><line x1="16" x2="16" y1="2" y2="6"/><line x1="8" x2="8" y1="2" y2="6"/><line x1="3" x2="21" y1="10" y2="10"/></svg>
-                        <span>門診查詢</span>
-                    </a>
-                    <a href="#" class="flex items-center space-x-3 py-2 border-b border-gray-200 text-text-primary" onclick="openModal('modal-past-visits')">
-                        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 2v4"/><path d="M16 2v4"/><rect width="18" height="18" x="3" y="4" rx="2"/><path d="M3 10h18"/><path d="m9 16 2 2 4-4"/></svg>
-                        <span>歷次門診</span>
-                    </a>
-                    <a href="#" class="flex items-center space-x-3 py-2 border-b border-gray-200 text-text-primary" onclick="openModal('modal-clinic-surgery')">
-                       <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z"/><polyline points="14 2 14 8 20 8"/><line x1="12" x2="12" y1="18" y2="12"/><line x1="9" x2="15" y1="15" y2="15"/></svg>
-                       <span>門診手術</span>
-                    </a>
-                    <a href="#" class="flex items-center space-x-3 py-2 text-text-primary" onclick="openModal('modal-checkup-schedule')">
-                        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z"/><polyline points="14 2 14 8 20 8"/><path d="m10 13-2 2 2 2"/><path d="m14 13 2 2-2 2"/></svg>
-                        <span>門診檢查</span>
-                    </a>
-                </div>
-            </div>
-
-            <div class="glass-card p-4">
-                <h3 class="font-bold text-[--primary-color] border-b-2 border-[--primary-light] pb-2 mb-3">住院</h3>
-                <div class="space-y-1">
-                    <a href="#" class="flex items-center space-x-3 py-2 border-b border-gray-200 text-text-primary" onclick="navigateTo('screen5')">
-                        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m9 11 3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>
-                        <span>住院準備</span>
-                    </a>
-                    <a href="#" class="flex items-center space-x-3 py-2 border-b border-gray-200 text-text-primary">
-                        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 3h20"/><path d="M21 3v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V3"/><path d="M12 16v5"/><path d="M8 21h8"/></svg>
-                        <span>住院中事項</span>
-                    </a>
-                    <a href="#" class="flex items-center space-x-3 py-2 text-text-primary" onclick="openModal('modal-yearly-discharge')">
-                        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
-                        <span>歷次住院</span>
-                    </a>
-                </div>
-            </div>
-            
-            <div class="glass-card p-4">
-                <h3 class="font-bold text-[--primary-color] border-b-2 border-[--primary-light] pb-2 mb-3">文件</h3>
-                <a href="#" class="flex items-center space-x-3 text-text-primary py-1">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z"/><polyline points="14 2 14 8 20 8"/><path d="m10 15.5 2 2 4-4"/></svg>
-                    <span>已簽同意書</span>
-                </a>
-            </div>
-
-            <div class="glass-card p-4">
-                <h3 class="font-bold text-[--primary-color] border-b-2 border-[--primary-light] pb-2 mb-3">個人健康管理</h3>
-                <a href="#" class="flex items-center space-x-3 text-text-primary py-1" onclick="openModal('modal-health-management')">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M12 8v8"/><path d="M8 12h8"/></svg>
-                    <span>個人健康管理</span>
-                </a>
-            </div>
-
-            <div class="glass-card p-4">
-                <h3 class="font-bold text-[--primary-color] border-b-2 border-[--primary-light] pb-2 mb-3">其他</h3>
-                <div class="space-y-1">
-                    <a href="#" class="flex items-center space-x-3 py-2 border-b border-gray-200 text-text-primary">
-                        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
-                        <span>近期訊息</span>
-                    </a>
-                    <a href="#" class="flex items-center space-x-3 py-2 border-b border-gray-200 text-text-primary">
-                        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"/></svg>
-                        <span>回饋</span>
-                    </a>
-                    <a href="#" class="flex items-center space-x-3 py-2 text-text-primary">
-                       <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4"/><path d="M12 8h.01"/></svg>
-                       <span>程式說明</span>
-                    </a>
-                </div>
-            </div>
-        </main>
-        
-        <button onclick="navigateTo('screen8')" class="absolute bottom-24 right-5 bg-[--primary-color] text-white w-16 h-16 rounded-full shadow-lg flex items-center justify-center" style="box-shadow: 0 10px 25px -5px rgba(58, 147, 78, 0.4), 0 8px 10px -6px rgba(58, 147, 78, 0.2);">
-            <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 8V4H8"/><rect width="16" height="12" x="4" y="8" rx="2"/><path d="M2 14h2"/><path d="M20 14h2"/><path d="M15 13v2"/><path d="M9 13v2"/></svg>
+<div id="screen2" class="screen">
+     <header class="bg-[--primary-color] p-3 flex justify-between items-center text-white sticky top-0 z-20 shadow-lg" style="background-image: linear-gradient(to right, #3A934E, #43A047);">
+         <button onclick="navigateTo('screen1')" class="text-white">
+            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg>
+         </button>
+        <h2 class="font-bold text-lg">王大明 (健保測試卡)</h2>
+        <button class="text-white">
+            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06-.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
         </button>
+    </header>
+
+    <main class="flex-grow overflow-y-auto p-4 space-y-4 pb-24">
+        <div class="glass-card p-4">
+            <h3 class="font-bold text-[--primary-color] border-b-2 border-[--primary-light] pb-2 mb-3">個人提醒</h3>
+            <div class="space-y-2">
+                <a href="#" class="flex justify-between items-center text-text-primary py-1" onclick="openModal('modal-14day-appointment')">
+                    <span>有門診預約 (未來14天)</span>
+                    <span class="text-[--accent-blue] font-semibold text-sm">查看 &gt;</span>
+                </a>
+                <a href="#" class="flex justify-between items-center text-text-primary py-1" onclick="openModal('modal-checkup-schedule')">
+                    <span>有門診特殊檢查 (這兩天)</span>
+                    <span class="text-[--accent-blue] font-semibold text-sm">查看 &gt;</span>
+                </a>
+                <a href="#" class="flex justify-between items-center text-text-primary py-1" onclick="openModal('modal-90day-discharge')">
+                    <span>最近30天內由亞東出院</span>
+                    <span class="text-[--accent-blue] font-semibold text-sm">查看 &gt;</span>
+                </a>
+            </div>
+        </div>
+
+        <div class="glass-card p-4">
+             <h3 class="font-bold text-[--primary-color] border-b-2 border-[--primary-light] pb-2 mb-3">醫療個案專區</h3>
+             <a href="#" class="flex items-center space-x-3 text-text-primary py-1" onclick="navigateTo('screen7')">
+                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7V4a2 2 0 0 1 2-2h8.5L20 7.5V20a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2v-3"/><polyline points="14 2 14 8 20 8"/><path d="M9 15h.01"/><path d="M9 12h.01"/><path d="M9 9h.01"/></svg>
+                <span>醫療個案專區</span>
+             </a>
+        </div>
+
+        <div class="glass-card p-4">
+            <h3 class="font-bold text-[--primary-color] border-b-2 border-[--primary-light] pb-2 mb-3">門診</h3>
+            <div class="space-y-1">
+                <a href="#" class="flex items-center space-x-3 py-2 border-b border-gray-200 text-text-primary" onclick="openModal('modal-clinic-query')">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="18" height="18" x="3" y="4" rx="2" ry="2"/><line x1="16" x2="16" y1="2" y2="6"/><line x1="8" x2="8" y1="2" y2="6"/><line x1="3" x2="21" y1="10" y2="10"/></svg>
+                    <span>門診查詢</span>
+                </a>
+                <a href="#" class="flex items-center space-x-3 py-2 border-b border-gray-200 text-text-primary" onclick="openModal('modal-past-visits')">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 2v4"/><path d="M16 2v4"/><rect width="18" height="18" x="3" y="4" rx="2"/><path d="M3 10h18"/><path d="m9 16 2 2 4-4"/></svg>
+                    <span>歷次門診</span>
+                </a>
+                <a href="#" class="flex items-center space-x-3 py-2 border-b border-gray-200 text-text-primary" onclick="openModal('modal-clinic-surgery')">
+                   <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z"/><polyline points="14 2 14 8 20 8"/><line x1="12" x2="12" y1="18" y2="12"/><line x1="9" x2="15" y1="15" y2="15"/></svg>
+                   <span>門診手術</span>
+                </a>
+                 <a href="#" class="flex items-center space-x-3 py-2 text-text-primary" onclick="openModal('modal-checkup-schedule')">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z"/><polyline points="14 2 14 8 20 8"/><path d="m10 13-2 2 2 2"/><path d="m14 13 2 2-2 2"/></svg>
+                    <span>門診檢查</span>
+                </a>
+            </div>
+        </div>
+
+         <div class="glass-card p-4">
+            <h3 class="font-bold text-[--primary-color] border-b-2 border-[--primary-light] pb-2 mb-3">住院</h3>
+            <div class="space-y-1">
+                <a href="#" class="flex items-center space-x-3 py-2 border-b border-gray-200 text-text-primary" onclick="navigateTo('screen5')">
+                     <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m9 11 3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>
+                    <span>住院準備</span>
+                </a>
+                <a href="#" class="flex items-center space-x-3 py-2 border-b border-gray-200 text-text-primary">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 3h20"/><path d="M21 3v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V3"/><path d="M12 16v5"/><path d="M8 21h8"/></svg>
+                    <span>住院中事項</span>
+                </a>
+                <a href="#" class="flex items-center space-x-3 py-2 text-text-primary" onclick="openModal('modal-yearly-discharge')">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+                    <span>歷次住院</span>
+                </a>
+            </div>
+        </div>
         
-        <nav class="bottom-nav bg-white/80 backdrop-blur-sm border-t fixed bottom-0 left-0 right-0 h-20 max-w-[420px] mx-auto flex justify-around items-center z-20">
-            <a href="#" class="flex flex-col items-center text-gray-500 w-1/5 pt-2 text-center active">
-                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="18" height="18" x="3" y="4" rx="2" ry="2"/><line x1="16" x2="16" y1="2" y2="6"/><line x1="8" x2="8" y1="2" y2="6"/><line x1="3" x2="21" y1="10" y2="10"/></svg>
-                <span class="text-xs mt-1 font-semibold">掛號業務</span>
-            </a>
-            <a href="#" class="flex flex-col items-center text-gray-500 w-1/5 pt-2 text-center">
-                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 2h4"/><path d="M12 22v-4"/><path d="M20 12a8 8 0 1 0-8 8 4 4 0 0 0-4-4H4.5"/><path d="M17.5 8.5a4 4 0 0 0-4-4H12"/></svg>
-                <span class="text-xs mt-1 font-semibold">進度查詢</span>
-            </a>
-            <a href="#" class="flex flex-col items-center text-gray-500 w-1/5 pt-2 text-center">
-                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8.5 2H18l-2 4-2-4H8.5V2Z"/><path d="M4.5 2h-1"/><path d="M4.5 6h-1"/><path d="m14 11.5-5 2.5 5 2.5v4.5l-10-5 10-5Z"/><path d="m14 11.5 5 2.5-5 2.5v4.5l10-5-10-5Z"/></svg>
-                <span class="text-xs mt-1 font-semibold">慢箋預約</span>
-            </a>
-            <a href="#" class="flex flex-col items-center text-gray-500 w-1/5 pt-2 text-center">
-                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="20" height="14" x="2" y="5" rx="2"/><line x1="2" x2="22" y1="10" y2="10"/></svg>
-                <span class="text-xs mt-1 font-semibold">繳費</span>
-            </a>
-            <a href="#" class="flex flex-col items-center text-gray-500 w-1/5 pt-2 text-center">
-               <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>
-               <span class="text-xs mt-1 font-semibold">待簽同意書</span>
-            </a>
-        </nav>
-    </div>
+         <div class="glass-card p-4">
+             <h3 class="font-bold text-[--primary-color] border-b-2 border-[--primary-light] pb-2 mb-3">文件</h3>
+             <a href="#" class="flex items-center space-x-3 text-text-primary py-1">
+                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z"/><polyline points="14 2 14 8 20 8"/><path d="m10 15.5 2 2 4-4"/></svg>
+                <span>已簽同意書</span>
+             </a>
+        </div>
+
+        <div class="glass-card p-4">
+             <h3 class="font-bold text-[--primary-color] border-b-2 border-[--primary-light] pb-2 mb-3">個人健康管理</h3>
+             <a href="#" class="flex items-center space-x-3 text-text-primary py-1" onclick="openModal('modal-health-management')">
+                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M12 8v8"/><path d="M8 12h8"/></svg>
+                <span>個人健康管理</span>
+             </a>
+        </div>
+
+        <div class="glass-card p-4">
+            <h3 class="font-bold text-[--primary-color] border-b-2 border-[--primary-light] pb-2 mb-3">其他</h3>
+            <div class="space-y-1">
+                <a href="#" class="flex items-center space-x-3 py-2 border-b border-gray-200 text-text-primary">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+                    <span>近期訊息</span>
+                </a>
+                <a href="#" class="flex items-center space-x-3 py-2 border-b border-gray-200 text-text-primary">
+                     <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"/></svg>
+                    <span>回饋</span>
+                </a>
+                <a href="#" class="flex items-center space-x-3 py-2 text-text-primary">
+                   <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4"/><path d="M12 8h.01"/></svg>
+                   <span>程式說明</span>
+                </a>
+            </div>
+        </div>
+    </main>
     
-    <div id="screen3" class="screen">
-        <header class="header-tech p-3 flex justify-between items-center text-gray-800 sticky top-0 z-20">
-            <button onclick="navigateTo('screen1')" class="text-gray-600">
-                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg>
-            </button>
-            <h2 class="font-bold text-lg">網路掛號</h2>
-            <div class="w-6"></div>
-        </header>
-        <main class="flex-grow overflow-y-auto p-4 space-y-4">
-            <div class="glass-card p-4">
-                <h3 class="font-bold text-gray-800 mb-3 text-lg">依科別掛號</h3>
-                <div class="flex items-center justify-center space-x-2 mb-4">
-                    <button class="tab-button flex-1 py-2 px-4 rounded-lg bg-gray-200 text-gray-700 transition active" onclick="openTab(event, 'division-tab')">依「部」查詢</button>
-                    <button class="tab-button flex-1 py-2 px-4 rounded-lg bg-gray-200 text-gray-700 transition" onclick="openTab(event, 'department-tab')">依「科」查詢</button>
-                </div>
-
-                <div id="division-tab" class="tab-content active">
-                    <div class="bg-green-50/50 border border-green-200/50 rounded-lg p-3">
-                        <h4 class="font-bold text-[--primary-color] mb-2">內科部</h4>
-                        <div class="grid grid-cols-2 gap-2 text-sm">
-                            <a href="#" onclick="navigateTo('screen4')" class="text-[--accent-blue] hover:underline p-1">> 心臟血管內科</a>
-                            <a href="#" class="text-[--accent-blue] hover:underline p-1">> 消化內科</a>
-                            <a href="#" class="text-[--accent-blue] hover:underline p-1">> 胸腔內科</a>
-                            <a href="#" class="text-[--accent-blue] hover:underline p-1">> 腎臟內科</a>
-                            <a href="#" class="text-[--accent-blue] hover:underline p-1">> 新陳代謝科</a>
-                            <a href="#" class="text-[--accent-blue] hover:underline p-1">> 血液腫瘤科</a>
-                        </div>
-                    </div>
-                    <div class="bg-blue-50/50 border border-blue-200/50 rounded-lg p-3 mt-3">
-                        <h4 class="font-bold text-blue-800 mb-2">外科部</h4>
-                        <div class="grid grid-cols-2 gap-2 text-sm">
-                            <a href="#" class="text-[--accent-blue] hover:underline p-1">> 一般外科</a>
-                            <a href="#" class="text-[--accent-blue] hover:underline p-1">> 心臟血管外科</a>
-                            <a href="#" class="text-[--accent-blue] hover:underline p-1">> 胸腔外科</a>
-                            <a href="#" class="text-[--accent-blue] hover:underline p-1">> 整形外科</a>
-                        </div>
-                    </div>
-                </div>
-                <div id="department-tab" class="tab-content">
-                    <p class="text-center text-gray-500">依「科」查詢內容</p>
-                </div>
-            </div>
-            <div class="glass-card p-4 space-y-2">
-                <a href="#" class="block py-2 border-b border-gray-200/80 text-gray-700 font-semibold">> 醫師介紹</a>
-                <a href="#" class="block py-2 text-gray-700 font-semibold" onclick="navigateTo('screen6')">> 查詢 / 取消掛號</a>
-            </div>
-        </main>
-    </div>
-
-    <div id="screen4" class="screen">
-        <header class="header-tech p-3 flex justify-between items-center text-gray-800 sticky top-0 z-20">
-            <button onclick="navigateTo('screen3')" class="text-gray-600">
-                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg>
-            </button>
-            <h2 class="font-bold text-lg">心臟血管內科</h2>
-            <div class="w-6"></div>
-        </header>
-        <main class="flex-grow overflow-y-auto p-2 sm:p-4 space-y-3">
-            <div class="bg-white rounded-lg shadow-md border overflow-hidden">
-                <div class="bg-gray-100 p-3">
-                    <h3 class="font-bold text-gray-800">王大明 醫師</h3>
-                    <p class="text-sm text-gray-600">專長：高血壓、心導管手術</p>
-                </div>
-                <div class="overflow-x-auto">
-                    <table class="w-full text-center text-sm text-gray-700">
-                        <thead class="bg-gray-200">
-                            <tr>
+     <button onclick="navigateTo('screen8')" class="absolute bottom-24 right-5 bg-[--primary-color] text-white w-16 h-16 rounded-full shadow-lg flex items-center justify-center" style="box-shadow: 0 10px 25px -5px rgba(58, 147, 78, 0.4), 0 8px 10px -6px rgba(58, 147, 78, 0.2);">
+        <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 8V4H8"/><rect width="16" height="12" x="4" y="8" rx="2"/><path d="M2 14h2"/><path d="M20 14h2"/><path d="M15 13v2"/><path d="M9 13v2"/></svg>
+    </button>
+    
+     <nav class="bottom-nav bg-white/80 backdrop-blur-sm border-t fixed bottom-0 left-0 right-0 h-20 max-w-[420px] mx-auto flex justify-around items-center z-20">
+        <a href="#" class="flex flex-col items-center text-gray-500 w-1/5 pt-2 text-center active">
+            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="18" height="18" x="3" y="4" rx="2" ry="2"/><line x1="16" x2="16" y1="2" y2="6"/><line x1="8" x2="8" y1="2" y2="6"/><line x1="3" x2="21" y1="10" y2="10"/></svg>
+            <span class="text-xs mt-1 font-semibold">掛號業務</span>
+        </a>
+        <a href="#" class="flex flex-col items-center text-gray-500 w-1/5 pt-2 text-center">
+            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 2h4"/><path d="M12 22v-4"/><path d="M20 12a8 8 0 1 0-8 8 4 4 0 0 0-4-4H4.5"/><path d="M17.5 8.5a4 4 0 0 0-4-4H12"/></svg>
+            <span class="text-xs mt-1 font-semibold">進度查詢</span>
+        </a>
+         <a href="#" class="flex flex-col items-center text-gray-500 w-1/5 pt-2 text-center">
+            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8.5 2H18l-2 4-2-4H8.5V2Z"/><path d="M4.5 2h-1"/><path d="M4.5 6h-1"/><path d="m14 11.5-5 2.5 5 2.5v4.5l-10-5 10-5Z"/><path d="m14 11.5 5 2.5-5 2.5v4.5l10-5-10-5Z"/></svg>
+            <span class="text-xs mt-1 font-semibold">慢箋預約</span>
+        </a>
+        <a href="#" class="flex flex-col items-center text-gray-500 w-1/5 pt-2 text-center">
+            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="20" height="14" x="2" y="5" rx="2"/><line x1="2" x2="22" y1="10" y2="10"/></svg>
+            <span class="text-xs mt-1 font-semibold">繳費</span>
+        </a>
+        <a href="#" class="flex flex-col items-center text-gray-500 w-1/5 pt-2 text-center">
+           <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>
+           <span class="text-xs mt-1 font-semibold">待簽同意書</span>
+        </a>
+    </nav>
+</div>
