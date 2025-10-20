@@ -1,0 +1,1140 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>亞東醫院 LINE Mini App 原型</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Noto+Sans+TC:wght@400;500;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            /* 主色系 */
+            --primary-color: #3A934E; /* Sea Green */
+            --primary-light: #9BD4B1; /* Celadon */
+            --primary-bg: #F3EFDF;   /* Eggshell - for light green backgrounds */
+            /* 主色系 (維持不變) */
+            --primary-color: #3A934E;
+            --primary-light: #9BD4B1;
+            
+            /* 科技感亮色主題 */
+            --background-color: #F0F4F8; /* 淺灰藍背景 */
+            --card-background-color: rgba(255, 255, 255, 0.7); /* 半透明白色 for Glassmorphism */
+            --text-primary: #2C3E50; /* 深藍灰文字 */
+            --text-secondary: #566573; /* 次要文字 */
+            --border-color: rgba(58, 147, 78, 0.2); /* 半透明淺綠邊框 */
+            --shadow-color-light: rgba(93, 109, 126, 0.1);
+            --shadow-color-strong: rgba(93, 109, 126, 0.2);
+
+            /* 輔助色系 */
+            --accent-pink: #D391A2;   /* Puce */
+            --accent-rose: #EBBCBE;   /* Tea Rose Red */
+
+            /* 中性色系 */
+            --background-color: #F8F2ED; /* Isabelline 2 - Main BG */
+            --card-background-color: #FFFFFF;
+            --text-primary: #1F2937;
+            --text-secondary: #6B7280;
+            --border-color: #EFECEB; /* Isabelline */
+            --neutral-gray: #C4BCC3; /* French Gray */
+            --accent-blue: #3498DB; /* 亮藍色 */
+            --accent-red: #E74C3C;
+        }
+        body {
+            font-family: 'Noto Sans TC', 'Inter', sans-serif;
+            -webkit-tap-highlight-color: transparent;
+            background-color: var(--background-color);
+            background-color: #D6DBDF;
+        }
+        .main-container {
+            width: 100%;
+            max-width: 420px;
+            height: 100vh;
+            margin: 0 auto;
+            border-left: 1px solid var(--border-color);
+            border-right: 1px solid var(--border-color);
+            border-left: 1px solid #BDC3C7;
+            border-right: 1px solid #BDC3C7;
+            display: flex;
+            flex-direction: column;
+            background-color: var(--background-color);
+        }
+        .screen {
+            display: none;
+            flex-direction: column;
+            flex-grow: 1;
+            overflow-y: auto;
+            height: 100%;
+            position: relative;
+            background-color: var(--background-color);
+        }
+        .screen.active {
+            display: flex;
+        }
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 50;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            overflow: auto;
+            background-color: rgba(0,0,0,0.6);
+            background-color: rgba(0,0,0,0.5);
+            justify-content: center;
+            align-items: center;
+        }
+        /* 玻璃擬態效果 (亮色模式) */
+        .glass-card {
+            background: var(--card-background-color);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.5);
+            border-radius: 1rem;
+            box-shadow: 0 8px 32px 0 var(--shadow-color-light);
+        }
+        .modal-content {
+            background-color: var(--card-background-color);
+            margin: auto;
+            padding: 0;
+            border: 1px solid #888;
+            width: 90%;
+            max-width: 500px;
+            border-radius: 16px;
+            overflow: hidden;
+        }
+        .fade-in {
+            animation: fadeIn 0.3s ease-in-out;
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+        /* Swiper-like carousel styles */
+        .carousel {
+            position: relative;
+            overflow: hidden;
+            width: 100%;
+        }
+        .carousel-wrapper {
+            display: flex;
+            transition: transform 0.3s ease-in-out;
+        }
+        .carousel-slide {
+            flex: 0 0 85%;
+            margin-right: 1rem;
+            opacity: 0.7;
+            transform: scale(0.95);
+            transition: opacity 0.3s, transform 0.3s;
+        }
+        .carousel-slide.active-slide {
+            opacity: 1;
+            transform: scale(1);
+        }
+        .main-icon-grid a:active {
+            transform: scale(0.95);
+            transition: transform 0.1s;
+        }
+        .bottom-nav a.active {
+            color: var(--primary-color);
+            from { opacity: 0; transform: scale(0.95); }
+            to { opacity: 1; transform: scale(1); }
+        }
+        .carousel-slide { transition: opacity 0.3s, transform 0.3s; }
+        .carousel-slide.active-slide { opacity: 1; transform: scale(1); }
+        .main-icon-grid a:active { transform: scale(0.95); transition: transform 0.1s; }
+        .bottom-nav a.active { color: var(--primary-color); }
+        .tab-button.active {
+            background-color: var(--primary-color);
+            color: white;
+            font-weight: bold;
+            box-shadow: 0 4px 15px rgba(58, 147, 78, 0.2);
+        }
+        .tab-content {
+            display: none;
+        }
+        .tab-content.active {
+            display: block;
+        }
+        .tab-content { display: none; }
+        .tab-content.active { display: block; }
+        .modal-tab-button.active {
+            border-color: var(--primary-color);
+            color: var(--primary-color);
+            font-weight: bold;
+        }
+        /* AI Chat Styles */
+        .chat-bubble {
+            max-width: 80%;
+            padding: 10px 15px;
+            border-radius: 20px;
+            word-wrap: break-word;
+        }
+        .chat-bubble.user {
+            background-color: var(--primary-color);
+            color: white;
+            align-self: flex-end;
+            border-bottom-right-radius: 5px;
+        }
+        .chat-bubble.assistant {
+            background-color: #E5E7EB;
+            color: var(--text-primary);
+            align-self: flex-start;
+            border-bottom-left-radius: 5px;
+        .chat-bubble { max-width: 80%; padding: 10px 15px; border-radius: 20px; word-wrap: break-word; }
+        .chat-bubble.user { background-image: linear-gradient(to right, var(--primary-color), #2e7d40); color: white; align-self: flex-end; border-bottom-right-radius: 5px; }
+        .chat-bubble.assistant { background-color: #EAECEE; color: var(--text-primary); align-self: flex-start; border-bottom-left-radius: 5px; }
+        .header-tech {
+            background-image: linear-gradient(to bottom, white, #FDFEFE);
+            border-bottom: 1px solid #E5E7E9;
+        }
+
+    </style>
+</head>
+<body class="bg-gray-800 flex justify-center items-center h-screen">
+<body class="bg-gray-200 flex justify-center items-center h-screen">
+
+
+<!-- ===== Screen 2: 亞東愛健康 (Tier 2) ===== -->
+        <div id="screen2" class="screen">
+             <!-- Header -->
+            <header class="bg-[--primary-color] p-3 flex justify-between items-center text-white sticky top-0 z-20 shadow-lg" style="background-image: linear-gradient(to right, #3A934E, #43A047);">
+                 <button onclick="navigateTo('screen1')" class="text-white">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg>
+                 </button>
+                <h2 class="font-bold text-lg">王大明 (健保測試卡)</h2>
+                <button class="text-white">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06-.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+                </button>
+            </header>
+
+            <!-- Main Content -->
+            <main class="flex-grow overflow-y-auto p-4 space-y-4 pb-24">
+                <!-- 個人提醒 -->
+                <div class="glass-card p-4">
+                    <h3 class="font-bold text-[--primary-color] border-b-2 border-[--primary-light] pb-2 mb-3">個人提醒</h3>
+                    <div class="space-y-2">
+                        <a href="#" class="flex justify-between items-center text-text-primary py-1" onclick="openModal('modal-14day-appointment')">
+                            <span>有門診預約 (未來14天)</span>
+                            <span class="text-[--accent-blue] font-semibold text-sm">查看 &gt;</span>
+                        </a>
+                        <a href="#" class="flex justify-between items-center text-text-primary py-1" onclick="openModal('modal-checkup-schedule')">
+                            <span>有門診特殊檢查 (這兩天)</span>
+                            <span class="text-[--accent-blue] font-semibold text-sm">查看 &gt;</span>
+                        </a>
+                        <a href="#" class="flex justify-between items-center text-text-primary py-1" onclick="openModal('modal-90day-discharge')">
+                            <span>最近30天內由亞東出院</span>
+                            <span class="text-[--accent-blue] font-semibold text-sm">查看 &gt;</span>
+                        </a>
+                    </div>
+                </div>
+
+                <!-- 醫療個案專區 -->
+                <div class="glass-card p-4">
+                     <h3 class="font-bold text-[--primary-color] border-b-2 border-[--primary-light] pb-2 mb-3">醫療個案專區</h3>
+                     <a href="#" class="flex items-center space-x-3 text-text-primary py-1" onclick="navigateTo('screen7')">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7V4a2 2 0 0 1 2-2h8.5L20 7.5V20a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2v-3"/><polyline points="14 2 14 8 20 8"/><path d="M9 15h.01"/><path d="M9 12h.01"/><path d="M9 9h.01"/></svg>
+                        <span>醫療個案專區</span>
+                     </a>
+                </div>
+
+                <!-- 門診 -->
+                <div class="glass-card p-4">
+                    <h3 class="font-bold text-[--primary-color] border-b-2 border-[--primary-light] pb-2 mb-3">門診</h3>
+                    <div class="space-y-1">
+                        <a href="#" class="flex items-center space-x-3 py-2 border-b border-gray-200 text-text-primary" onclick="openModal('modal-clinic-query')">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="18" height="18" x="3" y="4" rx="2" ry="2"/><line x1="16" x2="16" y1="2" y2="6"/><line x1="8" x2="8" y1="2" y2="6"/><line x1="3" x2="21" y1="10" y2="10"/></svg>
+                            <span>門診查詢</span>
+                        </a>
+                        <a href="#" class="flex items-center space-x-3 py-2 border-b border-gray-200 text-text-primary" onclick="openModal('modal-past-visits')">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 2v4"/><path d="M16 2v4"/><rect width="18" height="18" x="3" y="4" rx="2"/><path d="M3 10h18"/><path d="m9 16 2 2 4-4"/></svg>
+                            <span>歷次門診</span>
+                        </a>
+                        <a href="#" class="flex items-center space-x-3 py-2 border-b border-gray-200 text-text-primary" onclick="openModal('modal-clinic-surgery')">
+                           <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z"/><polyline points="14 2 14 8 20 8"/><line x1="12" x2="12" y1="18" y2="12"/><line x1="9" x2="15" y1="15" y2="15"/></svg>
+                           <span>門診手術</span>
+                        </a>
+                         <a href="#" class="flex items-center space-x-3 py-2 text-text-primary" onclick="openModal('modal-checkup-schedule')">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z"/><polyline points="14 2 14 8 20 8"/><path d="m10 13-2 2 2 2"/><path d="m14 13 2 2-2 2"/></svg>
+                            <span>門診檢查</span>
+                        </a>
+                    </div>
+                </div>
+
+                 <!-- 住院 -->
+                <div class="glass-card p-4">
+                    <h3 class="font-bold text-[--primary-color] border-b-2 border-[--primary-light] pb-2 mb-3">住院</h3>
+                    <div class="space-y-1">
+                        <a href="#" class="flex items-center space-x-3 py-2 border-b border-gray-200 text-text-primary" onclick="navigateTo('screen5')">
+                             <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m9 11 3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>
+                            <span>住院準備</span>
+                        </a>
+                        <a href="#" class="flex items-center space-x-3 py-2 border-b border-gray-200 text-text-primary">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 3h20"/><path d="M21 3v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V3"/><path d="M12 16v5"/><path d="M8 21h8"/></svg>
+                            <span>住院中事項</span>
+                        </a>
+                        <a href="#" class="flex items-center space-x-3 py-2 text-text-primary" onclick="openModal('modal-yearly-discharge')">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+                            <span>歷次住院</span>
+                        </a>
+                    </div>
+                </div>
+                
+                 <!-- 文件 -->
+                <div class="glass-card p-4">
+                     <h3 class="font-bold text-[--primary-color] border-b-2 border-[--primary-light] pb-2 mb-3">文件</h3>
+                     <a href="#" class="flex items-center space-x-3 text-text-primary py-1">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z"/><polyline points="14 2 14 8 20 8"/><path d="m10 15.5 2 2 4-4"/></svg>
+                        <span>已簽同意書</span>
+                     </a>
+                </div>
+
+                <!-- 個人健康管理 -->
+                <div class="glass-card p-4">
+                     <h3 class="font-bold text-[--primary-color] border-b-2 border-[--primary-light] pb-2 mb-3">個人健康管理</h3>
+                     <a href="#" class="flex items-center space-x-3 text-text-primary py-1" onclick="openModal('modal-health-management')">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M12 8v8"/><path d="M8 12h8"/></svg>
+                        <span>個人健康管理</span>
+                     </a>
+                </div>
+
+                <!-- 其他 -->
+                <div class="glass-card p-4">
+                    <h3 class="font-bold text-[--primary-color] border-b-2 border-[--primary-light] pb-2 mb-3">其他</h3>
+                    <div class="space-y-1">
+                        <a href="#" class="flex items-center space-x-3 py-2 border-b border-gray-200 text-text-primary">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+                            <span>近期訊息</span>
+                        </a>
+                        <a href="#" class="flex items-center space-x-3 py-2 border-b border-gray-200 text-text-primary">
+                             <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"/></svg>
+                            <span>回饋</span>
+                        </a>
+                        <a href="#" class="flex items-center space-x-3 py-2 text-text-primary">
+                           <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4"/><path d="M12 8h.01"/></svg>
+                           <span>程式說明</span>
+                        </a>
+                    </div>
+                </div>
+            </main>
+            
+             <!-- AI Assistant FAB -->
+            <button onclick="navigateTo('screen8')" class="absolute bottom-24 right-5 bg-[--primary-color] text-white w-16 h-16 rounded-full shadow-lg flex items-center justify-center" style="box-shadow: 0 10px 25px -5px rgba(58, 147, 78, 0.4), 0 8px 10px -6px rgba(58, 147, 78, 0.2);">
+                <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 8V4H8"/><rect width="16" height="12" x="4" y="8" rx="2"/><path d="M2 14h2"/><path d="M20 14h2"/><path d="M15 13v2"/><path d="M9 13v2"/></svg>
+            </button>
+            
+             <!-- Bottom Navigation Bar -->
+            <nav class="bottom-nav bg-white/80 backdrop-blur-sm border-t fixed bottom-0 left-0 right-0 h-20 max-w-[420px] mx-auto flex justify-around items-center z-20">
+                <a href="#" class="flex flex-col items-center text-gray-500 w-1/5 pt-2 text-center active">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="18" height="18" x="3" y="4" rx="2" ry="2"/><line x1="16" x2="16" y1="2" y2="6"/><line x1="8" x2="8" y1="2" y2="6"/><line x1="3" x2="21" y1="10" y2="10"/></svg>
+                    <span class="text-xs mt-1 font-semibold">掛號業務</span>
+                </a>
+                <a href="#" class="flex flex-col items-center text-gray-500 w-1/5 pt-2 text-center">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 2h4"/><path d="M12 22v-4"/><path d="M20 12a8 8 0 1 0-8 8 4 4 0 0 0-4-4H4.5"/><path d="M17.5 8.5a4 4 0 0 0-4-4H12"/></svg>
+                    <span class="text-xs mt-1 font-semibold">進度查詢</span>
+                </a>
+                 <a href="#" class="flex flex-col items-center text-gray-500 w-1/5 pt-2 text-center">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8.5 2H18l-2 4-2-4H8.5V2Z"/><path d="M4.5 2h-1"/><path d="M4.5 6h-1"/><path d="m14 11.5-5 2.5 5 2.5v4.5l-10-5 10-5Z"/><path d="m14 11.5 5 2.5-5 2.5v4.5l10-5-10-5Z"/></svg>
+                    <span class="text-xs mt-1 font-semibold">慢箋預約</span>
+                </a>
+                <a href="#" class="flex flex-col items-center text-gray-500 w-1/5 pt-2 text-center">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="20" height="14" x="2" y="5" rx="2"/><line x1="2" x2="22" y1="10" y2="10"/></svg>
+                    <span class="text-xs mt-1 font-semibold">繳費</span>
+                </a>
+                <a href="#" class="flex flex-col items-center text-gray-500 w-1/5 pt-2 text-center">
+                   <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>
+                   <span class="text-xs mt-1 font-semibold">待簽同意書</span>
+                </a>
+            </nav>
+        </div>
+        
+        <!-- ===== Screen 3: 網路掛號 (科別) ===== -->
+        <div id="screen3" class="screen">
+            <header class="header-tech p-3 flex justify-between items-center text-gray-800 sticky top-0 z-20">
+                 <button onclick="navigateTo('screen1')" class="text-gray-600">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg>
+                 </button>
+                <h2 class="font-bold text-lg">網路掛號</h2>
+                <div class="w-6"></div>
+            </header>
+            <main class="flex-grow overflow-y-auto p-4 space-y-4">
+                <div class="glass-card p-4">
+                    <h3 class="font-bold text-gray-800 mb-3 text-lg">依科別掛號</h3>
+                    <div class="flex items-center justify-center space-x-2 mb-4">
+                        <button class="tab-button flex-1 py-2 px-4 rounded-lg bg-gray-200 text-gray-700 transition active" onclick="openTab(event, 'division-tab')">依「部」查詢</button>
+                        <button class="tab-button flex-1 py-2 px-4 rounded-lg bg-gray-200 text-gray-700 transition" onclick="openTab(event, 'department-tab')">依「科」查詢</button>
+                    </div>
+
+                    <div id="division-tab" class="tab-content active">
+                        <div class="bg-green-50/50 border border-green-200/50 rounded-lg p-3">
+                            <h4 class="font-bold text-[--primary-color] mb-2">內科部</h4>
+                            <div class="grid grid-cols-2 gap-2 text-sm">
+                                <a href="#" onclick="navigateTo('screen4')" class="text-[--accent-blue] hover:underline p-1">> 心臟血管內科</a>
+                                <a href="#" class="text-[--accent-blue] hover:underline p-1">> 消化內科</a>
+                                <a href="#" class="text-[--accent-blue] hover:underline p-1">> 胸腔內科</a>
+                                <a href="#" class="text-[--accent-blue] hover:underline p-1">> 腎臟內科</a>
+                                <a href="#" class="text-[--accent-blue] hover:underline p-1">> 新陳代謝科</a>
+                                <a href="#" class="text-[--accent-blue] hover:underline p-1">> 血液腫瘤科</a>
+                            </div>
+                        </div>
+                         <div class="bg-blue-50/50 border border-blue-200/50 rounded-lg p-3 mt-3">
+                            <h4 class="font-bold text-blue-800 mb-2">外科部</h4>
+                            <div class="grid grid-cols-2 gap-2 text-sm">
+                                <a href="#" class="text-[--accent-blue] hover:underline p-1">> 一般外科</a>
+                                <a href="#" class="text-[--accent-blue] hover:underline p-1">> 心臟血管外科</a>
+                                <a href="#" class="text-[--accent-blue] hover:underline p-1">> 胸腔外科</a>
+                                <a href="#" class="text-[--accent-blue] hover:underline p-1">> 整形外科</a>
+                            </div>
+                        </div>
+                    </div>
+                     <div id="department-tab" class="tab-content">
+                        <p class="text-center text-gray-500">依「科」查詢內容</p>
+                    </div>
+                </div>
+                 <div class="glass-card p-4 space-y-2">
+                     <a href="#" class="block py-2 border-b border-gray-200/80 text-gray-700 font-semibold">> 醫師介紹</a>
+                     <a href="#" class="block py-2 text-gray-700 font-semibold" onclick="navigateTo('screen6')">> 查詢 / 取消掛號</a>
+                 </div>
+            </main>
+        </div>
+
+        <!-- ===== Screen 4: 網路掛號 (醫師班表) ===== -->
+        <div id="screen4" class="screen">
+             <header class="header-tech p-3 flex justify-between items-center text-gray-800 sticky top-0 z-20">
+                 <button onclick="navigateTo('screen3')" class="text-gray-600">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg>
+                 </button>
+                <h2 class="font-bold text-lg">心臟血管內科</h2>
+                <div class="w-6"></div>
+            </header>
+            <main class="flex-grow overflow-y-auto p-2 sm:p-4 space-y-3">
+                <!-- Doctor Card -->
+                <div class="bg-white rounded-lg shadow-md border overflow-hidden">
+                    <div class="bg-gray-100 p-3">
+                        <h3 class="font-bold text-gray-800">王大明 醫師</h3>
+                        <p class="text-sm text-gray-600">專長：高血壓、心導管手術</p>
+                    </div>
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-center text-sm text-gray-700">
+                            <thead class="bg-gray-200">
+                                <tr>
+                                    <th class="p-2">時段</th><th class="p-2">一</th><th class="p-2">二</th><th class="p-2">三</th><th class="p-2">四</th><th class="p-2">五</th>
+                                </tr>
+                            </thead>
+                            <tbody class="divide-y divide-gray-200">
+                                <tr>
+                                    <td class="p-2 font-semibold">上午</td>
+                                    <td class="p-2"><button class="bg-blue-500 text-white text-xs px-3 py-1 rounded-full" onclick="openModal('modal-registration-confirm')">掛號</button></td>
+                                    <td class="p-2 text-gray-400">休診</td>
+                                    <td class="p-2"><span class="bg-orange-500 text-white text-xs px-3 py-1 rounded-full">額滿</span></td>
+                                    <td class="p-2 text-gray-400">休診</td>
+                                    <td class="p-2"><button class="bg-blue-500 text-white text-xs px-3 py-1 rounded-full" onclick="openModal('modal-registration-confirm')">掛號</button></td>
+                                </tr>
+                                <tr>
+                                    <td class="p-2 font-semibold">下午</td>
+                                    <td class="p-2 text-gray-400">休診</td>
+                                    <td class="p-2"><button class="bg-blue-500 text-white text-xs px-3 py-1 rounded-full" onclick="openModal('modal-registration-confirm')">掛號</button></td>
+                                    <td class="p-2 text-gray-400">休診</td>
+                                    <td class="p-2"><span class="bg-orange-500 text-white text-xs px-3 py-1 rounded-full">額滿</span></td>
+                                     <td class="p-2 text-gray-400">休診</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+                 <!-- Doctor Card 2 -->
+                <div class="bg-white rounded-lg shadow-md border overflow-hidden">
+                    <div class="bg-gray-100 p-3">
+                        <h3 class="font-bold text-gray-800">陳小美 醫師</h3>
+                        <p class="text-sm text-gray-600">專長：心律不整、心臟超音波</p>
+                    </div>
+                     <div class="overflow-x-auto">
+                        <table class="w-full text-center text-sm text-gray-700">
+                           <thead class="bg-gray-200">
+                                <tr>
+                                    <th class="p-2">時段</th><th class="p-2">一</th><th class="p-2">二</th><th class="p-2">三</th><th class="p-2">四</th><th class="p-2">五</th>
+                                </tr>
+                            </thead>
+                            <tbody class="divide-y divide-gray-200">
+                                <tr>
+                                    <td class="p-2 font-semibold">上午</td>
+                                    <td class="p-2 text-gray-400">休診</td>
+                                    <td class="p-2"><button class="bg-blue-500 text-white text-xs px-3 py-1 rounded-full" onclick="openModal('modal-registration-confirm')">掛號</button></td>
+                                    <td class="p-2 text-gray-400">休診</td>
+                                    <td class="p-2"><button class="bg-blue-500 text-white text-xs px-3 py-1 rounded-full" onclick="openModal('modal-registration-confirm')">掛號</button></td>
+                                    <td class="p-2 text-gray-400">休診</td>
+                                </tr>
+                                <tr>
+                                    <td class="p-2 font-semibold">下午</td>
+                                    <td class="p-2"><span class="bg-orange-500 text-white text-xs px-3 py-1 rounded-full">額滿</span></td>
+                                    <td class="p-2 text-gray-400">休診</td>
+                                    <td class="p-2"><button class="bg-blue-500 text-white text-xs px-3 py-1 rounded-full" onclick="openModal('modal-registration-confirm')">掛號</button></td>
+                                    <td class="p-2 text-gray-400">休診</td>
+                                     <td class="p-2"><span class="bg-orange-500 text-white text-xs px-3 py-1 rounded-full">額滿</span></td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </main>
+        </div>
+        
+        <!-- ===== Screen 5: 住院準備 ===== -->
+        <div id="screen5" class="screen">
+            <header class="header-tech p-3 flex justify-between items-center text-gray-800 sticky top-0 z-20">
+                 <button onclick="navigateTo('screen2')" class="text-gray-600">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg>
+                 </button>
+                <h2 class="font-bold text-lg">住院準備</h2>
+                <div class="w-6"></div>
+            </header>
+            <main class="flex-grow overflow-y-auto p-4 space-y-4">
+                <div class="flex justify-center">
+                     <a href="#" class="text-blue-600 border border-blue-600 rounded-md px-4 py-1 text-sm">APP 下載</a>
+                </div>
+                <h3 class="text-center font-bold text-gray-800">預計住院清單</h3>
+                <div class="space-y-2">
+                    <div class="border-2 border-yellow-400 bg-yellow-50 rounded-lg p-3 flex justify-between items-center">
+                        <span>感染科 (114年10月10日)</span>
+                        <span class="text-gray-600 font-semibold">已選擇</span>
+                    </div>
+                    <div class="border bg-white rounded-lg p-3 flex justify-between items-center">
+                        <span>心臟血管內科 (114年10月3日)</span>
+                        <button class="bg-blue-600 text-white text-sm px-4 py-1 rounded">選擇</button>
+                    </div>
+                     <div class="border bg-white rounded-lg p-3 flex justify-between items-center">
+                        <span>骨科部 (114年10月1日)</span>
+                        <button class="bg-blue-600 text-white text-sm px-4 py-1 rounded">選擇</button>
+                    </div>
+                </div>
+                <p class="text-center text-blue-600 font-semibold">&lt;&lt; 住院準備內容 &gt;&gt;</p>
+                <div class="border-2 border-[--primary-color] bg-green-50/50 rounded-lg p-3 space-y-2">
+                    <div>
+                        <span class="font-semibold">預計住院科別：</span><span>感染科</span>
+                    </div>
+                    <div>
+                        <span class="font-semibold">預計住院日期：</span><span>114年10月10日</span>
+                    </div>
+                    <div class="bg-gray-200/50 rounded-md p-3 flex justify-between items-center">
+                        <div>
+                            <span class="inline-block w-4 h-4 bg-red-500 rounded-full mr-2"></span>
+                            <span>住院床等登記</span>
+                        </div>
+                        <button class="bg-white text-blue-600 border border-blue-500 text-sm px-4 py-1 rounded">登記</button>
+                    </div>
+                    <div class="bg-gray-200/50 rounded-md p-3 flex justify-between items-center">
+                        <div>
+                            <span class="inline-block w-4 h-4 bg-red-500 rounded-full mr-2"></span>
+                            <span>住院前問卷 </span><span class="text-red-600">(未填寫)</span>
+                        </div>
+                        <button class="bg-white text-blue-600 border border-blue-500 text-sm px-4 py-1 rounded flex items-center space-x-1">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>
+                            <span>填寫</span>
+                        </button>
+                    </div>
+                </div>
+            </main>
+        </div>
+
+        <!-- ===== Screen 6: 查詢/取消掛號 ===== -->
+        <div id="screen6" class="screen">
+            <header class="header-tech p-3 flex justify-between items-center text-gray-800 sticky top-0 z-20">
+                 <button onclick="navigateTo('screen3')" class="text-gray-600">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg>
+                 </button>
+                <h2 class="font-bold text-lg">查詢/取消掛號</h2>
+                <div class="w-6"></div>
+            </header>
+            <main class="flex-grow overflow-y-auto p-4 space-y-4">
+                <p class="text-center text-red-600">其他時段或醫師。</p>
+                <div class="bg-white rounded-lg shadow border">
+                    <div class="grid grid-cols-3">
+                        <div class="font-semibold bg-gray-100 text-[--primary-color] p-3 col-span-1 rounded-tl-lg">日期</div>
+                        <div class="p-3 col-span-2 border-b">2025-10-15(三)</div>
+                        <div class="font-semibold bg-gray-100 text-[--primary-color] p-3 col-span-1">時段</div>
+                        <div class="p-3 col-span-2 border-b">下午</div>
+                        <div class="font-semibold bg-gray-100 text-[--primary-color] p-3 col-span-1">科別</div>
+                        <div class="p-3 col-span-2 border-b">精神暨心身醫學部</div>
+                        <div class="font-semibold bg-gray-100 text-[--primary-color] p-3 col-span-1">醫師</div>
+                        <div class="p-3 col-span-2 border-b">潘怡如</div>
+                        <div class="font-semibold bg-gray-100 text-[--primary-color] p-3 col-span-1">診間</div>
+                        <div class="p-3 col-span-2 border-b">A905</div>
+                         <div class="font-semibold bg-gray-100 text-[--primary-color] p-3 col-span-1">就診號碼</div>
+                        <div class="p-3 col-span-2 border-b">67</div>
+                        <div class="font-semibold bg-gray-100 text-[--primary-color] p-3 col-span-1">建檔時間</div>
+                        <div class="p-3 col-span-2 border-b"></div>
+                        <div class="font-semibold bg-gray-100 text-[--primary-color] p-3 col-span-1">是否取消掛號</div>
+                        <div class="p-3 col-span-2 border-b flex items-center"><button class="bg-rose-600 hover:bg-rose-700 text-white font-bold py-1 px-4 rounded-full">取消掛號</button></div>
+                        <div class="font-semibold bg-gray-100 text-[--primary-color] p-3 col-span-1 rounded-bl-lg">開診狀態</div>
+                        <div class="p-3 col-span-2"></div>
+                    </div>
+                </div>
+                 <div class="flex justify-center mt-6">
+                    <button class="bg-[--primary-color] text-white font-bold py-3 px-8 rounded-full shadow-lg" onclick="navigateTo('screen3')">回網路掛號首頁</button>
+                 </div>
+            </main>
+        </div>
+        
+        <!-- ===== Screen 7: 醫療個案專區 ===== -->
+        <div id="screen7" class="screen">
+            <header class="header-tech p-3 flex justify-between items-center text-gray-800 sticky top-0 z-20">
+                 <button onclick="navigateTo('screen2')" class="text-gray-600">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg>
+                 </button>
+                <h2 class="font-bold text-lg">醫療個案專區</h2>
+                <div class="w-6"></div>
+            </header>
+            <div class="w-full bg-blue-100 h-2">
+                <div class="bg-blue-500 h-2" style="width: 50%;"></div>
+            </div>
+            <main class="flex-grow overflow-y-auto p-4">
+                <div class="grid grid-cols-2 gap-4">
+                    <a href="#" class="border border-[--primary-color] rounded-lg p-3 text-[--primary-color] font-semibold flex items-center justify-between">> 腹膜透析</a>
+                    <a href="#" class="border border-[--primary-color] rounded-lg p-3 text-[--primary-color] font-semibold flex items-center justify-between">> 泌尿道癌</a>
+                    <a href="#" class="border border-[--primary-color] rounded-lg p-3 text-[--primary-color] font-semibold flex items-center justify-between">> 婦癌</a>
+                    <a href="#" class="border border-[--primary-color] rounded-lg p-3 text-[--primary-color] font-semibold flex items-center justify-between">> 血液及淋巴癌</a>
+                    <a href="#" class="border border-[--primary-color] rounded-lg p-3 text-[--primary-color] font-semibold flex items-center justify-between">> 其他癌</a>
+                    <a href="#" class="border border-[--primary-color] rounded-lg p-3 text-[--primary-color] font-semibold flex items-center justify-between">> 甲狀腺癌</a>
+                    <a href="#" class="border border-[--primary-color] rounded-lg p-3 text-[--primary-color] font-semibold flex items-center justify-between">> 糖尿病</a>
+                    <a href="#" class="border border-[--primary-color] rounded-lg p-3 text-[--primary-color] font-semibold flex items-center justify-between">> 乳癌</a>
+                    <a href="#" class="border border-[--primary-color] rounded-lg p-3 text-[--primary-color] font-semibold flex items-center justify-between">> 頭頸癌</a>
+                    <a href="#" class="border border-[--primary-color] rounded-lg p-3 text-[--primary-color] font-semibold flex items-center justify-between">> 大腸直腸癌</a>
+                    <a href="#" class="border border-[--primary-color] rounded-lg p-3 text-[--primary-color] font-semibold flex items-center justify-between">> 肺癌</a>
+                </div>
+            </main>
+        </div>
+
+        <!-- ===== Screen 8: AI 小幫手 ===== -->
+        <div id="screen8" class="screen bg-gray-100">
+            <header class="header-tech p-3 flex justify-between items-center text-gray-800 sticky top-0 z-20">
+                 <button onclick="navigateTo('screen2')" class="text-gray-600">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg>
+                 </button>
+                <h2 class="font-bold text-lg">AI 小幫手</h2>
+                <div class="w-6"></div>
+            </header>
+            <main id="chat-container" class="flex-grow overflow-y-auto p-4 flex flex-col space-y-4">
+                <div class="chat-bubble assistant">
+                    請問需要幫什麼忙? 您可輸入 查班表、掛號、改期、取消、或 推薦醫師、查詢醫師專長、查詢地點、收費、剩餘額度。
+                </div>
+                <!-- Chat messages will be appended here -->
+            </main>
+            <footer class="bg-white p-2 border-t sticky bottom-0">
+                <div class="flex items-center space-x-2">
+                    <input type="text" id="chat-input" placeholder="請在這裡輸入訊息..." class="flex-grow bg-gray-100 border rounded-full py-2 px-4 focus:outline-none focus:ring-2 focus:ring-[--primary-color]">
+                    <button id="send-btn" class="bg-[--primary-color] text-white rounded-full p-2">
+                         <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
+                    </button>
+                </div>
+            </footer>
+        </div>
+
+
+        <!-- ===== Modals (Tier 3) ===== -->
+        <!-- All Modals will have the glass-card effect -->
+        <!-- 14日內門診 Modal -->
+        <div id="modal-14day-appointment" class="modal">
+            <div class="modal-content glass-card w-full max-w-md mx-auto">
+                <div class="p-4 border-b border-gray-200/80 flex justify-between items-center">
+                    <h2 class="text-lg font-bold text-gray-800">查詢</h2>
+                    <button class="text-gray-500 text-2xl font-bold" onclick="closeModal('modal-14day-appointment')">&times;</button>
+                </div>
+                <div class="p-4">
+                    <h3 class="text-center font-bold text-blue-600 mb-4">14日內門診</h3>
+                    <div class="space-y-3">
+                        <!-- Appointment Item -->
+                        <div class="border rounded-lg p-3 bg-white/80">
+                            <p class="text-red-600 font-semibold">• 10月7日 (下午)</p>
+                            <p class="text-gray-700 ml-4">胃鏡室 (鍾承軒)</p>
+                            <p class="text-gray-700 ml-4">6H-G09診 33號</p>
+                            <div class="flex space-x-2 mt-2">
+                                <button class="bg-teal-600 text-white text-sm py-1 px-3 rounded-md w-1/2">填寫資料</button>
+                                <button class="bg-gray-500 text-white text-sm py-1 px-3 rounded-md w-1/2">查看進度</button>
+                            </div>
+                        </div>
+                        <!-- Appointment Item -->
+                         <div class="border rounded-lg p-3 bg-white/80">
+                            <p class="text-red-600 font-semibold">• 10月9日 (上午)</p>
+                            <p class="text-gray-700 ml-4">新陳代謝科 (林蒼)</p>
+                            <p class="text-gray-700 ml-4">G223診 85號</p>
+                            <div class="flex space-x-2 mt-2">
+                                <button class="bg-teal-600 text-white text-sm py-1 px-3 rounded-md w-1/2">填寫資料</button>
+                                <button class="bg-gray-500 text-white text-sm py-1 px-3 rounded-md w-1/2">查看進度</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- 90天內出院清單 Modal -->
+        <div id="modal-90day-discharge" class="modal">
+            <div class="modal-content glass-card w-full max-w-md mx-auto">
+                 <div class="p-4 border-b border-gray-200/80 flex justify-between items-center">
+                    <h2 class="text-lg font-bold text-gray-800">查詢</h2>
+                    <button class="text-gray-500 text-2xl font-bold" onclick="closeModal('modal-90day-discharge')">&times;</button>
+                </div>
+                <div class="p-4">
+                    <h3 class="text-center font-bold text-blue-600 mb-4">最近 90 天內出院清單</h3>
+                    <p class="text-center text-sm text-gray-500 mb-4">(114年7月6日 ~ 114年10月4日)</p>
+                    <div class="space-y-3">
+                        <!-- Discharge Item -->
+                        <div class="border-2 border-[--primary-light] rounded-lg p-3 bg-white/80">
+                            <p class="font-bold text-blue-800">麻醉部</p>
+                            <p class="text-gray-700">醫師：吳佳展</p>
+                            <div class="flex justify-between text-sm text-gray-600">
+                               <span>住院：114年9月11日</span>
+                               <span>出院：114年9月11日</span>
+                            </div>
+                            <div class="flex justify-center mt-2">
+                                <button class="bg-white border border-blue-500 text-blue-500 text-sm py-1 px-6 rounded-md">出院計畫書</button>
+                            </div>
+                        </div>
+                         <!-- Discharge Item -->
+                        <div class="border-2 border-[--primary-light] rounded-lg p-3 bg-white/80">
+                            <p class="font-bold text-blue-800">胸腔內科</p>
+                            <p class="text-gray-700">醫師：勇浩群</p>
+                            <div class="flex justify-between text-sm text-gray-600">
+                               <span>住院：114年8月13日</span>
+                               <span>出院：114年8月18日</span>
+                            </div>
+                            <div class="flex justify-center mt-2">
+                               <button class="bg-white border border-blue-500 text-blue-500 text-sm py-1 px-6 rounded-md">出院計畫書</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 門診檢查排程 Modal -->
+        <div id="modal-checkup-schedule" class="modal">
+            <div class="modal-content glass-card w-full max-w-md mx-auto">
+                 <div class="p-4 border-b border-gray-200/80 flex justify-between items-center">
+                    <h2 class="text-lg font-bold text-gray-800">查詢</h2>
+                    <button class="text-gray-500 text-2xl font-bold" onclick="closeModal('modal-checkup-schedule')">&times;</button>
+                </div>
+                <div class="p-4">
+                    <h3 class="text-center font-bold text-blue-600 mb-2">門診檢查排程 (最近14天內)</h3>
+                    <p class="text-center text-xs text-red-600 mb-4">顯示的時間為預計檢查時間，請務必提早報到</p>
+                    <table class="w-full text-sm">
+                        <thead class="text-left text-gray-600">
+                            <tr class="border-b">
+                                <th class="py-2 px-1">日期</th>
+                                <th class="py-2 px-1">檢查</th>
+                                <th class="py-2 px-1">注意事項</th>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y">
+                            <tr>
+                                <td class="py-2 px-1 text-red-600 font-semibold">10月5日 (08:00)</td>
+                                <td class="py-2 px-1">乳房攝影</td>
+                                <td class="py-2 px-1"><button class="bg-blue-500 text-white text-xs px-4 py-1 rounded">查看</button></td>
+                            </tr>
+                            <tr>
+                                <td class="py-2 px-1 text-red-600 font-semibold">10月5日 (09:40)</td>
+                                <td class="py-2 px-1">乳房造影</td>
+                                <td class="py-2 px-1"><button class="bg-blue-500 text-white text-xs px-4 py-1 rounded">查看</button></td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- 掛號確認 Modal -->
+        <div id="modal-registration-confirm" class="modal">
+             <div class="modal-content glass-card w-full max-w-sm mx-auto p-5 text-center">
+                <h2 class="text-xl font-bold text-gray-800 mb-4">掛號確認</h2>
+                <div class="text-left space-y-2 mb-6 text-gray-700">
+                    <p><span class="font-semibold text-gray-500">科別：</span>心臟血管內科</p>
+                    <p><span class="font-semibold text-gray-500">醫師：</span>王大明</p>
+                    <p><span class="font-semibold text-gray-500">日期：</span>2025-10-15 (三)</p>
+                    <p><span class="font-semibold text-gray-500">時段：</span>上午</p>
+                    <p><span class="font-semibold text-gray-500">診間：</span>A905</p>
+                </div>
+                <div class="flex justify-center space-x-4">
+                    <button class="bg-gray-200 text-gray-800 font-bold py-2 px-8 rounded-lg" onclick="closeModal('modal-registration-confirm')">取消</button>
+                    <button class="bg-[--primary-color] text-white font-bold py-2 px-8 rounded-lg" onclick="closeModal('modal-registration-confirm')">確認</button>
+                </div>
+             </div>
+        </div>
+
+        <!-- 個人健康管理 Modal -->
+        <div id="modal-health-management" class="modal">
+            <div class="modal-content glass-card w-full max-w-md mx-auto">
+                 <div class="p-4 border-b border-gray-200/80 flex justify-between items-center">
+                    <h2 class="text-lg font-bold text-gray-800">個人健康管理</h2>
+                    <button class="text-gray-500 text-2xl font-bold" onclick="closeModal('modal-health-management')">&times;</button>
+                </div>
+                <div class="p-4">
+                    <button class="bg-blue-500 text-white text-sm py-1 px-4 rounded-md mb-3">&lt; 返回選單</button>
+                    <h3 class="font-bold text-center text-gray-800 mb-1">疫苗接種建議表(27~49歲)</h3>
+                    <p class="text-center text-sm text-gray-600 mb-1">美國傳染病防治諮詢會(ACIP)建議</p>
+                    <p class="text-center text-sm text-red-600 mb-4">接種 "B型流行性感冒嗜血桿菌疫苗" 2劑(本院暫無)</p>
+
+                    <div class="border-b-2 flex justify-center mb-4">
+                         <button class="modal-tab-button border-b-2 border-transparent px-4 py-2 text-gray-500 transition active" onclick="openModalTab(event, 'general-group')">一般族群</button>
+                         <button class="modal-tab-button border-b-2 border-transparent px-4 py-2 text-gray-500 transition" onclick="openModalTab(event, 'high-risk-group')">高風險族群</button>
+                         <button class="modal-tab-button border-b-2 border-transparent px-4 py-2 text-gray-500 transition" onclick="openModalTab(event, 'notes-group')">注意事項</button>
+                    </div>
+                    
+                    <div id="general-group" class="tab-content active">
+                        <p class="font-semibold text-center text-gray-700 mb-2">一般族群，建議接種</p>
+                        <table class="w-full text-sm">
+                            <thead>
+                                <tr class="border-b bg-gray-100">
+                                    <th class="p-2 text-left font-bold text-gray-600">疫苗種類</th>
+                                    <th class="p-2 text-right font-bold text-gray-600">劑數</th>
+                                </tr>
+                            </thead>
+                            <tbody class="divide-y">
+                                <tr><td class="p-2">破傷風、白喉、百日咳相關疫苗</td><td class="p-2 text-right">1/10年</td></tr>
+                                <tr><td class="p-2">麻疹、腮腺炎、德國麻疹混合疫苗(MMR)</td><td class="p-2 text-right">1</td></tr>
+                                <tr><td class="p-2">水痘疫苗</td><td class="p-2 text-right">2</td></tr>
+                                <tr><td class="p-2">季節性流感疫苗</td><td class="p-2 text-right">1/年</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                    <div id="high-risk-group" class="tab-content"><p class="text-center text-gray-500">高風險族群內容</p></div>
+                    <div id="notes-group" class="tab-content"><p class="text-center text-gray-500">注意事項內容</p></div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- 歷次住院(一年) Modal -->
+        <div id="modal-yearly-discharge" class="modal">
+            <div class="modal-content glass-card w-full max-w-md mx-auto">
+                <div class="p-4 border-b border-gray-200/80 flex justify-between items-center">
+                    <h2 class="text-lg font-bold text-gray-800">歷次住院</h2>
+                    <button class="text-gray-500 text-2xl font-bold" onclick="closeModal('modal-yearly-discharge')">&times;</button>
+                </div>
+                <div class="p-4">
+                    <h3 class="text-center font-bold text-blue-600 mb-4">最近 一年 內出院清單</h3>
+                    <p class="text-center text-sm text-gray-500 mb-4">(113年10月4日 ~ 114年10月4日)</p>
+                    <div class="space-y-3 max-h-80 overflow-y-auto pr-2">
+                        <!-- Discharge Item -->
+                        <div class="border-2 border-[--primary-light] rounded-lg p-3 bg-white/80">
+                            <p class="font-bold text-blue-800">麻醉部</p>
+                            <p class="text-gray-700">醫師：吳佳展</p>
+                            <div class="flex justify-between text-sm text-gray-600">
+                               <span>住院：114年9月11日</span>
+                               <span>出院：114年9月11日</span>
+                            </div>
+                            <div class="flex justify-center mt-2">
+                                <button class="bg-white border border-blue-500 text-blue-500 text-sm py-1 px-6 rounded-md">出院計畫書</button>
+                            </div>
+                        </div>
+                         <!-- Discharge Item -->
+                        <div class="border-2 border-[--primary-light] rounded-lg p-3 bg-white/80">
+                            <p class="font-bold text-blue-800">胸腔內科</p>
+                            <p class="text-gray-700">醫師：勇浩群</p>
+                            <div class="flex justify-between text-sm text-gray-600">
+                               <span>住院：114年8月13日</span>
+                               <span>出院：114年8月18日</span>
+                            </div>
+                            <div class="flex justify-center mt-2">
+                               <button class="bg-white border border-blue-500 text-blue-500 text-sm py-1 px-6 rounded-md">出院計畫書</button>
+                            </div>
+                        </div>
+                         <!-- Discharge Item -->
+                        <div class="border-2 border-[--primary-light] rounded-lg p-3 bg-white/80">
+                            <p class="font-bold text-blue-800">影像醫學科</p>
+                            <p class="text-gray-700">醫師：賴彥君</p>
+                            <div class="flex justify-between text-sm text-gray-600">
+                               <span>住院：114年5月29日</span>
+                               <span>出院：114年6月18日</span>
+                            </div>
+                            <div class="flex justify-center mt-2">
+                               <button class="bg-white border border-blue-500 text-blue-500 text-sm py-1 px-6 rounded-md">出院計畫書</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 門診查詢 Modal -->
+        <div id="modal-clinic-query" class="modal">
+            <div class="modal-content glass-card w-full max-w-md mx-auto">
+                <div class="p-4 border-b border-gray-200/80 flex justify-between items-center">
+                    <h2 class="text-lg font-bold text-gray-800">門診查詢</h2>
+                    <button class="text-gray-500 text-2xl font-bold" onclick="closeModal('modal-clinic-query')">&times;</button>
+                </div>
+                <div class="p-4">
+                    <p class="text-center text-sm text-gray-600 mb-4">可查 <span class="text-blue-600 font-semibold">預約、未來180天</span> 之資料</p>
+                    <div class="flex justify-center space-x-1 bg-gray-200/80 rounded-lg p-1 mb-4">
+                        <button class="flex-1 py-1 px-2 rounded-md bg-white text-yellow-600 shadow">一般門診</button>
+                        <button class="flex-1 py-1 px-2 rounded-md text-gray-600">化學治療室</button>
+                        <button class="flex-1 py-1 px-2 rounded-md text-gray-600">門診治療室</button>
+                    </div>
+                     <div class="border border-gray-200 rounded-lg p-3 bg-white/80 mb-3">
+                        <h4 class="text-blue-600 font-bold text-center mb-2">3日內門診</h4>
+                        <p class="text-red-600 font-semibold">• 10月7日 (下午)</p>
+                        <p class="text-gray-700 ml-4">胃鏡室 (鍾承軒)</p>
+                        <p class="text-gray-700 ml-4">6H-G09診 33號</p>
+                        <div class="flex space-x-2 mt-2">
+                            <button class="bg-teal-600 text-white text-sm py-1 px-3 rounded-md w-1/2">填寫資料</button>
+                            <button class="bg-gray-500 text-white text-sm py-1 px-3 rounded-md w-1/2">查看進度</button>
+                        </div>
+                    </div>
+                    <table class="w-full text-sm text-center">
+                        <thead class="bg-gray-200/80 text-gray-600">
+                            <tr>
+                                <th class="p-2 font-semibold">日期與時段</th>
+                                <th class="p-2 font-semibold">科別</th>
+                                <th class="p-2 font-semibold">醫師</th>
+                                <th class="p-2 font-semibold">診間</th>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y divide-gray-200 bg-white/50">
+                            <tr>
+                                <td class="p-2">114年10月7日 (下午)</td>
+                                <td class="p-2">胃鏡室</td>
+                                <td class="p-2">鍾承軒</td>
+                                <td class="p-2">6H-G09</td>
+                            </tr>
+                             <tr>
+                                <td class="p-2">114年10月9日 (上午)</td>
+                                <td class="p-2">新陳代謝科</td>
+                                <td class="p-2">林蒼</td>
+                                <td class="p-2">G223</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- 歷次門診 Modal -->
+        <div id="modal-past-visits" class="modal">
+            <div class="modal-content glass-card w-full max-w-md mx-auto">
+                <div class="p-4 border-b border-gray-200/80 flex justify-between items-center">
+                    <h2 class="text-lg font-bold text-gray-800">歷次門診</h2>
+                    <button class="text-gray-500 text-2xl font-bold" onclick="closeModal('modal-past-visits')">&times;</button>
+                </div>
+                <div class="p-4">
+                     <h3 class="text-center font-bold text-blue-600 mb-4">前180天門診</h3>
+                     <div class="space-y-3 max-h-80 overflow-y-auto pr-2">
+                        <div class="border rounded-lg p-3 bg-white/80">
+                            <p class="font-semibold text-blue-700">• 114年7月22日 (上午)</p>
+                            <p class="text-gray-700 ml-4">精神暨心身醫學部 (侯德斌)</p>
+                            <p class="text-gray-700 ml-4">A903診 90號</p>
+                            <div class="flex space-x-2 mt-2">
+                                <button class="bg-blue-500 text-white text-sm py-1 px-3 rounded-md w-1/2">診後資料</button>
+                                <button class="bg-amber-500 text-white text-sm py-1 px-3 rounded-md w-1/2">門診用藥</button>
+                            </div>
+                        </div>
+                        <div class="border rounded-lg p-3 bg-white/80">
+                             <p class="font-semibold text-blue-700">• 114年5月21日 (上午)</p>
+                            <p class="text-gray-700 ml-4">小兒超音波 (陳家駿)</p>
+                            <p class="text-gray-700 ml-4">4F23診 1號</p>
+                             <div class="flex space-x-2 mt-2">
+                                <button class="bg-blue-500 text-white text-sm py-1 px-3 rounded-md w-1/2">診後資料</button>
+                                <button class="bg-amber-500 text-white text-sm py-1 px-3 rounded-md w-1/2">門診用藥</button>
+                            </div>
+                        </div>
+                     </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- 門診手術 Modal -->
+        <div id="modal-clinic-surgery" class="modal">
+             <div class="modal-content glass-card w-full max-w-md mx-auto">
+                <div class="p-4 border-b border-gray-200/80 flex justify-between items-center">
+                    <h2 class="text-lg font-bold text-gray-800">門診手術</h2>
+                    <button class="text-gray-500 text-2xl font-bold" onclick="closeModal('modal-clinic-surgery')">&times;</button>
+                </div>
+                <div class="p-4">
+                     <h3 class="text-center font-bold text-blue-600 mb-4">門診手術 (最近90天內)</h3>
+                     <table class="w-full text-sm">
+                         <thead class="font-semibold text-gray-600">
+                            <tr class="border-b">
+                                <td class="p-2">時間</td>
+                                <td class="p-2">科別</td>
+                                <td class="p-2">醫師</td>
+                                <td class="p-2">麻醉</td>
+                            </tr>
+                         </thead>
+                         <tbody class="divide-y">
+                            <tr>
+                                 <td class="p-2">
+                                    <p>10月12日</p>
+                                    <p>AM 11:30</p>
+                                 </td>
+                                 <td class="p-2">口腔顎面外科</td>
+                                 <td class="p-2">林乘毀</td>
+                                 <td class="p-2"></td>
+                            </tr>
+                         </tbody>
+                     </table>
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+    <script>
+        // --- Navigation ---
+        const screens = document.querySelectorAll('.screen');
+        function navigateTo(screenId) {
+            screens.forEach(screen => {
+                screen.classList.remove('active');
+            });
+            const targetScreen = document.getElementById(screenId);
+            if (targetScreen) {
+                targetScreen.classList.add('active');
+                targetScreen.scrollTop = 0; // Scroll to top on new screen
+            }
+        }
+
+        // --- Modals ---
+        function openModal(modalId) {
+            const modal = document.getElementById(modalId);
+            if (modal) {
+                modal.style.display = 'flex';
+                const modalContent = modal.querySelector('.modal-content');
+                if (modalContent) {
+                    modalContent.classList.add('fade-in');
+                }
+            }
+        }
+
+        function closeModal(modalId) {
+            const modal = document.getElementById(modalId);
+            if (modal) {
+                modal.style.display = 'none';
+                const modalContent = modal.querySelector('.modal-content');
+                if (modalContent) {
+                    modalContent.classList.remove('fade-in');
+                }
+            }
+        }
+        
+        window.onclick = function(event) {
+            if (event.target.classList.contains('modal')) {
+                closeModal(event.target.id);
+            }
+        }
+        
+        // --- Carousel ---
+        document.addEventListener('DOMContentLoaded', () => {
+            const wrapper = document.querySelector('.carousel-wrapper');
+            const slides = document.querySelectorAll('.carousel-slide');
+            if (!wrapper || slides.length === 0) return;
+            let currentIndex = 0;
+
+            function updateCarousel() {
+                const offset = -currentIndex * (slides[0].offsetWidth + 16); // 16px is margin-right
+                wrapper.style.transform = `translateX(${offset}px)`;
+                slides.forEach((slide, index) => {
+                    slide.classList.toggle('active-slide', index === currentIndex);
+                });
+            }
+
+            setInterval(() => {
+                currentIndex = (currentIndex + 1) % slides.length;
+                updateCarousel();
+            }, 5000); // Change slide every 5 seconds
+
+            // Initial setup
+            updateCarousel();
+        });
+
+        // --- Tabs (for main screens) ---
+        function openTab(evt, tabName) {
+            var i, tabcontent, tablinks;
+            const parent = evt.currentTarget.closest('.glass-card');
+            tabcontent = parent.querySelectorAll(".tab-content");
+            for (i = 0; i < tabcontent.length; i++) {
+                tabcontent[i].style.display = "none";
+            }
+            tablinks = parent.querySelectorAll(".tab-button");
+            for (i = 0; i < tablinks.length; i++) {
+                tablinks[i].classList.remove("active");
+            }
+            document.getElementById(tabName).style.display = "block";
+            evt.currentTarget.classList.add("active");
+        }
+        
+        // --- Tabs (for modals) ---
+        function openModalTab(evt, tabName) {
+            const parentModal = evt.currentTarget.closest('.modal-content');
+            if (!parentModal) return;
+
+            const tabContents = parentModal.querySelectorAll(".tab-content");
+            tabContents.forEach(content => {
+                content.classList.remove("active");
+                content.style.display = "none";
+            });
+
+            const tabLinks = parentModal.querySelectorAll(".modal-tab-button");
+            tabLinks.forEach(link => {
+                link.classList.remove("active");
+            });
+
+            const targetContent = parentModal.querySelector("#" + tabName);
+            if (targetContent) {
+                targetContent.style.display = "block";
+                targetContent.classList.add("active");
+            }
+            evt.currentTarget.classList.add("active");
+        }
+
+        // --- AI Chat ---
+        const chatInput = document.getElementById('chat-input');
+        const sendBtn = document.getElementById('send-btn');
+        const chatContainer = document.getElementById('chat-container');
+
+        const handleChat = () => {
+            const userInput = chatInput.value.trim();
+            if(!userInput) return;
+
+            // Display user message
+            const userMessageElem = document.createElement('div');
+            userMessageElem.className = 'chat-bubble user';
+            userMessageElem.textContent = userInput;
+            chatContainer.appendChild(userMessageElem);
+
+            chatInput.value = "";
+            chatContainer.scrollTop = chatContainer.scrollHeight;
+
+            // Simulate assistant response
+            setTimeout(() => {
+                 const assistantMessageElem = document.createElement('div');
+                 assistantMessageElem.className = 'chat-bubble assistant';
+                 assistantMessageElem.textContent = "感謝您的訊息，這是一個模擬回覆。有關「" + userInput + "」的詳細資訊，請參考我們的官方網站或聯繫客服人員。";
+                 chatContainer.appendChild(assistantMessageElem);
+                 chatContainer.scrollTop = chatContainer.scrollHeight;
+            }, 1000);
+        };
+        
+        if (sendBtn) {
+             sendBtn.addEventListener('click', handleChat);
+        }
+        if (chatInput) {
+            chatInput.addEventListener('keydown', (e) => {
+                if (e.key === 'Enter') {
+                    handleChat();
+                }
+            });
+        }
+
+
+        // Initialize first tab
+        document.addEventListener('DOMContentLoaded', () => {
+             const initialTab = document.querySelector('#screen3 .tab-button.active');
+             if(initialTab) {
+                initialTab.click();
+             }
+             const initialModalTab = document.querySelector('#modal-health-management .modal-tab-button.active');
+             if(initialModalTab) {
+                openModalTab({ currentTarget: initialModalTab }, 'general-group');
+             }
+        });
+
+    </script>
+
+</body>
+</html>
