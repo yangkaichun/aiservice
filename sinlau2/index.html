@@ -1,0 +1,989 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>醫院-診所 數位共享平台 (全功能DEMO)</title>
+    <style>
+        /* --- 基本樣式重設 --- */
+        :root {
+            --primary-dark: #1a237e;
+            --primary-main: #303f9f;
+            --primary-light: #e8eaf6;
+            --secondary-accent: #ffc107;
+            --text-primary: #333;
+            --text-secondary: #555;
+            --bg-main: #f4f7f6;
+            --bg-widget: #ffffff;
+            --border-color: #e0e0e0;
+            --tag-danger-bg: #ffebee;
+            --tag-danger-text: #c62828;
+            --tag-success-bg: #e8f5e9;
+            --tag-success-text: #2e7d32;
+            --tag-pending-bg: #fffde7;
+            --tag-pending-text: #f57f17;
+        }
+
+        body, html {
+            margin: 0;
+            padding: 0;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, "Noto Sans TC", sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji";
+            background-color: var(--bg-main);
+            color: var(--text-primary);
+            height: 100%;
+        }
+
+        /* --- 主要佈局 (CSS Grid) --- */
+        .portal-container {
+            display: grid;
+            grid-template-areas:
+                "header header"
+                "sidebar content";
+            grid-template-columns: 260px 1fr;
+            grid-template-rows: 60px 1fr;
+            height: 100vh;
+        }
+
+        /* --- 1. 頂部標頭 (Header) --- */
+        .portal-header {
+            grid-area: header;
+            background-color: var(--bg-widget);
+            color: var(--primary-dark);
+            padding: 0 20px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            border-bottom: 2px solid var(--border-color);
+            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+            z-index: 10;
+        }
+        .portal-header h1 { margin: 0; font-size: 1.4rem; }
+        .user-info { font-size: 0.9rem; }
+        .user-info span { margin-right: 15px; }
+        .user-info a { color: var(--tag-danger-text); text-decoration: none; font-weight: bold; }
+
+        /* --- 2. 側邊導覽列 (Sidebar) --- */
+        .portal-sidebar {
+            grid-area: sidebar;
+            background-color: var(--primary-dark);
+            color: var(--bg-widget);
+            padding: 20px 0;
+            overflow-y: auto;
+            z-index: 5;
+        }
+        .portal-sidebar h3 {
+            font-size: 0.8rem;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            color: #9fa8da;
+            padding: 0 20px;
+            margin: 20px 0 10px 0;
+        }
+        .portal-sidebar nav a {
+            display: flex;
+            align-items: center;
+            padding: 12px 20px;
+            color: var(--primary-light);
+            text-decoration: none;
+            font-size: 0.95rem;
+            transition: background-color 0.2s ease;
+            cursor: pointer;
+        }
+        .portal-sidebar nav a .icon {
+            margin-right: 12px;
+            font-size: 1.1rem;
+            width: 20px;
+            text-align: center;
+        }
+        .portal-sidebar nav a:hover { background-color: var(--primary-main); }
+        .portal-sidebar nav a.active {
+            background-color: #3f51b5;
+            font-weight: bold;
+            color: #fff;
+            border-right: 4px solid var(--secondary-accent);
+        }
+
+        /* --- 3. 主要內容區 (Content) --- */
+        .portal-content {
+            grid-area: content;
+            overflow-y: auto;
+            padding: 25px;
+        }
+        
+        /* --- 頁面切換邏輯 --- */
+        .page-content {
+            display: none; /* 預設隱藏所有頁面 */
+        }
+        .page-content.active {
+            display: block; /* 只顯示 active 的頁面 */
+        }
+
+        .content-header {
+            margin: 0 0 20px 0;
+            padding-bottom: 10px;
+            border-bottom: 1px solid #ddd;
+            font-size: 1.8rem;
+            color: var(--primary-dark);
+        }
+
+        /* --- 通用元件 (按鈕, 表單, 卡片) --- */
+        .widget {
+            background-color: var(--bg-widget);
+            border-radius: 8px;
+            padding: 20px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+        }
+        .widget h3 {
+            margin-top: 0;
+            margin-bottom: 15px;
+            color: var(--primary-dark);
+            font-size: 1.1rem;
+            border-bottom: 2px solid #eee;
+            padding-bottom: 10px;
+            display: flex;
+            align-items: center;
+        }
+        .widget h3 .icon { margin-right: 8px; font-size: 1.2rem; }
+        
+        .form-group {
+            margin-bottom: 15px;
+        }
+        .form-group label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+            font-size: 0.9rem;
+        }
+        .form-group input[type="text"],
+        .form-group input[type="date"],
+        .form-group select {
+            width: 100%;
+            padding: 10px;
+            font-size: 1rem;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            box-sizing: border-box; /* 確保 padding 不會撐爆寬度 */
+        }
+        .btn {
+            padding: 10px 18px;
+            font-size: 1rem;
+            border-radius: 4px;
+            border: none;
+            cursor: pointer;
+            font-weight: bold;
+            transition: background-color 0.2s;
+        }
+        .btn-primary {
+            background-color: var(--primary-main);
+            color: white;
+        }
+        .btn-primary:hover { background-color: var(--primary-dark); }
+        .btn-secondary {
+            background-color: #e0e0e0;
+            color: #333;
+        }
+        .btn-secondary:hover { background-color: #bdbdbd; }
+
+        .search-bar {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+        .search-bar .form-group {
+            flex-grow: 1;
+            margin-bottom: 0;
+        }
+        .search-bar .btn {
+            align-self: flex-end; /* 對齊表單底部 */
+        }
+
+        /* --- 表格樣式 --- */
+        .data-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+        }
+        .data-table th, .data-table td {
+            border: 1px solid var(--border-color);
+            padding: 12px;
+            text-align: left;
+            font-size: 0.9rem;
+        }
+        .data-table th {
+            background-color: var(--primary-light);
+            color: var(--primary-dark);
+            font-weight: bold;
+        }
+        .data-table tr:nth-child(even) { background-color: #f9f9f9; }
+        .data-table tr:hover { background-color: #f1f1f1; }
+
+        /* --- 狀態標籤 (Tag) --- */
+        .tag {
+            padding: 4px 10px;
+            border-radius: 12px;
+            font-size: 0.8rem;
+            font-weight: bold;
+            white-space: nowrap;
+        }
+        .tag-danger { background-color: var(--tag-danger-bg); color: var(--tag-danger-text); }
+        .tag-success { background-color: var(--tag-success-bg); color: var(--tag-success-text); }
+        .tag-pending { background-color: var(--tag-pending-bg); color: var(--tag-pending-text); }
+        .tag-info { background-color: #e3f2fd; color: #0d47a1; }
+        .tag-meeting { background-color: #f3e5f5; color: #4a148c; }
+
+        /* --- 儀表板網格 (Dashboard Grid) --- */
+        .widget-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+            gap: 20px;
+        }
+        .widget ul { list-style-type: none; padding-left: 0; margin: 0; }
+        .widget li {
+            padding: 8px 5px;
+            border-bottom: 1px dashed #eee;
+            font-size: 0.9rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .widget li:last-child { border-bottom: none; }
+        .kpi-item { text-align: center; margin: 10px; }
+        .kpi-item .value { font-size: 2rem; font-weight: bold; color: var(--primary-dark); }
+        .kpi-item .label { font-size: 0.9rem; color: var(--text-secondary); }
+        .kpi-container { display: flex; justify-content: space-around; padding-top: 10px; }
+
+        /* --- 照護紀錄 (Tabs) --- */
+        .tab-nav {
+            display: flex;
+            border-bottom: 2px solid var(--border-color);
+            margin-bottom: 20px;
+        }
+        .tab-nav .tab-link {
+            padding: 10px 20px;
+            cursor: pointer;
+            font-size: 1rem;
+            font-weight: 500;
+            color: var(--text-secondary);
+            border-bottom: 3px solid transparent;
+            margin-bottom: -2px; /* 蓋掉 tab-nav 的 border */
+        }
+        .tab-nav .tab-link:hover { color: var(--primary-dark); }
+        .tab-nav .tab-link.active {
+            color: var(--primary-main);
+            border-bottom-color: var(--primary-main);
+            font-weight: bold;
+        }
+        .tab-content { display: none; }
+        .tab-content.active { display: block; }
+        .form-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+        }
+
+        /* --- 病人互動 (LINE Mockup) --- */
+        .line-mockup {
+            width: 380px;
+            margin: auto;
+            border: 2px solid #ccc;
+            border-radius: 8px;
+            background-color: #79acdc; /* LINE BG Color */
+            padding: 10px;
+            height: 500px;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+        }
+        .chat-bubble {
+            padding: 10px 15px;
+            border-radius: 15px;
+            margin-bottom: 10px;
+            max-width: 75%;
+            font-size: 0.9rem;
+            line-height: 1.4;
+        }
+        .bubble-bot {
+            background-color: #fff;
+            align-self: flex-start;
+            border-top-left-radius: 0;
+        }
+        .bubble-user {
+            background-color: #c8e6c9;
+            align-self: flex-end;
+            border-top-right-radius: 0;
+        }
+        .line-mockup-header {
+            text-align: center;
+            font-weight: bold;
+            color: white;
+            padding-bottom: 10px;
+            border-bottom: 1px solid #fff3;
+        }
+        
+        /* --- 健康處方 (Categories) --- */
+        .prescription-categories {
+            display: flex;
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+        .prescription-categories .btn {
+            flex-grow: 1;
+            font-size: 1.1rem;
+            padding: 15px;
+        }
+
+        /* --- 知識庫 (Knowledge Base) --- */
+        .kb-list {
+            list-style-type: none;
+            padding-left: 0;
+        }
+        .kb-list li {
+            background: #f9f9f9;
+            margin-bottom: 8px;
+            border-radius: 4px;
+            border: 1px solid #eee;
+        }
+        .kb-list a {
+            display: block;
+            padding: 15px;
+            text-decoration: none;
+            color: var(--primary-dark);
+            font-weight: 500;
+        }
+        .kb-list a:hover {
+            background: var(--primary-light);
+        }
+        .kb-list a::before {
+            content: '📄';
+            margin-right: 10px;
+        }
+        
+        /* --- 線上照會 (Consultation) --- */
+        .consult-layout {
+            display: grid;
+            grid-template-columns: 300px 1fr;
+            height: 600px;
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            overflow: hidden;
+            background: var(--bg-widget);
+        }
+        .consult-list {
+            border-right: 1px solid var(--border-color);
+            overflow-y: auto;
+        }
+        .consult-item {
+            padding: 15px;
+            border-bottom: 1px solid #eee;
+            cursor: pointer;
+        }
+        .consult-item:hover { background-color: #f9f9f9; }
+        .consult-item.active { background-color: var(--primary-light); }
+        .consult-item .name { font-weight: bold; color: var(--primary-dark); }
+        .consult-item .subject { font-size: 0.9rem; color: var(--text-secondary); margin-top: 4px; }
+        .consult-chat-area {
+            display: flex;
+            flex-direction: column;
+            padding: 20px;
+        }
+        .consult-chat-log {
+            flex-grow: 1;
+            overflow-y: auto;
+            margin-bottom: 15px;
+        }
+        .consult-chat-log .bubble-bot {
+            max-width: 90%;
+        }
+        .consult-reply { display: flex; gap: 10px; }
+        .consult-reply input { flex-grow: 1; }
+
+    </style>
+</head>
+<body>
+
+    <div class="portal-container">
+
+        <header class="portal-header">
+            <h1>🏥 醫院-診所 數位共享平台</h1>
+            <div class="user-info">
+                <span>歡迎, <strong>王醫師 (新林診所)</strong></span>
+                <a href="#">登出</a>
+            </div>
+        </header>
+
+        <aside class="portal-sidebar">
+            <nav id="sidebar-nav">
+                <a data-page="page-dashboard" class="active">
+                    <span class="icon">🏠</span> 主儀表板
+                </a>
+                
+                <h3>核心功能</h3>
+                <a data-page="page-query">
+                    <span class="icon">🔍</span> 雲端結果查詢
+                </a>
+                <a data-page="page-referral">
+                    <span class="icon">🏃</span> 轉介個案追蹤
+                </a>
+                <a data-page="page-care-record">
+                    <span class="icon">📝</span> 照護紀錄模組
+                </a>
+                <a data-page="page-patient-interaction">
+                    <span class="icon">📱</span> 病人互動模組
+                </a>
+                <a data-page="page-prescription">
+                    <span class="icon">🌱</span> 健康處方模組
+                </a>
+
+                <h3>分析與支援</h3>
+                <a data-page="page-reports">
+                    <span class="icon">📊</span> 指標報表分析
+                </a>
+                <a data-page="page-push">
+                    <span class="icon">📢</span> 平台推播模組
+                </a>
+                <a data-page="page-kb">
+                    <span class="icon">📚</span> 共照知識庫 (SOP)
+                </a>
+                <a data-page="page-consult">
+                    <span class="icon">💬</span> 線上照會區
+                </a>
+            </nav>
+        </aside>
+
+        <main class="portal-content">
+
+            <div class="page-content active" id="page-dashboard">
+                <h2 class="content-header">主儀表板</h2>
+                <div class="widget-grid">
+                    <div class="widget">
+                        <h3><span class="icon">📢</span> 最新政策資訊 (平台推播)</h3>
+                        <ul>
+                            <li>
+                                <span>接種疫苗：2025年流感疫苗接種計畫...</span>
+                                <span class="tag tag-info">衛福部</span>
+                            </li>
+                            <li>
+                                <span>分級醫療：轉診方案修訂說明</span>
+                                <span class="tag tag-info">健保署</span>
+                            </li>
+                            <li>
+                                <span>傳染病通報：登革熱最新通報指引</span>
+                                <span class="tag tag-info">疾管署</span>
+                            </li>
+                            <li>
+                                <span>教育訓練：[會議] 11/15 糖尿病共照網研討...</span>
+                                <span class="tag tag-meeting">平台通知</span>
+                            </li>
+                        </ul>
+                    </div>
+                    <div class="widget">
+                        <h3><span class="icon">⚠️</span> 異常提醒 & 落後通知</h3>
+                        <ul>
+                            <li>
+                                <span>病患 [王大明] 血糖指標異常 (220mg/dL)</span>
+                                <span class="tag tag-danger">指標異常</span>
+                            </li>
+                            <li>
+                                <span>病患 [李小美] 已逾期 3 天未回診</span>
+                                <span class="tag tag-danger">落後通知</span>
+                            </li>
+                            <li>
+                                <span>病患 [陳先生] 轉介追蹤尚未完成</span>
+                                <span class="tag tag-pending">個案追蹤</span>
+                            </li>
+                        </ul>
+                    </div>
+                    <div class="widget">
+                        <h3><span class="icon">📈</span> 關鍵績效指標 (KPI) - 10月</h3>
+                        <div class="kpi-container">
+                            <div class="kpi-item">
+                                <div class="value">85%</div>
+                                <div class="label">轉介成功率</div>
+                            </div>
+                            <div class="kpi-item">
+                                <div class="value">78%</div>
+                                <div class="label">慢病照護達標率</div>
+                            </div>
+                            <div class="kpi-item">
+                                <div class="value">3 / 15</div>
+                                <div class="label">群內品質排名</div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="widget">
+                        <h3><span class="icon">✅</span> 今日待辦事項</h3>
+                        <ul>
+                            <li>
+                                <span>[陳先生] 轉介追蹤電訪</span>
+                                <span class="tag tag-pending">待處理</span>
+                            </li>
+                            <li>
+                                <span>[王大明] 衛教紀錄上傳</span>
+                                <span class="tag tag-pending">待處理</span>
+                            </li>
+                            <li>
+                                <span>[線上照會] 北榮 黎醫師 回覆</span>
+                                <span class="tag tag-info">新訊息</span>
+                            </li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+
+            <div class="page-content" id="page-query">
+                <h2 class="content-header">🔍 雲端結果查詢</h2>
+                <div class="widget">
+                    <h3>查詢病人資料 (需求 1.(1))</h3>
+                    <div class="search-bar">
+                        <div class="form-group">
+                            <label for="patient-id">病人身分證號 / 病歷號</label>
+                            <input type="text" id="patient-id" placeholder="請輸入身分證號...">
+                        </div>
+                        <div class="form-group">
+                            <label for="patient-name">病人姓名</label>
+                            <input type="text" id="patient-name" placeholder="請輸入姓名...">
+                        </div>
+                        <button class="btn btn-primary">查詢</button>
+                    </div>
+
+                    <div class="query-results">
+                        <h4>查詢結果： 王大明 (A123456789)</h4>
+                        <table class="data-table">
+                            <thead>
+                                <tr>
+                                    <th>檢查日期</th>
+                                    <th>來源醫院</th>
+                                    <th>檢查項目</th>
+                                    <th>摘要/結果</th>
+                                    <th>處置建議</th>
+                                    <th>操作</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td>2025-10-28</td>
+                                    <td>台北榮民總醫院</td>
+                                    <td>血液檢查 (HbA1c)</td>
+                                    <td>8.2 %</td>
+                                    <td>建議調整用藥</td>
+                                    <td><a href="#">查看詳情</a></td>
+                                </tr>
+                                <tr>
+                                    <td>2025-10-25</td>
+                                    <td>亞東紀念醫院</td>
+                                    <td>胸部X光</td>
+                                    <td>無明顯異常</td>
+                                    <td>定期追蹤</td>
+                                    <td><a href="#">查看詳情</a></td>
+                                </tr>
+                                <tr>
+                                    <td>2025-10-20</td>
+                                    <td>台北榮民總醫院</td>
+                                    <td>門診摘要</td>
+                                    <td>主訴：頭暈、疲倦</td>
+                                    <td>已開立降血糖藥物...</td>
+                                    <td><a href="#">查看詳G</a></td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <div class="page-content" id="page-referral">
+                <h2 class="content-header">🏃 轉介個案追蹤</h2>
+                <div class="widget">
+                    <h3>待追蹤列表 (雙向通報 需求 1.(3))</h3>
+                    <table class="data-table">
+                        <thead>
+                            <tr>
+                                <th>轉介日期</th>
+                                <th>病人</th>
+                                <th>轉出/轉入</th>
+                                <th>機構 (科別)</th>
+                                <th>狀態</th>
+                                <th>待辦事項</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td>2025-10-29</td>
+                                <td>陳先生</td>
+                                <td>轉出</td>
+                                <td>臺大醫院 (心臟內科)</td>
+                                <td><span class="tag tag-pending">已轉介，待回覆</span></td>
+                                <td><a href="#">提醒就醫</a></td>
+                            </tr>
+                            <tr>
+                                <td>2025-10-27</td>
+                                <td>李小美</td>
+                                <td>轉入</td>
+                                <td>北榮 (家醫科)</td>
+                                <td><span class="tag tag-success">已完成就醫</span></td>
+                                <td><a href="#">結案</a></td>
+                            </tr>
+                            <tr>
+                                <td>2025-10-22</td>
+                                <td>張女士</td>
+                                <td>轉出</td>
+                                <td>亞東醫院 (腎臟內科)</td>
+                                <td><span class="tag tag-danger">逾期未就醫</span></td>
+                                <td><a href="#">電話追蹤</a></td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <div class="page-content" id="page-care-record">
+                <h2 class="content-header">📝 照護紀錄模組</h2>
+                <div class="widget">
+                    <div class="form-group">
+                        <label for="care-patient">選擇病人</label>
+                        <select id="care-patient">
+                            <option>王大明 (A123456789)</option>
+                            <option>李小美 (F223456789)</option>
+                            <option>陳先生 (H123456789)</option>
+                        </select>
+                    </div>
+                    <hr>
+                    <nav class="tab-nav" id="care-tab-nav">
+                        <a class="tab-link active" data-tab="tab-chronic">慢病照護紀錄</a>
+                        <a class="tab-link" data-tab="tab-metabolic">代謝照護紀錄</a>
+                        <a class="tab-link" data-tab="tab-edu">衛教資訊</a>
+                    </nav>
+
+                    <div class="tab-content active" id="tab-chronic">
+                        <h3>慢病照護紀錄 (糖尿病)</h3>
+                        <div class="form-grid">
+                            <div class="form-group">
+                                <label>收縮壓 (SBP)</label>
+                                <input type="text" value="135">
+                            </div>
+                            <div class="form-group">
+                                <label>舒張壓 (DBP)</label>
+                                <input type="text" value="85">
+                            </div>
+                            <div class="form-group">
+                                <label>空腹血糖 (AC)</label>
+                                <input type="text" value="150">
+                            </div>
+                            <div class="form-group">
+                                <label>糖化血色素 (HbA1c)</label>
+                                <input type="text" value="8.2">
+                            </div>
+                        </div>
+                        <button class="btn btn-primary">儲存紀錄</button>
+                    </div>
+                    
+                    <div class="tab-content" id="tab-metabolic">
+                        <h3>代謝照護紀錄</h3>
+                        <p>此處放置代謝症候群相關欄位...</p>
+                    </div>
+                    
+                    <div class="tab-content" id="tab-edu">
+                        <h3>衛教資訊</h3>
+                        <p>此處放置衛教紀錄與資訊...</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="page-content" id="page-patient-interaction">
+                <h2 class="content-header">📱 病人互動模組 (LINE自動提醒)</h2>
+                <div class="widget">
+                    <h3>DEMO：自動回診提醒與衛教追蹤 (需求 1.(3))</h3>
+                    <div class="line-mockup">
+                        <div class="line-mockup-header">新林診所 關懷機器人</div>
+                        <div class="chat-bubble bubble-bot">
+                            王大明 您好，提醒您 11/5 (三) 下午 14:30 應回診追蹤血糖狀況，請記得攜帶健保卡。
+                        </div>
+                        <div class="chat-bubble bubble-bot">
+                            [衛教資訊] 提醒您，天氣變冷，請注意足部保暖與保養喔！ 點此看詳情...
+                        </div>
+                        <div class="chat-bubble bubble-user">
+                            好的，謝謝提醒。
+                        </div>
+                        <div class="chat-bubble bubble-bot">
+                            很高興為您服務，祝您身體健康！
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="page-content" id="page-prescription">
+                <h2 class="content-header">🌱 健康處方模組</h2>
+                <div class="widget">
+                    <h3>提供營養、運動、減重、戒菸衛教</h3>
+                    <div class="prescription-categories">
+                        <button class="btn btn-secondary active" id="btn-nutri">🥗 營養</button>
+                        <button class="btn btn-secondary" id="btn-exercise">🏃 運動</button>
+                        <button class="btn btn-secondary" id="btn-weight">⚖️ 減重</button>
+                        <button class="btn btn-secondary" id="btn-smoke">🚭 戒菸</button>
+                    </div>
+                    <div class="prescription-content widget">
+                        <h4>🥗 營養處方 (糖尿病)</h4>
+                        <p><strong>原則：</strong>「均衡飲食」、「定時定量」、「高纖」、「低油」、「低鹽」、「控糖」。</p>
+                        <ul>
+                            <li><strong>全穀雜糧類：</strong>優先選擇高纖維的全穀類，如糙米、五穀米、燕麥。</li>
+                            <li><strong>蔬菜類：</strong>建議每日攝取 3-5 份，多選擇深色蔬菜。</li>
+                            <li><strong>水果類：</strong>每日 2 份，建議在餐與餐之間食用，避免果汁。</li>
+                        </ul>
+                        <button class="btn btn-primary">發送此衛教處方給病人</button>
+                    </div>
+                </div>
+            </div>
+
+            <div class="page-content" id="page-reports">
+                <h2 class="content-header">📊 指標報表分析</h2>
+                <div class="widget">
+                    <h3>依健保署格式自動整理照護成果報表</h3>
+                    <div class="search-bar">
+                        <div class="form-group">
+                            <label>報表類型</label>
+                            <select>
+                                <option>糖尿病照護成果</option>
+                                <option>代謝症候群管理</option>
+                                <option>群內診所比較</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label>日期區間</label>
+                            <input type="date" value="2025-10-01">
+                        </div>
+                         <div class="form-group">
+                            <label>&nbsp;</label>
+                            <input type="date" value="2025-10-31">
+                        </div>
+                        <button class="btn btn-primary">產生報表</button>
+                    </div>
+
+                    <h4>診所照護品質 (群內比較)</h4>
+                    <div style="font-family: Arial, sans-serif; margin-top: 20px;">
+                        <div style="display: flex; align-items: flex-end; height: 250px; border-bottom: 2px solid #ccc; padding: 10px; gap: 15px;">
+                            <div style="width: 50px; background: #c5cae9; text-align: center; color: #333; font-size: 0.8rem; padding-top: 5px; height: 78%;" title="群組平均: 78%">群組平均</div>
+                            <div style="width: 50px; background: var(--primary-main); text-align: center; color: white; font-size: 0.8rem; padding-top: 5px; height: 85%;" title="本診所: 85%">本診所</div>
+                            <div style="width: 50px; background: #c5cae9; text-align: center; color: #333; font-size: 0.8rem; padding-top: 5px; height: 90%;" title="診所A: 90%">診所A</div>
+                            <div style="width: 50px; background: #c5cae9; text-align: center; color: #333; font-size: 0.8rem; padding-top: 5px; height: 72%;" title="診所B: 72%">診所B</div>
+                        </div>
+                        <div style="display: flex; height: 30px; border-bottom: 2px solid #ccc; padding: 10px; gap: 15px; font-size:0.8rem; font-weight:bold;">
+                            <div style="width: 50px; text-align: center;">HbA1c&lt;7%</div>
+                            <div style="width: 50px; text-align: center;">BP&lt;130/80</div>
+                            <div style="width: 50px; text-align: center;">LDL&lt;100</div>
+                            <div style="width: 50px; text-align: center;">...</div>
+                        </div>
+                    </div>
+
+                    <table class="data-table">
+                        <thead>
+                            <tr>
+                                <th>指標項目</th>
+                                <th>本診所 (10月)</th>
+                                <th>前期 (9月)</th>
+                                <th>群組平均</th>
+                                <th>落後通知</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td>收案人數</td>
+                                <td>120</td>
+                                <td>115</td>
+                                <td>88</td>
+                                <td>-</td>
+                            </tr>
+                            <tr>
+                                <td>HbA1c < 7.0% 達成率</td>
+                                <td>75%</td>
+                                <td>72%</td>
+                                <td>78%</td>
+                                <td><span class="tag tag-pending">落後群組</span></td>
+                            </tr>
+                            <tr>
+                                <td>BP < 130/80 達成率</td>
+                                <td>82%</td>
+                                <td>80%</td>
+                                <td>81%</td>
+                                <td><span class="tag tag-success">達標</span></td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <div class="page-content" id="page-push">
+                <h2 class="content-header">📢 平台推播模組 (所有訊息)</h2>
+                <div class="widget">
+                    <h3>教育訓練通知、會議訊息提醒、政策資訊</h3>
+                    <table class="data-table">
+                        <thead>
+                            <tr>
+                                <th>日期</th>
+                                <th>類型</th>
+                                <th>來源</th>
+                                <th>主旨</th>
+                                <th>狀態</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td>2025-10-30</td>
+                                <td><span class="tag tag-meeting">會議訊息</span></td>
+                                <td>平台管理</td>
+                                <td>教育訓練：[會議] 11/15 糖尿病共照網研討會報名</td>
+                                <td><span class="tag tag-danger">未讀</span></td>
+                            </tr>
+                            <tr>
+                                <td>2025-10-29</td>
+                                <td><span class="tag tag-info">政策資訊</span></td>
+                                <td>衛福部</td>
+                                <td>接種疫苗：2025年流感疫苗接種計畫說明</td>
+                                <td><span class="tag tag-success">已讀</span></td>
+                            </tr>
+                            <tr>
+                                <td>2025-10-28</td>
+                                <td><span class="tag tag-info">政策資訊</span></td>
+                                <td>健保署</td>
+                                <td>分級醫療：轉診方案修訂說明</td>
+                                <td><span class="tag tag-success">已讀</span></td>
+                            </tr>
+                             <tr>
+                                <td>2025-10-27</td>
+                                <td><span class="tag tag-info">政策資訊</span></td>
+                                <td>疾管署</td>
+                                <td>傳染病通報：登革熱最新通報指引</td>
+                                <td><span class="tag tag-success">已讀</span></td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <div class="page-content" id="page-kb">
+                <h2 class="content-header">📚 共照知識庫</h2>
+                <div class="widget">
+                    <h3>SOP、衛教單張與範本指引、常見Q&A (需求 4)</h3>
+                    <div class="search-bar">
+                        <div class="form-group">
+                            <label for="kb-search">搜尋關鍵字</label>
+                            <input type="text" id="kb-search" placeholder="例如：糖尿病衛教單張...">
+                        </div>
+                        <button class="btn btn-primary">搜尋</button>
+                    </div>
+
+                    <div class="form-grid">
+                        <div>
+                            <h4>SOP 流程包</h4>
+                            <ul class="kb-list">
+                                <li><a href="#">新個案收案標準作業流程 (SOP)</a></li>
+                                <li><a href="#">轉診作業指引 (SOP)</a></li>
+                                <li><a href="#">個案管理師電訪SOP</a></li>
+                            </ul>
+                        </div>
+                        <div>
+                            <h4>衛教單張與範本</h4>
+                            <ul class="kb-list">
+                                <li><a href="#">[範本] 糖尿病共同照護衛教單</a></li>
+                                <li><a href="#">[範本] 高血壓飲食衛教 (DASH)</a></li>
+                                <li><a href="#">[範本] 戒菸衛教指引</a></li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="page-content" id="page-consult">
+                <h2 class="content-header">💬 線上照會區</h2>
+                <div class="widget">
+                    <h3>留言討論非急性個案之照會建議</h3>
+                    <div class="consult-layout">
+                        <div class="consult-list">
+                            <div class="consult-item active">
+                                <div class="name">黎崇冠 專員 (北榮 個管中心)</div>
+                                <div class="subject">關於 [張女士] 藥物整合建議...</div>
+                            </div>
+                            <div class="consult-item">
+                                <div class="name">林營養師 (臺大 營養科)</div>
+                                <div class="subject">關於 [黃小弟] 營養處方...</div>
+                            </div>
+                             <div class="consult-item">
+                                <div class="name">陳醫師 (亞東 心臟內科)</div>
+                                <div class="subject">[林小姐] 轉介回覆</div>
+                            </div>
+                        </div>
+                        <div class="consult-chat-area">
+                            <div class="consult-chat-log">
+                                <div class="chat-bubble bubble-bot">
+                                    王醫師您好，關於您照會的個案 [張女士]，經查閱雲端病歷，建議可將 OOO 藥物劑量調整為...
+                                </div>
+                                <div class="chat-bubble bubble-user">
+                                    黎專員您好，感謝您的建議，我會再跟病人說明。
+                                </div>
+                                 <div class="chat-bubble bubble-bot">
+                                    另外，病人下次轉回北榮的日期是 11/20，再麻煩您屆時上傳近況摘要，謝謝。
+                                </div>
+                            </div>
+                            <div class="consult-reply">
+                                <input type="text" placeholder="輸入訊息...">
+                                <button class="btn btn-primary">傳送</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+        </main>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const navLinks = document.querySelectorAll('#sidebar-nav a');
+            const pages = document.querySelectorAll('.page-content');
+            
+            // 處理側邊欄點擊事件
+            navLinks.forEach(link => {
+                link.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    
+                    const targetPageId = this.getAttribute('data-page');
+                    
+                    // 1. 更新側邊欄連結的 active 狀態
+                    navLinks.forEach(l => l.classList.remove('active'));
+                    this.classList.add('active');
+                    
+                    // 2. 切換顯示的頁面
+                    pages.forEach(page => {
+                        if (page.id === targetPageId) {
+                            page.classList.add('active');
+                        } else {
+                            page.classList.remove('active');
+                        }
+                    });
+                });
+            });
+
+            // 處理 "照護紀錄模組" 內的 Tab 切換
+            const tabLinks = document.querySelectorAll('#care-tab-nav .tab-link');
+            const tabContents = document.querySelectorAll('#page-care-record .tab-content');
+            
+            tabLinks.forEach(link => {
+                link.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    const targetTabId = this.getAttribute('data-tab');
+                    
+                    tabLinks.forEach(l => l.classList.remove('active'));
+                    this.classList.add('active');
+                    
+                    tabContents.forEach(content => {
+                        if (content.id === targetTabId) {
+                            content.classList.add('active');
+                        } else {
+                            content.classList.remove('active');
+                        }
+                    });
+                });
+            });
+        });
+    </script>
+
+</body>
+</html>
