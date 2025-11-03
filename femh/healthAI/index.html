@@ -3,86 +3,367 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>亞東醫院 智慧健康平台</title>
+    <title>亞東醫院 智慧健康平台 (三層架構展示)</title>
     <style>
-        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, "Noto Sans TC", sans-serif; margin: 0; background-color: #f4f7f6; }
-        .header { background-color: #005a9c; color: white; padding: 20px 40px; display: flex; justify-content: space-between; align-items: center; }
-        .header h1 { margin: 0; font-size: 1.5rem; }
-        .nav a { color: white; text-decoration: none; margin-left: 20px; }
-        .container { max-width: 1200px; margin: 30px auto; padding: 0 20px; }
-        .welcome { font-size: 1.8rem; font-weight: 600; margin-bottom: 20px; }
-        .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 20px; }
-        .widget { background-color: white; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.05); overflow: hidden; }
+        /* --- 基本樣式 --- */
+        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, "Noto Sans TC", sans-serif; margin: 0; background-color: #f4f7f6; display: flex; justify-content: center; align-items: center; min-height: 100vh; }
+        .container { max-width: 1200px; width: 100%; margin: 20px; }
+        .widget { background-color: white; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.05); overflow: hidden; margin-bottom: 20px; }
         .widget-header { padding: 20px; background-color: #eef7ff; border-bottom: 1px solid #ddd; }
         .widget-header h2 { margin: 0; font-size: 1.1rem; color: #005a9c; }
         .widget-content { padding: 20px; }
+        .btn { display: inline-block; background-color: #007bff; color: white; padding: 12px 20px; border: none; border-radius: 5px; text-decoration: none; font-weight: 600; text-align: center; cursor: pointer; }
+        .btn-secondary { background-color: #6c757d; }
+        .btn-nav { margin-bottom: 10px; }
+        
+        /* --- 頁面容器 (用於切換) --- */
+        .page { display: none; } /* 預設隱藏所有頁面 */
+        .page.active { display: block; } /* 只顯示活動頁面 */
+
+        /* --- 1. 登入頁 (Layer 1) --- */
+        #login-page { text-align: center; padding: 50px; background-color: white; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.1); }
+        #login-page h1 { color: #004a7c; margin-bottom: 30px; }
+        #login-page .login-options { display: flex; justify-content: center; gap: 20px; }
+        #login-page .login-box { padding: 30px; border: 1px solid #ddd; border-radius: 8px; width: 250px; cursor: pointer; transition: all 0.2s ease; }
+        #login-page .login-box:hover { box-shadow: 0 2px 8px rgba(0,0,0,0.1); border-color: #007bff; }
+        #login-page .login-box h2 { margin-top: 0; font-size: 1.3rem; }
+        
+        /* --- 2. 儀表板 (Layer 2) --- */
+        .header { background-color: #005a9c; color: white; padding: 20px 40px; display: flex; justify-content: space-between; align-items: center; border-radius: 8px 8px 0 0; }
+        .header.clinical { background-color: #004a7c; }
+        .header h1 { margin: 0; font-size: 1.5rem; }
+        .header .nav-link { color: white; text-decoration: none; margin-left: 20px; }
+        .dashboard-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 20px; padding: 20px; background: white; border-radius: 0 0 8px 8px; }
+        .clinical-grid { display: grid; grid-template-columns: 2fr 1fr; gap: 30px; padding: 20px; background: white; border-radius: 0 0 8px 8px; }
+
+        /* --- 2.1 民眾入口 --- */
         .notification-item { border-bottom: 1px solid #eee; padding: 15px 0; }
         .notification-item:last-child { border-bottom: 0; }
         .notification-item .date { font-size: 0.9rem; color: #666; }
         .notification-item .message { font-size: 1rem; font-weight: 500; }
-        .chatbot-btn { display: inline-block; background-color: #007bff; color: white; padding: 12px 20px; border-radius: 5px; text-decoration: none; font-weight: 600; margin-top: 10px; }
+        .notification-item .action-link { font-size: 0.9rem; color: #007bff; text-decoration: none; cursor: pointer; }
+
+        /* --- 2.2 臨床入口 --- */
+        table { width: 100%; border-collapse: collapse; }
+        th, td { text-align: left; padding: 12px; border-bottom: 1px solid #eee; }
+        th { background-color: #f9f9f9; }
+        .form-group { margin-bottom: 15px; }
+        .form-group label { display: block; margin-bottom: 5px; font-weight: 500; }
+        .form-group input { width: 100%; padding: 8px; border: 1px solid #ccc; border-radius: 4px; box-sizing: border-box; }
+        .prediction-result { background-color: #fff8e1; border: 1px solid #ffecb3; padding: 15px; border-radius: 5px; margin-top: 15px; text-align: center; display: none; }
+        .prediction-result .risk-high { color: #d32f2f; font-weight: bold; font-size: 1.2rem; }
+        .action-link { color: #007bff; text-decoration: none; cursor: pointer; }
+        .action-link:hover { text-decoration: underline; }
+
+        /* --- 3. 子頁面 (Layer 3) --- */
+        .sub-page-content { padding: 30px; background: white; border-radius: 8px; }
+        .sub-page-content h1 { color: #004a7c; margin-top: 0; }
+        .sub-page-content h3 { color: #005a9c; border-bottom: 2px solid #eef7ff; padding-bottom: 5px; }
+        .sub-page-content p { line-height: 1.6; }
+
     </style>
 </head>
 <body>
 
-    <header class="header">
-        <h1>亞東醫院 智慧健康平台</h1>
-        <nav class="nav">
-            <a href="#">我的儀表板</a>
-            <a href="#">健康存摺</a>
-            <a href="#">衛教資訊</a>
-            <a href="#">[民眾姓名]，登出</a>
-        </nav>
-    </header>
+    <div class="container">
 
-    <main class="container">
-        <div class="welcome">您好，王曉明 先生</div>
-        
-        <div class="grid">
-            <section class="widget">
-                <div class="widget-header">
-                    <h2>疫苗接種提醒</h2>
+        <div id="login-page" class="page active">
+            <h1>亞東醫院 智慧健康平台</h1>
+            <div class="login-options">
+                <div class="login-box" onclick="navigateTo('public-portal')">
+                    <h2>民眾入口</h2>
+                    <p>查看個人化健康提醒、疫苗接種紀錄與健檢建議。</p>
                 </div>
-                <div class="widget-content">
-                    <div class="notification-item">
-                        <div class="date">應接種日期: 2025-11-15</div>
-                        <div class="message">您家中的孩童 [王小弟] 應接種「公費流感疫苗 (第1劑)」。</div>
-                        </div>
-                    <div class="notification-item">
-                        <div class="date">應接種日期: 2025-12-01</div>
-                        <div class="message">提醒您，您的「帶狀皰疹疫苗 (自費)」第 2 劑已可施打。</div>
-                    </div>
+                <div class="login-box" onclick="navigateTo('clinical-portal')">
+                    <h2>臨床人員入口</h2>
+                    <p>進行個案管理、使用 AI 風險預測模型。</p>
                 </div>
-            </section>
-
-            <section class="widget">
-                <div class="widget-header">
-                    <h2>健康篩檢建議</h2>
-                </div>
-                <div class="widget-content">
-                    <div class="notification-item">
-                        <div class="date">依據 USPSTF 指引</div>
-                        <div class="message">根據您的年齡 (52歲)，建議您應定期進行「大腸癌篩檢」。</div>
-                    </div>
-                    <div class="notification-item">
-                        <div class="date">依據 國民健康署</div>
-                        <div class="message">您今年尚未進行「成人健康檢查」，建議您盡快安排。</div>
-                    </div>
-                </div>
-            </section>
-            
-            <section class="widget">
-                <div class="widget-header">
-                    <h2>您的專屬健康管家</h2>
-                </div>
-                <div class="widget-content">
-                    <p>所有個人化的健康提醒，都會同步推送到您的「亞東 AI Chatbot」中。</p>
-                    <p>有任何健康問題嗎？</p>
-                    <a href="#" class="chatbot-btn">立即詢問 AI Chatbot</a>
-                </div>
-            </section>
+            </div>
         </div>
-    </main>
+
+        <div id="public-portal" class="page">
+            <header class="header">
+                <h1>智慧健康平台</h1>
+                <nav>
+                    <span style="opacity: 0.8;">[王曉明 先生]</span>
+                    <a href="#" class="nav-link" onclick="navigateTo('login-page')">登出</a>
+                </nav>
+            </header>
+
+            <div class="dashboard-grid">
+                <section class="widget">
+                    <div class="widget-header"><h2>疫苗接種提醒</h2></div>
+                    <div class="widget-content">
+                        <div class="notification-item">
+                            <div class="date">應接種日期: 2025-11-15</div>
+                            <div class="message">您家中的孩童 [王小弟] 應接種「公費流感疫苗 (第1劑)」。</div>
+                            <span class="action-link" onclick="navigateTo('public-vaccine-details', { title: '公費流感疫苗 (第1劑)', patient: '王小弟' })">
+                                &raquo; 查看疫苗詳情
+                            </span>
+                        </div>
+                        <div class="notification-item">
+                            <div class="date">應接種日期: 2025-12-01</div>
+                            <div class="message">提醒您，您的「帶狀皰疹疫苗 (自費)」第 2 劑已可施打。</div>
+                            <span class="action-link" onclick="navigateTo('public-vaccine-details', { title: '帶狀皰疹疫苗 (自費)', patient: '王曉明' })">
+                                &raquo; 查看疫苗詳情
+                            </span>
+                        </div>
+                    </div>
+                </section>
+
+                <section class="widget">
+                    <div class="widget-header"><h2>健康篩檢建議 (癌篩)</h2></div>
+                    <div class="widget-content">
+                        <div class="notification-item">
+                            <div class="date">依據 USPSTF 指引</div>
+                            <div class="message">根據您的年齡 (52歲)，建議您應定期進行「大腸癌篩檢」。</div>
+                        </div>
+                    </div>
+                </section>
+                
+                <section class="widget">
+                    <div class="widget-header"><h2>您的專屬健康管家</h2></div>
+                    <div class="widget-content">
+                        <p>所有個人化的健康提醒，都會同步推送到您的「亞東 AI Chatbot」中。</p>
+                        <a href="#" class="btn">立即詢問 AI Chatbot</a>
+                    </div>
+                </section>
+            </div>
+        </div>
+
+        <div id="clinical-portal" class="page">
+            <header class="header clinical">
+                <h1>臨床決策輔助平台</h1>
+                <nav>
+                    <span style="opacity: 0.8;">[陳醫師]</span>
+                    <a href="#" class="nav-link" onclick="navigateTo('login-page')">登出 (MFA)</a>
+                </nav>
+            </header>
+
+            <div class="clinical-grid">
+                <main>
+                    <section class="widget">
+                        <div class="widget-header"><h2>代謝症候群高風險個案</h2></div>
+                        <div class="widget-content">
+                            <table>
+                                <thead>
+                                    <tr>
+                                        <th>病歷號</th>
+                                        <th>姓名</th>
+                                        <th>腰圍</th>
+                                        <th>血壓</th>
+                                        <th>空腹血糖</th>
+                                        <th>操作</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr>
+                                        <td>123456</td>
+                                        <td>林大明</td>
+                                        <td style="color: red;">95 cm</td>
+                                        <td style="color: red;">140/90</td>
+                                        <td>105 mg/dL</td>
+                                        <td><span class="action-link" onclick="navigateTo('clinical-patient-management', { patientName: '林大明', patientId: '123456' })">納入管理</span></td>
+                                    </tr>
+                                    <tr>
+                                        <td>789012</td>
+                                        <td>陳淑芬</td>
+                                        <td>88 cm</td>
+                                        <td>130/85</td>
+                                        <td style="color: red;">110 mg/dL</td>
+                                        <td><span class="action-link" onclick="navigateTo('clinical-patient-management', { patientName: '陳淑芬', patientId: '789012' })">納入管理</span></td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </section>
+                </main>
+                
+                <aside>
+                    <section class="widget">
+                        <div class="widget-header"><h2>長者健康風險 AI 預測</h2></div>
+                        <div class="widget-content">
+                            <form id="sarcopenia-form">
+                                <h3>肌少症 (Sarcopenia) 風險</h3>
+                                <div class="form-group">
+                                    <label for="patient-id">查詢病患 (病歷號)</label>
+                                    <input type="text" id="patient-id" value="123456">
+                                </div>
+                                <div class="form-group">
+                                    <label for="grip-strength">握力 (kg)</label>
+                                    <input type="text" id="grip-strength" value="25">
+                                </div>
+                                <button type="submit" class="btn">開始預測</button>
+                                
+                                <div class="prediction-result" id="sarcopenia-result">
+                                    <div>罹病機率: <span id="risk-prob"></span></div>
+                                    <div class="risk-high" id="risk-level"></div>
+                                </div>
+                            </form>
+                            <hr style="margin: 20px 0; border: 0; border-top: 1px solid #eee;">
+                            <span class="action-link" onclick="navigateTo('clinical-ai-details')">&raquo; 查看 AI 模型詳細規格</span>
+                        </div>
+                    </section>
+                </aside>
+            </div>
+        </div>
+
+        <div id="public-vaccine-details" class="page">
+            <div class="sub-page-content">
+                <button class="btn btn-secondary btn-nav" onclick="navigateTo('public-portal')">&laquo; 返回儀表板</button>
+                <h1 id="vaccine-title">疫苗詳情</h1>
+                <p><strong>接種對象:</strong> <span id="vaccine-patient"></span></p>
+                <h3>疫苗介紹</h3>
+                <p>（此處放置該疫苗的詳細衛教資訊，例如公費流感疫苗的適用對象、接種時程、可能的副作用等...）</p>
+                <h3>接種時程</h3>
+                <p>（根據需求規格書 4.1.1，系統應依據國家主管機關公告之時程與相關規則，計算下一劑應接種日期、補接種日期。）</p>
+                <ul>
+                    <li><strong>應接種日期:</strong> <span id="vaccine-date"></span></li>
+                    <li><strong>狀態:</strong> 尚未接種</li>
+                </ul>
+                <a href="#" class="btn">預約掛號接種</a>
+            </div>
+        </div>
+
+        <div id="clinical-patient-management" class="page">
+            <div class="sub-page-content">
+                <button class="btn btn-secondary btn-nav" onclick="navigateTo('clinical-portal')">&laquo; 返回儀表板</button>
+                <h1 id="patient-name">個案管理計畫</h1>
+                <p><strong>病歷號:</strong> <span id="patient-id-display"></span></p>
+                
+                <h3>風險因子</h3>
+                <p>（此處顯示從 EMR 抓取的個案數據，對應需求規格書 4.1.3-1）</p>
+                <ul>
+                    <li>腰圍: 95 cm (高)</li>
+                    <li>血壓: 140/90 mmHg (高)</li>
+                    <li>空腹血糖: 105 mg/dL (偏高)</li>
+                    <li>三酸甘油酯: 160 mg/dL (高)</li>
+                    <li>高密度脂蛋白: 35 mg/dL (低)</li>
+                </ul>
+                
+                <h3>管理計畫</h3>
+                <p>（此處預留介面，對應需求規格書 4.1.3-2，未來可與 AI 營養/運動處方系統對接）</p>
+                <form>
+                    <div class="form-group">
+                        <label>營養處方建議 (未來擴充)</label>
+                        <textarea disabled>（AI 營養處方...）</textarea>
+                    </div>
+                    <div class="form-group">
+                        <label>運動處方建議 (未來擴充)</label>
+                        <textarea disabled>（AI 運動處方...）</textarea>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <div id="clinical-ai-details" class="page">
+            <div class="sub-page-content">
+                <button class="btn btn-secondary btn-nav" onclick="navigateTo('clinical-portal')">&laquo; 返回儀表板</button>
+                <h1>AI 預測模型規格書 (肌少症)</h1>
+                <p>（此頁面內容對應需求規格書 4.2.1 驗收標準）</p>
+                
+                <h3>模型演算法</h3>
+                <p>（驗收標準 4.2.1-1: 開發並比較至少三種機器學習演算法）</p>
+                <ul>
+                    <li>已評估: 羅吉斯迴歸 (Logistic Regression), 隨機森林 (Random Forest), XGBoost</li>
+                    <li><strong>最終選定: XGBoost</strong></li>
+                </ul>
+
+                <h3>模型效能</h3>
+                <p>（驗收標準 4.2.1-2: 採用交叉驗證，評估指標包含 AUC 等）</p>
+                <table>
+                    <thead><tr><th>評估指標</th><th>交叉驗證 (CV) 平均值</th></tr></thead>
+                    <tbody>
+                        <tr><td>AUC (Area Under Curve)</td><td>0.88</td></tr>
+                        <tr><td>準確率 (Accuracy)</td><td>85.2%</td></tr>
+                        <tr><td>敏感度 (Sensitivity)</td><td>0.82</td></tr>
+                        <tr><td>特異度 (Specificity)</td><td>0.87</td></tr>
+                        <tr><td>F1 分數 (F1 Score)</td><td>0.84</td></tr>
+                    </tbody>
+                </table>
+
+                <h3>特徵工程</h3>
+                <p>（此處應詳述模型所使用之特徵，對應需求規格書 3.2 里程碑 2.8）</p>
+            </div>
+        </div>
+
+    </div> <script>
+        // --- 頁面導航邏輯 ---
+        
+        // 儲存所有頁面的 ID
+        const pageIds = [
+            'login-page', 
+            'public-portal', 
+            'clinical-portal', 
+            'public-vaccine-details', 
+            'clinical-patient-management',
+            'clinical-ai-details'
+        ];
+
+        /**
+         * 導航到指定 ID 的頁面，並可選擇性地傳入參數
+         * @param {string} targetPageId - 目標頁面的 ID
+         * @param {object} [params] - 傳遞給子頁面的參數
+         */
+        function navigateTo(targetPageId, params) {
+            // 隱藏所有頁面
+            pageIds.forEach(id => {
+                const page = document.getElementById(id);
+                if (page) page.classList.remove('active');
+            });
+            
+            // 顯示目標頁面
+            const targetPage = document.getElementById(targetPageId);
+            if (targetPage) {
+                targetPage.classList.add('active');
+                
+                // 如果有傳入參數，則更新子頁面的內容
+                if (params) {
+                    updateSubPageContent(targetPageId, params);
+                }
+            }
+            
+            // 每次換頁時都滾動到頁面頂部
+            window.scrollTo(0, 0);
+        }
+
+        /**
+         * 根據傳入的參數更新子頁面的動態內容
+         * @param {string} pageId - 子頁面的 ID
+         * @param {object} params - 參數物件
+         */
+        function updateSubPageContent(pageId, params) {
+            if (pageId === 'public-vaccine-details' && params) {
+                document.getElementById('vaccine-title').textContent = params.title || '疫苗詳情';
+                document.getElementById('vaccine-patient').textContent = params.patient || 'N/A';
+                document.getElementById('vaccine-date').textContent = (params.title.includes('流感')) ? '2025-11-15' : '2025-12-01';
+            }
+            
+            if (pageId === 'clinical-patient-management' && params) {
+                document.getElementById('patient-name').textContent = `個案管理計畫: ${params.patientName}` || '個案管理計畫';
+                document.getElementById('patient-id-display').textContent = params.patientId || 'N/A';
+            }
+        }
+
+        // --- 臨床入口: AI 預測模擬 ---
+        document.getElementById('sarcopenia-form').addEventListener('submit', function(e) {
+            e.preventDefault();
+            
+            // 模擬呼叫 API 並取得回傳值 (對應 4.1.4-2)
+            const prob = (Math.random() * 0.4 + 0.5).toFixed(2); // 模擬 50%~90% 的機率
+            const resultBox = document.getElementById('sarcopenia-result');
+            
+            // 顯示預測結果 (對應 4.2.1-2: 輸出機率及分級)
+            document.getElementById('risk-prob').textContent = `${(prob * 100).toFixed(0)} %`;
+            document.getElementById('risk-level').textContent = (prob > 0.7) ? '高風險' : '中度風險';
+            resultBox.style.display = 'block';
+        });
+
+        // --- 初始載入 ---
+        // 預設顯示登入頁面 (雖然 CSS 已經處理了，但 JS 再次確保)
+        navigateTo('login-page');
+
+    </script>
 
 </body>
 </html>
