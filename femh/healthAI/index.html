@@ -27,7 +27,7 @@ body {
 
 /* --- 登入頁面樣式 --- */
 .login-container {
-    max-width: 800px;
+    max-width: 1000px; /* 增加寬度以容納三張卡片 */
     margin: 5vh auto;
     padding: 40px;
     text-align: center;
@@ -35,7 +35,7 @@ body {
 .portal-header.logo { margin-bottom: 20px; }
 .portal-header h1 { font-size: 2.5rem; margin-bottom: 10px; }
 .portal-header p { font-size: 1.1rem; color: #6c757d; }
-.login-options { display: flex; justify-content: center; gap: 30px; margin-top: 40px; }
+.login-options { display: flex; justify-content: center; gap: 30px; margin-top: 40px; flex-wrap: wrap; }
 .login-card {
     width: 300px;
     padding: 30px;
@@ -67,6 +67,10 @@ body {
 .btn-link { background: none; color: var(--primary-color); padding: 0; font-weight: 700; }
 .btn-link-disabled { background: none; color: #adb5bd; padding: 0; font-weight: 700; cursor: not-allowed; }
 .btn-back { background: none; border: 1px solid var(--border-color); padding: 5px 10px; border-radius: 20px; cursor: pointer; }
+.btn-danger { background-color: #dc3545; color: white; }
+.btn-danger:hover { background-color: #c82333; }
+.btn-success { background-color: #28a745; color: white; }
+.btn-success:hover { background-color: #218838; }
 
 /* --- Portal 容器與導覽列 --- */
 .portal-container { max-width: 1200px; margin: 0 auto; }
@@ -134,9 +138,10 @@ body {
 .recommendation-card h4 { margin-top: 0; }
 .recommendation-card p { margin-bottom: 5px; }
 
-.patient-table { width: 100%; border-collapse: collapse; }
-.patient-table th,.patient-table td { padding: 12px; text-align: left; border-bottom: 1px solid var(--border-color); }
-.patient-table th { background-color: #f8f9fa; }
+.patient-table, .data-table { width: 100%; border-collapse: collapse; }
+.patient-table th,.patient-table td,
+.data-table th, .data-table td { padding: 12px; text-align: left; border-bottom: 1px solid var(--border-color); }
+.patient-table th, .data-table th { background-color: #f8f9fa; }
 .risk-high { color: #dc3545; font-weight: 700; }
 .btn-sm { padding: 5px 10px; font-size: 0.9rem; }
 .btn-sm-disabled { padding: 5px 10px; font-size: 0.9rem; background-color: #e9ecef; color: #6c757d; cursor: not-allowed; border: 1px solid #ced4da; border-radius: 5px; }
@@ -158,6 +163,34 @@ body {
 .result-metric.metric-value { font-size: 2.5rem; font-weight: 700; display: block; }
 .result-metric.metric-label { color: #6c757d; }
 .risk-medium { color: #fd7e14; }
+
+/* --- 補全的管理員後台樣式 --- */
+.status-active { color: #28a745; font-weight: 700; }
+.status-inactive { color: #6c757d; }
+
+.api-card {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 20px;
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    margin-bottom: 15px;
+    background-color: var(--widget-bg);
+}
+.api-info h4 { margin: 0 0 5px 0; }
+.api-info p { margin: 0; color: #6c757d; }
+.api-status { display: flex; align-items: center; gap: 10px; font-weight: 700; }
+.status-indicator {
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+}
+.status-indicator.status-connected { background-color: #28a745; box-shadow: 0 0 8px rgba(40, 167, 69, 0.7); }
+.status-indicator.status-error { background-color: #dc3545; box-shadow: 0 0 8px rgba(220, 53, 69, 0.7); }
+.api-status .status-connected { color: #28a745; }
+.api-status .status-error { color: #dc3545; }
+
     </style>
 </head>
 <body>
@@ -165,7 +198,7 @@ body {
     <main id="login-portal" class="page">
         <div class="login-container">
             <header class="portal-header">
-                <img src="https://via.placeholder.com/150x50?text=Hospital+Logo" alt="醫院標誌" class="logo">
+                <img src="fetlogo.png" alt="醫院標誌" class="logo">
                 <h1>整合性疾病風險預測平台</h1>
                 <p>以預防醫學為導向的新世代智慧醫療服務</p>
             </header>
@@ -179,6 +212,11 @@ body {
                     <h2>臨床入口</h2>
                     <p>管理高風險個案、使用AI決策輔助工具。</p>
                     <button class="btn btn-secondary">登入</button>
+                </div>
+                <div class="login-card" id="login-admin">
+                    <h2>管理員入口</h2>
+                    <p>管理使用者權限與監控系統服務。</p>
+                    <button class="btn">登入</button>
                 </div>
             </div>
         </div>
@@ -405,138 +443,136 @@ body {
                 </div>
             </div>
         </section>
-
-<section id="admin-dashboard" class="page dashboard" data-page="admin-dashboard">
-    <header class="dashboard-header">
-        <h2>系統管理員，您好！</h2>
-        <p>管理平台使用者權限與監控系統介接服務狀態。</p>
-    </header>
-    <div class="widget-grid">
-        <div class="widget">
-            <h3>使用者管理</h3>
-            <p>管理臨床人員與系統管理員的帳號及權限。</p>
-            <button class="btn btn-link" onclick="showSubPage('user-management-details')">進入使用者管理 &rarr;</button>
-        </div>
-        <div class="widget">
-            <h3>API 介接管理</h3>
-            <p>監控與外部系統的 API 連線狀態與健康度。</p>
-            <button class="btn btn-link" onclick="showSubPage('api-management-details')">查看 API 狀態 &rarr;</button>
-        </div>
-    </div>
-</section>
-
-<section id="user-management-details" class="page sub-page hidden" data-page="user-management-details">
-    <header class="subpage-header">
-        <button class="btn-back" onclick="showDashboard('admin-dashboard')">&larr; 返回儀表板</button>
-        <h2>使用者管理</h2>
-    </header>
-    <div class="content-container">
-        <table class="data-table">
-            <thead>
-                <tr>
-                    <th>使用者 ID</th>
-                    <th>姓名</th>
-                    <th>角色</th>
-                    <th>狀態</th>
-                    <th>操作</th>
-                </tr>
-            </thead>
-            <tbody>
-                <tr>
-                    <td>dr_lin</td>
-                    <td>林醫師</td>
-                    <td>臨床人員</td>
-                    <td><span class="status-active">啟用</span></td>
-                    <td><button class="btn btn-sm">編輯權限</button> <button class="btn btn-sm btn-danger">停用</button></td>
-                </tr>
-                <tr>
-                    <td>nurse_chen</td>
-                    <td>陳個管師</td>
-                    <td>臨床人員</td>
-                    <td><span class="status-active">啟用</span></td>
-                    <td><button class="btn btn-sm">編輯權限</button> <button class="btn btn-sm btn-danger">停用</button></td>
-                </tr>
-                <tr>
-                    <td>sys_admin</td>
-                    <td>系統管理員</td>
-                    <td>管理員</td>
-                    <td><span class="status-active">啟用</span></td>
-                    <td><button class="btn btn-sm">編輯權限</button> <button class="btn btn-sm btn-danger" disabled>停用</button></td>
-                </tr>
-                 <tr>
-                    <td>dr_wang</td>
-                    <td>王醫師</td>
-                    <td>臨床人員</td>
-                    <td><span class="status-inactive">停用</span></td>
-                    <td><button class="btn btn-sm">編輯權限</button> <button class="btn btn-sm btn-success">啟用</button></td>
-                </tr>
-            </tbody>
-        </table>
-    </div>
-</section>
-
-<section id="api-management-details" class="page sub-page hidden" data-page="api-management-details">
-    <header class="subpage-header">
-        <button class="btn-back" onclick="showDashboard('admin-dashboard')">&larr; 返回儀表板</button>
-        <h2>API 介接狀態監控</h2>
-    </header>
-    <div class="content-container">
-        <div class="api-card">
-            <div class="api-info">
-                <h4>院內 HIS 系統介接</h4>
-                <p>提供病患基本資料與臨床數據</p>
-            </div>
-            <div class="api-status">
-                <span class="status-indicator status-connected"></span>
-                <span>正常連線</span>
-            </div>
-        </div>
-        <div class="api-card">
-            <div class="api-info">
-                <h4>國健署風險預測模組 (肌少症)</h4>
-                <p>院內 AI 模型 API 服務</p>
-            </div>
-            <div class="api-status">
-                <span class="status-indicator status-connected"></span>
-                <span>正常連線</span>
-            </div>
-        </div>
-        <div class="api-card">
-            <div class="api-info">
-                <h4>USPSTF 指引資料庫 API</h4>
-                <p>獲取國際最新預防醫學篩檢建議</p>
-            </div>
-            <div class="api-status">
-                <span class="status-indicator status-connected"></span>
-                <span>正常連線</span>
-            </div>
-        </div>
-        <div class="api-card">
-            <div class="api-info">
-                <h4>亞東 Chatbot 推播 API</h4>
-                <p>向民眾發送個人化健康提醒</p>
-            </div>
-            <div class="api-status">
-                <span class="status-indicator status-error"></span>
-                <span>連線異常</span>
-            </div>
-        </div>
-    </div>
-</section>
-
-
-        
     </div>
 
-    <script>
+    <div id="admin-portal-container" class="portal-container hidden">
+        <section id="admin-dashboard" class="page dashboard" data-page="admin-dashboard">
+            <header class="dashboard-header">
+                <h2>系統管理員，您好！</h2>
+                <p>管理平台使用者權限與監控系統介接服務狀態。</p>
+            </header>
+            <div class="widget-grid">
+                <div class="widget">
+                    <h3>使用者管理</h3>
+                    <p>管理臨床人員與系統管理員的帳號及權限。</p>
+                    <button class="btn btn-link" onclick="showSubPage('user-management-details')">進入使用者管理 &rarr;</button>
+                </div>
+                <div class="widget">
+                    <h3>API 介接管理</h3>
+                    <p>監控與外部系統的 API 連線狀態與健康度。</p>
+                    <button class="btn btn-link" onclick="showSubPage('api-management-details')">查看 API 狀態 &rarr;</button>
+                </div>
+            </div>
+        </section>
+
+        <section id="user-management-details" class="page sub-page hidden" data-page="user-management-details">
+            <header class="subpage-header">
+                <button class="btn-back" onclick="showDashboard('admin-dashboard')">&larr; 返回儀表板</button>
+                <h2>使用者管理</h2>
+            </header>
+            <div class="content-container">
+                <table class="data-table">
+                    <thead>
+                        <tr>
+                            <th>使用者 ID</th>
+                            <th>姓名</th>
+                            <th>角色</th>
+                            <th>狀態</th>
+                            <th>操作</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>dr_lin</td>
+                            <td>林醫師</td>
+                            <td>臨床人員</td>
+                            <td><span class="status-active">啟用</span></td>
+                            <td><button class="btn btn-sm">編輯權限</button> <button class="btn btn-sm btn-danger">停用</button></td>
+                        </tr>
+                        <tr>
+                            <td>nurse_chen</td>
+                            <td>陳個管師</td>
+                            <td>臨床人員</td>
+                            <td><span class="status-active">啟用</span></td>
+                            <td><button class="btn btn-sm">編輯權限</button> <button class="btn btn-sm btn-danger">停用</button></td>
+                        </tr>
+                        <tr>
+                            <td>sys_admin</td>
+                            <td>系統管理員</td>
+                            <td>管理員</td>
+                            <td><span class="status-active">啟用</span></td>
+                            <td><button class="btn btn-sm">編輯權限</button> <button class="btn btn-sm btn-danger" disabled>停用</button></td>
+                        </tr>
+                        <tr>
+                            <td>dr_wang</td>
+                            <td>王醫師</td>
+                            <td>臨床人員</td>
+                            <td><span class="status-inactive">停用</span></td>
+                            <td><button class="btn btn-sm">編輯權限</button> <button class="btn btn-sm btn-success">啟用</button></td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </section>
+
+        <section id="api-management-details" class="page sub-page hidden" data-page="api-management-details">
+            <header class="subpage-header">
+                <button class="btn-back" onclick="showDashboard('admin-dashboard')">&larr; 返回儀表板</button>
+                <h2>API 介接狀態監控</h2>
+            </header>
+            <div class="content-container">
+                <div class="api-card">
+                    <div class="api-info">
+                        <h4>院內 HIS 系統介接</h4>
+                        <p>提供病患基本資料與臨床數據</p>
+                    </div>
+                    <div class="api-status">
+                        <span class="status-indicator status-connected"></span>
+                        <span class="status-connected">正常連線</span>
+                    </div>
+                </div>
+                <div class="api-card">
+                    <div class="api-info">
+                        <h4>國健署風險預測模組 (肌少症)</h4>
+                        <p>院內 AI 模型 API 服務</p>
+                    </div>
+                    <div class="api-status">
+                        <span class="status-indicator status-connected"></span>
+                        <span class="status-connected">正常連線</span>
+                    </div>
+                </div>
+                <div class="api-card">
+                    <div class="api-info">
+                        <h4>USPSTF 指引資料庫 API</h4>
+                        <p>獲取國際最新預防醫學篩檢建議</p>
+                    </div>
+                    <div class="api-status">
+                        <span class="status-indicator status-connected"></span>
+                        <span class="status-connected">正常連線</span>
+                    </div>
+                </div>
+                <div class="api-card">
+                    <div class="api-info">
+                        <h4>亞東 Chatbot 推播 API</h4>
+                        <p>向民眾發送個人化健康提醒</p>
+                    </div>
+                    <div class="api-status">
+                        <span class="status-indicator status-error"></span>
+                        <span class="status-error">連線異常</span>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </div> <script>
    document.addEventListener('DOMContentLoaded', () => {
     // 全域狀態變數
-    let currentUserRole = null; // 'public' or 'clinical'
+    let currentUserRole = null; // 'public', 'clinical', or 'admin'
 
     // DOM 元素參考
     const loginPortal = document.getElementById('login-portal');
     const publicPortalContainer = document.getElementById('public-portal-container');
     const clinicalPortalContainer = document.getElementById('clinical-portal-container');
+    const adminPortalContainer = document.getElementById('admin-portal-container'); // 
     const allPages = document.querySelectorAll('[data-page]');
 
     // ====================================================
@@ -562,15 +598,23 @@ body {
             loginPortal.classList.add('hidden');
             publicPortalContainer.classList.remove('hidden');
             clinicalPortalContainer.classList.add('hidden');
+            if(adminPortalContainer) adminPortalContainer.classList.add('hidden'); // 
         } else if (currentUserRole === 'clinical') {
             loginPortal.classList.add('hidden');
             publicPortalContainer.classList.add('hidden');
             clinicalPortalContainer.classList.remove('hidden');
+            if(adminPortalContainer) adminPortalContainer.classList.add('hidden'); // 
+        } else if (currentUserRole === 'admin') { // 
+            loginPortal.classList.add('hidden');
+            publicPortalContainer.classList.add('hidden');
+            clinicalPortalContainer.classList.add('hidden');
+            if(adminPortalContainer) adminPortalContainer.classList.remove('hidden'); // 
         } else {
             // 登出狀態
             loginPortal.classList.remove('hidden');
             publicPortalContainer.classList.add('hidden');
             clinicalPortalContainer.classList.add('hidden');
+            if(adminPortalContainer) adminPortalContainer.classList.add('hidden'); // 
         }
     }
 
@@ -591,12 +635,19 @@ body {
     }
 
     // ====================================================
-    // 登入/登出邏輯
+    // D7A/D7A邏輯
     // ====================================================
 
     function login(role) {
         currentUserRole = role;
-        const dashboardId = role === 'public'? 'public-dashboard' : 'clinical-dashboard';
+        let dashboardId;
+        if (role === 'public') {
+            dashboardId = 'public-dashboard';
+        } else if (role === 'clinical') {
+            dashboardId = 'clinical-dashboard';
+        } else if (role === 'admin') {
+            dashboardId = 'admin-dashboard';
+        }
         showPage(dashboardId);
     }
 
@@ -612,10 +663,13 @@ body {
     // 登入按鈕
     document.getElementById('login-public').addEventListener('click', () => login('public'));
     document.getElementById('login-clinical').addEventListener('click', () => login('clinical'));
+    document.getElementById('login-admin').addEventListener('click', () => login('admin')); // 
 
     // 登出按鈕
     document.getElementById('logout-public').addEventListener('click', logout);
     document.getElementById('logout-clinical').addEventListener('click', logout);
+    // 如果您為管理員後台加上了登出按鈕 (如上方註解所示)，記得也要綁定：
+    // document.getElementById('logout-admin').addEventListener('click', logout);
 
     // 肌少症 AI 模型表單提交模擬
     const sarcopeniaForm = document.getElementById('sarcopenia-form');
