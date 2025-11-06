@@ -1,0 +1,207 @@
+
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>訪視路徑規劃</title>
+     <link rel="shortcut icon" href="feticon.ico">
+    
+    <style>
+        /* 基本樣式 */
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+            background-color: #f4f7f6;
+            margin: 0;
+            padding: 20px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+        }
+
+        /* 容器樣式 */
+        .container {
+            background-color: #ffffff;
+            padding: 30px;
+            border-radius: 12px;
+            box-shadow: 0 6px 15px rgba(0, 0, 0, 0.08);
+            width: 100%;
+            max-width: 600px;
+        }
+
+        /* 標題 */
+        h1 {
+            text-align: center;
+            color: #333;
+            margin-top: 0;
+            margin-bottom: 25px;
+        }
+
+        /* 輸入框群組 */
+        .input-group {
+            margin-bottom: 20px;
+        }
+
+        .input-group label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 600;
+            color: #555;
+        }
+
+        /* 輸入框樣式 */
+        input[type="text"] {
+            width: 100%;
+            padding: 12px;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            box-sizing: border-box; /* 確保 padding 不會影響寬度 */
+            font-size: 16px;
+        }
+
+        /* "到達點" 的標題 */
+        h3 {
+            margin-top: 25px;
+            margin-bottom: 10px;
+            color: #444;
+            border-bottom: 2px solid #eee;
+            padding-bottom: 5px;
+        }
+
+        /* 到達點列表 */
+        #destinationsList {
+            display: flex;
+            flex-direction: column;
+            gap: 10px; /* 每個輸入框之間的間距 */
+        }
+
+        /* 按鈕基本樣式 */
+        button {
+            padding: 12px 20px;
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: background-color 0.3s ease, box-shadow 0.3s ease;
+        }
+
+        /* 新增地點按鈕 */
+        #addDestination {
+            background-color: #e0eafc;
+            color: #3b82f6;
+            margin-top: 10px;
+        }
+
+        #addDestination:hover {
+            background-color: #d1e0ff;
+        }
+
+        /* 規劃路徑主按鈕 */
+        #planRoute {
+            background-color: #10b981;
+            color: white;
+            width: 100%;
+            margin-top: 25px;
+            padding: 15px;
+            font-size: 18px;
+        }
+
+        #planRoute:hover {
+            background-color: #059669;
+            box-shadow: 0 4px 10px rgba(16, 185, 129, 0.3);
+        }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <h1>訪視路徑規劃最佳化</h1>
+
+        <div class="input-group">
+            <label for="startPoint">📍 起始點地址</label>
+            <input type="text" id="startPoint" placeholder="例如：台北市信義區市府路1號 (台北101)">
+        </div>
+
+        <h3>🏁 到達點地址</h3>
+        <div id="destinationsList">
+            <input type="text" class="destination" placeholder="例如：台北市士林區至善路二段221號 (故宮博物院)">
+        </div>
+        <button id="addDestination">+ 新增到達點</button>
+
+        <button id="planRoute">規劃路徑並開啟 Google 地圖</button>
+    </div>
+
+    <script>
+        // 等待 HTML 內容完全載入後再執行 JavaScript
+        document.addEventListener('DOMContentLoaded', () => {
+
+            // 獲取 "新增到達點" 按鈕
+            const addDestButton = document.getElementById('addDestination');
+            
+            // 獲取 "到達點列表" 的容器
+            const destinationsList = document.getElementById('destinationsList');
+
+            // 獲取 "規劃路徑" 按鈕
+            const planRouteButton = document.getElementById('planRoute');
+
+            // 監聽 "新增到達點" 按鈕點擊事件
+            addDestButton.addEventListener('click', () => {
+                // 建立一個新的 input 元素
+                const newInput = document.createElement('input');
+                newInput.type = 'text';
+                newInput.className = 'destination'; // 賦予 class 方便選取
+                newInput.placeholder = '請輸入下一個地址';
+                
+                // 將新 input 欄位加到列表中
+                destinationsList.appendChild(newInput);
+            });
+
+            // 監聽 "規劃路徑" 按鈕點擊事件
+            planRouteButton.addEventListener('click', () => {
+                // 1. 獲取起始點地址
+                const startPoint = document.getElementById('startPoint').value.trim();
+
+                // 2. 檢查起始點是否為空
+                if (startPoint === '') {
+                    alert('請務必輸入「起始點」地址！');
+                    return; // 中斷執行
+                }
+
+                // 3. 獲取所有到達點地址
+                const destinationInputs = document.querySelectorAll('.destination');
+                const destinations = [];
+                
+                destinationInputs.forEach(input => {
+                    const address = input.value.trim();
+                    if (address !== '') {
+                        destinations.push(address); // 只將有填寫的地址加入
+                    }
+                });
+
+                // 4. 檢查是否至少有一個到達點
+                if (destinations.length === 0) {
+                    alert('請至少輸入一個「到達點」地址！');
+                    return; // 中斷執行
+                }
+
+                // 5. 建立 Google Maps 導航網址
+                // 格式：https://www.google.com/maps/dir/起點/中途點1/中途點2/.../最終點
+                const baseUrl = 'https://www.google.com/maps/dir/';
+                
+                // 將所有地址轉換為 URL 編碼
+                const encodedStart = encodeURIComponent(startPoint);
+                const encodedDestinations = destinations.map(dest => encodeURIComponent(dest)).join('/');
+
+                // 組合最終網址
+                const finalUrl = `${baseUrl}${encodedStart}/${encodedDestinations}`;
+
+                // 6. 在新分頁開啟 Google 地圖
+                window.open(finalUrl, '_blank');
+            });
+        });
+    </script>
+
+    </body>
+</html>
