@@ -5,7 +5,6 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>訪視路徑規劃 (API 版)</title>
      <link rel="shortcut icon" href="feticon.ico">
-    
     <style>
         body {
             font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
@@ -23,10 +22,13 @@
             border-radius: 12px;
             box-shadow: 0 6px 15px rgba(0, 0, 0, 0.08);
             width: 400px;
+            /* 讓控制面板可以滾動 */
+            max-height: 90vh;
+            overflow-y: auto;
         }
         .map-container {
             flex-grow: 1;
-            height: 80vh; /* 地圖高度 */
+            height: 90vh; /* 提高地圖高度 */
         }
         #map {
             width: 100%;
@@ -45,12 +47,43 @@
         #addDestination:hover { background-color: #d1e0ff; }
         #planRoute { background-color: #10b981; color: white; width: 100%; margin-top: 25px; padding: 15px; font-size: 18px; }
         #planRoute:hover { background-color: #059669; }
-        /* 顯示路徑文字 */
+
+        /* --- CSS 優化 (新增/修改) --- */
+        
+        /* [新] 最佳順序面板樣式 */
+        #order-panel {
+            margin-top: 20px;
+            padding: 15px;
+            background-color: #f0fdf4; /* 淡綠色背景 */
+            border: 1px solid #bbf7d0;
+            border-radius: 8px;
+        }
+        #order-panel h4 {
+            margin-top: 0;
+            margin-bottom: 10px;
+            color: #166534; /* 深綠色標題 */
+        }
+        #order-panel ol {
+            padding-left: 25px; /* 調整列表縮排 */
+            margin: 0;
+        }
+        #order-panel li {
+            margin-bottom: 8px;
+            font-weight: 500;
+            color: #155724;
+        }
+        #order-panel li strong {
+            color: #0d3a17; /* 加深起點/終點文字 */
+        }
+
+        /* [修改] 詳細路徑指引面板 */
         #directions-panel {
             margin-top: 20px;
             padding: 15px;
             background-color: #f8f8f8;
             border-radius: 8px;
+            max-height: 400px; /* 給定一個最大高度並啟用滾動 */
+            overflow-y: auto;
         }
     </style>
 </head>
@@ -71,8 +104,12 @@
             <button id="addDestination">+ 新增到達點</button>
             <button id="planRoute">規劃最佳路徑</button>
             
+            <div id="order-panel">
+                <p>最佳路徑順序將顯示在此。</p>
+            </div>
+
             <div id="directions-panel">
-                <p>路徑規劃結果將顯示在此。</p>
+                <p>詳細路徑指引將顯示在此。</p>
             </div>
         </div>
 
@@ -81,28 +118,24 @@
         </div>
     </div>
 
-    <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyBQ0UdLwluVkxZOi5vwezMTvSivUI0m24o&callback=initMap" async defer></script>
+    <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyBQ0UdLwluVkxZOi5vwezMTvSivUI0m24o&libraries=places&callback=initMap" async defer></script>
 
     <script>
-        // 全域變數，用於存放地圖服務
+        // 全域變數
         let map, directionsService, directionsRenderer;
 
         // 初始化地圖
         function initMap() {
-            // 1. 建立地圖服務
             directionsService = new google.maps.DirectionsService();
-            // 2. 建立地圖渲染服務
             directionsRenderer = new google.maps.DirectionsRenderer();
             
-            // 3. 建立地圖實例
             map = new google.maps.Map(document.getElementById('map'), {
                 zoom: 12,
                 center: { lat: 25.033, lng: 121.5654 } // 預設中心點 (台北)
             });
             
-            // 4. 將渲染服務綁定到地圖上
             directionsRenderer.setMap(map);
-            // 5. 將渲染服務綁定到文字面板上
+            // 將詳細路徑指引綁定到 directions-panel
             directionsRenderer.setPanel(document.getElementById('directions-panel'));
         }
 
@@ -112,7 +145,6 @@
             const destinationsList = document.getElementById('destinationsList');
             const planRouteButton = document.getElementById('planRoute');
 
-            // 新增到達點
             addDestButton.addEventListener('click', () => {
                 const newInput = document.createElement('input');
                 newInput.type = 'text';
@@ -121,19 +153,23 @@
                 destinationsList.appendChild(newInput);
             });
 
-            // 規劃路徑
             planRouteButton.addEventListener('click', calculateAndDisplayRoute);
         });
 
         function calculateAndDisplayRoute() {
-            // 1. 獲取所有地址
+            // 獲取地址
             const startPoint = document.getElementById('startPoint').value.trim();
             const destinationInputs = document.querySelectorAll('.destination');
             
-            const waypoints = [];
-            let destinationPoint = ''; // 終點
+            // 獲取面板元素
+            const orderPanel = document.getElementById('order-panel');
+            const directionsPanel = document.getElementById('directions-panel');
 
-            // 收集所有中途點
+            // --- [JS 優化 1/3] 清空上次結果 ---
+            orderPanel.innerHTML = '<p>正在計算最佳路徑...</p>';
+            directionsPanel.innerHTML = ''; // 清空舊的詳細指引
+
+            const waypoints = [];
             destinationInputs.forEach(input => {
                 const address = input.value.trim();
                 if (address !== '') {
@@ -143,61 +179,72 @@
 
             if (startPoint === '') {
                 alert('請輸入起始點！');
+                orderPanel.innerHTML = '<p style="color: red;">錯誤：請輸入起始點。</p>';
                 return;
             }
             if (waypoints.length === 0) {
                 alert('請至少輸入一個到達點！');
+                orderPanel.innerHTML = '<p style="color: red;">錯誤：請至少輸入一個到達點。</p>';
                 return;
             }
 
-            // 為了使用「最佳化」，我們需要一個「起點」、一個「終點」和「中途點」
             // 策略：將中途點的 *最後一個* 設為 API 呼叫的「終點」(destination)
-            // 其他的則作為「中途點」(waypoints)
-            
-            destinationPoint = waypoints.pop(); // 移除最後一個元素並將其設為終點
+            const destinationPoint = waypoints.pop(); // 移除最後一個元素並將其設為終點
 
+            // 將剩下的 waypoints 轉換為 API 需要的格式
             const waypointsForApi = [];
-            if (waypoints.length > 0) {
-                waypoints.forEach(location => {
-                    waypointsForApi.push({
-                        location: location,
-                        stopover: true // true 表示這是一個停靠點
-                    });
+            waypoints.forEach(location => {
+                waypointsForApi.push({
+                    location: location,
+                    stopover: true 
                 });
-            }
+            });
 
-            // 2. 建立 API 請求
+            // 建立 API 請求
             const request = {
-                origin: startPoint,       // 起點
-                destination: destinationPoint, // 終點
-                waypoints: waypointsForApi, // 中途點 (會被排序)
-                
-                // *** 關鍵 ***
-                optimizeWaypoints: true,  // 啟用「最佳化路徑」
-                
-                travelMode: 'DRIVING'   // 交通方式 (開車)
+                origin: startPoint,
+                destination: destinationPoint,
+                waypoints: waypointsForApi,
+                optimizeWaypoints: true, // 關鍵：啟用「最佳化路徑」
+                travelMode: 'DRIVING'
             };
 
-            // 3. 呼叫 Directions API
+            // 呼叫 Directions API
             directionsService.route(request, (result, status) => {
                 if (status === 'OK') {
-                    // 4. 如果成功，顯示結果
+                    // 1. 繪製路徑到地圖 (這也會自動填入 directions-panel)
                     directionsRenderer.setDirections(result);
                     
-                    // 顯示最佳化後的順序
+                    // --- [JS 優化 2/3] 建立並顯示最佳化順序 ---
                     const route = result.routes[0];
-                    let optimizedOrder = `最佳化順序：\n`;
-                    optimizedOrder += `${startPoint} (起點)\n`;
+                    
+                    // 建立 HTML 列表
+                    let orderHtml = '<h4>📍 最佳訪視順序</h4><ol>';
+                    
+                    // 1. 起點
+                    orderHtml += `<li>${startPoint} <strong>(起點)</strong></li>`;
+                    
+                    // 2. 最佳化的中途點
+                    // route.waypoint_order 是一個索引陣列，例如 [1, 0]
+                    // 表示 waypointsForApi[1] 應該先去，然後才是 waypointsForApi[0]
                     route.waypoint_order.forEach(index => {
-                        optimizedOrder += `-> ${waypointsForApi[index].location}\n`;
+                        orderHtml += `<li>${waypointsForApi[index].location}</li>`;
                     });
-                    optimizedOrder += `-> ${destinationPoint} (終點)`;
                     
-                    console.log(optimizedOrder);
-                    // 你可以將這個 'optimizedOrder' 字串顯示在頁面上
+                    // 3. 終點
+                    orderHtml += `<li>${destinationPoint} <strong>(終點)</strong></li>`;
                     
+                    orderHtml += '</ol>';
+                    
+                    // --- [JS 優化 3/3] 將 HTML 放入 order-panel ---
+                    orderPanel.innerHTML = orderHtml;
+                    
+                } else if (status === 'ZERO_RESULTS') {
+                    alert('路徑規劃失敗：找不到可行的路徑 (ZERO_RESULTS)。請檢查地址是否都正確且精確。');
+                    orderPanel.innerHTML = '<p style="color: red;">路徑規劃失敗：找不到可行的路徑。請檢查地址是否精確。</p>';
                 } else {
                     alert('路徑規劃失敗：' + status);
+                    orderPanel.innerHTML = `<p style="color: red;">路徑規劃失敗：${status}</p>`;
                 }
             });
         }
