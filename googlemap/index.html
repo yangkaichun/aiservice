@@ -204,8 +204,8 @@
                 const origin = document.getElementById('origin-address').value;
                 const waypointInputs = document.querySelectorAll('.waypoint-input');
                 const waypointAddresses = Array.from(waypointInputs)
-                                            .map(input => input.value)
-                                            .filter(address => address.trim()!== '');
+                                           .map(input => input.value)
+                                           .filter(address => address.trim()!== '');
 
                 // 2. 驗證輸入
                 if (!origin) throw new Error('請輸入起始點地址。');
@@ -262,7 +262,6 @@
 
                 if (!response.ok) {
                     const errorData = await response.json();
-                    // *** 修正點 #1：修正語法錯誤 ***
                     throw new Error(`ORS API 錯誤: ${errorData.error? errorData.error.message : response.status}`);
                 }
 
@@ -287,7 +286,6 @@
         }
 
         // === (ORS) 步驟 3：解析回應並建構 Google Maps URL ===
-        // *** 修正點 #2：完全重寫此函數以修正邏輯錯誤 ***
         function handleApiResponse(response, startCoord, endCoord) {
             
             // 1. 獲取最佳化後的站點列表 (steps)
@@ -296,12 +294,14 @@
             // 2. 建立一個座標陣列，格式為 "緯度,經度"
             // ORS 座標格式為 [經度, 緯度]
             // Google URL 格式為 "緯度,經度"
+            
+            // *** 修正點 #1：初始化為一個空陣列 ***
             let optimizedCoords =;
 
             // 3. 按照 ORS 回傳的順序建立 URL
-            // 我們使用我們傳入的 startCoord 和 endCoord 來確保最高精度
             
             // 添加起始點
+            // *** 修正點 #2：使用 [1] (緯度),  (經度) ***
             optimizedCoords.push(`${startCoord[1]},${startCoord}`);
 
             // 遍歷所有 "job" (中途點)
@@ -309,11 +309,13 @@
             steps.forEach(step => {
                 if (step.type === 'job') {
                     // step.location 是 [經度, 緯度]
+                    // *** 修正點 #3：使用 [1] (緯度),  (經度) ***
                     optimizedCoords.push(`${step.location[1]},${step.location}`);
                 }
             });
 
             // 添加終點
+            // *** 修正點 #4：使用 [1] (緯度),  (經度) ***
             optimizedCoords.push(`${endCoord[1]},${endCoord}`);
 
             // 4. 建構 Google Maps 導航 URL
