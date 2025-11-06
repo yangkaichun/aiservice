@@ -1,113 +1,94 @@
 <!DOCTYPE html>
-<html lang="zh-TW">
+<html lang="zh-Hant-TW">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>訪視路徑規劃</title>
+    <title>訪視路徑規劃最佳化</title>
     <style>
-        /* 基本樣式 */
         body {
             font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
             background-color: #f4f7f6;
-            margin: 0;
-            padding: 20px;
+            color: #333;
             display: flex;
             justify-content: center;
-            align-items: center;
+            align-items: flex-start;
+            padding: 20px;
             min-height: 100vh;
         }
-
-        /* 容器樣式 */
-        .container {
-            background-color: #ffffff;
-            padding: 30px;
-            border-radius: 12px;
-            box-shadow: 0 6px 15px rgba(0, 0, 0, 0.08);
+       .container {
             width: 100%;
             max-width: 600px;
+            background: #ffffff;
+            border-radius: 8px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+            padding: 24px;
         }
-
-        /* 標題 */
         h1 {
             text-align: center;
-            color: #333;
+            color: #2c3e50;
             margin-top: 0;
-            margin-bottom: 25px;
         }
-
-        /* 輸入框群組 */
-        .input-group {
-            margin-bottom: 20px;
+       .form-group,.waypoint-entry {
+            margin-bottom: 16px;
         }
-
-        .input-group label {
+        label {
             display: block;
-            margin-bottom: 8px;
+            margin-bottom: 6px;
             font-weight: 600;
-            color: #555;
         }
-
-        /* 輸入框樣式 */
         input[type="text"] {
             width: 100%;
-            padding: 12px;
+            padding: 10px;
             border: 1px solid #ddd;
-            border-radius: 8px;
-            box-sizing: border-box; /* 確保 padding 不會影響寬度 */
-            font-size: 16px;
+            border-radius: 4px;
+            box-sizing: border-box; /* 確保 padding 不影響寬度 */
         }
-
-        /* "到達點" 的標題 */
-        h3 {
-            margin-top: 25px;
-            margin-bottom: 10px;
-            color: #444;
-            border-bottom: 2px solid #eee;
-            padding-bottom: 5px;
-        }
-
-        /* 到達點列表 */
-        #destinationsList {
+       .waypoint-entry {
             display: flex;
-            flex-direction: column;
-            gap: 10px; /* 每個輸入框之間的間距 */
+            align-items: center;
+            gap: 10px;
         }
-
-        /* 按鈕基本樣式 */
+       .waypoint-entry input[type="text"] {
+            flex-grow: 1; /* 讓輸入框填滿剩餘空間 */
+        }
         button {
-            padding: 12px 20px;
+            padding: 10px 15px;
             border: none;
-            border-radius: 8px;
-            font-size: 16px;
-            font-weight: 600;
+            border-radius: 4px;
             cursor: pointer;
-            transition: background-color 0.3s ease, box-shadow 0.3s ease;
+            font-size: 16px;
+            font-weight: 500;
+            transition: background-color 0.2s;
         }
-
-        /* 新增地點按鈕 */
-        #addDestination {
-            background-color: #e0eafc;
-            color: #3b82f6;
-            margin-top: 10px;
+       .controls {
+            display: flex;
+            justify-content: space-between;
+            gap: 10px;
+            margin-top: 20px;
         }
-
-        #addDestination:hover {
-            background-color: #d1e0ff;
-        }
-
-        /* 規劃路徑主按鈕 */
-        #planRoute {
-            background-color: #10b981;
+        #add-waypoint-btn {
+            background-color: #3498db;
             color: white;
-            width: 100%;
-            margin-top: 25px;
-            padding: 15px;
-            font-size: 18px;
         }
-
-        #planRoute:hover {
-            background-color: #059669;
-            box-shadow: 0 4px 10px rgba(16, 185, 129, 0.3);
+        #add-waypoint-btn:hover {
+            background-color: #2980b9;
+        }
+        #plan-route-btn {
+            background-color: #2ecc71;
+            color: white;
+            flex-grow: 1; /* 讓規劃按鈕更顯著 */
+        }
+        #plan-route-btn:hover {
+            background-color: #27ae60;
+        }
+       .remove-waypoint-btn {
+            background-color: #e74c3c;
+            color: white;
+            padding: 8px 12px;
+            font-size: 14px;
+        }
+       .remove-waypoint-btn:hover {
+            background-color: #c0392b;
         }
     </style>
 </head>
@@ -115,90 +96,166 @@
 
     <div class="container">
         <h1>訪視路徑規劃最佳化</h1>
-
-        <div class="input-group">
-            <label for="startPoint">📍 起始點地址</label>
-            <input type="text" id="startPoint" placeholder="例如：台北市信義區市府路1號 (台北101)">
+        
+        <div class="form-group">
+            <label for="origin-address">起始點地址：</label>
+            <input type="text" id="origin-address" placeholder="請輸入起始點..." required>
         </div>
-
-        <h3>🏁 到達點地址</h3>
-        <div id="destinationsList">
-            <input type="text" class="destination" placeholder="例如：台北市士林區至善路二段221號 (故宮博物院)">
+        
+        <div id="waypoints-container">
+            </div>
+        
+        <div class="controls">
+            <button type="button" id="add-waypoint-btn">新增到達點</button>
+            <button type="button" id="plan-route-btn">規劃最佳路徑</button>
         </div>
-        <button id="addDestination">+ 新增到達點</button>
-
-        <button id="planRoute">規劃路徑並開啟 Google 地圖</button>
     </div>
 
     <script>
-        // 等待 HTML 內容完全載入後再執行 JavaScript
-        document.addEventListener('DOMContentLoaded', () => {
+        // === 應用程式初始化 ===
+        function initApp() {
+            // 實例化 DirectionsService
+            const directionsService = new google.maps.DirectionsService();
 
-            // 獲取 "新增到達點" 按鈕
-            const addDestButton = document.getElementById('addDestination');
+            // 綁定事件監聽器
+            document.getElementById('add-waypoint-btn').addEventListener('click', addWaypointInput);
+            document.getElementById('waypoints-container').addEventListener('click', handleRemoveWaypoint);
+            document.getElementById('plan-route-btn').addEventListener('click', () => {
+                calculateOptimizedRoute(directionsService);
+            });
             
-            // 獲取 "到達點列表" 的容器
-            const destinationsList = document.getElementById('destinationsList');
+            // 預設新增一個到達點欄位
+            addWaypointInput();
+        }
 
-            // 獲取 "規劃路徑" 按鈕
-            const planRouteButton = document.getElementById('planRoute');
+        // === (Part 3) 動態管理中途站點 ===
 
-            // 監聽 "新增到達點" 按鈕點擊事件
-            addDestButton.addEventListener('click', () => {
-                // 建立一個新的 input 元素
-                const newInput = document.createElement('input');
-                newInput.type = 'text';
-                newInput.className = 'destination'; // 賦予 class 方便選取
-                newInput.placeholder = '請輸入下一個地址';
-                
-                // 將新 input 欄位加到列表中
-                destinationsList.appendChild(newInput);
-            });
+        function addWaypointInput() {
+            const container = document.getElementById('waypoints-container');
 
-            // 監聽 "規劃路徑" 按鈕點擊事件
-            planRouteButton.addEventListener('click', () => {
-                // 1. 獲取起始點地址
-                const startPoint = document.getElementById('startPoint').value.trim();
+            const entryDiv = document.createElement('div');
+            entryDiv.className = 'waypoint-entry';
 
-                // 2. 檢查起始點是否為空
-                if (startPoint === '') {
-                    alert('請務必輸入「起始點」地址！');
-                    return; // 中斷執行
+            const input = document.createElement('input');
+            input.type = 'text';
+            input.className = 'waypoint-input';
+            input.placeholder = '請輸入到達點...';
+
+            const removeBtn = document.createElement('button');
+            removeBtn.type = 'button';
+            removeBtn.className = 'remove-waypoint-btn';
+            removeBtn.textContent = '移除';
+
+            entryDiv.appendChild(input);
+            entryDiv.appendChild(removeBtn);
+            container.appendChild(entryDiv);
+        }
+
+        function handleRemoveWaypoint(event) {
+            if (event.target.classList.contains('remove-waypoint-btn')) {
+                // 檢查是否為最後一個輸入框，如果是，則不清空，而是清除其內容
+                const container = document.getElementById('waypoints-container');
+                if (container.children.length > 1) {
+                    event.target.parentElement.remove();
+                } else {
+                    // 如果是最後一個，只清空內容
+                    event.target.parentElement.querySelector('.waypoint-input').value = '';
                 }
+            }
+        }
 
-                // 3. 獲取所有到達點地址
-                const destinationInputs = document.querySelectorAll('.destination');
-                const destinations = [];
-                
-                destinationInputs.forEach(input => {
-                    const address = input.value.trim();
-                    if (address !== '') {
-                        destinations.push(address); // 只將有填寫的地址加入
-                    }
-                });
+        // === (Part 4) 核心邏輯（第一階段）- 呼叫 API ===
 
-                // 4. 檢查是否至少有一個到達點
-                if (destinations.length === 0) {
-                    alert('請至少輸入一個「到達點」地址！');
-                    return; // 中斷執行
+        function calculateOptimizedRoute(directionsService) {
+            // 1. 獲取起始點
+            const origin = document.getElementById('origin-address').value;
+            
+            // 2. 獲取所有 "到達點"
+            const waypointInputs = document.querySelectorAll('.waypoint-input');
+            
+            // 3. 轉換為地址字串陣列並過濾空值
+            const waypointAddresses = Array.from(waypointInputs)
+                                          .map(input => input.value)
+                                          .filter(address => address.trim()!== '');
+
+            // 4. 輸入驗證
+            if (!origin) {
+                alert('請輸入起始點地址。');
+                return;
+            }
+            if (waypointAddresses.length === 0) {
+                alert('請至少新增一個到達點。');
+                return;
+            }
+
+            // 5. 邏輯分岔：分離 destination 和 intermediateWaypoints
+            const destination = waypointAddresses[waypointAddresses.length - 1];
+            const intermediateWaypoints = waypointAddresses.slice(0, -1);
+
+            // 6. 轉換為 DirectionsWaypoint 物件
+            const waypts = intermediateWaypoints.map(location => ({
+                location: location,
+                stopover: true 
+            }));
+
+            // 7. 建構 Request 物件
+            const request = {
+                origin: origin,
+                destination: destination,
+                waypoints: waypts,
+                optimizeWaypoints: true, // 核心：自動判斷順序
+                travelMode: google.maps.TravelMode.DRIVING
+            };
+
+            // 8. 執行 API 呼叫
+            directionsService.route(request, function(response, status) {
+                if (status === google.maps.DirectionsStatus.OK) {
+                    // 成功：進入第二階段
+                    handleApiResponse(response, origin, destination, intermediateWaypoints);
+                } else {
+                    alert('路徑規劃失敗：' + status + '。請檢查地址是否正確。');
                 }
-
-                // 5. 建立 Google Maps 導航網址
-                // 格式：https://www.google.com/maps/dir/起點/中途點1/中途點2/.../最終點
-                const baseUrl = 'https://www.google.com/maps/dir/';
-                
-                // 將所有地址轉換為 URL 編碼
-                const encodedStart = encodeURIComponent(startPoint);
-                const encodedDestinations = destinations.map(dest => encodeURIComponent(dest)).join('/');
-
-                // 組合最終網址
-                const finalUrl = `${baseUrl}${encodedStart}/${encodedDestinations}`;
-
-                // 6. 在新分頁開啟 Google 地圖
-                window.open(finalUrl, '_blank');
             });
-        });
+        }
+
+        // === (Part 5) 核心邏輯（第二階段）- 解析與建構 URL ===
+
+        function handleApiResponse(response, origin, destination, originalWaypoints) {
+            // 1. 獲取最佳化後的索引順序
+            const optimizedOrder = response.routes.waypoint_order;
+            
+            // 2. 根據索引順序，重新排序原始地址陣列
+            const reorderedWaypoints = optimizedOrder.map(index => originalWaypoints[index]);
+
+            // 3. 將中途點陣列轉換為 "pipe-separated" 字串
+            const waypointString = reorderedWaypoints.join('|');
+            
+            // 4. URL 編碼
+            const encodedOrigin = encodeURIComponent(origin);
+            const encodedDestination = encodeURIComponent(destination);
+            const encodedWaypoints = encodeURIComponent(waypointString);
+            
+            // 5. 建構基礎 URL
+            let mapsUrl = `https://www.google.com/maps/dir/?api=1`;
+            mapsUrl += `&origin=${encodedOrigin}`;
+            mapsUrl += `&destination=${encodedDestination}`;
+            
+            if (encodedWaypoints) {
+                mapsUrl += `&waypoints=${encodedWaypoints}`;
+            }
+            
+            mapsUrl += `&travelmode=driving`;
+            
+            // 6. 添加 "navigate" 動作
+            mapsUrl += `&dir_action=navigate`;
+
+            // 7. 在新分頁中開啟
+            window.open(mapsUrl, '_blank');
+        }
+
     </script>
-
-    </body>
+    <script async 
+        src="https://maps.googleapis.com/maps/api/js?key=YOUR_API_KEY&callback=initApp">
+    </script>
+</body>
 </html>
