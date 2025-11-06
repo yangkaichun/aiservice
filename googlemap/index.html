@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>訪視路徑規劃最佳化</title>
+    <title>訪視路徑規劃最佳化 (ORS 免費版)</title>
     <style>
         body {
             font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
@@ -15,7 +15,7 @@
             padding: 20px;
             min-height: 100vh;
         }
-      .container {
+     .container {
             width: 100%;
             max-width: 600px;
             background: #ffffff;
@@ -28,7 +28,7 @@
             color: #2c3e50;
             margin-top: 0;
         }
-      .form-group,.waypoint-entry {
+     .form-group,.waypoint-entry {
             margin-bottom: 16px;
         }
         label {
@@ -41,15 +41,15 @@
             padding: 10px;
             border: 1px solid #ddd;
             border-radius: 4px;
-            box-sizing: border-box; /* 確保 padding 不影響寬度 */
+            box-sizing: border-box; 
         }
-      .waypoint-entry {
+     .waypoint-entry {
             display: flex;
             align-items: center;
             gap: 10px;
         }
-      .waypoint-entry input[type="text"] {
-            flex-grow: 1; /* 讓輸入框填滿剩餘空間 */
+     .waypoint-entry input[type="text"] {
+            flex-grow: 1; 
         }
         button {
             padding: 10px 15px;
@@ -60,7 +60,7 @@
             font-weight: 500;
             transition: background-color 0.2s;
         }
-      .controls {
+     .controls {
             display: flex;
             justify-content: space-between;
             gap: 10px;
@@ -76,18 +76,18 @@
         #plan-route-btn {
             background-color: #2ecc71;
             color: white;
-            flex-grow: 1; /* 讓規劃按鈕更顯著 */
+            flex-grow: 1; 
         }
         #plan-route-btn:hover {
             background-color: #27ae60;
         }
-      .remove-waypoint-btn {
+     .remove-waypoint-btn {
             background-color: #e74c3c;
             color: white;
             padding: 8px 12px;
             font-size: 14px;
         }
-      .remove-waypoint-btn:hover {
+     .remove-waypoint-btn:hover {
             background-color: #c0392b;
         }
     </style>
@@ -109,27 +109,35 @@
             <button type="button" id="add-waypoint-btn">新增到達點</button>
             <button type="button" id="plan-route-btn">規劃最佳路徑</button>
         </div>
+        
+        <div id="status-message" style="margin-top: 15px; text-align: center; font-weight: 600;"></div>
     </div>
 
     <script>
+        // === 請將此處替換為您自己的 OpenRouteService API 金鑰 ===
+        const OPENROUTESERVICE_API_KEY = "f80d5c3fb70a36605eb57a1502081706FdxsO3CYYK8"; 
+        // ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+        // 前往 https://openrouteservice.org/ 註冊免費帳戶以取得
+
         // === 應用程式初始化 ===
         function initApp() {
-            // 實例化 DirectionsService
-            const directionsService = new google.maps.DirectionsService();
-
             // 綁定事件監聽器
             document.getElementById('add-waypoint-btn').addEventListener('click', addWaypointInput);
             document.getElementById('waypoints-container').addEventListener('click', handleRemoveWaypoint);
             document.getElementById('plan-route-btn').addEventListener('click', () => {
-                calculateOptimizedRoute(directionsService);
+                // 檢查金鑰是否已填入
+                if (OPENROUTESERVICE_API_KEY === "YOUR_ORS_API_KEY") {
+                    alert("請在 HTML 程式碼中填入您的 openrouteservice API 金鑰。");
+                    return;
+                }
+                calculateOptimizedRoute(OPENROUTESERVICE_API_KEY);
             });
             
             // 預設新增一個到達點欄位
             addWaypointInput();
         }
-
-        // === (Part 3) 動態管理中途站點 ===
-
+        
+        // === 動態管理中途站點 (與前版相同) ===
         function addWaypointInput() {
             const container = document.getElementById('waypoints-container');
 
@@ -153,109 +161,163 @@
 
         function handleRemoveWaypoint(event) {
             if (event.target.classList.contains('remove-waypoint-btn')) {
-                // 檢查是否為最後一個輸入框，如果是，則不清空，而是清除其內容
                 const container = document.getElementById('waypoints-container');
                 if (container.children.length > 1) {
                     event.target.parentElement.remove();
                 } else {
-                    // 如果是最後一個，只清空內容
                     event.target.parentElement.querySelector('.waypoint-input').value = '';
                 }
             }
         }
 
-        // === (Part 4) 核心邏輯（第一階段）- 呼叫 API ===
-
-        function calculateOptimizedRoute(directionsService) {
-            // 1. 獲取起始點
-            const origin = document.getElementById('origin-address').value;
+        // === (ORS) 步驟 1：地理編碼 (將地址轉換為座標) ===
+        async function fetchGeocode(address, apiKey) {
+            const url = `https://api.openrouteservice.org/geocode/search?api_key=${apiKey}&text=${encodeURIComponent(address)}`;
             
-            // 2. 獲取所有 "到達點"
-            const waypointInputs = document.querySelectorAll('.waypoint-input');
-            
-            // 3. 轉換為地址字串陣列並過濾空值
-            const waypointAddresses = Array.from(waypointInputs)
-                                         .map(input => input.value)
-                                         .filter(address => address.trim()!== '');
-
-            // 4. 輸入驗證
-            if (!origin) {
-                alert('請輸入起始點地址。');
-                return;
-            }
-            if (waypointAddresses.length === 0) {
-                alert('請至少新增一個到達點。');
-                return;
-            }
-
-            // 5. 邏輯分岔：分離 destination 和 intermediateWaypoints
-            const destination = waypointAddresses[waypointAddresses.length - 1];
-            const intermediateWaypoints = waypointAddresses.slice(0, -1);
-
-            // 6. 轉換為 DirectionsWaypoint 物件
-            const waypts = intermediateWaypoints.map(location => ({
-                location: location,
-                stopover: true 
-            }));
-
-            // 7. 建構 Request 物件
-            const request = {
-                origin: origin,
-                destination: destination,
-                waypoints: waypts,
-                optimizeWaypoints: true, // 核心：自動判斷順序
-                travelMode: google.maps.TravelMode.DRIVING
-            };
-
-            // 8. 執行 API 呼叫
-            directionsService.route(request, function(response, status) {
-                if (status === google.maps.DirectionsStatus.OK) {
-                    // 成功：進入第二階段
-                    handleApiResponse(response, origin, destination, intermediateWaypoints);
-                } else {
-                    alert('路徑規劃失敗：' + status + '。請檢查地址是否正確。');
+            try {
+                const response = await fetch(url);
+                if (!response.ok) {
+                    throw new Error(`Geocode HTTP error! status: ${response.status}`);
                 }
-            });
-        }
-
-        // === (Part 5) 核心邏輯（第二階段）- 解析與建構 URL ===
-
-        function handleApiResponse(response, origin, destination, originalWaypoints) {
-            // 1. 獲取最佳化後的索引順序
-            const optimizedOrder = response.routes.waypoint_order;
-            
-            // 2. 根據索引順序，重新排序原始地址陣列
-            const reorderedWaypoints = optimizedOrder.map(index => originalWaypoints[index]);
-
-            // 3. 將中途點陣列轉換為 "pipe-separated" 字串
-            const waypointString = reorderedWaypoints.join('|');
-            
-            // 4. URL 編碼
-            const encodedOrigin = encodeURIComponent(origin);
-            const encodedDestination = encodeURIComponent(destination);
-            const encodedWaypoints = encodeURIComponent(waypointString);
-            
-            // 5. 建構基礎 URL
-            let mapsUrl = `https://www.google.com/maps/dir/?api=1`;
-            mapsUrl += `&origin=${encodedOrigin}`;
-            mapsUrl += `&destination=${encodedDestination}`;
-            
-            if (encodedWaypoints) {
-                mapsUrl += `&waypoints=${encodedWaypoints}`;
+                const data = await response.json();
+                
+                if (data.features && data.features.length > 0) {
+                    // 回傳第一個結果的座標 [經度, 緯度]
+                    return data.features.geometry.coordinates;
+                } else {
+                    throw new Error(`找不到地址: ${address}`);
+                }
+            } catch (error) {
+                console.error('Geocode error:', error);
+                throw error; // 將錯誤向上拋出
             }
-            
-            mapsUrl += `&travelmode=driving`;
-            
-            // 6. 添加 "navigate" 動作
-            mapsUrl += `&dir_action=navigate`;
-
-            // 7. 在新分頁中開啟
-            window.open(mapsUrl, '_blank');
         }
 
-    </script>
-    <script async defer
-        src="https://maps.googleapis.com/maps/api/js?key=YOUR_API_KEY&callback=initApp">
+        // === (ORS) 步驟 2：呼叫 ORS 最佳化 API ===
+        async function calculateOptimizedRoute(apiKey) {
+            const statusEl = document.getElementById('status-message');
+            statusEl.textContent = '正在規劃路徑，請稍候...';
+            statusEl.style.color = 'blue';
+
+            try {
+                // 1. 收集所有地址
+                const origin = document.getElementById('origin-address').value;
+                const waypointInputs = document.querySelectorAll('.waypoint-input');
+                const waypointAddresses = Array.from(waypointInputs)
+                                             .map(input => input.value)
+                                             .filter(address => address.trim()!== '');
+
+                // 2. 驗證輸入
+                if (!origin) throw new Error('請輸入起始點地址。');
+                if (waypointAddresses.length === 0) throw new Error('請至少新增一個到達點。');
+
+                // 3. 執行所有地理編碼
+                statusEl.textContent = '正在轉換地址 (共 ' + (waypointAddresses.length + 1) + ' 個)...';
+                
+                const originCoordPromise = fetchGeocode(origin, apiKey);
+                
+                const destination = waypointAddresses[waypointAddresses.length - 1];
+                const intermediateWaypoints = waypointAddresses.slice(0, -1);
+                
+                const destinationCoordPromise = fetchGeocode(destination, apiKey);
+                const waypointCoordPromises = intermediateWaypoints.map(addr => fetchGeocode(addr, apiKey));
+
+                // 等待所有編碼完成
+                const [startCoord, endCoord, wayptsCoords] = await Promise.all([
+                    originCoordPromise,
+                    destinationCoordPromise,
+                    Promise.all(waypointCoordPromises)
+                ]);
+
+                // 4. 建構 ORS Optimization API 請求
+                statusEl.textContent = '正在計算最佳順序...';
+                
+                const jobs = wayptsCoords.map((coord, index) => ({
+                    id: index,
+                    location: coord // [經度, 緯度]
+                }));
+                
+                const optimizationRequest = {
+                    jobs: jobs,
+                    vehicles: [
+                        {
+                            id: 1,
+                            profile: 'driving-car',
+                            start: startCoord, // [經度, 緯度]
+                            end: endCoord    // [經度, 緯度]
+                        }
+                    ]
+                };
+
+                // 5. 發送 POST 請求到 Optimization API
+                const response = await fetch('https://api.openrouteservice.org/v2/optimization', {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': apiKey,
+                        'Content-Type': 'application/json',
+                        'Accept': 'application/json, application/geo+json, application/gpx+xml, img/png; charset=utf-8'
+                    },
+                    body: JSON.stringify(optimizationRequest)
+                });
+
+                if (!response.ok) {
+                    const errorData = await response.json();
+                    throw new Error(`ORS API 錯誤: ${errorData.error? errorData.error.message : response.status}`);
+                }
+
+                const result = await response.json();
+                
+                if (result.routes && result.routes.length > 0) {
+                    // 6. 成功：處理回應並開啟 Google 地圖
+                    handleApiResponse(result, startCoord, endCoord);
+                    statusEl.textContent = '路徑規劃完成！正在開啟地圖...';
+                    statusEl.style.color = 'green';
+                } else if (result.code === 2010) { // 特定錯誤碼：找不到點
+                     throw new Error('ORS 錯誤：找不到點。請檢查地址是否在陸地上。');
+                } else {
+                    throw new Error('ORS 未能找到路徑。');
+                }
+
+            } catch (error) {
+                console.error('路徑規劃失敗:', error);
+                statusEl.textContent = `錯誤：${error.message}`;
+                statusEl.style.color = 'red';
+            }
+        }
+
+        // === (ORS) 步驟 3：解析回應並建構 Google Maps URL ===
+        function handleApiResponse(response, startCoord, endCoord) {
+            
+            const steps = response.routes.steps;
+            let optimizedCoords =; // 儲存 "緯度,經度" 格式的字串
+
+            // ORS `steps` 陣列已包含 start, end, 和所有 jobs
+            steps.forEach(step => {
+                // step.location 是 [經度, 緯度]
+                if (step.type === 'start') {
+                    // 轉換為 "緯度,經度"
+                    optimizedCoords.push(`${startCoord[1]},${startCoord}`);
+                } else if (step.type === 'job') {
+                    optimizedCoords.push(`${step.location[1]},${step.location}`);
+                }
+                // 我們在迴圈的最後單獨添加終點
+            });
+            
+            // 添加固定的終點
+            optimizedCoords.push(`${endCoord[1]},${endCoord}`);
+
+            // 建構 Google Maps 導航 URL
+            // 格式: /dir/緯度,經度/緯度,經度/...
+            const googleMapsUrl = `https://www.google.com/maps/dir/${optimizedCoords.join('/')}`;
+
+            // 在新分頁中開啟
+            window.open(googleMapsUrl, '_blank');
+        }
+
+        // === 啟動應用程式 ===
+        // 我們不需要等待 Google API，所以直接啟動
+        initApp();
+
     </script>
 </body>
 </html>
