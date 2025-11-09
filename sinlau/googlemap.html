@@ -4,8 +4,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>訪視路徑規劃 (API 版)</title>
-
-     <link rel="shortcut icon" href="feticon.ico"><style>
+     <link rel="shortcut icon" href="feticon.ico">
+    <style>
         body {
             font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
             background-color: #f4f7f6;
@@ -54,29 +54,55 @@
             background-color: #e0eafc; 
             color: #3b82f6; 
             margin-top: 10px;
-            width: 100%; /* 讓新增按鈕變寬 */
+            width: 100%;
         }
         #addDestination:hover { background-color: #d1e0ff; }
 
-        /* --- [新] 按鈕群組樣式 --- */
-        .button-group {
+        /* --- [新] 交通模式選擇器 (Radio Buttons) --- */
+        #mode-selector { margin-top: 25px; }
+        .radio-group {
             display: flex;
-            gap: 10px; /* 按鈕間距 */
-            margin-top: 25px;
+            justify-content: space-between;
+            margin-top: 10px;
+            gap: 5px;
         }
-        .plan-button {
-            flex: 1; /* 讓三個按鈕平分寬度 */
-            padding: 15px 10px; /* 調整內距 */
-            font-size: 16px;
+        .radio-group input[type="radio"] {
+            display: none; /* 隱藏原始 radio */
+        }
+        .radio-group label {
+            flex: 1;
+            text-align: center;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            font-size: 14px;
+            font-weight: 500;
+        }
+        /* 選中時的樣式 */
+        .radio-group input[type="radio"]:checked + label {
+            background-color: #e0eafc;
+            border-color: #3b82f6;
+            color: #3b82f6;
+            font-weight: 600;
+            box-shadow: 0 2px 4px rgba(59, 130, 246, 0.1);
+        }
+
+        /* --- [新] 主要規劃按鈕 --- */
+        .plan-button-main {
+            background-color: #10b981;
             color: white;
+            width: 100%;
+            margin-top: 25px;
+            padding: 15px;
+            font-size: 18px;
         }
-        #planDriving { background-color: #10b981; } /* 綠色 - 開車 */
-        #planDriving:hover { background-color: #059669; }
-        #planWalking { background-color: #3b82f6; } /* 藍色 - 步行 */
-        #planWalking:hover { background-color: #2563eb; }
-        #planTransit { background-color: #8b5cf6; } /* 紫色 - 交通 */
-        #planTransit:hover { background-color: #7c3aed; }
-        /* --- [舊] 樣式調整 (同上一個版本) --- */
+        .plan-button-main:hover {
+            background-color: #059669;
+        }
+
+        /* --- 舊樣式 (不變) --- */
         #order-panel {
             margin-top: 20px;
             padding: 15px;
@@ -84,11 +110,7 @@
             border: 1px solid #bbf7d0;
             border-radius: 8px;
         }
-        #order-panel h4 {
-            margin-top: 0;
-            margin-bottom: 10px;
-            color: #166534;
-        }
+        #order-panel h4 { margin-top: 0; margin-bottom: 10px; color: #166534; }
         #order-panel ol { padding-left: 25px; margin: 0; }
         #order-panel li { margin-bottom: 8px; font-weight: 500; color: #155724; }
         #order-panel li strong { color: #0d3a17; }
@@ -105,14 +127,8 @@
 <body>
 
     <div class="container">
-
-
         <div class="controls">
             <h1>訪視路徑規劃最佳化</h1>
-                    <div class="h-16 flex items-center justify-center border-b px-4">
-                <img src="fetlogo.png" alt="Logo" class="h-9 mr-2">
-              
-            </div>
             <div class="input-group">
                 <label for="startPoint">📍 起始點地址</label>
                 <input type="text" id="startPoint" placeholder="例如：台北101">
@@ -124,14 +140,24 @@
             </div>
             <button id="addDestination">+ 新增到達點</button>
 
-            <div class="button-group">
-                <button id="planDriving" class="plan-button">🚗 開車</button>
-                <button id="planWalking" class="plan-button">🚶 步行</button>
-                <button id="planTransit" class="plan-button">🚌 大眾運輸</button>
+            <div class="input-group" id="mode-selector">
+                <label>🚦 交通模式</label>
+                <div class="radio-group">
+                    <input type="radio" id="modeDriving" name="travelMode" value="DRIVING" checked>
+                    <label for="modeDriving">🚗 開車 (最佳化)</label>
+
+                    <input type="radio" id="modeWalking" name="travelMode" value="WALKING">
+                    <label for="modeWalking">🚶 步行</label>
+
+                    <input type="radio" id="modeTransit" name="travelMode" value="TRANSIT">
+                    <label for="modeTransit">🚌 大眾運輸</label>
+                </div>
             </div>
+
+            <button id="planRoute" class="plan-button-main">規劃路徑</button>
             
             <div id="order-panel">
-                <p>最佳路徑順序將顯示在此。</p>
+                <p>路徑順序將顯示在此。</p>
             </div>
 
             <div id="directions-panel">
@@ -144,7 +170,7 @@
         </div>
     </div>
 
-    <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyBQ0UdLwluVkxZOi5vwezMTvSivUI0m24o&libraries=places&callback=initMap" async defer></script>
+    <script src="https://maps.googleapis.com/maps/api/js?key=YOUR_API_KEY_HERE&libraries=places&callback=initMap" async defer></script>
 
     <script>
         // 全域變數
@@ -167,12 +193,15 @@
         // 當 DOM 載入完成後，綁定事件
         document.addEventListener('DOMContentLoaded', () => {
             const addDestButton = document.getElementById('addDestination');
-            const destinationsList = document.getElementById('destinationsList');
-
-            // --- [JS 修改] 綁定三個按鈕的事件 ---
-            document.getElementById('planDriving').addEventListener('click', () => calculateAndDisplayRoute('DRIVING'));
-            document.getElementById('planWalking').addEventListener('click', () => calculateAndDisplayRoute('WALKING'));
-            document.getElementById('planTransit').addEventListener('click', () => calculateAndDisplayRoute('TRANSIT'));
+            
+            // --- [JS 修改] 綁定單一規劃按鈕 ---
+            document.getElementById('planRoute').addEventListener('click', () => {
+                // 1. 獲取當前選擇的交通模式
+                const selectedMode = document.querySelector('input[name="travelMode"]:checked').value;
+                
+                // 2. 呼叫主函數，並傳入選擇的模式
+                calculateAndDisplayRoute(selectedMode);
+            });
 
             // 新增到達點按鈕 (不變)
             addDestButton.addEventListener('click', () => {
@@ -180,11 +209,12 @@
                 newInput.type = 'text';
                 newInput.className = 'destination';
                 newInput.placeholder = '請輸入下一個地址';
-                destinationsList.appendChild(newInput);
+                document.getElementById('destinationsList').appendChild(newInput);
             });
         });
 
-        // --- [JS 修改] 函數接受 travelMode 參數 ---
+        // --- 核心函數 (不變) ---
+        // 它本來就設計成可以接受 travelMode 參數
         function calculateAndDisplayRoute(travelMode) {
             // 獲取地址
             const startPoint = document.getElementById('startPoint').value.trim();
@@ -224,7 +254,7 @@
                 });
             });
 
-            // --- [JS 修改] 核心：根據 travelMode 決定是否最佳化 ---
+            // 核心邏輯：根據 travelMode 決定是否最佳化
             const isDriving = (travelMode === 'DRIVING');
             
             const request = {
@@ -242,9 +272,8 @@
                     // 1. 繪製路徑
                     directionsRenderer.setDirections(result);
                     
-                    // --- [JS 修改] 根據是否最佳化，顯示不同的順序列表 ---
+                    // 2. 顯示順序
                     const route = result.routes[0];
-                    // 檢查 API 回傳的 'waypoint_order' 陣列是否存在且有內容
                     const isOptimized = route.waypoint_order && route.waypoint_order.length > 0;
                     
                     let orderHtml = '';
@@ -258,7 +287,7 @@
                         });
                         orderHtml += `<li>${destinationPoint} <strong>(終點)</strong></li>`;
                     } else {
-                        // 情況 2: 未最佳化 (步行/大眾運輸/或開車但只有一個中途點)
+                        // 情況 2: 未最佳化 (步行/大眾運輸)
                         const modeText = travelMode === 'WALKING' ? '步行' : (travelMode === 'TRANSIT' ? '大眾運輸' : '依輸入');
                         orderHtml = `<h4>📝 訪視順序 (${modeText})</h4><ol>`;
                         orderHtml += `<li>${startPoint} <strong>(起點)</strong></li>`;
