@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>訪視路徑規劃 (API 版)</title>
- <link rel="shortcut icon" href="feticon.ico">
+    <link rel="shortcut icon" href="feticon.ico">
     
     <style>
         body {
@@ -37,21 +37,18 @@
             background-color: #e0e0e0;
         }
 
-        /* --- [CSS 修改 1/2] --- */
         .logo-container {
             text-align: center;
-            margin-bottom: 20px; /* Logo 和 H1 之間的間距 */
+            margin-bottom: 20px;
         }
         .logo-container img {
-            max-width: 150px; /* 限制 logo 寬度，可自行調整 */
+            max-width: 150px;
             height: auto;
         }
-        
-        /* --- [CSS 修改 2/2] --- */
         h1 { 
             text-align: center; 
             color: #333; 
-            margin-top: 0; /* 移除 h1 的上邊距 */
+            margin-top: 0;
             margin-bottom: 25px; 
         }
 
@@ -83,10 +80,10 @@
             display: flex;
             justify-content: space-between;
             margin-top: 10px;
-            gap: 5px;
+            gap: 10px; /* 增加間距 */
         }
         .radio-group input[type="radio"] {
-            display: none; /* 隱藏原始 radio */
+            display: none;
         }
         .radio-group label {
             flex: 1;
@@ -99,7 +96,6 @@
             font-size: 14px;
             font-weight: 500;
         }
-        /* 選中時的樣式 */
         .radio-group input[type="radio"]:checked + label {
             background-color: #e0eafc;
             border-color: #3b82f6;
@@ -119,6 +115,23 @@
         }
         .plan-button-main:hover {
             background-color: #059669;
+        }
+        
+        /* --- [新] Google Map 按鈕樣式 --- */
+        .open-maps-button {
+            background-color: #3b82f6; /* 藍色 */
+            color: white;
+            width: 100%;
+            margin-top: 15px;
+            padding: 15px;
+            font-size: 18px;
+        }
+        .open-maps-button:hover {
+            background-color: #2563eb;
+        }
+        .open-maps-button:disabled {
+            background-color: #9ca3af; /* 禁用時灰色 */
+            cursor: not-allowed;
         }
 
         /* 路徑面板 */
@@ -173,13 +186,12 @@
 
                     <input type="radio" id="modeWalking" name="travelMode" value="WALKING">
                     <label for="modeWalking">🚶 步行</label>
-
-                    <input type="radio" id="modeTransit" name="travelMode" value="TRANSIT">
-                    <label for="modeTransit">🚌 大眾運輸</label>
                 </div>
             </div>
 
             <button id="planRoute" class="plan-button-main">規劃路徑</button>
+            
+            <button id="openGoogleMaps" class="open-maps-button" disabled>在 Google 地圖中開啟</button>
             
             <div id="order-panel">
                 <p>路徑順序將顯示在此。</p>
@@ -195,11 +207,13 @@
         </div>
     </div>
 
-    <script src="https://maps.googleapis.com/maps/api/js?key=YOUR_API_KEY_HERE&libraries=places&callback=initMap" async defer></script>
+    <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyBQ0UdLwluVkxZOi5vwezMTvSivUI0m24o&libraries=places&callback=initMap" async defer></script>
 
     <script>
         // 全域變數
         let map, directionsService, directionsRenderer;
+        // [新] 儲存最後一次成功的路徑
+        let lastSuccessfulRoute = null; 
 
         // 初始化地圖
         function initMap() {
@@ -221,10 +235,7 @@
             
             // 綁定單一規劃按鈕
             document.getElementById('planRoute').addEventListener('click', () => {
-                // 1. 獲取當前選擇的交通模式
                 const selectedMode = document.querySelector('input[name="travelMode"]:checked').value;
-                
-                // 2. 呼叫主函數，並傳入選擇的模式
                 calculateAndDisplayRoute(selectedMode);
             });
 
@@ -236,10 +247,47 @@
                 newInput.placeholder = '請輸入下一個地址';
                 document.getElementById('destinationsList').appendChild(newInput);
             });
+
+            // [新] 綁定 "開啟 Google Map" 按鈕
+            document.getElementById('openGoogleMaps').addEventListener('click', () => {
+                if (!lastSuccessfulRoute) {
+                    return; // 正常情況下按鈕會被禁用，此為保險
+                }
+                
+                // 使用 Google Maps "Directions URL" (api=1)
+                const baseUrlApi = 'https://www.google.com/maps/dir/?api=1';
+                
+                // 1. 加上起點
+                const originParam = `&origin=${encodeURIComponent(lastSuccessfulRoute.origin)}`;
+                
+                // 2. 加上終點
+                const destParam = `&destination=${encodeURIComponent(lastSuccessfulRoute.destination)}`;
+                
+                // 3. 加上所有中途點 (用 | 分隔)
+                const waypointsParam = lastSuccessfulRoute.orderedWaypoints.length > 0
+                    ? `&waypoints=${lastSuccessfulRoute.orderedWaypoints.map(wp => encodeURIComponent(wp)).join('|')}`
+                    : '';
+                
+                // 4. 加上交通模式
+                const modeParam = lastSuccessfulRoute.travelMode === 'WALKING'
+                    ? '&travelmode=walking'
+                    : '&travelmode=driving';
+                
+                // 組合最終 URL
+                const finalUrl = baseUrlApi + originParam + destParam + waypointsParam + modeParam;
+                
+                // 在新分頁開啟
+                window.open(finalUrl, '_blank');
+            });
         });
 
         // 核心函數
         function calculateAndDisplayRoute(travelMode) {
+            // [JS 修改] 獲取按鈕並在開始時禁用
+            const openMapsButton = document.getElementById('openGoogleMaps');
+            openMapsButton.disabled = true;
+            lastSuccessfulRoute = null; // 清除舊路徑
+
             // 獲取地址
             const startPoint = document.getElementById('startPoint').value.trim();
             const destinationInputs = document.querySelectorAll('.destination');
@@ -264,8 +312,8 @@
                 return;
             }
             if (waypoints.length === 0) {
-                alert('請至少輸入一個到達点！');
-                orderPanel.innerHTML = '<p style="color: red;">錯誤：請至少輸入一個到達点。</p>';
+                alert('請至少輸入一個到達點！');
+                orderPanel.innerHTML = '<p style="color: red;">錯誤：請至少輸入一個到達點。</p>';
                 return;
             }
 
@@ -278,7 +326,6 @@
                 });
             });
 
-            // 核心邏輯：根據 travelMode 決定是否最佳化
             const isDriving = (travelMode === 'DRIVING');
             
             const request = {
@@ -286,7 +333,6 @@
                 destination: destinationPoint,
                 waypoints: waypointsForApi,
                 travelMode: travelMode,
-                // 只有 'DRIVING' 模式才啟用 optimizeWaypoints
                 optimizeWaypoints: isDriving 
             };
 
@@ -296,44 +342,7 @@
                     // 1. 繪製路徑
                     directionsRenderer.setDirections(result);
                     
-                    // 2. 顯示順序
                     const route = result.routes[0];
                     const isOptimized = route.waypoint_order && route.waypoint_order.length > 0;
                     
-                    let orderHtml = '';
-                    
-                    if (isOptimized) {
-                        // 情況 1: 最佳化成功 (只會發生在開車時)
-                        orderHtml = '<h4>📍 最佳訪視順序 (開車)</h4><ol>';
-                        orderHtml += `<li>${startPoint} <strong>(起點)</strong></li>`;
-                        route.waypoint_order.forEach(index => {
-                            orderHtml += `<li>${waypointsForApi[index].location}</li>`;
-                        });
-                        orderHtml += `<li>${destinationPoint} <strong>(終點)</strong></li>`;
-                    } else {
-                        // 情況 2: 未最佳化 (步行/大眾運輸)
-                        const modeText = travelMode === 'WALKING' ? '步行' : (travelMode === 'TRANSIT' ? '大眾運輸' : '依輸入');
-                        orderHtml = `<h4>📝 訪視順序 (${modeText})</h4><ol>`;
-                        orderHtml += `<li>${startPoint} <strong>(起點)</strong></li>`;
-                        waypointsForApi.forEach(wp => { // 直接遍歷原始陣列
-                            orderHtml += `<li>${wp.location}</li>`;
-                        });
-                        orderHtml += `<li>${destinationPoint} <strong>(終點)</strong></li>`;
-                    }
-                    
-                    orderHtml += '</ol>';
-                    orderPanel.innerHTML = orderHtml;
-                    
-                } else if (status === 'ZERO_RESULTS') {
-                    alert('路徑規劃失敗：找不到可行的路徑 (ZERO_RESULTS)。請檢查地址是否都正確且精確，或此模式下無法到達。');
-                    orderPanel.innerHTML = '<p style="color: red;">路徑規劃失敗：找不到可行的路徑。請檢查地址或交通模式。</p>';
-                } else {
-                    alert('路徑規劃失敗：' + status);
-                    orderPanel.innerHTML = `<p style="color: red;">路徑規劃失敗：${status}</p>`;
-                }
-            });
-        }
-    </script>
-
-</body>
-</html>
+                    // [JS 修改] 儲存成功的路徑以
