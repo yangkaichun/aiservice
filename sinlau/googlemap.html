@@ -345,4 +345,52 @@
                     const route = result.routes[0];
                     const isOptimized = route.waypoint_order && route.waypoint_order.length > 0;
                     
-                    // [JS 修改] 儲存成功的路徑以
+                    // [JS 修改] 儲存成功的路徑以供 "開啟" 按鈕使用
+                    lastSuccessfulRoute = {
+                        origin: startPoint,
+                        destination: destinationPoint,
+                        orderedWaypoints: [],
+                        travelMode: travelMode
+                    };
+
+                    let orderHtml = '';
+                    
+                    if (isOptimized) {
+                        orderHtml = '<h4>📍 最佳訪視順序 (開車)</h4><ol>';
+                        orderHtml += `<li>${startPoint} <strong>(起點)</strong></li>`;
+                        route.waypoint_order.forEach(index => {
+                            const location = waypointsForApi[index].location;
+                            orderHtml += `<li>${location}</li>`;
+                            lastSuccessfulRoute.orderedWaypoints.push(location); // 儲存排序後的中途點
+                        });
+                        orderHtml += `<li>${destinationPoint} <strong>(終點)</strong></li>`;
+                    } else {
+                        const modeText = travelMode === 'WALKING' ? '步行' : '依輸入';
+                        orderHtml = `<h4>📝 訪視順序 (${modeText})</h4><ol>`;
+                        orderHtml += `<li>${startPoint} <strong>(起點)</strong></li>`;
+                        waypointsForApi.forEach(wp => {
+                            orderHtml += `<li>${wp.location}</li>`;
+                            lastSuccessfulRoute.orderedWaypoints.push(wp.location); // 儲存輸入順序的中途點
+                        });
+                        orderHtml += `<li>${destinationPoint} <strong>(終點)</strong></li>`;
+                    }
+                    
+                    orderHtml += '</ol>';
+                    orderPanel.innerHTML = orderHtml;
+
+                    // [JS 修改] 成功後，啟用按鈕
+                    openMapsButton.disabled = false;
+                    
+                } else if (status === 'ZERO_RESULTS') {
+                    alert('路徑規劃失敗：找不到可行的路徑 (ZERO_RESULTS)。請檢查地址是否都正確且精確，或此模式下無法到達。');
+                    orderPanel.innerHTML = '<p style="color: red;">路徑規劃失敗：找不到可行的路徑。請檢查地址或交通模式。</p>';
+                } else {
+                    alert('路徑規劃失敗：' + status);
+                    orderPanel.innerHTML = `<p style="color: red;">路徑規劃失敗：${status}</p>`;
+                }
+            });
+        }
+    </script>
+
+</body>
+</html>
