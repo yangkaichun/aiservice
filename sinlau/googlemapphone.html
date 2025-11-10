@@ -7,7 +7,7 @@
     <link rel="shortcut icon" href="feticon.ico">
     
     <style>
-        /* (手機版 CSS 保持不變) */
+        /* 手機版 CSS (垂直佈局) */
         body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif; background-color: #f4f7f6; margin: 0; padding: 20px; }
         .container { display: flex; flex-direction: column; gap: 20px; }
         .controls { background-color: #ffffff; padding: 20px; border-radius: 12px; box-shadow: 0 6px 15px rgba(0, 0, 0, 0.08); width: 100%; max-height: none; overflow-y: visible; box-sizing: border-box; }
@@ -15,46 +15,9 @@
         #map { width: 100%; height: 100%; border-radius: 12px; background-color: #e0e0e0; }
         .logo-container { text-align: center; margin-bottom: 20px; }
         .logo-container img { max-width: 150px; height: auto; }
-        h1 { text-align: center; color: #333; margin-top: 0; margin-bottom: 10px; } /* 減少 h1 邊距 */
-
-        /* [新] STT 狀態顯示 */
-        #stt-status {
-            text-align: center;
-            font-size: 14px;
-            color: #3b82f6;
-            margin: 0;
-            padding-bottom: 15px;
-            min-height: 1.2em;
-        }
-
-        .location-display { text-align: center; font-size: 14px; color: #555; padding-bottom: 15px; border-bottom: 1px solid #eee; margin-bottom: 20px; min-height: 1.2em; }
-        .location-display strong { color: #000; }
+        h1 { text-align: center; color: #333; margin-top: 0; margin-bottom: 25px; }
         .input-group { margin-bottom: 20px; }
         .input-group label { display: block; margin-bottom: 8px; font-weight: 600; color: #555; }
-        
-        /* [新] STT 輸入框佈局 (Flex) */
-        .input-group-stt {
-            display: flex;
-            align-items: center;
-            gap: 5px; /* 按鈕和輸入框的間距 */
-        }
-        .input-group-stt input[type="text"] {
-            flex-grow: 1; /* 輸入框佔滿剩餘空間 */
-        }
-        
-        /* [新] STT 麥克風按鈕樣式 */
-        .stt-button {
-            flex-shrink: 0; /* 防止按鈕被壓縮 */
-            padding: 10px;
-            font-size: 18px; /* 放大麥克風圖示 */
-            background-color: #f0f0f0;
-            border: 1px solid #ddd;
-            border-radius: 8px;
-            cursor: pointer;
-            display: none; /* 預設隱藏，由 JS 偵測到 API 後顯示 */
-        }
-        .stt-button:hover { background-color: #e0e0e0; }
-
         input[type="text"] { width: 100%; padding: 12px; border: 1px solid #ddd; border-radius: 8px; box-sizing: border-box; font-size: 16px; }
         h3 { margin-top: 25px; margin-bottom: 10px; color: #444; border-bottom: 2px solid #eee; padding-bottom: 5px; }
         #destinationsList { display: flex; flex-direction: column; gap: 10px; }
@@ -78,7 +41,7 @@
         #order-panel ol { padding-left: 25px; margin: 0; }
         #order-panel li { margin-bottom: 8px; font-weight: 500; color: #155724; }
         #order-panel li strong { color: #0d3a17; }
-        #order-panel .panel-note { font-size: 12px; color: #555; margin-top: 10px; }
+        #order-panel .panel-note { font-size: 12px; color: #555; margin-top: 10px; } /* 提示文字的樣式 */
         #directions-panel { margin-top: 20px; padding: 15px; background-color: #f8f8f8; border-radius: 8px; max-height: 400px; overflow-y: auto; }
     </style>
 </head>
@@ -92,9 +55,6 @@
             </div>
             <h1>訪視路徑規劃最佳化</h1>
             
-            <p id="stt-status"></p> 
-            <p id="current-location" class="location-display">正在偵測您目前的位置...</p>
-            
             <div class="input-group weather-toggle">
                 <label for="toggleWeather">
                     <input type="checkbox" id="toggleWeather">
@@ -102,18 +62,13 @@
                 </label>
             </div>
             
-            <div class="input-group input-group-stt">
-                <label for="startPoint">📍 起始點</label>
-                <input type="text" id="startPoint" style="margin-right: 5px;">
-                <button id="startSttButton" class="stt-button">🎤</button>
+            <div class="input-group">
+                <label for="startPoint">📍 起始點地址</label>
+                <input type="text" id="startPoint" placeholder="例如：台北101">
             </div>
-
             <h3>🏁 到達點地址 (中途點)</h3>
             <div id="destinationsList">
-                <div class="input-group-stt">
-                    <input type="text" class="destination" placeholder="例如：故宮博物院">
-                    <button class="stt-button dynamic-stt-button">🎤</button>
-                </div>
+                <input type="text" class="destination" placeholder="例如：故宮博物院">
             </div>
             <button id="addDestination">+ 新增到達點</button>
 
@@ -126,6 +81,7 @@
                     <label for="modeWalking">🚶 步行</label>
                 </div>
             </div>
+
             <button id="planRoute" class="plan-button-main">規劃路徑</button>
             <button id="openGoogleMaps" class="open-maps-button" disabled>在 Google 地圖中開啟</button>
             <div id="order-panel"> <p>路徑順序將顯示在此。</p> </div>
@@ -139,125 +95,25 @@
 
     <script>
         // 全域變數
-        let map, directionsService, directionsRenderer, geocoder;
+        let map, directionsService, directionsRenderer;
         let lastSuccessfulRoute = null; 
-        let weatherLayer;
-        
-        // [新] 語音辨識變數
-        let recognition;
-        let currentSttInput = null; // 儲存當前正在語音輸入的欄位
-        const sttStatus = document.getElementById('stt-status');
-
-        // [新] 函數: 設定語音辨識
-        function setupSpeechRecognition() {
-            const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-            
-            if (!SpeechRecognition) {
-                // 不支援 API，不顯示任何按鈕
-                console.warn("瀏覽器不支援 Web Speech API");
-                return;
-            }
-
-            // 顯示所有 STT 按鈕
-            document.querySelectorAll('.stt-button').forEach(btn => {
-                btn.style.display = 'block';
-            });
-            
-            recognition = new SpeechRecognition();
-            recognition.lang = 'zh-TW'; // 設定語言為台灣中文
-            recognition.continuous = false;
-            recognition.interimResults = false;
-
-            // 事件: 辨識開始
-            recognition.onstart = () => {
-                sttStatus.textContent = '... 正在聆聽 ...';
-            };
-
-            // 事件: 辨識結束
-            recognition.onend = () => {
-                sttStatus.textContent = '';
-            };
-
-            // 事件: 發生錯誤
-            recognition.onerror = (event) => {
-                sttStatus.textContent = `語音辨識錯誤: ${event.error}`;
-            };
-
-            // 事件: 取得結果
-            recognition.onresult = (event) => {
-                const transcript = event.results[0][0].transcript;
-                if (currentSttInput) {
-                    currentSttInput.value = transcript;
-                }
-            };
-        }
-        
-        // [新] 函數: 開始聆聽 (由按鈕觸發)
-        function startListening(inputElement) {
-            currentSttInput = inputElement; // 鎖定要填入的 <input>
-            try {
-                recognition.start();
-            } catch (e) {
-                sttStatus.textContent = '語音辨識已在執行中。';
-            }
-        }
+        let weatherLayer; // 天氣圖層
 
         // 初始化地圖 (由 API 回呼)
         function initMap() {
             directionsService = new google.maps.DirectionsService();
             directionsRenderer = new google.maps.DirectionsRenderer();
-            geocoder = new google.maps.Geocoder();
             
             map = new google.maps.Map(document.getElementById('map'), {
                 zoom: 12,
-                center: { lat: 25.033, lng: 121.5654 }
+                center: { lat: 25.033, lng: 121.5654 } // 預設中心點 (台北)
             });
             
             directionsRenderer.setMap(map);
             directionsRenderer.setPanel(document.getElementById('directions-panel'));
             
+            // 初始化天氣圖層服務
             weatherLayer = new google.maps.weather.WeatherLayer();
-            
-            getUserLocation();
-            setupSpeechRecognition(); // [新] 啟動語音辨識
-        }
-        
-        // (獲取使用者位置函數，保持不變)
-        function getUserLocation() {
-            const locationDisplay = document.getElementById('current-location');
-            const startPointInput = document.getElementById('startPoint');
-            if (navigator.geolocation) {
-                navigator.geolocation.getCurrentPosition(
-                    (position) => {
-                        const pos = { lat: position.coords.latitude, lng: position.coords.longitude };
-                        geocoder.geocode({ 'location': pos }, (results, status) => {
-                            if (status === 'OK') {
-                                if (results[0]) {
-                                    const address = results[0].formatted_address;
-                                    locationDisplay.innerHTML = `📍 您目前的位置：<strong>${address}</strong>`;
-                                    startPointInput.value = address;
-                                } else {
-                                    locationDisplay.textContent = '錯誤：找不到地址';
-                                }
-                            } else {
-                                locationDisplay.textContent = '錯誤：反向地理編碼失敗';
-                            }
-                        });
-                    },
-                    (error) => {
-                        let errorMsg = '錯誤：';
-                        switch(error.code) {
-                            case error.PERMISSION_DENIED: errorMsg += '您拒絕了位置存取權限。'; break;
-                            case error.POSITION_UNAVAILABLE: errorMsg += '無法偵測目前位置。'; break;
-                            case error.TIMEOUT: errorMsg += '偵測位置超時。'; break;
-                            default: errorMsg += '發生未知錯誤。'; break;
-                        }
-                        locationDisplay.textContent = errorMsg;
-                    }
-                );
-            } else {
-                locationDisplay.textContent = '您的瀏覽器不支援地理位置功能。';
-            }
         }
 
         // 當 DOM 載入完成後，綁定事件
@@ -269,37 +125,14 @@
                 calculateAndDisplayRoute(selectedMode);
             });
 
-            // [修改] "新增到達點" 按鈕
             addDestButton.addEventListener('click', () => {
-                const destinationsList = document.getElementById('destinationsList');
-
-                // 1. 建立外層 Div
-                const wrapper = document.createElement('div');
-                wrapper.className = 'input-group-stt'; // 套用 flex 樣式
-
-                // 2. 建立 Input
                 const newInput = document.createElement('input');
                 newInput.type = 'text';
                 newInput.className = 'destination';
                 newInput.placeholder = '請輸入下一個地址';
-
-                // 3. 建立 Button
-                const newButton = document.createElement('button');
-                newButton.type = 'button'; // 避免觸發 form submit
-                newButton.className = 'stt-button';
-                newButton.textContent = '🎤';
-                newButton.style.display = 'block'; // 確保新按鈕是可見的
-                
-                // 4. 綁定新按鈕的點擊事件
-                newButton.addEventListener('click', () => startListening(newInput));
-
-                // 5. 組合
-                wrapper.appendChild(newInput);
-                wrapper.appendChild(newButton);
-                destinationsList.appendChild(wrapper);
+                document.getElementById('destinationsList').appendChild(newInput);
             });
 
-            // 綁定 "開啟 Google Map" 按鈕
             document.getElementById('openGoogleMaps').addEventListener('click', () => {
                 if (!lastSuccessfulRoute) { return; }
                 const baseUrlApi = 'https://www.google.com/maps/dir/?api=1';
@@ -310,35 +143,22 @@
                     : '';
                 const modeParam = lastSuccessfulRoute.travelMode === 'WALKING'
                     ? '&travelmode=walking'
-                    * : '&travelmode=driving';
+                    : '&travelmode=driving';
                 const finalUrl = baseUrlApi + originParam + destParam + waypointsParam + modeParam;
                 window.open(finalUrl, '_blank');
             });
             
-            // 綁定天氣開關
             const weatherCheckbox = document.getElementById('toggleWeather');
             weatherCheckbox.addEventListener('change', () => {
                 if (weatherCheckbox.checked) {
-                    weatherLayer.setMap(map);
+                    weatherLayer.setMap(map); // 開啟圖層
                 } else {
-                    weatherLayer.setMap(null);
+                    weatherLayer.setMap(null); // 關閉圖層
                 }
-            });
-
-            // [新] 綁定 "起始點" 的麥克風按鈕
-            document.getElementById('startSttButton').addEventListener('click', () => {
-                startListening(document.getElementById('startPoint'));
-            });
-
-            // [新] 綁定 "第一個到達點" 的麥克風按鈕
-            // 我們使用 querySelector 來選取第一個，因為它是在 HTML 裡固定的
-            document.querySelector('#destinationsList .stt-button').addEventListener('click', (event) => {
-                const input = event.target.previousElementSibling; // 找到按鈕前面的 input
-                startListening(input);
             });
         });
 
-        // (核心規劃函數 calculateAndDisplayRoute，保持不變)
+        // 核心函數 (與桌面版完全相同)
         function calculateAndDisplayRoute(travelMode) {
             const openMapsButton = document.getElementById('openGoogleMaps');
             openMapsButton.disabled = true;
@@ -350,7 +170,7 @@
             orderPanel.innerHTML = '<p>正在計算路徑...</p>';
             directionsPanel.innerHTML = '';
             
-            const waypoints = [];
+            const waypoints = []; // 儲存所有 "到達點"
             destinationInputs.forEach(input => {
                 const address = input.value.trim();
                 if (address !== '') { waypoints.push(address); }
@@ -367,6 +187,7 @@
                 return;
             }
             
+            // --- [邏輯修正] ---
             const waypointsForApi = [];
             waypoints.forEach(location => {
                 waypointsForApi.push({ location: location, stopover: true });
@@ -376,10 +197,10 @@
             
             const request = {
                 origin: startPoint,
-                destination: startPoint, 
-                waypoints: waypointsForApi,
+                destination: startPoint, // [修正] 將 "起點" 設為 "終點" 來觸發環狀最佳化
+                waypoints: waypointsForApi, // [修正] 包含 "所有" 到達點
                 travelMode: travelMode,
-                optimizeWaypoints: isDriving
+                optimizeWaypoints: isDriving // 開車時為 true, 步行時為 false
             };
             
             directionsService.route(request, (result, status) => {
@@ -390,40 +211,50 @@
                     
                     lastSuccessfulRoute = {
                         origin: startPoint,
-                        destination: null,
-                        orderedWaypoints: [],
+                        destination: null, // 稍後設定
+                        orderedWaypoints: [], // 儲存中間點
                         travelMode: travelMode
                     };
                     
                     let orderHtml = '';
-                    let optimizedWaypointsInOrder = [];
+                    let optimizedWaypointsInOrder = []; // 儲存排序後的 "到達點"
 
                     if (isOptimized) {
+                        // --- 情況 1: 最佳化 (開車) ---
                         orderHtml = '<h4>📍 最佳訪視順序 (開車)</h4><ol>';
                         orderHtml += `<li>${startPoint} <strong>(起點)</strong></li>`;
+                        
                         route.waypoint_order.forEach(index => {
                             const location = waypointsForApi[index].location;
                             optimizedWaypointsInOrder.push(location);
                         });
+
                         optimizedWaypointsInOrder.forEach(location => {
                             orderHtml += `<li>${location}</li>`;
                         });
+                        
                         orderHtml += '</ol>';
                         orderHtml += '<p class="panel-note">(已自動將終點設為最後一個訪視點)</p>';
+
                     } else {
+                        // --- 情況 2: 依輸入順序 (步行) ---
                         const modeText = '步行';
                         orderHtml = `<h4>📝 訪視順序 (${modeText})</h4><ol>`;
                         orderHtml += `<li>${startPoint} <strong>(起點)</strong></li>`;
+                        
                         waypointsForApi.forEach(wp => {
                             optimizedWaypointsInOrder.push(wp.location);
                         });
+
                         optimizedWaypointsInOrder.forEach(location => {
                             orderHtml += `<li>${location}</li>`;
                         });
+                        
                         orderHtml += '</ol>';
                         orderHtml += '<p class="panel-note">(步行模式將依您輸入的順序排列)</p>';
                     }
                     
+                    // --- [修正] 處理 "Open in Maps" 按鈕的資料 ---
                     if (optimizedWaypointsInOrder.length > 0) {
                         lastSuccessfulRoute.destination = optimizedWaypointsInOrder.pop(); 
                         lastSuccessfulRoute.orderedWaypoints = optimizedWaypointsInOrder; 
