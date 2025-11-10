@@ -4,97 +4,126 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>醫療數位孿生儀表板</title>
-    <link rel="shortcut icon" href="feticon.ico">
-    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&display=swap" rel="stylesheet">
-
+    <!-- 引入 Google Fonts 'Inter' -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;700&display=swap" rel="stylesheet">
     <style>
-        /* --- 1. 基礎與佈局 --- */
-        
-        * {
-            box-sizing: border-box;
-        }
-
+        /* --- 0. 基本設置與佈局 --- */
         body {
-            font-family: 'Orbitron', sans-serif;
-            background-color: #010038; /* 深藍色背景 [1] */
-            color: #00b3ff; /* 霓虹藍色文字 [2] */
+            font-family: 'Inter', sans-serif;
+            background-color: #000c18; /* 深藍色背景 */
+            color: #e0e0e0;
             margin: 0;
-            padding: 0;
+            height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
             overflow: hidden; /* 隱藏滾動條 */
         }
 
-       .dashboard-container {
+        .dashboard-container {
+            width: 95%;
+            height: 95%;
+            max-width: 1600px;
+            max-height: 900px;
             display: grid;
-            height: 100vh;
-            padding: 20px;
-            gap: 20px;
-            /* * 使用 CSS Grid Areas 進行宏觀佈局 [3]
-             * 佈局:
-             * | HEADER | HEADER |
-             * | HUMAN-TWIN | FACILITY-TWIN |
-             * | HUMAN-TWIN | FACILITY-DETAILS |
-            */
-            grid-template-columns: 2fr 1.5fr;
-            grid-template-rows: auto 1fr auto;
+            /* 網格佈局: 1行 標題, 1行 內容 */
             grid-template-areas:
                 "header header"
-                "human-twin facility-twin"
-                "human-twin facility-details";
-            perspective: 1500px; /* 創建 3D 視口 */
+                "main sidebar";
+            grid-template-rows: auto 1fr; /* 標題自動高度, 內容佔滿 */
+            grid-template-columns: 3fr 1fr; /* 主區域 3:1 側邊欄 */
+            gap: 20px;
+            padding: 20px;
+            box-sizing: border-box; /* 確保 padding 不影響總寬高 */
         }
 
         header {
             grid-area: header;
             text-align: center;
+            /* 新增: 使用 flex 讓 Logo 和標題並排 */
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 20px; /* Logo 和標題的間距 */
+        }
+
+        /* 新增: Logo 樣式 */
+        #header-logo {
+            width: 50px; /* 設置 Logo 寬度 */
+            height: 50px; /* 設置 Logo 高度 */
+            object-fit: contain; /* 確保 Logo 完整顯示 */
+            /* 讓 Logo 也有輕微發光效果 */
+            filter: drop-shadow(0 0 8px #00b3ff);
         }
 
        .widget {
             /* "全息投影" 面板效果 */
-            background: rgba(0, 25, 50, 0.7);
-            border: 1px solid #00b3ff;
+            background: rgba(0, 58, 89, 0.4); /* 半透明藍色背景 */
+            border: 1px solid #005f80; /* 亮藍色邊框 */
             border-radius: 8px;
-            box-shadow: 0 0 15px rgba(0, 180, 255, 0.5), 
-                        inset 0 0 10px rgba(0, 180, 255, 0.3); /* 發光邊框 */
-            backdrop-filter: blur(5px); /* 磨砂玻璃效果 */
             padding: 20px;
-            overflow: hidden;
+            box-shadow: 0 0 25px rgba(0, 179, 255, 0.3), inset 0 0 15px rgba(0, 179, 255, 0.2);
+            backdrop-filter: blur(5px);
+            
+            /* 3D 傾斜效果 */
+            transform: perspective(1000px) rotateX(3deg) rotateY(3deg) translateZ(-10px);
+            transition: transform 0.4s, box-shadow 0.4s;
+            
+            /* 確保 widget 可以作為 flex 容器 */
             display: flex;
             flex-direction: column;
-
-            /* 3D 傾斜效果，模擬 S_S_Final_Image */
-            transform: rotateY(3deg) translateZ(-10px);
-            transition: transform 0.4s, box-shadow 0.4s;
         }
 
        .widget:hover {
-            transform: rotateY(0deg) translateZ(0) scale(1.02);
-            box-shadow: 0 0 25px rgba(0, 180, 255, 0.8), 
-                        inset 0 0 15px rgba(0, 180, 255, 0.5);
+            transform: perspective(1000px) rotateX(0deg) rotateY(0deg) translateZ(0px);
+            box-shadow: 0 0 35px rgba(0, 179, 255, 0.5), inset 0 0 20px rgba(0, 179, 255, 0.3);
         }
 
-        /* 將小部件分配到網格區域 */
-       .human-twin { grid-area: human-twin; }
-       .facility-twin { grid-area: facility-twin; }
-       .facility-details { grid-area: facility-details; }
-
-        /* --- 2. 標題與文字效果 --- */
-
-        h1, h3 {
-            margin: 0 0 20px 0;
-            color: #fff;
-            /* 發光文字效果 [2, 1] */
-            text-shadow: 0 0 10px #00b3ff, 0 0 20px #00b3ff;
-            animation: glowing-text 2s ease-in-out infinite alternate;
+       .widget h3 {
+            margin-top: 0;
+            color: #00b3ff; /* 標題亮藍色 */
+            text-shadow: 0 0 10px #00b3ff;
+            border-bottom: 1px solid #005f80;
+            padding-bottom: 10px;
         }
 
-        @keyframes glowing-text {
-            from { text-shadow: 0 0 10px #00b3ff; }
-            to { text-shadow: 0 0 20px #00b3ff, 0 0 5px #fff; }
+        /* --- 1. 主區域 (左側) --- */
+        .main-content {
+            grid-area: main;
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            grid-template-rows: 1fr; /* 單行 */
+            gap: 20px;
+            min-height: 0; /* 修正 flex/grid 溢出 */
+        }
+
+        /* --- 2. 側邊欄 (右側) --- */
+        .sidebar {
+            grid-area: sidebar;
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+            min-height: 0; /* 修正 flex/grid 溢出 */
         }
 
         /* --- 3. 模組 A: 人體孿生 --- */
         
-/* ... existing code ... -->
+        .human-twin {
+             min-height: 0; /* 允許 flex-grow */
+        }
+        
+        /* 頭像容器樣式 */
+       .avatar-container {
+            width: 100%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            margin-bottom: 20px;
+            padding: 10px;
+            background: #000;
+            border-radius: 8px;
+        }
+
         #patient-avatar {
             width: 150px;
             height: 150px;
@@ -102,50 +131,44 @@
             border: 4px solid #00b3ff;
             box-shadow: 0 0 15px #00b3ff;
             object-fit: cover; /* 確保圖片填滿 */
-            /* * 新增: 錯誤處理，如果 p1.jpg 加載失敗
-             * 會顯示一個藍色的佔位符 [21]
-             */
-            background-color: #00b3ff;
+            transition: border-color 0.3s, box-shadow 0.3s;
         }
         
        .vitals-grid {
             display: grid;
-            grid-template-columns: 1fr 1fr;
+            grid-template-columns: repeat(2, 1fr); /* 2x2 網格 */
+            grid-template-rows: repeat(2, 1fr);
             gap: 15px;
             margin-bottom: 20px;
         }
 
        .vital {
-            background: rgba(0, 0, 0, 0.3);
+            background: #000;
             border: 1px solid #005f80;
-            padding: 15px;
+            padding: 10px;
             border-radius: 5px;
         }
 
-       .vital.label {
-            font-size: 1rem;
-            color: #00b3ff;
-            display: block;
+       .vital .label {
+            font-size: 0.9rem;
+            color: #a0cfff;
             margin-bottom: 5px;
         }
 
-       .vital.value {
-            font-size: 3rem;
-            font-weight: 700;
+       .vital .value {
+            font-size: 1.8rem;
+            font-weight: 500;
             color: #fff;
-            /* 數位數字外觀 [4] */
             text-shadow: 0 0 8px #fff; 
         }
 
-       .vital.unit {
-            font-size: 1rem;
-            color: #00b3ff;
+       .vital .unit {
+            font-size: 0.9rem;
+            color: #a0cfff;
             margin-left: 5px;
         }
 
-       /* 移除了 .stats-container, .doughnut-chart, .patient-info 相關樣式 */
-
-        /* 新增: 動態圖表容器 */
+        /* 動態圖表容器 */
        .graphs-container {
             flex-grow: 1; /* 填滿剩餘的垂直空間 */
             display: flex;
@@ -180,15 +203,16 @@
 
         /* --- 4. 模組 B: 設施孿生 (SVG 地圖) --- */
         
+       .facility-twin {
+            min-height: 0; /* 允許 flex-grow */
+        }
+
        .map-container {
             flex-grow: 1; /* 填滿.widget 的剩餘空間 */
-            display: flex;
-            justify-content: center;
-            align-items: center;
             background: #000;
-            border-radius: 5px;
+            border-radius: 4px;
             padding: 10px;
-            position: relative; /* 用於疊加狀態指示燈 */
+            min-height: 250px; /* 確保地圖有最小高度 */
         }
 
        .facility-map {
@@ -196,217 +220,199 @@
             height: 100%;
         }
 
-        /* * 修正 (FIX): 
-         * 選擇器從 .facility-map.room 改為 .facility-map .room
-         * (使用後代選擇器)
-         */
-         
-        /* SVG 路徑的默認樣式 */
        .facility-map .room {
-            fill: #333;
-            stroke: #00b3ff;
+            fill: rgba(0, 118, 163, 0.5); /* 房間底色 */
+            stroke: #00b3ff; /* 房間描邊 */
             stroke-width: 2;
+            transition: fill 0.3s, stroke-width 0.3s;
             cursor: pointer;
-            transition: fill 0.3s ease;
         }
 
-        /* SVG 點擊高亮效果 [7, 8] */
        .facility-map .room:hover {
-            fill: #555;
+            fill: rgba(0, 179, 255, 0.7);
         }
 
        .facility-map .room.selected {
-            fill: #00b3ff;
+            fill: rgba(0, 179, 255, 0.9);
+            stroke-width: 4;
             stroke: #fff;
         }
 
-        /* 警報閃爍動畫 [9] */
        .facility-map .room.alert {
-            fill: #ff4242; /* 警報紅色 [10] */
-            animation: blink-fill 1s infinite;
+            fill: rgba(255, 66, 66, 0.8); /* 警報紅色 */
+            stroke: #ff0000;
+            animation: pulse-alert 1s infinite alternate; /* 警報閃爍動畫 */
         }
 
-        @keyframes blink-fill {
-            0%, 100% { fill: #ff4242; }
-            50% { fill: #333; }
+        /* --- 5. 模組 C: 詳情面板 --- */
+       .details-panel {
+            flex-grow: 1; /* 佔滿側邊欄剩餘空間 */
+            min-height: 0;
         }
 
-        /* --- 5. 設施詳情 & 狀態指示燈 --- */
-
-       .details-grid {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 15px;
+       .details-content p {
+            background: #001a2c;
+            padding: 10px;
+            border-radius: 4px;
+            border-left: 3px solid #00b3ff;
+            margin: 15px 0;
+            display: flex;
+            justify-content: space-between;
         }
-       .detail-item.label {
-            font-size: 0.9rem;
-            color: #00b3ff;
+       .details-content p strong {
+            color: #a0cfff;
+            margin-right: 10px;
         }
-       .detail-item.value {
-            font-size: 1.5rem;
+       .details-content p span {
             color: #fff;
         }
 
-        /* 狀態指示燈 [10, 11, 12] */
-       .status-indicator {
-            display: flex;
-            align-items: center;
-            gap: 10px;
-        }
-
+        /* 狀態指示燈 */
        .status-dot {
-            width: 12px;
-            height: 12px;
+            height: 15px;
+            width: 15px;
             border-radius: 50%;
-            position: relative;
+            display: inline-block;
+            margin-right: 10px;
+            box-shadow: 0 0 10px;
         }
-        
-       .status-dot.online { background-color: #72ff7d; }
-       .status-dot.offline { background-color: #ff4242; }
-
-        /* 脈衝動畫 [10] */
-       .status-dot::before {
-            content: '';
-            position: absolute;
-            left: 50%;
-            top: 50%;
-            transform: translate(-50%, -50%);
-            width: 12px;
-            height: 12px;
-            border-radius: 50%;
-            background-color: inherit;
-            animation: pulse 1.5s infinite ease-out;
+       .status-dot.online {
+            background-color: #00ff00;
+            box-shadow: 0 0 10px #00ff00;
+        }
+       .status-dot.offline {
+            background-color: #ff4242;
+            box-shadow: 0 0 10px #ff4242;
         }
 
-       .status-dot.offline::before {
-            animation: none; /* 離線時不發光 */
-        }
 
-        @keyframes pulse {
+        /* --- 6. 動畫 --- */
+        @keyframes pulse-alert {
             from {
-                transform: translate(-50%, -50%) scale(0.5);
                 opacity: 1;
+                box-shadow: 0 0 10px #ff0000;
             }
             to {
-                transform: translate(-50%, -50%) scale(2);
-                opacity: 0;
+                opacity: 0.7;
+                box-shadow: 0 0 20px #ff0000;
             }
         }
-        
     </style>
 </head>
 <body>
 
     <div class="dashboard-container">
         <header>
+            <!-- 新增: Logo 圖片 -->
+            <img id="header-logo" src="fetlogo.png" alt="FET Logo"
+                 onerror="this.style.display='none'"> <!-- 如果 Logo 加載失敗則隱藏 -->
+            
             <h1>醫療數位孿生儀表板 (Demo)</h1>
         </header>
 
-        <div class="widget human-twin">
-            <!-- <h3> 標題現在是動態的 -->
-            <h3 id="human-twin-title">人體孿生 (Patient-001)</h3>
-            
-            <!-- 新增: 病患頭像 -->
-            <div class="avatar-container">
-                <!-- 
-                  更新: 
-                  'src' 路徑已設為 'p1.jpg'。
-                  並添加了 'onerror' 事件處理，以防圖片加載失敗。
-                -->
-                <img id="patient-avatar" 
-                     src="p1.jpg" 
-                     alt="病患頭像"
-                     onerror="this.src='https://placehold.co/150x150/010038/FF0000?text=Error'; this.style.borderColor='#ff0000';">
-            </div>
+        <div class="main-content">
+            <!-- 模組 A: 人體孿生 -->
+            <div class="widget human-twin">
+                <!-- <h3> 標題現在是動態的 -->
+                <h3 id="human-twin-title">人體孿生 (Patient-001)</h3>
+                
+                <!-- 病患頭像 -->
+                <div class="avatar-container">
+                    <!-- 
+                      更新: 
+                      使用 p1.jpg, p2.jpg... 
+                      並加入 onerror 備用圖片
+                    -->
+                    <img id="patient-avatar" src="p1.jpg" alt="病患頭像"
+                         onerror="this.src='https://placehold.co/150x150/010038/FF0000?text=Error'; this.style.borderColor='#ff0000';">
+                </div>
 
-            <div class="vitals-grid">
-                <div class="vital">
-                    <span class="label">心率 (HR)</span>
-                    <span class="value" id="vital-hr">72</span>
-                    <span class="unit">bpm</span>
+                <!-- 生命體徵 -->
+                <div class="vitals-grid">
+                    <div class="vital">
+                        <div class="label">心率 (HR)</div>
+                        <span class="value" id="vital-hr">72</span>
+                        <span class="unit">bpm</span>
+                    </div>
+                    <div class="vital">
+                        <div class="label">血壓 (BP)</div>
+                        <span class="value" id="vital-bp">120/80</span>
+                        <span class="unit">mmHg</span>
+                    </div>
+                    <div class="vital">
+                        <div class="label">血氧 (SpO2)</div>
+                        <span class="value" id="vital-spo2">98</span>
+                        <span class="unit">%</span>
+                    </div>
+                    <div class="vital">
+                        <div class="label">呼吸 (RR)</div>
+                        <span class="value" id="vital-rr">16</span>
+                        <span class="unit">/min</span>
+                    </div>
                 </div>
-                <div class="vital">
-                    <span class="label">血壓 (BP)</span>
-                    <span class="value" id="vital-bp">120/80</span>
-                    <span class="unit">mmHg</span>
-                </div>
-                <div class="vital">
-                    <span class="label">血氧 (SpO2)</span>
-                    <span class="value" id="vital-spo2">98</span>
-                    <span class="unit">%</span>
-                </div>
-                <div class="vital">
-                    <span class="label">呼吸 (RR)</span>
-                    <span class="value" id="vital-rr">16</span>
-                    <span class="unit">/min</span>
-                </div>
-            </div>
 
-            <!-- 移除 .stats-container (環圈圖和病患資訊) -->
-
-            <!-- 新增: 動態圖表容器 -->
-            <div class="graphs-container">
-                <div class="graph-wrapper">
-                    <h4 class="graph-label">心電圖 (ECG)</h4>
-                    <canvas id="ecg-canvas"></canvas>
-                </div>
-                <div class="graph-wrapper">
-                    <h4 class="graph-label">腦波圖 (EEG) - 5 通道</h4>
-                    <canvas id="eeg-canvas"></canvas>
-                </div>
-            </div>
-        </div>
-
-        <div class="widget facility-twin">
-            <h3>設施孿生 (ICU 樓層)</h3>
-            <div class="map-container">
-                <svg class="facility-map" viewBox="0 0 300 200" xmlns="http://www.w3.org/2000/svg">
-                    <title>ICU 樓層平面圖</title>
-                    
-                    <path class="room" id="room-101" d="M 10,10 H 140 V 90 H 10 Z" />
-                    <text x="75" y="55" fill="#fff" font-size="12" text-anchor="middle">ICU 101</text>
-                    
-                    <path class="room" id="room-102" d="M 160,10 H 290 V 90 H 160 Z" />
-                    <text x="225" y="55" fill="#fff" font-size="12" text-anchor="middle">ICU 102</text>
-                    
-                    <path class="room" id="room-103" d="M 10,110 H 140 V 190 H 10 Z" />
-                    <text x="75" y="155" fill="#fff" font-size="12" text-anchor="middle">ICU 103</text>
-                    
-                    <!-- 更新: ICU 104 -->
-                    <path class="room" id="room-104" d="M 160,110 H 290 V 190 H 160 Z" />
-                    <text x="225" y="155" fill="#fff" font-size="12" text-anchor="middle">ICU 104</text>
-                </svg>
-            </div>
-        </div>
-
-        <div class="widget facility-details">
-            <h3>設施詳情</h3>
-            <div class="details-grid">
-                <div class="detail-item">
-                    <span class="label">選定區域</span>
-                    <span class="value" id="details-room-name">--</span>
-                </div>
-                <div class="detail-item">
-                    <span class="label">狀態</span>
-                    <div class="status-indicator">
-                        <span class="status-dot online" id="details-status-dot"></span>
-                        <span class="value" id="details-status-text">--</span>
+                <!-- 動態圖表容器 -->
+                <div class="graphs-container">
+                    <div class="graph-wrapper">
+                        <h4 class="graph-label">心電圖 (ECG)</h4>
+                        <canvas id="ecg-canvas"></canvas>
+                    </div>
+                    <div class="graph-wrapper">
+                        <h4 class="graph-label">腦波圖 (EEG) - 5 通道</h4>
+                        <canvas id="eeg-canvas"></canvas>
                     </div>
                 </div>
             </div>
-            <div class="detail-item">
-                <span class="label">關聯病患</span>
-                <span class="value" id="details-patient">--</span>
-            </div>
-            <div class="detail-item">
-                <span class="label">設備</span>
-                <span class="value" id="details-equipment">--</span>
+
+            <!-- 模組 B: 設施孿生 (SVG 地圖) -->
+            <div class="widget facility-twin">
+                <h3>設施孿生 (ICU 樓層)</h3>
+                <div class="map-container">
+                    <svg class="facility-map" viewBox="0 0 300 200">
+                        <!-- 
+                          修正 (FIX): 
+                          CSS 選擇器錯誤 ('.facility-map.room' -> '.facility-map .room')
+                          已在此處的 CSS 中修正，SVG 結構無需更改
+                        -->
+                        <path class="room" id="room-101" d="M 10,10 H 140 V 90 H 10 Z" />
+                        <text x="75" y="55" fill="#fff" font-size="12" text-anchor="middle">ICU 101</text>
+                        
+                        <path class="room" id="room-102" d="M 160,10 H 290 V 90 H 160 Z" />
+                        <text x="225" y="55" fill="#fff" font-size="12" text-anchor="middle">ICU 102</text>
+                        
+                        <path class="room" id="room-103" d="M 10,110 H 140 V 190 H 10 Z" />
+                        <text x="75" y="155" fill="#fff" font-size="12" text-anchor="middle">ICU 103</text>
+                        
+                        <path class="room" id="room-104" d="M 160,110 H 290 V 190 H 160 Z" />
+                        <text x="225" y="155" fill="#fff" font-size="12" text-anchor="middle">ICU 104</text>
+                    </svg>
+                </div>
             </div>
         </div>
+
+        <div class="sidebar">
+            <!-- 模組 C: 詳情面板 -->
+            <div class="widget details-panel">
+                <!-- <h3> 標題現在是動態的 -->
+                <h3 id="details-name">ICU 病房 101</h3>
+                <div class="details-content">
+                    <p>
+                        <strong>狀態</strong>
+                        <span>
+                            <span class="status-dot online" id="details-status-dot"></span>
+                            <span id="details-status-text">Online</span>
+                        </span>
+                    </p>
+                    <p><strong>病患 ID</strong> <span id="details-patient">Patient-001</span></p>
+                    <p><strong>主要設備</strong> <span id="details-equipment">Ventilator V-100</span></p>
+                </div>
+            </div>
+        </div>
+
     </div>
 
     <script>
-        // 確保在 DOM 加載完成後執行 [13, 14, 15]
+        // 確保在 DOM 加載完成後執行
         document.addEventListener('DOMContentLoaded', function() {
 
             // --- 1. 緩存 DOM 元素 ---
@@ -416,25 +422,22 @@
             const rrElement = document.getElementById('vital-rr');
             
             /* * 修正 (FIX): 
-             * 選擇器從 .facility-map.room 改為 .facility-map .room
-             */
+              * CSS 選擇器錯誤 ('.facility-map.room' -> '.facility-map .room')
+              * 這裡的 JavaScript 選擇器也要修正
+            */
             const roomPaths = document.querySelectorAll('.facility-map .room');
             
-            const detailsName = document.getElementById('details-room-name');
-            const detailsStatusText = document.getElementById('details-status-text');
+            const detailsName = document.getElementById('details-name');
             const detailsStatusDot = document.getElementById('details-status-dot');
+            const detailsStatusText = document.getElementById('details-status-text');
             const detailsPatient = document.getElementById('details-patient');
             const detailsEquipment = document.getElementById('details-equipment');
 
             // 人體孿生 DOM 元素
             const humanTwinTitle = document.getElementById('human-twin-title');
             const patientAvatar = document.getElementById('patient-avatar');
-            // 修正: 移除了不存在的 DOM 元素
-            // const patientInfoName = document.getElementById('patient-info-name');
-            // const patientInfoStatus = document.getElementById('patient-info-status');
-            // const patientInfoLocation = document.getElementById('patient-info-location');
 
-            // 新增: 畫布元素
+            // 畫布元素
             const ecgCanvas = document.getElementById('ecg-canvas');
             const ecgCtx = ecgCanvas.getContext('2d');
             const eegCanvas = document.getElementById('eeg-canvas');
@@ -443,15 +446,15 @@
 
             // --- 2. 數據模擬引擎 ---
             
-            <!-- 
+            /*
               * 修正 (FIX): 
               * 修正了 SyntaxError: Unexpected token ':'
-              * 這裡的 patientDatabase 物件宣告不完整。
-            -->
+              * 移除了上一版錯誤加入的 '<' 標籤
+            */
             
-            <!-- 模擬病房與病患數據庫 -->
-            <!-- 使用 p1.jpg, p2.jpg, p3.jpg, p4.jpg -->
-            <const patientDatabase = {
+            /* 模擬病房與病患數據庫 */
+            /* 使用 p1.jpg, p2.jpg, p3.jpg, p4.jpg */
+            const patientDatabase = {
                 "room-101": { 
                     patientId: "Patient-001", 
                     avatarUrl: "p1.jpg", // 更新
@@ -476,7 +479,7 @@
                  "room-104": { 
                     patientId: "Patient-004", // 更新
                     avatarUrl: "p4.jpg", // 更新
-                    equipment: "Infusion Pump I-30", // 更新
+                    equipment: "Infusion Pump I-300", // 更新
                     status: "online", // 更新
                     baseVitals: { hr: 75, bpSys: 115, bpDia: 78, spo2: 98, rr: 16 } // 更新
                 },
@@ -486,9 +489,10 @@
             let currentBaseVitals = null;
             let currentSelectedRoom = 'room-101'; // 初始選中
 
-            // 模擬生命體徵 (中頻率更新) [17]
+            // 模擬生命體徵 (中頻率更新)
             setInterval(function simulateVitals() {
                 if (!currentBaseVitals) {
+                    // 如果房間為空 (雖然此 Demo 中都滿了)
                     hrElement.innerText = '--';
                     spo2Element.innerText = '--';
                     rrElement.innerText = '--';
@@ -506,10 +510,10 @@
                 
             }, 1500);
 
-            // 模擬設施狀態 (低頻率更新) [17]
+            // 模擬設施狀態 (低頻率更新)
             setInterval(function simulateFacility() {
+                // 隨機讓一個病房發出警報
                 if (Math.random() > 0.7) {
-                    // 選擇一個有病患的房間
                     const occupiedRooms = ["room-101", "room-102", "room-103", "room-104"];
                     let randomRoom = occupiedRooms[Math.floor(Math.random() * occupiedRooms.length)];
                     let roomEl = document.getElementById(randomRoom);
@@ -524,9 +528,9 @@
                             patientDatabase[randomRoom].status = "alert";
                         }
                         
+                        // 更新詳情面板(如果選中)
                         if (roomEl.classList.contains('selected')) {
                             updateDetails(randomRoom);
-                            updateHumanTwin(randomRoom);
                         }
                     }
                 }
@@ -543,16 +547,9 @@
                 
                 // 更新頭像
                 patientAvatar.src = data.avatarUrl; 
-                // 重置邊框顏色，以防 'onerror' 觸發
                 patientAvatar.style.borderColor = '#00b3ff';
                 
                 humanTwinTitle.innerText = `人體孿生 (${data.patientId})`;
-                
-                <!-- 修正: 移除了對不存在元素的 .innerText 賦值 -->
-                <!-- patientInfoName.innerText = `病患: ${data.patientId}`; -->
-                <!-- patientInfoLocation.innerText = `位置: ${roomId.toUpperCase()}`; -->
-                
-                <!-- 更新: 移除 patientInfoStatus 的更新 (該元素已被移除) -->
                 
                 if (!data.baseVitals) {
                     simulateVitals();
@@ -572,32 +569,32 @@
                     detailsStatusDot.className = "status-dot online";
                 } else if (data.status === 'alert') {
                     detailsStatusText.innerText = "Alert!";
-                    detailsStatusDot.className = "status-dot offline";
+                    detailsStatusDot.className = "status-dot offline"; // 使用 offline 的紅色
                 } else {
                     detailsStatusText.innerText = "Offline";
                     detailsStatusDot.className = "status-dot offline";
                 }
             }
 
-            // 為每個 SVG 房間路徑添加點擊事件 [7, 8, 20]
+            // 為每個 SVG 房間路徑添加點擊事件
             roomPaths.forEach(path => {
                 path.addEventListener('click', function() {
-                    // 1. 移除所有路徑的 'selected' 類 [8]
+                    // 1. 移除所有路徑的 'selected' 類
                     roomPaths.forEach(p => p.classList.remove('selected'));
                     
-                    // 2. 為被點擊的路徑添加 'selected' 類 [8]
+                    // 2. 為被點擊的路徑添加 'selected' 類
                     this.classList.add('selected');
                     
                     // 3. 更新兩個面板
                     currentSelectedRoom = this.id;
                     updateDetails(currentSelectedRoom);
                     updateHumanTwin(currentSelectedRoom);
-                });
+V                });
             });
 
-            // --- 4. 新增: 畫布繪圖引擎 ---
+            // --- 4. 畫布繪圖引擎 ---
 
-            // ECG 數據 (與之前版本相同)
+            // ECG 數據
             const ecgWaveform = [
                 100, 100, 100, 100, 100, 100, 100, 100, 100, 100, 
                 100, 100, 100, 100, 100, 100, 100, 100, 100, 100,
@@ -624,26 +621,36 @@
             
             // 響應式調整畫布大小
             function resizeCanvases() {
-                ecgCanvas.width = ecgCanvas.offsetWidth;
-                ecgCanvas.height = ecgCanvas.offsetHeight;
-                ecgCtx.strokeStyle = '#00ff00'; // ECG 綠色
-                ecgCtx.lineWidth = 2;
-                ecgCtx.shadowBlur = 5;
-                ecgCtx.shadowColor = '#00ff00';
+                // 確保畫布在父元素大小穩定後再調整
+                // 延遲一點點時間執行
+                setTimeout(() => {
+                    if (ecgCanvas.offsetWidth > 0) {
+                        ecgCanvas.width = ecgCanvas.offsetWidth;
+                        ecgCanvas.height = ecgCanvas.offsetHeight;
+                        ecgCtx.strokeStyle = '#00ff00'; // ECG 綠色
+                        ecgCtx.lineWidth = 2;
+                        ecgCtx.shadowBlur = 5;
+                        ecgCtx.shadowColor = '#00ff00';
+                    }
+                    
+                    if (eegCanvas.offsetWidth > 0) {
+                        eegCanvas.width = eegCanvas.offsetWidth;
+                        eegCanvas.height = eegCanvas.offsetHeight;
+                        eegCtx.strokeStyle = '#FFFF00'; // EEG 黃色
+                        eegCtx.lineWidth = 1; // 腦波線條細一點
 
-                eegCanvas.width = eegCanvas.offsetWidth;
-                eegCanvas.height = eegCanvas.offsetHeight;
-                eegCtx.strokeStyle = '#FFFF00'; // EEG 黃色
-                eegCtx.lineWidth = 1; // 腦波線條細一點
-
-                // 初始化 EEG Y 座標
-                for (let i = 0; i < eegLines; i++) {
-                    lastEegY[i] = (eegCanvas.height / (eegLines + 1)) * (i + 1);
-                }
+                        // 初始化 EEG Y 座標
+                        for (let i = 0; i < eegLines; i++) {
+                            lastEegY[i] = (eegCanvas.height / (eegLines + 1)) * (i + 1);
+                        }
+                    }
+                }, 50); // 50ms 延遲
             }
             
             // 繪製 ECG 波形
             function drawEcgWave() {
+                if (ecgCanvas.height === 0) return; // 畫布未準備好
+
                 let canvasHeight = ecgCanvas.height;
                 let baseHeight = canvasHeight / 1.8;
                 let scale = canvasHeight / 200; // 根據畫布高度動態縮放
@@ -673,6 +680,8 @@
 
             // 繪製 EEG 波形 (多通道)
             function drawEegWave() {
+                if (eegCanvas.height === 0) return; // 畫布未準備好
+
                 let canvasHeight = eegCanvas.height;
                 let baseSpacing = canvasHeight / (eegLines + 1);
                 let amplitude = baseSpacing * 0.4; // 振幅
@@ -711,6 +720,9 @@
             }
 
             // --- 5. 啟動 ---
+            
+            // 監聽窗口大小變化，重新調整畫布
+            window.addEventListener('resize', resizeCanvases);
             
             resizeCanvases(); // 設置初始畫布大小
             animateGraphs();  // 開始繪製動畫
