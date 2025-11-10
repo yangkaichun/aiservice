@@ -94,8 +94,6 @@
 
         /* --- 3. 模組 A: 人體孿生 --- */
         
-        /* 移除了 #ecg-canvas 樣式 */
-
         /* 新增: 頭像容器樣式 */
        .avatar-container {
             width: 100%;
@@ -115,6 +113,10 @@
             border: 4px solid #00b3ff;
             box-shadow: 0 0 15px #00b3ff;
             object-fit: cover; /* 確保圖片填滿 */
+            /* * 新增: 錯誤處理，如果 p1.jpg 加載失敗
+             * 會顯示一個藍色的佔位符 [21]
+             */
+            background-color: #00b3ff;
         }
         
        .vitals-grid {
@@ -218,8 +220,13 @@
             height: 100%;
         }
 
+        /* * 修正 (FIX): 
+         * 選擇器從 .facility-map.room 改為 .facility-map .room
+         * (使用後代選擇器)
+         */
+         
         /* SVG 路徑的默認樣式 */
-       .facility-map.room {
+       .facility-map .room {
             fill: #333;
             stroke: #00b3ff;
             stroke-width: 2;
@@ -228,17 +235,17 @@
         }
 
         /* SVG 點擊高亮效果 [7, 8] */
-       .facility-map.room:hover {
+       .facility-map .room:hover {
             fill: #555;
         }
 
-       .facility-map.room.selected {
+       .facility-map .room.selected {
             fill: #00b3ff;
             stroke: #fff;
         }
 
         /* 警報閃爍動畫 [9] */
-       .facility-map.room.alert {
+       .facility-map .room.alert {
             fill: #ff4242; /* 警報紅色 [10] */
             animation: blink-fill 1s infinite;
         }
@@ -323,16 +330,17 @@
             <!-- <h3> 標題現在是動態的 -->
             <h3 id="human-twin-title">人體孿生 (Patient-001)</h3>
             
-            <!-- 移除了 <canvas id="ecg-canvas"></canvas> -->
-            
             <!-- 新增: 病患頭像 -->
             <div class="avatar-container">
                 <!-- 
-                  注意: 
-                  請將下面的 'src' 網址替換為您本地的圖片路徑 (例如 'p1.png')。
-                  目前使用 placehold.co 作為佔位符。
+                  更新: 
+                  'src' 路徑已設為 'p1.jpg'。
+                  並添加了 'onerror' 事件處理，以防圖片加載失敗。
                 -->
-                <img id="patient-avatar" src="https://placehold.co/150x150/010038/00b3ff?text=P1" alt="病患頭像">
+                <img id="patient-avatar" 
+                     src="p1.jpg" 
+                     alt="病患頭像"
+                     onerror="this.src='https://placehold.co/150x150/010038/FF0000?text=Error'; this.style.borderColor='#ff0000';">
             </div>
 
             <div class="vitals-grid">
@@ -389,7 +397,7 @@
                     <path class="room" id="room-103" d="M 10,110 H 140 V 190 H 10 Z" />
                     <text x="75" y="155" fill="#fff" font-size="12" text-anchor="middle">ICU 103</text>
                     
-                    <!-- 更新: 將 MRI 變更為 ICU 104 -->
+                    <!-- 更新: ICU 104 -->
                     <path class="room" id="room-104" d="M 160,110 H 290 V 190 H 160 Z" />
                     <text x="225" y="155" fill="#fff" font-size="12" text-anchor="middle">ICU 104</text>
                 </svg>
@@ -432,11 +440,10 @@
             const spo2Element = document.getElementById('vital-spo2');
             const rrElement = document.getElementById('vital-rr');
             
-            // 移除 ECG 相關
-            // const ecgCanvas = document.getElementById('ecg-canvas');
-            // const ctx = ecgCanvas.getContext('2d');
-            
-            const roomPaths = document.querySelectorAll('.facility-map.room');
+            /* * 修正 (FIX): 
+             * 選擇器從 .facility-map.room 改為 .facility-map .room
+             */
+            const roomPaths = document.querySelectorAll('.facility-map .room');
             
             const detailsName = document.getElementById('details-room-name');
             const detailsStatusText = document.getElementById('details-status-text');
@@ -444,52 +451,45 @@
             const detailsPatient = document.getElementById('details-patient');
             const detailsEquipment = document.getElementById('details-equipment');
 
-            // 新增: 人體孿生 DOM 元素
+            // 人體孿生 DOM 元素
             const humanTwinTitle = document.getElementById('human-twin-title');
             const patientAvatar = document.getElementById('patient-avatar');
             const patientInfoName = document.getElementById('patient-info-name');
             const patientInfoStatus = document.getElementById('patient-info-status');
             const patientInfoLocation = document.getElementById('patient-info-location');
 
-
-            // --- 2. 移除 ECG 繪圖引擎 ---
-            // [16]
+            // --- 2. 數據模擬引擎 ---
             
-            // (ECG 相關的 drawEcg, resizeCanvas, ecgWaveform, ecgDataIndex, ecgX, step 均已移除)
-
-
-            // --- 3. 數據模擬引擎 (setInterval) ---
-            
-            // 模擬病房與病患數據庫
-            // 這是 Demo 的核心數據模型
+            // 更新: 模擬病房與病患數據庫
+            // 使用 p1.jpg, p2.jpg, p3.jpg, p4.jpg
             const patientDatabase = {
                 "room-101": { 
                     patientId: "Patient-001", 
-                    avatarUrl: "p1.jpg", // 替換為 'p1.png'
+                    avatarUrl: "p1.jpg", // 更新
                     equipment: "Ventilator V-100", 
                     status: "online",
                     baseVitals: { hr: 72, bpSys: 120, bpDia: 80, spo2: 98, rr: 16 }
                 },
                 "room-102": { 
                     patientId: "Patient-002", 
-                    avatarUrl: "p2.jpg", // 替換為 'p2.png'
+                    avatarUrl: "p2.jpg", // 更新
                     equipment: "Dialysis D-50", 
                     status: "online",
                     baseVitals: { hr: 85, bpSys: 130, bpDia: 85, spo2: 97, rr: 18 }
                 },
                 "room-103": { 
                     patientId: "Patient-003", 
-                    avatarUrl: "p3.jpg", // 替換為 'p3.png'
+                    avatarUrl: "p3.jpg", // 更新
                     equipment: "ECMO E-20", 
                     status: "online",
                     baseVitals: { hr: 68, bpSys: 110, bpDia: 75, spo2: 99, rr: 14 }
                 },
                  "room-104": { 
-                    patientId: "Patient-003", 
-                    avatarUrl: "p4.jpg",
-                    equipment: "ECMO E-30", 
-                    status: "offline",
-                    baseVitals: null // 沒有病患
+                    patientId: "Patient-004", // 更新
+                    avatarUrl: "p4.jpg", // 更新
+                    equipment: "Infusion Pump I-30", // 更新
+                    status: "online", // 更新
+                    baseVitals: { hr: 75, bpSys: 115, bpDia: 78, spo2: 98, rr: 16 } // 更新
                 },
             };
 
@@ -498,10 +498,8 @@
             let currentSelectedRoom = 'room-101'; // 初始選中
 
             // 模擬生命體徵 (中頻率更新) [17]
-            // 更新: 模擬邏輯現在基於 currentBaseVitals
             setInterval(function simulateVitals() {
                 if (!currentBaseVitals) {
-                    // 如果房間為空，顯示 --
                     hrElement.innerText = '--';
                     spo2Element.innerText = '--';
                     rrElement.innerText = '--';
@@ -509,7 +507,6 @@
                     return;
                 }
 
-                // [18, 19]
                 hrElement.innerText = Math.floor(Math.random() * 5) + (currentBaseVitals.hr - 2);
                 spo2Element.innerText = Math.floor(Math.random() * 2) + (currentBaseVitals.spo2 - 1);
                 rrElement.innerText = Math.floor(Math.random() * 2) + (currentBaseVitals.rr - 1);
@@ -521,12 +518,10 @@
             }, 1500);
 
             // 模擬設施狀態 (低頻率更新) [17]
-            // 更新: 包含 room-104 並更新 patientDatabase
             setInterval(function simulateFacility() {
-                // 隨機讓一個病房發出警報
                 if (Math.random() > 0.7) {
                     // 選擇一個有病患的房間
-                    const occupiedRooms = ["room-101", "room-102", "room-103"];
+                    const occupiedRooms = ["room-101", "room-102", "room-103", "room-104"];
                     let randomRoom = occupiedRooms[Math.floor(Math.random() * occupiedRooms.length)];
                     let roomEl = document.getElementById(randomRoom);
                     
@@ -540,38 +535,32 @@
                             patientDatabase[randomRoom].status = "alert";
                         }
                         
-                        // 更新詳情面板(如果選中)
                         if (roomEl.classList.contains('selected')) {
                             updateDetails(randomRoom);
-                            updateHumanTwin(randomRoom); // 同時更新人體孿生面板的狀態
+                            updateHumanTwin(randomRoom);
                         }
                     }
                 }
             }, 5000);
 
 
-            // --- 4. 設施地圖互動 ---
+            // --- 3. 設施地圖互動 ---
 
-            // 更新: 抽離出一個函數來更新人體孿生面板
             function updateHumanTwin(roomId) {
                 const data = patientDatabase[roomId];
                 if (!data) return;
 
-                // 設置基礎生命體徵
                 currentBaseVitals = data.baseVitals;
                 
                 // 更新頭像
-                // 替換 'src' 為您本地的圖片 (例如 data.avatarUrl)
                 patientAvatar.src = data.avatarUrl; 
+                // 重置邊框顏色，以防 'onerror' 觸發
+                patientAvatar.style.borderColor = '#00b3ff';
                 
-                // 更新標題
                 humanTwinTitle.innerText = `人體孿生 (${data.patientId})`;
-                
-                // 更新病患資訊
                 patientInfoName.innerText = `病患: ${data.patientId}`;
                 patientInfoLocation.innerText = `位置: ${roomId.toUpperCase()}`;
                 
-                // 更新狀態
                 if (data.status === 'online') {
                     patientInfoStatus.innerText = '狀態: 穩定';
                     patientInfoStatus.style.color = '#fff';
@@ -583,14 +572,13 @@
                     patientInfoStatus.style.color = '#777';
                 }
 
-                // 如果沒有病患，立即清除生命體徵
                 if (!data.baseVitals) {
                     simulateVitals();
                 }
             }
 
             function updateDetails(roomId) {
-                const data = patientDatabase[roomId]; // 使用新的數據庫
+                const data = patientDatabase[roomId];
                 if (!data) return;
 
                 detailsName.innerText = roomId.toUpperCase();
@@ -602,7 +590,7 @@
                     detailsStatusDot.className = "status-dot online";
                 } else if (data.status === 'alert') {
                     detailsStatusText.innerText = "Alert!";
-                    detailsStatusDot.className = "status-dot offline"; // 使用 offline 的紅色
+                    detailsStatusDot.className = "status-dot offline";
                 } else {
                     detailsStatusText.innerText = "Offline";
                     detailsStatusDot.className = "status-dot offline";
@@ -621,17 +609,16 @@
                     // 3. 更新兩個面板
                     currentSelectedRoom = this.id;
                     updateDetails(currentSelectedRoom);
-                    updateHumanTwin(currentSelectedRoom); // <--- 新增
+                    updateHumanTwin(currentSelectedRoom);
                 });
             });
 
-            // --- 5. 啟動 ---
-            // 移除 resizeCanvas() 和 drawEcg()
+            // --- 4. 啟動 ---
             
             // 設置初始選中狀態
             document.getElementById(currentSelectedRoom).classList.add('selected');
             updateDetails(currentSelectedRoom);
-            updateHumanTwin(currentSelectedRoom); // <--- 新增
+            updateHumanTwin(currentSelectedRoom);
         });
     </script>
 </body>
