@@ -3,63 +3,606 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>智慧醫療數位分身 PoC</title>
-    <link rel="stylesheet" href="style.css">
- <link rel="shortcut icon" href="feticon.ico">
+    <title>智慧醫療數位分身 (3D 雙視圖 PoC)</title>
+    
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+            margin: 0;
+            background-color: #0a0f1a; /* 統一使用深色背景 */
+            color: #e0e0e0;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+            height: 100vh;
+        }
+        
+        header {
+            background-color: #1a2030;
+            padding: 1rem 2rem;
+            border-bottom: 1px solid #00529b;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            z-index: 100;
+        }
+
+        header h1 {
+            margin: 0;
+            font-size: 1.5rem;
+            color: #00d4ff;
+            text-shadow: 0 0 5px rgba(0, 212, 255, 0.7);
+        }
+
+        header nav button {
+            font-size: 1rem;
+            padding: 0.5rem 1rem;
+            margin-left: 0.5rem;
+            border: 1px solid #00d4ff;
+            background-color: transparent;
+            color: #00d4ff;
+            cursor: pointer;
+            border-radius: 4px;
+            transition: all 0.2s ease;
+        }
+
+        header nav button:hover {
+            background-color: rgba(0, 212, 255, 0.1);
+        }
+
+        header nav button.active {
+            background-color: #00d4ff;
+            color: #0a0f1a;
+            font-weight: bold;
+        }
+
+        main {
+            flex-grow: 1;
+            position: relative;
+        }
+
+        /* 視圖容器 */
+        .view {
+            display: none; /* 預設隱藏 */
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+        }
+
+        .view.active {
+            display: block; /* 顯示當前視圖 */
+        }
+
+        /* 兩個 3D 畫布 */
+        canvas {
+            display: block;
+            width: 100%;
+            height: 100%;
+        }
+
+        /* 病患視圖 - 說明文字 */
+        #patient-info-overlay {
+            position: absolute;
+            bottom: 1rem;
+            left: 1rem;
+            color: #aaa;
+            font-size: 0.9rem;
+            z-index: 10;
+        }
+
+        /* 醫院視圖 - 資產列表 */
+        #asset-info-overlay {
+            position: absolute;
+            top: 1rem;
+            left: 1rem;
+            background-color: rgba(10, 15, 26, 0.8);
+            border: 1px solid #00d4ff;
+            padding: 1rem;
+            border-radius: 8px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+            width: 250px;
+            z-index: 10;
+        }
+        
+        #asset-info-overlay h4 {
+            margin-top: 0;
+            color: #00d4ff;
+        }
+
+        #asset-list div {
+            padding: 0.25rem 0;
+        }
+       .asset-in-use { color: #ff4444; font-weight: bold; }
+       .asset-available { color: #00ff88; }
+       .asset-maintenance { color: #ffc107; }
+
+        /* * 隱藏的 2D 畫布容器 (用於病患視圖) */
+        #panel-container {
+            position: absolute;
+            left: -9999px;
+            top: -9999px;
+            display: none;
+        }
+    </style>
 </head>
 <body>
+    
     <header>
-        <h1>智慧醫療數位分身 (Digital Twin) PoC</h1>
+        <h1>智慧醫療數位分身 (PoC)</h1>
         <nav>
-            <button id="btn-patient" class="active">病患分身 (2D Vitals)</button>
-            <button id="btn-hospital">醫院分身 (3D Assets)</button>
+            <button id="btn-patient" class="active">病患全息分身 (3D HUD)</button>
+            <button id="btn-hospital">醫院設施分身 (3D Assets)</button>
         </nav>
     </header>
 
     <main>
+        <!-- 病患視圖容器 -->
         <div id="patient-view" class="view active">
-            <div class="patient-info">
-                <h3>病患：P001 - 李大明</h3>
-                <p>年齡：68 | 性別：男 | 位置：302A房</p>
-                <p>狀態：<span id="patient-status" class="status-ok">穩定</span></p>
-            </div>
-            <div class="dashboard-grid">
-                <div class="chart-container">
-                    <h4>心率 (BPM)</h4>
-                    <canvas id="heartRateChart"></canvas>
-                </div>
-                <div class="chart-container">
-                    <h4>血氧 (SpO2 %)</h4>
-                    <canvas id="spo2Chart"></canvas>
-                </div>
-                <div class="chart-container kpi-grid">
-                    <div>
-                        <h5>收縮壓</h5>
-                        <div id="kpi-systolic" class="kpi-value">--</div>
-                        <div class="kpi-unit">mmHg</div>
-                    </div>
-                    <div>
-                        <h5>舒張壓</h5>
-                        <div id="kpi-diastolic" class="kpi-value">--</div>
-                        <div class="kpi-unit">mmHg</div>
-                    </div>
-                </div>
-            </div>
+            <canvas id="patient-canvas"></canvas>
+            <div id="patient-info-overlay">使用滑鼠拖曳以旋轉視角 | 滾動以縮放</div>
         </div>
 
+        <!-- 醫院視圖容器 -->
         <div id="hospital-view" class="view">
+            <canvas id="hospital-canvas"></canvas>
             <div id="asset-info-overlay">
                 <h4>資產即時狀態</h4>
-                <div id="asset-list">
-                    </div>
+                <div id="asset-list"></div>
             </div>
-            <canvas id="3d-canvas"></canvas>
         </div>
     </main>
 
+    <!-- 隱藏的 2D 畫布 (供病患視圖使用) -->
+    <div id="panel-container">
+        <canvas id="panel-canvas-1" width="300" height="200"></canvas>
+        <canvas id="panel-canvas-2" width="300" height="200"></canvas>
+        <canvas id="panel-canvas-3" width="300" height="200"></canvas>
+        <canvas id="panel-canvas-4" width="300" height="200"></canvas>
+        <canvas id="panel-canvas-5" width="300" height="200"></canvas>
+        <canvas id="panel-canvas-6" width="300" height="200"></canvas>
+    </div>
+
+    <!-- 引入 Three.js 和 Chart.js -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
     
-    <script src="app.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            
+            // --- 全局變數和 DOM 元素 ---
+            const btnPatient = document.getElementById('btn-patient');
+            const btnHospital = document.getElementById('btn-hospital');
+            const patientView = document.getElementById('patient-view');
+            const hospitalView = document.getElementById('hospital-view');
+            const assetListOverlay = document.getElementById('asset-list');
+
+            let currentView = 'patient'; // 追蹤當前視圖
+
+            // --- 病患視圖變數 ---
+            let scenePatient, cameraPatient, rendererPatient, controlsPatient;
+            const panelCanvases = [];
+            const panelContexts = [];
+            const panelCharts = {};
+            const panelTextures = [];
+            let mockVitals = {
+                heartRate: 75, spO2: 98, bpSystolic: 120, bpDiastolic: 80,
+                status: "STABLE", brainWave: [],
+            };
+            const CHART_MAX_POINTS = 30;
+
+            // --- 醫院視圖變數 ---
+            let sceneHospital, cameraHospital, rendererHospital, controlsHospital;
+            let hospitalAssets = {}; // 存放 3D 物件
+            let mockAssets = {
+                'iv_pump_04': { x: -10, y: 2, z: 0, status: 'available', targetX: -10 },
+                'iv_pump_05': { x: 10, y: 2, z: 0, status: 'available', targetX: 10 }
+            };
+
+            // --- 初始化 ---
+            function init() {
+                // 1. 初始化兩個視圖
+                initPatientView();
+                initHospitalView();
+
+                // 2. 設定視圖切換
+                setupViewSwitcher();
+
+                // 3. 啟動統一的數據模擬
+                startDataSimulation();
+
+                // 4. 啟動主渲染循環
+                animate();
+
+                // 5. 監聽視窗大小
+                window.addEventListener('resize', onWindowResize);
+            }
+
+            // --- 視圖切換 ---
+            function setupViewSwitcher() {
+                btnPatient.addEventListener('click', () => {
+                    currentView = 'patient';
+                    patientView.classList.add('active');
+                    hospitalView.classList.remove('active');
+                    btnPatient.classList.add('active');
+                    btnHospital.classList.remove('active');
+                });
+
+                btnHospital.addEventListener('click', () => {
+                    currentView = 'hospital';
+                    hospitalView.classList.add('active');
+                    patientView.classList.remove('active');
+                    btnHospital.classList.add('active');
+                    btnPatient.classList.remove('active');
+                });
+            }
+
+            // --- 主渲染循環 ---
+            function animate() {
+                requestAnimationFrame(animate);
+
+                // 根據當前視圖，渲染對應的場景
+                if (currentView === 'patient') {
+                    if (rendererPatient) {
+                        controlsPatient.update();
+                        // 更新紋理
+                        panelTextures.forEach(texture => {
+                            texture.needsUpdate = true;
+                        });
+                        rendererPatient.render(scenePatient, cameraPatient);
+                    }
+                } else {
+                    if (rendererHospital) {
+                        controlsHospital.update();
+                        rendererHospital.render(sceneHospital, cameraHospital);
+                    }
+                }
+            }
+
+            // --- 視窗大小調整 ---
+            function onWindowResize() {
+                if (currentView === 'patient' && cameraPatient && rendererPatient) {
+                    cameraPatient.aspect = patientView.clientWidth / patientView.clientHeight;
+                    cameraPatient.updateProjectionMatrix();
+                    rendererPatient.setSize(patientView.clientWidth, patientView.clientHeight);
+                } else if (currentView === 'hospital' && cameraHospital && rendererHospital) {
+                    cameraHospital.aspect = hospitalView.clientWidth / hospitalView.clientHeight;
+                    cameraHospital.updateProjectionMatrix();
+                    rendererHospital.setSize(hospitalView.clientWidth, hospitalView.clientHeight);
+                }
+            }
+
+            // --- 統一數據模擬 ---
+            function startDataSimulation() {
+                setInterval(() => {
+                    // 1. 模擬病患數據
+                    mockVitals.heartRate += (Math.random() - 0.5) * 2;
+                    mockVitals.heartRate = Math.max(60, Math.min(105, mockVitals.heartRate));
+                    mockVitals.spO2 += (Math.random() - 0.4) * 0.5;
+                    mockVitals.spO2 = Math.max(93, Math.min(99, mockVitals.spO2));
+                    mockVitals.bpSystolic += (Math.random() - 0.5) * 2;
+                    mockVitals.bpDiastolic = mockVitals.bpSystolic - 40 + (Math.random() - 0.5) * 5;
+                    mockVitals.status = (mockVitals.spO2 < 95 || mockVitals.heartRate > 100) ? "ALERT" : "STABLE";
+                    mockVitals.brainWave.push(Math.random() * 100);
+                    if(mockVitals.brainWave.length > 100) mockVitals.brainWave.shift();
+                    
+                    // 更新病患面板 (即使在背景也要更新 2D canvas)
+                    updatePatientPanels();
+
+                    // 2. 模擬資產數據
+                    Object.keys(mockAssets).forEach(assetId => {
+                        const asset = mockAssets[assetId];
+                        if (Math.abs(asset.x - asset.targetX) < 1) {
+                            if (Math.random() < 0.1) {
+                                if (asset.status === 'available') {
+                                    asset.status = 'in_use';
+                                    asset.targetX = (Math.random() < 0.5) ? -5 : 5; // 移到使用區
+                                } else {
+                                    asset.status = 'available';
+                                    asset.targetX = (Math.random() < 0.5)? -10 : 10; // 移回儲存區
+                                }
+                            }
+                        }
+                        asset.x += Math.sign(asset.targetX - asset.x) * 0.2;
+                        
+                        // 更新醫院 3D 物件 (即使在背景也要更新)
+                        updateHospitalAsset(assetId, asset);
+                    });
+
+                }, 1000); // 每秒更新
+            }
+
+            // ===============================================
+            // === 病患全息分身 (3D HUD) 相關函式
+            // ===============================================
+
+            function initPatientView() {
+                scenePatient = new THREE.Scene();
+                scenePatient.background = new THREE.Color(0x0a0f1a);
+                scenePatient.fog = new THREE.Fog(0x0a0f1a, 20, 60);
+
+                cameraPatient = new THREE.PerspectiveCamera(75, patientView.clientWidth / patientView.clientHeight, 0.1, 1000);
+                cameraPatient.position.set(0, 10, 25);
+
+                const canvas = document.getElementById('patient-canvas');
+                rendererPatient = new THREE.WebGLRenderer({ canvas: canvas, antialias: true });
+                rendererPatient.setSize(patientView.clientWidth, patientView.clientHeight);
+
+                const ambientLight = new THREE.AmbientLight(0x404040, 2);
+                scenePatient.add(ambientLight);
+                const pointLight = new THREE.PointLight(0x00d4ff, 1.5, 100);
+                pointLight.position.set(0, 5, 0);
+                scenePatient.add(pointLight);
+
+                controlsPatient = new THREE.OrbitControls(cameraPatient, rendererPatient.domElement);
+                controlsPatient.enableDamping = true;
+                controlsPatient.dampingFactor = 0.05;
+                controlsPatient.minDistance = 10;
+                controlsPatient.maxDistance = 40;
+                controlsPatient.target.set(0, 5, 0);
+
+                initCentralFigure();
+                initHologramPanels();
+            }
+
+            function initCentralFigure() {
+                const material = new THREE.MeshStandardMaterial({
+                    color: 0x00d4ff, emissive: 0x00aaff, emissiveIntensity: 0.3,
+                    metalness: 0.8, roughness: 0.3, transparent: true, opacity: 0.8,
+                });
+                const torso = new THREE.Mesh(new THREE.CylinderGeometry(1, 1.5, 4, 16), material);
+                torso.position.y = 5;
+                const head = new THREE.Mesh(new THREE.SphereGeometry(1, 16, 16), material);
+                head.position.y = 8;
+                scenePatient.add(torso);
+                scenePatient.add(head);
+
+                const ringGeo = new THREE.RingGeometry(2.5, 3, 32);
+                const ringMat = new THREE.MeshBasicMaterial({ color: 0x00d4ff, side: THREE.DoubleSide, transparent: true, opacity: 0.5 });
+                const ring = new THREE.Mesh(ringGeo, ringMat);
+                ring.rotation.x = -Math.PI / 2;
+                ring.position.y = 0.1;
+                scenePatient.add(ring);
+            }
+
+            function initHologramPanels() {
+                const panelCount = 6;
+                const panelRadius = 15;
+                const angleStep = (Math.PI * 2) / panelCount;
+                const panelWidth = 10;
+                const panelHeight = (panelWidth / 300) * 200;
+
+                for (let i = 0; i < panelCount; i++) {
+                    const canvas = document.getElementById(`panel-canvas-${i + 1}`);
+                    panelCanvases.push(canvas);
+                    panelContexts.push(canvas.getContext('2d'));
+                    
+                    const texture = new THREE.CanvasTexture(canvas);
+                    panelTextures.push(texture);
+
+                    const material = new THREE.MeshBasicMaterial({
+                        map: texture, side: THREE.DoubleSide, transparent: true,
+                        opacity: 0.8, blending: THREE.AdditiveBlending,
+                    });
+                    
+                    const geometry = new THREE.PlaneGeometry(panelWidth, panelHeight);
+                    const mesh = new THREE.Mesh(geometry, material);
+                    
+                    const angle = angleStep * i;
+                    mesh.position.set(
+                        Math.sin(angle) * panelRadius,
+                        panelHeight / 2 + 2,
+                        Math.cos(angle) * panelRadius
+                    );
+                    mesh.lookAt(0, 5, 0);
+                    scenePatient.add(mesh);
+                }
+                initPanelCharts();
+            }
+
+            function initPanelCharts() {
+                const chartOptions = (title) => ({
+                    responsive: false, maintainAspectRatio: false,
+                    plugins: { legend: { display: false }, title: { display: true, text: title, color: '#00d4ff' } },
+                    scales: {
+                        x: { display: false, grid: { color: 'rgba(0, 212, 255, 0.2)' }, ticks: { color: '#00d4ff' } },
+                        y: { beginAtZero: false, grid: { color: 'rgba(0, 212, 255, 0.2)' }, ticks: { color: '#00d4ff' } }
+                    },
+                    animation: false,
+                });
+                const lineStyle = { borderColor: '#00d4ff', backgroundColor: 'rgba(0, 212, 255, 0.1)', borderWidth: 2, pointRadius: 0, tension: 0.3 };
+
+                panelCharts.heartRate = new Chart(panelContexts[0], { type: 'line', data: { labels: [], datasets: [{ ...lineStyle }] }, options: chartOptions('心率 (BPM)') });
+                panelCharts.spo2 = new Chart(panelContexts[1], { type: 'line', data: { labels: [], datasets: [{ ...lineStyle }] }, options: chartOptions('血氧 (SpO2 %)') });
+            }
+
+            function updatePatientPanels() {
+                if (panelCharts.heartRate) {
+                    updateChart(panelCharts.heartRate, Math.round(mockVitals.heartRate));
+                }
+                if (panelCharts.spo2) {
+                    updateChart(panelCharts.spo2, Math.round(mockVitals.spO2));
+                }
+                drawPanel_KPI(panelContexts[2], "血壓 (mmHg)", Math.round(mockVitals.bpSystolic), Math.round(mockVitals.bpDiastolic));
+                drawPanel_Status(panelContexts[3], "病患狀態", mockVitals.status);
+                drawPanel_Line(panelContexts[4], "腦波 (EEG)", mockVitals.brainWave);
+                drawPanel_Pie(panelContexts[5], "設備資源", [0.6, 0.3, 0.1]);
+            }
+
+            function updateChart(chart, value) {
+                const data = chart.data;
+                const now = new Date().toLocaleTimeString().split(" ")[0];
+                data.labels.push(now);
+                data.datasets[0].data.push(value);
+                if (data.labels.length > CHART_MAX_POINTS) {
+                    data.labels.shift();
+                    data.datasets[0].data.shift();
+                }
+                chart.update();
+            }
+
+            const baseFill = 'rgba(10, 20, 40, 0.7)';
+            const textColor = '#00d4ff';
+            const titleColor = '#ffffff';
+            const alertColor = '#ff4444';
+            const okColor = '#00ff88';
+
+            function clearCanvas(ctx) {
+                ctx.fillStyle = baseFill;
+                ctx.fillRect(0, 0, ctx.canvas.width, ctx.canvas.height);
+                ctx.strokeStyle = textColor;
+                ctx.strokeRect(2, 2, ctx.canvas.width - 4, ctx.canvas.height - 4);
+            }
+            function drawPanel_KPI(ctx, title, kpi1, kpi2) {
+                if (!ctx) return;
+                clearCanvas(ctx);
+                ctx.fillStyle = titleColor; ctx.font = "bold 24px Arial"; ctx.textAlign = "center";
+                ctx.fillText(title, 150, 40);
+                ctx.font = "bold 48px Arial"; ctx.fillStyle = textColor;
+                ctx.fillText(kpi1, 100, 110); ctx.font = "24px Arial";
+                ctx.fillText("SYST", 100, 140); ctx.font = "bold 48px Arial";
+                ctx.fillText(kpi2, 200, 110); ctx.font = "24px Arial";
+                ctx.fillText("DIA", 200, 140);
+            }
+            function drawPanel_Status(ctx, title, status) {
+                if (!ctx) return;
+                clearCanvas(ctx);
+                ctx.fillStyle = titleColor; ctx.font = "bold 24px Arial"; ctx.textAlign = "center";
+                ctx.fillText(title, 150, 40);
+                ctx.font = "bold 60px Arial";
+                ctx.fillStyle = (status === "ALERT") ? alertColor : okColor;
+                ctx.fillText(status, 150, 120);
+            }
+            function drawPanel_Line(ctx, title, data) {
+                if (!ctx) return;
+                clearCanvas(ctx);
+                ctx.fillStyle = titleColor; ctx.font = "bold 24px Arial"; ctx.textAlign = "center";
+                ctx.fillText(title, 150, 40);
+                ctx.strokeStyle = okColor; ctx.lineWidth = 2; ctx.beginPath();
+                const step = ctx.canvas.width / data.length;
+                for (let i = 0; i < data.length; i++) {
+                    const x = i * step;
+                    const y = 80 + (data[i] / 100) * 100;
+                    if (i === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
+                }
+                ctx.stroke();
+            }
+            function drawPanel_Pie(ctx, title, data) {
+                if (!ctx) return;
+                clearCanvas(ctx);
+                ctx.fillStyle = titleColor; ctx.font = "bold 24px Arial"; ctx.textAlign = "center";
+                ctx.fillText(title, 150, 40);
+                const colors = [okColor, alertColor, textColor];
+                let startAngle = 0; const radius = 60;
+                for(let i=0; i<data.length; i++) {
+                    const sliceAngle = 2 * Math.PI * data[i];
+                    ctx.fillStyle = colors[i % colors.length];
+                    ctx.beginPath();
+                    ctx.moveTo(150, 120);
+                    ctx.arc(150, 120, radius, startAngle, startAngle + sliceAngle);
+                    ctx.closePath();
+                    ctx.fill();
+                    startAngle += sliceAngle;
+                }
+            }
+
+
+            // ===============================================
+            // === 醫院設施分身 (3D Assets) 相關函式
+            // ===============================================
+            
+            function initHospitalView() {
+                const canvas = document.getElementById('hospital-canvas');
+                const container = document.getElementById('hospital-view');
+
+                sceneHospital = new THREE.Scene();
+                sceneHospital.background = new THREE.Color(0x0a0f1a); // 同樣使用深色背景
+
+                cameraHospital = new THREE.PerspectiveCamera(75, container.clientWidth / container.clientHeight, 0.1, 1000);
+                cameraHospital.position.set(0, 30, 40);
+                cameraHospital.lookAt(0, 0, 0);
+
+                rendererHospital = new THREE.WebGLRenderer({ canvas: canvas, antialias: true });
+                rendererHospital.setSize(container.clientWidth, container.clientHeight);
+
+                const ambientLight = new THREE.AmbientLight(0xffffff, 0.7);
+                sceneHospital.add(ambientLight);
+                const directionalLight = new THREE.DirectionalLight(0xffffff, 0.5);
+                directionalLight.position.set(0, 10, 5);
+                sceneHospital.add(directionalLight);
+
+                // 地板
+                const floor = new THREE.Mesh(
+                    new THREE.PlaneGeometry(100, 100),
+                    new THREE.MeshStandardMaterial({ color: 0x333344 }) // 深色地板
+                );
+                floor.rotation.x = -Math.PI / 2;
+                sceneHospital.add(floor);
+                
+                // 地板網格
+                const gridHelper = new THREE.GridHelper(100, 20, 0x00d4ff, 0x00529b);
+                gridHelper.material.opacity = 0.3;
+                gridHelper.material.transparent = true;
+                sceneHospital.add(gridHelper);
+
+                // 創建資產實例
+                const assetGeo = new THREE.BoxGeometry(2, 4, 2);
+                
+                hospitalAssets['iv_pump_04'] = new THREE.Mesh(assetGeo, new THREE.MeshStandardMaterial({ color: 0x00ff88 }));
+                hospitalAssets['iv_pump_04'].name = 'iv_pump_04';
+                hospitalAssets['iv_pump_04'].position.set(-10, 2, 0);
+                sceneHospital.add(hospitalAssets['iv_pump_04']);
+
+                hospitalAssets['iv_pump_05'] = new THREE.Mesh(assetGeo, new THREE.MeshStandardMaterial({ color: 0x00ff88 }));
+                hospitalAssets['iv_pump_05'].name = 'iv_pump_05';
+                hospitalAssets['iv_pump_05'].position.set(10, 2, 0);
+                sceneHospital.add(hospitalAssets['iv_pump_05']);
+
+                // 醫院視圖的控制器
+                controlsHospital = new THREE.OrbitControls(cameraHospital, rendererHospital.domElement);
+                controlsHospital.enableDamping = true;
+                controlsHospital.dampingFactor = 0.05;
+            }
+            
+            function updateHospitalAsset(assetId, data) {
+                if (!sceneHospital) return; 
+
+                const asset = hospitalAssets[assetId];
+                if (asset) {
+                    asset.position.set(data.x, data.y, data.z);
+
+                    let newColor = 0x00ff88;
+                    let statusText = '可用';
+                    let statusClass = 'asset-available';
+                    
+                    if (data.status === 'in_use') {
+                        newColor = 0xff4444;
+                        statusText = '使用中';
+                        statusClass = 'asset-in-use';
+                    } else if (data.status === 'maintenance') {
+                        newColor = 0xffc107;
+                        statusText = '維護中';
+                        statusClass = 'asset-maintenance';
+                    }
+                    asset.material.color.setHex(newColor);
+
+                    let overlayEntry = document.getElementById(`asset-${assetId}`);
+                    if (!overlayEntry) {
+                        overlayEntry = document.createElement('div');
+                        overlayEntry.id = `asset-${assetId}`;
+                        assetListOverlay.appendChild(overlayEntry);
+                    }
+                    overlayEntry.innerHTML = `<strong>${assetId}:</strong> <span class="${statusClass}">${statusText}</span> (Pos: ${data.x.toFixed(1)})`;
+                }
+            }
+
+
+            // --- 啟動 ---
+            init();
+        });
+    </script>
 </body>
 </html>
