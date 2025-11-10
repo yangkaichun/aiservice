@@ -108,65 +108,102 @@
             <div id="map"></div>
         </div>
     </div>
-    <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyBQ0UdLwluVkxZOi5vwezMTvSivUI0m24o&libraries=places&callback=initMap" async defer></script>
-    <script>
+ <script>
+        // 全域變數
         let map, directionsService, directionsRenderer;
         let lastSuccessfulRoute = null; 
 
+        // 初始化地圖
         function initMap() {
             directionsService = new google.maps.DirectionsService();
             directionsRenderer = new google.maps.DirectionsRenderer();
+            
             map = new google.maps.Map(document.getElementById('map'), {
                 zoom: 12,
-                center: { lat: 25.033, lng: 121.5654 }
+                center: { lat: 25.033, lng: 121.5654 } // 預設中心點 (台北)
             });
+            
             directionsRenderer.setMap(map);
             directionsRenderer.setPanel(document.getElementById('directions-panel'));
         }
 
+        // 當 DOM 載入完成後，綁定事件
         document.addEventListener('DOMContentLoaded', () => {
+            const addDestButton = document.getElementById('addDestination');
+            
+            // 綁定單一規劃按鈕
             document.getElementById('planRoute').addEventListener('click', () => {
                 const selectedMode = document.querySelector('input[name="travelMode"]:checked').value;
                 calculateAndDisplayRoute(selectedMode);
             });
-            document.getElementById('addDestination').addEventListener('click', () => {
+
+            // 新增到達點按鈕
+            addDestButton.addEventListener('click', () => {
                 const newInput = document.createElement('input');
                 newInput.type = 'text';
                 newInput.className = 'destination';
                 newInput.placeholder = '請輸入下一個地址';
                 document.getElementById('destinationsList').appendChild(newInput);
             });
+
+            // 綁定 "開啟 Google Map" 按鈕
             document.getElementById('openGoogleMaps').addEventListener('click', () => {
-                if (!lastSuccessfulRoute) { return; }
+                if (!lastSuccessfulRoute) {
+                    return; // 正常情況下按鈕會被禁用，此為保險
+                }
+                
+                // 使用 Google Maps "Directions URL" (api=1)
                 const baseUrlApi = 'https://www.google.com/maps/dir/?api=1';
+                
+                // 1. 加上起點
                 const originParam = `&origin=${encodeURIComponent(lastSuccessfulRoute.origin)}`;
+                
+                // 2. 加上終點
                 const destParam = `&destination=${encodeURIComponent(lastSuccessfulRoute.destination)}`;
+                
+                // 3. 加上所有中途點 (用 | 分隔)
                 const waypointsParam = lastSuccessfulRoute.orderedWaypoints.length > 0
                     ? `&waypoints=${lastSuccessfulRoute.orderedWaypoints.map(wp => encodeURIComponent(wp)).join('|')}`
                     : '';
+                
+                // 4. 加上交通模式
                 const modeParam = lastSuccessfulRoute.travelMode === 'WALKING'
                     ? '&travelmode=walking'
                     : '&travelmode=driving';
+                
+                // 組合最終 URL
                 const finalUrl = baseUrlApi + originParam + destParam + waypointsParam + modeParam;
+                
+                // 在新分頁開啟
                 window.open(finalUrl, '_blank');
             });
         });
 
+        // 核心函數
         function calculateAndDisplayRoute(travelMode) {
+            // [JS 修改] 獲取按鈕並在開始時禁用
             const openMapsButton = document.getElementById('openGoogleMaps');
             openMapsButton.disabled = true;
-            lastSuccessfulRoute = null; 
+            lastSuccessfulRoute = null; // 清除舊路徑
+
+            // 獲取地址
             const startPoint = document.getElementById('startPoint').value.trim();
             const destinationInputs = document.querySelectorAll('.destination');
+            
             const orderPanel = document.getElementById('order-panel');
             const directionsPanel = document.getElementById('directions-panel');
+
             orderPanel.innerHTML = '<p>正在計算路徑...</p>';
             directionsPanel.innerHTML = '';
+
             const waypoints = [];
             destinationInputs.forEach(input => {
                 const address = input.value.trim();
-                if (address !== '') { waypoints.push(address); }
+                if (address !== '') {
+                    waypoints.push(address);
+                }
             });
+
             if (startPoint === '') {
                 alert('請輸入起始點！');
                 orderPanel.innerHTML = '<p style="color: red;">錯誤：請輸入起始點。</p>';
@@ -177,12 +214,18 @@
                 orderPanel.innerHTML = '<p style="color: red;">錯誤：請至少輸入一個到達點。</p>';
                 return;
             }
+
             const destinationPoint = waypoints.pop();
             const waypointsForApi = [];
             waypoints.forEach(location => {
-                waypointsForApi.push({ location: location, stopover: true });
+                waypointsForApi.push({
+                    location: location,
+                    stopover: true 
+                });
             });
+
             const isDriving = (travelMode === 'DRIVING');
+            
             const request = {
                 origin: startPoint,
                 destination: destinationPoint,
@@ -190,25 +233,33 @@
                 travelMode: travelMode,
                 optimizeWaypoints: isDriving 
             };
+
+            // 呼叫 Directions API
             directionsService.route(request, (result, status) => {
                 if (status === 'OK') {
+                    // 1. 繪製路徑
                     directionsRenderer.setDirections(result);
+                    
                     const route = result.routes[0];
                     const isOptimized = route.waypoint_order && route.waypoint_order.length > 0;
+                    
+                    // [JS 修改] 儲存成功的路徑以供 "開啟" 按鈕使用
                     lastSuccessfulRoute = {
                         origin: startPoint,
                         destination: destinationPoint,
                         orderedWaypoints: [],
                         travelMode: travelMode
                     };
+
                     let orderHtml = '';
+                    
                     if (isOptimized) {
                         orderHtml = '<h4>📍 最佳訪視順序 (開車)</h4><ol>';
                         orderHtml += `<li>${startPoint} <strong>(起點)</strong></li>`;
                         route.waypoint_order.forEach(index => {
                             const location = waypointsForApi[index].location;
                             orderHtml += `<li>${location}</li>`;
-                            lastSuccessfulRoute.orderedWaypoints.push(location);
+                            lastSuccessfulRoute.orderedWaypoints.push(location); // 儲存排序後的中途點
                         });
                         orderHtml += `<li>${destinationPoint} <strong>(終點)</strong></li>`;
                     } else {
@@ -217,24 +268,29 @@
                         orderHtml += `<li>${startPoint} <strong>(起點)</strong></li>`;
                         waypointsForApi.forEach(wp => {
                             orderHtml += `<li>${wp.location}</li>`;
-                            lastSuccessfulRoute.orderedWaypoints.push(wp.location);
+                            lastSuccessfulRoute.orderedWaypoints.push(wp.location); // 儲存輸入順序的中途點
                         });
                         orderHtml += `<li>${destinationPoint} <strong>(終點)</strong></li>`;
                     }
+                    
                     orderHtml += '</ol>';
                     orderPanel.innerHTML = orderHtml;
+
+                    // [JS 修改] 成功後，啟用按鈕
                     openMapsButton.disabled = false;
+                    
                 } else if (status === 'ZERO_RESULTS') {
                     alert('路徑規劃失敗：找不到可行的路徑 (ZERO_RESULTS)。請檢查地址是否都正確且精確，或此模式下無法到達。');
                     orderPanel.innerHTML = '<p style="color: red;">路徑規劃失敗：找不到可行的路徑。請檢查地址或交通模式。</p>';
                 } else {
                     alert('路徑規劃失敗：' + status);
-                    orderPanel.innerHTML = `<p style="color: red;">路徑規劃失敗：${status}</p>';
+                    orderPanel.innerHTML = `<p style="color: red;">路徑規劃失敗：${status}</p>`;
                 }
             });
         }
     </script>
 
+    <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyBQ0UdLwluVkxZOi5vwezMTvSivUI0m24o&libraries=places&callback=initMap" async defer></script>
 
 </body>
 </html>
