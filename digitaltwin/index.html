@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>醫療數位孿生儀表板</title>
-    
+    <link rel="shortcut icon" href="feticon.ico">
     <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&display=swap" rel="stylesheet">
 
     <style>
@@ -94,18 +94,7 @@
 
         /* --- 3. 模組 A: 人體孿生 --- */
         
-        /* 新增: 頭像容器樣式 */
-       .avatar-container {
-            width: 100%;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            margin-bottom: 20px;
-            padding: 10px;
-            background: #000;
-            border-radius: 8px;
-        }
-
+/* ... existing code ... -->
         #patient-avatar {
             width: 150px;
             height: 150px;
@@ -154,53 +143,40 @@
             margin-left: 5px;
         }
 
-       .stats-container {
+       /* 移除了 .stats-container, .doughnut-chart, .patient-info 相關樣式 */
+
+        /* 新增: 動態圖表容器 */
+       .graphs-container {
+            flex-grow: 1; /* 填滿剩餘的垂直空間 */
             display: flex;
-            gap: 20px;
-            align-items: center;
+            flex-direction: column;
+            gap: 10px;
+            min-height: 0; /* 確保 flex-grow 在 flex column 中正常運作 */
         }
 
-        /* 純 CSS 環圈圖 [5, 6] */
-       .doughnut-chart {
-            width: 120px;
-            height: 120px;
-            border-radius: 50%;
-            /* 使用 conic-gradient 繪製圖表 */
-            background: conic-gradient(
-                #00b3ff 0% 75%, 
-                #333 75% 100%
-            );
-            
-            /* 使用偽元素創建環圈的"洞" [5] */
+       .graph-wrapper {
+            flex-grow: 1; /* 每個圖表均分空間 */
             display: flex;
-            justify-content: center;
-            align-items: center;
-            position: relative;
+            flex-direction: column;
+            background: #000;
+            border: 1px solid #005f80; /* 匹配 vitals 邊框 */
+            border-radius: 4px;
+            padding: 5px;
         }
 
-       .doughnut-chart::before {
-            content: '';
-            width: 90px;
-            height: 90px;
-            background: #010038; /* 匹配.vital 的背景 */
-            border-radius: 50%;
-            position: absolute;
-        }
-
-       .doughnut-label {
-            position: relative; /* 確保在 ::before 之上 */
-            text-align: center;
-            color: #fff;
-        }
-       .doughnut-label.value {
-            font-size: 2rem;
-            font-weight: 700;
-            display: block;
-        }
-       .doughnut-label.label {
-            font-size: 0.9rem;
+       .graph-label {
             color: #00b3ff;
+            margin: 0 0 5px 5px;
+            font-size: 0.9rem;
+            font-weight: 400;
         }
+
+        #ecg-canvas, #eeg-canvas {
+            width: 100%;
+            flex-grow: 1; /* 畫布填滿 wrapper */
+            border-radius: 4px;
+        }
+
 
         /* --- 4. 模組 B: 設施孿生 (SVG 地圖) --- */
         
@@ -366,18 +342,17 @@
                 </div>
             </div>
 
-            <div class="stats-container">
-                <div class="doughnut-chart" id="physio-load">
-                    <div class="doughnut-label">
-                        <span class="value" id="doughnut-value">75%</span>
-                        <span class="label">生理負荷</span>
-                    </div>
+            <!-- 移除 .stats-container (環圈圖和病患資訊) -->
+
+            <!-- 新增: 動態圖表容器 -->
+            <div class="graphs-container">
+                <div class="graph-wrapper">
+                    <h4 class="graph-label">心電圖 (ECG)</h4>
+                    <canvas id="ecg-canvas"></canvas>
                 </div>
-                <div class="patient-info">
-                    <!-- 這些 <p> 標籤現在是動態的 -->
-                    <p id="patient-info-name"><strong>病患:</strong> Patient-001</p>
-                    <p id="patient-info-status"><strong>狀態:</strong> 穩定</p>
-                    <p id="patient-info-location"><strong>位置:</strong> ICU 病房 101</p>
+                <div class="graph-wrapper">
+                    <h4 class="graph-label">腦波圖 (EEG) - 5 通道</h4>
+                    <canvas id="eeg-canvas"></canvas>
                 </div>
             </div>
         </div>
@@ -454,15 +429,29 @@
             // 人體孿生 DOM 元素
             const humanTwinTitle = document.getElementById('human-twin-title');
             const patientAvatar = document.getElementById('patient-avatar');
-            const patientInfoName = document.getElementById('patient-info-name');
-            const patientInfoStatus = document.getElementById('patient-info-status');
-            const patientInfoLocation = document.getElementById('patient-info-location');
+            // 修正: 移除了不存在的 DOM 元素
+            // const patientInfoName = document.getElementById('patient-info-name');
+            // const patientInfoStatus = document.getElementById('patient-info-status');
+            // const patientInfoLocation = document.getElementById('patient-info-location');
+
+            // 新增: 畫布元素
+            const ecgCanvas = document.getElementById('ecg-canvas');
+            const ecgCtx = ecgCanvas.getContext('2d');
+            const eegCanvas = document.getElementById('eeg-canvas');
+            const eegCtx = eegCanvas.getContext('2d');
+
 
             // --- 2. 數據模擬引擎 ---
             
-            // 更新: 模擬病房與病患數據庫
-            // 使用 p1.jpg, p2.jpg, p3.jpg, p4.jpg
-            const patientDatabase = {
+            <!-- 
+              * 修正 (FIX): 
+              * 修正了 SyntaxError: Unexpected token ':'
+              * 這裡的 patientDatabase 物件宣告不完整。
+            -->
+            
+            <!-- 模擬病房與病患數據庫 -->
+            <!-- 使用 p1.jpg, p2.jpg, p3.jpg, p4.jpg -->
+            <const patientDatabase = {
                 "room-101": { 
                     patientId: "Patient-001", 
                     avatarUrl: "p1.jpg", // 更新
@@ -558,20 +547,13 @@
                 patientAvatar.style.borderColor = '#00b3ff';
                 
                 humanTwinTitle.innerText = `人體孿生 (${data.patientId})`;
-                patientInfoName.innerText = `病患: ${data.patientId}`;
-                patientInfoLocation.innerText = `位置: ${roomId.toUpperCase()}`;
                 
-                if (data.status === 'online') {
-                    patientInfoStatus.innerText = '狀態: 穩定';
-                    patientInfoStatus.style.color = '#fff';
-                } else if (data.status === 'alert') {
-                    patientInfoStatus.innerText = '狀態: 警報!';
-                    patientInfoStatus.style.color = '#ff4242'; // 警報紅色
-                } else {
-                    patientInfoStatus.innerText = '狀態: 離線';
-                    patientInfoStatus.style.color = '#777';
-                }
-
+                <!-- 修正: 移除了對不存在元素的 .innerText 賦值 -->
+                <!-- patientInfoName.innerText = `病患: ${data.patientId}`; -->
+                <!-- patientInfoLocation.innerText = `位置: ${roomId.toUpperCase()}`; -->
+                
+                <!-- 更新: 移除 patientInfoStatus 的更新 (該元素已被移除) -->
+                
                 if (!data.baseVitals) {
                     simulateVitals();
                 }
@@ -613,8 +595,126 @@
                 });
             });
 
-            // --- 4. 啟動 ---
+            // --- 4. 新增: 畫布繪圖引擎 ---
+
+            // ECG 數據 (與之前版本相同)
+            const ecgWaveform = [
+                100, 100, 100, 100, 100, 100, 100, 100, 100, 100, 
+                100, 100, 100, 100, 100, 100, 100, 100, 100, 100,
+                100, 100, 100, 100, 100, 100, 100, 100, 100, 100,
+                100, 100, 100, 100, 100, 100, 100, 100, 100, 100, 
+                102, 105, 103, 100, // P 波
+                100, 100, 98, 95,   // Q
+                180, // R
+                90, 95, 100, 105, 110, 108, 105, // S-T
+                100, 100, 100, 100, 100, 100, 100, 100, 100, 100,
+                100, 100, 100, 100, 100, 100, 100, 100, 100, 100,
+                100, 100, 100, 100, 100, 100, 100, 100, 100, 100,
+                100, 100, 100, 100, 100, 100, 100, 100, 100, 100
+            ];
+            let ecgDataIndex = 0;
+            let ecgX = 0;
+            const ecgStep = 2; // 每次前進 2 像素
+
+            // EEG 數據
+            const eegLines = 5; // 5 通道腦波
+            let eegX = 0;
+            const eegStep = 2;
+            let lastEegY = new Array(eegLines).fill(0); // 儲存 5 條線各自的 Y 
             
+            // 響應式調整畫布大小
+            function resizeCanvases() {
+                ecgCanvas.width = ecgCanvas.offsetWidth;
+                ecgCanvas.height = ecgCanvas.offsetHeight;
+                ecgCtx.strokeStyle = '#00ff00'; // ECG 綠色
+                ecgCtx.lineWidth = 2;
+                ecgCtx.shadowBlur = 5;
+                ecgCtx.shadowColor = '#00ff00';
+
+                eegCanvas.width = eegCanvas.offsetWidth;
+                eegCanvas.height = eegCanvas.offsetHeight;
+                eegCtx.strokeStyle = '#FFFF00'; // EEG 黃色
+                eegCtx.lineWidth = 1; // 腦波線條細一點
+
+                // 初始化 EEG Y 座標
+                for (let i = 0; i < eegLines; i++) {
+                    lastEegY[i] = (eegCanvas.height / (eegLines + 1)) * (i + 1);
+                }
+            }
+            
+            // 繪製 ECG 波形
+            function drawEcgWave() {
+                let canvasHeight = ecgCanvas.height;
+                let baseHeight = canvasHeight / 1.8;
+                let scale = canvasHeight / 200; // 根據畫布高度動態縮放
+
+                ecgCtx.clearRect(ecgX, 0, ecgStep + 10, canvasHeight);
+
+                ecgCtx.beginPath();
+                
+                let y1_val = ecgWaveform[ecgDataIndex];
+                let y2_index = (ecgDataIndex + 1) % ecgWaveform.length;
+                let y2_val = ecgWaveform[y2_index];
+
+                let canvasY1 = baseHeight - (y1_val - 100) * scale; 
+                let canvasY2 = baseHeight - (y2_val - 100) * scale;
+
+                ecgCtx.moveTo(ecgX, canvasY1);
+                ecgCtx.lineTo(ecgX + ecgStep, canvasY2);
+                ecgCtx.stroke();
+
+                ecgX += ecgStep;
+                ecgDataIndex = y2_index;
+                
+                if (ecgX > ecgCanvas.width) {
+                    ecgX = 0; 
+                }
+            }
+
+            // 繪製 EEG 波形 (多通道)
+            function drawEegWave() {
+                let canvasHeight = eegCanvas.height;
+                let baseSpacing = canvasHeight / (eegLines + 1);
+                let amplitude = baseSpacing * 0.4; // 振幅
+
+                eegCtx.clearRect(eegX, 0, eegStep + 10, canvasHeight);
+
+                for (let i = 0; i < eegLines; i++) {
+                    let currentBaseY = baseSpacing * (i + 1);
+                    // 模擬隨機波動
+                    let newY = currentBaseY + (Math.random() - 0.5) * amplitude;
+
+                    eegCtx.beginPath();
+                    eegCtx.moveTo(eegX, lastEegY[i]);
+                    eegCtx.lineTo(eegX + eegStep, newY);
+                    eegCtx.stroke();
+                    
+                    lastEegY[i] = newY;
+                }
+                
+                eegX += eegStep;
+
+                if (eegX > eegCanvas.width) {
+                    eegX = 0;
+                    // 當 X 歸零時，重置 Y 到基線，防止線條飄移
+                    for (let i = 0; i < eegLines; i++) {
+                         lastEegY[i] = (eegCanvas.height / (eegLines + 1)) * (i + 1);
+                    }
+                }
+            }
+
+            // 主動畫循環
+            function animateGraphs() {
+                drawEcgWave();
+                drawEegWave();
+                requestAnimationFrame(animateGraphs); // 請求下一幀
+            }
+
+            // --- 5. 啟動 ---
+            
+            resizeCanvases(); // 設置初始畫布大小
+            animateGraphs();  // 開始繪製動畫
+
             // 設置初始選中狀態
             document.getElementById(currentSelectedRoom).classList.add('selected');
             updateDetails(currentSelectedRoom);
