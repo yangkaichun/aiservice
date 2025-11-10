@@ -7,45 +7,12 @@
     <link rel="shortcut icon" href="feticon.ico">
     
     <style>
-        body {
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
-            background-color: #f4f7f6;
-            margin: 0;
-            padding: 20px;
-        }
-
-        /* --- [手機版 CSS 修改 1/3] --- */
-        .container {
-            display: flex;
-            flex-direction: column; /* 改為垂直堆疊 */
-            gap: 20px;
-        }
-        
-        /* --- [手機版 CSS 修改 2/3] --- */
-        .controls {
-            background-color: #ffffff;
-            padding: 20px; /* 稍微減少 padding */
-            border-radius: 12px;
-            box-shadow: 0 6px 15px rgba(0, 0, 0, 0.08);
-            width: 100%; /* 寬度改為 100% */
-            max-height: none; /* 移除最大高度限制 */
-            overflow-y: visible; /* 不需要滾動 */
-            box-sizing: border-box; /* 確保 padding 不會讓寬度溢出 */
-        }
-        
-        /* --- [手機版 CSS 修改 3/3] --- */
-        .map-container {
-            flex-grow: 1;
-            height: 60vh; /* 地圖高度 (可依需求調整) */
-        }
-
-        /* (其他所有 CSS 樣式都和桌機版相同) */
-        #map {
-            width: 100%;
-            height: 100%;
-            border-radius: 12px;
-            background-color: #e0e0e0;
-        }
+        /* (您所有的 CSS 保持不變) */
+        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif; background-color: #f4f7f6; margin: 0; padding: 20px; }
+        .container { display: flex; flex-direction: column; gap: 20px; }
+        .controls { background-color: #ffffff; padding: 20px; border-radius: 12px; box-shadow: 0 6px 15px rgba(0, 0, 0, 0.08); width: 100%; max-height: none; overflow-y: visible; box-sizing: border-box; }
+        .map-container { flex-grow: 1; height: 60vh; }
+        #map { width: 100%; height: 100%; border-radius: 12px; background-color: #e0e0e0; }
         .logo-container { text-align: center; margin-bottom: 20px; }
         .logo-container img { max-width: 150px; height: auto; }
         h1 { text-align: center; color: #333; margin-top: 0; margin-bottom: 25px; }
@@ -73,13 +40,36 @@
         #order-panel li { margin-bottom: 8px; font-weight: 500; color: #155724; }
         #order-panel li strong { color: #0d3a17; }
         #directions-panel { margin-top: 20px; padding: 15px; background-color: #f8f8f8; border-radius: 8px; max-height: 400px; overflow-y: auto; }
+        
+        /* [修改 1/4] 天氣開關的 CSS */
+        .weather-toggle {
+            padding-bottom: 20px;
+            border-bottom: 1px solid #eee;
+            font-weight: 500;
+        }
+        .weather-toggle input {
+            margin-right: 8px;
+        }
     </style>
 </head>
 <body>
+
     <div class="container">
         <div class="controls">
-            <div class="logo-container"> <img src="fetlogo.png" alt="Logo"> </div>
+
+            <div class="logo-container">
+                <img src="fetlogo.png" alt="Logo">
+            </div>
+
             <h1>訪視路徑規劃最佳化</h1>
+            
+            <div class="input-group weather-toggle">
+                <label for="toggleWeather">
+                    <input type="checkbox" id="toggleWeather">
+                    🗺️ 在地圖上顯示天氣圖層
+                </label>
+            </div>
+            
             <div class="input-group">
                 <label for="startPoint">📍 起始點地址</label>
                 <input type="text" id="startPoint" placeholder="例如：台北101">
@@ -90,6 +80,7 @@
                 <input type="text" class="destination" placeholder="例如：台北市立動物園">
             </div>
             <button id="addDestination">+ 新增到達點</button>
+
             <div class="input-group" id="mode-selector">
                 <label>🚦 交通模式</label>
                 <div class="radio-group">
@@ -99,19 +90,23 @@
                     <label for="modeWalking">🚶 步行</label>
                 </div>
             </div>
+
             <button id="planRoute" class="plan-button-main">規劃路徑</button>
             <button id="openGoogleMaps" class="open-maps-button" disabled>在 Google 地圖中開啟</button>
             <div id="order-panel"> <p>路徑順序將顯示在此。</p> </div>
             <div id="directions-panel"> <p>詳細路徑指引將顯示在此。</p> </div>
         </div>
+
         <div class="map-container">
             <div id="map"></div>
         </div>
     </div>
- <script>
+
+    <script>
         // 全域變數
         let map, directionsService, directionsRenderer;
         let lastSuccessfulRoute = null; 
+        let weatherLayer; // [修改 3/4] 新增 weatherLayer 變數
 
         // 初始化地圖
         function initMap() {
@@ -125,6 +120,9 @@
             
             directionsRenderer.setMap(map);
             directionsRenderer.setPanel(document.getElementById('directions-panel'));
+            
+            // [修改 4/4] 初始化天氣圖層服務
+            weatherLayer = new google.maps.weather.WeatherLayer();
         }
 
         // 當 DOM 載入完成後，綁定事件
@@ -148,62 +146,47 @@
 
             // 綁定 "開啟 Google Map" 按鈕
             document.getElementById('openGoogleMaps').addEventListener('click', () => {
-                if (!lastSuccessfulRoute) {
-                    return; // 正常情況下按鈕會被禁用，此為保險
-                }
-                
-                // 使用 Google Maps "Directions URL" (api=1)
+                if (!lastSuccessfulRoute) { return; }
                 const baseUrlApi = 'https://www.google.com/maps/dir/?api=1';
-                
-                // 1. 加上起點
                 const originParam = `&origin=${encodeURIComponent(lastSuccessfulRoute.origin)}`;
-                
-                // 2. 加上終點
                 const destParam = `&destination=${encodeURIComponent(lastSuccessfulRoute.destination)}`;
-                
-                // 3. 加上所有中途點 (用 | 分隔)
                 const waypointsParam = lastSuccessfulRoute.orderedWaypoints.length > 0
                     ? `&waypoints=${lastSuccessfulRoute.orderedWaypoints.map(wp => encodeURIComponent(wp)).join('|')}`
                     : '';
-                
-                // 4. 加上交通模式
                 const modeParam = lastSuccessfulRoute.travelMode === 'WALKING'
                     ? '&travelmode=walking'
                     : '&travelmode=driving';
-                
-                // 組合最終 URL
                 const finalUrl = baseUrlApi + originParam + destParam + waypointsParam + modeParam;
-                
-                // 在新分頁開啟
                 window.open(finalUrl, '_blank');
+            });
+            
+            // [修改 5/4] 綁定天氣開關
+            const weatherCheckbox = document.getElementById('toggleWeather');
+            weatherCheckbox.addEventListener('change', () => {
+                if (weatherCheckbox.checked) {
+                    weatherLayer.setMap(map); // 開啟圖層
+                } else {
+                    weatherLayer.setMap(null); // 關閉圖層 (設為 null)
+                }
             });
         });
 
-        // 核心函數
+        // (核心函數 calculateAndDisplayRoute 保持不變)
         function calculateAndDisplayRoute(travelMode) {
-            // [JS 修改] 獲取按鈕並在開始時禁用
             const openMapsButton = document.getElementById('openGoogleMaps');
             openMapsButton.disabled = true;
-            lastSuccessfulRoute = null; // 清除舊路徑
-
-            // 獲取地址
+            lastSuccessfulRoute = null; 
             const startPoint = document.getElementById('startPoint').value.trim();
             const destinationInputs = document.querySelectorAll('.destination');
-            
             const orderPanel = document.getElementById('order-panel');
             const directionsPanel = document.getElementById('directions-panel');
-
             orderPanel.innerHTML = '<p>正在計算路徑...</p>';
             directionsPanel.innerHTML = '';
-
             const waypoints = [];
             destinationInputs.forEach(input => {
                 const address = input.value.trim();
-                if (address !== '') {
-                    waypoints.push(address);
-                }
+                if (address !== '') { waypoints.push(address); }
             });
-
             if (startPoint === '') {
                 alert('請輸入起始點！');
                 orderPanel.innerHTML = '<p style="color: red;">錯誤：請輸入起始點。</p>';
@@ -214,18 +197,12 @@
                 orderPanel.innerHTML = '<p style="color: red;">錯誤：請至少輸入一個到達點。</p>';
                 return;
             }
-
             const destinationPoint = waypoints.pop();
             const waypointsForApi = [];
             waypoints.forEach(location => {
-                waypointsForApi.push({
-                    location: location,
-                    stopover: true 
-                });
+                waypointsForApi.push({ location: location, stopover: true });
             });
-
             const isDriving = (travelMode === 'DRIVING');
-            
             const request = {
                 origin: startPoint,
                 destination: destinationPoint,
@@ -233,33 +210,25 @@
                 travelMode: travelMode,
                 optimizeWaypoints: isDriving 
             };
-
-            // 呼叫 Directions API
             directionsService.route(request, (result, status) => {
                 if (status === 'OK') {
-                    // 1. 繪製路徑
                     directionsRenderer.setDirections(result);
-                    
                     const route = result.routes[0];
                     const isOptimized = route.waypoint_order && route.waypoint_order.length > 0;
-                    
-                    // [JS 修改] 儲存成功的路徑以供 "開啟" 按鈕使用
                     lastSuccessfulRoute = {
                         origin: startPoint,
                         destination: destinationPoint,
                         orderedWaypoints: [],
                         travelMode: travelMode
                     };
-
                     let orderHtml = '';
-                    
                     if (isOptimized) {
                         orderHtml = '<h4>📍 最佳訪視順序 (開車)</h4><ol>';
                         orderHtml += `<li>${startPoint} <strong>(起點)</strong></li>`;
                         route.waypoint_order.forEach(index => {
                             const location = waypointsForApi[index].location;
                             orderHtml += `<li>${location}</li>`;
-                            lastSuccessfulRoute.orderedWaypoints.push(location); // 儲存排序後的中途點
+                            lastSuccessfulRoute.orderedWaypoints.push(location);
                         });
                         orderHtml += `<li>${destinationPoint} <strong>(終點)</strong></li>`;
                     } else {
@@ -268,17 +237,13 @@
                         orderHtml += `<li>${startPoint} <strong>(起點)</strong></li>`;
                         waypointsForApi.forEach(wp => {
                             orderHtml += `<li>${wp.location}</li>`;
-                            lastSuccessfulRoute.orderedWaypoints.push(wp.location); // 儲存輸入順序的中途點
+                            lastSuccessfulRoute.orderedWaypoints.push(wp.location);
                         });
                         orderHtml += `<li>${destinationPoint} <strong>(終點)</strong></li>`;
                     }
-                    
                     orderHtml += '</ol>';
                     orderPanel.innerHTML = orderHtml;
-
-                    // [JS 修改] 成功後，啟用按鈕
                     openMapsButton.disabled = false;
-                    
                 } else if (status === 'ZERO_RESULTS') {
                     alert('路徑規劃失敗：找不到可行的路徑 (ZERO_RESULTS)。請檢查地址是否都正確且精確，或此模式下無法到達。');
                     orderPanel.innerHTML = '<p style="color: red;">路徑規劃失敗：找不到可行的路徑。請檢查地址或交通模式。</p>';
@@ -290,7 +255,7 @@
         }
     </script>
 
-    <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyBQ0UdLwluVkxZOi5vwezMTvSivUI0m24o&libraries=places&callback=initMap" async defer></script>
+    <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyBQ0UdLwluVkxZOi5vwezMTvSivUI0m24o&libraries=places,weather&callback=initMap" async defer></script>
 
 </body>
 </html>
