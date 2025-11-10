@@ -3,605 +3,635 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>智慧醫療數位分身 (3D 雙視圖 PoC)</title>
+    <title>醫療數位孿生儀表板</title>
     
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&display=swap" rel="stylesheet">
+
     <style>
+        /* --- 1. 基礎與佈局 --- */
+        
+        * {
+            box-sizing: border-box;
+        }
+
         body {
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+            font-family: 'Orbitron', sans-serif;
+            background-color: #010038; /* 深藍色背景 [1] */
+            color: #00b3ff; /* 霓虹藍色文字 [2] */
             margin: 0;
-            background-color: #0a0f1a; /* 統一使用深色背景 */
-            color: #e0e0e0;
+            padding: 0;
+            overflow: hidden; /* 隱藏滾動條 */
+        }
+
+       .dashboard-container {
+            display: grid;
+            height: 100vh;
+            padding: 20px;
+            gap: 20px;
+            /* * 使用 CSS Grid Areas 進行宏觀佈局 [3]
+             * 佈局:
+             * | HEADER | HEADER |
+             * | HUMAN-TWIN | FACILITY-TWIN |
+             * | HUMAN-TWIN | FACILITY-DETAILS |
+            */
+            grid-template-columns: 2fr 1.5fr;
+            grid-template-rows: auto 1fr auto;
+            grid-template-areas:
+                "header header"
+                "human-twin facility-twin"
+                "human-twin facility-details";
+            perspective: 1500px; /* 創建 3D 視口 */
+        }
+
+        header {
+            grid-area: header;
+            text-align: center;
+        }
+
+       .widget {
+            /* "全息投影" 面板效果 */
+            background: rgba(0, 25, 50, 0.7);
+            border: 1px solid #00b3ff;
+            border-radius: 8px;
+            box-shadow: 0 0 15px rgba(0, 180, 255, 0.5), 
+                        inset 0 0 10px rgba(0, 180, 255, 0.3); /* 發光邊框 */
+            backdrop-filter: blur(5px); /* 磨砂玻璃效果 */
+            padding: 20px;
             overflow: hidden;
             display: flex;
             flex-direction: column;
-            height: 100vh;
+
+            /* 3D 傾斜效果，模擬 S_S_Final_Image */
+            transform: rotateY(3deg) translateZ(-10px);
+            transition: transform 0.4s, box-shadow 0.4s;
+        }
+
+       .widget:hover {
+            transform: rotateY(0deg) translateZ(0) scale(1.02);
+            box-shadow: 0 0 25px rgba(0, 180, 255, 0.8), 
+                        inset 0 0 15px rgba(0, 180, 255, 0.5);
+        }
+
+        /* 將小部件分配到網格區域 */
+       .human-twin { grid-area: human-twin; }
+       .facility-twin { grid-area: facility-twin; }
+       .facility-details { grid-area: facility-details; }
+
+        /* --- 2. 標題與文字效果 --- */
+
+        h1, h3 {
+            margin: 0 0 20px 0;
+            color: #fff;
+            /* 發光文字效果 [2, 1] */
+            text-shadow: 0 0 10px #00b3ff, 0 0 20px #00b3ff;
+            animation: glowing-text 2s ease-in-out infinite alternate;
+        }
+
+        @keyframes glowing-text {
+            from { text-shadow: 0 0 10px #00b3ff; }
+            to { text-shadow: 0 0 20px #00b3ff, 0 0 5px #fff; }
+        }
+
+        /* --- 3. 模組 A: 人體孿生 --- */
+        
+        /* 移除了 #ecg-canvas 樣式 */
+
+        /* 新增: 頭像容器樣式 */
+       .avatar-container {
+            width: 100%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            margin-bottom: 20px;
+            padding: 10px;
+            background: #000;
+            border-radius: 8px;
+        }
+
+        #patient-avatar {
+            width: 150px;
+            height: 150px;
+            border-radius: 50%; /* 圓形頭像 */
+            border: 4px solid #00b3ff;
+            box-shadow: 0 0 15px #00b3ff;
+            object-fit: cover; /* 確保圖片填滿 */
         }
         
-        header {
-            background-color: #1a2030;
-            padding: 1rem 2rem;
-            border-bottom: 1px solid #00529b;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.2);
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            z-index: 100;
+       .vitals-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+            margin-bottom: 20px;
         }
 
-        header h1 {
-            margin: 0;
-            font-size: 1.5rem;
-            color: #00d4ff;
-            text-shadow: 0 0 5px rgba(0, 212, 255, 0.7);
+       .vital {
+            background: rgba(0, 0, 0, 0.3);
+            border: 1px solid #005f80;
+            padding: 15px;
+            border-radius: 5px;
         }
 
-        header nav button {
+       .vital.label {
             font-size: 1rem;
-            padding: 0.5rem 1rem;
-            margin-left: 0.5rem;
-            border: 1px solid #00d4ff;
-            background-color: transparent;
-            color: #00d4ff;
-            cursor: pointer;
-            border-radius: 4px;
-            transition: all 0.2s ease;
+            color: #00b3ff;
+            display: block;
+            margin-bottom: 5px;
         }
 
-        header nav button:hover {
-            background-color: rgba(0, 212, 255, 0.1);
+       .vital.value {
+            font-size: 3rem;
+            font-weight: 700;
+            color: #fff;
+            /* 數位數字外觀 [4] */
+            text-shadow: 0 0 8px #fff; 
         }
 
-        header nav button.active {
-            background-color: #00d4ff;
-            color: #0a0f1a;
-            font-weight: bold;
+       .vital.unit {
+            font-size: 1rem;
+            color: #00b3ff;
+            margin-left: 5px;
         }
 
-        main {
-            flex-grow: 1;
+       .stats-container {
+            display: flex;
+            gap: 20px;
+            align-items: center;
+        }
+
+        /* 純 CSS 環圈圖 [5, 6] */
+       .doughnut-chart {
+            width: 120px;
+            height: 120px;
+            border-radius: 50%;
+            /* 使用 conic-gradient 繪製圖表 */
+            background: conic-gradient(
+                #00b3ff 0% 75%, 
+                #333 75% 100%
+            );
+            
+            /* 使用偽元素創建環圈的"洞" [5] */
+            display: flex;
+            justify-content: center;
+            align-items: center;
             position: relative;
         }
 
-        /* 視圖容器 */
-        .view {
-            display: none; /* 預設隱藏 */
+       .doughnut-chart::before {
+            content: '';
+            width: 90px;
+            height: 90px;
+            background: #010038; /* 匹配.vital 的背景 */
+            border-radius: 50%;
             position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
         }
 
-        .view.active {
-            display: block; /* 顯示當前視圖 */
+       .doughnut-label {
+            position: relative; /* 確保在 ::before 之上 */
+            text-align: center;
+            color: #fff;
         }
-
-        /* 兩個 3D 畫布 */
-        canvas {
+       .doughnut-label.value {
+            font-size: 2rem;
+            font-weight: 700;
             display: block;
+        }
+       .doughnut-label.label {
+            font-size: 0.9rem;
+            color: #00b3ff;
+        }
+
+        /* --- 4. 模組 B: 設施孿生 (SVG 地圖) --- */
+        
+       .map-container {
+            flex-grow: 1; /* 填滿.widget 的剩餘空間 */
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            background: #000;
+            border-radius: 5px;
+            padding: 10px;
+            position: relative; /* 用於疊加狀態指示燈 */
+        }
+
+       .facility-map {
             width: 100%;
             height: 100%;
         }
 
-        /* 病患視圖 - 說明文字 */
-        #patient-info-overlay {
-            position: absolute;
-            bottom: 1rem;
-            left: 1rem;
-            color: #aaa;
-            font-size: 0.9rem;
-            z-index: 10;
+        /* SVG 路徑的默認樣式 */
+       .facility-map.room {
+            fill: #333;
+            stroke: #00b3ff;
+            stroke-width: 2;
+            cursor: pointer;
+            transition: fill 0.3s ease;
         }
 
-        /* 醫院視圖 - 資產列表 */
-        #asset-info-overlay {
-            position: absolute;
-            top: 1rem;
-            left: 1rem;
-            background-color: rgba(10, 15, 26, 0.8);
-            border: 1px solid #00d4ff;
-            padding: 1rem;
-            border-radius: 8px;
-            box-shadow: 0 2px 5px rgba(0,0,0,0.2);
-            width: 250px;
-            z-index: 10;
+        /* SVG 點擊高亮效果 [7, 8] */
+       .facility-map.room:hover {
+            fill: #555;
+        }
+
+       .facility-map.room.selected {
+            fill: #00b3ff;
+            stroke: #fff;
+        }
+
+        /* 警報閃爍動畫 [9] */
+       .facility-map.room.alert {
+            fill: #ff4242; /* 警報紅色 [10] */
+            animation: blink-fill 1s infinite;
+        }
+
+        @keyframes blink-fill {
+            0%, 100% { fill: #ff4242; }
+            50% { fill: #333; }
+        }
+
+        /* --- 5. 設施詳情 & 狀態指示燈 --- */
+
+       .details-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+        }
+       .detail-item.label {
+            font-size: 0.9rem;
+            color: #00b3ff;
+        }
+       .detail-item.value {
+            font-size: 1.5rem;
+            color: #fff;
+        }
+
+        /* 狀態指示燈 [10, 11, 12] */
+       .status-indicator {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+       .status-dot {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            position: relative;
         }
         
-        #asset-info-overlay h4 {
-            margin-top: 0;
-            color: #00d4ff;
-        }
+       .status-dot.online { background-color: #72ff7d; }
+       .status-dot.offline { background-color: #ff4242; }
 
-        #asset-list div {
-            padding: 0.25rem 0;
-        }
-       .asset-in-use { color: #ff4444; font-weight: bold; }
-       .asset-available { color: #00ff88; }
-       .asset-maintenance { color: #ffc107; }
-
-        /* * 隱藏的 2D 畫布容器 (用於病患視圖) */
-        #panel-container {
+        /* 脈衝動畫 [10] */
+       .status-dot::before {
+            content: '';
             position: absolute;
-            left: -9999px;
-            top: -9999px;
-            display: none;
+            left: 50%;
+            top: 50%;
+            transform: translate(-50%, -50%);
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            background-color: inherit;
+            animation: pulse 1.5s infinite ease-out;
         }
+
+       .status-dot.offline::before {
+            animation: none; /* 離線時不發光 */
+        }
+
+        @keyframes pulse {
+            from {
+                transform: translate(-50%, -50%) scale(0.5);
+                opacity: 1;
+            }
+            to {
+                transform: translate(-50%, -50%) scale(2);
+                opacity: 0;
+            }
+        }
+        
     </style>
 </head>
 <body>
-    
-    <header>
-        <h1>智慧醫療數位分身 (PoC)</h1>
-        <nav>
-            <button id="btn-patient" class="active">病患全息分身 (3D HUD)</button>
-            <button id="btn-hospital">醫院設施分身 (3D Assets)</button>
-        </nav>
-    </header>
 
-    <main>
-        <!-- 病患視圖容器 -->
-        <div id="patient-view" class="view active">
-            <canvas id="patient-canvas"></canvas>
-            <div id="patient-info-overlay">使用滑鼠拖曳以旋轉視角 | 滾動以縮放</div>
-        </div>
+    <div class="dashboard-container">
+        <header>
+            <h1>醫療數位孿生儀表板 (Demo)</h1>
+        </header>
 
-        <!-- 醫院視圖容器 -->
-        <div id="hospital-view" class="view">
-            <canvas id="hospital-canvas"></canvas>
-            <div id="asset-info-overlay">
-                <h4>資產即時狀態</h4>
-                <div id="asset-list"></div>
+        <div class="widget human-twin">
+            <!-- <h3> 標題現在是動態的 -->
+            <h3 id="human-twin-title">人體孿生 (Patient-001)</h3>
+            
+            <!-- 移除了 <canvas id="ecg-canvas"></canvas> -->
+            
+            <!-- 新增: 病患頭像 -->
+            <div class="avatar-container">
+                <!-- 
+                  注意: 
+                  請將下面的 'src' 網址替換為您本地的圖片路徑 (例如 'p1.png')。
+                  目前使用 placehold.co 作為佔位符。
+                -->
+                <img id="patient-avatar" src="p1.jpg" alt="病患頭像">
+            </div>
+
+            <div class="vitals-grid">
+                <div class="vital">
+                    <span class="label">心率 (HR)</span>
+                    <span class="value" id="vital-hr">72</span>
+                    <span class="unit">bpm</span>
+                </div>
+                <div class="vital">
+                    <span class="label">血壓 (BP)</span>
+                    <span class="value" id="vital-bp">120/80</span>
+                    <span class="unit">mmHg</span>
+                </div>
+                <div class="vital">
+                    <span class="label">血氧 (SpO2)</span>
+                    <span class="value" id="vital-spo2">98</span>
+                    <span class="unit">%</span>
+                </div>
+                <div class="vital">
+                    <span class="label">呼吸 (RR)</span>
+                    <span class="value" id="vital-rr">16</span>
+                    <span class="unit">/min</span>
+                </div>
+            </div>
+
+            <div class="stats-container">
+                <div class="doughnut-chart" id="physio-load">
+                    <div class="doughnut-label">
+                        <span class="value" id="doughnut-value">75%</span>
+                        <span class="label">生理負荷</span>
+                    </div>
+                </div>
+                <div class="patient-info">
+                    <!-- 這些 <p> 標籤現在是動態的 -->
+                    <p id="patient-info-name"><strong>病患:</strong> Patient-001</p>
+                    <p id="patient-info-status"><strong>狀態:</strong> 穩定</p>
+                    <p id="patient-info-location"><strong>位置:</strong> ICU 病房 101</p>
+                </div>
             </div>
         </div>
-    </main>
 
-    <!-- 隱藏的 2D 畫布 (供病患視圖使用) -->
-    <div id="panel-container">
-        <canvas id="panel-canvas-1" width="300" height="200"></canvas>
-        <canvas id="panel-canvas-2" width="300" height="200"></canvas>
-        <canvas id="panel-canvas-3" width="300" height="200"></canvas>
-        <canvas id="panel-canvas-4" width="300" height="200"></canvas>
-        <canvas id="panel-canvas-5" width="300" height="200"></canvas>
-        <canvas id="panel-canvas-6" width="300" height="200"></canvas>
+        <div class="widget facility-twin">
+            <h3>設施孿生 (ICU 樓層)</h3>
+            <div class="map-container">
+                <svg class="facility-map" viewBox="0 0 300 200" xmlns="http://www.w3.org/2000/svg">
+                    <title>ICU 樓層平面圖</title>
+                    
+                    <path class="room" id="room-101" d="M 10,10 H 140 V 90 H 10 Z" />
+                    <text x="75" y="55" fill="#fff" font-size="12" text-anchor="middle">ICU 101</text>
+                    
+                    <path class="room" id="room-102" d="M 160,10 H 290 V 90 H 160 Z" />
+                    <text x="225" y="55" fill="#fff" font-size="12" text-anchor="middle">ICU 102</text>
+                    
+                    <path class="room" id="room-103" d="M 10,110 H 140 V 190 H 10 Z" />
+                    <text x="75" y="155" fill="#fff" font-size="12" text-anchor="middle">ICU 103</text>
+                    
+                    <!-- 更新: 將 MRI 變更為 ICU 104 -->
+                    <path class="room" id="room-104" d="M 160,110 H 290 V 190 H 160 Z" />
+                    <text x="225" y="155" fill="#fff" font-size="12" text-anchor="middle">ICU 104</text>
+                </svg>
+            </div>
+        </div>
+
+        <div class="widget facility-details">
+            <h3>設施詳情</h3>
+            <div class="details-grid">
+                <div class="detail-item">
+                    <span class="label">選定區域</span>
+                    <span class="value" id="details-room-name">--</span>
+                </div>
+                <div class="detail-item">
+                    <span class="label">狀態</span>
+                    <div class="status-indicator">
+                        <span class="status-dot online" id="details-status-dot"></span>
+                        <span class="value" id="details-status-text">--</span>
+                    </div>
+                </div>
+            </div>
+            <div class="detail-item">
+                <span class="label">關聯病患</span>
+                <span class="value" id="details-patient">--</span>
+            </div>
+            <div class="detail-item">
+                <span class="label">設備</span>
+                <span class="value" id="details-equipment">--</span>
+            </div>
+        </div>
     </div>
 
-    <!-- 引入 Three.js 和 Chart.js -->
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
-    
     <script>
-        document.addEventListener('DOMContentLoaded', () => {
+        // 確保在 DOM 加載完成後執行 [13, 14, 15]
+        document.addEventListener('DOMContentLoaded', function() {
+
+            // --- 1. 緩存 DOM 元素 ---
+            const hrElement = document.getElementById('vital-hr');
+            const bpElement = document.getElementById('vital-bp');
+            const spo2Element = document.getElementById('vital-spo2');
+            const rrElement = document.getElementById('vital-rr');
             
-            // --- 全局變數和 DOM 元素 ---
-            const btnPatient = document.getElementById('btn-patient');
-            const btnHospital = document.getElementById('btn-hospital');
-            const patientView = document.getElementById('patient-view');
-            const hospitalView = document.getElementById('hospital-view');
-            const assetListOverlay = document.getElementById('asset-list');
+            // 移除 ECG 相關
+            // const ecgCanvas = document.getElementById('ecg-canvas');
+            // const ctx = ecgCanvas.getContext('2d');
+            
+            const roomPaths = document.querySelectorAll('.facility-map.room');
+            
+            const detailsName = document.getElementById('details-room-name');
+            const detailsStatusText = document.getElementById('details-status-text');
+            const detailsStatusDot = document.getElementById('details-status-dot');
+            const detailsPatient = document.getElementById('details-patient');
+            const detailsEquipment = document.getElementById('details-equipment');
 
-            let currentView = 'patient'; // 追蹤當前視圖
+            // 新增: 人體孿生 DOM 元素
+            const humanTwinTitle = document.getElementById('human-twin-title');
+            const patientAvatar = document.getElementById('patient-avatar');
+            const patientInfoName = document.getElementById('patient-info-name');
+            const patientInfoStatus = document.getElementById('patient-info-status');
+            const patientInfoLocation = document.getElementById('patient-info-location');
 
-            // --- 病患視圖變數 ---
-            let scenePatient, cameraPatient, rendererPatient, controlsPatient;
-            const panelCanvases = [];
-            const panelContexts = [];
-            const panelCharts = {};
-            const panelTextures = [];
-            let mockVitals = {
-                heartRate: 75, spO2: 98, bpSystolic: 120, bpDiastolic: 80,
-                status: "STABLE", brainWave: [],
+
+            // --- 2. 移除 ECG 繪圖引擎 ---
+            // [16]
+            
+            // (ECG 相關的 drawEcg, resizeCanvas, ecgWaveform, ecgDataIndex, ecgX, step 均已移除)
+
+
+            // --- 3. 數據模擬引擎 (setInterval) ---
+            
+            // 模擬病房與病患數據庫
+            // 這是 Demo 的核心數據模型
+            const patientDatabase = {
+                "room-101": { 
+                    patientId: "Patient-001", 
+                    avatarUrl: "https://placehold.co/150x150/010038/00b3ff?text=P1", // 替換為 'p1.png'
+                    equipment: "Ventilator V-100", 
+                    status: "online",
+                    baseVitals: { hr: 72, bpSys: 120, bpDia: 80, spo2: 98, rr: 16 }
+                },
+                "room-102": { 
+                    patientId: "Patient-002", 
+                    avatarUrl: "https://placehold.co/150x150/010038/00b3ff?text=P2", // 替換為 'p2.png'
+                    equipment: "Dialysis D-50", 
+                    status: "online",
+                    baseVitals: { hr: 85, bpSys: 130, bpDia: 85, spo2: 97, rr: 18 }
+                },
+                "room-103": { 
+                    patientId: "Patient-003", 
+                    avatarUrl: "https://placehold.co/150x150/010038/00b3ff?text=P3", // 替換為 'p3.png'
+                    equipment: "ECMO E-20", 
+                    status: "online",
+                    baseVitals: { hr: 68, bpSys: 110, bpDia: 75, spo2: 99, rr: 14 }
+                },
+                 "room-104": { 
+                    patientId: "N/A", 
+                    avatarUrl: "https://placehold.co/150x150/333/777?text=Empty",
+                    equipment: "Empty", 
+                    status: "offline",
+                    baseVitals: null // 沒有病患
+                },
             };
-            const CHART_MAX_POINTS = 30;
 
-            // --- 醫院視圖變數 ---
-            let sceneHospital, cameraHospital, rendererHospital, controlsHospital;
-            let hospitalAssets = {}; // 存放 3D 物件
-            let mockAssets = {
-                'iv_pump_04': { x: -10, y: 2, z: 0, status: 'available', targetX: -10 },
-                'iv_pump_05': { x: 10, y: 2, z: 0, status: 'available', targetX: 10 }
-            };
+            // 用於儲存當前選定病患的基礎生命體徵
+            let currentBaseVitals = null;
+            let currentSelectedRoom = 'room-101'; // 初始選中
 
-            // --- 初始化 ---
-            function init() {
-                // 1. 初始化兩個視圖
-                initPatientView();
-                initHospitalView();
-
-                // 2. 設定視圖切換
-                setupViewSwitcher();
-
-                // 3. 啟動統一的數據模擬
-                startDataSimulation();
-
-                // 4. 啟動主渲染循環
-                animate();
-
-                // 5. 監聽視窗大小
-                window.addEventListener('resize', onWindowResize);
-            }
-
-            // --- 視圖切換 ---
-            function setupViewSwitcher() {
-                btnPatient.addEventListener('click', () => {
-                    currentView = 'patient';
-                    patientView.classList.add('active');
-                    hospitalView.classList.remove('active');
-                    btnPatient.classList.add('active');
-                    btnHospital.classList.remove('active');
-                });
-
-                btnHospital.addEventListener('click', () => {
-                    currentView = 'hospital';
-                    hospitalView.classList.add('active');
-                    patientView.classList.remove('active');
-                    btnHospital.classList.add('active');
-                    btnPatient.classList.remove('active');
-                });
-            }
-
-            // --- 主渲染循環 ---
-            function animate() {
-                requestAnimationFrame(animate);
-
-                // 根據當前視圖，渲染對應的場景
-                if (currentView === 'patient') {
-                    if (rendererPatient) {
-                        controlsPatient.update();
-                        // 更新紋理
-                        panelTextures.forEach(texture => {
-                            texture.needsUpdate = true;
-                        });
-                        rendererPatient.render(scenePatient, cameraPatient);
-                    }
-                } else {
-                    if (rendererHospital) {
-                        controlsHospital.update();
-                        rendererHospital.render(sceneHospital, cameraHospital);
-                    }
+            // 模擬生命體徵 (中頻率更新) [17]
+            // 更新: 模擬邏輯現在基於 currentBaseVitals
+            setInterval(function simulateVitals() {
+                if (!currentBaseVitals) {
+                    // 如果房間為空，顯示 --
+                    hrElement.innerText = '--';
+                    spo2Element.innerText = '--';
+                    rrElement.innerText = '--';
+                    bpElement.innerText = '--/--';
+                    return;
                 }
-            }
 
-            // --- 視窗大小調整 ---
-            function onWindowResize() {
-                if (currentView === 'patient' && cameraPatient && rendererPatient) {
-                    cameraPatient.aspect = patientView.clientWidth / patientView.clientHeight;
-                    cameraPatient.updateProjectionMatrix();
-                    rendererPatient.setSize(patientView.clientWidth, patientView.clientHeight);
-                } else if (currentView === 'hospital' && cameraHospital && rendererHospital) {
-                    cameraHospital.aspect = hospitalView.clientWidth / hospitalView.clientHeight;
-                    cameraHospital.updateProjectionMatrix();
-                    rendererHospital.setSize(hospitalView.clientWidth, hospitalView.clientHeight);
-                }
-            }
+                // [18, 19]
+                hrElement.innerText = Math.floor(Math.random() * 5) + (currentBaseVitals.hr - 2);
+                spo2Element.innerText = Math.floor(Math.random() * 2) + (currentBaseVitals.spo2 - 1);
+                rrElement.innerText = Math.floor(Math.random() * 2) + (currentBaseVitals.rr - 1);
+                
+                let sys = Math.floor(Math.random() * 5) + (currentBaseVitals.bpSys - 2);
+                let dia = Math.floor(Math.random() * 3) + (currentBaseVitals.bpDia - 1);
+                bpElement.innerText = `${sys}/${dia}`;
+                
+            }, 1500);
 
-            // --- 統一數據模擬 ---
-            function startDataSimulation() {
-                setInterval(() => {
-                    // 1. 模擬病患數據
-                    mockVitals.heartRate += (Math.random() - 0.5) * 2;
-                    mockVitals.heartRate = Math.max(60, Math.min(105, mockVitals.heartRate));
-                    mockVitals.spO2 += (Math.random() - 0.4) * 0.5;
-                    mockVitals.spO2 = Math.max(93, Math.min(99, mockVitals.spO2));
-                    mockVitals.bpSystolic += (Math.random() - 0.5) * 2;
-                    mockVitals.bpDiastolic = mockVitals.bpSystolic - 40 + (Math.random() - 0.5) * 5;
-                    mockVitals.status = (mockVitals.spO2 < 95 || mockVitals.heartRate > 100) ? "ALERT" : "STABLE";
-                    mockVitals.brainWave.push(Math.random() * 100);
-                    if(mockVitals.brainWave.length > 100) mockVitals.brainWave.shift();
+            // 模擬設施狀態 (低頻率更新) [17]
+            // 更新: 包含 room-104 並更新 patientDatabase
+            setInterval(function simulateFacility() {
+                // 隨機讓一個病房發出警報
+                if (Math.random() > 0.7) {
+                    // 選擇一個有病患的房間
+                    const occupiedRooms = ["room-101", "room-102", "room-103"];
+                    let randomRoom = occupiedRooms[Math.floor(Math.random() * occupiedRooms.length)];
+                    let roomEl = document.getElementById(randomRoom);
                     
-                    // 更新病患面板 (即使在背景也要更新 2D canvas)
-                    updatePatientPanels();
-
-                    // 2. 模擬資產數據
-                    Object.keys(mockAssets).forEach(assetId => {
-                        const asset = mockAssets[assetId];
-                        if (Math.abs(asset.x - asset.targetX) < 1) {
-                            if (Math.random() < 0.1) {
-                                if (asset.status === 'available') {
-                                    asset.status = 'in_use';
-                                    asset.targetX = (Math.random() < 0.5) ? -5 : 5; // 移到使用區
-                                } else {
-                                    asset.status = 'available';
-                                    asset.targetX = (Math.random() < 0.5)? -10 : 10; // 移回儲存區
-                                }
-                            }
+                    if (roomEl) {
+                        // 切換警報狀態
+                        if (roomEl.classList.contains('alert')) {
+                            roomEl.classList.remove('alert');
+                            patientDatabase[randomRoom].status = "online";
+                        } else {
+                            roomEl.classList.add('alert');
+                            patientDatabase[randomRoom].status = "alert";
                         }
-                        asset.x += Math.sign(asset.targetX - asset.x) * 0.2;
                         
-                        // 更新醫院 3D 物件 (即使在背景也要更新)
-                        updateHospitalAsset(assetId, asset);
-                    });
-
-                }, 1000); // 每秒更新
-            }
-
-            // ===============================================
-            // === 病患全息分身 (3D HUD) 相關函式
-            // ===============================================
-
-            function initPatientView() {
-                scenePatient = new THREE.Scene();
-                scenePatient.background = new THREE.Color(0x0a0f1a);
-                scenePatient.fog = new THREE.Fog(0x0a0f1a, 20, 60);
-
-                cameraPatient = new THREE.PerspectiveCamera(75, patientView.clientWidth / patientView.clientHeight, 0.1, 1000);
-                cameraPatient.position.set(0, 10, 25);
-
-                const canvas = document.getElementById('patient-canvas');
-                rendererPatient = new THREE.WebGLRenderer({ canvas: canvas, antialias: true });
-                rendererPatient.setSize(patientView.clientWidth, patientView.clientHeight);
-
-                const ambientLight = new THREE.AmbientLight(0x404040, 2);
-                scenePatient.add(ambientLight);
-                const pointLight = new THREE.PointLight(0x00d4ff, 1.5, 100);
-                pointLight.position.set(0, 5, 0);
-                scenePatient.add(pointLight);
-
-                controlsPatient = new THREE.OrbitControls(cameraPatient, rendererPatient.domElement);
-                controlsPatient.enableDamping = true;
-                controlsPatient.dampingFactor = 0.05;
-                controlsPatient.minDistance = 10;
-                controlsPatient.maxDistance = 40;
-                controlsPatient.target.set(0, 5, 0);
-
-                initCentralFigure();
-                initHologramPanels();
-            }
-
-            function initCentralFigure() {
-                const material = new THREE.MeshStandardMaterial({
-                    color: 0x00d4ff, emissive: 0x00aaff, emissiveIntensity: 0.3,
-                    metalness: 0.8, roughness: 0.3, transparent: true, opacity: 0.8,
-                });
-                const torso = new THREE.Mesh(new THREE.CylinderGeometry(1, 1.5, 4, 16), material);
-                torso.position.y = 5;
-                const head = new THREE.Mesh(new THREE.SphereGeometry(1, 16, 16), material);
-                head.position.y = 8;
-                scenePatient.add(torso);
-                scenePatient.add(head);
-
-                const ringGeo = new THREE.RingGeometry(2.5, 3, 32);
-                const ringMat = new THREE.MeshBasicMaterial({ color: 0x00d4ff, side: THREE.DoubleSide, transparent: true, opacity: 0.5 });
-                const ring = new THREE.Mesh(ringGeo, ringMat);
-                ring.rotation.x = -Math.PI / 2;
-                ring.position.y = 0.1;
-                scenePatient.add(ring);
-            }
-
-            function initHologramPanels() {
-                const panelCount = 6;
-                const panelRadius = 15;
-                const angleStep = (Math.PI * 2) / panelCount;
-                const panelWidth = 10;
-                const panelHeight = (panelWidth / 300) * 200;
-
-                for (let i = 0; i < panelCount; i++) {
-                    const canvas = document.getElementById(`panel-canvas-${i + 1}`);
-                    panelCanvases.push(canvas);
-                    panelContexts.push(canvas.getContext('2d'));
-                    
-                    const texture = new THREE.CanvasTexture(canvas);
-                    panelTextures.push(texture);
-
-                    const material = new THREE.MeshBasicMaterial({
-                        map: texture, side: THREE.DoubleSide, transparent: true,
-                        opacity: 0.8, blending: THREE.AdditiveBlending,
-                    });
-                    
-                    const geometry = new THREE.PlaneGeometry(panelWidth, panelHeight);
-                    const mesh = new THREE.Mesh(geometry, material);
-                    
-                    const angle = angleStep * i;
-                    mesh.position.set(
-                        Math.sin(angle) * panelRadius,
-                        panelHeight / 2 + 2,
-                        Math.cos(angle) * panelRadius
-                    );
-                    mesh.lookAt(0, 5, 0);
-                    scenePatient.add(mesh);
-                }
-                initPanelCharts();
-            }
-
-            function initPanelCharts() {
-                const chartOptions = (title) => ({
-                    responsive: false, maintainAspectRatio: false,
-                    plugins: { legend: { display: false }, title: { display: true, text: title, color: '#00d4ff' } },
-                    scales: {
-                        x: { display: false, grid: { color: 'rgba(0, 212, 255, 0.2)' }, ticks: { color: '#00d4ff' } },
-                        y: { beginAtZero: false, grid: { color: 'rgba(0, 212, 255, 0.2)' }, ticks: { color: '#00d4ff' } }
-                    },
-                    animation: false,
-                });
-                const lineStyle = { borderColor: '#00d4ff', backgroundColor: 'rgba(0, 212, 255, 0.1)', borderWidth: 2, pointRadius: 0, tension: 0.3 };
-
-                panelCharts.heartRate = new Chart(panelContexts[0], { type: 'line', data: { labels: [], datasets: [{ ...lineStyle }] }, options: chartOptions('心率 (BPM)') });
-                panelCharts.spo2 = new Chart(panelContexts[1], { type: 'line', data: { labels: [], datasets: [{ ...lineStyle }] }, options: chartOptions('血氧 (SpO2 %)') });
-            }
-
-            function updatePatientPanels() {
-                if (panelCharts.heartRate) {
-                    updateChart(panelCharts.heartRate, Math.round(mockVitals.heartRate));
-                }
-                if (panelCharts.spo2) {
-                    updateChart(panelCharts.spo2, Math.round(mockVitals.spO2));
-                }
-                drawPanel_KPI(panelContexts[2], "血壓 (mmHg)", Math.round(mockVitals.bpSystolic), Math.round(mockVitals.bpDiastolic));
-                drawPanel_Status(panelContexts[3], "病患狀態", mockVitals.status);
-                drawPanel_Line(panelContexts[4], "腦波 (EEG)", mockVitals.brainWave);
-                drawPanel_Pie(panelContexts[5], "設備資源", [0.6, 0.3, 0.1]);
-            }
-
-            function updateChart(chart, value) {
-                const data = chart.data;
-                const now = new Date().toLocaleTimeString().split(" ")[0];
-                data.labels.push(now);
-                data.datasets[0].data.push(value);
-                if (data.labels.length > CHART_MAX_POINTS) {
-                    data.labels.shift();
-                    data.datasets[0].data.shift();
-                }
-                chart.update();
-            }
-
-            const baseFill = 'rgba(10, 20, 40, 0.7)';
-            const textColor = '#00d4ff';
-            const titleColor = '#ffffff';
-            const alertColor = '#ff4444';
-            const okColor = '#00ff88';
-
-            function clearCanvas(ctx) {
-                ctx.fillStyle = baseFill;
-                ctx.fillRect(0, 0, ctx.canvas.width, ctx.canvas.height);
-                ctx.strokeStyle = textColor;
-                ctx.strokeRect(2, 2, ctx.canvas.width - 4, ctx.canvas.height - 4);
-            }
-            function drawPanel_KPI(ctx, title, kpi1, kpi2) {
-                if (!ctx) return;
-                clearCanvas(ctx);
-                ctx.fillStyle = titleColor; ctx.font = "bold 24px Arial"; ctx.textAlign = "center";
-                ctx.fillText(title, 150, 40);
-                ctx.font = "bold 48px Arial"; ctx.fillStyle = textColor;
-                ctx.fillText(kpi1, 100, 110); ctx.font = "24px Arial";
-                ctx.fillText("SYST", 100, 140); ctx.font = "bold 48px Arial";
-                ctx.fillText(kpi2, 200, 110); ctx.font = "24px Arial";
-                ctx.fillText("DIA", 200, 140);
-            }
-            function drawPanel_Status(ctx, title, status) {
-                if (!ctx) return;
-                clearCanvas(ctx);
-                ctx.fillStyle = titleColor; ctx.font = "bold 24px Arial"; ctx.textAlign = "center";
-                ctx.fillText(title, 150, 40);
-                ctx.font = "bold 60px Arial";
-                ctx.fillStyle = (status === "ALERT") ? alertColor : okColor;
-                ctx.fillText(status, 150, 120);
-            }
-            function drawPanel_Line(ctx, title, data) {
-                if (!ctx) return;
-                clearCanvas(ctx);
-                ctx.fillStyle = titleColor; ctx.font = "bold 24px Arial"; ctx.textAlign = "center";
-                ctx.fillText(title, 150, 40);
-                ctx.strokeStyle = okColor; ctx.lineWidth = 2; ctx.beginPath();
-                const step = ctx.canvas.width / data.length;
-                for (let i = 0; i < data.length; i++) {
-                    const x = i * step;
-                    const y = 80 + (data[i] / 100) * 100;
-                    if (i === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
-                }
-                ctx.stroke();
-            }
-            function drawPanel_Pie(ctx, title, data) {
-                if (!ctx) return;
-                clearCanvas(ctx);
-                ctx.fillStyle = titleColor; ctx.font = "bold 24px Arial"; ctx.textAlign = "center";
-                ctx.fillText(title, 150, 40);
-                const colors = [okColor, alertColor, textColor];
-                let startAngle = 0; const radius = 60;
-                for(let i=0; i<data.length; i++) {
-                    const sliceAngle = 2 * Math.PI * data[i];
-                    ctx.fillStyle = colors[i % colors.length];
-                    ctx.beginPath();
-                    ctx.moveTo(150, 120);
-                    ctx.arc(150, 120, radius, startAngle, startAngle + sliceAngle);
-                    ctx.closePath();
-                    ctx.fill();
-                    startAngle += sliceAngle;
-                }
-            }
-
-
-            // ===============================================
-            // === 醫院設施分身 (3D Assets) 相關函式
-            // ===============================================
-            
-            function initHospitalView() {
-                const canvas = document.getElementById('hospital-canvas');
-                const container = document.getElementById('hospital-view');
-
-                sceneHospital = new THREE.Scene();
-                sceneHospital.background = new THREE.Color(0x0a0f1a); // 同樣使用深色背景
-
-                cameraHospital = new THREE.PerspectiveCamera(75, container.clientWidth / container.clientHeight, 0.1, 1000);
-                cameraHospital.position.set(0, 30, 40);
-                cameraHospital.lookAt(0, 0, 0);
-
-                rendererHospital = new THREE.WebGLRenderer({ canvas: canvas, antialias: true });
-                rendererHospital.setSize(container.clientWidth, container.clientHeight);
-
-                const ambientLight = new THREE.AmbientLight(0xffffff, 0.7);
-                sceneHospital.add(ambientLight);
-                const directionalLight = new THREE.DirectionalLight(0xffffff, 0.5);
-                directionalLight.position.set(0, 10, 5);
-                sceneHospital.add(directionalLight);
-
-                // 地板
-                const floor = new THREE.Mesh(
-                    new THREE.PlaneGeometry(100, 100),
-                    new THREE.MeshStandardMaterial({ color: 0x333344 }) // 深色地板
-                );
-                floor.rotation.x = -Math.PI / 2;
-                sceneHospital.add(floor);
-                
-                // 地板網格
-                const gridHelper = new THREE.GridHelper(100, 20, 0x00d4ff, 0x00529b);
-                gridHelper.material.opacity = 0.3;
-                gridHelper.material.transparent = true;
-                sceneHospital.add(gridHelper);
-
-                // 創建資產實例
-                const assetGeo = new THREE.BoxGeometry(2, 4, 2);
-                
-                hospitalAssets['iv_pump_04'] = new THREE.Mesh(assetGeo, new THREE.MeshStandardMaterial({ color: 0x00ff88 }));
-                hospitalAssets['iv_pump_04'].name = 'iv_pump_04';
-                hospitalAssets['iv_pump_04'].position.set(-10, 2, 0);
-                sceneHospital.add(hospitalAssets['iv_pump_04']);
-
-                hospitalAssets['iv_pump_05'] = new THREE.Mesh(assetGeo, new THREE.MeshStandardMaterial({ color: 0x00ff88 }));
-                hospitalAssets['iv_pump_05'].name = 'iv_pump_05';
-                hospitalAssets['iv_pump_05'].position.set(10, 2, 0);
-                sceneHospital.add(hospitalAssets['iv_pump_05']);
-
-                // 醫院視圖的控制器
-                controlsHospital = new THREE.OrbitControls(cameraHospital, rendererHospital.domElement);
-                controlsHospital.enableDamping = true;
-                controlsHospital.dampingFactor = 0.05;
-            }
-            
-            function updateHospitalAsset(assetId, data) {
-                if (!sceneHospital) return; 
-
-                const asset = hospitalAssets[assetId];
-                if (asset) {
-                    asset.position.set(data.x, data.y, data.z);
-
-                    let newColor = 0x00ff88;
-                    let statusText = '可用';
-                    let statusClass = 'asset-available';
-                    
-                    if (data.status === 'in_use') {
-                        newColor = 0xff4444;
-                        statusText = '使用中';
-                        statusClass = 'asset-in-use';
-                    } else if (data.status === 'maintenance') {
-                        newColor = 0xffc107;
-                        statusText = '維護中';
-                        statusClass = 'asset-maintenance';
+                        // 更新詳情面板(如果選中)
+                        if (roomEl.classList.contains('selected')) {
+                            updateDetails(randomRoom);
+                            updateHumanTwin(randomRoom); // 同時更新人體孿生面板的狀態
+                        }
                     }
-                    asset.material.color.setHex(newColor);
+                }
+            }, 5000);
 
-                    let overlayEntry = document.getElementById(`asset-${assetId}`);
-                    if (!overlayEntry) {
-                        overlayEntry = document.createElement('div');
-                        overlayEntry.id = `asset-${assetId}`;
-                        assetListOverlay.appendChild(overlayEntry);
-                    }
-                    overlayEntry.innerHTML = `<strong>${assetId}:</strong> <span class="${statusClass}">${statusText}</span> (Pos: ${data.x.toFixed(1)})`;
+
+            // --- 4. 設施地圖互動 ---
+
+            // 更新: 抽離出一個函數來更新人體孿生面板
+            function updateHumanTwin(roomId) {
+                const data = patientDatabase[roomId];
+                if (!data) return;
+
+                // 設置基礎生命體徵
+                currentBaseVitals = data.baseVitals;
+                
+                // 更新頭像
+                // 替換 'src' 為您本地的圖片 (例如 data.avatarUrl)
+                patientAvatar.src = data.avatarUrl; 
+                
+                // 更新標題
+                humanTwinTitle.innerText = `人體孿生 (${data.patientId})`;
+                
+                // 更新病患資訊
+                patientInfoName.innerText = `病患: ${data.patientId}`;
+                patientInfoLocation.innerText = `位置: ${roomId.toUpperCase()}`;
+                
+                // 更新狀態
+                if (data.status === 'online') {
+                    patientInfoStatus.innerText = '狀態: 穩定';
+                    patientInfoStatus.style.color = '#fff';
+                } else if (data.status === 'alert') {
+                    patientInfoStatus.innerText = '狀態: 警報!';
+                    patientInfoStatus.style.color = '#ff4242'; // 警報紅色
+                } else {
+                    patientInfoStatus.innerText = '狀態: 離線';
+                    patientInfoStatus.style.color = '#777';
+                }
+
+                // 如果沒有病患，立即清除生命體徵
+                if (!data.baseVitals) {
+                    simulateVitals();
                 }
             }
 
+            function updateDetails(roomId) {
+                const data = patientDatabase[roomId]; // 使用新的數據庫
+                if (!data) return;
 
-            // --- 啟動 ---
-            init();
+                detailsName.innerText = roomId.toUpperCase();
+                detailsPatient.innerText = data.patientId;
+                detailsEquipment.innerText = data.equipment;
+                
+                if (data.status === 'online') {
+                    detailsStatusText.innerText = "Online";
+                    detailsStatusDot.className = "status-dot online";
+                } else if (data.status === 'alert') {
+                    detailsStatusText.innerText = "Alert!";
+                    detailsStatusDot.className = "status-dot offline"; // 使用 offline 的紅色
+                } else {
+                    detailsStatusText.innerText = "Offline";
+                    detailsStatusDot.className = "status-dot offline";
+                }
+            }
+
+            // 為每個 SVG 房間路徑添加點擊事件 [7, 8, 20]
+            roomPaths.forEach(path => {
+                path.addEventListener('click', function() {
+                    // 1. 移除所有路徑的 'selected' 類 [8]
+                    roomPaths.forEach(p => p.classList.remove('selected'));
+                    
+                    // 2. 為被點擊的路徑添加 'selected' 類 [8]
+                    this.classList.add('selected');
+                    
+                    // 3. 更新兩個面板
+                    currentSelectedRoom = this.id;
+                    updateDetails(currentSelectedRoom);
+                    updateHumanTwin(currentSelectedRoom); // <--- 新增
+                });
+            });
+
+            // --- 5. 啟動 ---
+            // 移除 resizeCanvas() 和 drawEcg()
+            
+            // 設置初始選中狀態
+            document.getElementById(currentSelectedRoom).classList.add('selected');
+            updateDetails(currentSelectedRoom);
+            updateHumanTwin(currentSelectedRoom); // <--- 新增
         });
     </script>
 </body>
