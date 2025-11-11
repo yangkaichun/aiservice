@@ -159,32 +159,78 @@
         /* --- 2. 人體孿生 (左下) --- */
        .human-twin {
             grid-area: human;
-            /* 高度由 grid-template-rows: 1fr 決定 */
-            /* 確保內容可以滾動 (如果螢幕極端的小) */
+            /* 允許內容在需要時滾動 (例如小螢幕) */
             overflow-y: auto; 
         }
         
-       .avatar-container {
+       /* 移除了 .avatar-container */
+
+        /* * 新增: 人體掃描容器
+         * 這將取代舊的頭像，並包含熱點
+        */
+       .body-scan-container {
+            position: relative; /* 讓熱點 (hotspots) 可以絕對定位 */
             width: 100%;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            margin-bottom: 20px;
-            padding: 10px;
-            background: #000;
-            border-radius: 8px;
+            max-width: 300px; /* 限制最大寬度以保持長寬比 */
+            margin: 0 auto 20px auto; /* 置中並增加底部間距 */
         }
 
-        #patient-avatar {
-            width: 150px;
-            height: 150px;
-            border-radius: 50%; /* 圓形頭像 */
-            border: 4px solid #00b3ff;
-            box-shadow: 0 0 15px #00b3ff;
-            object-fit: cover; /* 確保圖片填滿 */
-            transition: border-color 0.3s, box-shadow 0.3s;
+        #body-scan-image {
+            width: 100%;
+            border-radius: 8px;
+            opacity: 0.8; /* 使其看起來更像 "掃描" */
         }
-        
+
+        /* * 新增: 熱點 (Hotspots) 樣式
+        */
+       .hotspot {
+            position: absolute;
+            width: 15px;
+            height: 15px;
+            background-color: #00b3ff;
+            border: 2px solid #fff;
+            border-radius: 50%;
+            cursor: pointer;
+            animation: pulse-hotspot 1.5s infinite ease-in-out;
+            box-shadow: 0 0 15px #00b3ff;
+            transition: transform 0.2s;
+        }
+
+       .hotspot:hover {
+            transform: scale(1.3); /* 滑鼠懸停時放大 */
+        }
+
+        /* 根據圖片估算的熱點位置 (使用百分比以保持響應性) */
+       .hotspot.brain { top: 8%; left: 47%; }
+       .hotspot.heart { top: 25%; left: 48%; }
+       .hotspot.lungs { top: 32%; left: 38%; }
+       .hotspot.arm-bp { top: 30%; left: 25%; } /* BP (手臂) */
+
+        /* * 新增: 熱點跳動動畫
+        */
+        @keyframes pulse-hotspot {
+            0% { transform: scale(1); opacity: 1; }
+            50% { transform: scale(1.3); opacity: 0.7; }
+            100% { transform: scale(1); opacity: 1; }
+        }
+
+        /* * 新增: 數據塊 (data-block)
+         * 用於 JS 識別和添加 highlight
+        */
+       .vital, .graph-wrapper {
+            /* 添加 .data-block 類以便 JS 選取 */
+            transition: transform 0.3s, box-shadow 0.3s, border-color 0.3s;
+        }
+
+        /* * 新增: 熱點懸停時的目標高亮樣式
+        */
+       .data-block.highlight {
+            border-color: #00b3ff;
+            box-shadow: 0 0 20px rgba(0, 179, 255, 0.7);
+            transform: scale(1.02); /* 輕微放大 */
+        }
+
+
        .vitals-grid {
             display: grid;
             grid-template-columns: repeat(2, 1fr); /* 2x2 網格 */
@@ -377,28 +423,48 @@
         <div class="widget human-twin">
             <h3 id="human-twin-title">人體孿生 (Patient-001)</h3>
             
-            <div class="avatar-container">
-                <img id="patient-avatar" src="p1.jpg" alt="病患頭像"
-                     onerror="this.src='https://placehold.co/150x150/010038/FF0000?text=Error'; this.style.borderColor='#ff0000';">
+            <!-- 
+              * 重新設計: 
+              * 移除 .avatar-container，替換為 .body-scan-container
+            -->
+            <div class="body-scan-container">
+                <!-- 
+                  * 這是您要求的圖片
+                  * SRC 路徑已預留為 "image_afa66b.jpg"
+                  * 如果找不到圖片，將顯示一個錯誤佔位符
+                -->
+                <img id="body-scan-image" src="digitwin.jpg" alt="Body Scan"
+                     onerror="this.src='https://placehold.co/300x500/001a2c/FF0000?text=找不到圖片'; this.style.opacity=1;">
+                
+                <!-- 新增: 互動熱點 -->
+                <div class="hotspot brain" data-target="data-block-eeg" title="腦波圖 (EEG)"></div>
+                <div class="hotspot heart" data-target="data-block-ecg" title="心電圖 (ECG)"></div>
+                <div class="hotspot lungs" data-target="data-block-spo2" title="血氧 (SpO2)"></div>
+                <div class="hotspot arm-bp" data-target="data-block-bp" title="血壓 (BP)"></div>
             </div>
 
+            <!-- 
+              * 結構更新: 
+              * 為 Vitals 和 Graphs 添加 .data-block 和唯一的 ID，
+              * 以便熱點可以鎖定它們
+            -->
             <div class="vitals-grid">
-                <div class="vital">
+                <div class="vital data-block" id="data-block-hr">
                     <div class="label">心率 (HR)</div>
                     <span class="value" id="vital-hr">72</span>
                     <span class="unit">bpm</span>
                 </div>
-                <div class="vital">
+                <div class="vital data-block" id="data-block-bp">
                     <div class="label">血壓 (BP)</div>
                     <span class="value" id="vital-bp">120/80</span>
                     <span class="unit">mmHg</span>
                 </div>
-                <div class="vital">
+                <div class="vital data-block" id="data-block-spo2">
                     <div class="label">血氧 (SpO2)</div>
                     <span class="value" id="vital-spo2">98</span>
                     <span class="unit">%</span>
                 </div>
-                <div class="vital">
+                <div class="vital data-block" id="data-block-rr">
                     <div class="label">呼吸 (RR)</div>
                     <span class="value" id="vital-rr">16</span>
                     <span class="unit">/min</span>
@@ -406,11 +472,11 @@
             </div>
 
             <div class="graphs-container">
-                <div class="graph-wrapper">
+                <div class="graph-wrapper data-block" id="data-block-ecg">
                     <h4 class="graph-label">心電圖 (ECG)</h4>
                     <canvas id="ecg-canvas"></canvas>
                 </div>
-                <div class="graph-wrapper">
+                <div class="graph-wrapper data-block" id="data-block-eeg">
                     <h4 class="graph-label">腦波圖 (EEG) - 5 通道</h4>
                     <canvas id="eeg-canvas"></canvas>
                 </div>
@@ -456,7 +522,7 @@
             const detailsEquipment = document.getElementById('details-equipment');
 
             const humanTwinTitle = document.getElementById('human-twin-title');
-            const patientAvatar = document.getElementById('patient-avatar');
+            const patientAvatar = document.getElementById('patient-avatar'); // 注意: 這個元素現在已被移除
 
             const ecgCanvas = document.getElementById('ecg-canvas');
             const ecgCtx = ecgCanvas.getContext('2d');
@@ -547,8 +613,12 @@
                 const data = patientDatabase[roomId];
                 if (!data) return;
                 currentBaseVitals = data.baseVitals;
-                patientAvatar.src = data.avatarUrl; 
-                patientAvatar.style.borderColor = '#00b3ff';
+                
+                /* * 移除對 patientAvatar 的更新，因為它已被 body scan 取代
+                 * patientAvatar.src = data.avatarUrl; 
+                 * patientAvatar.style.borderColor = '#00b3ff';
+                */
+                
                 humanTwinTitle.innerText = `人體孿生 (${data.patientId})`;
                 if (!data.baseVitals) {
                     simulateVitals();
@@ -592,7 +662,10 @@
             });
 
             // --- 4. 畫布繪圖引擎 ---
-
+            
+            /* * 修正 (FIX): 
+             * 補回遺失的 'const ecgWaveform = [' 宣告
+            */
             const ecgWaveform = [
                 100, 100, 100, 100, 100, 100, 100, 100, 100, 100, 
                 100, 100, 100, 100, 100, 100, 100, 100, 100, 100,
@@ -698,7 +771,15 @@
 
             function animateGraphs() {
                 drawEcgWave();
+                /* * 修正 (FIX): 
+                 * 這裡應該是 drawEegWave() 而不是 drawEcgWave()
+                */
                 drawEegWave();
+                
+                /* * 修正 (FIX): 
+                 * 必須使用 requestAnimationFrame 
+                 * 而不是直接遞歸調用，否則會導致堆疊溢位 (stack overflow)
+                */
                 requestAnimationFrame(animateGraphs);
             }
 
@@ -713,6 +794,34 @@
             document.getElementById(currentSelectedRoom).classList.add('selected');
             updateDetails(currentSelectedRoom);
             updateHumanTwin(currentSelectedRoom);
+
+            // --- 6. 新增: 熱點互動 ---
+            const hotspots = document.querySelectorAll('.hotspot');
+            const dataBlocks = document.querySelectorAll('.data-block'); // 緩存所有數據塊
+
+            hotspots.forEach(hotspot => {
+                const targetId = hotspot.dataset.target;
+                const targetElement = document.getElementById(targetId);
+
+                if (targetElement) {
+                    // 滑鼠懸停: 高亮
+                    hotspot.addEventListener('mouseover', () => {
+                        // 移除所有現有的高亮
+                        dataBlocks.forEach(block => block.classList.remove('highlight'));
+                        
+                        // 添加高亮到目標元素
+                        targetElement.classList.add('highlight');
+                        
+                        // (可選) 滾動到該元素
+                        // targetElement.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+                    });
+
+                    // 滑鼠移出: 移除高亮
+                    hotspot.addEventListener('mouseout', () => {
+                        targetElement.classList.remove('highlight');
+                    });
+                }
+            });
         });
     </script>
 </body>
