@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>今日招標資訊列表 - OpenFun API 修正版</title>
+    <title>今日招標資訊列表 - Proxy 最終修正版</title>
     <style>
         body {
             font-family: Arial, sans-serif;
@@ -75,10 +75,11 @@
         </ul>
 
     <script>
-        // 【CORS 修正】使用公開代理服務 (Proxy)
-        const PROXY_URL = 'https://api.allorigins.win/raw?url=';
+        // 【PROXY 修正】替換為另一個公共代理服務
+        // ***重要提醒：此服務仍有可能隨時失效，請務必了解其不穩定性。***
+        const PROXY_URL = 'https://thingproxy.freeboard.io/fetch/';
 
-        // 【API 修正】使用新的 API 來源和端點
+        // API 來源
         const G0V_API_BASE = 'https://pcc-api.openfun.app/api/listbydate?date=';
         
         const RESULTS_CONTAINER = document.getElementById('tender-results');
@@ -86,7 +87,7 @@
         const PAGE_TITLE = document.getElementById('page-title');
 
         /**
-         * 獲取今天的日期並格式化為 YYYYMMDD (符合新的 API 需求)
+         * 獲取今天的日期並格式化為 YYYYMMDD
          * @returns {string} 今天的日期字串
          */
         function getTodayDate() {
@@ -94,7 +95,6 @@
             const year = date.getFullYear();
             const month = String(date.getMonth() + 1).padStart(2, '0');
             const day = String(date.getDate()).padStart(2, '0');
-            // 【修正點】日期格式改為 YYYYMMDD
             return `${year}${month}${day}`; 
         }
 
@@ -107,8 +107,8 @@
             
             const originalApiUrl = `${G0V_API_BASE}${todayRaw}`;
             
-            // 將原始 API 網址編碼後，透過代理服務的網址發出請求
-            const apiUrl = `${PROXY_URL}${encodeURIComponent(originalApiUrl)}`;
+            // **【關鍵修改】將原始 API 網址直接附加到新的代理服務網址後**
+            const apiUrl = `${PROXY_URL}${originalApiUrl}`;
             
             // 更新頁面標題顯示今天的日期
             PAGE_TITLE.textContent = `今日招標資訊列表 (${todayDisplay})`;
@@ -125,8 +125,6 @@
                 const data = await response.json(); 
                 
                 // 假設資料結構仍然包含一個名為 'tenders' 的陣列
-                // 如果您發現資料列表未出現，可能是 API 使用了不同的陣列 key，
-                // 例如：data.list 或 data.items。
                 const tenders = data.tenders || data.list || []; 
 
                 // 檢查是否有資料
@@ -140,7 +138,6 @@
                 console.error("獲取資料失敗:", error);
                 displayError("很抱歉，獲取招標資料失敗。請檢查網路連線或代理服務是否正常運作。");
             } finally {
-                // 無論成功或失敗，都移除載入中的訊息
                 if (LOADING_ELEMENT) {
                     LOADING_ELEMENT.remove();
                 }
@@ -156,7 +153,7 @@
                 const li = document.createElement('li');
                 li.className = 'tender-item';
                 
-                // 標案連結 (假設欄位名稱與舊 API 相容，用於建構連結)
+                // 標案連結
                 const tenderUrl = `https://web.pcc.gov.tw/prkms/prms-viewTenderDetail.do?tenderId=${tender.unit_id}&seq=${tender.job_number}`;
 
                 li.innerHTML = `
