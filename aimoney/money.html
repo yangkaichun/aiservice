@@ -3,27 +3,123 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <link rel="shortcut icon" href="feticon.ico">
-    <title>全螢幕 iframe 範例</title>
+    <link rel="shortcut icon" href="feticon.ico">
+    <title>Money</title>
     <style>
-        /* 將 body 和 html 設定為 100% 高度和寬度，並移除預設邊距 */
-        html, body {
+        body {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
             margin: 0;
-            padding: 0;
-            height: 100%;
-            width: 100%;
-            overflow: hidden; /* 防止滾動條出現，因為 iframe 已經佔滿 */
+            flex-direction: column;
+            font-family: Arial, sans-serif;
+            background-color: #f0f2f5; /* 輕微的背景色 */
         }
 
-        /* 設定 iframe 佔滿整個視窗 */
-        #fullScreenIframe {
+        #logo-container {
+            margin-bottom: 30px; /* logo與訊息之間的間距 */
+        }
+
+        #logo {
+            max-width: 150px; /* 控制logo大小 */
+            height: auto;
+            border-radius: 8px; /* 輕微圓角 */
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1); /* logo陰影 */
+        }
+
+        #message {
+            margin-top: 20px;
+            margin-bottom: 20px; /* 訊息與進度條之間的間距 */
+            font-size: 1.2em;
+            color: #333;
+            text-align: center;
+        }
+
+        #container {
+            width: 80%;
+            max-width: 500px;
+            background-color: #e0e0e0; /* 進度條容器的背景色 */
+            border-radius: 8px; /* 圓角邊框 */
+            overflow: hidden;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15); /* 更明顯的陰影 */
+            position: relative; /* 為了讓文字在進度條上 */
+            height: 40px; /* 增加進度條高度 */
+            display: flex; /* 讓內部文字居中 */
+            align-items: center; /* 讓內部文字居中 */
+        }
+
+        #progress-bar {
+            width: 100%; /* 初始為100% */
+            height: 100%; /* 填滿容器 */
+            background-color: #007bff; /* 藍色進度條 */
+            animation: countdown 3s linear forwards;
+            position: absolute; /* 絕對定位，覆蓋在容器上 */
+            top: 0;
+            left: 0;
+            z-index: 1; /* 確保在文字下方 */
+        }
+
+        #progress-text {
+            position: relative; /* 相對定位，確保在進度條上方 */
+            z-index: 2; /* 確保在進度條上方 */
             width: 100%;
-            height: 100%;
-            border: none; /* 移除 iframe 預設的邊框 */
+            text-align: center;
+            color: white; /* 文字顏色 */
+            font-weight: bold;
+            font-size: 1.1em;
+            text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.3); /* 文字陰影 */
+        }
+
+        /* 定義倒數動畫，從寬度100%到0% */
+        @keyframes countdown {
+            from { width: 100%; }
+            to { width: 0%; }
         }
     </style>
 </head>
 <body>
-    <iframe id="fullScreenIframe" src="https://web.pcc.gov.tw/prkms/today/common/todayTender"></iframe>
+
+    <div id="logo-container">
+        <img id="logo" src="fetlogo.png" alt="Logo">
+    </div>
+
+    <div id="message">即將轉址至政府電子採購網，請稍候... (<span id="seconds">3</span>秒)</div>
+    
+    <div id="container">
+        <div id="progress-bar"></div>
+        <div id="progress-text">倒數中...</div>
+    </div>
+
+    <script>
+        const redirectUrl = "https://web.pcc.gov.tw/prkms/today/common/todayTender";
+        const totalTime = 3; // 倒數總秒數
+        let currentTime = totalTime;
+        const secondsDisplay = document.getElementById('seconds');
+        const progressText = document.getElementById('progress-text');
+
+        // 腳本控制倒數秒數顯示
+        const interval = setInterval(() => {
+            currentTime--;
+            if (currentTime >= 0) {
+                secondsDisplay.textContent = currentTime;
+                progressText.textContent = `倒數中... ${currentTime} 秒`; // 更新進度條上的文字
+            }
+            
+            if (currentTime <= 0) {
+                clearInterval(interval);
+                progressText.textContent = `轉址中...`; // 倒數結束後的文字
+                window.location.href = redirectUrl;
+            }
+        }, 1000); // 每1000毫秒（1秒）執行一次
+        
+        const progressBar = document.getElementById('progress-bar');
+        progressBar.addEventListener('animationend', () => {
+             if (currentTime > 0) { // 如果動畫結束但倒數還沒到0，則轉址 (作為備用)
+                 window.location.href = redirectUrl;
+             }
+        });
+        
+    </script>
 </body>
 </html>
