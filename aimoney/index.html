@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>今日招標資訊列表 - g0v API (CORS 修正版)</title>
+    <title>今日招標資訊列表 - OpenFun API 修正版</title>
     <style>
         body {
             font-family: Arial, sans-serif;
@@ -75,18 +75,18 @@
         </ul>
 
     <script>
-        // **【CORS 修正】使用公開代理服務 (Proxy)**
-        // 注意：公開代理服務不保證穩定性，建議正式環境使用自建後端服務。
+        // 【CORS 修正】使用公開代理服務 (Proxy)
         const PROXY_URL = 'https://api.allorigins.win/raw?url=';
 
-        // g0v API 的基本 URL
-        const G0V_API_BASE = 'https://pcc.g0v.ronny.tw/api/v1/tender/date/';
+        // 【API 修正】使用新的 API 來源和端點
+        const G0V_API_BASE = 'https://pcc-api.openfun.app/api/listbydate?date=';
+        
         const RESULTS_CONTAINER = document.getElementById('tender-results');
         const LOADING_ELEMENT = document.getElementById('loading');
         const PAGE_TITLE = document.getElementById('page-title');
 
         /**
-         * 獲取今天的日期並格式化為 YYYY-MM-DD
+         * 獲取今天的日期並格式化為 YYYYMMDD (符合新的 API 需求)
          * @returns {string} 今天的日期字串
          */
         function getTodayDate() {
@@ -94,21 +94,24 @@
             const year = date.getFullYear();
             const month = String(date.getMonth() + 1).padStart(2, '0');
             const day = String(date.getDate()).padStart(2, '0');
-            return `${year}-${month}-${day}`;
+            // 【修正點】日期格式改為 YYYYMMDD
+            return `${year}${month}${day}`; 
         }
 
         /**
-         * 從 g0v API 獲取今日招標資料 (透過代理服務)
+         * 從 OpenFun API 獲取今日招標資料 (透過代理服務)
          */
         async function fetchTodayTenders() {
-            const today = getTodayDate();
-            const originalApiUrl = `${G0V_API_BASE}${today}`;
+            const todayRaw = getTodayDate();
+            const todayDisplay = todayRaw.replace(/(\d{4})(\d{2})(\d{2})/, '$1-$2-$3'); // 僅供顯示
             
-            // **【關鍵修改】將原始 API 網址編碼後，透過代理服務的網址發出請求**
+            const originalApiUrl = `${G0V_API_BASE}${todayRaw}`;
+            
+            // 將原始 API 網址編碼後，透過代理服務的網址發出請求
             const apiUrl = `${PROXY_URL}${encodeURIComponent(originalApiUrl)}`;
             
             // 更新頁面標題顯示今天的日期
-            PAGE_TITLE.textContent = `今日招標資訊列表 (${today})`;
+            PAGE_TITLE.textContent = `今日招標資訊列表 (${todayDisplay})`;
 
             try {
                 // 發出請求到代理服務
@@ -118,19 +121,24 @@
                     throw new Error(`HTTP 錯誤: ${response.status}`);
                 }
                 
-                // 代理服務會直接返回 g0v API 的 JSON 內容
+                // 代理服務會直接返回 API 的 JSON 內容
                 const data = await response.json(); 
                 
+                // 假設資料結構仍然包含一個名為 'tenders' 的陣列
+                // 如果您發現資料列表未出現，可能是 API 使用了不同的陣列 key，
+                // 例如：data.list 或 data.items。
+                const tenders = data.tenders || data.list || []; 
+
                 // 檢查是否有資料
-                if (data.tenders && data.tenders.length > 0) {
-                    displayTenders(data.tenders);
+                if (tenders.length > 0) {
+                    displayTenders(tenders);
                 } else {
-                    displayNoData(today);
+                    displayNoData(todayDisplay);
                 }
 
             } catch (error) {
                 console.error("獲取資料失敗:", error);
-                displayError("很抱歉，獲取招標資料失敗。這是由於 CORS 限制，請檢查網路連線，或嘗試更換代理服務。");
+                displayError("很抱歉，獲取招標資料失敗。請檢查網路連線或代理服務是否正常運作。");
             } finally {
                 // 無論成功或失敗，都移除載入中的訊息
                 if (LOADING_ELEMENT) {
@@ -148,15 +156,15 @@
                 const li = document.createElement('li');
                 li.className = 'tender-item';
                 
-                // 標案連結
+                // 標案連結 (假設欄位名稱與舊 API 相容，用於建構連結)
                 const tenderUrl = `https://web.pcc.gov.tw/prkms/prms-viewTenderDetail.do?tenderId=${tender.unit_id}&seq=${tender.job_number}`;
 
                 li.innerHTML = `
                     <h3><a href="${tenderUrl}" target="_blank" title="點擊前往政府採購網查看">${tender.name}</a></h3>
                     <p><span class="label">機關名稱:</span> ${tender.unit_name}</p>
-                    <p><span class="label">採購金額:</span> ${tender.amount}</p>
+                    <p><span class="label">採購金額:</span> ${tender.amount || 'N/A'}</p>
                     <p><span class="label">聯絡人:</span> ${tender.contact_name || '無'}</p>
-                    <p><span class="label">公告日期:</span> ${tender.publish_time}</p>
+                    <p><span class="label">公告日期:</span> ${tender.publish_time || 'N/A'}</p>
                 `;
                 RESULTS_CONTAINER.appendChild(li);
             });
