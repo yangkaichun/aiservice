@@ -3,185 +3,196 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>今日招標資訊列表 - 最終自建代理版</title>
+    <title>今日招標資訊 (g0v API)</title>
     <style>
-        body {
-            font-family: Arial, sans-serif;
-            margin: 20px;
-            background-color: #f4f4f9;
+        /* 參照 [22]，提供基本樣式以提高可讀性 */
+        body { 
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+            margin: 0;
+            padding: 1em;
+            background-color: #f9f9f9;
         }
         h1 {
             color: #333;
-            text-align: center;
-            border-bottom: 2px solid #ccc;
-            padding-bottom: 10px;
         }
-        #loading {
-            text-align: center;
-            font-size: 1.2em;
-            color: #555;
-            margin-top: 50px;
-        }
-        .tender-list {
-            list-style: none;
-            padding: 0;
-            max-width: 900px;
-            margin: 20px auto;
-        }
-        .tender-item {
+        table { 
+            width: 100%; 
+            border-collapse: collapse; 
+            margin-top: 1em;
             background-color: #fff;
-            border: 1px solid #ddd;
-            border-radius: 8px;
-            margin-bottom: 15px;
-            padding: 15px;
-            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
-            transition: transform 0.2s;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
         }
-        .tender-item:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+        th, td { 
+            border: 1px solid #ddd; 
+            padding: 12px; 
+            text-align: left;
+            vertical-align: top;
         }
-        .tender-item h3 {
-            color: #007bff;
-            margin-top: 0;
-            border-bottom: 1px dotted #eee;
-            padding-bottom: 5px;
+        th { 
+            background-color: #f2f2f2; 
+            font-weight: 600;
         }
-        .tender-item p {
-            margin: 5px 0;
-            font-size: 0.95em;
+        tr:nth-child(even) {
+            background-color: #f8f8f8;
         }
-        .label {
-            font-weight: bold;
+        #status { 
+            margin: 1em 0; 
+            font-style: italic;
             color: #555;
-            display: inline-block;
-            width: 80px;
+            padding: 10px;
+            background-color: #eee;
+            border-radius: 4px;
         }
-        .no-data {
-            text-align: center;
-            color: #ff5733;
-            font-size: 1.5em;
-            padding: 50px;
+        a {
+            color: #007bff;
+            text-decoration: none;
+        }
+        a:hover {
+            text-decoration: underline;
         }
     </style>
 </head>
 <body>
 
-    <h1 id="page-title">今日招標資訊列表</h1>
+    <h1>今日招標資訊 (g0v API)</h1>
 
-    <div id="loading">正在載入今日招標資料...</div>
+    <div id="status">正在初始化...</div>
 
-    <ul class="tender-list" id="tender-results">
-        </ul>
+    <table id="tenders-table">
+        <thead>
+            <tr>
+                <th>標案名稱</th>
+                <th>機關名稱</th>
+                <th>截止投標</th>
+            </tr>
+        </thead>
+        <tbody id="tenders-body">
+            </tbody>
+    </table>
 
     <script>
-        // 【最終解決方案】指向您自己部署的後端代理服務
-        // ***請將此網址替換為您自己伺服器的公開網址 (例如: https://your-server.com/api/tenders?date=)***
-        // 範例中假設您在本地運行 Python 代理服務於 5000 port
-        const PROXY_API_BASE = 'http://localhost:5000/api/tenders?date='; 
+        // --- 1. API 設定 (重要！) ---
+
+        //!!! 嚴重警告：此 URL 可能已過時且不穩定!!!
+        // 根據  的 GitHub 提交紀錄 "變更pcc api 網址"，
+        // 此 API 位址經常變動。請務必前往：
+        // https://github.com/openfunltd/pcc-viewer
+        // 檢視 config.js 檔案，並用其中的 'config.api' 值替換下方的 URL。
+        const API_BASE_URL = 'https://pcc.g0v.ronny.tw';
+
+        // --- 2. 獲取 DOM 元素 ---
+        const statusDiv = document.getElementById('status');
+        const tableBody = document.getElementById('tenders-body');
+
+        // --- 3. 輔助函數：獲取今日日期 ---
         
-        const RESULTS_CONTAINER = document.getElementById('tender-results');
-        const LOADING_ELEMENT = document.getElementById('loading');
-        const PAGE_TITLE = document.getElementById('page-title');
-
         /**
-         * 獲取今天的日期並格式化為 YYYYMMDD
-         * @returns {string} 今天的日期字串
+         * 獲取今天的日期，並格式化為 'YYYY-MM-DD'
+         * @returns {string} 格式化後的日期字串
          */
-        function getTodayDate() {
-            const date = new Date();
-            const year = date.getFullYear();
-            const month = String(date.getMonth() + 1).padStart(2, '0');
-            const day = String(date.getDate()).padStart(2, '0');
-            return `${year}${month}${day}`; 
+        function getTodayString() {
+            const today = new Date();
+            const y = today.getFullYear();
+            const m = String(today.getMonth() + 1).padStart(2, '0');
+            const d = String(today.getDate()).padStart(2, '0');
+            return `${y}-${m}-${d}`;
         }
 
+        // --- 4. 核心功能：渲染資料 ---
+        
         /**
-         * 從您自己的代理服務獲取今日招標資料
-         */
-        async function fetchTodayTenders() {
-            const todayRaw = getTodayDate();
-            const todayDisplay = todayRaw.replace(/(\d{4})(\d{2})(\d{2})/, '$1-$2-$3'); // 僅供顯示
-            
-            // 直接呼叫您自己的代理服務端點，並傳遞日期
-            const apiUrl = `${PROXY_API_BASE}${todayRaw}`; 
-            
-            // 更新頁面標題顯示今天的日期
-            PAGE_TITLE.textContent = `今日招標資訊列表 (${todayDisplay})`;
-
-            try {
-                // 發出請求到您自己的伺服器
-                const response = await fetch(apiUrl); 
-                
-                if (!response.ok) {
-                    throw new Error(`HTTP 錯誤: ${response.status}`);
-                }
-                
-                const data = await response.json(); 
-                
-                // 假設您的後端代理返回的資料是一個包含招標列表的陣列
-                // 檢查 data.tenders, data.list, 或 data 本身是否為陣列
-                const tenders = data.tenders || data.list || (Array.isArray(data) ? data : []); 
-
-                // 檢查是否有資料
-                if (tenders.length > 0) {
-                    displayTenders(tenders);
-                } else {
-                    displayNoData(todayDisplay);
-                }
-
-            } catch (error) {
-                console.error("獲取資料失敗:", error);
-                displayError(`很抱歉，獲取招標資料失敗。請確保您的後端代理服務 ${PROXY_API_BASE.split('?')[0]} 正在運行且設定正確。`);
-            } finally {
-                if (LOADING_ELEMENT) {
-                    LOADING_ELEMENT.remove();
-                }
-            }
-        }
-
-        /**
-         * 將招標資料列表顯示在頁面上
-         * @param {Array<Object>} tenders - 招標案件陣列
+         * 將招標資料陣列渲染到 HTML 表格中
+         * @param {Array} tenders - 從 API 獲取的招標資料陣列
          */
         function displayTenders(tenders) {
-            tenders.forEach(tender => {
-                const li = document.createElement('li');
-                li.className = 'tender-item';
-                
-                // 標案連結
-                const tenderUrl = `https://web.pcc.gov.tw/prkms/prms-viewTenderDetail.do?tenderId=${tender.unit_id}&seq=${tender.job_number}`;
+            // 清空 "載入中" 狀態
+            tableBody.innerHTML = '';
 
-                li.innerHTML = `
-                    <h3><a href="${tenderUrl}" target="_blank" title="點擊前往政府採購網查看">${tender.name}</a></h3>
-                    <p><span class="label">機關名稱:</span> ${tender.unit_name}</p>
-                    <p><span class="label">採購金額:</span> ${tender.amount || 'N/A'}</p>
-                    <p><span class="label">聯絡人:</span> ${tender.contact_name || '無'}</p>
-                    <p><span class="label">公告日期:</span> ${tender.publish_time || 'N/A'}</p>
-                `;
-                RESULTS_CONTAINER.appendChild(li);
+            if (tenders.length === 0) {
+                statusDiv.textContent = '今日目前無招標資訊。';
+                return;
+            }
+
+            statusDiv.textContent = `成功載入 ${tenders.length} 筆今日招標資訊。`;
+
+            // 遍歷資料陣列 [15]
+            tenders.forEach(tender => {
+                // 插入一個新的表格列 [14]
+                const row = tableBody.insertRow();
+
+                // 警告：以下為「假設」的資料欄位結構，因 API 缺乏文件。
+                
+                // 1. 標案名稱 (建立連結)
+                const titleCell = row.insertCell();
+                const link = document.createElement('a');
+                link.textContent = tender.brief?.title |
+
+| '（標題未知）';
+                link.href = tender.url |
+
+| '#';
+                link.target = '_blank'; // 在新分頁開啟
+                titleCell.appendChild(link);
+
+                // 2. 機關名稱
+                const unitCell = row.insertCell();
+                unitCell.textContent = tender.unit_name |
+
+| '（機關未知）';
+
+                // 3. 截止日期
+                const dateCell = row.insertCell();
+                dateCell.textContent = tender.end_date? new Date(tender.end_date).toLocaleDateString() : '（日期未知）';
             });
         }
 
+        // --- 5. 核心功能：獲取資料 ---
+        
         /**
-         * 顯示無資料訊息
-         * @param {string} date - 日期
+         * 異步獲取並顯示招標資訊
          */
-        function displayNoData(date) {
-            RESULTS_CONTAINER.innerHTML = `<div class="no-data">今日 (${date}) 暫無新的招標公告資料。</div>`;
+        async function loadTenders() {
+            try {
+                const todayString = getTodayString();
+                
+                // 根據第一部分的分析 ，構建 API URL
+                const API_URL = `${API_BASE_URL}/api/tenders?sdate=${todayString}&edate=${todayString}`;
+                
+                statusDiv.textContent = `正在從 ${API_URL} 載入資料...`;
+                
+                // 執行 Fetch 請求 [17, 18]
+                const response = await fetch(API_URL);
+                
+                // 必須手動檢查回應狀態 
+                if (!response.ok) {
+                    throw new Error(`API 回應錯誤: ${response.status} ${response.statusText}`);
+                }
+                
+                const data = await response.json();
+
+                // 假設 API 回傳的資料結構
+                if (data && data.records && Array.isArray(data.records)) {
+                    displayTenders(data.records);
+                } else {
+                    // API 回傳了非預期的資料結構
+                    throw new Error('API 回傳的資料格式不正確 (未找到 'records' 陣列)。');
+                }
+
+            } catch (error) {
+                // 統一處理所有錯誤
+                console.error('資料獲取失敗:', error);
+                statusDiv.innerHTML = `資料載入失敗：<br>${error.message}<br>
+                                    <br><b>請注意：</b> g0v API 端點可能已變更。
+                                    請檢查瀏覽器主控台 (console) 的 CORS 錯誤，
+                                    並依程式碼註解更新 API_BASE_URL。`;
+                tableBody.innerHTML = '';
+            }
         }
 
-        /**
-         * 顯示錯誤訊息
-         * @param {string} message - 錯誤訊息
-         */
-        function displayError(message) {
-            RESULTS_CONTAINER.innerHTML = `<div class="no-data" style="color:red;">${message}</div>`;
-        }
-
-        // 執行主要功能
-        document.addEventListener('DOMContentLoaded', fetchTodayTenders);
+        // --- 6. 啟動程式 ---
+        // 當 DOM 載入完成後，執行 loadTenders
+        document.addEventListener('DOMContentLoaded', loadTenders);
+        
     </script>
-
 </body>
 </html>
