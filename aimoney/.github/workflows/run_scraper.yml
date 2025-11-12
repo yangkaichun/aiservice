@@ -1,47 +1,38 @@
-# 檔案名稱： .github/workflows/run_scraper.yml
-
-name: Daily Tender Scraper # 這個 Action 的名稱
+name: Daily Tender Scraper # 名稱不變
 
 on:
-  # 1. 定時執行 (Schedule)
   schedule:
-    # 這裡使用 Cron 語法， '0 1 * * *' 代表
-    # 每天的 UTC 時間 01:00 執行
-    # (換算成台灣時間 CST，就是 +8 小時 = 早上 09:00)
-    - cron: '0 1 * * *'
-
-  # 2. 手動執行 (Workflow Dispatch)
-  # 讓您可以在 GitHub 頁面上手動點擊「Run workflow」按鈕來測試
+    - cron: '0 1 * * *' # 台灣時間 09:00
   workflow_dispatch:
+
+# --- (新增) ---
+# 授權 GitHub Actions 
+permissions:
+  contents: write  # 允許 Action 讀取和寫入(push)您的倉庫
+# --- (新增結束) ---
 
 jobs:
   scrape:
-    runs-on: ubuntu-latest # 使用最新的 Ubuntu 虛擬機來執行
+    runs-on: ubuntu-latest
     steps:
-      # 步驟 1: 取得您的程式碼
-      # 把您倉庫中的程式碼下載到虛擬機中
+      # (步驟 1, 2, 3, 4 不變... )
       - name: Check out repository
         uses: actions/checkout@v4
 
-      # 步驟 2: 設定 Python 環境
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
-          python-version: '3.10' # 指定使用 Python 3.10
+          python-version: '3.10'
 
-      # 步驟 3: 安裝相依套件
-      # 執行 pip install -r requirements.txt
       - name: Install dependencies
         run: pip install -r requirements.txt
 
-      # 步驟 4: 執行您的 Python 爬蟲腳本
       - name: Run scraper script
         run: python scrape_tenders.py
 
-      # 步驟 5: 將爬取的資料 (新的 CSV 檔) 存回倉庫
-      # 這一步會自動 commit 和 push 新產生的 .csv 檔案
+      # (步驟 5 不變，它會自動抓取所有 .csv 檔案)
       - name: Commit and push changes
         uses: stefanzweifel/git-auto-commit-action@v5
         with:
-          commit_message: "Update tender data" # Commit 的訊息
-          file_pattern: "*.csv" # 指定只 commit CSV 檔案
+          commit_message: "Update tender data"
+          file_pattern: "*.csv" # 這個
