@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>今日招標資訊 (g0v API)</title>
     <style>
-        /* 參照 [22]，提供基本樣式以提高可讀性 */
+        /* 參照 [1, 2]，提供基本樣式以提高可讀性 */
         body { 
             font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
             margin: 0;
@@ -74,7 +74,7 @@
         // --- 1. API 設定 (重要！) ---
 
         //!!! 嚴重警告：此 URL 可能已過時且不穩定!!!
-        // 根據  的 GitHub 提交紀錄 "變更pcc api 網址"，
+        // 根據 [3] 的 GitHub 提交紀錄 "變更pcc api 網址"，
         // 此 API 位址經常變動。請務必前往：
         // https://github.com/openfunltd/pcc-viewer
         // 檢視 config.js 檔案，並用其中的 'config.api' 值替換下方的 URL。
@@ -115,9 +115,9 @@
 
             statusDiv.textContent = `成功載入 ${tenders.length} 筆今日招標資訊。`;
 
-            // 遍歷資料陣列 [15]
+            // 遍歷資料陣列 [4, 5]
             tenders.forEach(tender => {
-                // 插入一個新的表格列 [14]
+                // 插入一個新的表格列 [4, 6]
                 const row = tableBody.insertRow();
 
                 // 警告：以下為「假設」的資料欄位結構，因 API 缺乏文件。
@@ -125,20 +125,16 @@
                 // 1. 標案名稱 (建立連結)
                 const titleCell = row.insertCell();
                 const link = document.createElement('a');
-                link.textContent = tender.brief?.title |
-
-| '（標題未知）';
-                link.href = tender.url |
-
-| '#';
+                // [已修正] 移除 ?. 語法，改用傳統 && 檢查，提高相容性
+                link.textContent = (tender.brief && tender.brief.title) || '（標題未知）';
+                link.href = tender.url || '#';
                 link.target = '_blank'; // 在新分頁開啟
                 titleCell.appendChild(link);
 
                 // 2. 機關名稱
                 const unitCell = row.insertCell();
-                unitCell.textContent = tender.unit_name |
-
-| '（機關未知）';
+                // [已修正] 使用 || (邏輯 OR) 運算符提供預設值
+                unitCell.textContent = tender.unit_name || '（機關未知）';
 
                 // 3. 截止日期
                 const dateCell = row.insertCell();
@@ -155,15 +151,15 @@
             try {
                 const todayString = getTodayString();
                 
-                // 根據第一部分的分析 ，構建 API URL
+                // 根據第一部分的分析 [7]，構建 API URL
                 const API_URL = `${API_BASE_URL}/api/tenders?sdate=${todayString}&edate=${todayString}`;
                 
                 statusDiv.textContent = `正在從 ${API_URL} 載入資料...`;
                 
-                // 執行 Fetch 請求 [17, 18]
+                // 執行 Fetch 請求 [8, 5]
                 const response = await fetch(API_URL);
                 
-                // 必須手動檢查回應狀態 
+                // 必須手動檢查回應狀態 [8]
                 if (!response.ok) {
                     throw new Error(`API 回應錯誤: ${response.status} ${response.statusText}`);
                 }
