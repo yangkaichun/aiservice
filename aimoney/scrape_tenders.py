@@ -40,7 +40,7 @@ payload = {
     "category": "",
     "fromWeb": "true",
     "page": 1,
-    "pageSize": 500
+    "pageSize": 5000
 }
 
 # 3. (重要) 設定 Headers (不變，省略...)
