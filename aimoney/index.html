@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+    <meta charset="UTF-R">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>今日標案結果</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/papaparse/5.4.1/papaparse.min.js"></script>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+            margin: 20px;
+            background-color: #f4f7f6;
+            color: #333;
+        }
+        h1 {
+            color: #0056b3;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+        th, td {
+            padding: 12px 15px;
+            border: 1px solid #ddd;
+            text-align: left;
+        }
+        th {
+            background-color: #007bff;
+            color: white;
+            font-weight: bold;
+        }
+        tr:nth-child(even) {
+            background-color: #f9f9f9;
+        }
+        tr:hover {
+            background-color: #f1f1f1;
+        }
+        #loading {
+            font-size: 1.2em;
+            color: #555;
+            padding: 20px 0;
+        }
+    </style>
+</head>
+<body>
+
+    <h1>政府採購網 - 今日標案</h1>
+    <p id="loading">正在載入最新標案資料...</p>
+    
+    <table id="tender-table">
+        <thead>
+            <tr>
+                <th>案號</th>
+                <th>機關名稱</th>
+                <th>標案名稱</th>
+                <th>公告日期</th>
+                <th>預算金額</th>
+                <th>狀態</th>
+            </tr>
+        </thead>
+        <tbody id="table-body">
+            </tbody>
+    </table>
+
+    <script>
+        document.addEventListener("DOMContentLoaded", () => {
+            const tableBody = document.getElementById("table-body");
+            const loading = document.getElementById("loading");
+            
+            // 爬蟲產生的固定檔名
+            const dataUrl = "tenders_latest.csv";
+
+            // 使用 PapaParse 讀取並解析 CSV 檔案
+            Papa.parse(dataUrl, {
+                download: true,       // 告訴 PapaParse 要用 HTTP GET 下載這個檔案
+                header: true,         // CSV 的第一行是欄位名稱
+                skipEmptyLines: true, // 略過空行
+                complete: function(results) {
+                    // 檢查是否有抓到資料
+                    if (results.data && results.data.length > 0) {
+                        loading.style.display = "none"; // 隱藏 "載入中..."
+                        
+                        // 遍歷每一筆資料
+                        results.data.forEach(row => {
+                            const tr = document.createElement("tr");
+                            
+                            // 根據 CSV 欄位名稱填入表格
+                            tr.innerHTML = `
+                                <td>${row.serialNo || ''}</td>
+                                <td>${row.agencyName || ''}</td>
+                                <td>${row.tenderName || ''}</td>
+                                <td>${row.publishDate || ''}</td>
+                                <td>${row.tenderBudget || ''}</td>
+                                <td>${row.tenderStatus || ''}</td>
+                            `;
+                            tableBody.appendChild(tr);
+                        });
+                    } else {
+                        loading.innerText = "沒有找到資料，或資料為空。";
+                    }
+                },
+                error: function(err, file) {
+                    console.error("PapaParse 錯誤:", err);
+                    loading.innerText = `載入資料失敗。請確認 ${dataUrl} 檔案是否存在於倉庫中。`;
+                }
+            });
+        });
+    </script>
+
+</body>
+</html>
