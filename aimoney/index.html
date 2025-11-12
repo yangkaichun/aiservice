@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>今日招標資訊列表 - Proxy 最終修正版</title>
+    <title>今日招標資訊列表 - 最終自建代理版</title>
     <style>
         body {
             font-family: Arial, sans-serif;
@@ -75,12 +75,10 @@
         </ul>
 
     <script>
-        // 【PROXY 修正】替換為另一個公共代理服務
-        // ***重要提醒：此服務仍有可能隨時失效，請務必了解其不穩定性。***
-        const PROXY_URL = 'https://thingproxy.freeboard.io/fetch/';
-
-        // API 來源
-        const G0V_API_BASE = 'https://pcc-api.openfun.app/api/listbydate?date=';
+        // 【最終解決方案】指向您自己部署的後端代理服務
+        // ***請將此網址替換為您自己伺服器的公開網址 (例如: https://your-server.com/api/tenders?date=)***
+        // 範例中假設您在本地運行 Python 代理服務於 5000 port
+        const PROXY_API_BASE = 'http://localhost:5000/api/tenders?date='; 
         
         const RESULTS_CONTAINER = document.getElementById('tender-results');
         const LOADING_ELEMENT = document.getElementById('loading');
@@ -99,33 +97,31 @@
         }
 
         /**
-         * 從 OpenFun API 獲取今日招標資料 (透過代理服務)
+         * 從您自己的代理服務獲取今日招標資料
          */
         async function fetchTodayTenders() {
             const todayRaw = getTodayDate();
             const todayDisplay = todayRaw.replace(/(\d{4})(\d{2})(\d{2})/, '$1-$2-$3'); // 僅供顯示
             
-            const originalApiUrl = `${G0V_API_BASE}${todayRaw}`;
-            
-            // **【關鍵修改】將原始 API 網址直接附加到新的代理服務網址後**
-            const apiUrl = `${PROXY_URL}${originalApiUrl}`;
+            // 直接呼叫您自己的代理服務端點，並傳遞日期
+            const apiUrl = `${PROXY_API_BASE}${todayRaw}`; 
             
             // 更新頁面標題顯示今天的日期
             PAGE_TITLE.textContent = `今日招標資訊列表 (${todayDisplay})`;
 
             try {
-                // 發出請求到代理服務
+                // 發出請求到您自己的伺服器
                 const response = await fetch(apiUrl); 
                 
                 if (!response.ok) {
                     throw new Error(`HTTP 錯誤: ${response.status}`);
                 }
                 
-                // 代理服務會直接返回 API 的 JSON 內容
                 const data = await response.json(); 
                 
-                // 假設資料結構仍然包含一個名為 'tenders' 的陣列
-                const tenders = data.tenders || data.list || []; 
+                // 假設您的後端代理返回的資料是一個包含招標列表的陣列
+                // 檢查 data.tenders, data.list, 或 data 本身是否為陣列
+                const tenders = data.tenders || data.list || (Array.isArray(data) ? data : []); 
 
                 // 檢查是否有資料
                 if (tenders.length > 0) {
@@ -136,7 +132,7 @@
 
             } catch (error) {
                 console.error("獲取資料失敗:", error);
-                displayError("很抱歉，獲取招標資料失敗。請檢查網路連線或代理服務是否正常運作。");
+                displayError(`很抱歉，獲取招標資料失敗。請確保您的後端代理服務 ${PROXY_API_BASE.split('?')[0]} 正在運行且設定正確。`);
             } finally {
                 if (LOADING_ELEMENT) {
                     LOADING_ELEMENT.remove();
