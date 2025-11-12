@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>今日招標資訊列表 - g0v API</title>
+    <title>今日招標資訊列表 - g0v API (CORS 修正版)</title>
     <style>
         body {
             font-family: Arial, sans-serif;
@@ -75,6 +75,10 @@
         </ul>
 
     <script>
+        // **【CORS 修正】使用公開代理服務 (Proxy)**
+        // 注意：公開代理服務不保證穩定性，建議正式環境使用自建後端服務。
+        const PROXY_URL = 'https://api.allorigins.win/raw?url=';
+
         // g0v API 的基本 URL
         const G0V_API_BASE = 'https://pcc.g0v.ronny.tw/api/v1/tender/date/';
         const RESULTS_CONTAINER = document.getElementById('tender-results');
@@ -94,21 +98,28 @@
         }
 
         /**
-         * 從 g0v API 獲取今日招標資料
+         * 從 g0v API 獲取今日招標資料 (透過代理服務)
          */
         async function fetchTodayTenders() {
             const today = getTodayDate();
-            const apiUrl = `${G0V_API_BASE}${today}`;
+            const originalApiUrl = `${G0V_API_BASE}${today}`;
+            
+            // **【關鍵修改】將原始 API 網址編碼後，透過代理服務的網址發出請求**
+            const apiUrl = `${PROXY_URL}${encodeURIComponent(originalApiUrl)}`;
             
             // 更新頁面標題顯示今天的日期
             PAGE_TITLE.textContent = `今日招標資訊列表 (${today})`;
 
             try {
-                const response = await fetch(apiUrl);
+                // 發出請求到代理服務
+                const response = await fetch(apiUrl); 
+                
                 if (!response.ok) {
                     throw new Error(`HTTP 錯誤: ${response.status}`);
                 }
-                const data = await response.json();
+                
+                // 代理服務會直接返回 g0v API 的 JSON 內容
+                const data = await response.json(); 
                 
                 // 檢查是否有資料
                 if (data.tenders && data.tenders.length > 0) {
@@ -119,7 +130,7 @@
 
             } catch (error) {
                 console.error("獲取資料失敗:", error);
-                displayError("很抱歉，獲取招標資料失敗。請檢查網路連線或稍後再試。");
+                displayError("很抱歉，獲取招標資料失敗。這是由於 CORS 限制，請檢查網路連線，或嘗試更換代理服務。");
             } finally {
                 // 無論成功或失敗，都移除載入中的訊息
                 if (LOADING_ELEMENT) {
@@ -137,7 +148,7 @@
                 const li = document.createElement('li');
                 li.className = 'tender-item';
                 
-                // 標案連結 (若有)
+                // 標案連結
                 const tenderUrl = `https://web.pcc.gov.tw/prkms/prms-viewTenderDetail.do?tenderId=${tender.unit_id}&seq=${tender.job_number}`;
 
                 li.innerHTML = `
