@@ -1,0 +1,876 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+   <link rel="shortcut icon" href="feticon.ico">
+    <title>隨身AI智能小管家 - 後台管理系統 (Demo)</title>
+    <style>
+        /* --- 全局樣式 --- */
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Microsoft JhengHei", Roboto, "Helvetica Neue", Arial, sans-serif;
+            background-color: #f4f7fa;
+            color: #333;
+            display: flex;
+            height: 100vh;
+            overflow: hidden;
+        }
+
+        /* --- 側邊導覽列 --- */
+        .sidebar {
+            width: 260px;
+            background-color: #0d47a1; /* 深藍色，符合專業感 */
+            color: white;
+            padding: 20px 0;
+            height: 100vh;
+            position: fixed;
+            overflow-y: auto;
+        }
+        .sidebar-header {
+            padding: 0 20px 20px 20px;
+            text-align: center;
+            border-bottom: 1px solid #1556b3;
+        }
+        .sidebar-header h2 {
+            font-size: 1.2rem;
+            margin-bottom: 5px;
+        }
+        .sidebar-header span {
+            font-size: 0.8rem;
+            opacity: 0.8;
+        }
+        .sidebar nav ul {
+            list-style: none;
+            padding: 0;
+        }
+        .sidebar nav li a {
+            display: block;
+            padding: 15px 25px;
+            color: #e0e0e0;
+            text-decoration: none;
+            font-size: 1rem;
+            transition: background-color 0.3s, color 0.3s;
+            border-left: 4px solid transparent;
+        }
+        .sidebar nav li a:hover {
+            background-color: #1556b3;
+            color: #ffffff;
+            border-left: 4px solid #64b5f6; /* 亮藍色 */
+        }
+        .sidebar nav li a.active {
+            background-color: #1976d2; /* 較亮的藍色 */
+            color: #ffffff;
+            font-weight: 600;
+            border-left: 4px solid #ffffff;
+        }
+
+        /* --- 主要內容區 --- */
+        .main-content {
+            flex-grow: 1;
+            margin-left: 260px;
+            padding: 30px;
+            overflow-y: auto;
+            height: 100vh;
+        }
+        .page {
+            display: none; /* 預設隱藏所有頁面 */
+        }
+        .page.active {
+            display: block; /* 顯示當前頁面 */
+        }
+        
+        /* --- 頁面標頭 --- */
+        .page-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 25px;
+            border-bottom: 2px solid #ddd;
+            padding-bottom: 15px;
+        }
+        .page-header h1 {
+            font-size: 1.8rem;
+            color: #1a237e; /* 靛藍色 */
+        }
+        .user-profile {
+            font-size: 0.9rem;
+            text-align: right;
+        }
+        .user-profile span {
+            font-weight: 600;
+            color: #0d47a1;
+        }
+        .user-profile div {
+            font-size: 0.8rem;
+            color: #555;
+        }
+
+        /* --- 內容卡片 --- */
+        .card {
+            background-color: #ffffff;
+            border-radius: 8px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+            padding: 25px;
+            margin-bottom: 25px;
+        }
+        .card-header {
+            font-size: 1.25rem;
+            font-weight: 600;
+            color: #1a237e;
+            margin-bottom: 20px;
+            padding-bottom: 10px;
+            border-bottom: 1px solid #eee;
+        }
+
+        /* --- 內容網格 --- */
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 20px;
+        }
+        .grid-col-2 {
+            display: grid;
+            grid-template-columns: 2fr 1fr;
+            gap: 20px;
+        }
+        .grid-col-3 {
+            display: grid;
+            grid-template-columns: 1fr 1fr 1fr;
+            gap: 20px;
+        }
+        
+        /* --- 模擬圖表 --- */
+        .chart-placeholder {
+            background: #fafafa;
+            border: 1px dashed #ccc;
+            padding: 20px;
+            border-radius: 8px;
+            min-height: 250px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+        }
+        .chart-title {
+            font-weight: 600;
+            color: #555;
+            margin-bottom: 15px;
+            text-align: center;
+        }
+        
+        /* 模擬長條圖 (群組) */
+        .mock-bar-chart {
+            display: flex;
+            justify-content: space-around;
+            align-items: flex-end;
+            width: 100%;
+            height: 180px;
+        }
+        .bar-group {
+            display: flex;
+            gap: 5px;
+            align-items: flex-end;
+        }
+        .bar {
+            width: 20px;
+            background-color: #42a5f5; /* 藍色 */
+            border-radius: 4px 4px 0 0;
+        }
+        .bar.female {
+            background-color: #ef5350; /* 紅色 */
+        }
+
+        /* 模擬圓餅圖 */
+        .mock-pie-chart {
+            width: 150px;
+            height: 150px;
+            border-radius: 50%;
+            background: conic-gradient(
+                #4caf50 0% 25%, 
+                #ffeb3b 25% 55%, 
+                #f44336 55% 80%,
+                #9c27b0 80% 100%
+            );
+        }
+
+        /* 模擬文字雲 */
+        .mock-word-cloud {
+            padding: 10px;
+        }
+        .mock-word-cloud span {
+            display: inline-block;
+            margin: 5px;
+            color: #0d47a1;
+        }
+        .word-xl { font-size: 2.2rem; font-weight: 700; opacity: 1; }
+        .word-lg { font-size: 1.8rem; font-weight: 600; opacity: 0.9; }
+        .word-md { font-size: 1.4rem; font-weight: 500; opacity: 0.8; }
+        .word-sm { font-size: 1.0rem; font-weight: 400; opacity: 0.7; }
+
+        /* 模擬地圖熱區 */
+        .mock-map {
+            width: 100%;
+            height: 200px;
+            background: #e0e0e0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #777;
+            font-weight: 600;
+            border-radius: 8px;
+            background-image: linear-gradient(135deg, #f0f0f0 25%, transparent 25%),
+                              linear-gradient(225deg, #f0f0f0 25%, transparent 25%),
+                              linear-gradient(45deg, #f0f0f0 25%, transparent 25%),
+                              linear-gradient(315deg, #f0f0f0 25%, #e0e0e0 25%);
+            background-position: 10px 0, 10px 0, 0 0, 0 0;
+            background-size: 20px 20px;
+            background-repeat: repeat;
+        }
+
+        /* --- AI 管理頁面 --- */
+        .tabs {
+            display: flex;
+            border-bottom: 2px solid #ccc;
+            margin-bottom: 20px;
+        }
+        .tab {
+            padding: 10px 20px;
+            cursor: pointer;
+            font-size: 1rem;
+            font-weight: 500;
+            border-bottom: 3px solid transparent;
+            margin-bottom: -2px; /* 讓 tab 的 bottom border 蓋過 tabs 的 */
+        }
+        .tab.active {
+            border-bottom: 3px solid #0d47a1;
+            font-weight: 600;
+            color: #0d47a1;
+        }
+        .tab-content {
+            display: none;
+        }
+        .tab-content.active {
+            display: block;
+        }
+
+        /* --- 模擬表格 --- */
+        .styled-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.9rem;
+        }
+        .styled-table th, .styled-table td {
+            border: 1px solid #ddd;
+            padding: 12px;
+            text-align: left;
+        }
+        .styled-table th {
+            background-color: #f2f2f2;
+            font-weight: 600;
+        }
+        .styled-table tr:nth-child(even) {
+            background-color: #f9f9f9;
+        }
+        .styled-table tr:hover {
+            background-color: #f1f1f1;
+        }
+
+        /* --- 按鈕 --- */
+        .btn {
+            background-color: #1976d2;
+            color: white;
+            padding: 8px 15px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 0.9rem;
+            transition: background-color 0.3s;
+        }
+        .btn:hover {
+            background-color: #0d47a1;
+        }
+        .btn.btn-outline {
+            background-color: transparent;
+            color: #1976d2;
+            border: 1px solid #1976d2;
+        }
+        .btn.btn-outline:hover {
+            background-color: #e3f2fd;
+        }
+        .btn.btn-danger {
+            background-color: #d32f2f;
+        }
+        .btn.btn-danger:hover {
+            background-color: #b71c1c;
+        }
+        .btn.btn-success {
+            background-color: #388e3c;
+        }
+        .btn.btn-success:hover {
+            background-color: #1b5e20;
+        }
+        .btn-group {
+            display: flex;
+            gap: 8px;
+        }
+        
+        /* --- AI 規則引擎 --- */
+        .rule-card {
+            background: #fdfdfd;
+            border: 1px solid #e0e0e0;
+            border-left: 5px solid #1976d2;
+            padding: 20px;
+            border-radius: 5px;
+            margin-bottom: 15px;
+            font-family: 'Courier New', Courier, monospace;
+            font-size: 0.95rem;
+        }
+        .rule-if { color: #d32f2f; font-weight: 600; }
+        .rule-then { color: #388e3c; font-weight: 600; }
+        .rule-condition { color: #0d47a1; }
+        .rule-action { color: #555; }
+
+        /* --- API 狀態 --- */
+        .status-dot {
+            height: 10px;
+            width: 10px;
+            border-radius: 50%;
+            display: inline-block;
+            margin-right: 8px;
+        }
+        .status-connected {
+            background-color: #4caf50; /* 綠色 */
+        }
+        .status-error {
+            background-color: #f44336; /* 紅色 */
+        }
+        .status-warning {
+            background-color: #ffeb3b; /* 黃色 */
+        }
+        
+        /* 響應式設計 */
+        @media (max-width: 1200px) {
+            .grid-col-2 { grid-template-columns: 1fr; }
+            .grid-col-3 { grid-template-columns: 1fr 1fr; }
+        }
+        @media (max-width: 768px) {
+            .grid, .grid-col-3 { grid-template-columns: 1fr; }
+            .sidebar {
+                width: 100%;
+                height: auto;
+                position: relative;
+            }
+            .main-content {
+                margin-left: 0;
+            }
+            body {
+                flex-direction: column;
+                height: auto;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="sidebar">
+      <div class="logo-container">
+            <img src="nhrilogo.png" alt="Logo 1">
+            <img src="fetlogo.png" alt="Logo 2">
+        </div>
+        <div class="sidebar-header">
+            <h2>隨身AI智能小管家</h2>
+            <span>第二期計畫 - 後台管理系統</span>
+        </div>
+        <nav>
+            <ul>
+                <li><a href="#" class="nav-link active" onclick="showPage('dashboard', this)">總覽 (Dashboard)</a></li>
+                <li><a href="#" class="nav-link" onclick="showPage('ai-management', this)">AI 管理 (AI的後台)</a></li>
+                <li><a href="#" class="nav-link" onclick="showPage('member-analysis', this)">會員管理 (會員的後台)</a></li>
+                <li><a href="#" class="nav-link" onclick="showPage('api-management', this)">API 管理 (API的後台)</a></li>
+                <li><a href="#" class="nav-link" onclick="showPage('settings', this)">系統設定</a></li>
+            </ul>
+        </nav>
+    </div>
+
+    <div class="main-content">
+        
+        <div class="page-header">
+            <h1 id="page-title">總覽 (Dashboard)</h1>
+            <div class="user-profile">
+                <span>國衛院 / 中央 (最高權限)</span>
+                <div>richard.yang@nhri.org.tw</div>
+            </div>
+        </div>
+
+        <div id="dashboard" class="page active">
+            <div class="card">
+                <div class="card-header">歡迎使用「隨身AI智能小管家」後台</div>
+                <p>這是一個互動式 Demo，旨在展示第二期計畫的核心後台功能。</p>
+                <p>請點擊左側導覽列的「AI 管理」、「會員管理」和「API 管理」來查看基於國衛院需求及專案規劃書所模擬的介面。</p>
+            </div>
+            
+            <div class="grid-col-3">
+                <div class="card">
+                    <div class="card-header">活躍會員數 (本日)</div>
+                    <div style="font-size: 2.5rem; font-weight: 700; color: #0d47a1;">1,280</div>
+                    <div style="color: #388e3c;">+5% vs 昨日</div>
+                </div>
+                <div class="card">
+                    <div class="card-header">AI 互動次數 (本日)</div>
+                    <div style="font-size: 2.5rem; font-weight: 700; color: #1a237e;">8,450</div>
+                     <div style="color: #388e3c;">+12% vs 昨日</div>
+                </div>
+                <div class="card">
+                    <div class="card-header">主動關懷觸發</div>
+                    <div style="font-size: 2.5rem; font-weight: 700; color: #1976d2;">320</div>
+                    <div style="color: #555;">(目標: 每週/每位 > 3次 [cite: 35])</div>
+                </div>
+            </div>
+            
+            <div class="card">
+                 <div class="card-header">系統狀態</div>
+                 <p><span class="status-dot status-connected"></span> AI 核心 (Azure OpenAI): 運作正常</p>
+                 <p><span class="status-dot status-connected"></span> 語音服務 (長問 / Microsoft): 運作正常</p>
+                 <p><span class="status-dot status-error"></span> 異常: 語音回覆與文字不符 [cite: 39] - 正在處理</p>
+            </div>
+        </div>
+
+        <div id="ai-management" class="page">
+            
+            <div class="tabs">
+                <div class="tab ai-tab active" onclick="showAiTab('knowledge-base', this)">知識庫管理 (RAG) [cite: 188]</div>
+                <div class="tab ai-tab" onclick="showAiTab('care-engine', this)">主動式關懷AI引擎 [cite: 222]</div>
+                <div class="tab ai-tab" onclick="showAiTab('bot-flow', this)">BOT 設置服務 [cite: 189]</div>
+            </div>
+
+            <div id="knowledge-base" class="tab-content ai-tab-content active">
+                <div class="card">
+                    <div class="card-header">知識庫文件管理</div>
+                    <p style="margin-bottom: 20px;">
+                        國衛院管理員可在此處自主上傳、更新或移除 AI 的知識來源，無需再依賴工程師。[cite: 186]<br>
+                        上傳文件時，需強制標註分類類別，以利精準推播。[cite: 83]
+                    </p>
+                    <button class="btn btn-success" style="margin-bottom: 20px;">+ 上傳新文件</button>
+
+                    <table class="styled-table">
+                        <thead>
+                            <tr>
+                                <th>檔案名稱</th>
+                                <th>文件分類標籤 [cite: 84]</th>
+                                <th>最後更新時間</th>
+                                <th>狀態</th>
+                                <th>操作</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td>2025年長照福利懶人包.pdf</td>
+                                <td>長照與社會福利</td>
+                                <td>2025-11-10 14:30</td>
+                                <td style="color: #388e3c;">已索引</td>
+                                <td class="btn-group">
+                                    <button class="btn btn-outline">編輯</button>
+                                    <button class="btn btn-danger">刪除</button>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td>高血壓衛教手冊.docx</td>
+                                <td>醫療健康與保健</td>
+                                <td>2025-11-09 09:15</td>
+                                <td style="color: #388e3c;">已索引</td>
+                                <td class="btn-group">
+                                    <button class="btn btn-outline">編輯</button>
+                                    <button class="btn btn-danger">刪除</button>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td>防詐騙165.txt</td>
+                                <td>法律與權益保障, 生活資訊</td>
+                                <td>2025-11-08 17:00</td>
+                                <td style="color: #f57c00;">處理中...</td>
+                                <td class="btn-group">
+                                    <button class="btn btn-outline">編輯</button>
+                                    <button class="btn btn-danger">刪除</button>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <div id="care-engine" class="tab-content ai-tab-content">
+                <div class="card">
+                    <div class="card-header">可適性主動式關懷AI引擎 [cite: 222]</div>
+                    <p style="margin-bottom: 20px;">
+                        使用自然語言定義關懷規則。系統後端的 LLM 會將規則解析為可執行的觸發條件，實現自動化、個人化的主動關懷。[cite: 223]
+                    </p>
+                    <button class="btn btn-success" style="margin-bottom: 20px;">+ 新增關懷規則</button>
+                    
+                    <div class="rule-card">
+                        <div class="rule-if">IF (規則觸發條件):</div>
+                        <div class="rule-condition">
+                            "當一位超過70歲、有高血壓病史的獨居使用者，連續三天沒有記錄血壓..." [cite: 223]
+                        </div>
+                        <hr style="margin: 10px 0; border: 0; border-top: 1px dashed #ccc;">
+                        <div class="rule-then">THEN (自動執行動作):</div>
+                        <div class="rule-action">
+                            "自動發送 Line 推播訊息: [陳伯伯，我先提醒您量一下血壓。記錄下來我幫您存檔。] [cite: 16]"
+                        </div>
+                    </div>
+
+                    <div class="rule-card">
+                        <div class="rule-if">IF (規則觸發條件):</div>
+                        <div class="rule-condition">
+                            "當使用者詢問 [睡不著] 或 [失眠] 關鍵字超過 3 次..."
+                        </div>
+                        <hr style="margin: 10px 0; border: 0; border-top: 1px dashed #ccc;">
+                        <div class="rule-then">THEN (自動執行動作):</div>
+                        <div class="rule-action">
+                            "主動推播: [我找到一個針對長者的睡前舒眠音樂，現在播放給您聽好嗎？] [cite: 26]"
+                        </div>
+                    </div>
+
+                </div>
+            </div>
+            
+            <div id="bot-flow" class="tab-content ai-tab-content">
+                <div class="card">
+                    <div class="card-header">BOT 設置服務 (任務型流程) [cite: 189]</div>
+                    <p style="margin-bottom: 20px;">
+                        定義特定任務的對話流程，例如交通查詢、掛號協助等。
+                    </p>
+                    
+                    <div class="rule-card">
+                        <div><strong style="font-size: 1.1rem; color: #1a237e;">流程名稱: 交通查詢 [cite: 19]</strong></div>
+                        <div style="margin-top: 10px;">
+                            <strong>觸發意圖:</strong> 詢問 (交通, "怎麼去", "車票")
+                        </div>
+                        <div style="margin-top: 5px;">
+                            <strong>流程:</strong>
+                            <ol style="margin-left: 20px; line-height: 1.6;">
+                                <li><strong>AI:</strong> "您想去哪裡？" (反問確認 [cite: 8])</li>
+                                <li><strong>User:</strong> "[目的地]"</li>
+                                <li><strong>AI:</strong> "您想從哪裡出發？" (反問確認 [cite: 8])</li>
+                                <li><strong>User:</strong> "[出發地]"</li>
+                                <li><strong>AI:</strong> (串接台鐵/高鐵/客運 API [cite: 55, 60, 61]) -> "為您查詢到... (RAG 檢索個人化建議 [cite: 21, 24])"</li>
+                            </ol>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+
+        <div id="member-analysis" class="page">
+            
+            <div class="card">
+                <div class="card-header">會員資料屬性及使用情形分析 [cite: 109]</div>
+                <p>依據國衛院需求 [cite: 109]，將會員資料以視覺化圖表呈現。國衛院可自行增加調查之屬性欄位。</p>
+                <p style="margin-top: 10px;"><strong>目前登入層級:</strong> 國衛院/中央 (最高權限) [cite: 111]</p>
+            </div>
+
+            <div class="grid-col-2">
+                <div class="card">
+                    <div class="chart-placeholder">
+                        <div class="chart-title">會員年齡及性別分布 (群組長條圖) [cite: 113]</div>
+                        <div class="mock-bar-chart">
+                            <div class="bar-group">
+                                <div class="bar" style="height: 100px;"></div>
+                                <div class="bar female" style="height: 150px;"></div>
+                            </div>
+                            <div class="bar-group">
+                                <div class="bar" style="height: 110px;"></div>
+                                <div class="bar female" style="height: 130px;"></div>
+                            </div>
+                            <div class="bar-group">
+                                <div class="bar" style="height: 80px;"></div>
+                                <div class="bar female" style="height: 140px;"></div>
+                            </div>
+                            <div class="bar-group">
+                                <div class="bar" style="height: 110px;"></div>
+                                <div class="bar female" style="height: 170px;"></div>
+                            </div>
+                            <div class="bar-group">
+                                <div class="bar" style="height: 70px;"></div>
+                                <div class="bar female" style="height: 165px;"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="card">
+                    <div class="chart-placeholder">
+                        <div class="chart-title">原住民各族身份佔比 (圓餅圖) [cite: 113, 115]</div>
+                        <div class="mock-pie-chart"></div>
+                        <div style="margin-top: 10px; font-size: 0.8rem; text-align: center;">
+                            (阿美族 37.3%, 排灣族 18.1%, 泰雅族 16.3%...)
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="grid-col-2">
+                <div class="card">
+                    <div class="chart-placeholder">
+                        <div class="chart-title">民眾常問前十關鍵詞 (文字雲圖) [cite: 113]</div>
+                        <div class="mock-word-cloud">
+                            <span class="word-xl">血壓 [cite: 118]</span>
+                            <span class="word-md">頭暈 [cite: 118]</span>
+                            <span class="word-lg">長照 [cite: 118]</span>
+                            <span class="word-sm">天氣 [cite: 118]</span>
+                            <span class="word-md">補助</span>
+                            <span class="word-lg">睡不著 [cite: 118]</span>
+                            <span class="word-sm">公車 [cite: 118]</span>
+                            <span class="word-md">詐騙 [cite: 118]</span>
+                        </div>
+                    </div>
+                </div>
+                
+                 <div class="card">
+                    <div class="chart-placeholder">
+                        <div class="chart-title">會員區域分布 (台灣地圖熱區圖) [cite: 113]</div>
+                        <div class="mock-map">
+                            [ 模擬台灣地圖熱區圖 ]
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+             <div class="card">
+                <div class="card-header">使用者詢問問題統計分析 [cite: 116]</div>
+                <p>依據16類主題自動準確分類 [cite: 117, 118]</p>
+                <div style="font-size: 0.9rem; line-height: 1.8;">
+                    <div>醫療健康與保健 (40%) <div style="height: 15px; width: 40%; background: #42a5f5;"></div></div>
+                    <div>長照與社會福利 (25%) <div style="height: 15px; width: 25%; background: #66bb6a;"></div></div>
+                    <div>生活資訊與公共服務 (15%) <div style="height: 15px; width: 15%; background: #ffa726;"></div></div>
+                    <div>其他 (20%) <div style="height: 15px; width: 20%; background: #bdbdbd;"></div></div>
+                </div>
+            </div>
+
+        </div>
+
+        <div id="api-management" class="page">
+            <div class="card">
+                <div class="card-header">開放式數據生態系 API 管理 </div>
+                <p>管理與監控所有對內及對外的 API 串接，確保數據交換的穩定與安全。</p>
+            </div>
+
+            <div class="card">
+                <div class="card-header">核心數據 API</div>
+                <table class="styled-table">
+                    <thead>
+                        <tr>
+                            <th>API 名稱</th>
+                            <th>標準 [cite: 129]</th>
+                            <th>狀態</th>
+                            <th>說明</th>
+                            <th>操作</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>標準化生理量測數據 API </td>
+                            <td>FHIR / JSON</td>
+                            <td><span class="status-dot status-connected"></span> 運作正常</td>
+                            <td>用於串接 Fora, Leadtek 等第三方設備及公共量測站 [cite: 195, 226]</td>
+                            <td class="btn-group">
+                                <button class="btn btn-outline">文件</button>
+                                <button class="btn btn-outline">Log</button>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td>個人化AI虛擬人像 (Avatar) API [cite: 219]</td>
+                            <td>JSON (串接第三方)</td>
+                            <td><span class="status-dot status-connected"></span> 運作正常</td>
+                            <td>用於生成個人化頭像 (試用版本) [cite: 219]</td>
+                            <td class="btn-group">
+                                <button class="btn btn-outline">文件</button>
+                                <button class="btn btn-outline">Log</button>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+            
+            <div class="card">
+                <div class="card-header">跨局處及外部串接 API</div>
+                <table class="styled-table">
+                     <thead>
+                        <tr>
+                            <th>API 名稱</th>
+                            <th>類型</th>
+                            <th>狀態</th>
+                            <th>說明</th>
+                            <th>操作</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                         <tr>
+                            <td>雲林幣扭一下 (獎勵機制) [cite: 89, 94]</td>
+                            <td>異質系統整合 [cite: 101]</td>
+                            <td><span class="status-dot status-connected"></span> 運作正常</td>
+                            <td>與雲林縣政府試辦串接 [cite: 105]</td>
+                             <td class="btn-group">
+                                <button class="btn btn-outline">文件</button>
+                                <button class="btn btn-outline">Log</button>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td>中央氣象局 API [cite: 59]</td>
+                            <td>政府開放資料</td>
+                            <td><span class="status-dot status-connected"></span> 運作正常</td>
+                            <td>即時天氣資訊 [cite: 54]</td>
+                             <td class="btn-group">
+                                <button class="btn btn-outline">文件</button>
+                                <button class="btn btn-outline">Log</button>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td>台鐵時刻表 API [cite: 60]</td>
+                            <td>政府開放資料</td>
+                            <td><span class="status-dot status-warning"></span> 延遲</td>
+                            <td>即時交通資訊 [cite: 54]</td>
+                             <td class="btn-group">
+                                <button class="btn btn-outline">文件</button>
+                                <button class="btn btn-outline">Log</button>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td>新北幣 / 台東金幣 API [cite: 93, 95]</td>
+                            <td>異質系統整合 [cite: 101]</td>
+                            <td><span class="status-dot status-error"></span> 未串接</td>
+                            <td>規劃中，逐步導入 [cite: 105]</td>
+                             <td class="btn-group">
+                                <button class="btn btn-outline">文件</button>
+                                <button class="btn btn-outline">Log</button>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+            
+             <div class="card">
+                <div class="card-header">系統效能與安全 [cite: 130]</div>
+                <p><strong>壓力測試結果:</strong> 模擬100位使用者同時上線，每10秒鐘發送一個對話並在5秒內完成回應達 <strong>98%</strong> (目標 > 95%) [cite: 130]</p>
+                <p><strong>安全性:</strong> 所有資料傳輸均採用加密連線 [cite: 102]</p>
+                <p><strong>Log 功能:</strong> 已增列完整 log 保存，方便後續追蹤 [cite: 131]</p>
+            </div>
+
+        </div>
+        
+        <div id="settings" class="page">
+            <div class="card">
+                <div class="card-header">後台管理系統分級 [cite: 106]</div>
+                <p style="margin-bottom: 20px;">
+                    後台權限管理資料依照管理者層級不同進行分階授權，授權項目由國衛院設定。[cite: 108]
+                </p>
+                <img src="https://i.imgur.com/39aX9A8.png" alt="五層管理架構圖" style="width: 100%; max-width: 700px; border: 1px solid #ccc; padding: 10px; background: #f9f9f9;" >
+                <p style="font-size: 0.9rem; color: #555; margin-top: 10px;">(模擬圖，概念來自 [cite: 111])</p>
+            </div>
+            
+            <div class="card">
+                <div class="card-header">權限設定 [cite: 125]</div>
+                 <table class="styled-table">
+                     <thead>
+                        <tr>
+                            <th>角色 (Role)</th>
+                            <th>功能權限</th>
+                            <th>資料權限</th>
+                            <th>操作</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>國衛院/中央</td>
+                            <td>所有功能</td>
+                            <td>所有資料</td>
+                             <td class="btn-group"><button class="btn btn-outline">編輯</button></td>
+                        </tr>
+                         <tr>
+                            <td>縣市政府 (例如: 雲林縣)</td>
+                            <td>查看儀表板, 管理轄下單位</td>
+                            <td>僅限雲林縣會員資料</td>
+                             <td class="btn-group"><button class="btn btn-outline">編輯</button></td>
+                        </tr>
+                        <tr>
+                            <td>醫院/NGO</td>
+                            <td>查看儀表板</td>
+                            <td>僅限所屬會員資料</td>
+                             <td class="btn-group"><button class="btn btn-outline">編輯</button></td>
+                        </tr>
+                    </tbody>
+                 </table>
+            </div>
+        </div>
+
+    </div>
+
+    <script>
+        // 預設顯示 'dashboard' 頁面
+        document.addEventListener('DOMContentLoaded', function() {
+            showPage('dashboard', document.querySelector('.nav-link.active'));
+        });
+
+        // 顯示指定 ID 的頁面，並隱藏其他頁面
+        function showPage(pageId, clickedLink) {
+            // 1. 隱藏所有 'page' 類別的元素
+            var pages = document.querySelectorAll('.page');
+            pages.forEach(function(page) {
+                page.style.display = 'none';
+            });
+
+            // 2. 顯示被點擊的 'page'
+            var activePage = document.getElementById(pageId);
+            if (activePage) {
+                activePage.style.display = 'block';
+            }
+
+            // 3. 更新頁面標題
+            var pageTitle = document.getElementById('page-title');
+            if (pageTitle && clickedLink) {
+                pageTitle.textContent = clickedLink.textContent;
+            }
+            
+            // 4. 更新側邊欄的 'active' 狀態
+            var navLinks = document.querySelectorAll('.sidebar .nav-link');
+            navLinks.forEach(function(link) {
+                link.classList.remove('active');
+            });
+            if (clickedLink) {
+                clickedLink.classList.add('active');
+            }
+        }
+        
+        // 'AI 管理' 頁面內部的 Tab 切換
+        function showAiTab(tabId, clickedTab) {
+            // 1. 隱藏所有 'ai-tab-content'
+            var tabContents = document.querySelectorAll('.ai-tab-content');
+            tabContents.forEach(function(content) {
+                content.classList.remove('active');
+            });
+
+            // 2. 顯示被點擊的 tab 內容
+            var activeTabContent = document.getElementById(tabId);
+            if (activeTabContent) {
+                activeTabContent.classList.add('active');
+            }
+
+            // 3. 更新 tab 的 'active' 狀態
+            var tabs = document.querySelectorAll('.ai-tab');
+            tabs.forEach(function(tab) {
+                tab.classList.remove('active');
+            });
+            if (clickedTab) {
+                clickedTab.classList.add('active');
+            }
+        }
+    </script>
+
+</body>
+</html>
