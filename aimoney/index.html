@@ -93,8 +93,9 @@
         function getTodayString() {
             const today = new Date();
             const y = today.getFullYear();
-            const m = String(today.getMonth() + 1).padStart(2, '0');
-            const d = String(today.getDate()).padStart(2, '0');
+            // [已修正] 確保 .padStart 相容性
+            const m = ('0' + (today.getMonth() + 1)).slice(-2);
+            const d = ('0' + today.getDate()).slice(-2);
             return `${y}-${m}-${d}`;
         }
 
@@ -116,7 +117,7 @@
             statusDiv.textContent = `成功載入 ${tenders.length} 筆今日招標資訊。`;
 
             // 遍歷資料陣列 [4, 5]
-            tenders.forEach(tender => {
+            tenders.forEach(function(tender) { // [已修正] 改用 function 關鍵字，避免箭頭函數的相容性問題
                 // 插入一個新的表格列 [4, 6]
                 const row = tableBody.insertRow();
 
@@ -125,20 +126,31 @@
                 // 1. 標案名稱 (建立連結)
                 const titleCell = row.insertCell();
                 const link = document.createElement('a');
-                // [已修正] 移除 ?. 語法，改用傳統 && 檢查，提高相容性
-                link.textContent = (tender.brief && tender.brief.title) || '（標題未知）';
+
+                // [已修正] 改用傳統 if 檢查，完全移除 ?. 和 || 語法，確保最大相容性
+                let title = '（標題未知）';
+                if (tender.brief && tender.brief.title) {
+                    title = tender.brief.title;
+                }
+                link.textContent = title;
+                
                 link.href = tender.url || '#';
                 link.target = '_blank'; // 在新分頁開啟
                 titleCell.appendChild(link);
 
                 // 2. 機關名稱
                 const unitCell = row.insertCell();
-                // [已修正] 使用 || (邏輯 OR) 運算符提供預設值
                 unitCell.textContent = tender.unit_name || '（機關未知）';
 
                 // 3. 截止日期
                 const dateCell = row.insertCell();
-                dateCell.textContent = tender.end_date? new Date(tender.end_date).toLocaleDateString() : '（日期未知）';
+                
+                // [已修正] 同樣將三元運算符 ? : 改為 if/else，提高相容性
+                let endDate = '（日期未知）';
+                if (tender.end_date) {
+                    endDate = new Date(tender.end_date).toLocaleDateString();
+                }
+                dateCell.textContent = endDate;
             });
         }
 
@@ -146,43 +158,43 @@
         
         /**
          * 異步獲取並顯示招標資訊
+         * [已修正] 移除 async/await，改用 .then()，以支援更舊的瀏覽器
          */
-        async function loadTenders() {
-            try {
-                const todayString = getTodayString();
+        function loadTenders() {
+            const todayString = getTodayString();
                 
-                // 根據第一部分的分析 [7]，構建 API URL
-                const API_URL = `${API_BASE_URL}/api/tenders?sdate=${todayString}&edate=${todayString}`;
+            // 根據第一部分的分析 [7]，構建 API URL
+            const API_URL = `${API_BASE_URL}/api/tenders?sdate=${todayString}&edate=${todayString}`;
                 
-                statusDiv.textContent = `正在從 ${API_URL} 載入資料...`;
-                
-                // 執行 Fetch 請求 [8, 5]
-                const response = await fetch(API_URL);
-                
-                // 必須手動檢查回應狀態 [8]
-                if (!response.ok) {
-                    throw new Error(`API 回應錯誤: ${response.status} ${response.statusText}`);
-                }
-                
-                const data = await response.json();
+            statusDiv.textContent = `正在從 ${API_URL} 載入資料...`;
 
-                // 假設 API 回傳的資料結構
-                if (data && data.records && Array.isArray(data.records)) {
-                    displayTenders(data.records);
-                } else {
-                    // API 回傳了非預期的資料結構
-                    throw new Error('API 回傳的資料格式不正確 (未找到 'records' 陣列)。');
-                }
-
-            } catch (error) {
-                // 統一處理所有錯誤
-                console.error('資料獲取失敗:', error);
-                statusDiv.innerHTML = `資料載入失敗：<br>${error.message}<br>
-                                    <br><b>請注意：</b> g0v API 端點可能已變更。
-                                    請檢查瀏覽器主控台 (console) 的 CORS 錯誤，
-                                    並依程式碼註解更新 API_BASE_URL。`;
-                tableBody.innerHTML = '';
-            }
+            // [已修正] 改用 .then() 處理 Fetch
+            fetch(API_URL)
+                .then(function(response) {
+                    // 必須手動檢查回應狀態 [8]
+                    if (!response.ok) {
+                        throw new Error(`API 回應錯誤: ${response.status} ${response.statusText}`);
+                    }
+                    return response.json();
+                })
+                .then(function(data) {
+                    // 假設 API 回傳的資料結構
+                    if (data && data.records && Array.isArray(data.records)) {
+                        displayTenders(data.records);
+                    } else {
+                        // API 回傳了非預期的資料結構
+                        throw new Error('API 回傳的資料格式不正確 (未找到 'records' 陣列)。');
+                    }
+                })
+                .catch(function(error) {
+                    // 統一處理所有錯誤
+                    console.error('資料獲取失敗:', error);
+                    statusDiv.innerHTML = `資料載入失敗：<br>${error.message}<br>
+                                        <br><b>請注意：</b> g0v API 端點可能已變更。
+                                        請檢查瀏覽器主控台 (console) 的 CORS 錯誤，
+                                        並依程式碼註解更新 API_BASE_URL。`;
+                    tableBody.innerHTML = '';
+                });
         }
 
         // --- 6. 啟動程式 ---
