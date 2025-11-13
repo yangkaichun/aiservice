@@ -1,0 +1,666 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI智能服務管理平台 - 亞東醫院</title>
+    <link rel="icon" href="image/feticon.ico" type="image/x-icon">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    
+    <style>
+        /* CSS 樣式 - 專業後台管理介面 */
+        :root {
+            --primary-color: #0056b3; /* 亞東/遠傳 藍色系 */
+            --secondary-color: #007bff;
+            --bg-color: #f4f7f6;
+            --sidebar-bg: #2c3e50;
+            --sidebar-text: #ecf0f1;
+            --sidebar-active: #3498db;
+            --card-bg: #ffffff;
+            --text-color: #333;
+            --border-color: #e0e0e0;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, "Noto Sans", sans-serif;
+            margin: 0;
+            padding: 0;
+            display: flex;
+            height: 100vh;
+            background-color: var(--bg-color);
+            overflow: hidden; /* 防止滾動 */
+        }
+
+        /* --- 側邊欄 Sidebar --- */
+        .sidebar {
+            width: 260px;
+            background-color: var(--sidebar-bg);
+            color: var(--sidebar-text);
+            display: flex;
+            flex-direction: column;
+            flex-shrink: 0;
+        }
+
+        .sidebar-header {
+            padding: 20px;
+            text-align: center;
+            border-bottom: 1px solid #4a627c;
+        }
+
+        .sidebar-header img {
+            max-width: 150px;
+        }
+
+        .sidebar-menu {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+            flex-grow: 1;
+        }
+
+        .sidebar-menu li {
+            padding: 18px 25px;
+            cursor: pointer;
+            transition: background-color 0.2s;
+            border-left: 4px solid transparent;
+            font-size: 1rem;
+        }
+
+        .sidebar-menu li:hover {
+            background-color: #34495e;
+        }
+
+        .sidebar-menu li.active {
+            background-color: var(--sidebar-active);
+            border-left-color: #ffffff;
+            font-weight: 600;
+        }
+
+        .sidebar-menu li.menu-title {
+            padding: 15px 25px 5px;
+            font-size: 0.8rem;
+            text-transform: uppercase;
+            color: #95a5a6;
+            cursor: default;
+        }
+        .sidebar-menu li.menu-title:hover {
+            background-color: transparent;
+        }
+
+
+        /* --- 主內容區 Main Content --- */
+        .main-wrapper {
+            flex-grow: 1;
+            display: flex;
+            flex-direction: column;
+            height: 100vh;
+            overflow: hidden;
+        }
+
+        .header {
+            height: 60px;
+            background-color: var(--card-bg);
+            border-bottom: 1px solid var(--border-color);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0 24px;
+            flex-shrink: 0;
+        }
+
+        .header-title {
+            font-size: 1.5rem;
+            font-weight: 600;
+            color: var(--text-color);
+        }
+
+        .header-user {
+            font-size: 0.9rem;
+            color: #555;
+        }
+
+        .content {
+            flex-grow: 1;
+            padding: 24px;
+            overflow-y: auto;
+        }
+
+        /* 內容區塊 (預設隱藏) */
+        .content-section {
+            display: none;
+        }
+        /* 預設顯示第一個區塊 */
+        .content-section.active {
+            display: block;
+        }
+        
+        /* --- 卡片與通用元件 --- */
+        .card {
+            background-color: var(--card-bg);
+            border-radius: 8px;
+            border: 1px solid var(--border-color);
+            padding: 24px;
+            margin-bottom: 24px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+        }
+        
+        .card-header {
+            font-size: 1.2rem;
+            font-weight: 600;
+            margin-bottom: 20px;
+        }
+        
+        .grid-container {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 20px;
+        }
+
+        /* --- 表格樣式 --- */
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+        }
+        th, td {
+            padding: 12px 15px;
+            border: 1px solid var(--border-color);
+            text-align: left;
+            font-size: 0.9rem;
+        }
+        th {
+            background-color: #f9f9f9;
+            font-weight: 600;
+        }
+        tbody tr:nth-child(even) {
+            background-color: #fcfcfc;
+        }
+
+        /* --- 表單樣式 --- */
+        .form-group {
+            margin-bottom: 20px;
+        }
+        .form-group label {
+            display: block;
+            font-weight: 600;
+            margin-bottom: 8px;
+        }
+        .form-group input, .form-group select {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            box-sizing: border-box; /* 確保 padding 不會影響寬度 */
+        }
+        
+        /* --- 按鈕 --- */
+        .btn {
+            padding: 10px 18px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 0.9rem;
+            font-weight: 500;
+            transition: background-color 0.2s;
+        }
+        .btn-primary {
+            background-color: var(--primary-color);
+            color: white;
+        }
+        .btn-primary:hover {
+            background-color: #0045a0;
+        }
+        .btn-success {
+            background-color: #28a745;
+            color: white;
+        }
+        .btn-warning {
+            background-color: #ffc107;
+            color: #333;
+        }
+        .btn-danger {
+            background-color: #dc3545;
+            color: white;
+        }
+        
+        /* --- 狀態標籤 --- */
+        .status-badge {
+            padding: 4px 8px;
+            border-radius: 12px;
+            font-size: 0.8rem;
+            font-weight: 600;
+        }
+        .status-active {
+            background-color: #e4f8e9;
+            color: #28a745;
+        }
+        .status-inactive {
+            background-color: #fbebeb;
+            color: #dc3545;
+        }
+
+    </style>
+</head>
+<body>
+    
+    <div class="sidebar">
+        <div class="sidebar-header">
+            <img src="image/fetlogo.png" alt="FET Logo">
+        </div>
+        <ul class="sidebar-menu" id="sidebar-menu">
+            <li class="active" data-target="dashboard">總覽 (Dashboard)</li>
+            <li data-target="chronic-risk">慢性病風險警示</li>
+            
+            <li class="menu-title">AI Agent 管理</li>
+            <li data-target="agent-tuning">AI Agent 調適後台</li>
+            <li data-target="agent-analytics">AI Agent 用量分析</li>
+            
+            <li class="menu-title">服務與介接</li>
+            <li data-target="reg-manage">智慧掛號管理</li>
+            <li data-target="api-manage">API 介接管理</li>
+            <li data-target="voice-manage">語音/總機介接管理</li>
+        </ul>
+    </div>
+
+    <div class="main-wrapper">
+        
+        <div class="header">
+            <h1 class="header-title" id="main-title">總覽 (Dashboard)</h1>
+            <div class="header-user">
+                使用者：admin (亞東醫院)
+            </div>
+        </div>
+
+        <div class="content">
+
+            <section id="dashboard" class="content-section active">
+                <div class="card">
+                    <div class="card-header">歡迎使用 AI 智能服務管理平台</div>
+                    <p>請從左側選單選擇您要管理的項目。</p>
+                    <p>此平台為亞東醫院「健康深耕計畫」的核心後台，您可以在此管理所有 AI 智能助理的相關設定、監控服務狀態，並查看數據分析報告。</p>
+                </div>
+            </section>
+
+            <section id="chronic-risk" class="content-section">
+                <div class="grid-container">
+                    <div class="card">
+                        <div class="card-header">風險等級分佈</div>
+                        <canvas id="riskChart" height="250"></canvas>
+                    </div>
+                    <div class="card">
+                        <div class="card-header">警示觸發統計</div>
+                        <p>今日觸發：<strong>82</strong> 次</p>
+                        <p>本週觸發：<strong>412</strong> 次</p>
+                        <p>主要風險：<strong>糖尿病 (45%)</strong></p>
+                    </div>
+                </div>
+                
+                <div class="card">
+                    <div class="card-header">高風險個案警示清單 (即時)</div>
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>病歷號</th>
+                                <th>姓名</th>
+                                <th>風險類型</th>
+                                <th>風險分數</th>
+                                <th>上次就診</th>
+                                <th>操作</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td>102****</td>
+                                <td>陳*文</td>
+                                <td>心血管疾病</td>
+                                <td>92 (高)</td>
+                                <td>2025-10-15</td>
+                                <td><button class="btn btn-warning btn-sm">發送關懷通知</button></td>
+                            </tr>
+                            <tr>
+                                <td>215****</td>
+                                <td>林*美</td>
+                                <td>糖尿病</td>
+                                <td>88 (高)</td>
+                                <td>2025-09-02</td>
+                                <td><button class="btn btn-warning btn-sm">發送關懷通知</button></td>
+                            </tr>
+                            <tr>
+                                <td>338****</td>
+                                <td>張*雄</td>
+                                <td>衰弱症</td>
+                                <td>81 (中)</td>
+                                <td>2025-11-01</td>
+                                <td><button class="btn btn-warning btn-sm">發送關懷通知</button></td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </section>
+
+            <section id="agent-tuning" class="content-section">
+                <div class="card">
+                    <div class="card-header">AI Agent 列表</div>
+                    <p>此處管理 AI 助理的各項子功能（Agents）。您可以針對不同 Agent 進行調適、訓練與開關。</p>
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Agent 名稱</th>
+                                <th>功能描述</th>
+                                <th>狀態</th>
+                                <th>上次訓練</th>
+                                <th>操作</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td><strong>[掛號] 智能掛號 Agent</strong></td>
+                                <td>處理自然語言掛號、科別推薦</td>
+                                <td><span class="status-badge status-active">啟用中</span></td>
+                                <td>2025-11-10</td>
+                                <td><button class="btn btn-primary btn-sm">調適 / 訓練</button></td>
+                            </tr>
+                            <tr>
+                                <td><strong>[衛教] 個人化衛教 Agent</strong></td>
+                                <td>推送個人化衛教資訊</td>
+                                <td><span class="status-badge status-active">啟用中</span></td>
+                                <td>2025-11-05</td>
+                                <td><button class="btn btn-primary btn-sm">調適 / 訓練</button></td>
+                            </tr>
+                            <tr>
+                                <td><strong>[查詢] 報告查詢 Agent</strong></td>
+                                <td>處理檢驗報告、約診查詢</td>
+                                <td><span class="status-badge status-active">啟用中</span></td>
+                                <td>2025-11-01</td>
+                                <td><button class="btn btn-primary btn-sm">調適 / 訓練</button></td>
+                            </tr>
+                            <tr>
+                                <td><strong>[運動] 運動處方 Agent</strong></td>
+                                <td>提供個人化運動建議 (117年上線)</td>
+                                <td><span class="status-badge status-inactive">開發中</span></td>
+                                <td>N/A</td>
+                                <td><button class="btn btn-primary btn-sm" disabled>調適 / 訓練</button></td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </section>
+
+            <section id="agent-analytics" class="content-section">
+                <div class="card">
+                    <div class="card-header">AI Agent 每日使用量趨勢 (近30天)</div>
+                    <canvas id="usageChart" height="120"></canvas>
+                </div>
+                <div class="card">
+                    <div class="card-header">意圖 (Intent) 辨識熱門排行</div>
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>排名</th>
+                                <th>意圖名稱</th>
+                                <th>今日呼叫次數</th>
+                                <th>辨識成功率</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr><td>1</td><td>掛號 (Registration)</td><td>1,280</td><td>98.5%</td></tr>
+                            <tr><td>2</td><td>查詢約診 (QueryAppointment)</td><td>950</td><td>99.1%</td></tr>
+                            <tr><td>3</td><td>常見問題 (FAQ_Location)</td><td>720</td><td>96.0%</td></tr>
+                            <tr><td>4...</td><td>...</td><td>...</td><td>...</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </section>
+            
+            <section id="reg-manage" class="content-section">
+                <div class="card">
+                    <div class="card-header">智慧掛號後台管理</div>
+                    <div class="form-group">
+                        <label for="reg-days">可預約天數</label>
+                        <input type="number" id="reg-days" value="28">
+                    </div>
+                    <div class="form-group">
+                        <label for="reg-cutoff">當日掛號截止時間</label>
+                        <select id="reg-cutoff">
+                            <option value="12:00">中午 12:00</option>
+                            <option value="16:00" selected>下午 16:00</option>
+                            <option value="20:00">晚上 20:00</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="reg-symptom">症狀關鍵字對應科別 (範例)</label>
+                        <textarea id="reg-symptom" rows="5" style="width: 100%; font-family: monospace;">
+"胃痛", "肚子痛" -> "肝膽腸胃科"
+"胸悶", "心悸" -> "心臟血管內科"
+"感冒", "發燒" -> "家庭醫學科"
+...
+                        </textarea>
+                    </div>
+                    <button class="btn btn-success">儲存設定</button>
+                </div>
+            </section>
+
+            <section id="api-manage" class="content-section">
+                <div class="card">
+                    <div class="card-header">API 介接狀態總覽</div>
+                    <p>管理 AI 平台與醫院後台系統（HIS、EHR、大數據中台）的 API 介接點。</p>
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>API 端點</th>
+                                <th>對應系統</th>
+                                <th>狀態</th>
+                                <th>延遲 (ms)</th>
+                                <th>今日請求數</th>
+                                <th>操作</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td>/api/his/getSchedule</td>
+                                <td>醫院資訊系統 (HIS)</td>
+                                <td><span class="status-badge status-active">Active</span></td>
+                                <td>85ms</td>
+                                <td>15,204</td>
+                                <td><button class="btn btn-primary btn-sm">查看 Log</button></td>
+                            </tr>
+                            <tr>
+                                <td>/api/his/makeAppointment</td>
+                                <td>醫院資訊系統 (HIS)</td>
+                                <td><span class="status-badge status-active">Active</span></td>
+                                <td>120ms</td>
+                                <td>1,280</td>
+                                <td><button class="btn btn-primary btn-sm">查看 Log</button></td>
+                            </tr>
+                            <tr>
+                                <td>/api/ehr/getReport</td>
+                                <td>電子病歷 (EHR)</td>
+                                <td><span class="status-badge status-active">Active</span></td>
+                                <td>210ms</td>
+                                <td>980</td>
+                                <td><button class="btn btn-primary btn-sm">查看 Log</button></td>
+                            </tr>
+                            <tr>
+                                <td>/api/bigdata/getRisk</td>
+                                <td>大數據中台 (叡揚)</td>
+                                <td><span class="status-badge status-active">Active</span></td>
+                                <td>450ms</td>
+                                <td>412</td>
+                                <td><button class="btn btn-primary btn-sm">查看 Log</button></td>
+                            </tr>
+                            <tr>
+                                <td>/api/fet/sendSMS</td>
+                                <td>遠傳簡訊平台</td>
+                                <td><span class="status-badge status-inactive">Inactive</span></td>
+                                <td>-</td>
+                                <td>0</td>
+                                <td><button class="btn btn-danger btn-sm">檢查設定</button></td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </section>
+            
+            <section id="voice-manage" class="content-section">
+                <div class="grid-container">
+                    <div class="card">
+                        <div class="card-header">總機 (PBX) 系統介接</div>
+                        <div class="form-group">
+                            <label>介接狀態</label>
+                            <input type="text" value="已連線 (Active)" disabled style="background:#e4f8e9; color: #28a745;">
+                        </div>
+                        <div class="form-group">
+                            <label for="pbx-ip">總機系統 IP</label>
+                            <input type="text" id="pbx-ip" value="192.168.1.100">
+                        </div>
+                        <div class="form-group">
+                            <label for="pbx-port">SIP Port</label>
+                            <input type="text" id="pbx-port" value="5060">
+                        </div>
+                        <button class="btn btn-success">儲存並重啟介接</button>
+                    </div>
+
+                    <div class="card">
+                        <div class="card-header">語音辨識 (ASR) / 合成 (TTS) 管理</div>
+                        <div class="form-group">
+                            <label for="asr-provider">ASR 引擎供應商</label>
+                            <select id="asr-provider">
+                                <option value="fet" selected>遠傳 (FET ASR)</option>
+                                <option value="google">Google Speech-to-Text</option>
+                                <option value="ms">Microsoft Azure</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label for="asr-lang">主要辨識語言 (含台語)</label>
+                            <select id="asr-lang">
+                                <option value="zh-TW" selected>中文 (台灣) - 含台語模型</option>
+                                <option value="en-US">英文 (美國)</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label for="tts-voice">TTS 語音合成 (發音人)</label>
+                            <select id="tts-voice">
+                                <option value="female1" selected>女聲 (親切)</option>
+                                <option value="male1">男聲 (沉穩)</option>
+                            </select>
+                        </div>
+                        <button class="btn btn-success">儲存設定</button>
+                    </div>
+                </div>
+            </section>
+
+        </div> </div> <script>
+        // --- JavaScript - 模擬單頁應用 (SPA) 導航 ---
+
+        const menuItems = document.querySelectorAll('#sidebar-menu li[data-target]');
+        const contentSections = document.querySelectorAll('.content-section');
+        const mainTitle = document.getElementById('main-title');
+
+        // 導航點擊事件
+        menuItems.forEach(item => {
+            item.addEventListener('click', () => {
+                const targetId = item.getAttribute('data-target');
+                
+                // 處理選單的 active 狀態
+                menuItems.forEach(i => i.classList.remove('active'));
+                item.classList.add('active');
+                
+                // 處理內容區塊的顯示
+                contentSections.forEach(section => {
+                    if (section.id === targetId) {
+                        section.classList.add('active');
+                    } else {
+                        section.classList.remove('active');
+                    }
+                });
+                
+                // 更新頂部標題
+                mainTitle.textContent = item.textContent;
+
+                // 特殊處理: 如果切換到圖表頁面，才繪製圖表
+                if (targetId === 'agent-analytics') {
+                    renderUsageChart();
+                }
+                if (targetId === 'chronic-risk') {
+                    renderRiskChart();
+                }
+            });
+        });
+
+        // --- Chart.js 繪圖函數 ---
+
+        let usageChartInstance;
+        let riskChartInstance;
+
+        /** 繪製 AI Agent 用量趨勢圖 (折線圖) */
+        function renderUsageChart() {
+            if (usageChartInstance) {
+                usageChartInstance.destroy(); // 避免重複繪製
+            }
+            const ctx = document.getElementById('usageChart').getContext('2d');
+            const labels = Array.from({length: 30}, (_, i) => `10/${i + 1}`); // 模擬日期
+            usageChartInstance = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: labels,
+                    datasets: [
+                        {
+                            label: '智能掛號 Agent',
+                            data: Array.from({length: 30}, () => Math.floor(Math.random() * 500 + 800)),
+                            borderColor: 'rgba(0, 86, 179, 1)',
+                            backgroundColor: 'rgba(0, 86, 179, 0.1)',
+                            fill: true,
+                            tension: 0.3
+                        },
+                        {
+                            label: '個人化衛教 Agent',
+                            data: Array.from({length: 30}, () => Math.floor(Math.random() * 300 + 200)),
+                            borderColor: 'rgba(40, 167, 69, 1)',
+                            backgroundColor: 'rgba(40, 167, 69, 0.1)',
+                            fill: true,
+                            tension: 0.3
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    plugins: { legend: { position: 'top' } }
+                }
+            });
+        }
+
+        /** 繪製慢性病風險分佈圖 (甜甜圈圖) */
+        function renderRiskChart() {
+            if (riskChartInstance) {
+                riskChartInstance.destroy();
+            }
+            const ctx = document.getElementById('riskChart').getContext('2d');
+            riskChartInstance = new Chart(ctx, {
+                type: 'doughnut',
+                data: {
+                    labels: ['高風險', '中風險', '低風險'],
+                    datasets: [{
+                        label: '風險分佈',
+                        data: [120, 350, 2400], // 模擬數據
+                        backgroundColor: [
+                            'rgba(220, 53, 69, 0.8)', // 紅
+                            'rgba(255, 193, 7, 0.8)',  // 黃
+                            'rgba(40, 167, 69, 0.8)'   // 綠
+                        ],
+                        borderColor: '#fff',
+                        borderWidth: 2
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    plugins: { legend: { position: 'bottom' } }
+                }
+            });
+        }
+
+        // 預設載入第一個圖表 (總覽頁面沒有圖表，所以改為點擊時才載入)
+        // (如果預設頁面是儀表板，可以在這裡呼叫 render)
+        
+    </script>
+</body>
+</html>
