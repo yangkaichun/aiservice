@@ -5,13 +5,22 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>行動護理機 Demo</title>
     <style>
+        :root {
+            --primary-color: #007aff;
+            --active-color: #f09a36; /* 來自 的橘色 */
+            --bg-color: #ffffff;
+            --widget-bg: #f8f8f8;
+            --text-color: #333333;
+            --border-color: #e0e0e0;
+            --header-bg: #fefefe;
+        }
         body {
             background-color: #d0d0d0;
             display: flex;
             justify-content: center;
             align-items: center;
             height: 100vh;
-            font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
+            font-family: 'PingFang TC', 'Microsoft JhengHei', sans-serif;
             margin: 0;
         }
 
@@ -19,137 +28,200 @@
         .mobile-simulator {
             width: 375px;
             height: 812px;
-            background-color: #1c1c1c;
+            background-color: var(--bg-color);
             border-radius: 44px;
-            border: 10px solid #111;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+            border: 10px solid #f0f0f0;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
             position: relative;
             overflow: hidden;
-        }
-
-        /* 模擬手機瀏海 */
-        .mobile-simulator::before {
-            content: '';
-            width: 180px;
-            height: 30px;
-            background-color: #111;
-            position: absolute;
-            top: 0;
-            left: 50%;
-            transform: translateX(-50%);
-            border-bottom-left-radius: 20px;
-            border-bottom-right-radius: 20px;
-            z-index: 100;
+            display: flex;
+            flex-direction: column;
         }
 
         /* APP 畫面 */
         .app-screen {
             width: 100%;
             height: 100%;
-            background-color: #000000;
+            background-color: var(--bg-color);
             display: flex;
             flex-direction: column;
             overflow: hidden;
         }
 
-        /* 模擬狀態列 */
+        /* 頂部狀態列 */
         .status-bar {
-            color: #fff;
+            color: var(--text-color);
             padding: 15px 20px 10px 20px;
             display: flex;
             justify-content: space-between;
             font-size: 14px;
             z-index: 50;
+            background-color: var(--header-bg);
+            border-bottom: 1px solid var(--border-color);
         }
-        .status-bar .right-icons {
-            display: flex;
-            gap: 8px;
-        }
+        .status-bar .right-icons { display: flex; gap: 8px; }
 
         /* APP 標題和資訊 */
         .app-header {
             padding: 10px 15px;
-            background-color: #111;
-            border-bottom: 1px solid #333;
+            background-color: var(--header-bg);
+            border-bottom: 1px solid var(--border-color);
+            position: relative;
+        }
+        .app-header .logo-placeholder {
+            position: absolute;
+            top: 10px;
+            left: 15px;
+            width: 40px;
+            height: 40px;
+            background: #eee;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 10px;
+            color: #999;
+            overflow: hidden;
+        }
+        .app-header .logo-placeholder img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
         }
         
         .app-title-bar {
             display: flex;
-            justify-content: space-between;
+            justify-content: flex-end;
             align-items: center;
-            color: #fff;
+            color: var(--text-color);
             margin-bottom: 10px;
+            height: 40px;
         }
         .app-title-bar h1 {
             font-size: 18px;
             margin: 0;
+            position: absolute;
+            left: 50%;
+            transform: translateX(-50%);
         }
-        .app-title-bar .more-btn {
-            color: #888;
-            font-size: 14px;
-        }
+        .app-title-bar .more-btn { color: var(--primary-color); font-size: 16px; }
 
         .info-bar {
             display: flex;
             justify-content: space-between;
             align-items: center;
-            color: #ccc;
+            color: #888;
             font-size: 12px;
+            padding-top: 5px;
         }
-        .info-bar .time {
-            color: #f0e68c; /* 模擬 的黃色時間 */
-            font-weight: bold;
-        }
-        .info-bar .user {
-            color: #34c759; /* 模擬 的綠色名字 */
-            font-weight: bold;
+        .info-bar .time { color: #555; font-weight: bold; }
+        .info-bar .user { color: #008000; font-weight: bold; }
+
+        /* 內容區域 */
+        .app-content {
+            flex-grow: 1;
+            overflow-y: auto;
+            background-color: var(--bg-color);
         }
 
-        /* 主選單按鈕 */
-        .main-menu {
-            flex-grow: 1;
+        /* 隱藏所有頁面 */
+        .page {
+            display: none;
             padding: 20px;
+        }
+        /* 顯示當前頁面 */
+        .page.active {
+            display: block;
+        }
+
+        /* 主選單 */
+        .main-menu {
             display: grid;
             grid-template-columns: 1fr;
             gap: 15px;
-            overflow-y: auto;
         }
         .menu-button {
             display: flex;
             align-items: center;
-            background-color: #333;
-            color: #fff;
+            background-color: var(--widget-bg);
+            color: var(--text-color);
             padding: 18px;
             border-radius: 12px;
             font-size: 18px;
             text-align: left;
-            border: 1px solid #444;
+            border: 1px solid var(--border-color);
+            cursor: pointer;
         }
-        .menu-button img {
+        .menu-button:active {
+            background-color: #e0e0e0;
+        }
+        .menu-button .icon {
+            font-size: 20px;
+            margin-right: 15px;
             width: 24px;
-            height: 24px;
-            margin-right: 15px;
-            filter: invert(1);
+            text-align: center;
         }
-        .menu-button .icon-placeholder {
-            width: 30px;
-            height: 30px;
-            margin-right: 15px;
-            background-color: #555;
-            border-radius: 5px;
+
+        /* 子頁面樣式 */
+        .subpage-header {
+            display: flex;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+        .back-button {
+            font-size: 16px;
+            color: var(--primary-color);
+            cursor: pointer;
+            background: none;
+            border: none;
+            padding: 5px;
+        }
+        .subpage-title {
+            font-size: 20px;
+            font-weight: bold;
+            text-align: center;
+            flex-grow: 1;
+        }
+        .list-item {
+            background-color: var(--widget-bg);
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 10px;
+            border: 1px solid var(--border-color);
+        }
+        .camera-placeholder {
+            width: 100%;
+            height: 200px;
+            background: #333;
+            color: white;
             display: flex;
             justify-content: center;
             align-items: center;
-            font-size: 12px;
-            color: #aaa;
+            border-radius: 8px;
         }
+        .bed-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 10px;
+        }
+        .bed-item {
+            padding: 10px;
+            background: #e0f7fa;
+            border: 1px solid #b2ebf2;
+            border-radius: 8px;
+            text-align: center;
+        }
+        .bed-item .bed-number { font-weight: bold; font-size: 16px; }
+        .bed-item .patient-name { font-size: 14px; color: #00796b; }
+        .bed-item.occupied { background: #ffebee; border-color: #ffcdd2; }
+        .bed-item.occupied .patient-name { color: #c62828; }
 
         /* 底部導航列 */
         .footer-nav {
             display: grid;
             grid-template-columns: repeat(4, 1fr);
-            background-color: #2a2a2a;
-            border-top: 1px solid #444;
+            background-color: #fafafa;
+            border-top: 1px solid var(--border-color);
         }
         .nav-item {
             display: flex;
@@ -159,20 +231,11 @@
             padding: 10px 0;
             color: #8e8e93;
             font-size: 10px;
+            cursor: pointer;
         }
-        .nav-item .icon-placeholder {
-            width: 28px;
-            height: 28px;
-            background-color: #444;
-            border-radius: 4px;
-            margin-bottom: 4px;
-        }
+        .nav-item .icon { font-size: 24px; margin-bottom: 4px; }
         .nav-item.active {
-            background-color: #f09a36; /* 模擬 的橘色選中 */
-            color: #000;
-        }
-        .nav-item.active .icon-placeholder {
-            background-color: #fff;
+            color: var(--active-color);
         }
     </style>
 </head>
@@ -182,17 +245,20 @@
         <div class="app-screen">
             
             <div class="status-bar">
-                <span><img src="https://i.imgur.com/gY9N06H.png" alt="signal" style="height: 12px;"> 遠傳電信</span>
+                <span><span class="icon">📶</span> 遠傳電信</span>
                 <div class="right-icons">
-                    <span>Wi-Fi</span>
-                    <span>98%</span>
-                    <span>🔋</span>
+                    <span><span class="icon">📡</span> Wi-Fi</span>
+                    <span>98% <span class="icon">🔋</span></span>
                 </div>
             </div>
 
             <div class="app-header">
+                <div class="logo-placeholder">
+                    <img src="YOUR_LOGO_PATH.png" alt="Logo" style="display:none;">
+                    Logo
+                </div>
                 <div class="app-title-bar">
-                    <h1>e電員行動護理機 2 </h1>
+                    <h1 id="page-title">e電員行動護理機</h1>
                     <span class="more-btn">更多</span>
                 </div>
                 <div class="info-bar">
@@ -202,54 +268,200 @@
                 </div>
             </div>
 
-            <div class="main-menu">
-                <button class="menu-button">
-                    <span class="icon-placeholder">清單</span>
-                    通話紀錄 
-                </button>
-                <button class="menu-button">
-                    <span class="icon-placeholder">巡房</span>
-                    巡房紀錄 
-                </button>
-                <button class="menu-button">
-                    <span class="icon-placeholder">影像</span>
-                    走道影像 
-                </button>
-                <button class="menu-button">
-                    <span class="icon-placeholder">班表</span>
-                    護理值班表 
-                </button>
-                <button class="menu-button">
-                    <span class="icon-placeholder">護2</span>
-                    第二主護 
-                </button>
-                <button class="menu-button">
-                    <span class="icon-placeholder">護3</span>
-                    第三主護 
-                </button>
+            <div class="app-content">
+
+                <div class="page active" id="page-main">
+                    <div class="main-menu">
+                        <button class="menu-button" onclick="showPage('page-call-log')">
+                            <span class="icon">📞</span> 通話紀錄
+                        </button>
+                        <button class="menu-button" onclick="showPage('page-rounding')">
+                            <span class="icon">📝</span> 巡房紀錄
+                        </button>
+                        <button class="menu-button" onclick="showPage('page-camera')">
+                            <span class="icon">📹</span> 走道影像
+                        </button>
+                        <button class="menu-button" onclick="showPage('page-schedule')">
+                            <span class="icon">🗓️</span> 護理值班表
+                        </button>
+                        <button class="menu-button" onclick="showPage('page-nurse-2')">
+                            <span class="icon">👩‍⚕️</span> 第二主護
+                        </button>
+                        <button class="menu-button" onclick="showPage('page-nurse-3')">
+                            <span class="icon">👩‍⚕️</span> 第三主護
+                        </button>
+                    </div>
+                </div>
+
+                <div class="page" id="page-call-log">
+                    <div class="subpage-header">
+                        <button class="back-button" onclick="showPage('page-main')">❮ 返回</button>
+                        <h2 class="subpage-title">通話紀錄</h2>
+                    </div>
+                    <div class="list-item">📞 病床 101 (林OO) - 15:30 (已接聽)</div>
+                    <div class="list-item">📞 病床 205 (陳OO) - 15:28 (未接)</div>
+                    <div class="list-item">📞 浴廁 1 (緊急) - 15:27 (已處理)</div>
+                </div>
+
+                <div class="page" id="page-rounding">
+                    <div class="subpage-header">
+                        <button class="back-button" onclick="showPage('page-main')">❮ 返回</button>
+                        <h2 class="subpage-title">巡房紀錄</h2>
+                    </div>
+                    <div class="list-item">✅ 病床 101 - 15:00 (已巡)</div>
+                    <div class="list-item">⬜️ 病床 102 - (待巡)</div>
+                    <div class="list-item">✅ 病床 103 - 14:30 (已巡)</div>
+                </div>
+
+                <div class="page" id="page-camera">
+                    <div class="subpage-header">
+                        <button class="back-button" onclick="showPage('page-main')">❮ 返回</button>
+                        <h2 class="subpage-title">走道影像</h2>
+                    </div>
+                    <div class="camera-placeholder">
+                        📹 即時影像載入中...
+                    </div>
+                </div>
+
+                <div class="page" id="page-schedule">
+                    <div class="subpage-header">
+                        <button class="back-button" onclick="showPage('page-main')">❮ 返回</button>
+                        <h2 class="subpage-title">護理值班表</h2>
+                    </div>
+                    <div class="list-item">
+                        <strong>大夜 (00-08):</strong> 王護理師, 李護理師
+                    </div>
+                    <div class="list-item">
+                        <strong>白班 (08-16):</strong> 陳護理長, *林孟祥*
+                    </div>
+                    <div class="list-item">
+                        <strong>小夜 (16-00):</strong> 吳護理師, 趙護理師
+                    </div>
+                </div>
+
+                <div class="page" id="page-nurse-2">
+                    <div class="subpage-header">
+                        <button class="back-button" onclick="showPage('page-main')">❮ 返回</button>
+                        <h2 class="subpage-title">第二主護</h2>
+                    </div>
+                    <div class="list-item">
+                        <p>👩‍⚕️ <strong>姓名:</strong> 陳護理長</p>
+                        <p>📞 <strong>分機:</strong> #8001</p>
+                    </div>
+                </div>
+
+                <div class="page" id="page-nurse-3">
+                    <div class="subpage-header">
+                        <button class="back-button" onclick="showPage('page-main')">❮ 返回</button>
+                        <h2 class="subpage-title">第三主護</h2>
+                    </div>
+                    <div class="list-item">
+                        <p>👩‍⚕️ <strong>姓名:</strong> 吳護理師</p>
+                        <p>📞 <strong>分機:</strong> #8003</p>
+                    </div>
+                </div>
+
+                <div class="page" id="page-location">
+                    <div class="subpage-header">
+                        <button class="back-button" onclick="showPage('page-main')">❮ 返回</button>
+                        <h2 class="subpage-title">人員定位</h2>
+                    </div>
+                    <div class="list-item">📍 *林孟祥* (您) - 1F 護理站</div>
+                    <div class="list-item">📍 吳護理師 - 2F 走道</div>
+                    <div class="list-item">📍 陳護理長 - 5F 會議室</div>
+                </div>
+
+                <div class="page" id="page-bed-info">
+                    <div class="subpage-header">
+                        <button class="back-button" onclick="showPage('page-main')">❮ 返回</button>
+                        <h2 class="subpage-title">住床資料</h2>
+                    </div>
+                    <div class="bed-grid">
+                        <div class="bed-item occupied">
+                            <div class="bed-number">1 (1-5)</div>
+                            <div class="patient-name">杜O (男) 082</div>
+                        </div>
+                        <div class="bed-item occupied">
+                            <div class="bed-number">2 (1-5)</div>
+                            <div class="patient-name">鐘O (男) 049</div>
+                        </div>
+                        <div class="bed-item">
+                            <div class="bed-number">3 (1-5)</div>
+                            <div class="patient-name">--</div>
+                        </div>
+                        <div class="bed-item">
+                            <div class="bed-number">5 (1-5)</div>
+                            <div class="patient-name">--</div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="page" id="page-asset">
+                    <div class="subpage-header">
+                        <button class="back-button" onclick="showPage('page-main')">❮ 返回</button>
+                        <h2 class="subpage-title">資產定位</h2>
+                    </div>
+                    <input type="text" placeholder="🔍 搜尋資產 (如: 輪椅)" style="width: 90%; padding: 10px; margin-bottom: 15px; border: 1px solid var(--border-color); border-radius: 8px;">
+                    <div class="list-item">휠 輪椅 #10 - 1F 大廳</div>
+                    <div class="list-item">💉 IV 幫浦 #5 - 2F 護理站</div>
+                </div>
+
             </div>
 
             <div class="footer-nav">
-                <div class="nav-item">
-                    <div class="icon-placeholder"></div>
-                    人員定位 
+                <div class="nav-item" id="nav-location" onclick="showPage('page-location')">
+                    <span class="icon">📍</span>
+                    人員定位
                 </div>
-                <div class="nav-item">
-                    <div class="icon-placeholder"></div>
-                    住床資料 
+                <div class="nav-item" id="nav-bed-info" onclick="showPage('page-bed-info')">
+                    <span class="icon">🛏️</span>
+                    住床資料
                 </div>
-                <div class="nav-item">
-                    <div class="icon-placeholder"></div>
-                    資產定位 
+                <div class="nav-item" id="nav-asset" onclick="showPage('page-asset')">
+                    <span class="icon">📦</span>
+                    資產定位
                 </div>
-                <div class="nav-item active">
-                    <div class="icon-placeholder"></div>
-                    程式集 
+                <div class="nav-item active" id="nav-main" onclick="showPage('page-main')">
+                    <span class="icon">📱</span>
+                    程式集
                 </div>
             </div>
             
         </div>
     </div>
+
+    <script>
+        let currentPage = 'page-main';
+        let currentNav = 'nav-main';
+
+        function showPage(pageId) {
+            // 隱藏目前頁面
+            document.getElementById(currentPage).classList.remove('active');
+            
+            // 顯示新頁面
+            document.getElementById(pageId).classList.add('active');
+            currentPage = pageId;
+
+            // 更新底部導航列的 active 狀態
+            document.getElementById(currentNav).classList.remove('active');
+
+            if (pageId.startsWith('page-location')) {
+                currentNav = 'nav-location';
+            } else if (pageId.startsWith('page-bed-info')) {
+                currentNav = 'nav-bed-info';
+            } else if (pageId.startsWith('page-asset')) {
+                currentNav = 'nav-asset';
+            } else {
+                // 預設回到程式集 (主選單)
+                currentNav = 'nav-main';
+            }
+            document.getElementById(currentNav).classList.add('active');
+
+            // 更新標題 (可選)
+            // const newTitle = document.querySelector(`[onclick="showPage('${pageId}')"]`)?.innerText;
+            // document.getElementById('page-title').innerText = newTitle || 'e電員行動護理機';
+        }
+    </script>
 
 </body>
 </html>
