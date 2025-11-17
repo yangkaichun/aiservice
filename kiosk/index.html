@@ -1,0 +1,184 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Kiosk Avatar 介面</title>
+    <style>
+        /* 1. 基本重設與全螢幕設定 */
+        html, body {
+            margin: 0;
+            padding: 0;
+            height: 100%;
+            width: 100%;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, "Noto Sans", sans-serif;
+            background-color: #f0f2f5; /* Kiosk 背景色 */
+            overflow: hidden; /* 隱藏捲軸 */
+        }
+
+        /* 2. Kiosk 主要容器 (使用 Flexbox 垂直排列) */
+        .kiosk-container {
+            display: flex;
+            flex-direction: column; /* 垂直排列 */
+            height: 100vh; /* 佔滿整個視窗高度 */
+            width: 100vw;  /* 佔滿整個視窗寬度 */
+        }
+
+        /* 3. 對話文字區域 */
+        .dialogue-area {
+            padding: 24px;
+            text-align: center;
+            background-color: #ffffff;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+            z-index: 10; /* 確保在最上層 */
+            flex-shrink: 0; /* 防止此區域被壓縮 */
+        }
+
+        #dialogue-text {
+            font-size: 1.5rem;
+            font-weight: 500;
+            color: #333;
+            margin: 0;
+        }
+
+        /* 4. Avatar 影片區域 (佔滿剩餘空間) */
+        .avatar-area {
+            flex-grow: 1; /* 佔滿所有可用的垂直空間 */
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+            box-sizing: border-box; /* 讓 padding 不會撐開寬度 */
+            overflow: hidden; /* 確保影片不會超出範圍 */
+        }
+
+        .avatar-area video {
+            width: 100%;
+            height: 100%;
+            object-fit: cover; /* 裁剪並填滿, 保持比例 */
+            border-radius: 20px; /* 圓角 */
+        }
+
+        /* 5. 控制項區域 (底部麥克風) */
+        .controls-area {
+            padding: 20px;
+            background-color: #ffffff;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            box-shadow: 0 -2px 8px rgba(0, 0, 0, 0.1);
+            flex-shrink: 0; /* 防止此區域被壓縮 */
+        }
+
+        #mic-button {
+            width: 80px;
+            height: 80px;
+            border-radius: 50%; /* 圓形 */
+            border: none;
+            background-color: #007bff; /* 預設藍色 */
+            color: white;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            cursor: pointer;
+            transition: background-color 0.3s, transform 0.2s;
+            box-shadow: 0 4px 12px rgba(0, 123, 255, 0.4);
+        }
+
+        #mic-button:hover {
+            background-color: #0056b3;
+        }
+
+        #mic-button:active {
+            transform: scale(0.95);
+        }
+
+        /* 麥克風 SVG 圖示 */
+        #mic-button svg {
+            width: 40px;
+            height: 40px;
+        }
+
+        /* 6. "聆聽中" 的特殊狀態 */
+        #mic-button.is-listening {
+            background-color: #dc3545; /* 變成紅色 */
+            box-shadow: 0 4px 12px rgba(220, 53, 69, 0.5);
+            animation: pulse 1.5s infinite; /* 脈動動畫 */
+        }
+
+        /* 脈動動畫定義 */
+        @keyframes pulse {
+            0% {
+                box-shadow: 0 0 0 0 rgba(220, 53, 69, 0.7);
+            }
+            70% {
+                box-shadow: 0 0 0 20px rgba(220, 53, 69, 0);
+            }
+            100% {
+                box-shadow: 0 0 0 0 rgba(220, 53, 69, 0);
+            }
+        }
+
+    </style>
+</head>
+<body>
+
+    <div class="kiosk-container">
+
+        <div class="dialogue-area">
+            <p id="dialogue-text">歡迎使用，請點擊麥克風開始對話</p>
+        </div>
+
+        <div class="avatar-area">
+            <video 
+                id="avatar-video"
+                src=".mov/demoavatar.mp4" 
+                autoplay 
+                loop 
+                muted 
+                playsinline>
+            </video>
+            </div>
+
+        <div class="controls-area">
+            <button id="mic-button" title="開始對話">
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 384 512" fill="currentColor">
+                    <path d="M192 0C139 0 96 43 96 96V256c0 53 43 96 96 96s96-43 96-96V96c0-53-43-96-96-96zM288 256c0 53-43 96-96 96s-96-43-96-96H48c0 79.5 64.5 144 144 144s144-64.5 144-144h-48zM192 480c-17.7 0-32-14.3-32-32s14.3-32 32-32s32 14.3 32 32s-14.3 32-32 32z"/>
+                </svg>
+            </button>
+        </div>
+
+    </div>
+
+    <script>
+        // 簡單的 JavaScript 來控制按鈕狀態和文字
+        const micButton = document.getElementById('mic-button');
+        const dialogueText = document.getElementById('dialogue-text');
+
+        let isListening = false;
+
+        micButton.addEventListener('click', () => {
+            isListening = !isListening; // 切換聆聽狀態
+
+            if (isListening) {
+                // 開始聆聽
+                micButton.classList.add('is-listening');
+                micButton.title = "停止對話";
+                dialogueText.textContent = "聆聽中...";
+                
+                // (您可以在這裡添加實際的語音辨識 API)
+
+            } else {
+                // 停止聆聽
+                micButton.classList.remove('is-listening');
+                micButton.title = "開始對話";
+                dialogueText.textContent = "請點擊麥克風開始對話";
+                
+                // (您可以在這裡停止語音辨識)
+            }
+        });
+
+    </script>
+
+</body>
+</html>
