@@ -3,233 +3,854 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-     <link rel="shortcut icon" href="feticon.ico">
-    <title>Kiosk Avatar 介面 (已更新)</title>
+       <link rel="shortcut icon" href="feticon.ico">
+    <title>Kiosk 管理後台</title>
     <style>
-        /* 1. 基本重設與全螢幕設定 */
-        html, body {
+        /* 1. 基本設定與字體 */
+        :root {
+            --primary-color: #007bff;
+            --primary-hover: #0056b3;
+            --bg-color: #f4f7fa;
+            --sidebar-bg: #ffffff;
+            --card-bg: #ffffff;
+            --border-color: #e3e8ee;
+            --text-color: #333;
+            --text-secondary: #666;
+            --sidebar-width: 260px;
+        }
+
+        @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700&display=swap');
+
+        body, html {
             margin: 0;
             padding: 0;
             height: 100%;
             width: 100%;
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, "Noto Sans", sans-serif;
-            background-color: #f0f2f5; /* Kiosk 背景色 */
-            overflow: hidden; /* 隱藏捲軸 */
+            font-family: "Noto Sans TC", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            overflow: hidden;
         }
 
-        /* 2. Kiosk 主要容器 (使用 Flexbox 垂直排列) */
-        .kiosk-container {
+        /* 2. 主要佈局 (Sidebar + Content) */
+        .admin-layout {
             display: flex;
-            flex-direction: column; /* 垂直排列 */
-            height: 100vh; /* 佔滿整個視窗高度 */
-            width: 100vw;  /* 佔滿整個視窗寬度 */
+            height: 100vh;
         }
 
-        /* **** 新增：Logo 區域 **** */
-        .logo-area {
-            padding: 16px;
-            background-color: #ffffff;
-            display: flex; /* 讓 Logo 並排 */
-            justify-content: center; /* 水平置中 */
-            align-items: center; /* 垂直置中 */
-            gap: 24px; /* Logo 之間的間距 */
-            flex-shrink: 0; /* 防止此區域被壓縮 */
-            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-            z-index: 20; /* 確保在最上層 */
-        }
-
-        .logo-area img {
-            max-height: 40px; /* 限制 Logo 高度，自動縮放寬度 */
-            width: auto;
-        }
-
-        /* 3. 對話文字區域 */
-        .dialogue-area {
+        .sidebar {
+            width: var(--sidebar-width);
+            flex-shrink: 0;
+            background-color: var(--sidebar-bg);
+            border-right: 1px solid var(--border-color);
             padding: 24px;
-            text-align: center;
-            background-color: #ffffff;
-            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-            z-index: 10; /* 確保在最上層 */
-            flex-shrink: 0; /* 防止此區域被壓縮 */
+            box-sizing: border-box;
+            display: flex;
+            flex-direction: column;
+            overflow-y: auto;
         }
 
-        #dialogue-text {
-            font-size: 1.5rem;
-            font-weight: 500;
-            color: #333;
+        /* **** 修改：Logo 區域 **** */
+        .sidebar-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between; /* 讓 Logo 均分 */
+            gap: 16px;
+            padding-bottom: 24px;
+            border-bottom: 1px solid var(--border-color);
+            margin-bottom: 24px;
+        }
+
+        .sidebar-logo {
+            max-height: 35px; /* 調整 Logo 高度 */
+            width: auto;
+            object-fit: contain;
+        }
+
+        .sidebar-nav ul {
+            list-style: none;
+            padding: 0;
             margin: 0;
-            min-height: 1.5rem; /* 確保切換文字時高度不變 */
         }
 
-        /* 4. Avatar 影片區域 (佔滿剩餘空間) */
-        .avatar-area {
-            flex-grow: 1; /* 佔滿所有可用的垂直空間 */
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            padding: 20px;
-            box-sizing: border-box; /* 讓 padding 不會撐開寬度 */
-            overflow: hidden; /* 確保影片不會超出範圍 */
-            min-height: 0; /* **** 修改：增加此行以修正 Flexbox 溢出問題 **** */
+        .sidebar-nav li {
+            margin-bottom: 8px;
         }
 
-        .avatar-area video {
-            width: 100%;
-            height: 100%;
-            /* **** 修改：從 cover 改成 contain 確保影片完整顯示不裁切 **** */
-            object-fit: contain; 
-            border-radius: 20px; /* 圓角 */
+        /* **** 修改：選單連結 (加入 flex) **** */
+        .sidebar-nav a {
+            display: flex; /* 改為 flex */
+            align-items: center; /* 垂直置中 icon 和文字 */
+            padding: 12px 16px;
+            text-decoration: none;
+            color: var(--text-secondary);
+            font-weight: 500;
+            border-radius: 8px;
+            transition: background-color 0.2s, color 0.2s;
         }
 
-        /* 5. 控制項區域 (底部麥克風) */
-        .controls-area {
-            padding: 20px;
-            background-color: #ffffff;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            box-shadow: 0 -2px 8px rgba(0, 0, 0, 0.1);
-            flex-shrink: 0; /* 防止此區域被壓縮 */
+        .sidebar-nav a:hover {
+            background-color: var(--bg-color);
+            color: var(--text-color);
         }
 
-        #mic-button {
-            width: 80px;
-            height: 80px;
-            border-radius: 50%; /* 圓形 */
-            border: none;
-            background-color: #007bff; /* 預設藍色 */
+        .sidebar-nav li.active > a {
+            background-color: var(--primary-color);
             color: white;
-            display: flex;
-            justify-content: center;
-            align-items: center;
+        }
+        
+        /* **** 新增：Icon 樣式 **** */
+        .icon {
+            width: 1.1rem;
+            height: 1.1rem;
+            margin-right: 12px;
+            flex-shrink: 0;
+            stroke: currentColor;
+            stroke-width: 2;
+            fill: none;
+            stroke-linecap: round;
+            stroke-linejoin: round;
+        }
+
+        /* 子選單 */
+        .submenu {
+            padding-left: 20px;
+            margin-top: 8px;
+            display: none; /* 預設隱藏 */
+        }
+
+        .sidebar-nav li.active .submenu {
+            display: block; /* Active 時顯示 */
+        }
+
+        .submenu li a {
+            padding-left: 24px;
+            font-size: 0.9rem;
+        }
+        
+        .submenu .icon {
+            width: 0.9rem;
+            height: 0.9rem;
+        }
+
+        .submenu li.active > a {
+            background-color: #e6f2ff;
+            color: var(--primary-color);
+        }
+
+
+        /* 主內容區域 */
+        .content {
+            flex-grow: 1;
+            padding: 32px;
+            overflow-y: auto;
+        }
+
+        .page {
+            display: none; /* 所有頁面預設隱藏 */
+        }
+
+        .page.active {
+            display: block; /* Active 頁面顯示 */
+        }
+
+        h1 {
+            font-size: 2rem;
+            font-weight: 700;
+            margin-top: 0;
+            margin-bottom: 24px;
+        }
+
+        /* 3. 通用元件 (Card, Button, Form) */
+        .card {
+            background-color: var(--card-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            padding: 24px;
+            margin-bottom: 24px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        .form-group label {
+            display: block;
+            font-weight: 500;
+            margin-bottom: 8px;
+        }
+
+        .form-group input[type="text"],
+        .form-group input[type="password"],
+        .form-group select,
+        .form-group textarea {
+            width: 100%;
+            padding: 12px;
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            box-sizing: border-box; /* 確保 padding 不會撐開寬度 */
+            font-size: 1rem;
+        }
+
+        .form-group textarea {
+            min-height: 120px;
+            resize: vertical;
+        }
+        
+        .btn {
+            padding: 12px 20px;
+            font-size: 1rem;
+            font-weight: 500;
+            border: none;
+            border-radius: 8px;
             cursor: pointer;
-            transition: background-color 0.3s, transform 0.2s;
-            box-shadow: 0 4px 12px rgba(0, 123, 255, 0.4);
+            transition: background-color 0.2s, box-shadow 0.2s;
         }
 
-        #mic-button:hover {
-            background-color: #0056b3;
+        .btn-primary {
+            background-color: var(--primary-color);
+            color: white;
+            box-shadow: 0 4px 8px rgba(0, 123, 255, 0.2);
         }
 
-        #mic-button:active {
-            transform: scale(0.95);
+        .btn-primary:hover {
+            background-color: var(--primary-hover);
         }
 
-        /* 麥克風 SVG 圖示 */
-        #mic-button svg {
-            width: 40px;
-            height: 40px;
+        .btn-secondary {
+            background-color: #e9ecef;
+            color: #333;
+        }
+        
+        .btn-secondary:hover {
+            background-color: #d1d5db;
         }
 
-        /* 6. "聆聽中" 的特殊狀態 */
-        #mic-button.is-listening {
-            background-color: #dc3545; /* 變成紅色 */
-            box-shadow: 0 4px 12px rgba(220, 53, 69, 0.5);
-            animation: pulse 1.5s infinite; /* 脈動動畫 */
+        /* 4. Avatar 新增 (多步驟巫師) */
+        .wizard-steps {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 24px;
+            padding-bottom: 16px;
+            border-bottom: 1px solid var(--border-color);
         }
 
-        /* 7. 按鈕禁用狀態 */
-        #mic-button:disabled {
-            background-color: #aaa;
-            cursor: not-allowed;
-            box-shadow: none;
-            animation: none;
+        .wizard-step {
+            flex: 1;
+            text-align: center;
+            padding: 8px;
+            color: var(--text-secondary);
+            font-weight: 500;
+            border-bottom: 3px solid transparent;
         }
 
+        .wizard-step.active {
+            color: var(--primary-color);
+            border-bottom-color: var(--primary-color);
+        }
 
-        /* 脈動動畫定義 */
-        @keyframes pulse {
-            0% {
-                box-shadow: 0 0 0 0 rgba(220, 53, 69, 0.7);
-            }
-            70% {
-                box-shadow: 0 0 0 20px rgba(220, 53, 69, 0);
-            }
-            100% {
-                box-shadow: 0 0 0 0 rgba(220, 53, 69, 0);
-            }
+        .wizard-content {
+            display: none;
+        }
+        
+        .wizard-content.active {
+            display: block;
+        }
+
+        .upload-box {
+            border: 2px dashed var(--border-color);
+            border-radius: 12px;
+            padding: 48px;
+            text-align: center;
+            background-color: #fafafa;
+            cursor: pointer;
+        }
+        
+        .upload-box:hover {
+            border-color: var(--primary-color);
+        }
+
+        .progress-bar {
+            width: 100%;
+            height: 20px;
+            background-color: #e9ecef;
+            border-radius: 10px;
+            overflow: hidden;
+            margin-top: 16px;
+        }
+
+        .progress-bar-inner {
+            width: 0%;
+            height: 100%;
+            background-color: var(--primary-color);
+            transition: width 0.5s;
+        }
+
+        /* 5. Avatar 設定 (表格) */
+        .avatar-table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        
+        .avatar-table th, .avatar-table td {
+            padding: 16px;
+            text-align: left;
+            border-bottom: 1px solid var(--border-color);
+            vertical-align: middle;
+        }
+        
+        .avatar-table th {
+            background-color: #f8f9fa;
+        }
+        
+        /* 6. AI Agent (Dify 風格) */
+        .segmented-control {
+            display: flex;
+            background-color: #e9ecef;
+            border-radius: 8px;
+            padding: 4px;
+            margin-bottom: 24px;
+        }
+
+        .segmented-control .tab {
+            flex: 1;
+            padding: 10px;
+            text-align: center;
+            font-weight: 500;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: background-color 0.2s, color 0.2s;
+        }
+
+        .segmented-control .tab.active {
+            background-color: var(--card-bg);
+            color: var(--primary-color);
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+        
+        /* Dify 卡片風格 */
+        .dify-card {
+            background-color: var(--card-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            margin-bottom: 24px;
+            overflow: hidden; /* 確保 header 和 content 貼合 */
+        }
+        
+        .dify-card-header {
+            padding: 20px 24px;
+            background-color: #fcfcfc;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .dify-card-header h3 {
+            margin: 0;
+            font-size: 1.2rem;
+        }
+        
+        .dify-card-content {
+            padding: 24px;
+        }
+
+        /* Dify 的 prompt text area */
+        .prompt-editor {
+            font-family: 'Courier New', Courier, monospace;
+            background-color: #fdfdfd;
+            border: 1px solid var(--border-color);
+            min-height: 200px;
+        }
+
+        .knowledge-list ul {
+            list-style: none;
+            padding: 0;
+        }
+        
+        .knowledge-list li {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 12px;
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            margin-bottom: 8px;
+        }
+
+        .knowledge-list .doc-icon {
+            margin-right: 12px;
+        }
+
+        .knowledge-list .btn-danger {
+             background: #fbebee;
+             color: #dc3545;
+             font-size: 0.8rem;
+             padding: 4px 8px;
         }
 
     </style>
 </head>
 <body>
 
-    <div class="kiosk-container">
+    <div class="admin-layout">
+        <nav class="sidebar">
+            <div class="sidebar-header">
+                <img src="logocs.png" alt="CS Logo" class="sidebar-logo">
+                <img src="fetlogo.png" alt="FET Logo" class="sidebar-logo">
+            </div>
+            
+            <ul class="sidebar-nav">
+                <li class="active" data-page="avatar-settings">
+                    <a href="#">
+                        <svg class="icon" viewBox="0 0 24 24"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>
+                        1. Avatar 人物設定
+                    </a>
+                    <ul class="submenu">
+                        <li class="active" data-page="avatar-settings">
+                            <a href="#">
+                                <svg class="icon" viewBox="0 0 24 24"><line x1="8" y1="6" x2="21" y2="6"></line><line x1="8" y1="12" x2="21" y2="12"></line><line x1="8" y1="18" x2="21" y2="18"></line><line x1="3" y1="6" x2="3.01" y2="6"></line><line x1="3" y1="12" x2="3.01" y2="12"></line><line x1="3" y1="18" x2="3.01" y2="18"></line></svg>
+                                Avatar 設定 (應用)
+                            </a>
+                        </li>
+                        <li data-page="avatar-add">
+                            <a href="#">
+                                <svg class="icon" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="16"></line><line x1="8" y1="12" x2="16" y2="12"></line></svg>
+                                新增 Avatar
+                            </a>
+                        </li>
+                    </ul>
+                </li>
+                <li data-page="api-asr">
+                    <a href="#">
+                        <svg class="icon" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09a1.65 1.65 0 0 0-1-1.51 1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09a1.65 1.65 0 0 0 1.51-1 1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path></svg>
+                        2. API 介接設定
+                    </a>
+                    <ul class="submenu">
+                        <li data-page="api-asr">
+                            <a href="#">
+                                <svg class="icon" viewBox="0 0 24 24"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"></path><path d="M19 10v2a7 7 0 0 1-14 0v-2"></path><line x1="12" y1="19" x2="12" y2="23"></line><line x1="8" y1="23" x2="16" y2="23"></line></svg>
+                                ASR API 設定
+                            </a>
+                        </li>
+                        <li data-page="api-tts">
+                            <a href="#">
+                                <svg class="icon" viewBox="0 0 24 24"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon><path d="M19.07 4.93a10 10 0 0 1 0 14.14M15.54 8.46a5 5 0 0 1 0 7.07"></path></svg>
+                                TTS API 設定
+                            </a>
+                        </li>
+                    </ul>
+                </li>
+                <li data-page="agent-settings">
+                    <a href="#">
+                        <svg class="icon" viewBox="0 0 24 24"><rect x="4" y="4" width="16" height="16" rx="2" ry="2"></rect><rect x="9" y="9" width="6" height="6"></rect><line x1="9" y1="1" x2="9" y2="4"></line><line x1="15" y1="1" x2="15" y2="4"></line><line x1="9" y1="20" x2="9" y2="23"></line><line x1="15" y1="20" x2="15" y2="23"></line><line x1="20" y1="9" x2="23" y2="9"></line><line x1="20" y1="14" x2="23" y2="14"></line><line x1="1" y1="9" x2="4" y2="9"></line><line x1="1" y1="14" x2="4" y2="14"></line></svg>
+                        3. AI Agent 服務設定
+                    </a>
+                    <ul class="submenu">
+                        <li data-page="agent-settings">
+                            <a href="#">
+                                <svg class="icon" viewBox="0 0 24 24"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"></path></svg>
+                                服務設定
+                            </a>
+                        </li>
+                    </ul>
+                </li>
+                
+                <li style="margin-top: 24px; border-top: 1px solid var(--border-color); padding-top: 16px;">
+                    <a href="index.html" target="_blank"> <svg class="icon" viewBox="0 0 24 24"><rect x="2" y="3" width="20" height="14" rx="2" ry="2"></rect><line x1="8" y1="21" x2="16" y2="21"></line><line x1="12" y1="17" x2="12" y2="21"></line></svg>
+                        目前展示畫面
+                    </a>
+                </li>
+            </ul>
+        </nav>
 
-        <div class="logo-area">
-            <img src="logocs.png" alt="CS Logo">
-            <img src="fetlogo.png" alt="FET Logo">
-        </div>
+        <main class="content">
 
-        <div class="dialogue-area">
-            <p id="dialogue-text">歡迎使用，請點擊麥克風開始對話</p>
-        </div>
+            <div class="page active" id="page-avatar-settings">
+                <h1>Avatar 設定與應用</h1>
+                <div class="card">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
+                        <h2>目前的人物模型</h2>
+                        <button class="btn btn-primary" onclick="navigateTo('avatar-add')">+ 新增 Avatar</button>
+                    </div>
+                    
+                    <table class="avatar-table">
+                        <thead>
+                            <tr>
+                                <th>啟用 (應用)</th>
+                                <th>預覽</th>
+                                <th>檔案名稱</th>
+                                <th>上傳日期</th>
+                                <th>狀態</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td><input type="radio" name="active-avatar" checked></td>
+                                <td>
+                                    <video src="avatar.mp4"
+                                           style="width: 80px; height: 80px; object-fit: cover; border-radius: 8px;"
+                                           autoplay loop muted playsinline>
+                                    </video>
+                                </td>
+                                <td>avatar.mp4</td>
+                                <td>2025-11-15</td>
+                                <td><span style="color: green;">● 已完成訓練</span></td>
+                            </tr>
+                            <tr>
+                                <td><input type="radio" name="active-avatar"></td>
+                                <td><img src="https://via.placeholder.com/80x80.png?text=Avatar2" alt="Avatar" style="width: 80px; height: 80px; object-fit: cover; border-radius: 8px;"></td>
+                                <td>avatar_male_01.mp4</td>
+                                <td>2025-11-10</td>
+                                <td><span style="color: green;">● 已完成訓練</span></td>
+                            </tr>
+                             <tr>
+                                <td><input type="radio" name="active-avatar" disabled></td>
+                                <td><img src="https://via.placeholder.com/80x80.png?text=Avatar3" alt="Avatar" style="width: 80px; height: 80px; object-fit: cover; border-radius: 8px;"></td>
+                                <td>avatar_new_temp.mp4</td>
+                                <td>2025-11-17</td>
+                                <td><span style="color: orange;">● 嘴型訓練中...</span></td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
 
-        <div class="avatar-area">
-            <video 
-                id="avatar-video"
-                src="mov/avatar.mp4" 
-                autoplay 
-                loop 
-                muted 
-                playsinline>
-            </video>
-        </div>
+            <div class="page" id="page-avatar-add">
+                <h1>新增 Avatar</h1>
+                <div class="card">
+                    <div class="wizard-steps">
+                        <div class="wizard-step active" data-step="1">1. 上傳人物影像</div>
+                        <div class="wizard-step" data-step="2">2. 訓練嘴型</div>
+                        <div class="wizard-step" data-step="3">3. 完成上傳</div>
+                    </div>
 
-        <div class="controls-area">
-            <button id="mic-button" title="開始對話">
-                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 384 512" fill="currentColor">
-                    <path d="M192 0C139 0 96 43 96 96V256c0 53 43 96 96 96s96-43 96-96V96c0-53-43-96-96-96zM288 256c0 53-43 96-96 96s-96-43-96-96H48c0 79.5 64.5 144 144 144s144-64.5 144-144h-48zM192 480c-17.7 0-32-14.3-32-32s14.3-32 32-32s32 14.3 32 32s-14.3 32-32 32z"/>
-                </svg>
-            </button>
-        </div>
+                    <div class="wizard-content active" data-content="1">
+                        <h2>上傳人物影像檔案 (MP4)</h2>
+                        <p>請上傳 1080x1920 (9:16) 尺寸的 MP4 影片，建議長度為 10-30 秒。</p>
+                        <div class="upload-box" onclick="simulateUpload()">
+                            <h3>點擊此處或拖曳檔案上傳</h3>
+                            <p style="color: var(--text-secondary);">支援 .mp4, .mov 檔案</p>
+                        </div>
+                        <div style="text-align: right; margin-top: 24px;">
+                            <button class="btn btn-primary" onclick="wizardNext(1)">下一步</button>
+                        </div>
+                    </div>
+                    
+                    <div class="wizard-content" data-content="2">
+                        <h2>訓練嘴型</h2>
+                        <p>系統正在分析您的影片並進行嘴型同步訓練，請稍候...</p>
+                        <p id="progress-text">進度：0%</p>
+                        <div class="progress-bar">
+                            <div class="progress-bar-inner" id="progress-bar"></div>
+                        </div>
+                        <div style="text-align: right; margin-top: 24px;">
+                            <button class="btn btn-secondary" onclick="wizardNext(2, true)">返回上一步</button>
+                            <button class="btn btn-primary" id="wizard-btn-2" disabled>下一步 (訓練中)</button>
+                        </div>
+                    </div>
 
+                    <div class="wizard-content" data-content="3">
+                        <div style="text-align: center; padding: 48px;">
+                            <h2 style="color: green;">✓ 上傳並訓練完成！</h2>
+                            <p>您的新 Avatar (avatar_new_temp.mp4) 已經準備就緒。</p>
+                            <button class="btn btn-primary" onclick="navigateTo('avatar-settings')">返回 Avatar 設定</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="page" id="page-api-asr">
+                <h1>ASR API 介接設定</h1>
+                <div class="card">
+                    <h2>語音轉文字 (ASR) 服務</h2>
+                    <p>設定 Kiosk 用來接收使用者語音的 API。</p>
+                    <div class="form-group">
+                        <label for="asr-provider">服務提供商</label>
+                        <select id="asr-provider">
+                            <option value="google">Google Cloud Speech-to-Text</option>
+                            <option value="azure">Azure Cognitive Services</option>
+                            <option value="aws">Amazon Transcribe</option>
+                            <option value="custom">自訂 API 端點</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="asr-endpoint">API 端點 (Endpoint URL)</label>
+                        <input type="text" id="asr-endpoint" value="https://speech.googleapis.com/v1/speech:recognize">
+                    </div>
+                    <div class="form-group">
+                        <label for="asr-key">API Key</label>
+                        <input type="password" id="asr-key" value="************">
+                    </div>
+                    <div style="text-align: right;">
+                        <button class="btn btn-primary">儲存設定</button>
+                    </div>
+                </div>
+            </div>
+
+            <div class="page" id="page-api-tts">
+                <h1>TTS API 介接設定</h1>
+                <div class="card">
+                    <h2>文字轉語音 (TTS) 服務</h2>
+                    <p>設定 Kiosk 用來回覆使用者聲音的 API。</p>
+                    <div class="form-group">
+                        <label for="tts-provider">服務提供商</label>
+                        <select id="tts-provider">
+                            <option value="google">Google Cloud Text-to-Speech</option>
+                            <option value="azure" selected>Azure Cognitive Services</option>
+                            <option value="aws">Amazon Polly</option>
+                            <option value="custom">自訂 API 端點</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="tts-endpoint">API 端點 (Endpoint URL)</label>
+                        <input type="text" id="tts-endpoint" value="https://eastus.api.cognitive.microsoft.com/sts/v1.0/issuetoken">
+                    </div>
+                    <div class="form-group">
+                        <label for="tts-key">API Key</label>
+                        <input type="password" id="tts-key" value="************">
+                    </div>
+                    <div class="form-group">
+                        <label for="tts-voice">語音模型 (Voice)</label>
+                         <select id="tts-voice">
+                            <option value="zh-TW-HsiaoChen">zh-TW-HsiaoChenNeural (台灣女聲)</option>
+                            <option value="zh-TW-YunJhe">zh-TW-YunJheNeural (台灣男聲)</option>
+                            <option value="en-US-Jenny">en-US-JennyNeural (美國女聲)</option>
+                        </select>
+                    </div>
+                    <div style="text-align: right;">
+                        <button class="btn btn-primary">儲存設定</button>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="page" id="page-agent-settings">
+                <h1>AI Agent 服務設定</h1>
+                
+                <div class="segmented-control">
+                    <div class="tab" data-tab="agent-api">AI Agent 服務 API (簡易)</div>
+                    <div class="tab active" data-tab="agent-custom">AI Agent 自訂義服務 (Dify)</div>
+                </div>
+
+                <div class="tab-content" id="agent-api">
+                    <div class="card">
+                        <h2>AI Agent 服務 API 設定</h2>
+                        <p>如果您已經有自建或外部的 AI Agent 服務 (例如 RAG API)，請在此處填入介接資訊。</p>
+                         <div class="form-group">
+                            <label for="agent-endpoint">API 端點 (Endpoint URL)</label>
+                            <input type="text" id="agent-endpoint" placeholder="https://your-agent-api.com/chat">
+                        </div>
+                        <div class="form-group">
+                            <label for="agent-key">API Key (選填)</label>
+                            <input type="password" id="agent-key">
+                        </div>
+                        <div style="text-align: right;">
+                            <button class="btn btn-primary">儲存設定</button>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="tab-content active" id="agent-custom">
+                    
+                    <div class="dify-card">
+                        <div class="dify-card-header">
+                            <h3>提示詞 (Prompt)</h3>
+                        </div>
+                        <div class="dify-card-content">
+                            <div class="form-group">
+                                <label>系統提示詞 (System Prompt)</label>
+                                <textarea class="prompt-editor">你是一個專業的醫院導覽 AI 助手。
+你的任務是：
+1. 回答病患關於「醫院設施」、「看診時間」、「科別位置」的問題。
+2. 使用友善、同理心的語氣。
+3. 根據提供的「知識庫」內容回答，如果知識庫沒有，請回答「我暫時找不到這方面的資訊，請洽詢服務台。」
+
+可用的變數：
+{{user_input}} - 使用者的問題
+{{history}} - 歷史對話紀錄
+</textarea>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="dify-card">
+                        <div class="dify-card-header">
+                            <h3>Knowledge 服務訓練 (知識庫)</h3>
+                        </div>
+                        <div class="dify-card-content">
+                            <p>連接您的資料，讓 AI 能根據您的文件回答問題。</p>
+                            <div class="knowledge-list">
+                                <ul>
+                                    <li>
+                                        <span><span class="doc-icon">📄</span> 亞東醫院樓層導覽.pdf</span>
+                                        <button class="btn btn-danger">移除</button>
+                                    </li>
+                                     <li>
+                                        <span><span class="doc-icon">📄</span> 看診時間與常見QA.csv</span>
+                                        <button class="btn btn-danger">移除</button>
+                                    </li>
+                                </ul>
+                            </div>
+                            <div style="margin-top: 16px;">
+                                <button class="btn btn-secondary">+ 上傳文件</button>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="dify-card">
+                        <div class="dify-card-header">
+                            <h3>AI 模型選定與 LLM 訓練設定</h3>
+                        </div>
+                        <div class="dify-card-content">
+                            <div class="form-group">
+                                <label for="llm-model">LLM 模型選定</label>
+                                <select id="llm-model">
+                                    <option value="gpt-4o">OpenAI - gpt-4o</option>
+                                    <option value="gpt-4-turbo">OpenAI - gpt-4-turbo</option>
+                                    <option value="claude-3-opus" selected>Anthropic - claude-3-opus</option>
+                                    <option value="gemini-1.5-pro">Google - gemini-1.5-pro</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label>Embedding 模型 (用於知識庫訓練)</label>
+                                <select id="embedding-model">
+                                    <option value="ada-002">OpenAI - text-embedding-ada-002</option>
+                                    <option value="mxbai-embed" selected>mxbai-embed-large</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                 <label>Temperature (隨機性，0 = 嚴謹, 1 = 創意)</label>
+                                 <input type="range" min="0" max="1" step="0.1" value="0.3" style="width: 100%;">
+                            </div>
+                        </div>
+                    </div>
+
+                    <div style="text-align: right;">
+                        <button class="btn btn-primary">儲存並發佈 AI Agent</button>
+                    </div>
+
+                </div>
+
+            </div>
+
+        </main>
     </div>
 
     <script>
-        // **** 修改：模擬對話 ****
-        const micButton = document.getElementById('mic-button');
-        const dialogueText = document.getElementById('dialogue-text');
+        // 頁面導航邏輯
+        function navigateTo(pageId) {
+            // 處理頁面顯示
+            document.querySelectorAll('.page').forEach(page => {
+                page.classList.remove('active');
+            });
+            document.getElementById(`page-${pageId}`).classList.add('active');
 
-        // 模擬的回應陣列
-        const responses = [
-            "您好！請問有什麼可以為您服務的嗎？",
-            "好的，正在為您查詢院內設施...",
-            "查詢完成。一樓有星巴克與便利商店。",
-            "很高興為您服務，您可以隨時再次點擊按鈕詢問其他問題。"
-        ];
-        let responseIndex = 0;
-        let isProcessing = false; // 用來防止在機器人回應時重複點擊
+            // 處理選單 active 狀態
+            document.querySelectorAll('.sidebar-nav li').forEach(li => {
+                li.classList.remove('active');
+            });
 
-        micButton.addEventListener('click', () => {
-            // 如果正在處理中 (聆聽/回應)，則不觸發新的點擊
-            if (isProcessing) return; 
+            const targetLink = document.querySelector(`.sidebar-nav [data-page="${pageId}"]`);
+            if (targetLink) {
+                targetLink.closest('li').classList.add('active');
+                
+                // 如果是子選單，也要讓父選單 active
+                const parentLi = targetLink.closest('ul.submenu')?.closest('li');
+                if (parentLi) {
+                    parentLi.classList.add('active');
+                }
+            }
+        }
+
+        // **** 修改：幫所有選單連結加上事件 ****
+        document.querySelectorAll('.sidebar-nav a').forEach(link => {
+            link.addEventListener('click', (e) => {
+                const pageId = link.parentElement.getAttribute('data-page');
+                
+                if (pageId) {
+                    // 如果是內部頁面 (有 data-page)，則阻止預設跳轉
+                    e.preventDefault(); 
+                    navigateTo(pageId);
+                }
+                // 如果沒有 data-page (例如 index.html 連結)，
+                // 則不執行 e.preventDefault()，讓瀏覽器正常跳轉。
+            });
+        });
+
+        // 模擬 Avatar 上傳巫師
+        let currentStep = 1;
+        function wizardNext(fromStep, isBack = false) {
+            currentStep = isBack ? fromStep - 1 : fromStep + 1;
             
-            isProcessing = true;
+            // 更新步驟條
+            document.querySelectorAll('.wizard-step').forEach(step => {
+                const stepNum = parseInt(step.getAttribute('data-step'));
+                if (stepNum === currentStep) {
+                    step.classList.add('active');
+                } else {
+                    step.classList.remove('active');
+                }
+            });
 
-            // 1. 開始聆聽
-            micButton.classList.add('is-listening');
-            micButton.disabled = true; // 聆聽時禁用按鈕
-            dialogueText.textContent = "聆聽中...";
+            // 更新內容
+            document.querySelectorAll('.wizard-content').forEach(content => {
+                content.classList.remove('active');
+            });
+            document.querySelector(`.wizard-content[data-content="${currentStep}"]`).classList.add('active');
+            
+            // 如果是到步驟 2 (訓練)，模擬進度條
+            if (currentStep === 2 && !isBack) {
+                simulateTraining();
+            }
+        }
+        
+        function simulateUpload() {
+            // 模擬點擊 input[type=file]
+            alert("（模擬）請選擇一個 MP4 檔案。");
+            // 實際上您可以觸發一個隱藏的 <input type="file">
+        }
 
-            // 2. 模擬 2 秒的 "聆聽"
-            setTimeout(() => {
-                micButton.classList.remove('is-listening');
-                dialogueText.textContent = "..."; // 模擬 "思考中"
+        function simulateTraining() {
+            let progress = 0;
+            const progressBar = document.getElementById('progress-bar');
+            const progressText = document.getElementById('progress-text');
+            const nextButton = document.getElementById('wizard-btn-2');
+            nextButton.disabled = true;
+            nextButton.textContent = "下一步 (訓練中)";
 
-                // 3. 模擬 1.5 秒的 "思考"
-                setTimeout(() => {
-                    // 4. 顯示模擬回應
-                    dialogueText.textContent = responses[responseIndex];
-                    responseIndex = (responseIndex + 1) % responses.length; // 循環顯示回應
-                    
-                    // 5. 回到待機狀態
-                    micButton.disabled = false; // 讓按鈕可以再次被點擊
-                    isProcessing = false; 
+            const interval = setInterval(() => {
+                progress += Math.random() * 10;
+                if (progress > 100) progress = 100;
+                
+                progressBar.style.width = progress + '%';
+                progressText.textContent = `進度：${Math.round(progress)}%`;
 
-                }, 1500); // 思考時間
+                if (progress === 100) {
+                    clearInterval(interval);
+                    progressText.textContent = "訓練完成！";
+                    nextButton.disabled = false;
+                    nextButton.textContent = "下一步";
+                }
+            }, 300);
+        }
 
-            }, 2000); // 聆聽時間
+        // AI Agent (Dify) 頁籤切換
+        document.querySelectorAll('.segmented-control .tab').forEach(tab => {
+            tab.addEventListener('click', () => {
+                // 切換 Tab 樣式
+                document.querySelectorAll('.segmented-control .tab').forEach(t => t.classList.remove('active'));
+                tab.classList.add('active');
+
+                // 切換內容顯示
+                const tabContentId = tab.getAttribute('data-tab');
+                document.querySelectorAll('.tab-content').forEach(content => {
+                    content.classList.remove('active');
+                });
+                document.getElementById(tabContentId).classList.add('active');
+            });
+        });
+
+        // 預設載入第一個頁面
+        document.addEventListener('DOMContentLoaded', () => {
+            navigateTo('avatar-settings');
         });
 
     </script>
