@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Kiosk Avatar 介面</title>
+    <title>Kiosk Avatar 介面 (已更新)</title>
     <style>
         /* 1. 基本重設與全螢幕設定 */
         html, body {
@@ -24,6 +24,24 @@
             width: 100vw;  /* 佔滿整個視窗寬度 */
         }
 
+        /* **** 新增：Logo 區域 **** */
+        .logo-area {
+            padding: 16px;
+            background-color: #ffffff;
+            display: flex; /* 讓 Logo 並排 */
+            justify-content: center; /* 水平置中 */
+            align-items: center; /* 垂直置中 */
+            gap: 24px; /* Logo 之間的間距 */
+            flex-shrink: 0; /* 防止此區域被壓縮 */
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+            z-index: 20; /* 確保在最上層 */
+        }
+
+        .logo-area img {
+            max-height: 40px; /* 限制 Logo 高度，自動縮放寬度 */
+            width: auto;
+        }
+
         /* 3. 對話文字區域 */
         .dialogue-area {
             padding: 24px;
@@ -39,6 +57,7 @@
             font-weight: 500;
             color: #333;
             margin: 0;
+            min-height: 1.5rem; /* 確保切換文字時高度不變 */
         }
 
         /* 4. Avatar 影片區域 (佔滿剩餘空間) */
@@ -50,12 +69,14 @@
             padding: 20px;
             box-sizing: border-box; /* 讓 padding 不會撐開寬度 */
             overflow: hidden; /* 確保影片不會超出範圍 */
+            min-height: 0; /* **** 修改：增加此行以修正 Flexbox 溢出問題 **** */
         }
 
         .avatar-area video {
             width: 100%;
             height: 100%;
-            object-fit: cover; /* 裁剪並填滿, 保持比例 */
+            /* **** 修改：從 cover 改成 contain 確保影片完整顯示不裁切 **** */
+            object-fit: contain; 
             border-radius: 20px; /* 圓角 */
         }
 
@@ -106,6 +127,15 @@
             animation: pulse 1.5s infinite; /* 脈動動畫 */
         }
 
+        /* 7. 按鈕禁用狀態 */
+        #mic-button:disabled {
+            background-color: #aaa;
+            cursor: not-allowed;
+            box-shadow: none;
+            animation: none;
+        }
+
+
         /* 脈動動畫定義 */
         @keyframes pulse {
             0% {
@@ -125,6 +155,11 @@
 
     <div class="kiosk-container">
 
+        <div class="logo-area">
+            <img src="logocs.png" alt="CS Logo">
+            <img src="fetlogo.png" alt="FET Logo">
+        </div>
+
         <div class="dialogue-area">
             <p id="dialogue-text">歡迎使用，請點擊麥克風開始對話</p>
         </div>
@@ -138,7 +173,7 @@
                 muted 
                 playsinline>
             </video>
-            </div>
+        </div>
 
         <div class="controls-area">
             <button id="mic-button" title="開始對話">
@@ -151,31 +186,49 @@
     </div>
 
     <script>
-        // 簡單的 JavaScript 來控制按鈕狀態和文字
+        // **** 修改：模擬對話 ****
         const micButton = document.getElementById('mic-button');
         const dialogueText = document.getElementById('dialogue-text');
 
-        let isListening = false;
+        // 模擬的回應陣列
+        const responses = [
+            "您好！請問有什麼可以為您服務的嗎？",
+            "好的，正在為您查詢院內設施...",
+            "查詢完成。一樓有星巴克與便利商店。",
+            "很高興為您服務，您可以隨時再次點擊按鈕詢問其他問題。"
+        ];
+        let responseIndex = 0;
+        let isProcessing = false; // 用來防止在機器人回應時重複點擊
 
         micButton.addEventListener('click', () => {
-            isListening = !isListening; // 切換聆聽狀態
+            // 如果正在處理中 (聆聽/回應)，則不觸發新的點擊
+            if (isProcessing) return; 
+            
+            isProcessing = true;
 
-            if (isListening) {
-                // 開始聆聽
-                micButton.classList.add('is-listening');
-                micButton.title = "停止對話";
-                dialogueText.textContent = "聆聽中...";
-                
-                // (您可以在這裡添加實際的語音辨識 API)
+            // 1. 開始聆聽
+            micButton.classList.add('is-listening');
+            micButton.disabled = true; // 聆聽時禁用按鈕
+            dialogueText.textContent = "聆聽中...";
 
-            } else {
-                // 停止聆聽
+            // 2. 模擬 2 秒的 "聆聽"
+            setTimeout(() => {
                 micButton.classList.remove('is-listening');
-                micButton.title = "開始對話";
-                dialogueText.textContent = "請點擊麥克風開始對話";
-                
-                // (您可以在這裡停止語音辨識)
-            }
+                dialogueText.textContent = "..."; // 模擬 "思考中"
+
+                // 3. 模擬 1.5 秒的 "思考"
+                setTimeout(() => {
+                    // 4. 顯示模擬回應
+                    dialogueText.textContent = responses[responseIndex];
+                    responseIndex = (responseIndex + 1) % responses.length; // 循環顯示回應
+                    
+                    // 5. 回到待機狀態
+                    micButton.disabled = false; // 讓按鈕可以再次被點擊
+                    isProcessing = false; 
+
+                }, 1500); // 思考時間
+
+            }, 2000); // 聆聽時間
         });
 
     </script>
