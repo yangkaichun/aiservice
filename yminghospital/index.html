@@ -199,8 +199,30 @@
 
         /* 監視器 & 跌倒偵測 */
         .video-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(350px, 1fr)); gap: 20px; }
-        .video-feed { background: #333; color: white; display: flex; justify-content: center; align-items: center; border-radius: 8px; aspect-ratio: 16 / 9; position: relative; }
-        .video-feed .label { position: absolute; bottom: 10px; left: 10px; background: rgba(0,0,0,0.5); padding: 5px 8px; border-radius: 4px; font-size: 14px; }
+        
+        /* * 【修正 1】:
+         * 移除了 display: flex, justify-content: center, align-items: center
+         * 這些是造成圖檔 "超出框" 的原因。
+         * 並新增 overflow: hidden; 確保圖檔會遵守圓角
+         */
+        .video-feed { 
+            background: #333; 
+            color: white; 
+            border-radius: 8px; 
+            aspect-ratio: 16 / 9; 
+            position: relative;
+            overflow: hidden; /* 確保子層 (圖片) 遵守圓角 */
+        }
+        .video-feed .label { 
+            position: absolute; 
+            bottom: 10px; 
+            left: 10px; 
+            background: rgba(0,0,0,0.5); 
+            padding: 5px 8px; 
+            border-radius: 4px; 
+            font-size: 14px;
+            z-index: 10; /* 確保標籤在圖片之上 */
+        }
         
         /* 跌倒偵測動態模擬 */
         .alert-feed {
@@ -225,6 +247,16 @@
         .alert-item.critical {
             border-left: 4px solid var(--danger-color);
             background: #fff8f8;
+        }
+
+        /* * 【修正 2】:
+         * 新增 .live-icon 樣式
+         * 讓圖檔 100% 填滿 .video-feed 容器
+         */
+        .live-icon {
+            width: 100%;
+            height: 100%;
+            object-fit: cover; /* 填滿容器，多餘部分裁切 */
         }
 
     </style>
@@ -506,7 +538,7 @@
                                 <td>3F-B 護理站</td>
                                 <td>192.168.1.102</td>
                                 <td style="color: #1e8e3e;">連線中</td>
-                                <td><button class="button-secondary">編輯</button></td>
+                                S<td><button class="button-secondary">編輯</button></td>
                             </tr>
                             <tr>
                                 <td>CCTV-03</td>
@@ -597,7 +629,16 @@
             const grid = document.getElementById('cctv-grid');
             const selectedArea = this.value;
             if (selectedArea) {
-                grid.innerHTML = `<div class="video-feed"><div class="label">${selectedArea}</div>[ LIVE ]</div>`;
+                /*
+                 * 【修正 3】:
+                 * 將原來的 [ LIVE ] 文字，
+                 * 替換為與 "跌倒偵測" 頁面相同的 <img> 圖檔 (livecamara.jpg)
+                 */
+                grid.innerHTML = `
+                    <div class="video-feed">
+                        <img src="livecamara.jpg" alt="${selectedArea}" class="live-icon">
+                        <div class="label">${selectedArea}</div>
+                    </div>`;
             } else {
                 grid.innerHTML = '<div class="video-feed"><div class="label">請選擇區域</div></div>';
             }
