@@ -1,0 +1,697 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>三軍總醫院智慧護理站電子白板系統 (TSGH Demo)</title>
+    <style>
+        :root {
+            --bg-dark: #121212;
+            --bg-panel: #1e1e1e;
+            --text-main: #e0e0e0;
+            --text-muted: #a0a0a0;
+            --accent-blue: #4fc3f7;
+            --accent-green: #81c784;
+            --accent-red: #e57373;
+            --accent-yellow: #fff176;
+            --status-cleaning: #ffb74d;
+            --border-radius: 8px;
+            --shadow: 0 4px 6px rgba(0,0,0,0.4);
+        }
+
+        * { box-sizing: border-box; user-select: none; -webkit-user-select: none; }
+        
+        body {
+            font-family: "Microsoft JhengHei", "Segoe UI", sans-serif;
+            margin: 0;
+            padding: 0;
+            background-color: var(--bg-dark);
+            color: var(--text-main);
+            height: 100vh;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+        }
+
+        /* --- Header & Marquee Area --- */
+        header {
+            height: 70px;
+            background-color: #000;
+            display: flex;
+            align-items: center;
+            padding: 0 25px;
+            border-bottom: 2px solid #333;
+        }
+
+       .hospital-logo { 
+            font-size: 1.8rem; 
+            font-weight: bold; 
+            color: var(--accent-blue); 
+            margin-right: 30px; 
+            display: flex;
+            align-items: center;
+        }
+        
+       .marquee-container {
+            flex: 1;
+            background: #222;
+            height: 45px;
+            overflow: hidden;
+            display: flex;
+            align-items: center;
+            margin: 0 20px;
+            border-radius: 4px;
+            border: 1px solid #444;
+        }
+        
+       .marquee-content {
+            white-space: nowrap;
+            animation: scroll 25s linear infinite;
+            color: var(--accent-yellow);
+            font-size: 1.4rem;
+            font-weight: bold;
+        }
+        @keyframes scroll { 0% { transform: translateX(100%); } 100% { transform: translateX(-100%); } }
+
+       .clock { 
+            font-size: 1.5rem; 
+            margin-left: auto; 
+            font-family: monospace; 
+            color: var(--accent-green);
+            font-weight: bold;
+        }
+
+        /* --- Layer 1: Dashboard Grid System --- */
+        #layer-1-dashboard {
+            display: grid;
+            /* Sidebar (Staff), Main Content (Beds), Side Panel (Stats/Schedule) */
+            grid-template-columns: 280px 1fr 320px; 
+            grid-template-rows: 1fr 300px;
+            gap: 12px;
+            padding: 15px;
+            height: calc(100vh - 70px);
+            transition: filter 0.3s;
+        }
+
+       .panel {
+            background-color: var(--bg-panel);
+            border-radius: var(--border-radius);
+            padding: 12px;
+            box-shadow: var(--shadow);
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+            position: relative;
+            border: 1px solid #333;
+        }
+
+       .panel-header {
+            font-size: 1.3rem;
+            font-weight: bold;
+            border-bottom: 2px solid #444;
+            padding-bottom: 8px;
+            margin-bottom: 12px;
+            display: flex;
+            justify-content: space-between;
+            color: var(--accent-blue);
+        }
+
+        /* Bed Matrix Styling */
+       .bed-grid-container {
+            grid-column: 2;
+            grid-row: 1 / span 2;
+            display: grid;
+            /* Responsive grid for 20+ beds */
+            grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); 
+            grid-template-rows: repeat(auto-fill, minmax(140px, 1fr));
+            gap: 10px;
+            overflow-y: auto;
+            padding-right: 5px;
+        }
+
+       .bed-card {
+            background: #2c2c2c;
+            border-radius: 6px;
+            padding: 10px;
+            display: flex;
+            flex-direction: column;
+            cursor: pointer;
+            position: relative;
+            border-left: 6px solid #555; /* Default empty */
+            transition: transform 0.1s;
+        }
+       .bed-card:active { transform: scale(0.98); }
+        
+        /* Status Indicators */
+       .bed-card.occupied { border-left-color: var(--accent-green); }
+       .bed-card.cleaning { border-left-color: var(--status-cleaning); background: #3e2723; }
+       .bed-card.isolation { border: 2px solid var(--accent-red); }
+
+        /* Gender Colors */
+       .bed-card.female.patient-name { color: #f48fb1; } 
+       .bed-card.male.patient-name { color: #90caf9; }
+
+       .bed-number { 
+            font-size: 1.6rem; 
+            font-weight: bold; 
+            position: absolute; 
+            top: 5px; 
+            right: 8px; 
+            color: #666; 
+        }
+       .patient-name { font-size: 1.4rem; margin-top: 10px; font-weight: bold; }
+       .patient-detail { font-size: 1rem; color: #bbb; margin-top: 4px; line-height: 1.2; }
+        
+       .tags { display: flex; gap: 5px; margin-top: auto; flex-wrap: wrap; }
+       .tag { 
+            font-size: 0.8rem; 
+            padding: 2px 6px; 
+            border-radius: 4px; 
+            color: #000; 
+            font-weight: bold; 
+        }
+       .tag.dnr { background: var(--accent-red); color: white; }
+       .tag.fall { background: var(--accent-yellow); }
+       .tag.allergy { background: var(--accent-blue); color: white; }
+
+        /* Staff & Schedule Panels */
+       .staff-list { grid-column: 1; grid-row: 1 / span 2; overflow-y: auto; }
+       .stat-panel { grid-column: 3; grid-row: 1; }
+       .schedule-panel { grid-column: 3; grid-row: 2; }
+
+       .staff-item { 
+            margin-bottom: 12px; 
+            border-bottom: 1px solid #444; 
+            padding-bottom: 8px; 
+        }
+       .staff-role { font-size: 0.9rem; color: var(--accent-blue); display:block; margin-bottom:2px;}
+       .staff-name { font-size: 1.2rem; font-weight: bold; }
+       .staff-ext { font-size: 1rem; color: #888; float: right; }
+
+        /* --- Layer 2: Detailed View (Slider) --- */
+        #layer-2-detail {
+            position: absolute;
+            top: 70px;
+            left: 0;
+            width: 100%;
+            height: calc(100vh - 70px);
+            background: var(--bg-dark);
+            z-index: 10;
+            padding: 20px;
+            display: none; /* Hidden by default */
+            flex-direction: column;
+        }
+
+       .nav-bar {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 20px;
+        }
+
+       .back-btn {
+            background: var(--accent-blue);
+            border: none;
+            color: #000;
+            padding: 12px 25px;
+            font-size: 1.2rem;
+            font-weight: bold;
+            border-radius: 5px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+        }
+       .back-btn:hover { background: #81d4fa; }
+
+       .detail-content {
+            flex: 1;
+            background: var(--bg-panel);
+            border-radius: var(--border-radius);
+            padding: 20px;
+            overflow-y: auto;
+            border: 1px solid #444;
+        }
+
+        /* Data Tables */
+        table.data-table { width: 100%; border-collapse: collapse; margin-top: 10px; }
+        table.data-table th { 
+            text-align: left; 
+            padding: 15px; 
+            background-color: #333; 
+            color: var(--accent-blue); 
+            font-size: 1.1rem;
+            position: sticky; top: 0;
+        }
+        table.data-table td { 
+            text-align: left; 
+            padding: 15px; 
+            border-bottom: 1px solid #444; 
+            font-size: 1.1rem;
+        }
+        table.data-table tr:hover { background-color: #2a2a2a; }
+
+        /* --- Layer 3: Modal Overlay --- */
+        #layer-3-modal {
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.85);
+            z-index: 20;
+            display: none;
+            justify-content: center;
+            align-items: center;
+            backdrop-filter: blur(5px);
+        }
+
+       .modal-card {
+            background: #252525;
+            width: 70%;
+            height: 80%;
+            border-radius: 12px;
+            padding: 25px;
+            display: flex;
+            flex-direction: column;
+            border: 1px solid #555;
+            box-shadow: 0 0 30px rgba(0,0,0,0.7);
+        }
+        
+       .modal-header { 
+            font-size: 1.8rem; 
+            border-bottom: 2px solid #444; 
+            padding-bottom: 15px; 
+            margin-bottom: 20px; 
+            display: flex; 
+            justify-content: space-between; 
+            color: var(--accent-green);
+        }
+       .close-modal { 
+            background: transparent; 
+            border: none; 
+            color: #fff; 
+            font-size: 2rem; 
+            cursor: pointer; 
+        }
+
+        /* --- Network Error Overlay (Requirement 1.6) --- */
+        #network-error {
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(50, 0, 0, 0.3); /* Semi-transparent red tint */
+            border: 8px solid #d32f2f;
+            box-sizing: border-box;
+            z-index: 100;
+            display: none;
+            pointer-events: none; /* Allow underlying data to be seen */
+            justify-content: center;
+            align-items: flex-start;
+            padding-top: 120px;
+        }
+       .error-box {
+            background: #d32f2f;
+            color: white;
+            padding: 25px 50px;
+            font-size: 1.8rem;
+            font-weight: bold;
+            border-radius: 8px;
+            box-shadow: 0 0 20px rgba(0,0,0,0.8);
+            text-align: center;
+            max-width: 80%;
+            pointer-events: auto;
+        }
+
+        /* --- Simulation Controls --- */
+       .sim-controls { 
+            position: fixed; bottom: 10px; right: 10px; 
+            background: rgba(0,0,0,0.5); padding: 10px; border-radius: 8px;
+            z-index: 200; 
+        }
+       .sim-btn {
+            background: #444; color: white; border: 1px solid #666;
+            padding: 5px 10px; margin: 0 5px; cursor: pointer;
+        }
+       .sim-btn:hover { background: #666; }
+
+        /* Chart Placeholders */
+       .chart-placeholder {
+            width: 100%; height: 100%;
+            display: flex; align-items: center; justify-content: center;
+            flex-direction: column;
+        }
+       .pie-chart {
+            width: 120px; height: 120px; border-radius: 50%;
+            background: conic-gradient(var(--accent-blue) 0% 60%, var(--accent-red) 60% 80%, #444 80% 100%);
+            margin-bottom: 10px;
+        }
+    </style>
+</head>
+<body>
+
+    <header>
+        <div class="hospital-logo">
+            <span>🏥 三軍總醫院</span>
+            <span style="font-size: 1.2rem; margin-left: 15px; color: #aaa;">52病房護理站 (電子白板系統)</span>
+        </div>
+        <div class="marquee-container">
+            <div class="marquee-content" id="marquee-text">
+                【公告】本週三下午2點由護理長召開病安會議，請各位同仁準時參加。 | 防疫期間請落實手部衛生與配戴口罩。 | 恭喜 52病房 榮獲本月最佳服務團隊！
+            </div>
+        </div>
+        <div class="clock" id="clock">00:00:00</div>
+    </header>
+
+    <div id="network-error">
+        <div class="error-box">
+            網路中斷中，請稍後再試，如有任何問題，請連絡資訊組機房電話 88630
+        </div>
+    </div>
+
+    <div id="layer-1-dashboard">
+        <div class="panel staff-list">
+            <div class="panel-header">
+                <span>照護團隊值班表</span>
+                <span style="font-size:0.9rem; cursor:pointer;">✎ 編輯</span>
+            </div>
+            <div id="staff-container">
+                </div>
+            
+            <div style="margin-top: auto; border-top: 1px solid #444; padding-top:15px;">
+                <div class="panel-header" style="font-size:1.1rem;">病房聯絡資訊</div>
+                <div class="staff-item"><span class="staff-role">單位書記</span><span class="staff-name">林雅婷</span><span class="staff-ext">1234</span></div>
+                <div class="staff-item"><span class="staff-role">社工師</span><span class="staff-name">陳建國</span><span class="staff-ext">5678</span></div>
+                <div class="staff-item"><span class="staff-role">機房熱線</span><span class="staff-name">資訊組</span><span class="staff-ext">88630</span></div>
+            </div>
+        </div>
+
+        <div class="panel bed-grid-container" id="bed-grid">
+            </div>
+
+        <div class="panel stat-panel" onclick="navigateToLayer2('stats')">
+            <div class="panel-header">病房動態 (點擊詳情)</div>
+            <div class="chart-placeholder">
+                <div class="pie-chart"></div>
+                <div style="display:flex; gap:15px; font-size:0.9rem;">
+                    <span style="color:var(--accent-blue)">■ 佔床 (60%)</span>
+                    <span style="color:var(--accent-red)">■ 預出 (20%)</span>
+                    <span style="color:#666">■ 空床 (20%)</span>
+                </div>
+                <div style="margin-top:10px; font-weight:bold;">今日入院: 3 | 今日出院: 2</div>
+            </div>
+        </div>
+
+        <div class="panel schedule-panel" onclick="navigateToLayer2('schedule')">
+            <div class="panel-header">今日排程 (點擊詳情)</div>
+            <ul style="list-style: none; padding: 0; margin: 0;">
+                <li style="margin-bottom: 12px; border-left: 4px solid var(--accent-yellow); padding-left: 10px;">
+                    <div style="font-size:0.9rem; color:var(--accent-yellow); font-weight:bold;">手術 (OP) - 09:00</div>
+                    <div>05-01 王O明 (Laparoscopic...)</div>
+                    <div style="color:#888; font-size:0.8rem;">狀態: 手術中</div>
+                </li>
+                <li style="margin-bottom: 12px; border-left: 4px solid var(--accent-blue); padding-left: 10px;">
+                    <div style="font-size:0.9rem; color:var(--accent-blue); font-weight:bold;">檢查 (CT) - 10:30</div>
+                    <div>05-03 李O華 (Abdominal CT)</div>
+                    <div style="color:#888; font-size:0.8rem;">狀態: 傳送中</div>
+                </li>
+                <li style="margin-bottom: 12px; border-left: 4px solid var(--accent-green); padding-left: 10px;">
+                    <div style="font-size:0.9rem; color:var(--accent-green); font-weight:bold;">洗腎 (HD) - 14:00</div>
+                    <div>06-02 陳O豪</div>
+                    <div style="color:#888; font-size:0.8rem;">狀態: 待排程</div>
+                </li>
+            </ul>
+        </div>
+    </div>
+
+    <div id="layer-2-detail">
+        <div class="nav-bar">
+            <button class="back-btn" onclick="backToLayer1()">⬅ 返回總覽儀表板</button>
+            <div style="font-size:1.5rem; font-weight:bold; color:var(--accent-blue);" id="layer-2-title">詳細資訊</div>
+        </div>
+        <div class="detail-content" id="layer-2-content">
+            </div>
+    </div>
+
+    <div id="layer-3-modal">
+        <div class="modal-card">
+            <div class="modal-header">
+                <span id="modal-title">詳細資訊</span>
+                <button class="close-modal" onclick="closeLayer3()">×</button>
+            </div>
+            <div id="modal-body" style="flex:1; overflow: auto; display: flex; gap: 20px;">
+                </div>
+            <div style="margin-top: 20px; padding-top: 10px; border-top: 1px solid #444; display: flex; justify-content: flex-end; gap: 10px;">
+                 <button class="sim-btn" style="padding: 10px 20px; background: var(--accent-blue); color: black; border:none; border-radius:5px;">開啟 PACS 影像</button>
+                 <button class="sim-btn" style="padding: 10px 20px; background: #444; border-radius:5px;">列印病歷摘要</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="sim-controls">
+        <span style="color:#aaa; margin-right:10px;">Demo Controls:</span>
+        <button class="sim-btn" onclick="toggleNetwork()">模擬網路中斷 (Toggle Network)</button>
+        <button class="sim-btn" onclick="randomizeData()">更新數據 (Refresh Data)</button>
+    </div>
+
+    <script>
+        // --- MOCK DATA GENERATION ---
+        const DOCTORS = ["李志豪", "張偉文", "陳淑芬", "林怡君"];
+        const NURSES = ["王小美", "陳雅婷", "林欣怡", "張惠雯"];
+        
+        // Generating 24 Beds for the Demo (Requirement: 20+ beds)
+        const BEDS = Array.from({length: 24}, (_, i) => {
+            const bedNum = `05-${(i+1).toString().padStart(2, '0')}`;
+            const statusRand = Math.random();
+            let status = 'occupied';
+            if (statusRand > 0.8) status = 'empty';
+            else if (statusRand > 0.7) status = 'cleaning';
+            
+            const gender = Math.random() > 0.5? 'M' : 'F';
+            const nameRaw = gender === 'M'? "王大明" : "林小美";
+            const maskedName = nameRaw + "O" + nameRaw; // Privacy Masking
+            
+            return {
+                id: bedNum,
+                bed: bedNum,
+                status: status,
+                name: status === 'occupied'? maskedName : (status === 'cleaning'? '清潔中' : '空床'),
+                rawName: nameRaw,
+                gender: gender,
+                mrn: `88${Math.floor(Math.random()*100000)}`,
+                doctor: DOCTORS,
+                nurse: NURSES,
+                admissionDate: "2023/10/25",
+                tags: status === 'occupied'?.filter(Boolean) :
+            };
+        });
+
+        const STAFF_DATA =;
+
+        // --- APP STATE ---
+        let isNetworkOnline = true;
+
+        // --- INITIALIZATION ---
+        function init() {
+            updateClock();
+            renderBedGrid();
+            renderStaff();
+            setInterval(updateClock, 1000);
+        }
+
+        function updateClock() {
+            const now = new Date();
+            document.getElementById('clock').innerText = now.toLocaleString('zh-TW', { hour12: false });
+        }
+
+        // --- RENDERING LAYER 1 ---
+        function renderBedGrid() {
+            const grid = document.getElementById('bed-grid');
+            grid.innerHTML = '';
+            BEDS.forEach(bed => {
+                const card = document.createElement('div');
+                let classes = `bed-card ${bed.status}`;
+                if (bed.status === 'occupied') classes += ` ${bed.gender === 'M'? 'male' : 'female'}`;
+                if (bed.tags.includes('Iso')) classes += ' isolation';
+                
+                card.className = classes;
+                card.onclick = () => openPatientDetail(bed);
+
+                // Tag Rendering
+                let tagsHtml = '';
+                if (bed.tags.length > 0) {
+                    tagsHtml = bed.tags.map(t => {
+                        let label = t; 
+                        let cls = 'tag';
+                        if (t === 'DNR') { cls += ' dnr'; label = 'DNR'; }
+                        if (t === 'Fall') { cls += ' fall'; label = '跌倒'; }
+                        if (t === 'Allergy') { cls += ' allergy'; label = '過敏'; }
+                        if (t === 'Iso') { cls += ' allergy'; label = '隔離'; background='purple'; }
+                        return `<span class="${cls}">${label}</span>`;
+                    }).join('');
+                }
+
+                // Inner Content based on status
+                if (bed.status === 'occupied') {
+                    card.innerHTML = `
+                        <div class="bed-number">${bed.bed}</div>
+                        <div class="patient-name">${bed.name}</div>
+                        <div class="patient-detail">${bed.doctor}<br>RN: ${bed.nurse}</div>
+                        <div class="tags">${tagsHtml}</div>
+                    `;
+                } else if (bed.status === 'cleaning') {
+                    card.innerHTML = `
+                        <div class="bed-number">${bed.bed}</div>
+                        <div class="patient-name" style="color: var(--status-cleaning);">清潔中</div>
+                        <div class="patient-detail">預計完成: 10min</div>
+                        <button style="margin-top:auto; background:#555; border:none; color:white; padding:5px;">刷卡完成</button>
+                    `;
+                } else {
+                    card.innerHTML = `
+                        <div class="bed-number">${bed.bed}</div>
+                        <div class="patient-name" style="color: #666;">空床</div>
+                    `;
+                }
+                grid.appendChild(card);
+            });
+        }
+
+        function renderStaff() {
+            const container = document.getElementById('staff-container');
+            container.innerHTML = STAFF_DATA.map(s => `
+                <div class="staff-item">
+                    <span class="staff-role">${s.role} (${s.type})</span>
+                    <span class="staff-name">${s.name}</span>
+                    <span class="staff-ext">Ext. ${s.ext}</span>
+                </div>
+            `).join('');
+        }
+
+        // --- NAVIGATION CONTROLLERS (Layers 2 & 3) ---
+        
+        function navigateToLayer2(view) {
+            const layer2 = document.getElementById('layer-2-detail');
+            const content = document.getElementById('layer-2-content');
+            const title = document.getElementById('layer-2-title');
+            
+            layer2.style.display = 'flex';
+            
+            if (view === 'schedule') {
+                title.innerText = "今日完整手術與檢查排程表";
+                content.innerHTML = `
+                    <table class="data-table">
+                        <thead>
+                            <tr>
+                                <th>時間</th><th>類別</th><th>床號</th><th>姓名</th><th>項目名稱</th><th>地點</th><th>狀態</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr><td>08:30</td><td>手術</td><td>05-01</td><td>王O明</td><td>Laparoscopic Cholecystectomy</td><td>OR-03</td><td>進行中</td></tr>
+                            <tr><td>09:00</td><td>檢查</td><td>05-12</td><td>張O慶</td><td>MRI Brain w/o contrast</td><td>MRI室</td><td>已報到</td></tr>
+                            <tr><td>10:30</td><td>檢查</td><td>05-03</td><td>李O華</td><td>Abdominal CT</td><td>CT室</td><td>傳送中</td></tr>
+                            <tr><td>13:00</td><td>洗腎</td><td>06-02</td><td>陳O豪</td><td>Hemodialysis</td><td>洗腎室</td><td>待排程</td></tr>
+                            <tr><td>15:00</td><td>手術</td><td>05-08</td><td>林O婷</td><td>ORIF (Left Femur)</td><td>OR-05</td><td>術前準備</td></tr>
+                        </tbody>
+                    </table>
+                `;
+            } else if (view === 'stats') {
+                title.innerText = "病房管理統計報表 & 護理人力配置";
+                content.innerHTML = `
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
+                        <div class="panel">
+                            <div class="panel-header">護理人力動態</div>
+                            <div style="font-size:1.2rem;">
+                                <p>白班應到: 8人 / 實到: 8人 (Leader: 陳淑芬)</p>
+                                <p>小夜預計: 5人</p>
+                                <p>大夜預計: 4人</p>
+                            </div>
+                        </div>
+                        <div class="panel">
+                            <div class="panel-header">病房品質指標 (Quality Metrics)</div>
+                            <p>本月跌倒件數: 0</p>
+                            <p>本月壓瘡發生率: 0.02%</p>
+                            <p>平均住院天數: 4.5 天</p>
+                        </div>
+                        <div class="panel" style="grid-column: 1 / span 2;">
+                             <div class="panel-header">出入院動態</div>
+                             <table class="data-table">
+                                <tr><th>類別</th><th>床號</th><th>姓名</th><th>主治醫師</th><th>備註</th></tr>
+                                <tr><td>預計出院</td><td>05-06</td><td>陳O同</td><td>李醫師</td><td>等待批價</td></tr>
+                                <tr><td>預計入院</td><td>05-19</td><td>黃O義</td><td>張醫師</td><td>由急診轉入</td></tr>
+                             </table>
+                        </div>
+                    </div>
+                `;
+            }
+        }
+
+        function backToLayer1() {
+            document.getElementById('layer-2-detail').style.display = 'none';
+        }
+
+        function openPatientDetail(bed) {
+            if (bed.status === 'empty') return;
+            
+            const modal = document.getElementById('layer-3-modal');
+            document.getElementById('modal-title').innerText = `床位詳細資訊: ${bed.bed}`;
+            
+            const leftCol = `
+                <div style="flex: 1;">
+                    <h3 style="color:var(--accent-blue); border-bottom:1px solid #444; padding-bottom:10px;">基本資料</h3>
+                    <p><strong>姓名:</strong> ${bed.name} (${bed.gender})</p>
+                    <p><strong>病歷號:</strong> ${bed.mrn}</p>
+                    <p><strong>主治醫師:</strong> ${bed.doctor}</p>
+                    <p><strong>主責護理:</strong> ${bed.nurse}</p>
+                    <p><strong>入院日期:</strong> ${bed.admissionDate} (住院第 3 天)</p>
+                    
+                    <h3 style="color:var(--accent-red); border-bottom:1px solid #444; padding-bottom:10px; margin-top:30px;">臨床警示</h3>
+                    <div style="display:flex; gap:10px; flex-wrap:wrap;">
+                         ${bed.tags.map(t => `<span class="tag" style="background:var(--accent-red); color:white; padding:8px; font-size:1rem;">${t}</span>`).join('') |
+
+| '無特殊註記'}
+                    </div>
+                </div>
+            `;
+            
+            const rightCol = `
+                <div style="flex: 1; border-left:1px solid #444; padding-left:25px;">
+                    <h3 style="color:var(--accent-yellow); border-bottom:1px solid #444; padding-bottom:10px;">今日醫囑與到期提醒</h3>
+                    <ul style="font-size:1.1rem; line-height:1.8;">
+                        <li>⚠️ [到期] CVC 中央靜脈導管 (Day 7)</li>
+                        <li>⚠️ [到期] 抗生素 Vancomycin (Day 14)</li>
+                        <li>✅ 10:00 換藥 (已執行)</li>
+                        <li>⬜ 14:00 血糖監測 (AC)</li>
+                    </ul>
+                    
+                    <h3 style="color:var(--accent-green); border-bottom:1px solid #444; padding-bottom:10px; margin-top:30px;">家屬與聯絡註記</h3>
+                    <p>主要照顧者: 太太 (0912-345-678)</p>
+                    <p>備註: 家屬要求病情解釋請於下午 5 點後。</p>
+                </div>
+            `;
+
+            document.getElementById('modal-body').innerHTML = leftCol + rightCol;
+            modal.style.display = 'flex';
+        }
+
+        function closeLayer3() {
+            document.getElementById('layer-3-modal').style.display = 'none';
+        }
+
+        // --- NETWORK SIMULATION (Toggle) ---
+        function toggleNetwork() {
+            isNetworkOnline =!isNetworkOnline;
+            const overlay = document.getElementById('network-error');
+            // Requirement 1.6: Show overlay but KEEP data visible underneath
+            if (!isNetworkOnline) {
+                overlay.style.display = 'flex';
+                document.getElementById('layer-1-dashboard').style.filter = 'grayscale(0.8) blur(2px)'; // Visual cue for stale data
+            } else {
+                overlay.style.display = 'none';
+                document.getElementById('layer-1-dashboard').style.filter = 'none';
+            }
+        }
+        
+        function randomizeData() {
+            // Reload page to refresh mock data
+            location.reload();
+        }
+
+        // Start
+        init();
+    </script>
+</body>
+</html>
