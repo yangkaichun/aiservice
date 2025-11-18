@@ -61,37 +61,80 @@
             min-height: 1.5rem; /* 確保切換文字時高度不變 */
         }
 
-        /* 4. Avatar 影片區域 (佔滿剩餘空間) */
+        /* **** 修改：4. Avatar 影片區域 (佔滿剩餘空間) **** */
         .avatar-area {
             flex-grow: 1; /* 佔滿所有可用的垂直空間 */
             display: flex;
             justify-content: center;
             align-items: center;
-            padding: 20px;
-            box-sizing: border-box; /* 讓 padding 不會撐開寬度 */
-            overflow: hidden; /* 確保影片不會超出範圍 */
-            min-height: 0; /* **** 修正 Flexbox 溢出問題 **** */
+            /* padding: 20px; */ /* <-- 移除 padding */
+            box-sizing: border-box; 
+            overflow: hidden; 
+            min-height: 0; 
+            position: relative; /* <-- 設為相對定位，作為懸浮按鈕的基準 */
         }
 
         .avatar-area video {
             width: 100%;
             height: 100%;
-            /* **** 修改：改成 contain 確保影片完整顯示不裁切 **** */
-            object-fit: contain; 
-            border-radius: 20px; /* 圓角 */
+            /* **** 修改：改成 cover 確保填滿不留邊 **** */
+            object-fit: cover; 
+            /* border-radius: 20px; */ /* <-- 移除圓角讓其填滿 */
         }
 
-        /* 5. 控制項區域 (底部麥克風) */
+        /* **** 修改：5. 控制項區域 (懸浮在影片上) **** */
         .controls-area {
+            position: absolute; /* <-- 改為絕對定位 */
+            bottom: 20px; /* <-- 懸浮在底部 */
+            left: 0;
+            width: 100%;
+            
             padding: 20px;
-            background-color: #ffffff;
+            box-sizing: border-box;
+            background-color: transparent; /* <-- 改為透明 */
             display: flex;
+            flex-direction: column; /* <-- 垂直排列 (語言按鈕在麥克風上) */
             justify-content: center;
             align-items: center;
-            box-shadow: 0 -2px 8px rgba(0, 0, 0, 0.1);
-            flex-shrink: 0; /* 防止此區域被壓縮 */
+            box-shadow: none; /* <-- 移除陰影 */
+            z-index: 30; /* 確保在影片上層 */
+        }
+        
+        /* **** 新增：C. 語言選擇 **** */
+        .language-selector {
+            display: flex;
+            justify-content: center;
+            flex-wrap: wrap; /* 允許換行 */
+            gap: 8px;
+            margin-bottom: 20px; /* 與麥克風按鈕的間距 */
         }
 
+        .lang-btn {
+            padding: 8px 12px;
+            font-size: 0.9rem;
+            /* 使用半透明背景以適應影片 */
+            background-color: rgba(255, 255, 255, 0.2); 
+            border: 1px solid rgba(255, 255, 255, 0.8);
+            color: white;
+            border-radius: 20px;
+            cursor: pointer;
+            transition: background-color 0.2s, color 0.2s;
+            text-shadow: 0 1px 2px rgba(0, 0, 0, 0.4); /* 增加文字陰影 */
+        }
+
+        .lang-btn:hover {
+            background-color: rgba(255, 255, 255, 0.4);
+        }
+
+        .lang-btn.active {
+            background-color: #fff;
+            color: #007bff;
+            font-weight: 500;
+            text-shadow: none;
+        }
+
+
+        /* 麥克風按鈕 */
         #mic-button {
             width: 80px;
             height: 80px;
@@ -104,7 +147,8 @@
             align-items: center;
             cursor: pointer;
             transition: background-color 0.3s, transform 0.2s;
-            box-shadow: 0 4px 12px rgba(0, 123, 255, 0.4);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3); /* 調整陰影 */
+            flex-shrink: 0; /* 確保按鈕大小不變 */
         }
 
         #mic-button:hover {
@@ -174,62 +218,93 @@
                 muted 
                 playsinline>
             </video>
-        </div>
 
-        <div class="controls-area">
-            <button id="mic-button" title="開始對話">
-                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 384 512" fill="currentColor">
-                    <path d="M192 0C139 0 96 43 96 96V256c0 53 43 96 96 96s96-43 96-96V96c0-53-43-96-96-96zM288 256c0 53-43 96-96 96s-96-43-96-96H48c0 79.5 64.5 144 144 144s144-64.5 144-144h-48zM192 480c-17.7 0-32-14.3-32-32s14.3-32 32-32s32 14.3 32 32s-14.3 32-32 32z"/>
-                </svg>
-            </button>
+            <div class="controls-area">
+                
+                <div class="language-selector">
+                    <button class="lang-btn active" data-lang="zh-TW">中文</button>
+                    <button class="lang-btn" data-lang="ta">台語</button>
+                    <button class="lang-btn" data-lang="hak">客語</button>
+                    <button class="lang-btn" data-lang="en">EN</button>
+                    <button class="lang-btn" data-lang="ms">Malay</button>
+                    <button class="lang-btn" data-lang="vi">Tiếng Việt</button>
+                    <button class="lang-btn" data-lang="ja">日本語</button>
+                    <button class="lang-btn" data-lang="fil">Filipino</button>
+                </div>
+
+                <button id="mic-button" title="開始對話">
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 384 512" fill="currentColor">
+                        <path d="M192 0C139 0 96 43 96 96V256c0 53 43 96 96 96s96-43 96-96V96c0-53-43-96-96-96zM288 256c0 53-43 96-96 96s-96-43-96-96H48c0 79.5 64.5 144 144 144s144-64.5 144-144h-48zM192 480c-17.7 0-32-14.3-32-32s14.3-32 32-32s32 14.3 32 32s-14.3 32-32 32z"/>
+                    </svg>
+                </button>
+            </div>
         </div>
 
     </div>
 
     <script>
-        // 模擬對話
+        // **** 修改：A.5 自動模擬對話 ****
         const micButton = document.getElementById('mic-button');
         const dialogueText = document.getElementById('dialogue-text');
 
-        // 模擬的回應陣列
-        const responses = [
-            "您好！請問有什麼可以為您服務的嗎？",
-            "好的，正在為您查詢院內設施...",
-            "查詢完成。一樓有星巴克與便利商店。",
-            "很高興為您服務，您可以隨時再次點擊按鈕詢問其他問題。"
+        // 模擬的對話陣列 (5組)
+        const userQueries = [
+            "你好，請問掛號處在哪裡？",
+            "我想找洗手間。",
+            "請問一樓有什麼商店？",
+            "看診時間到幾點？",
+            "謝謝你的幫忙。"
         ];
-        let responseIndex = 0;
-        let isProcessing = false; // 用來防止在機器人回應時重複點擊
+        const botResponses = [
+            "您好！掛號處在二樓，請搭乘電扶梯。",
+            "洗手間請往您的左手邊走到底就到了。",
+            "一樓有星巴克與 7-11 便利商店。",
+            "我們門診時間到晚上九點為止。",
+            "不客氣，很高興為您服務。"
+        ];
+        let convoIndex = 0;
 
-        micButton.addEventListener('click', () => {
-            // 如果正在處理中 (聆聽/回應)，則不觸發新的點擊
-            if (isProcessing) return; 
-            
-            isProcessing = true;
-
-            // 1. 開始聆聽
+        function runConversation() {
+            // 1. 模擬使用者提問 (顯示 "聆聽中")
+            dialogueText.textContent = userQueries[convoIndex];
             micButton.classList.add('is-listening');
-            micButton.disabled = true; // 聆聽時禁用按鈕
-            dialogueText.textContent = "聆聽中...";
+            micButton.disabled = true;
 
-            // 2. 模擬 2 秒的 "聆聽"
+            // 2. 模擬 "聆聽" 2.5 秒
             setTimeout(() => {
                 micButton.classList.remove('is-listening');
                 dialogueText.textContent = "..."; // 模擬 "思考中"
 
-                // 3. 模擬 1.5 秒的 "思考"
+                // 3. 模擬 "思考" 1.5 秒
                 setTimeout(() => {
-                    // 4. 顯示模擬回應
-                    dialogueText.textContent = responses[responseIndex];
-                    responseIndex = (responseIndex + 1) % responses.length; // 循環顯示回應
+                    // 4. 顯示機器人回應
+                    dialogueText.textContent = botResponses[convoIndex];
+                    micButton.disabled = false; // 按鈕恢復可用
+
+                    // 5. 更新索引
+                    convoIndex = (convoIndex + 1) % userQueries.length; // 循環
                     
-                    // 5. 回到待機狀態
-                    micButton.disabled = false; // 讓按鈕可以再次被點擊
-                    isProcessing = false; 
+                    // 6. 等待 3 秒後開始下一輪對話
+                    setTimeout(runConversation, 3000); 
 
                 }, 1500); // 思考時間
 
-            }, 2000); // 聆聽時間
+            }, 2500); // 聆聽時間
+        }
+
+        // C. 語言選擇按鈕邏輯
+        document.querySelectorAll('.lang-btn').forEach(button => {
+            button.addEventListener('click', () => {
+                document.querySelectorAll('.lang-btn').forEach(btn => btn.classList.remove('active'));
+                button.classList.add('active');
+                console.log('Language selected:', button.getAttribute('data-lang'));
+                // 這裡可以添加切換語言的 API 呼叫
+            });
+        });
+
+        // 頁面載入後 2 秒，開始自動對話
+        document.addEventListener('DOMContentLoaded', () => {
+            setTimeout(runConversation, 2000);
         });
 
     </script>
