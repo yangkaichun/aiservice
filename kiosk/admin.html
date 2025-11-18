@@ -157,7 +157,7 @@
         .form-group textarea { min-height: 120px; resize: vertical; }
         .form-group input[type="range"] { width: 100%; padding: 0; }
         
-        /* **** 新增：表單排版 **** */
+        /* 表單排版 */
         .form-row {
             display: flex;
             flex-wrap: wrap;
@@ -182,7 +182,7 @@
         .knowledge-list li { display: flex; justify-content: space-between; align-items: center; padding: 12px; border: 1px solid var(--border-color); border-radius: 8px; margin-bottom: 8px; }
         .knowledge-list .doc-icon { margin-right: 12px; }
 
-        /* **** 新增：工具 (Tools) 樣式 **** */
+        /* 工具 (Tools) 樣式 */
         .tool-list {
             display: grid;
             grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
@@ -370,23 +370,135 @@
                         <div class="wizard-step" data-step="2">2. 訓練嘴型</div>
                         <div class="wizard-step" data-step="3">3. 完成上傳</div>
                     </div>
-                    <div class="wizard-content active" data-content="1">... (內容不變) ...</div>
-                    <div class="wizard-content" data-content="2">... (內容不變) ...</div>
-                    <div class="wizard-content" data-content="3">... (內容不變) ...</div>
+
+                    <div class="wizard-content active" data-content="1">
+                        <h2>上傳人物影像檔案 (MP4)</h2>
+                        <p>請上傳 1080x1920 (9:16) 尺寸的 MP4 影片，建議長度為 10-30 秒。</p>
+                        <div class="upload-box" onclick="simulateUpload()">
+                            <h3>點擊此處或拖曳檔案上傳</h3>
+                            <p style="color: var(--text-secondary);">支援 .mp4, .mov 檔案</p>
+                        </div>
+                        <div style="text-align: right; margin-top: 24px;">
+                            <button class="btn btn-primary" onclick="wizardNext(1)">下一步</button>
+                        </div>
+                    </div>
+                    
+                    <div class="wizard-content" data-content="2">
+                        <h2>訓練嘴型</h2>
+                        <p>系統正在分析您的影片並進行嘴型同步訓練，請稍候...</p>
+                        <p id="progress-text">進度：0%</p>
+                        <div class="progress-bar">
+                            <div class="progress-bar-inner" id="progress-bar"></div>
+                        </div>
+                        <div style="text-align: right; margin-top: 24px;">
+                            <button class="btn btn-secondary" onclick="wizardNext(2, true)">返回上一步</button>
+                            <button class="btn btn-primary" id="wizard-btn-2" disabled>下一步 (訓練中)</button>
+                        </div>
+                    </div>
+
+                    <div class="wizard-content" data-content="3">
+                        <div style="text-align: center; padding: 48px;">
+                            <h2 style="color: green;">✓ 上傳並訓練完成！</h2>
+                            <p>您的新 Avatar (avatar_new_temp.mp4) 已經準備就緒。</p>
+                            <button class="btn btn-primary" onclick="navigateTo('avatar-settings')">返回 Avatar 設定</button>
+                        </div>
+                    </div>
                 </div>
             </div>
 
             <div class="page" id="page-api-asr">
                 <h1>ASR API 介接設定</h1>
                 <div class="card">
-                    ... (內容不變) ...
+                    <h2>語音轉文字 (ASR) 服務</h2>
+                    <p>設定 Kiosk 用來接收使用者語音的 API。</p>
+                    <div class="form-group">
+                        <label for="asr-provider">服務提供商</label>
+                        <select id="asr-provider">
+                            <option value="google">Google Cloud Speech-to-Text</option>
+                            <option value="azure">Azure Cognitive Services</option>
+                            <option value="aws">Amazon Transcribe</option>
+                            <option value="custom">自訂 API 端點</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="asr-language">辨識語言</label>
+                        <select id="asr-language">
+                            <option value="zh-TW">中文 (台灣)</option>
+                            <option value="en-US">英語 (美國)</option>
+                            <option value="ms-MY">馬來文</option>
+                            <option value="vi-VN">越南文</option>
+                            <option value="ja-JP">日文</option>
+                            <option value="fil-PH">菲律賓文</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="asr-endpoint">API 端點 (Endpoint URL)</label>
+                        <input type="text" id="asr-endpoint" value="https://speech.googleapis.com/v1/speech:recognize">
+                    </div>
+                    <div class="form-group">
+                        <label for="asr-key">API Key</label>
+                        <input type="password" id="asr-key" value="************">
+                    </div>
+                    <div style="text-align: right;">
+                        <button class="btn btn-primary">儲存設定</button>
+                    </div>
                 </div>
             </div>
 
             <div class="page" id="page-api-tts">
                 <h1>TTS API 介接設定</h1>
                 <div class="card">
-                    ... (內容不變) ...
+                    <h2>文字轉語音 (TTS) 服務</h2>
+                    <p>設定 Kiosk 用來回覆使用者聲音的 API。</p>
+                    <div class="form-group">
+                        <label for="tts-provider">服務提供商</label>
+                        <select id="tts-provider">
+                            <option value="google">Google Cloud Text-to-Speech</option>
+                            <option value="azure" selected>Azure Cognitive Services</option>
+                            <option value="aws">Amazon Polly</option>
+                            <option value="custom">自訂 API 端點</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="tts-endpoint">API 端點 (Endpoint URL)</label>
+                        <input type="text" id="tts-endpoint" value="https://eastus.api.cognitive.microsoft.com/sts/v1.0/issuetoken">
+                    </div>
+                    <div class="form-group">
+                        <label for="tts-key">API Key</label>
+                        <input type="password" id="tts-key" value="************">
+                    </div>
+                    <div class="form-group">
+                        <label for="tts-voice">語音模型 (Voice)</label>
+                         <select id="tts-voice">
+                            <optgroup label="中文 (台灣)">
+                                <option value="zh-TW-HsiaoChen">zh-TW-HsiaoChenNeural (女)</option>
+                                <option value="zh-TW-YunJhe">zh-TW-YunJheNeural (男)</option>
+                            </optgroup>
+                            <optgroup label="英語 (美國)">
+                                <option value="en-US-Jenny">en-US-JennyNeural (女)</option>
+                                <option value="en-US-Guy">en-US-GuyNeural (男)</option>
+                            </optgroup>
+                            <optgroup label="馬來文">
+                                <option value="ms-MY-Yasmin">ms-MY-YasminNeural (女)</option>
+                                <option value="ms-MY-Osman">ms-MY-OsmanNeural (男)</option>
+                            </optgroup>
+                            <optgroup label="越南文">
+                                <option value="vi-VN-HoaiMy">vi-VN-HoaiMyNeural (女)</option>
+                                <option value="vi-VN-NamMinh">vi-VN-NamMinhNeural (男)</option>
+                            </optgroup>
+                            <optgroup label="日文">
+                                <option value="ja-JP-Nanami">ja-JP-NanamiNeural (女)</option>
+                                <option value="ja-JP-Keita">ja-JP-KeitaNeural (男)</option>
+                            </optgroup>
+                            <optgroup label="菲律賓文">
+                                <option value="fil-PH-Blessica">fil-PH-BlessicaNeural (女)</option>
+                                <option value="fil-PH-Angelo">fil-PH-AngeloNeural (男)</option>
+                            </optgroup>
+                        </select>
+                    </div>
+                    <div style="text-align: right;">
+                        <button class="btn btn-primary">儲存設定</button>
+                    </div>
                 </div>
             </div>
             
@@ -588,12 +700,13 @@
                 li.classList.remove('active');
             });
 
-            const targetLink = document.querySelector(`.sidebar-nav [data-page="${pageId}"]`);
-            if (targetLink) {
-                targetLink.closest('li').classList.add('active');
+            // 修正：使用 [data-page="..."] 選擇器來精確找到 li
+            const targetLi = document.querySelector(`.sidebar-nav li[data-page="${pageId}"]`);
+            if (targetLi) {
+                targetLi.classList.add('active');
                 
                 // 如果是子選單，也要讓父選單 active
-                const parentLi = targetLink.closest('ul.submenu')?.closest('li');
+                const parentLi = targetLi.closest('ul.submenu')?.closest('li');
                 if (parentLi) {
                     parentLi.classList.add('active');
                 }
@@ -613,7 +726,7 @@
             );
         }
 
-        // **** 修正：統一的點擊事件處理 ****
+        // 修正：統一的點擊事件處理
         document.querySelectorAll('.sidebar-nav a').forEach(link => {
             link.addEventListener('click', (e) => {
                 
@@ -624,21 +737,12 @@
                     return; // 結束
                 }
 
-                // 2. 檢查是否為「內部頁面」連結 (透過父層的 data-page)
-                // 修正：從 <a> 往上找 <li> 的 data-page
+                // 2. 檢查是否為「內部頁面」連結 (透過父層 li 的 data-page)
                 const parentLi = link.closest('li[data-page]');
                 if (parentLi) {
                     e.preventDefault(); // 阻止預設的點擊行為
                     const pageId = parentLi.getAttribute('data-page');
                     navigateTo(pageId); // 呼叫內部導航函式
-                }
-                
-                // 3. 如果只是父層 (沒有 data-page 的 li)，點擊會展開/收合
-                // 這裡我們假設點擊父層也會觸發 pageId (e.g. 點 2. API 介接設定)
-                const parentLiWithSubmenu = link.closest('li[data-page]');
-                if(parentLiWithSubmenu && parentLiWithSubmenu.querySelector('.submenu')) {
-                    // 點擊了有子選單的主項目
-                    // 可以在這裡添加展開/收合的邏輯，但目前是靠 navigateTo 處理 active 狀態
                 }
             });
         });
