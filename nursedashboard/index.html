@@ -3,480 +3,335 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>護理站電子白板Demo</title>
-    <!-- 網頁 Icon -->
+    <title>系統管理設定 - 護理站電子白板</title>
     <link rel="icon" href="image/feticon.icon" type="image/x-icon">
-    <!-- FontAwesome Icons -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     
     <style>
+        /* 復用 index.html 的基本變數以保持風格一致 */
         :root {
             --bg-body: #f7f9fc;
             --bg-white: #ffffff;
-            --primary: #005b96;       /* 遠傳/醫療主色 */
+            --primary: #005b96;
             --text-main: #333333;
             --text-sub: #666666;
             --border-light: #e0e0e0;
-            
-            /* 狀態顏色 */
-            --status-occupied-bg: #e6fffa;
-            --status-occupied-text: #047481;
-            --status-occupied-border: #38b2ac;
-
-            --status-cleaning-bg: #fffaf0;
-            --status-cleaning-text: #dd6b20;
-            --status-cleaning-border: #ed8936;
-
-            --status-isolation-bg: #fff5f5;
-            --status-isolation-text: #c53030;
-            --status-isolation-border: #f56565;
-
-            --status-empty-bg: #edf2f7;
-            --status-empty-text: #718096;
-            --status-empty-border: #cbd5e0;
+            --error: #e53e3e;
         }
 
-        * {
-            box-sizing: border-box;
-            margin: 0;
-            padding: 0;
-            font-family: "Noto Sans TC", "Microsoft JhengHei", sans-serif;
-        }
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: "Noto Sans TC", sans-serif; }
 
         body {
             background-color: var(--bg-body);
             color: var(--text-main);
-            overflow: hidden; /* 禁止整個頁面捲動，只讓內容區捲動 */
             height: 100vh;
             display: flex;
             flex-direction: column;
+            overflow: hidden;
         }
 
-        /* --- Loading Animation --- */
+        /* --- Loading & Animations --- */
         #loading-overlay {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: var(--bg-white);
-            z-index: 9999;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            flex-direction: column;
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: var(--bg-white); z-index: 9999;
+            display: flex; flex-direction: column; justify-content: center; align-items: center;
             transition: opacity 0.8s ease-out;
         }
-
         .spinner {
-            width: 60px;
-            height: 60px;
-            border: 5px solid #f3f3f3;
-            border-top: 5px solid var(--primary);
-            border-radius: 50%;
-            animation: spin 1s linear infinite;
-            margin-bottom: 20px;
+            width: 60px; height: 60px; border: 5px solid #f3f3f3;
+            border-top: 5px solid var(--primary); border-radius: 50%;
+            animation: spin 1s linear infinite; margin-bottom: 20px;
         }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
 
-        .loading-text {
-            font-size: 1.2rem;
-            color: var(--primary);
-            font-weight: bold;
-            letter-spacing: 2px;
-        }
-
-        @keyframes spin {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
-        }
-
-        /* --- Header --- */
-        header {
-            background-color: var(--bg-white);
-            height: 80px;
-            display: flex;
-            align-items: center;
-            padding: 0 20px;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.05);
-            z-index: 100;
-            flex-shrink: 0;
-        }
-
-        .logo-area {
-            display: flex;
-            align-items: center;
-            width: 250px;
-        }
-
-        .logo-area img {
-            height: 50px; /* Logo 高度限制 */
-            width: auto;
-            object-fit: contain;
-        }
-
-        .title-area {
-            flex: 1;
-            text-align: center;
-        }
-
-        .title-area h1 {
-            font-size: 1.8rem;
-            color: var(--primary);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 10px;
-        }
-
-        .clock-area {
-            width: 250px;
-            text-align: right;
-            font-size: 1.5rem;
-            font-weight: bold;
-            color: var(--text-sub);
-            font-family: monospace; /* 時間字體 */
-        }
-
-        /* --- Marquee --- */
-        .marquee-container {
-            background-color: var(--primary);
-            color: white;
-            height: 40px;
-            display: flex;
-            align-items: center;
-            overflow: hidden;
-            flex-shrink: 0;
-        }
-
-        .marquee-content {
-            white-space: nowrap;
-            animation: marquee 20s linear infinite;
-            padding-left: 100%;
-            font-size: 1.1rem;
-        }
-
-        @keyframes marquee {
-            0% { transform: translateX(0); }
-            100% { transform: translateX(-100%); }
-        }
-
-        /* --- Main Content (Bed Grid) --- */
-        .main-content {
-            flex: 1;
-            padding: 20px;
-            overflow-y: auto; /* 內容過多時可捲動 */
-            display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); /* 自適應欄位 */
-            gap: 15px;
-            align-content: start;
-        }
-
-        /* --- Bed Card Design --- */
-        .bed-card {
-            background: var(--bg-white);
-            border-radius: 12px;
-            border: 2px solid transparent;
-            box-shadow: 0 4px 6px rgba(0,0,0,0.05);
-            display: flex;
-            flex-direction: column;
-            height: 220px; /* 固定高度 */
-            overflow: hidden;
-            transition: transform 0.2s;
-            position: relative;
-        }
-
-        .bed-card:hover {
-            transform: translateY(-3px);
-            box-shadow: 0 8px 15px rgba(0,0,0,0.1);
-        }
-
-        /* Status Styles */
-        .status-occupied { border-color: var(--status-occupied-border); background: var(--status-occupied-bg); }
-        .status-cleaning { border-color: var(--status-cleaning-border); background: var(--status-cleaning-bg); }
-        .status-isolation { border-color: var(--status-isolation-border); background: var(--status-isolation-bg); }
-        .status-empty { border-color: var(--status-empty-border); background: var(--status-empty-bg); }
-
-        /* Card Header */
-        .card-header {
-            padding: 10px 15px;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            border-bottom: 1px solid rgba(0,0,0,0.05);
-            background: rgba(255,255,255,0.5);
-        }
-
-        .bed-number {
-            font-size: 1.4rem;
-            font-weight: 800;
-            color: var(--text-main);
-        }
-
-        .bed-status-tag {
-            font-size: 0.85rem;
-            padding: 4px 8px;
-            border-radius: 15px;
-            font-weight: bold;
-        }
-        .tag-occupied { background: var(--status-occupied-border); color: white; }
-        .tag-cleaning { background: var(--status-cleaning-border); color: white; }
-        .tag-isolation { background: var(--status-isolation-border); color: white; }
-        .tag-empty { background: var(--status-empty-border); color: white; }
-
-        /* Card Body */
-        .card-body {
-            padding: 15px;
-            flex: 1;
-            display: flex;
-            flex-direction: column;
-            justify-content: center;
-            position: relative;
-        }
-
-        .patient-name {
-            font-size: 1.6rem;
-            font-weight: bold;
-            margin-bottom: 10px;
-            white-space: nowrap;
-            overflow: hidden;
-            text-overflow: ellipsis;
-            text-align: center;
-        }
-
-        .patient-details {
-            font-size: 0.95rem;
-            color: var(--text-sub);
-            display: flex;
-            flex-direction: column;
-            gap: 5px;
-        }
-
-        .detail-row {
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            white-space: nowrap;
-            overflow: hidden;
-            text-overflow: ellipsis;
+        /* --- Login Modal --- */
+        #login-container {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.5); backdrop-filter: blur(5px);
+            z-index: 5000;
+            display: none; /* Initially hidden, shown after loading */
+            justify-content: center; align-items: center;
         }
         
-        .doctor-nurse {
-             margin-top: auto;
-             padding-top: 10px;
-             border-top: 1px dashed rgba(0,0,0,0.1);
-             display: flex;
-             justify-content: space-between;
-             font-size: 0.9rem;
+        .login-box {
+            background: white; padding: 40px; border-radius: 15px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.2);
+            width: 400px; text-align: center;
+        }
+        .login-box h2 { margin-bottom: 20px; color: var(--primary); }
+        .input-group { margin-bottom: 15px; text-align: left; }
+        .input-group label { display: block; margin-bottom: 5px; color: var(--text-sub); }
+        .input-group input {
+            width: 100%; padding: 10px; border: 1px solid var(--border-light);
+            border-radius: 5px; font-size: 1rem;
+        }
+        .btn-login {
+            width: 100%; padding: 12px; background: var(--primary);
+            color: white; border: none; border-radius: 5px;
+            font-size: 1.1rem; cursor: pointer; margin-top: 10px;
+        }
+        .error-msg { color: var(--error); font-size: 0.9rem; margin-top: 10px; display: none; }
+
+        /* --- Main Admin Layout --- */
+        #admin-dashboard {
+            display: none; /* Hidden until login */
+            flex-direction: column; height: 100%;
         }
 
-        /* Empty State Styling */
-        .empty-state {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            height: 100%;
-            color: var(--status-empty-text);
+        header {
+            background: var(--bg-white); height: 70px;
+            display: flex; align-items: center; padding: 0 30px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+            justify-content: space-between;
         }
-        .empty-state i { font-size: 3rem; margin-bottom: 10px; opacity: 0.5; }
-
-        /* --- Footer/Control --- */
-        .admin-btn-container {
-            position: fixed;
-            bottom: 20px;
-            left: 20px;
-            z-index: 500;
+        .header-title { font-size: 1.5rem; color: var(--primary); font-weight: bold; display: flex; align-items: center; gap: 10px; }
+        .btn-back {
+            text-decoration: none; color: var(--text-sub); font-weight: bold;
+            border: 1px solid var(--border-light); padding: 8px 15px;
+            border-radius: 20px; transition: 0.3s;
         }
+        .btn-back:hover { background: var(--primary); color: white; border-color: var(--primary); }
 
-        .btn-admin {
-            background-color: var(--text-sub);
-            color: white;
-            border: none;
-            padding: 10px 20px;
-            border-radius: 30px;
-            font-size: 1rem;
-            cursor: pointer;
-            box-shadow: 0 4px 10px rgba(0,0,0,0.2);
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            transition: background 0.3s;
-            text-decoration: none; /* 確保連結樣式 */
+        /* Content Area - Fix Overlap with Grid */
+        .admin-content {
+            flex: 1; padding: 30px; overflow-y: auto;
+        }
+        
+        .settings-grid {
+            display: grid;
+            /* 使用 repeat(auto-fit) 確保卡片不會重疊，自動換行 */
+            grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+            gap: 25px;
+            padding-bottom: 30px;
         }
 
-        .btn-admin:hover {
-            background-color: var(--primary);
+        /* Setting Card */
+        .setting-card {
+            background: white; border-radius: 12px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+            border: 1px solid var(--border-light);
+            display: flex; flex-direction: column;
         }
 
-        /* RWD Text Adjustment */
-        @media (max-width: 768px) {
-            .title-area h1 { font-size: 1.2rem; }
-            .logo-area { width: 150px; }
-            .clock-area { width: 100px; font-size: 1rem; }
+        .card-title {
+            padding: 15px 20px; border-bottom: 1px solid var(--border-light);
+            background: #f8f9fa; color: var(--primary); font-weight: bold; font-size: 1.1rem;
+            display: flex; align-items: center; gap: 10px;
+            border-radius: 12px 12px 0 0;
+        }
+
+        .card-body {
+            padding: 20px; flex: 1;
+        }
+
+        /* Form Elements inside cards */
+        .form-row { margin-bottom: 15px; }
+        .form-row label { display: block; font-size: 0.9rem; color: var(--text-sub); margin-bottom: 5px; }
+        .form-row input[type="text"], .form-row input[type="url"], .form-row select {
+            width: 100%; padding: 8px; border: 1px solid var(--border-light); border-radius: 4px;
+        }
+        .status-indicator {
+            display: inline-block; width: 10px; height: 10px; border-radius: 50%;
+            background: #48bb78; margin-right: 5px;
+        }
+        .btn-save {
+            background: var(--primary); color: white; border: none;
+            padding: 8px 15px; border-radius: 4px; cursor: pointer; float: right;
         }
 
     </style>
 </head>
 <body>
 
-    <!-- Loading Animation -->
+    <!-- 1. Loading Animation -->
     <div id="loading-overlay">
         <div class="spinner"></div>
-        <div class="loading-text">系統載入中...</div>
+        <div class="loading-text">系統模組載入中...</div>
     </div>
 
-    <!-- Header -->
-    <header>
-        <div class="logo-area">
-            <!-- Logo 若無圖檔會顯示 alt 文字 -->
-            <img src="fetlogo.png" alt="FET Logo" onerror="this.style.display='none'; this.nextElementSibling.style.display='block';">
-            <span style="display:none; font-weight:bold; font-size:1.5rem; color:var(--primary);">FET</span>
-        </div>
-        <div class="title-area">
-            <h1><i class="fa-solid fa-hospital-user"></i> 護理站電子白板系統</h1>
-        </div>
-        <div class="clock-area" id="clock">12:00:00</div>
-    </header>
-
-    <!-- Marquee -->
-    <div class="marquee-container">
-        <div class="marquee-content">
-            <i class="fa-solid fa-bullhorn"></i> 公告：本院定於下週三進行消防演習，請各單位配合辦理。 &nbsp;&nbsp;&nbsp; | &nbsp;&nbsp;&nbsp; 注意：NICU 訪客時間更改為每日 14:00 - 15:00。 &nbsp;&nbsp;&nbsp; | &nbsp;&nbsp;&nbsp; <i class="fa-solid fa-cloud-sun"></i> 今日天氣：晴時多雲，氣溫 26°C。
+    <!-- 2. Login Modal -->
+    <div id="login-container">
+        <div class="login-box">
+            <img src="fetlogo.png" alt="Logo" style="height: 40px; margin-bottom: 15px;">
+            <h2>管理員登入</h2>
+            <div class="input-group">
+                <label><i class="fa-solid fa-user"></i> 帳號</label>
+                <input type="text" id="username" placeholder="請輸入帳號">
+            </div>
+            <div class="input-group">
+                <label><i class="fa-solid fa-lock"></i> 密碼</label>
+                <input type="password" id="password" placeholder="請輸入密碼">
+            </div>
+            <p class="error-msg" id="login-error"><i class="fa-solid fa-circle-exclamation"></i> 帳號或密碼錯誤</p>
+            <button class="btn-login" onclick="attemptLogin()">登入系統</button>
         </div>
     </div>
 
-    <!-- Main Content Grid -->
-    <div class="main-content" id="bed-grid">
-        <!-- JS will inject content here -->
-    </div>
+    <!-- 3. Main Dashboard -->
+    <div id="admin-dashboard">
+        <header>
+            <div class="header-title">
+                <i class="fa-solid fa-sliders"></i> 系統管理控制台
+            </div>
+            <a href="index.html" class="btn-back"><i class="fa-solid fa-arrow-right-from-bracket"></i> 返回白板</a>
+        </header>
 
-    <!-- Admin Button (Bottom Left) -->
-    <div class="admin-btn-container">
-        <a href="admin.html" class="btn-admin">
-            <i class="fa-solid fa-gear"></i> 管理設定
-        </a>
+        <div class="admin-content">
+            <div class="settings-grid">
+                
+                <!-- NIS 介接 -->
+                <div class="setting-card">
+                    <div class="card-title"><i class="fa-solid fa-user-nurse"></i> NIS 護理系統設定</div>
+                    <div class="card-body">
+                        <div class="form-row">
+                            <label>API Endpoint URL</label>
+                            <input type="url" value="https://nis-api.hospital.internal/v2/beds">
+                        </div>
+                        <div class="form-row">
+                            <label>更新頻率 (秒)</label>
+                            <input type="text" value="60">
+                        </div>
+                        <div class="form-row">
+                            <label>連線狀態</label>
+                            <div style="font-size: 0.9rem;"><span class="status-indicator"></span>正常連線中</div>
+                        </div>
+                        <button class="btn-save">儲存設定</button>
+                    </div>
+                </div>
+
+                <!-- HIS 介接 -->
+                <div class="setting-card">
+                    <div class="card-title"><i class="fa-solid fa-hospital"></i> HIS 醫療資訊設定</div>
+                    <div class="card-body">
+                        <div class="form-row">
+                            <label>資料庫連線字串</label>
+                            <input type="text" value="192.168.1.100:1521/HISDB">
+                        </div>
+                        <div class="form-row">
+                            <label>病患隱私遮罩</label>
+                            <select>
+                                <option>顯示全名</option>
+                                <option selected>中間名遮罩 (王○明)</option>
+                            </select>
+                        </div>
+                        <button class="btn-save">儲存設定</button>
+                    </div>
+                </div>
+
+                <!-- PACS 介接 -->
+                <div class="setting-card">
+                    <div class="card-title"><i class="fa-solid fa-x-ray"></i> PACS 影像系統設定</div>
+                    <div class="card-body">
+                        <div class="form-row">
+                            <label>DICOM Server IP</label>
+                            <input type="text" value="192.168.50.20">
+                        </div>
+                        <div class="form-row">
+                            <label>AETitle</label>
+                            <input type="text" value="FET_WHITEBOARD">
+                        </div>
+                        <button class="btn-save">儲存設定</button>
+                    </div>
+                </div>
+
+                <!-- 電子排班表 -->
+                <div class="setting-card">
+                    <div class="card-title"><i class="fa-solid fa-calendar-days"></i> 電子排班表介接</div>
+                    <div class="card-body">
+                        <div class="form-row">
+                            <label>排班資料來源</label>
+                            <select>
+                                <option>Excel 匯入</option>
+                                <option selected>HR 系統 API</option>
+                            </select>
+                        </div>
+                        <div class="form-row">
+                            <label>當班人員顯示數量上限</label>
+                            <input type="text" value="10">
+                        </div>
+                        <button class="btn-save">儲存設定</button>
+                    </div>
+                </div>
+
+                <!-- 公告訊息 -->
+                <div class="setting-card">
+                    <div class="card-title"><i class="fa-solid fa-bullhorn"></i> 公告訊息介接</div>
+                    <div class="card-body">
+                        <div class="form-row">
+                            <label>跑馬燈訊息來源</label>
+                            <input type="text" value="院內公告系統 JSON">
+                        </div>
+                        <div class="form-row">
+                            <label>跑馬燈速度</label>
+                            <input type="range" min="1" max="10" value="5">
+                        </div>
+                        <button class="btn-save">儲存設定</button>
+                    </div>
+                </div>
+
+                <!-- 系統資訊 (Extra for balance) -->
+                <div class="setting-card">
+                    <div class="card-title"><i class="fa-solid fa-server"></i> 本機系統資訊</div>
+                    <div class="card-body">
+                        <div class="form-row">
+                            <label>IP 位址</label>
+                            <input type="text" value="10.20.30.45" disabled style="background:#eee;">
+                        </div>
+                        <div class="form-row">
+                            <label>軟體版本</label>
+                            <input type="text" value="v2.5.1 (Build 20231115)" disabled style="background:#eee;">
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+        </div>
     </div>
 
     <script>
-        // 1. Loading Animation Logic
+        // 1. Flow Control: Load -> Login -> Dashboard
         window.onload = function() {
+            // Step 1: Loading Animation (4 seconds)
             setTimeout(() => {
                 const overlay = document.getElementById('loading-overlay');
                 overlay.style.opacity = '0';
                 setTimeout(() => {
                     overlay.style.display = 'none';
-                }, 800); // Wait for fade out
-            }, 4000); // 4 seconds delay
-            
-            renderBeds();
-            startClock();
+                    // Step 2: Show Login
+                    document.getElementById('login-container').style.display = 'flex';
+                }, 800);
+            }, 4000);
         };
 
-        // 2. Clock Logic
-        function startClock() {
-            const clockEl = document.getElementById('clock');
-            setInterval(() => {
-                const now = new Date();
-                // Format: HH:MM:SS
-                clockEl.innerText = now.toTimeString().split(' ')[0];
-            }, 1000);
+        // 2. Login Logic
+        function attemptLogin() {
+            const user = document.getElementById('username').value;
+            const pass = document.getElementById('password').value;
+            const errorMsg = document.getElementById('login-error');
+
+            if (user === 'fet' && pass === 'fet') {
+                // Success
+                errorMsg.style.display = 'none';
+                document.getElementById('login-container').style.display = 'none';
+                document.getElementById('admin-dashboard').style.display = 'flex';
+            } else {
+                // Failure
+                errorMsg.style.display = 'block';
+                // Shake animation effect
+                const box = document.querySelector('.login-box');
+                box.style.transform = 'translateX(10px)';
+                setTimeout(() => box.style.transform = 'translateX(0)', 100);
+                setTimeout(() => box.style.transform = 'translateX(-10px)', 200);
+                setTimeout(() => box.style.transform = 'translateX(0)', 300);
+            }
         }
 
-        // 3. Mock Data & Rendering
-        const bedsData = [
-            { id: '05-01', status: 'occupied', name: '陳○宏', gender: '男', age: 65, doctor: '李醫師', nurse: '王護理師', tags: ['禁食', '防跌'] },
-            { id: '05-02', status: 'occupied', name: '林○美', gender: '女', age: 42, doctor: '張醫師', nurse: '林護理師', tags: ['過敏'] },
-            { id: '05-03', status: 'isolation', name: '王○明', gender: '男', age: 70, doctor: '陳醫師', nurse: '陳護理師', tags: ['接觸隔離'] },
-            { id: '05-05', status: 'empty', name: '', gender: '', age: 0, doctor: '', nurse: '', tags: [] },
-            { id: '05-06', status: 'cleaning', name: '待床中', gender: '', age: 0, doctor: '', nurse: '清潔組', tags: [] },
-            { id: '05-07', status: 'occupied', name: '黃○芬', gender: '女', age: 28, doctor: '李醫師', nurse: '王護理師', tags: [] },
-            { id: '05-08', status: 'occupied', name: '張○豪', gender: '男', age: 55, doctor: '吳醫師', nurse: '劉護理師', tags: ['限水'] },
-            { id: '05-09', status: 'empty', name: '', gender: '', age: 0, doctor: '', nurse: '', tags: [] },
-            { id: '05-10', status: 'occupied', name: '劉○華', gender: '女', age: 88, doctor: '張醫師', nurse: '林護理師', tags: ['防跌', '高風險'] },
-            { id: '05-11', status: 'occupied', name: '蔡○文', gender: '男', age: 34, doctor: '陳醫師', nurse: '陳護理師', tags: [] },
-            { id: '05-12', status: 'isolation', name: '楊○瑋', gender: '男', age: 50, doctor: '李醫師', nurse: '王護理師', tags: ['飛沫隔離'] },
-            { id: '05-13', status: 'occupied', name: '許○婷', gender: '女', age: 22, doctor: '吳醫師', nurse: '劉護理師', tags: [] },
-        ];
-
-        function renderBeds() {
-            const grid = document.getElementById('bed-grid');
-            let htmlContent = '';
-
-            bedsData.forEach(bed => {
-                let statusClass = `status-${bed.status}`;
-                let tagClass = `tag-${bed.status}`;
-                let statusText = '';
-                let bodyContent = '';
-
-                // Determine status text and body content
-                switch(bed.status) {
-                    case 'occupied':
-                        statusText = '一般';
-                        bodyContent = `
-                            <div class="patient-name">${bed.name}</div>
-                            <div class="patient-details">
-                                <div class="detail-row"><i class="fa-solid fa-venus-mars"></i> ${bed.gender} / ${bed.age}歲</div>
-                                <div class="detail-row" style="color: #c53030;">
-                                    ${bed.tags.map(t => `<i class="fa-solid fa-circle-exclamation"></i> ${t}`).join(' ')}
-                                </div>
-                            </div>
-                            <div class="doctor-nurse">
-                                <span><i class="fa-solid fa-user-doctor"></i> ${bed.doctor}</span>
-                                <span><i class="fa-solid fa-user-nurse"></i> ${bed.nurse}</span>
-                            </div>
-                        `;
-                        break;
-                    case 'isolation':
-                        statusText = '隔離';
-                        bodyContent = `
-                            <div class="patient-name" style="color:var(--status-isolation-text);">${bed.name}</div>
-                            <div class="patient-details">
-                                <div class="detail-row"><i class="fa-solid fa-shield-virus"></i> 感染管控中</div>
-                                <div class="detail-row" style="font-weight:bold;">
-                                    ${bed.tags.join(' ')}
-                                </div>
-                            </div>
-                             <div class="doctor-nurse">
-                                <span><i class="fa-solid fa-user-doctor"></i> ${bed.doctor}</span>
-                                <span><i class="fa-solid fa-user-nurse"></i> ${bed.nurse}</span>
-                            </div>
-                        `;
-                        break;
-                    case 'cleaning':
-                        statusText = '清潔';
-                        bodyContent = `
-                            <div class="empty-state" style="color:var(--status-cleaning-text);">
-                                <i class="fa-solid fa-broom"></i>
-                                <span>病床清潔中</span>
-                                <span style="font-size:0.8rem; margin-top:5px;">預計 15 分鐘</span>
-                            </div>
-                        `;
-                        break;
-                    default: // empty
-                        statusText = '空床';
-                        bodyContent = `
-                            <div class="empty-state">
-                                <i class="fa-solid fa-bed"></i>
-                                <span>目前無人</span>
-                            </div>
-                        `;
-                }
-
-                htmlContent += `
-                    <div class="bed-card ${statusClass}">
-                        <div class="card-header">
-                            <div class="bed-number"><i class="fa-solid fa-procedures"></i> ${bed.id}</div>
-                            <div class="bed-status-tag ${tagClass}">${statusText}</div>
-                        </div>
-                        <div class="card-body">
-                            ${bodyContent}
-                        </div>
-                    </div>
-                `;
-            });
-
-            grid.innerHTML = htmlContent;
-        }
+        // Enter key support
+        document.addEventListener('keypress', function (e) {
+            if (e.key === 'Enter' && document.getElementById('login-container').style.display === 'flex') {
+                attemptLogin();
+            }
+        });
     </script>
 </body>
 </html>
