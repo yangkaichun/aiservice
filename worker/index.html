@@ -3,664 +3,588 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>HODS 智慧醫院營運派工系統</title>
-    <link rel="shortcut icon" href="feticon.ico" type="image/x-icon">
-    <link rel="stylesheet" href="[https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css](https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css)">
-    <script src="[https://cdn.jsdelivr.net/npm/chart.js](https://cdn.jsdelivr.net/npm/chart.js)"></script>
+    <title>HODS 醫院派工系統</title>
     
-    <style>
-        :root {
-            --primary-color: #0056b3; /* 醫療藍 */
-            --secondary-color: #00a86b; /* 醫療綠 */
-            --text-color: #333333;
-            --bg-color: #ffffff;
-            --light-gray: #f8f9fa;
-            --border-color: #e9ecef;
-            --shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
-            --transition: all 0.3s ease;
-        }
+    <!-- Favicon Configuration -->
+    <link rel="shortcut icon" href="feticon.ico" type="image/x-icon">
+    
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- React & ReactDOM -->
+    <script crossorigin src="https://unpkg.com/react@18/umd/react.development.js"></script>
+    <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
+    
+    <!-- Prop Types (Required for Recharts UMD to work correctly) -->
+    <script src="https://unpkg.com/prop-types/prop-types.min.js"></script>
 
-        * {
-            box-sizing: border-box;
-            margin: 0;
-            padding: 0;
-            font-family: 'Segoe UI', 'Microsoft JhengHei', sans-serif;
-        }
+    <!-- Recharts (Chart library for React) - Using specific version for stability -->
+    <script src="https://unpkg.com/recharts@2.12.7/umd/Recharts.js"></script>
+    
+    <!-- Babel for JSX -->
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    
+    <!-- Lucide Icons (Lightweight icon set) -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@300;400;500;700&display=swap');
 
         body {
-            background-color: var(--bg-color);
-            color: var(--text-color);
+            font-family: 'Noto Sans TC', sans-serif;
+            background-color: #f8fafc; /* Very light gray, almost white */
             overflow-x: hidden;
         }
 
-        /* --- 3秒載入動畫 --- */
-        #loader {
+        /* Custom Scrollbar */
+        ::-webkit-scrollbar {
+            width: 6px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #f1f1f1;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #cbd5e1;
+            border-radius: 3px;
+        }
+
+        /* Loading Animation Styles */
+        .loader-container {
             position: fixed;
             top: 0;
             left: 0;
             width: 100%;
             height: 100%;
             background-color: #ffffff;
-            z-index: 9999;
             display: flex;
-            flex-direction: column;
             justify-content: center;
             align-items: center;
+            z-index: 9999;
+            flex-direction: column;
             transition: opacity 0.5s ease-out;
         }
-
-       .spinner {
-            width: 50px;
-            height: 50px;
-            border: 5px solid var(--light-gray);
-            border-top: 5px solid var(--primary-color);
-            border-radius: 50%;
-            animation: spin 1s linear infinite;
-            margin-bottom: 20px;
-        }
-
-       .loading-text {
-            font-size: 1.2rem;
-            color: var(--primary-color);
-            font-weight: bold;
-            animation: pulse 1.5s infinite;
-        }
-
-        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
-        @keyframes pulse { 0% { opacity: 0.6; } 50% { opacity: 1; } 100% { opacity: 0.6; } }
-
-        /* --- Header & Navigation --- */
-        header {
-            position: fixed;
-            top: 0;
-            width: 100%;
-            height: 70px;
-            background: white;
-            box-shadow: var(--shadow);
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            padding: 0 2rem;
-            z-index: 1000;
-        }
-
-       .logo-area {
-            display: flex;
-            align-items: center;
-            gap: 15px;
-        }
-
-       .logo-area img {
-            height: 40px;
-            width: auto;
-        }
-
-       .logo-text {
-            font-size: 1.2rem;
-            font-weight: bold;
-            color: var(--primary-color);
-        }
-
-       .nav-info {
-            display: flex;
-            align-items: center;
-            gap: 20px;
-            font-size: 0.9rem;
-            color: #666;
-        }
-
-       .nav-btn {
-            padding: 8px 16px;
-            border-radius: 20px;
-            background: var(--light-gray);
-            cursor: pointer;
-            transition: var(--transition);
-        }
         
-       .nav-btn:hover { background: #e2e6ea; }
-
-        /* --- Main Container --- */
-       .main-container {
-            margin-top: 80px;
-            padding: 2rem;
-            min-height: calc(100vh - 80px);
-            position: relative;
-        }
-
-        /* --- Breadcrumbs --- */
-       .breadcrumbs {
-            margin-bottom: 20px;
-            color: #888;
-            font-size: 0.9rem;
-            cursor: pointer;
-        }
-       .breadcrumbs span:hover { color: var(--primary-color); text-decoration: underline; }
-       .breadcrumbs i { margin: 0 10px; font-size: 0.8rem; }
-
-        /* --- Layer 1: Landing Grid --- */
-       .dashboard-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-            gap: 2rem;
-            opacity: 0; /* Init hidden for transition */
-            transform: translateY(20px);
-            animation: fadeUp 0.8s forwards 0.5s;
-        }
-
-       .module-card {
-            background: white;
-            border: 1px solid var(--border-color);
-            border-radius: 12px;
-            padding: 2rem;
-            text-align: center;
-            cursor: pointer;
-            transition: var(--transition);
-            position: relative;
-            overflow: hidden;
-        }
-
-       .module-card:hover {
-            transform: translateY(-5px);
-            box-shadow: 0 10px 20px rgba(0,0,0,0.1);
-            border-color: var(--primary-color);
-        }
-
-       .module-card::before {
-            content: '';
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 5px;
-            background: var(--primary-color);
-        }
-
-       .card-icon {
-            font-size: 3rem;
-            color: var(--primary-color);
-            margin-bottom: 1.5rem;
-        }
-
-       .card-title {
-            font-size: 1.5rem;
-            margin-bottom: 1rem;
-            font-weight: 600;
-        }
-
-       .card-desc {
-            color: #666;
-            line-height: 1.6;
-            margin-bottom: 1.5rem;
-        }
-
-       .card-stat {
-            background: var(--light-gray);
-            padding: 10px;
-            border-radius: 8px;
-            font-size: 0.9rem;
-            color: #555;
-            display: flex;
-            justify-content: space-between;
-        }
-
-        /* --- Layer 2: Module Dashboard (Hidden by default) --- */
-       .layer-section {
-            display: none;
+        .loader-hidden {
             opacity: 0;
-            transition: opacity 0.4s ease;
+            pointer-events: none;
         }
 
-       .active-layer {
-            display: block;
-            opacity: 1;
-            animation: fadeIn 0.5s ease;
+        .pulse-ring {
+            content: '';
+            width: 80px;
+            height: 80px;
+            border: 4px solid #3b82f6;
+            border-radius: 50%;
+            animation: pulse-ring 1.25s cubic-bezier(0.215, 0.61, 0.355, 1) infinite;
         }
 
-       .l2-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 2rem;
-            padding-bottom: 1rem;
-            border-bottom: 1px solid var(--border-color);
+        @keyframes pulse-ring {
+            0% { transform: scale(0.33); opacity: 1; }
+            80%, 100% { transform: scale(1); opacity: 0; }
         }
 
-       .l2-grid {
-            display: grid;
-            grid-template-columns: 1fr 3fr; /* Sidebar menu + Main content */
-            gap: 2rem;
+        /* Card Hover Effect */
+        .hover-card {
+            transition: all 0.2s ease-in-out;
         }
-
-       .side-menu {
-            background: var(--light-gray);
-            border-radius: 12px;
-            padding: 1.5rem;
-            height: fit-content;
+        .hover-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
         }
-
-       .menu-item {
-            padding: 12px 15px;
-            margin-bottom: 10px;
-            border-radius: 8px;
-            cursor: pointer;
-            transition: var(--transition);
-            display: flex;
-            align-items: center;
-            gap: 10px;
-        }
-
-       .menu-item:hover,.menu-item.active {
-            background: var(--primary-color);
-            color: white;
-        }
-
-       .content-area {
-            background: white;
-            border: 1px solid var(--border-color);
-            border-radius: 12px;
-            padding: 2rem;
-            min-height: 500px;
-        }
-
-        /* --- Layer 3: Interactive Elements --- */
-       .form-group {
-            margin-bottom: 1.5rem;
-        }
-       .form-label {
-            display: block;
-            margin-bottom: 0.5rem;
-            font-weight: 500;
-        }
-       .form-control {
-            width: 100%;
-            padding: 10px;
-            border: 1px solid #ccc;
-            border-radius: 6px;
-            font-size: 1rem;
-        }
-       .btn-primary {
-            background: var(--primary-color);
-            color: white;
-            border: none;
-            padding: 10px 25px;
-            border-radius: 6px;
-            cursor: pointer;
-            font-size: 1rem;
-            transition: var(--transition);
-        }
-       .btn-primary:hover { background: #004494; }
-        
-       .btn-scan {
-            background: var(--text-color);
-            color: white;
-            width: 100%;
-            padding: 15px;
-            border: none;
-            border-radius: 6px;
-            margin-bottom: 20px;
-            cursor: pointer;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            gap: 10px;
-        }
-
-       .status-badge {
-            padding: 4px 8px;
-            border-radius: 4px;
-            font-size: 0.8rem;
-            font-weight: bold;
-        }
-       .status-urgent { background: #ffebee; color: #c62828; }
-       .status-normal { background: #e3f2fd; color: #1565c0; }
-
-        /* Animations */
-        @keyframes fadeUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
-        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
-
-        /* Tables for L3 */
-       .data-table {
-            width: 100%;
-            border-collapse: collapse;
-            margin-top: 20px;
-        }
-       .data-table th,.data-table td {
-            padding: 12px;
-            text-align: left;
-            border-bottom: 1px solid #eee;
-        }
-       .data-table th { background-color: var(--light-gray); }
-
     </style>
 </head>
 <body>
 
-    <div id="loader">
-        <div class="spinner"></div>
-        <div class="loading-text">HODS 系統載入中...</div>
-    </div>
+    <div id="root"></div>
 
-    <header>
-        <div class="logo-area">
-            <img src="image/fetlogo.png" alt="FET Logo" onerror="this.src='[https://via.placeholder.com/100x40?text=FET+Logo';this.onerror=null](https://via.placeholder.com/100x40?text=FET+Logo';this.onerror=null);">
-            <span class="logo-text">智慧醫院營運派工系統</span>
-        </div>
-        <div class="nav-info">
-            <div class="nav-btn"><i class="fas fa-bell"></i> 通知 (3)</div>
-            <div class="nav-btn"><i class="fas fa-user-circle"></i> 管理員</div>
-        </div>
-    </header>
+    <script type="text/babel">
+        const { useState, useEffect, useMemo } = React;
+        // Ensure Recharts is defined before destructuring
+        const { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } = window.Recharts || {};
 
-    <div class="main-container">
-        
-        <div class="breadcrumbs" id="breadcrumbs">
-            <span onclick="goHome()">首頁</span>
-        </div>
-
-        <div id="layer1" class="layer-section active-layer">
-            <div style="text-align: center; margin-bottom: 3rem;">
-                <h1 style="font-size: 2.5rem; color: var(--primary-color); margin-bottom: 1rem;">全方位後勤指揮中心</h1>
-                <p style="color: #666; max-width: 600px; margin: 0 auto;">整合儀器維修、環境清潔、傳送服務與決策數據，實現高效能智慧醫療運營。</p>
-            </div>
-
-            <div class="dashboard-grid">
-                <div class="module-card" onclick="goToLayer2('biomed')">
-                    <div class="card-icon"><i class="fas fa-heartbeat"></i></div>
-                    <div class="card-title">醫工維修系統</div>
-                    <div class="card-desc">管理全院 5000+ 醫療儀器。包含 QR Code 報修、PM 排程與法規合規管理。</div>
-                    <div class="card-stat">
-                        <span>今日報修: 12</span>
-                        <span>待修設備: 3</span>
-                    </div>
-                </div>
-
-                <div class="module-card" onclick="goToLayer2('evs')">
-                    <div class="card-icon"><i class="fas fa-broom"></i></div>
-                    <div class="card-title">環境清潔派工</div>
-                    <div class="card-desc">感染控制連動。終期清潔自動派單，隔離房消毒標準流程監控。</div>
-                    <div class="card-stat">
-                        <span>病床清潔中: 5</span>
-                        <span>平均周轉: 45分</span>
-                    </div>
-                </div>
-
-                <div class="module-card" onclick="goToLayer2('porter')">
-                    <div class="card-icon"><i class="fas fa-wheelchair"></i></div>
-                    <div class="card-title">傳送服務調度</div>
-                    <div class="card-desc">如 Uber 般的傳送叫車系統。AI 演算法優化路徑，RTLS 即時定位。</div>
-                    <div class="card-stat">
-                        <span>在途中: 8</span>
-                        <span>平均等待: 8分</span>
-                    </div>
-                </div>
-
-                <div class="module-card" onclick="goToLayer2('command')">
-                    <div class="card-icon"><i class="fas fa-chart-line"></i></div>
-                    <div class="card-title">決策戰情室</div>
-                    <div class="card-desc">跨部門數據整合。即時熱點圖、KPI 監控與人力資源預測分析。</div>
-                    <div class="card-stat">
-                        <span>SLA 達成率: 98%</span>
-                        <span>異常警示: 0</span>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <div id="layer2" class="layer-section">
-            <div class="l2-header">
-                <h2 id="l2-title" style="color: var(--primary-color);">模組標題</h2>
-                <div style="font-size: 0.9rem; color: #666;">系統狀態: <span style="color: var(--secondary-color); font-weight: bold;">線上</span></div>
-            </div>
-
-            <div class="l2-grid">
-                <div class="side-menu" id="l2-menu">
-                    </div>
-
-                <div class="content-area" id="l3-content">
-                    <div style="display: flex; justify-content: center; align-items: center; height: 100%; color: #999;">
-                        <p>請從左側選單選擇一項功能</p>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-    </div>
-
-    <script>
-        // 1. Loading Animation (3 Seconds)
-        window.addEventListener('load', () => {
-            setTimeout(() => {
-                const loader = document.getElementById('loader');
-                loader.style.opacity = '0';
-                setTimeout(() => {
-                    loader.style.display = 'none';
-                }, 500);
-            }, 3000);
-        });
-
-        // 2. Navigation System
-        const layer1 = document.getElementById('layer1');
-        const layer2 = document.getElementById('layer2');
-        const l2Title = document.getElementById('l2-title');
-        const l2Menu = document.getElementById('l2-menu');
-        const l3Content = document.getElementById('l3-content');
-        const breadcrumbs = document.getElementById('breadcrumbs');
-
-        let currentModule = '';
-
-        function goHome() {
-            layer2.classList.remove('active-layer');
-            setTimeout(() => {
-                layer2.style.display = 'none';
-                layer1.style.display = 'block';
-                setTimeout(() => layer1.classList.add('active-layer'), 50);
-            }, 300);
-            breadcrumbs.innerHTML = '<span onclick="goHome()">首頁</span>';
-        }
-
-        function goToLayer2(moduleId) {
-            currentModule = moduleId;
-            layer1.classList.remove('active-layer');
-            
-            setTimeout(() => {
-                layer1.style.display = 'none';
-                layer2.style.display = 'block';
-                setTimeout(() => layer2.classList.add('active-layer'), 50);
-                
-                setupLayer2(moduleId);
-            }, 300);
-        }
-
-        // 3. Module Configuration (L2 & L3 Content)
-        const moduleData = {
-            'biomed': {
-                title: '醫工維修管理系統 (Biomed)',
-                menu:,
-                content: {
-                    'req': `
-                        <h3><i class="fas fa-tools"></i> 新增設備報修</h3>
-                        <p style="color:#666; margin-bottom:20px;">請掃描設備上的財產編號 QR Code 或手動輸入。</p>
-                        <button class="btn-scan"><i class="fas fa-camera"></i> 開啟相機掃描 QR Code</button>
-                        <form onsubmit="alert('報修單已送出！通知已發送至 LINE。'); return false;">
-                            <div class="form-group">
-                                <label class="form-label">設備編號 (Asset ID)</label>
-                                <input type="text" class="form-control" value="IV-PUMP-2025-001" readonly>
-                            </div>
-                            <div class="form-group">
-                                <label class="form-label">故障描述</label>
-                                <select class="form-control">
-                                    <option>無法開機</option>
-                                    <option>螢幕顯示異常</option>
-                                    <option>電池蓄電不足</option>
-                                    <option>其他 (請說明)</option>
-                                </select>
-                            </div>
-                            <div class="form-group">
-                                <label class="form-label">緊急程度</label>
-                                <div style="display:flex; gap:10px;">
-                                    <label><input type="radio" name="priority" checked> 一般</label>
-                                    <label><input type="radio" name="priority"> <span style="color:red;">緊急 (影響病患安全)</span></label>
-                                </div>
-                            </div>
-                            <button type="submit" class="btn-primary">提交報修單</button>
-                        </form>
-                    `,
-                    'list': `
-                        <h3>維修工單佇列</h3>
-                        <table class="data-table">
-                            <thead><tr><th>單號</th><th>設備</th><th>位置</th><th>狀態</th><th>負責人</th></tr></thead>
-                            <tbody>
-                                <tr><td>R-2023001</td><td>生理監視器</td><td>ICU-01</td><td><span class="status-badge status-urgent">維修中</span></td><td>陳工程師</td></tr>
-                                <tr><td>R-2023002</td><td>輸液幫浦</td><td>5B-12</td><td><span class="status-badge status-normal">待派工</span></td><td>-</td></tr>
-                                <tr><td>R-2023003</td><td>心電圖機</td><td>ER-Resus</td><td><span class="status-badge status-normal">待料中</span></td><td>林工程師</td></tr>
-                            </tbody>
-                        </table>
-                    `
-                }
-            },
-            'evs': {
-                title: '環境清潔服務 (EVS)',
-                menu: [
-                    { id: 'map', name: '病房清潔狀態地圖', icon: 'fa-map' },
-                    { id: 'iso', name: '隔離房消毒指引', icon: 'fa-shield-virus' }
-                ],
-                content: {
-                    'map': `
-                        <h3><i class="fas fa-hospital-alt"></i> 5樓病房區 - 即時清潔狀態</h3>
-                        <div style="display:grid; grid-template-columns: repeat(4, 1fr); gap:15px; margin-top:20px;">
-                            <div style="padding:20px; border:1px solid #ddd; border-radius:8px; background:#e8f5e9; text-align:center;">501<br><small style="color:green;">已清潔</small></div>
-                            <div style="padding:20px; border:1px solid #ddd; border-radius:8px; background:#ffebee; text-align:center;">502<br><small style="color:red;">待終期清潔</small><br><i class="fas fa-biohazard"></i></div>
-                            <div style="padding:20px; border:1px solid #ddd; border-radius:8px; background:#fff3e0; text-align:center;">503<br><small style="color:orange;">清潔中 (張阿姨)</small></div>
-                            <div style="padding:20px; border:1px solid #ddd; border-radius:8px; background:#e8f5e9; text-align:center;">505<br><small style="color:green;">已清潔</small></div>
-                        </div>
-                        <div style="margin-top:20px; font-size:0.9rem; color:#666;">
-                            <i class="fas fa-info-circle"></i> 502房為接觸隔離病患出院，系統已自動指派具備 PPE 證照之人員。
-                        </div>
-                    `
-                }
-            },
-            'porter': {
-                title: '傳送物流系統 (Portering)',
-                menu: [
-                    { id: 'new', name: '新增傳送任務', icon: 'fa-plus-circle' },
-                    { id: 'track', name: '即時位置追蹤', icon: 'fa-crosshairs' }
-                ],
-                content: {
-                    'new': `
-                        <h3><i class="fas fa-ambulance"></i> 呼叫傳送人員</h3>
-                        <div class="form-group">
-                            <label class="form-label">起點</label>
-                            <input type="text" class="form-control" value="7A 護理站" readonly>
-                        </div>
-                        <div class="form-group">
-                            <label class="form-label">終點</label>
-                            <select class="form-control">
-                                <option>放射科 (X-Ray)</option>
-                                <option>開刀房 (OR)</option>
-                                <option>一樓批掛櫃台</option>
-                            </select>
-                        </div>
-                        <div class="form-group">
-                            <label class="form-label">傳送類型</label>
-                            <div style="display:flex; gap:10px; margin-top:5px;">
-                                <button type="button" style="flex:1; padding:10px; border:1px solid #ddd; background:white; border-radius:5px;">推床</button>
-                                <button type="button" style="flex:1; padding:10px; border:1px solid #ddd; background:white; border-radius:5px;">輪椅</button>
-                                <button type="button" style="flex:1; padding:10px; border:1px solid #ddd; background:white; border-radius:5px;">檢體</button>
-                            </div>
-                        </div>
-                        <button class="btn-primary" style="width:100%" onclick="alert('系統已指派最近的傳送員：王小明 (距離 50m)')">呼叫 (AI 智慧媒合)</button>
-                    `
-                }
-            },
-            'command': {
-                title: '營運決策戰情室',
-                menu: [
-                    { id: 'overview', name: '綜合儀表板', icon: 'fa-tachometer-alt' }
-                ],
-                content: {
-                    'overview': `
-                        <h3>全院營運關鍵指標 (KPI)</h3>
-                        <div style="height:300px; width:100%; margin-top:20px;">
-                            <canvas id="kpiChart"></canvas>
-                        </div>
-                        <div style="display:grid; grid-template-columns: 1fr 1fr; gap:20px; margin-top:20px;">
-                            <div style="background:#f8f9fa; padding:15px; border-radius:8px;">
-                                <h4>MTTR (平均修復時間)</h4>
-                                <p style="font-size:2rem; font-weight:bold; color:var(--primary-color);">3.2 小時</p>
-                                <small style="color:green;"><i class="fas fa-arrow-down"></i> 較上月下降 15%</small>
-                            </div>
-                            <div style="background:#f8f9fa; padding:15px; border-radius:8px;">
-                                <h4>病床清潔周轉率</h4>
-                                <p style="font-size:2rem; font-weight:bold; color:var(--secondary-color);">42 分鐘</p>
-                                <small style="color:green;"><i class="fas fa-check"></i> 達標 (目標 < 60分)</small>
-                            </div>
-                        </div>
-                    `
-                }
-            }
+        // --- Mock Data ---
+        const MOCK_DATA = {
+            stats: [
+                { title: "待處理維修", value: 12, color: "text-red-500", icon: "Wrench" },
+                { title: "今日請求", value: 45, color: "text-blue-500", icon: "FileText" },
+                { title: "清潔任務", value: 8, color: "text-green-500", icon: "Sparkles" },
+                { title: "設備妥善率", value: "98%", color: "text-purple-500", icon: "Activity" },
+            ],
+            chartData: [
+                { name: '08:00', requests: 12, repairs: 2 },
+                { name: '10:00', requests: 19, repairs: 5 },
+                { name: '12:00', requests: 8, repairs: 1 },
+                { name: '14:00', requests: 25, repairs: 6 },
+                { name: '16:00', requests: 15, repairs: 3 },
+                { name: '18:00', requests: 10, repairs: 4 },
+            ],
+            pieData: [
+                { name: '已完成', value: 400 },
+                { name: '處理中', value: 300 },
+                { name: '待指派', value: 100 },
+                { name: '異常', value: 50 },
+            ],
+            modules: [
+                { id: 'repair', title: '儀器維修', icon: 'Stethoscope', desc: '醫療儀器故障排除與報修' },
+                { id: 'request', title: '人員請求', icon: 'UserPlus', desc: '護理站人力支援與物資請求' },
+                { id: 'maintain', title: '設備維護', icon: 'Settings', desc: '定期保養與巡檢排程' },
+                { id: 'clean', title: '清潔派工', icon: 'SprayCan', desc: '病房與公共區域清潔調度' },
+            ],
+            tasks: [
+                { id: 101, type: 'repair', title: '呼吸器故障 (Ventilator-02)', location: 'ICU-Bed 5', priority: 'High', status: 'Pending', time: '10:30', requester: '林護理長' },
+                { id: 102, type: 'clean', title: '病床終期清潔', location: 'Ward 702', priority: 'Normal', status: 'Processing', time: '11:15', requester: '陳護理師' },
+                { id: 103, type: 'maintain', title: 'MRI 季保養', location: 'Radiology', priority: 'Scheduled', status: 'Pending', time: '14:00', requester: '系統排程' },
+                { id: 104, type: 'repair', title: '輸液幫浦異常', location: 'ER-03', priority: 'High', status: 'Done', time: '09:00', requester: '王醫師' },
+            ]
         };
 
-        function setupLayer2(moduleId) {
-            const data = moduleData[moduleId];
-            l2Title.innerHTML = data.title;
-            
-            // 更新麵包屑
-            breadcrumbs.innerHTML = `<span onclick="goHome()">首頁</span> <i class="fas fa-chevron-right"></i> <span>${data.title}</span>`;
+        const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042'];
 
-            // 生成側邊選單
-            l2Menu.innerHTML = data.menu.map((item, index) => `
-                <div class="menu-item ${index === 0? 'active' : ''}" onclick="loadLayer3('${moduleId}', '${item.id}', this)">
-                    <i class="fas ${item.icon}"></i> ${item.name}
+        // --- Components ---
+
+        // 1. Icon Helper
+        const Icon = ({ name, size = 20, className = "" }) => {
+            const lucideIcon = window.lucide && window.lucide.icons ? window.lucide.icons[name] : null;
+            if (!lucideIcon) return <span className={className}>?</span>;
+            
+            return (
+                <svg 
+                    width={size} 
+                    height={size} 
+                    viewBox="0 0 24 24" 
+                    fill="none" 
+                    stroke="currentColor" 
+                    strokeWidth="2" 
+                    strokeLinecap="round" 
+                    strokeLinejoin="round" 
+                    className={className}
+                    dangerouslySetInnerHTML={{ __html: lucideIcon.toSvg().match(/<svg[^>]*>([\s\S]*?)<\/svg>/)[1] }}
+                />
+            );
+        };
+
+        // 2. Loading Screen
+        const LoadingScreen = ({ visible }) => {
+            if (!visible) return null;
+            return (
+                <div className={`loader-container ${!visible ? 'loader-hidden' : ''}`}>
+                    <div className="pulse-ring"></div>
+                    <div className="mt-8 text-xl font-bold text-gray-600 tracking-widest">HODS</div>
+                    <div className="text-sm text-gray-400 mt-2">系統載入中...</div>
                 </div>
-            `).join('');
+            );
+        };
 
-            // 預設載入第一個選項
-            loadLayer3(moduleId, data.menu.id, l2Menu.children);
-        }
+        // 3. Navigation Breadcrumb
+        const Breadcrumb = ({ path, onNavigate }) => (
+            <div className="flex items-center text-sm text-gray-500 mb-6">
+                <span 
+                    className="cursor-pointer hover:text-blue-600" 
+                    onClick={() => onNavigate('home')}
+                >
+                    首頁
+                </span>
+                {path.map((p, idx) => (
+                    <React.Fragment key={idx}>
+                        <span className="mx-2">/</span>
+                        <span 
+                            className={`${idx === path.length - 1 ? 'font-bold text-gray-800' : 'cursor-pointer hover:text-blue-600'}`}
+                            onClick={() => idx !== path.length - 1 && onNavigate(p.id)}
+                        >
+                            {p.label}
+                        </span>
+                    </React.Fragment>
+                ))}
+            </div>
+        );
 
-        function loadLayer3(moduleId, itemId, element) {
-            // Update active menu state
-            const items = document.querySelectorAll('.menu-item');
-            items.forEach(i => i.classList.remove('active'));
-            if(element) element.classList.add('active');
+        // 4. Main Application Component
+        const App = () => {
+            const [loading, setLoading] = useState(true);
+            // Navigation Stack: [{id: 'home', label: 'Home'}, {id: 'repair', label: '儀器維修'}]
+            const [navPath, setNavPath] = useState([]); 
+            const [selectedTask, setSelectedTask] = useState(null);
 
-            const data = moduleData[moduleId];
+            // Simulate 3s loading
+            useEffect(() => {
+                const timer = setTimeout(() => setLoading(false), 3000);
+                return () => clearTimeout(timer);
+            }, []);
+
+            // Navigation Handlers
+            const goHome = () => {
+                setNavPath([]);
+                setSelectedTask(null);
+            };
+
+            const goToModule = (moduleId, moduleTitle) => {
+                setNavPath([{ id: moduleId, label: moduleTitle }]);
+                setSelectedTask(null);
+            };
+
+            const goToDetail = (task) => {
+                setNavPath([...navPath, { id: 'detail', label: '任務詳情' }]);
+                setSelectedTask(task);
+            };
+
+            const goBack = () => {
+                if (selectedTask) {
+                    // Back from detail to list
+                    const newPath = [...navPath];
+                    newPath.pop();
+                    setNavPath(newPath);
+                    setSelectedTask(null);
+                } else {
+                    // Back from list to home
+                    setNavPath([]);
+                }
+            };
+
+            // --- Render Logic ---
             
-            // Inject Content
-            if (data.content[itemId]) {
-                l3Content.innerHTML = data.content[itemId];
+            // View: Dashboard (Layer 1)
+            const renderDashboard = () => (
+                <div className="animate-fade-in">
+                    {/* Stats Row */}
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+                        {MOCK_DATA.stats.map((stat, idx) => (
+                            <div key={idx} className="bg-white p-6 rounded-xl shadow-sm hover-card border border-gray-100">
+                                <div className="flex justify-between items-start">
+                                    <div>
+                                        <p className="text-sm text-gray-500 mb-1">{stat.title}</p>
+                                        <h3 className="text-3xl font-bold text-gray-800">{stat.value}</h3>
+                                    </div>
+                                    <div className={`p-3 rounded-lg bg-opacity-10 ${stat.color.replace('text-', 'bg-')}`}>
+                                        <Icon name={stat.icon} className={stat.color} size={24} />
+                                    </div>
+                                </div>
+                            </div>
+                        ))}
+                    </div>
+
+                    {/* Modules Grid */}
+                    <h2 className="text-xl font-bold text-gray-800 mb-4">功能模組</h2>
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+                        {MOCK_DATA.modules.map((mod) => (
+                            <div 
+                                key={mod.id} 
+                                onClick={() => goToModule(mod.id, mod.title)}
+                                className="bg-white p-6 rounded-xl shadow-sm hover-card cursor-pointer border border-gray-100 group"
+                            >
+                                <div className="flex items-center mb-4">
+                                    <div className="p-3 bg-blue-50 rounded-lg group-hover:bg-blue-100 transition-colors">
+                                        <Icon name={mod.icon} className="text-blue-600" size={24} />
+                                    </div>
+                                </div>
+                                <h3 className="text-lg font-semibold text-gray-800 mb-2">{mod.title}</h3>
+                                <p className="text-sm text-gray-500">{mod.desc}</p>
+                            </div>
+                        ))}
+                    </div>
+
+                    {/* Charts Section */}
+                    <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                        <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100 lg:col-span-2">
+                            <h3 className="text-lg font-semibold text-gray-800 mb-6">即時流量監控</h3>
+                            <div className="h-64">
+                                <ResponsiveContainer width="100%" height="100%">
+                                    {LineChart ? (
+                                        <LineChart data={MOCK_DATA.chartData}>
+                                            <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
+                                            <XAxis dataKey="name" stroke="#94a3b8" />
+                                            <YAxis stroke="#94a3b8" />
+                                            <Tooltip 
+                                                contentStyle={{ backgroundColor: '#fff', borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)' }}
+                                            />
+                                            <Line type="monotone" dataKey="requests" stroke="#3b82f6" strokeWidth={3} dot={{ r: 4 }} name="請求數" />
+                                            <Line type="monotone" dataKey="repairs" stroke="#ef4444" strokeWidth={3} dot={{ r: 4 }} name="維修數" />
+                                        </LineChart>
+                                    ) : <div className="flex items-center justify-center h-full text-gray-400">圖表載入中...</div>}
+                                </ResponsiveContainer>
+                            </div>
+                        </div>
+                        <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
+                            <h3 className="text-lg font-semibold text-gray-800 mb-6">案件狀態分佈</h3>
+                            <div className="h-64">
+                                <ResponsiveContainer width="100%" height="100%">
+                                    {PieChart ? (
+                                        <PieChart>
+                                            <Pie
+                                                data={MOCK_DATA.pieData}
+                                                cx="50%"
+                                                cy="50%"
+                                                innerRadius={60}
+                                                outerRadius={80}
+                                                paddingAngle={5}
+                                                dataKey="value"
+                                            >
+                                                {MOCK_DATA.pieData.map((entry, index) => (
+                                                    <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                                                ))}
+                                            </Pie>
+                                            <Tooltip />
+                                        </PieChart>
+                                    ) : <div className="flex items-center justify-center h-full text-gray-400">圖表載入中...</div>}
+                                </ResponsiveContainer>
+                                <div className="flex justify-center gap-4 mt-4">
+                                    {MOCK_DATA.pieData.map((entry, index) => (
+                                        <div key={index} className="flex items-center text-xs text-gray-500">
+                                            <div className="w-2 h-2 rounded-full mr-1" style={{ backgroundColor: COLORS[index % COLORS.length] }}></div>
+                                            {entry.name}
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            );
+
+            // View: List (Layer 2)
+            const renderList = () => {
+                const currentModuleId = navPath[0].id;
+                // Filter tasks based on module (simple mock logic)
+                const filteredTasks = MOCK_DATA.tasks.filter(t => t.type === currentModuleId || currentModuleId === 'request');
                 
-                // Special handler for Chart.js in Command Center
-                if(moduleId === 'command' && itemId === 'overview') {
-                    setTimeout(initChart, 100);
-                }
-            } else {
-                l3Content.innerHTML = '<p>功能開發中...</p>';
+                return (
+                    <div className="animate-fade-in">
+                        <div className="flex justify-between items-center mb-6">
+                            <h2 className="text-2xl font-bold text-gray-800">{navPath[0].label} - 任務列表</h2>
+                            <button className="bg-blue-600 text-white px-4 py-2 rounded-lg flex items-center hover:bg-blue-700 transition-colors">
+                                <Icon name="Plus" size={18} className="mr-2" />
+                                新增任務
+                            </button>
+                        </div>
+
+                        <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+                            <table className="w-full text-left">
+                                <thead className="bg-gray-50 border-b border-gray-100">
+                                    <tr>
+                                        <th className="p-4 text-sm font-semibold text-gray-600">ID</th>
+                                        <th className="p-4 text-sm font-semibold text-gray-600">標題</th>
+                                        <th className="p-4 text-sm font-semibold text-gray-600">位置</th>
+                                        <th className="p-4 text-sm font-semibold text-gray-600">優先級</th>
+                                        <th className="p-4 text-sm font-semibold text-gray-600">狀態</th>
+                                        <th className="p-4 text-sm font-semibold text-gray-600">操作</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {filteredTasks.length > 0 ? filteredTasks.map(task => (
+                                        <tr key={task.id} className="border-b border-gray-50 hover:bg-blue-50/50 transition-colors">
+                                            <td className="p-4 text-gray-600">#{task.id}</td>
+                                            <td className="p-4 font-medium text-gray-800">{task.title}</td>
+                                            <td className="p-4 text-gray-600 flex items-center">
+                                                <Icon name="MapPin" size={14} className="mr-1 text-gray-400" />
+                                                {task.location}
+                                            </td>
+                                            <td className="p-4">
+                                                <span className={`px-2 py-1 rounded-full text-xs font-medium ${
+                                                    task.priority === 'High' ? 'bg-red-100 text-red-700' : 
+                                                    task.priority === 'Scheduled' ? 'bg-purple-100 text-purple-700' :
+                                                    'bg-green-100 text-green-700'
+                                                }`}>
+                                                    {task.priority}
+                                                </span>
+                                            </td>
+                                            <td className="p-4">
+                                                <span className="flex items-center text-sm text-gray-600">
+                                                    <span className={`w-2 h-2 rounded-full mr-2 ${
+                                                        task.status === 'Pending' ? 'bg-yellow-400' :
+                                                        task.status === 'Processing' ? 'bg-blue-400' :
+                                                        'bg-green-400'
+                                                    }`}></span>
+                                                    {task.status}
+                                                </span>
+                                            </td>
+                                            <td className="p-4">
+                                                <button 
+                                                    onClick={() => goToDetail(task)}
+                                                    className="text-blue-600 hover:text-blue-800 font-medium text-sm"
+                                                >
+                                                    查看詳情
+                                                </button>
+                                            </td>
+                                        </tr>
+                                    )) : (
+                                        <tr>
+                                            <td colSpan="6" className="p-8 text-center text-gray-400">目前此類別無待辦任務</td>
+                                        </tr>
+                                    )}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                );
+            };
+
+            // View: Detail (Layer 3)
+            const renderDetail = () => {
+                if (!selectedTask) return null;
+                return (
+                    <div className="animate-fade-in max-w-4xl mx-auto">
+                        <div className="bg-white rounded-xl shadow-lg border border-gray-100 overflow-hidden">
+                            {/* Header */}
+                            <div className="p-6 border-b border-gray-100 bg-gray-50 flex justify-between items-center">
+                                <div>
+                                    <div className="flex items-center gap-3 mb-2">
+                                        <span className="text-sm font-mono text-gray-500">#{selectedTask.id}</span>
+                                        <span className={`px-2 py-0.5 rounded text-xs font-medium ${
+                                            selectedTask.priority === 'High' ? 'bg-red-100 text-red-700' : 'bg-blue-100 text-blue-700'
+                                        }`}>
+                                            {selectedTask.priority}
+                                        </span>
+                                    </div>
+                                    <h1 className="text-2xl font-bold text-gray-800">{selectedTask.title}</h1>
+                                </div>
+                                <div className="flex gap-2">
+                                    <button className="p-2 text-gray-500 hover:bg-white hover:shadow rounded-lg transition-all">
+                                        <Icon name="Printer" size={20} />
+                                    </button>
+                                    <button className="p-2 text-gray-500 hover:bg-white hover:shadow rounded-lg transition-all">
+                                        <Icon name="Share2" size={20} />
+                                    </button>
+                                </div>
+                            </div>
+
+                            {/* Body */}
+                            <div className="p-8 grid grid-cols-1 md:grid-cols-3 gap-8">
+                                {/* Left Column: Info */}
+                                <div className="md:col-span-2 space-y-6">
+                                    <div>
+                                        <h3 className="text-sm font-semibold text-gray-400 uppercase tracking-wider mb-3">基本資訊</h3>
+                                        <div className="grid grid-cols-2 gap-4">
+                                            <div className="bg-gray-50 p-4 rounded-lg">
+                                                <p className="text-xs text-gray-500 mb-1">發生地點</p>
+                                                <p className="font-medium text-gray-800 flex items-center">
+                                                    <Icon name="MapPin" size={16} className="mr-2 text-blue-500" />
+                                                    {selectedTask.location}
+                                                </p>
+                                            </div>
+                                            <div className="bg-gray-50 p-4 rounded-lg">
+                                                <p className="text-xs text-gray-500 mb-1">通報時間</p>
+                                                <p className="font-medium text-gray-800 flex items-center">
+                                                    <Icon name="Clock" size={16} className="mr-2 text-blue-500" />
+                                                    {selectedTask.time}
+                                                </p>
+                                            </div>
+                                            <div className="bg-gray-50 p-4 rounded-lg">
+                                                <p className="text-xs text-gray-500 mb-1">通報人員</p>
+                                                <p className="font-medium text-gray-800 flex items-center">
+                                                    <Icon name="User" size={16} className="mr-2 text-blue-500" />
+                                                    {selectedTask.requester}
+                                                </p>
+                                            </div>
+                                            <div className="bg-gray-50 p-4 rounded-lg">
+                                                <p className="text-xs text-gray-500 mb-1">目前狀態</p>
+                                                <p className="font-medium text-gray-800">{selectedTask.status}</p>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <div>
+                                        <h3 className="text-sm font-semibold text-gray-400 uppercase tracking-wider mb-3">處理紀錄</h3>
+                                        <div className="border-l-2 border-blue-100 pl-4 space-y-6">
+                                            <div className="relative">
+                                                <div className="absolute -left-[21px] top-1 w-3 h-3 rounded-full bg-blue-500 border-2 border-white"></div>
+                                                <p className="text-sm text-gray-500 mb-1">10:35 AM</p>
+                                                <p className="text-gray-800">系統自動分派給維修組。</p>
+                                            </div>
+                                            <div className="relative">
+                                                <div className="absolute -left-[21px] top-1 w-3 h-3 rounded-full bg-gray-300 border-2 border-white"></div>
+                                                <p className="text-sm text-gray-500 mb-1">10:30 AM</p>
+                                                <p className="text-gray-800">林護理長 建立此請求。</p>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                {/* Right Column: Actions */}
+                                <div className="space-y-4">
+                                    <h3 className="text-sm font-semibold text-gray-400 uppercase tracking-wider mb-3">執行操作</h3>
+                                    <button className="w-full py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-medium transition-colors flex justify-center items-center shadow-lg shadow-blue-200">
+                                        <Icon name="CheckCircle" size={18} className="mr-2" />
+                                        接單處理
+                                    </button>
+                                    <button className="w-full py-3 bg-white border border-gray-200 text-gray-700 hover:bg-gray-50 rounded-lg font-medium transition-colors flex justify-center items-center">
+                                        <Icon name="MessageSquare" size={18} className="mr-2" />
+                                        新增註記
+                                    </button>
+                                    <button className="w-full py-3 bg-white border border-gray-200 text-red-600 hover:bg-red-50 hover:border-red-200 rounded-lg font-medium transition-colors flex justify-center items-center">
+                                        <Icon name="AlertTriangle" size={18} className="mr-2" />
+                                        回報異常
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                );
             }
-        }
 
-        function initChart() {
-            const ctx = document.getElementById('kpiChart').getContext('2d');
-            new Chart(ctx, {
-                type: 'line',
-                data: {
-                    labels: ['08:00', '10:00', '12:00', '14:00', '16:00', '18:00'],
-                    datasets: [{
-                        label: '未結案工單數',
-                        data: [1, 2, 3, 4, 5, 6],
-                        borderColor: '#0056b3',
-                        tension: 0.4,
-                        fill: true,
-                        backgroundColor: 'rgba(0, 86, 179, 0.1)'
-                    }]
-                },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false
-                }
-            });
-        }
+            return (
+                <div className="min-h-screen flex flex-col">
+                    {loading && <LoadingScreen visible={loading} />}
+                    
+                    {/* Navbar */}
+                    <nav className="bg-white border-b border-gray-200 sticky top-0 z-50">
+                        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                            <div className="flex justify-between h-16">
+                                <div className="flex items-center cursor-pointer" onClick={goHome}>
+                                    {/* Logo Handling with Fallback */}
+                                    <img 
+                                        src="image/fetlogo.png" 
+                                        alt="FET Logo" 
+                                        className="h-8 mr-3"
+                                        onError={(e) => {
+                                            e.target.style.display = 'none';
+                                            e.target.nextSibling.style.display = 'block';
+                                        }}
+                                    />
+                                    <div className="hidden text-2xl font-bold text-blue-600 mr-3">FET</div>
+                                    <div className="border-l border-gray-300 h-6 mx-2"></div>
+                                    <span className="text-gray-800 font-medium text-lg tracking-wide">HODS 醫院派工系統</span>
+                                </div>
+                                <div className="flex items-center space-x-4">
+                                    <button className="p-2 text-gray-400 hover:text-gray-600 relative">
+                                        <Icon name="Bell" />
+                                        <span className="absolute top-1 right-1 w-2 h-2 bg-red-500 rounded-full"></span>
+                                    </button>
+                                    <div className="flex items-center gap-2 pl-4 border-l border-gray-200">
+                                        <div className="w-8 h-8 rounded-full bg-gradient-to-tr from-blue-500 to-cyan-400 flex items-center justify-center text-white text-xs font-bold">
+                                            AD
+                                        </div>
+                                        <div className="hidden md:block text-sm">
+                                            <p className="text-gray-700 font-medium">Admin User</p>
+                                            <p className="text-xs text-gray-400">System Manager</p>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </nav>
 
+                    {/* Main Content */}
+                    <main className="flex-1 bg-slate-50 p-4 sm:p-6 lg:p-8">
+                        <div className="max-w-7xl mx-auto">
+                            {navPath.length > 0 && <Breadcrumb path={navPath} onNavigate={(id) => id === 'home' ? goHome() : goBack()} />}
+                            
+                            {navPath.length === 0 && renderDashboard()}
+                            {navPath.length === 1 && renderList()}
+                            {navPath.length === 2 && renderDetail()}
+                        </div>
+                    </main>
+
+                    {/* Footer */}
+                    <footer className="bg-white border-t border-gray-200 mt-auto">
+                        <div className="max-w-7xl mx-auto py-4 px-4 text-center text-xs text-gray-400">
+                            &copy; 2025 FET Hospital Operations Dispatch System. All rights reserved.
+                        </div>
+                    </footer>
+                </div>
+            );
+        };
+
+        const root = ReactDOM.createRoot(document.getElementById('root'));
+        root.render(<App />);
     </script>
 </body>
 </html>
