@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>系統管理設定 - 護理站電子白板</title>
-    <link rel="icon" href="./image/feticon.icon" type="image/x-icon">
+    <link rel="icon" href="image/feticon.icon" type="image/x-icon">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     
     <style>
@@ -19,7 +19,7 @@
             --error: #e53e3e;
         }
 
-        * { box-sizing: border-box; margin: 0; padding: 0; font-family: "Noto Sans TC", sans-serif; }
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: "Noto Sans TC", "Microsoft JhengHei", sans-serif; }
 
         body {
             background-color: var(--bg-body);
@@ -30,25 +30,74 @@
             overflow: hidden;
         }
 
-        /* --- Loading & Animations --- */
-        #loading-overlay {
-           position: fixed;
-                top: 0; left: 0; width: 100%; height: 100%;
-                background-color: #f8f9fa;
-                z-index: 9999;
-                display: flex;
-                flex-direction: column;
-                align-items: center;
-                justify-content: center;
-                transition: opacity 0.8s ease-out, visibility 0.8s;
+        /* --- 載入動畫層 (與 Index.html 同步) --- */
+        #system-loader {
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background-color: #f8f9fa;
+            z-index: 9999;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            transition: opacity 0.8s ease-out, visibility 0.8s;
         }
-        .spinner {
-         font-size: 4rem;
-                color: var(--primary);
-                animation: fa-beat 1s infinite linear;
-                margin-bottom: 20px;
+        
+        .loader-content { text-align: center; }
+        
+        /* 心跳圖示動畫 */
+        .pulse-icon {
+            font-size: 4rem;
+            color: var(--primary);
+            animation: fa-beat 1s infinite linear;
+            margin-bottom: 20px;
         }
-        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+        
+        .loader-text {
+            font-size: 1.5rem;
+            font-weight: bold;
+            color: var(--text-main);
+            margin-bottom: 5px;
+            letter-spacing: 2px;
+        }
+        
+        .loader-subtext {
+            font-size: 0.9rem;
+            color: var(--text-sub);
+            margin-bottom: 30px;
+        }
+
+        /* 進度條容器 */
+        .progress-container {
+            width: 280px;
+            height: 6px;
+            background-color: #e2e8f0;
+            border-radius: 3px;
+            overflow: hidden;
+            position: relative;
+        }
+
+        /* 進度條動畫 (4秒) */
+        .progress-bar {
+            width: 0%;
+            height: 100%;
+            background-color: var(--primary);
+            animation: loadProgress 4s linear forwards; 
+            border-radius: 3px;
+            box-shadow: 0 0 10px rgba(0, 91, 150, 0.5);
+        }
+
+        @keyframes loadProgress {
+            0% { width: 0%; }
+            100% { width: 100%; }
+        }
+
+        /* 隱藏 Loader 的 class */
+        .loader-hidden {
+            opacity: 0;
+            visibility: hidden;
+            pointer-events: none;
+        }
 
         /* --- Login Modal --- */
         #login-container {
@@ -57,7 +106,11 @@
             z-index: 5000;
             display: none; /* Initially hidden, shown after loading */
             justify-content: center; align-items: center;
+            opacity: 0; 
+            animation: fadeIn 0.5s forwards;
         }
+        
+        @keyframes fadeIn { to { opacity: 1; } }
         
         .login-box {
             background: white; padding: 40px; border-radius: 15px;
@@ -149,16 +202,23 @@
 </head>
 <body>
 
-    <!-- 1. Loading Animation -->
-    <div id="loading-overlay">
-        <div class="spinner"></div>
-        <div class="loading-text">系統管理模組載入中...</div>
+    <!-- 1. Loading Animation (New Style) -->
+    <div id="system-loader">
+        <div class="loader-content">
+            <i class="fa-solid fa-gear pulse-icon"></i>
+            <div class="loader-text">系統管理模組載入中</div>
+            <div class="loader-subtext">System Administration Module Loading</div>
+            
+            <div class="progress-container">
+                <div class="progress-bar"></div>
+            </div>
+        </div>
     </div>
 
     <!-- 2. Login Modal -->
     <div id="login-container">
         <div class="login-box">
-            <img src="fetlogo.png" alt="Logo" style="height: 40px; margin-bottom: 15px;">
+            <img src="fetlogo.png" alt="Logo" style="height: 40px; margin-bottom: 15px;" onerror="this.style.display='none';">
             <h2>管理員登入</h2>
             <div class="input-group">
                 <label><i class="fa-solid fa-user"></i> 帳號</label>
@@ -297,15 +357,21 @@
     <script>
         // 1. Flow Control: Load -> Login -> Dashboard
         window.onload = function() {
-            // Step 1: Loading Animation (4 seconds)
+            // Step 1: Wait for animation (4 seconds)
             setTimeout(() => {
-                const overlay = document.getElementById('loading-overlay');
-                overlay.style.opacity = '0';
+                const loader = document.getElementById('system-loader');
+                
+                // Add class to hide loader with fade effect
+                loader.classList.add('loader-hidden');
+                
+                // Allow transition to finish, then show login
                 setTimeout(() => {
-                    overlay.style.display = 'none';
+                    // loader.style.display = 'none'; // Optional: remove from layout
+                    
                     // Step 2: Show Login
                     document.getElementById('login-container').style.display = 'flex';
-                }, 800);
+                }, 500); 
+                
             }, 4000);
         };
 
