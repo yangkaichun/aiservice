@@ -4,7 +4,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>HODS 醫院派工系統</title>
-    <link rel="shortcut icon" href="./image/feticon.ico" type="image/x-icon">
+    <!-- 修正圖示路徑 -->
+    <link rel="shortcut icon" href="image/feticon.ico" type="image/x-icon">
 
     <!-- 1. Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
@@ -78,16 +79,27 @@
         }
     </style>
 
-    <!-- 核心邏輯：必須在 Alpine.js 載入之前定義 listener -->
     <script>
         document.addEventListener('alpine:init', () => {
             Alpine.data('hodsApp', () => ({
                 loading: true,
-                currentView: 'dashboard', // dashboard, list, detail
+                currentView: 'dashboard', // dashboard, list, detail, form
                 breadcrumbs: [],
                 currentModule: null,
                 currentTask: null,
+                formSubmitting: false,
                 
+                // 表單暫存資料
+                formData: {
+                    location: '',
+                    priority: 'Normal',
+                    desc: '',
+                    // 針對不同模組的特定欄位
+                    repairDevice: '',
+                    requestType: '',
+                    cleanType: ''
+                },
+
                 // 資料定義
                 stats: [
                     { title: "待處理維修", value: 12, bgClass: "bg-red-50", textClass: "text-red-500", icon: "fa-wrench" },
@@ -109,21 +121,15 @@
                     { id: 105, type: 'request', title: '備用氧氣鋼瓶補充', location: '5F 護理站', priority: 'High', status: 'Pending', time: '10:45', requester: '李護理師' },
                 ],
 
-                // 計算屬性 (Getter)
                 get filteredTasks() {
                     if (!this.currentModule) return [];
                     return this.tasks.filter(t => t.type === this.currentModule.id);
                 },
 
-                // 初始化函數
                 initApp() {
-                    console.log('App initializing...');
                     setTimeout(() => {
                         this.loading = false;
-                        // 確保 DOM 更新後再畫圖表
-                        this.$nextTick(() => {
-                            this.initCharts();
-                        });
+                        this.$nextTick(() => this.initCharts());
                     }, 3000);
                 },
 
@@ -133,9 +139,7 @@
                     this.breadcrumbs = [];
                     this.currentModule = null;
                     this.currentTask = null;
-                    this.$nextTick(() => {
-                        this.initCharts();
-                    });
+                    this.$nextTick(() => this.initCharts());
                 },
 
                 selectModule(mod) {
@@ -147,19 +151,40 @@
                 selectTask(task) {
                     this.currentTask = task;
                     this.currentView = 'detail';
-                    const rootCrumb = this.breadcrumbs.length > 0 ? this.breadcrumbs[0] : { label: '任務', view: 'list', id: 'all' };
+                    const rootCrumb = this.breadcrumbs.length > 0 ? this.breadcrumbs[0] : { label: '任務列表', view: 'list', id: 'list' };
                     this.breadcrumbs = [rootCrumb, { label: '任務詳情', view: 'detail', id: task.id }];
+                },
+
+                // === 第四層：開啟表單 ===
+                openForm() {
+                    // 重置表單
+                    this.formData = { location: '', priority: 'Normal', desc: '', repairDevice: '', requestType: '', cleanType: '' };
+                    this.currentView = 'form';
+                    const rootCrumb = this.breadcrumbs.length > 0 ? this.breadcrumbs[0] : { label: '任務列表', view: 'list', id: 'list' };
+                    this.breadcrumbs = [rootCrumb, { label: '新增需求單', view: 'form', id: 'new' }];
+                },
+
+                // === 第四層：提交表單 ===
+                submitForm() {
+                    this.formSubmitting = true;
+                    // 模擬 API 請求
+                    setTimeout(() => {
+                        this.formSubmitting = false;
+                        alert('需求單已成功送出！單號：#' + (Math.floor(Math.random() * 900) + 100));
+                        // 這裡可以將新資料 push 到 tasks array，這裡省略
+                        this.navigateTo('list'); // 返回列表
+                    }, 1500);
                 },
 
                 navigateTo(view, id) {
                     if (view === 'list') {
                         this.currentView = 'list';
+                        // 保留第一層麵包屑
                         this.breadcrumbs = [this.breadcrumbs[0]]; 
                         this.currentTask = null;
                     }
                 },
 
-                // 樣式輔助
                 getPriorityColor(p) {
                     if (p === 'High') return 'bg-red-100 text-red-700';
                     if (p === 'Scheduled') return 'bg-purple-100 text-purple-700';
@@ -171,17 +196,15 @@
                     return 'bg-green-500';
                 },
 
-                // 圖表初始化邏輯
                 initCharts() {
                     if (this.currentView !== 'dashboard') return;
-
+                    
                     const ctxLine = document.getElementById('trafficChart');
                     const ctxPie = document.getElementById('statusChart');
 
                     if (ctxLine) {
                         const existingChart = Chart.getChart(ctxLine);
                         if (existingChart) existingChart.destroy();
-
                         new Chart(ctxLine, {
                             type: 'line',
                             data: {
@@ -199,10 +222,7 @@
                                 responsive: true,
                                 maintainAspectRatio: false,
                                 plugins: { legend: { display: false } },
-                                scales: {
-                                    y: { beginAtZero: true, grid: { borderDash: [2, 4] } },
-                                    x: { grid: { display: false } }
-                                }
+                                scales: { y: { beginAtZero: true, grid: { borderDash: [2, 4] } }, x: { grid: { display: false } } }
                             }
                         });
                     }
@@ -210,7 +230,6 @@
                     if (ctxPie) {
                         const existingPie = Chart.getChart(ctxPie);
                         if (existingPie) existingPie.destroy();
-
                         new Chart(ctxPie, {
                             type: 'doughnut',
                             data: {
@@ -234,19 +253,18 @@
         });
     </script>
 
-    <!-- 4. Alpine.js (放在最後，並加上 defer，確保在上面的 listener 註冊後才執行) -->
     <script src="https://cdn.jsdelivr.net/npm/alpinejs@3.13.3/dist/cdn.min.js" defer></script>
 </head>
 <body class="text-slate-800" x-data="hodsApp" x-init="initApp()">
 
-    <!-- ==================== 1. 載入動畫層 ==================== -->
+    <!-- Loading Screen -->
     <div id="loader" :class="{ 'loader-hide': !loading }">
         <div class="pulse-circle mb-6"></div>
         <h1 class="text-2xl font-bold text-slate-700 tracking-widest">HODS</h1>
         <p class="text-slate-400 text-sm mt-2">醫院營運派工系統載入中...</p>
     </div>
 
-    <!-- ==================== 導航欄 ==================== -->
+    <!-- Navbar -->
     <nav class="bg-white border-b border-slate-100 sticky top-0 z-40 shadow-sm">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div class="flex justify-between h-16">
@@ -275,11 +293,10 @@
         </div>
     </nav>
 
-    <!-- ==================== 主內容區域 ==================== -->
-    <!-- 使用 x-show 確保只有在 loading 結束後才顯示內容 -->
+    <!-- Main Content -->
     <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 min-h-[calc(100vh-64px)]" x-show="!loading" x-cloak>
 
-        <!-- 麵包屑導航 -->
+        <!-- Breadcrumbs -->
         <div class="flex items-center text-sm text-slate-500 mb-6">
             <button @click="goHome()" class="hover:text-blue-600 transition"><i class="fa-solid fa-house mr-1"></i> 首頁</button>
             <template x-for="(crumb, index) in breadcrumbs" :key="index">
@@ -294,7 +311,7 @@
             </template>
         </div>
 
-        <!-- 層級 1: 儀表板 (Dashboard) -->
+        <!-- ==================== Layer 1: Dashboard ==================== -->
         <div x-show="currentView === 'dashboard'" class="fade-in">
             <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
                 <template x-for="stat in stats" :key="stat.title">
@@ -347,14 +364,15 @@
             </div>
         </div>
 
-        <!-- 層級 2: 任務列表 (List View) -->
+        <!-- ==================== Layer 2: List ==================== -->
         <div x-show="currentView === 'list'" class="fade-in">
             <div class="flex justify-between items-center mb-6">
                 <h2 class="text-2xl font-bold text-slate-800">
                     <span x-text="currentModule?.title"></span>
                     <span class="text-sm font-normal text-slate-400 ml-2">任務清單</span>
                 </h2>
-                <button class="bg-blue-600 hover:bg-blue-700 text-white px-5 py-2.5 rounded-lg shadow-md shadow-blue-200 transition flex items-center">
+                <!-- 新增任務按鈕：觸發第四層 (openForm) -->
+                <button @click="openForm()" class="bg-blue-600 hover:bg-blue-700 text-white px-5 py-2.5 rounded-lg shadow-md shadow-blue-200 transition flex items-center">
                     <i class="fa-solid fa-plus mr-2"></i> 新增需求
                 </button>
             </div>
@@ -412,7 +430,7 @@
             </div>
         </div>
 
-        <!-- 層級 3: 詳細頁面 (Detail View) -->
+        <!-- ==================== Layer 3: Detail ==================== -->
         <div x-show="currentView === 'detail'" class="fade-in">
             <div class="bg-white rounded-2xl shadow-lg border border-slate-100 overflow-hidden">
                 <div class="p-6 bg-slate-50 border-b border-slate-100 flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4">
@@ -506,15 +524,110 @@
                                     </div>
                                     <span class="text-sm font-medium text-slate-700">上傳現場照片</span>
                                 </button>
-                                <button class="w-full text-left px-4 py-3 bg-white hover:bg-blue-50 rounded-lg border border-slate-200 transition flex items-center group">
-                                    <div class="w-8 h-8 rounded-full bg-red-100 text-red-600 flex items-center justify-center mr-3 group-hover:bg-red-500 group-hover:text-white transition">
-                                        <i class="fa-solid fa-triangle-exclamation"></i>
-                                    </div>
-                                    <span class="text-sm font-medium text-slate-700">轉報異常</span>
-                                </button>
                             </div>
                         </div>
                     </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ==================== Layer 4: Forms (新增架構) ==================== -->
+        <div x-show="currentView === 'form'" class="fade-in">
+            <div class="max-w-3xl mx-auto bg-white rounded-2xl shadow-lg border border-slate-100 overflow-hidden">
+                <!-- Form Header -->
+                <div class="p-6 bg-slate-50 border-b border-slate-100">
+                    <h2 class="text-2xl font-bold text-slate-800 flex items-center">
+                        <i :class="`fa-solid ${currentModule?.icon} text-blue-500 mr-3`"></i>
+                        <span x-text="currentModule?.title + ' - 新增申請'"></span>
+                    </h2>
+                    <p class="text-slate-500 mt-1 text-sm">請填寫詳細資訊以利快速派工</p>
+                </div>
+
+                <!-- Form Body -->
+                <div class="p-8">
+                    <div class="space-y-6">
+                        
+                        <!-- 共通欄位：地點與優先級 -->
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            <div>
+                                <label class="block text-sm font-medium text-slate-700 mb-2">發生地點 / 需求位置</label>
+                                <div class="relative">
+                                    <span class="absolute inset-y-0 left-0 pl-3 flex items-center text-slate-400">
+                                        <i class="fa-solid fa-location-dot"></i>
+                                    </span>
+                                    <input type="text" x-model="formData.location" class="w-full pl-10 pr-4 py-2.5 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition" placeholder="例如：5F 護理站, ICU-01">
+                                </div>
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-slate-700 mb-2">優先等級</label>
+                                <select x-model="formData.priority" class="w-full px-4 py-2.5 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition bg-white">
+                                    <option value="Normal">普通 (Normal)</option>
+                                    <option value="High">緊急 (High)</option>
+                                    <option value="Scheduled">預約排程 (Scheduled)</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <!-- 儀器維修專用欄位 -->
+                        <div x-show="currentModule?.id === 'repair'" class="fade-in">
+                            <label class="block text-sm font-medium text-slate-700 mb-2">設備名稱 / 財產編號</label>
+                            <div class="relative">
+                                <span class="absolute inset-y-0 left-0 pl-3 flex items-center text-slate-400">
+                                    <i class="fa-solid fa-barcode"></i>
+                                </span>
+                                <input type="text" x-model="formData.repairDevice" class="w-full pl-10 pr-4 py-2.5 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none" placeholder="輸入儀器名稱或掃描條碼">
+                            </div>
+                        </div>
+
+                        <!-- 人員請求專用欄位 -->
+                        <div x-show="currentModule?.id === 'request'" class="fade-in">
+                            <label class="block text-sm font-medium text-slate-700 mb-2">需求類型</label>
+                            <select x-model="formData.requestType" class="w-full px-4 py-2.5 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none bg-white">
+                                <option value="" disabled selected>請選擇類型</option>
+                                <option value="transport">病患傳送</option>
+                                <option value="specimen">檢體傳送</option>
+                                <option value="support">護理支援</option>
+                                <option value="supplies">物資補充</option>
+                            </select>
+                        </div>
+
+                        <!-- 清潔派工專用欄位 -->
+                        <div x-show="currentModule?.id === 'clean'" class="fade-in">
+                            <label class="block text-sm font-medium text-slate-700 mb-2">清潔類型</label>
+                            <div class="grid grid-cols-2 gap-4">
+                                <button @click="formData.cleanType = 'daily'" :class="formData.cleanType === 'daily' ? 'bg-blue-50 border-blue-500 text-blue-700' : 'bg-white border-slate-200 text-slate-600 hover:bg-slate-50'" class="border rounded-lg p-3 text-center transition font-medium">
+                                    <i class="fa-solid fa-broom mb-1 block text-lg"></i> 日常清潔
+                                </button>
+                                <button @click="formData.cleanType = 'terminal'" :class="formData.cleanType === 'terminal' ? 'bg-blue-50 border-blue-500 text-blue-700' : 'bg-white border-slate-200 text-slate-600 hover:bg-slate-50'" class="border rounded-lg p-3 text-center transition font-medium">
+                                    <i class="fa-solid fa-biohazard mb-1 block text-lg"></i> 終期消毒
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- 描述與備註 -->
+                        <div>
+                            <label class="block text-sm font-medium text-slate-700 mb-2">
+                                <span x-text="currentModule?.id === 'repair' ? '故障描述' : '詳細說明'"></span>
+                            </label>
+                            <textarea x-model="formData.desc" rows="4" class="w-full px-4 py-2.5 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition" placeholder="請描述詳細情況..."></textarea>
+                        </div>
+
+                        <!-- 檔案上傳 (Mock UI) -->
+                        <div class="border-2 border-dashed border-slate-300 rounded-lg p-6 text-center hover:bg-slate-50 transition cursor-pointer">
+                            <i class="fa-solid fa-cloud-arrow-up text-3xl text-slate-400 mb-2"></i>
+                            <p class="text-sm text-slate-500">點擊上傳現場照片或將檔案拖曳至此</p>
+                        </div>
+
+                    </div>
+                </div>
+
+                <!-- Form Footer -->
+                <div class="p-6 bg-slate-50 border-t border-slate-100 flex justify-end gap-4">
+                    <button @click="navigateTo('list')" class="px-6 py-2.5 rounded-lg border border-slate-300 text-slate-700 font-medium hover:bg-white transition">取消</button>
+                    <button @click="submitForm()" :disabled="formSubmitting" class="px-6 py-2.5 rounded-lg bg-blue-600 text-white font-medium hover:bg-blue-700 transition shadow-lg shadow-blue-200 disabled:opacity-50 flex items-center">
+                        <i class="fa-solid fa-circle-notch fa-spin mr-2" x-show="formSubmitting"></i>
+                        <span x-text="formSubmitting ? '傳送中...' : '確認送出'"></span>
+                    </button>
                 </div>
             </div>
         </div>
