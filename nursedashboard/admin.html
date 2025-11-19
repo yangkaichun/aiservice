@@ -36,7 +36,7 @@
             top: 0; left: 0; width: 100%; height: 100%;
             background-color: #f8f9fa;
             z-index: 9999;
-            display: flex;
+            display: none; /* 修改：預設隱藏，登入後才顯示 */
             flex-direction: column;
             align-items: center;
             justify-content: center;
@@ -82,9 +82,13 @@
             width: 0%;
             height: 100%;
             background-color: var(--primary);
-            animation: loadProgress 4s linear forwards; 
+            /* 動畫將透過 JS 動態觸發 class 播放 */
             border-radius: 3px;
             box-shadow: 0 0 10px rgba(0, 91, 150, 0.5);
+        }
+        
+        .animate-progress {
+            animation: loadProgress 4s linear forwards; 
         }
 
         @keyframes loadProgress {
@@ -104,13 +108,9 @@
             position: fixed; top: 0; left: 0; width: 100%; height: 100%;
             background: rgba(0,0,0,0.5); backdrop-filter: blur(5px);
             z-index: 5000;
-            display: none; /* Initially hidden, shown after loading */
+            display: flex; /* 修改：預設直接顯示 */
             justify-content: center; align-items: center;
-            opacity: 0; 
-            animation: fadeIn 0.5s forwards;
         }
-        
-        @keyframes fadeIn { to { opacity: 1; } }
         
         .login-box {
             background: white; padding: 40px; border-radius: 15px;
@@ -133,7 +133,7 @@
 
         /* --- Main Admin Layout --- */
         #admin-dashboard {
-            display: none; /* Hidden until login */
+            display: none; /* Hidden until login & loading complete */
             flex-direction: column; height: 100%;
         }
 
@@ -202,7 +202,7 @@
 </head>
 <body>
 
-    <!-- 1. Loading Animation (New Style) -->
+    <!-- 1. Loading Animation (New Style, initially hidden) -->
     <div id="system-loader">
         <div class="loader-content">
             <i class="fa-solid fa-gear pulse-icon"></i>
@@ -210,12 +210,12 @@
             <div class="loader-subtext">System Administration Module Loading</div>
             
             <div class="progress-container">
-                <div class="progress-bar"></div>
+                <div class="progress-bar" id="progress-bar"></div>
             </div>
         </div>
     </div>
 
-    <!-- 2. Login Modal -->
+    <!-- 2. Login Modal (Default Visible) -->
     <div id="login-container">
         <div class="login-box">
             <img src="fetlogo.png" alt="Logo" style="height: 40px; margin-bottom: 15px;" onerror="this.style.display='none';">
@@ -355,39 +355,22 @@
     </div>
 
     <script>
-        // 1. Flow Control: Load -> Login -> Dashboard
-        window.onload = function() {
-            // Step 1: Wait for animation (4 seconds)
-            setTimeout(() => {
-                const loader = document.getElementById('system-loader');
-                
-                // Add class to hide loader with fade effect
-                loader.classList.add('loader-hidden');
-                
-                // Allow transition to finish, then show login
-                setTimeout(() => {
-                    // loader.style.display = 'none'; // Optional: remove from layout
-                    
-                    // Step 2: Show Login
-                    document.getElementById('login-container').style.display = 'flex';
-                }, 500); 
-                
-            }, 4000);
-        };
-
-        // 2. Login Logic
+        // 1. Login Logic (Triggered first)
         function attemptLogin() {
             const user = document.getElementById('username').value;
             const pass = document.getElementById('password').value;
             const errorMsg = document.getElementById('login-error');
 
             if (user === 'fet' && pass === 'fet') {
-                // Success
+                // 登入成功
                 errorMsg.style.display = 'none';
                 document.getElementById('login-container').style.display = 'none';
-                document.getElementById('admin-dashboard').style.display = 'flex';
+                
+                // 開始播放載入動畫
+                startLoadingSequence();
+                
             } else {
-                // Failure
+                // 登入失敗
                 errorMsg.style.display = 'block';
                 // Shake animation effect
                 const box = document.querySelector('.login-box');
@@ -398,9 +381,34 @@
             }
         }
 
-        // Enter key support
+        // 2. Loading Sequence
+        function startLoadingSequence() {
+            const loader = document.getElementById('system-loader');
+            const progressBar = document.getElementById('progress-bar');
+            
+            // 顯示 Loader
+            loader.style.display = 'flex';
+            
+            // 開始進度條動畫
+            progressBar.classList.add('animate-progress');
+            
+            // 等待 4 秒動畫結束
+            setTimeout(() => {
+                // 隱藏 Loader
+                loader.classList.add('loader-hidden');
+                
+                setTimeout(() => {
+                    loader.style.display = 'none';
+                    // 顯示 Dashboard
+                    document.getElementById('admin-dashboard').style.display = 'flex';
+                }, 500); // 等待 fade out
+                
+            }, 4000);
+        }
+
+        // Enter key support for Login
         document.addEventListener('keypress', function (e) {
-            if (e.key === 'Enter' && document.getElementById('login-container').style.display === 'flex') {
+            if (e.key === 'Enter' && document.getElementById('login-container').style.display !== 'none') {
                 attemptLogin();
             }
         });
