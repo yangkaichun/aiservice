@@ -1,454 +1,403 @@
-<!DOCTYPE html>
-<html lang="zh-TW">
+<!doctype html>
+<html lang="zh-Hant">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>台北榮民總醫院室內定位導航</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
-    <style>
-        @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@300;400;500;700&display=swap');
-        
-        body {
-            font-family: 'Noto Sans TC', sans-serif;
-            background-color: #ffffff;
-            color: #333;
-            overflow: hidden; /* Prevent scroll on body for app-like feel */
-            touch-action: manipulation;
-        }
-
-        /* Hide scrollbar for horizontal lists */
-        .hide-scrollbar::-webkit-scrollbar {
-            display: none;
-        }
-        .hide-scrollbar {
-            -ms-overflow-style: none;
-            scrollbar-width: none;
-        }
-
-        /* Map Container */
-        #map-container {
-            background-image: radial-gradient(#e5e7eb 1px, transparent 1px);
-            background-size: 20px 20px;
-        }
-
-        /* Pulse Animation for Current Location */
-        @keyframes pulse-ring {
-            0% { transform: scale(0.33); opacity: 1; }
-            80%, 100% { opacity: 0; }
-        }
-        @keyframes pulse-dot {
-            0% { transform: scale(0.8); }
-            50% { transform: scale(1); }
-            100% { transform: scale(0.8); }
-        }
-        .user-location-ring {
-            animation: pulse-ring 1.25s cubic-bezier(0.215, 0.61, 0.355, 1) infinite;
-        }
-        .user-location-dot {
-            animation: pulse-dot 1.25s cubic-bezier(0.455, 0.03, 0.515, 0.955) -0.4s infinite;
-        }
-
-        /* Transitions */
-        .fade-in {
-            animation: fadeIn 0.3s ease-in-out;
-        }
-        @keyframes fadeIn {
-            from { opacity: 0; transform: translateY(10px); }
-            to { opacity: 1; transform: translateY(0); }
-        }
-    </style>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>台北榮總 室內定位導航（Demo）</title>
+<style>
+  :root{
+    --accent:#0a66c2;
+    --bg:#ffffff;
+    --text:#111;
+    --muted:#666;
+    --icon:#111;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Noto Sans TC", "Helvetica Neue", Arial;
+  }
+  html,body{height:100%;margin:0;background:var(--bg);color:var(--text)}
+  .app{max-width:420px;margin:0 auto;border-left:1px solid #eee;border-right:1px solid #eee;min-height:100vh;display:flex;flex-direction:column;}
+  header {padding:12px;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid #f0f0f0}
+  .brand{display:flex;align-items:center;gap:10px}
+  .lang{display:flex;gap:6px}
+  .lang button{background:transparent;border:1px solid #eee;padding:6px 8px;border-radius:8px;font-size:12px}
+  main{padding:12px;flex:1;overflow:auto}
+  .big-entry{display:flex;flex-direction:column;align-items:center;gap:14px;padding:18px 12px;border-radius:12px;box-shadow:0 6px 18px rgba(10,10,10,0.04);background:#fff}
+  .icon-circle{width:84px;height:84px;border-radius:24px;display:flex;align-items:center;justify-content:center;border:1px solid #eee}
+  .muted{color:var(--muted);font-size:13px}
+  .bt-prompt{margin-top:6px;font-size:13px;color:var(--muted);display:flex;gap:8px;align-items:center}
+  .btn {background:var(--accent);color:#fff;padding:10px 14px;border-radius:10px;border:0;font-weight:600}
+  .map-area{margin-top:12px}
+  .map-wrap{background:#fff;border-radius:12px;padding:8px;border:1px solid #f0f0f0}
+  svg{width:100%;height:auto;display:block}
+  .controls{display:flex;gap:8px;margin-top:10px}
+  .search-box{flex:1;display:flex;gap:8px}
+  .input{flex:1;border:1px solid #eee;padding:8px 10px;border-radius:10px;font-size:14px}
+  .mic{width:44px;border-radius:10px;border:1px solid #eee;display:flex;align-items:center;justify-content:center}
+  .frequent{display:flex;gap:8px;margin-top:12px;flex-wrap:wrap}
+  .chip{padding:8px 10px;border-radius:10px;border:1px solid #eee;font-size:14px;background:#fff}
+  .route-steps{margin-top:12px;padding:10px;border-radius:10px;border:1px dashed #eee;background:#fafafa;font-size:14px}
+  footer{padding:10px;border-top:1px solid #f0f0f0;font-size:13px;color:var(--muted)}
+  /* SVG classes */
+  .building{fill:#f6f6f6;stroke:#ddd;stroke-width:1}
+  .label{font-size:12px;fill:var(--text)}
+  .you{fill:var(--accent)}
+  .path-line{stroke:var(--accent);stroke-width:4;fill:none;stroke-linecap:round;opacity:0.95}
+  .hidden{display:none}
+  /* small screens */
+  @media (max-width:420px){ .app{border:none} header{padding:10px} .big-entry{padding:12px} }
+</style>
 </head>
-<body class="h-screen w-full flex flex-col relative">
-
-    <!-- ====================
-         SCREEN 1: ENTRY
-         ==================== -->
-    <div id="screen-entry" class="flex flex-col items-center justify-center h-full w-full p-6 bg-white z-50 absolute top-0 left-0 transition-opacity duration-500">
-        
-        <div class="flex flex-col items-center mb-12 animate-bounce-slow">
-            <!-- Main Location Icon (Monochrome) -->
-            <div class="w-24 h-24 rounded-full border-4 border-gray-800 flex items-center justify-center mb-6">
-                <i class="fas fa-location-dot text-5xl text-gray-800"></i>
-            </div>
-            <h1 class="text-2xl font-bold text-gray-900 tracking-wide text-center">台北榮民總醫院<br><span class="text-lg font-normal">室內定位導航</span></h1>
-            <p class="text-gray-500 text-sm mt-2">Taipei Veterans General Hospital</p>
-        </div>
-
-        <!-- Language Selection -->
-        <div class="w-full max-w-xs space-y-3 mb-8">
-            <label class="text-xs font-bold text-gray-400 uppercase tracking-wider text-center block mb-2">Select Language</label>
-            <div class="grid grid-cols-2 gap-3">
-                <button onclick="selectLanguage('zh')" class="lang-btn border border-gray-300 rounded-lg py-3 text-sm hover:bg-gray-50 transition focus:ring-2 ring-gray-800 focus:bg-gray-800 focus:text-white">中文</button>
-                <button onclick="selectLanguage('en')" class="lang-btn border border-gray-300 rounded-lg py-3 text-sm hover:bg-gray-50 transition focus:ring-2 ring-gray-800 focus:bg-gray-800 focus:text-white">English</button>
-                <button onclick="selectLanguage('my')" class="lang-btn border border-gray-300 rounded-lg py-3 text-sm hover:bg-gray-50 transition focus:ring-2 ring-gray-800 focus:bg-gray-800 focus:text-white">Bahasa Melayu</button>
-                <button onclick="selectLanguage('vn')" class="lang-btn border border-gray-300 rounded-lg py-3 text-sm hover:bg-gray-50 transition focus:ring-2 ring-gray-800 focus:bg-gray-800 focus:text-white">Tiếng Việt</button>
-            </div>
-        </div>
-
-        <!-- Start Button -->
-        <button onclick="startApp()" class="w-full max-w-xs bg-gray-900 text-white font-bold py-4 rounded-xl shadow-lg hover:bg-gray-800 transform active:scale-95 transition flex items-center justify-center gap-2">
-            <span id="btn-enter-text">進入系統</span>
-            <i class="fas fa-arrow-right"></i>
-        </button>
-
-        <!-- Bluetooth Hint -->
-        <div class="mt-6 flex items-center gap-2 text-gray-400 text-xs">
-            <i class="fab fa-bluetooth-b"></i>
-            <span id="txt-bluetooth-hint">請開啟藍芽以獲取精確定位</span>
-        </div>
+<body>
+<div class="app" id="app">
+  <header>
+    <div class="brand">
+      <!-- single-color hospital icon -->
+      <svg width="36" height="36" viewBox="0 0 24 24" fill="none" aria-hidden>
+        <rect x="3" y="7" width="18" height="12" rx="2" stroke="var(--icon)" stroke-width="1.4" fill="none"/>
+        <path d="M12 3v6" stroke="var(--icon)" stroke-width="1.4" stroke-linecap="round"/>
+        <rect x="10.2" y="10.5" width="3.6" height="3.6" rx="0.6" fill="var(--icon)"/>
+      </svg>
+      <div style="font-weight:700">榮總 室內定位（Demo）</div>
     </div>
+    <div class="lang" aria-hidden>
+      <button data-lang="zh">中文</button>
+      <button data-lang="en">EN</button>
+      <button data-lang="ms">MS</button>
+      <button data-lang="vi">VI</button>
+    </div>
+  </header>
 
-    <!-- ====================
-         SCREEN 2: MAIN MAP & NAV
-         ==================== -->
-    <div id="screen-main" class="hidden flex-col h-full w-full bg-white">
-        
-        <!-- Top Bar: Search & Status -->
-        <div class="bg-white shadow-sm z-20 p-4 flex flex-col gap-3 rounded-b-2xl">
-            <!-- Status Row -->
-            <div class="flex justify-between items-center text-xs text-gray-500 mb-1">
-                <div class="flex items-center gap-1">
-                    <i class="fas fa-map-marker-alt text-gray-800"></i>
-                    <span id="current-loc-text">目前位置: 中正樓 1F 大廳</span>
-                </div>
-                <div class="flex items-center gap-2">
-                    <span class="bg-green-100 text-green-800 px-2 py-0.5 rounded-full">Online</span>
-                </div>
-            </div>
-
-            <!-- Search Bar -->
-            <div class="relative w-full">
-                <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                    <i class="fas fa-search text-gray-400"></i>
-                </div>
-                <input type="text" id="destination-input" 
-                    class="block w-full pl-10 pr-10 py-3 border-none bg-gray-100 rounded-xl text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-gray-200 transition" 
-                    placeholder="輸入科室或地點 (例如: 骨科)">
-                <button onclick="toggleVoiceInput()" class="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-500 hover:text-gray-800">
-                    <i class="fas fa-microphone"></i>
-                </button>
-            </div>
-
-            <!-- Quick Categories (Horizontal Scroll) -->
-            <div class="flex gap-2 overflow-x-auto hide-scrollbar pb-1" id="quick-tags">
-                <!-- Tags injected by JS -->
-            </div>
-        </div>
-
-        <!-- Map Area (SVG) -->
-        <div id="map-container" class="flex-grow relative overflow-hidden touch-none cursor-move">
-            <!-- SVG Map -->
-            <svg id="hospital-map" class="w-full h-full" viewBox="0 0 800 1000" preserveAspectRatio="xMidYMid slice">
-                <!-- Background -->
-                <rect width="800" height="1000" fill="#f9fafb" />
-
-                <!-- Roads -->
-                <path d="M 100,900 L 700,900 L 700,100 L 400,50 L 100,100 Z" fill="none" stroke="#e5e7eb" stroke-width="40" stroke-linejoin="round" />
-                <path d="M 400,900 L 400,600" fill="none" stroke="#e5e7eb" stroke-width="30" />
-                
-                <!-- Buildings (Simplified Blocks) -->
-                <!-- 3rd Outpatient -->
-                <g id="bldg-op3" class="cursor-pointer" onclick="selectBuilding('第三門診')">
-                    <rect x="50" y="650" width="250" height="150" rx="10" fill="white" stroke="#374151" stroke-width="2" />
-                    <text x="175" y="725" font-size="24" text-anchor="middle" fill="#374151" font-weight="bold">第三門診</text>
-                    <text x="175" y="750" font-size="16" text-anchor="middle" fill="#9ca3af">3rd Outpatient</text>
-                </g>
-
-                <!-- 2nd Outpatient -->
-                <g id="bldg-op2" class="cursor-pointer" onclick="selectBuilding('第二門診')">
-                    <rect x="500" y="650" width="250" height="150" rx="10" fill="white" stroke="#374151" stroke-width="2" />
-                    <text x="625" y="725" font-size="24" text-anchor="middle" fill="#374151" font-weight="bold">第二門診</text>
-                    <text x="625" y="750" font-size="16" text-anchor="middle" fill="#9ca3af">2nd Outpatient</text>
-                </g>
-
-                <!-- 1st Outpatient -->
-                <g id="bldg-op1" class="cursor-pointer" onclick="selectBuilding('第一門診')">
-                    <rect x="500" y="450" width="250" height="150" rx="10" fill="white" stroke="#374151" stroke-width="2" />
-                    <text x="625" y="525" font-size="24" text-anchor="middle" fill="#374151" font-weight="bold">第一門診</text>
-                    <text x="625" y="550" font-size="16" text-anchor="middle" fill="#9ca3af">1st Outpatient</text>
-                </g>
-
-                <!-- Chung Cheng Building (Main) -->
-                <g id="bldg-main" class="cursor-pointer" onclick="selectBuilding('中正樓')">
-                    <rect x="150" y="150" width="500" height="250" rx="10" fill="white" stroke="#374151" stroke-width="2" />
-                    <text x="400" y="260" font-size="32" text-anchor="middle" fill="#374151" font-weight="bold">中正樓 (主樓)</text>
-                    <text x="400" y="290" font-size="20" text-anchor="middle" fill="#9ca3af">Main Building</text>
-                    
-                    <!-- Internal Locations Visualization (Hidden initially or subtle) -->
-                    <circle cx="250" cy="220" r="5" fill="#e5e7eb" id="loc-ct" />
-                    <circle cx="550" cy="220" r="5" fill="#e5e7eb" id="loc-pharmacy" />
-                </g>
-
-                <!-- Path Layer -->
-                <path id="nav-path" d="" fill="none" stroke="#111827" stroke-width="6" stroke-dasharray="10,10" opacity="0" />
-                <circle id="nav-end-point" cx="0" cy="0" r="10" fill="#111827" opacity="0" />
-
-                <!-- User Location Marker (Interactive) -->
-                <g id="user-marker" transform="translate(400, 380)">
-                    <circle class="user-location-ring" cx="0" cy="0" r="40" fill="rgba(59, 130, 246, 0.3)" />
-                    <circle class="user-location-dot" cx="0" cy="0" r="12" fill="#2563eb" stroke="white" stroke-width="3" />
-                    <text y="-25" font-size="18" text-anchor="middle" fill="#1f2937" font-weight="bold" stroke="white" stroke-width="3" paint-order="stroke">Current</text>
-                </g>
+  <main>
+    <!-- Home entry -->
+    <section id="home">
+      <div class="big-entry" role="menu" aria-label="入口">
+        <div style="display:flex;flex-direction:column;align-items:center">
+          <div class="icon-circle" id="enterBtn" role="button" tabindex="0" aria-label="進入室內定位">
+            <!-- location single-color svg -->
+            <svg width="48" height="48" viewBox="0 0 24 24" fill="none" aria-hidden>
+              <path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 11 7 11s7-5.75 7-11c0-3.87-3.13-7-7-7z" stroke="var(--icon)" stroke-width="1.2" fill="none"/>
+              <circle cx="12" cy="9" r="2.2" fill="var(--icon)"/>
             </svg>
-
-            <!-- Zoom Controls -->
-            <div class="absolute bottom-24 right-4 flex flex-col gap-2">
-                <button onclick="zoomMap(1.1)" class="bg-white p-3 rounded-full shadow-lg border border-gray-100 text-gray-700 active:bg-gray-100"><i class="fas fa-plus"></i></button>
-                <button onclick="zoomMap(0.9)" class="bg-white p-3 rounded-full shadow-lg border border-gray-100 text-gray-700 active:bg-gray-100"><i class="fas fa-minus"></i></button>
-            </div>
+          </div>
+          <div style="font-weight:700;margin-top:6px">室內定位系統</div>
         </div>
 
-        <!-- Navigation / Info Panel (Bottom Sheet) -->
-        <div id="nav-panel" class="bg-white rounded-t-3xl shadow-[0_-5px_20px_rgba(0,0,0,0.1)] transform translate-y-full transition-transform duration-300 absolute bottom-0 w-full z-30">
-            <div class="p-1 w-full flex justify-center">
-                <div class="w-12 h-1.5 bg-gray-300 rounded-full mt-2 mb-1"></div>
-            </div>
-            <div class="p-5">
-                <div class="flex justify-between items-start mb-4">
-                    <div>
-                        <h2 id="nav-target-name" class="text-xl font-bold text-gray-900">目標地點</h2>
-                        <p id="nav-target-desc" class="text-sm text-gray-500">中正樓 3F • 距離 150 公尺</p>
-                    </div>
-                    <button onclick="startNavigation()" class="bg-gray-900 text-white p-3 rounded-full shadow-lg hover:bg-gray-700 transition">
-                        <i class="fas fa-location-arrow transform -rotate-45"></i>
-                    </button>
-                </div>
-                
-                <!-- Navigation Steps (Hidden until Start is clicked) -->
-                <div id="nav-steps" class="hidden mt-4 space-y-4 border-t border-gray-100 pt-4">
-                    <div class="flex items-center gap-4">
-                        <div class="text-2xl text-gray-800 w-8 text-center"><i class="fas fa-arrow-up"></i></div>
-                        <div>
-                            <p class="font-bold text-gray-800">直走 50 公尺</p>
-                            <p class="text-xs text-gray-400">經過 服務台</p>
-                        </div>
-                    </div>
-                    <div class="flex items-center gap-4">
-                        <div class="text-2xl text-gray-800 w-8 text-center"><i class="fas fa-arrow-right"></i></div>
-                        <div>
-                            <p class="font-bold text-gray-800">右轉 進入電梯廳</p>
-                            <p class="text-xs text-gray-400">搭乘電梯至 3 樓</p>
-                        </div>
-                    </div>
-                </div>
-            </div>
+        <div class="bt-prompt" id="btPrompt">
+          <!-- bluetooth single-color svg -->
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden>
+            <path d="M6 6l6 6-6 6V6zM18 6l-6 6 6 6V6z" stroke="var(--icon)" stroke-width="1.2" fill="none"/>
+          </svg>
+          <div>
+            <div id="btText" style="font-weight:600">請開啟藍牙以利室內定位</div>
+            <div class="muted" style="font-size:12px">建議開啟藍牙與位置權限（模擬）</div>
+          </div>
         </div>
-    </div>
 
-    <!-- Mock Voice Overlay -->
-    <div id="voice-overlay" class="hidden fixed inset-0 bg-black/50 z-50 flex items-center justify-center backdrop-blur-sm">
-        <div class="bg-white rounded-2xl p-8 flex flex-col items-center animate-pulse">
-            <div class="bg-red-50 p-6 rounded-full mb-4">
-                <i class="fas fa-microphone text-3xl text-red-500"></i>
-            </div>
-            <p class="text-gray-800 font-medium">正在聆聽...</p>
-            <p class="text-xs text-gray-400 mt-2">請說出您要去的科室</p>
-            <button onclick="toggleVoiceInput()" class="mt-6 text-gray-500 underline text-sm">取消</button>
+        <button class="btn" id="enableBt">啟用藍牙（模擬）</button>
+      </div>
+    </section>
+
+    <!-- Main map + controls -->
+    <section id="mapScreen" class="hidden" aria-hidden>
+      <div class="map-area">
+        <div style="display:flex;justify-content:space-between;align-items:center">
+          <div style="font-weight:700" id="currentLocationTitle">目前位置</div>
+          <div class="muted" id="floorLabel">B1</div>
         </div>
-    </div>
 
-    <script>
-        // --- Data ---
-        const translations = {
-            zh: { enter: "進入系統", hint: "請開啟藍芽以獲取精確定位", current: "目前位置: 中正樓 1F 大廳", search: "輸入科室或地點 (例如: 骨科)", listening: "正在聆聽...", target: "目標地點", go: "開始導航" },
-            en: { enter: "Enter System", hint: "Enable Bluetooth for precise location", current: "Current: Main Bldg 1F Lobby", search: "Search Dept or Location (e.g., Ortho)", listening: "Listening...", target: "Destination", go: "Start Nav" },
-            my: { enter: "Masuk Sistem", hint: "Aktifkan Bluetooth untuk lokasi tepat", current: "Lokasi: Bangunan Utama T1", search: "Cari Jabatan (contoh: Ortopedik)", listening: "Mendengar...", target: "Destinasi", go: "Mula" },
-            vn: { enter: "Vào hệ thống", hint: "Bật Bluetooth để định vị chính xác", current: "Vị trí: Tòa nhà chính T1", search: "Tìm khoa (ví dụ: Chỉnh hình)", listening: "Đang nghe...", target: "Điểm đến", go: "Bắt đầu" }
-        };
+        <div class="map-wrap" style="margin-top:8px">
+          <!-- Simulated SVG GIS map (簡化) -->
+          <svg id="campusSvg" viewBox="0 0 600 380" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="院區平面圖">
+            <!-- Grounds -->
+            <rect x="0" y="0" width="600" height="380" fill="#fff"/>
+            <!-- lake -->
+            <ellipse cx="480" cy="120" rx="60" ry="36" fill="#e9f5ff" stroke="#d6eafc"/>
+            <!-- buildings -->
+            <g id="buildings">
+              <rect id="zhongzheng" class="building" x="170" y="90" width="160" height="120" rx="8"/>
+              <text x="250" y="150" text-anchor="middle" class="label">中正樓</text>
 
-        const locations = [
-            { id: 'op1', name: '第一門診', alias: ['1st Outpatient', '第一门诊'], category: '門診', x: 625, y: 525, bldg: 'bldg-op1' },
-            { id: 'op2', name: '第二門診', alias: ['2nd Outpatient', '第二门诊'], category: '門診', x: 625, y: 725, bldg: 'bldg-op2' },
-            { id: 'op3', name: '第三門診', alias: ['3rd Outpatient', '身心科'], category: '門診', x: 175, y: 725, bldg: 'bldg-op3' },
-            { id: 'main', name: '中正樓', alias: ['Main Building', '住院'], category: '大樓', x: 400, y: 260, bldg: 'bldg-main' },
-            { id: 'er', name: '急診室', alias: ['Emergency', 'ER'], category: '急救', x: 550, y: 350, bldg: 'bldg-main' },
-            { id: 'ct', name: 'CT 檢查室', alias: ['CT Room', '電腦斷層'], category: '檢查', x: 250, y: 220, bldg: 'bldg-main' },
-            { id: 'xray', name: 'X光室', alias: ['X-Ray', '放射科'], category: '檢查', x: 300, y: 220, bldg: 'bldg-main' },
-            { id: 'pay', name: '批價櫃檯', alias: ['Cashier', '繳費'], category: '服務', x: 400, y: 380, bldg: 'bldg-main' },
-            { id: 'pharm', name: '領藥處', alias: ['Pharmacy', '藥局'], category: '服務', x: 500, y: 380, bldg: 'bldg-main' }
-        ];
+              <rect id="first" class="building" x="40" y="210" width="140" height="110" rx="8"/>
+              <text x="110" y="265" text-anchor="middle" class="label">第一門診</text>
 
-        const commonLocations = ['第一門診', '第二門診', '第三門診', '急診室', 'CT 檢查室', '批價櫃檯'];
+              <rect id="second" class="building" x="210" y="220" width="140" height="90" rx="8"/>
+              <text x="280" y="265" text-anchor="middle" class="label">第二門診</text>
 
-        // --- State ---
-        let currentLang = 'zh';
-        let currentLocation = { x: 400, y: 380 }; // Start at Lobby
-        let scale = 1;
-        let isNavigating = false;
+              <rect id="third" class="building" x="370" y="210" width="150" height="110" rx="8"/>
+              <text x="445" y="265" text-anchor="middle" class="label">第三門診</text>
 
-        // --- Initialization ---
-        function init() {
-            renderTags();
-            // Default selection styling
-            selectLanguage('zh');
-        }
+              <rect id="ct" class="building" x="430" y="40" width="90" height="50" rx="6"/>
+              <text x="475" y="66" text-anchor="middle" class="label">CT 檢查室</text>
+            </g>
 
-        function selectLanguage(lang) {
-            currentLang = lang;
-            const t = translations[lang];
-            
-            // Update UI Text
-            document.getElementById('btn-enter-text').innerText = t.enter;
-            document.getElementById('txt-bluetooth-hint').innerText = t.hint;
-            document.getElementById('current-loc-text').innerText = t.current;
-            document.getElementById('destination-input').placeholder = t.search;
+            <!-- your (current) location marker -->
+            <g id="youMarker" transform="translate(100,250)">
+              <circle cx="0" cy="0" r="8" class="you"/>
+              <text x="14" y="6" class="label">你(模擬)</text>
+            </g>
 
-            // Visual feedback on buttons
-            document.querySelectorAll('.lang-btn').forEach(btn => {
-                btn.classList.remove('bg-gray-800', 'text-white', 'ring-2');
-                btn.classList.add('bg-white', 'text-gray-800');
-            });
-            // Find the button clicked (approximate by text content logic or passing 'this' ideally, 
-            // but here we just select by index order logic for simplicity in demo)
-            const index = ['zh', 'en', 'my', 'vn'].indexOf(lang);
-            const btns = document.querySelectorAll('.lang-btn');
-            if(btns[index]) {
-                btns[index].classList.add('bg-gray-800', 'text-white', 'ring-2');
-                btns[index].classList.remove('bg-white', 'text-gray-800');
-            }
-        }
+            <!-- route path (hidden initially) -->
+            <path id="routePath" class="path-line" d="" />
 
-        function startApp() {
-            // Simulate Bluetooth Permission Check
-            if (window.confirm(translations[currentLang].hint + "? (Simulated Permission)")) {
-                // Transition
-                const entry = document.getElementById('screen-entry');
-                const main = document.getElementById('screen-main');
-                
-                entry.style.opacity = '0';
-                setTimeout(() => {
-                    entry.classList.add('hidden');
-                    main.classList.remove('hidden');
-                    main.classList.add('flex', 'fade-in');
-                }, 500);
-            }
-        }
+          </svg>
+        </div>
 
-        function renderTags() {
-            const container = document.getElementById('quick-tags');
-            container.innerHTML = '';
-            commonLocations.forEach(locName => {
-                const btn = document.createElement('button');
-                btn.className = "whitespace-nowrap px-4 py-2 rounded-full text-sm font-medium bg-gray-100 text-gray-600 border border-gray-200 hover:bg-gray-200 hover:text-gray-900 transition";
-                btn.innerText = locName;
-                btn.onclick = () => findAndNavigate(locName);
-                container.appendChild(btn);
-            });
-        }
+        <!-- controls -->
+        <div class="controls">
+          <div class="search-box">
+            <input id="searchInput" class="input" placeholder="輸入目的地或說出來" aria-label="輸入目的地" />
+            <div class="mic" id="micBtn" title="語音輸入" role="button" aria-label="語音輸入">
+              <!-- mic single-color svg -->
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden>
+                <path d="M12 14a3 3 0 0 0 3-3V6a3 3 0 1 0-6 0v5a3 3 0 0 0 3 3z" stroke="var(--icon)" stroke-width="1.2" fill="none"/>
+                <path d="M19 11v1a7 7 0 0 1-14 0v-1" stroke="var(--icon)" stroke-width="1.2" fill="none"/>
+                <path d="M12 19v3" stroke="var(--icon)" stroke-width="1.2" fill="none"/>
+              </svg>
+            </div>
+          </div>
+          <button class="btn" id="goBtn">前往</button>
+        </div>
 
-        // --- Map Logic ---
-        function zoomMap(factor) {
-            scale *= factor;
-            scale = Math.min(Math.max(0.5, scale), 3); // Clamp zoom
-            const svg = document.getElementById('hospital-map');
-            // Simple zoom implementation centered on current view
-            // For a real app, panning + zooming matrix transform is needed.
-            // Here we just adjust CSS transform for demo fluidity.
-            svg.style.transform = `scale(${scale})`;
-            svg.style.transformOrigin = "center center";
-            svg.style.transition = "transform 0.3s ease";
-        }
+        <!-- frequent places -->
+        <div style="margin-top:10px" class="muted">常用地點</div>
+        <div class="frequent" id="frequentList">
+          <!-- chips injected -->
+        </div>
 
-        // --- Navigation Logic ---
-        function selectBuilding(name) {
-            findAndNavigate(name);
-        }
+        <!-- route steps -->
+        <div id="routeSteps" class="route-steps hidden"></div>
 
-        function findAndNavigate(query) {
-            const target = locations.find(l => l.name.includes(query) || l.alias.some(a => a.toLowerCase().includes(query.toLowerCase())));
-            
-            if (target) {
-                document.getElementById('destination-input').value = target.name;
-                showNavPreview(target);
-            } else {
-                alert("未找到地點 (Simulated DB)");
-            }
-        }
+        <!-- departments quick search -->
+        <div style="margin-top:12px">
+          <div style="font-weight:700;margin-bottom:6px">院內科別（快速查詢）</div>
+          <div id="deptList" style="display:grid;grid-template-columns:repeat(2,1fr);gap:8px"></div>
+        </div>
 
-        function showNavPreview(target) {
-            const panel = document.getElementById('nav-panel');
-            const nameEl = document.getElementById('nav-target-name');
-            const descEl = document.getElementById('nav-target-desc');
-            
-            nameEl.innerText = target.name;
-            // Calculate mock distance
-            const dist = Math.floor(Math.sqrt(Math.pow(target.x - currentLocation.x, 2) + Math.pow(target.y - currentLocation.y, 2)));
-            descEl.innerText = `${target.category} • 距離 ${dist} 公尺`;
+      </div>
+    </section>
 
-            // Draw Path (Simple Line)
-            drawPath(currentLocation, {x: target.x, y: target.y});
+  </main>
 
-            // Show Panel
-            panel.classList.remove('translate-y-full');
-            // Reset navigation steps visibility
-            document.getElementById('nav-steps').classList.add('hidden');
-        }
+  <footer>
+    本 Demo 參考台北榮民總醫院公開院區平面與科別資訊（示意用）。實際導引請依現場標示。
+  </footer>
+</div>
 
-        function drawPath(start, end) {
-            const pathEl = document.getElementById('nav-path');
-            const endDot = document.getElementById('nav-end-point');
-            
-            // Create a slightly curved path logic (Bezier mock)
-            // Midpoint with offset to look like a route
-            const mx = (start.x + end.x) / 2;
-            const my = (start.y + end.y) / 2;
-            
-            // Simple L-shape or Curve
-            const d = `M ${start.x} ${start.y} Q ${start.x} ${end.y} ${end.x} ${end.y}`;
-            
-            pathEl.setAttribute('d', d);
-            pathEl.setAttribute('opacity', '1');
-            
-            // Animate path drawing
-            const length = pathEl.getTotalLength();
-            pathEl.style.strokeDasharray = length;
-            pathEl.style.strokeDashoffset = length;
-            pathEl.getBoundingClientRect(); // Trigger layout
-            pathEl.style.transition = "stroke-dashoffset 1s ease-in-out";
-            pathEl.style.strokeDashoffset = "0";
+<script>
+/* --------- 文字多語系 ---------- */
+const i18n = {
+  zh: {
+    enter: "室內定位系統",
+    btPrompt: "請開啟藍牙以利室內定位",
+    enableBt: "啟用藍牙（模擬）",
+    currentLocation: "目前位置",
+    floor: "B1",
+    placeholder: "輸入目的地或說出來",
+    go: "前往",
+    frequent: ["第一門診","第二門診","第三門診","CT 檢查室"],
+    deptTitle: "院內科別（快速查詢）",
+    stepsTitle: "導航指引"
+  },
+  en: {
+    enter: "Indoor Positioning",
+    btPrompt: "Please enable Bluetooth for indoor positioning",
+    enableBt: "Enable Bluetooth (demo)",
+    currentLocation: "Current location",
+    floor: "B1",
+    placeholder: "Type or speak destination",
+    go: "Go",
+    frequent: ["Outpatient 1","Outpatient 2","Outpatient 3","CT Room"],
+    deptTitle: "Departments (quick search)",
+    stepsTitle: "Navigation Steps"
+  },
+  ms: {
+    enter: "Penentududukan Dalam Bangunan",
+    btPrompt: "Sila aktifkan Bluetooth untuk penentududukan dalam bangunan",
+    enableBt: "Aktifkan Bluetooth (demo)",
+    currentLocation: "Lokasi sekarang",
+    floor: "B1",
+    placeholder: "Taip atau sebut destinasi",
+    go: "Pergi",
+    frequent: ["Poliklinik 1","Poliklinik 2","Poliklinik 3","Bilik CT"],
+    deptTitle: "Jabatan (carian pantas)",
+    stepsTitle: "Arahan Navigasi"
+  },
+  vi: {
+    enter: "Định vị trong nhà",
+    btPrompt: "Vui lòng bật Bluetooth để định vị trong nhà",
+    enableBt: "Bật Bluetooth (demo)",
+    currentLocation: "Vị trí hiện tại",
+    floor: "B1",
+    placeholder: "Gõ hoặc nói điểm đến",
+    go: "Đi",
+    frequent: ["Phòng khám 1","Phòng khám 2","Phòng khám 3","Phòng CT"],
+    deptTitle: "Khoa (tìm nhanh)",
+    stepsTitle: "Hướng dẫn điều hướng"
+  }
+};
 
-            endDot.setAttribute('cx', end.x);
-            endDot.setAttribute('cy', end.y);
-            endDot.setAttribute('opacity', '1');
-        }
+let lang = 'zh';
+function applyLang(){
+  document.documentElement.lang = (lang==='zh'?'zh-Hant':(lang==='en'?'en-US':(lang==='ms'?'ms':'vi')));
+  const t = i18n[lang];
+  document.querySelector('#btText').textContent = t.btPrompt;
+  document.querySelector('#enableBt').textContent = t.enableBt;
+  document.querySelector('#currentLocationTitle').textContent = t.currentLocation;
+  document.querySelector('#floorLabel').textContent = t.floor;
+  document.querySelector('#searchInput').placeholder = t.placeholder;
+  document.querySelector('#goBtn').textContent = t.go;
+  // frequent chips
+  renderFrequent(t.frequent);
+  document.querySelector('#deptList').previousElementSibling && (document.querySelector('#deptList').previousElementSibling.textContent = t.deptTitle);
+}
+document.querySelectorAll('.lang button').forEach(b=>{
+  b.addEventListener('click', ()=>{ lang = b.dataset.lang; applyLang(); });
+});
 
-        function startNavigation() {
-            const steps = document.getElementById('nav-steps');
-            steps.classList.remove('hidden');
-            steps.classList.add('fade-in');
-            isNavigating = true;
-            
-            // Mock updating current location along the path?
-            // For demo, we just show the instructions.
-        }
+/* --------- 模擬藍牙 啟用 ---------- */
+document.getElementById('enableBt').addEventListener('click', async ()=>{
+  // 模擬：試圖呼叫 navigator.bluetooth 若無則顯示說明
+  if (navigator.bluetooth){
+    try{
+      // 真實情況會要求使用者選擇裝置；此處僅示意
+      console.log('navigator.bluetooth available');
+      alert(i18n[lang].btPrompt + "\\n(實際定位需要實體藍牙 Beacon 與後端支援)");
+    }catch(e){
+      alert('藍牙啟用失敗（模擬）');
+    }
+  } else {
+    alert(i18n[lang].btPrompt + "\\n(您的瀏覽器不支援 Web Bluetooth，請使用 Chrome 手機或其他支援瀏覽器測試。)");
+  }
+});
 
-        // --- Voice Search ---
-        function toggleVoiceInput() {
-            const overlay = document.getElementById('voice-overlay');
-            if (overlay.classList.contains('hidden')) {
-                overlay.classList.remove('hidden');
-                // Mock waiting time then close
-                setTimeout(() => {
-                    overlay.classList.add('hidden');
-                    // Mock result
-                    findAndNavigate("CT");
-                }, 2000);
-            } else {
-                overlay.classList.add('hidden');
-            }
-        }
+/* --------- 進入 map 畫面 ---------- */
+const enterBtn = document.getElementById('enterBtn');
+enterBtn.addEventListener('click', openMap);
+enterBtn.addEventListener('keydown', (e)=>{ if(e.key==='Enter') openMap(); });
+function openMap(){
+  document.getElementById('home').classList.add('hidden');
+  const ms = document.getElementById('mapScreen');
+  ms.classList.remove('hidden');
+  ms.removeAttribute('aria-hidden');
+  applyLang();
+  // 模擬：設定目前位置（可由藍牙或定位決定）
+  setCurrentLocation({x:100,y:250,label:i18n[lang].currentLocation});
+}
 
-        // --- Input Handling ---
-        document.getElementById('destination-input').addEventListener('keypress', function (e) {
-            if (e.key === 'Enter') {
-                findAndNavigate(this.value);
-            }
-        });
+/* --------- current location marker ---------- */
+function setCurrentLocation(pt){
+  const gm = document.getElementById('youMarker');
+  gm.setAttribute('transform', `translate(${pt.x},${pt.y})`);
+  // update floor label if provided
+  // (在實作中可依藍牙 Beacon 回傳樓層)
+}
 
-        // Run Init
-        init();
+/* --------- Frequent list & departments ---------- */
+const frequentTargets = ["第一門診","第二門診","第三門診","CT 檢查室"];
+function renderFrequent(list){
+  const el = document.getElementById('frequentList');
+  el.innerHTML = '';
+  (list||frequentTargets).forEach(name=>{
+    const btn = document.createElement('button');
+    btn.className='chip';
+    btn.textContent = name;
+    btn.addEventListener('click', ()=>{ chooseDestination(name); });
+    el.appendChild(btn);
+  });
+}
 
-    </script>
+// 模擬從官方抓取的科別清單（取代表性項目）
+const departments = [
+  "內科部","外科部","骨科部","婦女醫學部","兒童醫學部","影像診療部",
+  "腫瘤醫學部","核醫部","牙科門診","復健醫學部","麻醉部","皮膚部"
+];
+function renderDepts(){
+  const dl = document.getElementById('deptList');
+  dl.innerHTML = '';
+  departments.forEach(d=>{
+    const b = document.createElement('button');
+    b.className='chip';
+    b.textContent = d;
+    b.addEventListener('click', ()=>chooseDestination(d));
+    dl.appendChild(b);
+  });
+}
+renderDepts();
+
+/* --------- Destination selection & route drawing (模擬) ---------- */
+let currentDest = null;
+function chooseDestination(name){
+  document.getElementById('searchInput').value = name;
+  // find coordinates for demo (簡化)
+  const coords = {
+    "第一門診":{x:110,y:260},
+    "第二門診":{x:280,y:260},
+    "第三門診":{x:445,y:260},
+    "CT 檢查室":{x:475,y:66},
+    "內科部":{x:250,y:150},
+    "外科部":{x:210,y:230},
+    "骨科部":{x:110,y:260},
+    "兒童醫學部":{x:445,y:260}
+  }[name] || {x:250,y:150};
+  currentDest = {name, coords};
+  highlightRouteTo(coords, name);
+}
+
+function highlightRouteTo(pt, name){
+  const pathEl = document.getElementById('routePath');
+  // build a smooth path from youMarker to pt (simple cubic path)
+  const you = document.getElementById('youMarker');
+  const tr = you.getAttribute('transform');
+  let m = tr.match(/translate\(([\d.]+),([\d.]+)\)/);
+  let sx = 100, sy = 250;
+  if (m){ sx = +m[1]; sy = +m[2]; }
+  const mx = (sx + pt.x)/2;
+  const my = Math.min(sy, pt.y) - 40;
+  const d = `M ${sx} ${sy} C ${sx} ${my} ${pt.x} ${my} ${pt.x} ${pt.y}`;
+  pathEl.setAttribute('d', d);
+  pathEl.classList.remove('hidden');
+
+  // show steps
+  const stepsEl = document.getElementById('routeSteps');
+  stepsEl.classList.remove('hidden');
+  const t = i18n[lang];
+  stepsEl.innerHTML = `<strong>${t.stepsTitle || '導航指引'}</strong><br/>
+    1. 從目前位置出發<br/>
+    2. 依路徑前往 ${name}<br/>
+    3. 到達後請依現場標示進入樓層/門診櫃檯。`;
+}
+
+/* --------- Search / Go button ---------- */
+document.getElementById('goBtn').addEventListener('click', ()=>{
+  const q = document.getElementById('searchInput').value.trim();
+  if(!q){ alert(i18n[lang].placeholder); return; }
+  chooseDestination(q);
+});
+
+/* --------- Voice input（Web Speech API） ---------- */
+const micBtn = document.getElementById('micBtn');
+let recognition = null;
+if ('webkitSpeechRecognition' in window || 'SpeechRecognition' in window){
+  const SpeechRec = window.SpeechRecognition || window.webkitSpeechRecognition;
+  recognition = new SpeechRec();
+  recognition.lang = (lang==='zh'?'zh-TW':(lang==='en'?'en-US':(lang==='ms'?'ms-MY':'vi-VN')));
+  recognition.interimResults = false;
+  recognition.maxAlternatives = 1;
+  recognition.onresult = (e)=>{
+    const txt = e.results[0][0].transcript;
+    document.getElementById('searchInput').value = txt;
+    chooseDestination(txt);
+  };
+  recognition.onerror = (e)=>{ console.log('speech error', e); alert('語音辨識失敗（可能瀏覽器不支援）'); }
+}
+micBtn.addEventListener('click', ()=>{
+  if(!recognition){ alert('您的瀏覽器不支援語音辨識，請使用 Chrome 手機測試'); return;}
+  recognition.lang = (lang==='zh'?'zh-TW':(lang==='en'?'en-US':(lang==='ms'?'ms-MY':'vi-VN')));
+  recognition.start();
+});
+
+/* --------- initial lang apply ---------- */
+applyLang();
+
+</script>
 </body>
 </html>
