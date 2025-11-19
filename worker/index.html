@@ -6,16 +6,13 @@
     <title>HODS 醫院派工系統</title>
     <link rel="shortcut icon" href="feticon.ico" type="image/x-icon">
 
-    <!-- 1. Tailwind CSS (UI 樣式) -->
+    <!-- 1. Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
 
-    <!-- 2. Alpine.js (核心邏輯 - 取代 React，更穩定) -->
-    <script src="https://cdn.jsdelivr.net/npm/alpinejs@3.13.3/dist/cdn.min.js"></script>
-
-    <!-- 3. Chart.js (圖表 - 取代 Recharts，避免錯誤) -->
+    <!-- 2. Chart.js -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
-    <!-- 4. FontAwesome (圖標) -->
+    <!-- 3. FontAwesome -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 
     <style>
@@ -23,10 +20,14 @@
 
         body {
             font-family: 'Noto Sans TC', sans-serif;
-            background-color: #f8fafc; /* 幾乎白色的淺灰底 */
+            background-color: #f8fafc;
         }
 
-        /* 載入動畫遮罩 */
+        [x-cloak] { 
+            display: none !important; 
+        }
+
+        /* Loader Styles */
         #loader {
             position: fixed;
             inset: 0;
@@ -36,15 +37,15 @@
             flex-direction: column;
             justify-content: center;
             align-items: center;
-            transition: opacity 0.5s ease;
+            transition: opacity 0.5s ease, visibility 0.5s;
         }
         
         .loader-hide {
             opacity: 0;
+            visibility: hidden;
             pointer-events: none;
         }
 
-        /* 呼吸燈動畫 */
         .pulse-circle {
             width: 60px;
             height: 60px;
@@ -60,7 +61,6 @@
             100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(59, 130, 246, 0); }
         }
 
-        /* 卡片互動效果 */
         .card-hover {
             transition: transform 0.2s, box-shadow 0.2s;
         }
@@ -69,7 +69,6 @@
             box-shadow: 0 10px 20px rgba(0,0,0,0.05);
         }
 
-        /* 淡入動畫 */
         .fade-in {
             animation: fadeIn 0.5s ease-out forwards;
         }
@@ -78,8 +77,167 @@
             to { opacity: 1; transform: translateY(0); }
         }
     </style>
+
+    <!-- 核心邏輯：必須在 Alpine.js 載入之前定義 listener -->
+    <script>
+        document.addEventListener('alpine:init', () => {
+            Alpine.data('hodsApp', () => ({
+                loading: true,
+                currentView: 'dashboard', // dashboard, list, detail
+                breadcrumbs: [],
+                currentModule: null,
+                currentTask: null,
+                
+                // 資料定義
+                stats: [
+                    { title: "待處理維修", value: 12, bgClass: "bg-red-50", textClass: "text-red-500", icon: "fa-wrench" },
+                    { title: "今日請求", value: 45, bgClass: "bg-blue-50", textClass: "text-blue-500", icon: "fa-file-lines" },
+                    { title: "清潔任務", value: 8, bgClass: "bg-green-50", textClass: "text-green-500", icon: "fa-broom" },
+                    { title: "設備妥善率", value: "98%", bgClass: "bg-purple-50", textClass: "text-purple-500", icon: "fa-heart-pulse" },
+                ],
+                modules: [
+                    { id: 'repair', title: '儀器維修', icon: 'fa-stethoscope', desc: '醫療儀器故障排除與報修' },
+                    { id: 'request', title: '人員請求', icon: 'fa-user-nurse', desc: '護理站人力支援與物資請求' },
+                    { id: 'maintain', title: '設備維護', icon: 'fa-screwdriver-wrench', desc: '定期保養與巡檢排程' },
+                    { id: 'clean', title: '清潔派工', icon: 'fa-pump-soap', desc: '病房與公共區域清潔調度' },
+                ],
+                tasks: [
+                    { id: 101, type: 'repair', title: '呼吸器故障 (Ventilator-02)', location: 'ICU-Bed 5', priority: 'High', status: 'Pending', time: '10:30', requester: '林護理長' },
+                    { id: 102, type: 'clean', title: '病床終期清潔', location: 'Ward 702', priority: 'Normal', status: 'Processing', time: '11:15', requester: '陳護理師' },
+                    { id: 103, type: 'maintain', title: 'MRI 季保養', location: 'Radiology', priority: 'Scheduled', status: 'Pending', time: '14:00', requester: '系統排程' },
+                    { id: 104, type: 'repair', title: '輸液幫浦異常', location: 'ER-03', priority: 'High', status: 'Done', time: '09:00', requester: '王醫師' },
+                    { id: 105, type: 'request', title: '備用氧氣鋼瓶補充', location: '5F 護理站', priority: 'High', status: 'Pending', time: '10:45', requester: '李護理師' },
+                ],
+
+                // 計算屬性 (Getter)
+                get filteredTasks() {
+                    if (!this.currentModule) return [];
+                    return this.tasks.filter(t => t.type === this.currentModule.id);
+                },
+
+                // 初始化函數
+                initApp() {
+                    console.log('App initializing...');
+                    setTimeout(() => {
+                        this.loading = false;
+                        // 確保 DOM 更新後再畫圖表
+                        this.$nextTick(() => {
+                            this.initCharts();
+                        });
+                    }, 3000);
+                },
+
+                // 導航邏輯
+                goHome() {
+                    this.currentView = 'dashboard';
+                    this.breadcrumbs = [];
+                    this.currentModule = null;
+                    this.currentTask = null;
+                    this.$nextTick(() => {
+                        this.initCharts();
+                    });
+                },
+
+                selectModule(mod) {
+                    this.currentModule = mod;
+                    this.currentView = 'list';
+                    this.breadcrumbs = [{ label: mod.title, view: 'list', id: mod.id }];
+                },
+
+                selectTask(task) {
+                    this.currentTask = task;
+                    this.currentView = 'detail';
+                    const rootCrumb = this.breadcrumbs.length > 0 ? this.breadcrumbs[0] : { label: '任務', view: 'list', id: 'all' };
+                    this.breadcrumbs = [rootCrumb, { label: '任務詳情', view: 'detail', id: task.id }];
+                },
+
+                navigateTo(view, id) {
+                    if (view === 'list') {
+                        this.currentView = 'list';
+                        this.breadcrumbs = [this.breadcrumbs[0]]; 
+                        this.currentTask = null;
+                    }
+                },
+
+                // 樣式輔助
+                getPriorityColor(p) {
+                    if (p === 'High') return 'bg-red-100 text-red-700';
+                    if (p === 'Scheduled') return 'bg-purple-100 text-purple-700';
+                    return 'bg-green-100 text-green-700';
+                },
+                getStatusColor(s) {
+                    if (s === 'Pending') return 'bg-yellow-400';
+                    if (s === 'Processing') return 'bg-blue-500';
+                    return 'bg-green-500';
+                },
+
+                // 圖表初始化邏輯
+                initCharts() {
+                    if (this.currentView !== 'dashboard') return;
+
+                    const ctxLine = document.getElementById('trafficChart');
+                    const ctxPie = document.getElementById('statusChart');
+
+                    if (ctxLine) {
+                        const existingChart = Chart.getChart(ctxLine);
+                        if (existingChart) existingChart.destroy();
+
+                        new Chart(ctxLine, {
+                            type: 'line',
+                            data: {
+                                labels: ['08:00', '10:00', '12:00', '14:00', '16:00', '18:00'],
+                                datasets: [{
+                                    label: '請求數',
+                                    data: [12, 19, 8, 25, 15, 10],
+                                    borderColor: '#3b82f6',
+                                    backgroundColor: 'rgba(59, 130, 246, 0.1)',
+                                    tension: 0.4,
+                                    fill: true
+                                }]
+                            },
+                            options: {
+                                responsive: true,
+                                maintainAspectRatio: false,
+                                plugins: { legend: { display: false } },
+                                scales: {
+                                    y: { beginAtZero: true, grid: { borderDash: [2, 4] } },
+                                    x: { grid: { display: false } }
+                                }
+                            }
+                        });
+                    }
+
+                    if (ctxPie) {
+                        const existingPie = Chart.getChart(ctxPie);
+                        if (existingPie) existingPie.destroy();
+
+                        new Chart(ctxPie, {
+                            type: 'doughnut',
+                            data: {
+                                labels: ['已完成', '處理中', '待指派', '異常'],
+                                datasets: [{
+                                    data: [40, 30, 10, 5],
+                                    backgroundColor: ['#3b82f6', '#facc15', '#d1d5db', '#f87171'],
+                                    borderWidth: 0
+                                }]
+                            },
+                            options: {
+                                responsive: true,
+                                maintainAspectRatio: false,
+                                cutout: '75%',
+                                plugins: { legend: { display: false } }
+                            }
+                        });
+                    }
+                }
+            }));
+        });
+    </script>
+
+    <!-- 4. Alpine.js (放在最後，並加上 defer，確保在上面的 listener 註冊後才執行) -->
+    <script src="https://cdn.jsdelivr.net/npm/alpinejs@3.13.3/dist/cdn.min.js" defer></script>
 </head>
-<body class="text-slate-800" x-data="hodsApp()" x-init="initApp()">
+<body class="text-slate-800" x-data="hodsApp" x-init="initApp()">
 
     <!-- ==================== 1. 載入動畫層 ==================== -->
     <div id="loader" :class="{ 'loader-hide': !loading }">
@@ -92,15 +250,12 @@
     <nav class="bg-white border-b border-slate-100 sticky top-0 z-40 shadow-sm">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div class="flex justify-between h-16">
-                <!-- Logo 區域 -->
                 <div class="flex items-center cursor-pointer" @click="goHome()">
                     <img src="image/fetlogo.png" alt="FET" class="h-8 mr-3 object-contain" onerror="this.style.display='none'; this.nextElementSibling.classList.remove('hidden')">
-                    <div class="hidden text-blue-600 font-bold text-2xl mr-2">FET</div> <!-- 備援文字 -->
+                    <div class="hidden text-blue-600 font-bold text-2xl mr-2">FET</div>
                     <div class="h-6 w-px bg-slate-300 mx-3"></div>
                     <span class="font-bold text-lg text-slate-700">HODS 派工中心</span>
                 </div>
-
-                <!-- 右側使用者資訊 -->
                 <div class="flex items-center space-x-4">
                     <button class="relative p-2 text-slate-400 hover:text-blue-600 transition">
                         <i class="fa-solid fa-bell text-xl"></i>
@@ -121,10 +276,11 @@
     </nav>
 
     <!-- ==================== 主內容區域 ==================== -->
-    <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 min-h-[calc(100vh-64px)]">
+    <!-- 使用 x-show 確保只有在 loading 結束後才顯示內容 -->
+    <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 min-h-[calc(100vh-64px)]" x-show="!loading" x-cloak>
 
         <!-- 麵包屑導航 -->
-        <div class="flex items-center text-sm text-slate-500 mb-6" x-show="!loading">
+        <div class="flex items-center text-sm text-slate-500 mb-6">
             <button @click="goHome()" class="hover:text-blue-600 transition"><i class="fa-solid fa-house mr-1"></i> 首頁</button>
             <template x-for="(crumb, index) in breadcrumbs" :key="index">
                 <div class="flex items-center">
@@ -140,7 +296,6 @@
 
         <!-- 層級 1: 儀表板 (Dashboard) -->
         <div x-show="currentView === 'dashboard'" class="fade-in">
-            <!-- 統計卡片 -->
             <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
                 <template x-for="stat in stats" :key="stat.title">
                     <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-100 card-hover">
@@ -157,7 +312,6 @@
                 </template>
             </div>
 
-            <!-- 功能模組選單 -->
             <h2 class="text-xl font-bold text-slate-800 mb-4 pl-2 border-l-4 border-blue-500">派工模組</h2>
             <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-10">
                 <template x-for="mod in modules" :key="mod.id">
@@ -171,7 +325,6 @@
                 </template>
             </div>
 
-            <!-- 圖表區 -->
             <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
                 <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-100 lg:col-span-2">
                     <h3 class="font-bold text-slate-700 mb-6">即時案件流量</h3>
@@ -195,7 +348,7 @@
         </div>
 
         <!-- 層級 2: 任務列表 (List View) -->
-        <div x-show="currentView === 'list'" class="fade-in" style="display: none;">
+        <div x-show="currentView === 'list'" class="fade-in">
             <div class="flex justify-between items-center mb-6">
                 <h2 class="text-2xl font-bold text-slate-800">
                     <span x-text="currentModule?.title"></span>
@@ -260,9 +413,8 @@
         </div>
 
         <!-- 層級 3: 詳細頁面 (Detail View) -->
-        <div x-show="currentView === 'detail'" class="fade-in" style="display: none;">
+        <div x-show="currentView === 'detail'" class="fade-in">
             <div class="bg-white rounded-2xl shadow-lg border border-slate-100 overflow-hidden">
-                <!-- Header -->
                 <div class="p-6 bg-slate-50 border-b border-slate-100 flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4">
                     <div>
                         <div class="flex items-center gap-3 mb-2">
@@ -282,9 +434,7 @@
                 </div>
 
                 <div class="p-6 grid grid-cols-1 lg:grid-cols-3 gap-8">
-                    <!-- 左側：詳細資訊 -->
                     <div class="lg:col-span-2 space-y-8">
-                        <!-- 資訊網格 -->
                         <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                             <div class="p-4 rounded-xl bg-slate-50 border border-slate-100">
                                 <p class="text-xs text-slate-400 uppercase mb-1">位置</p>
@@ -313,11 +463,9 @@
                             </div>
                         </div>
 
-                        <!-- 流程紀錄 -->
                         <div>
                             <h3 class="text-lg font-bold text-slate-800 mb-4">處理進度</h3>
                             <div class="relative pl-8 border-l-2 border-slate-200 space-y-8">
-                                <!-- Item 1 -->
                                 <div class="relative">
                                     <div class="absolute -left-[39px] top-0 w-5 h-5 bg-blue-500 rounded-full border-4 border-white shadow-sm"></div>
                                     <div class="bg-white p-4 rounded-xl border border-slate-100 shadow-sm">
@@ -328,7 +476,6 @@
                                         <p class="text-sm text-slate-600">系統自動指派給 <span class="text-blue-600">工程組-王大明</span>。</p>
                                     </div>
                                 </div>
-                                <!-- Item 2 -->
                                 <div class="relative">
                                     <div class="absolute -left-[39px] top-0 w-5 h-5 bg-slate-300 rounded-full border-4 border-white"></div>
                                     <div class="bg-white p-4 rounded-xl border border-slate-100 shadow-sm">
@@ -343,7 +490,6 @@
                         </div>
                     </div>
 
-                    <!-- 右側：操作面板 -->
                     <div class="space-y-4">
                         <div class="bg-slate-50 p-4 rounded-xl border border-slate-100">
                             <h4 class="font-bold text-slate-700 mb-3">快速操作</h4>
@@ -374,156 +520,5 @@
         </div>
 
     </main>
-
-    <!-- ==================== JavaScript 邏輯 (Alpine.js) ==================== -->
-    <script>
-        function hodsApp() {
-            return {
-                loading: true,
-                currentView: 'dashboard', // dashboard, list, detail
-                breadcrumbs: [],
-                currentModule: null,
-                currentTask: null,
-
-                // 資料
-                stats: [
-                    { title: "待處理維修", value: 12, bgClass: "bg-red-50", textClass: "text-red-500", icon: "fa-wrench" },
-                    { title: "今日請求", value: 45, bgClass: "bg-blue-50", textClass: "text-blue-500", icon: "fa-file-lines" },
-                    { title: "清潔任務", value: 8, bgClass: "bg-green-50", textClass: "text-green-500", icon: "fa-broom" },
-                    { title: "設備妥善率", value: "98%", bgClass: "bg-purple-50", textClass: "text-purple-500", icon: "fa-heart-pulse" },
-                ],
-                modules: [
-                    { id: 'repair', title: '儀器維修', icon: 'fa-stethoscope', desc: '醫療儀器故障排除與報修' },
-                    { id: 'request', title: '人員請求', icon: 'fa-user-nurse', desc: '護理站人力支援與物資請求' },
-                    { id: 'maintain', title: '設備維護', icon: 'fa-screwdriver-wrench', desc: '定期保養與巡檢排程' },
-                    { id: 'clean', title: '清潔派工', icon: 'fa-pump-soap', desc: '病房與公共區域清潔調度' },
-                ],
-                tasks: [
-                    { id: 101, type: 'repair', title: '呼吸器故障 (Ventilator-02)', location: 'ICU-Bed 5', priority: 'High', status: 'Pending', time: '10:30', requester: '林護理長' },
-                    { id: 102, type: 'clean', title: '病床終期清潔', location: 'Ward 702', priority: 'Normal', status: 'Processing', time: '11:15', requester: '陳護理師' },
-                    { id: 103, type: 'maintain', title: 'MRI 季保養', location: 'Radiology', priority: 'Scheduled', status: 'Pending', time: '14:00', requester: '系統排程' },
-                    { id: 104, type: 'repair', title: '輸液幫浦異常', location: 'ER-03', priority: 'High', status: 'Done', time: '09:00', requester: '王醫師' },
-                    { id: 105, type: 'request', title: '備用氧氣鋼瓶補充', location: '5F 護理站', priority: 'High', status: 'Pending', time: '10:45', requester: '李護理師' },
-                ],
-
-                // 計算屬性：過濾任務
-                get filteredTasks() {
-                    if (!this.currentModule) return [];
-                    return this.tasks.filter(t => t.type === this.currentModule.id || this.currentModule.id === 'request' && t.type !== 'clean'); // 簡單的 mock 邏輯
-                },
-
-                // 初始化
-                initApp() {
-                    // 3秒載入動畫
-                    setTimeout(() => {
-                        this.loading = false;
-                        // 確保圖表在載入後繪製
-                        this.$nextTick(() => {
-                            this.initCharts();
-                        });
-                    }, 3000);
-                },
-
-                // 導航邏輯
-                goHome() {
-                    this.currentView = 'dashboard';
-                    this.breadcrumbs = [];
-                    this.currentModule = null;
-                    this.currentTask = null;
-                    // 如果切回首頁，重新確保圖表存在 (Chart.js 有時在 DOM 隱藏後會需要注意)
-                    this.$nextTick(() => {
-                        // 簡單檢查是否需要重繪，這裡為了簡單，我們依賴 Chart.js 的 canvas 存在
-                    });
-                },
-
-                selectModule(mod) {
-                    this.currentModule = mod;
-                    this.currentView = 'list';
-                    this.breadcrumbs = [{ label: mod.title, view: 'list', id: mod.id }];
-                },
-
-                selectTask(task) {
-                    this.currentTask = task;
-                    this.currentView = 'detail';
-                    // 保持原本的麵包屑，加入新層級
-                    const baseCrumb = this.breadcrumbs[0]; 
-                    this.breadcrumbs = [baseCrumb, { label: '任務詳情', view: 'detail', id: task.id }];
-                },
-
-                navigateTo(view, id) {
-                    if (view === 'list') {
-                        this.currentView = 'list';
-                        this.breadcrumbs = [this.breadcrumbs[0]]; // 回到第二層
-                        this.currentTask = null;
-                    }
-                },
-
-                // 輔助樣式
-                getPriorityColor(p) {
-                    if (p === 'High') return 'bg-red-100 text-red-700';
-                    if (p === 'Scheduled') return 'bg-purple-100 text-purple-700';
-                    return 'bg-green-100 text-green-700';
-                },
-                getStatusColor(s) {
-                    if (s === 'Pending') return 'bg-yellow-400';
-                    if (s === 'Processing') return 'bg-blue-500';
-                    return 'bg-green-500';
-                },
-
-                // 圖表初始化
-                initCharts() {
-                    // 線圖
-                    const ctxLine = document.getElementById('trafficChart');
-                    if (ctxLine) {
-                        new Chart(ctxLine, {
-                            type: 'line',
-                            data: {
-                                labels: ['08:00', '10:00', '12:00', '14:00', '16:00', '18:00'],
-                                datasets: [{
-                                    label: '請求數',
-                                    data: [12, 19, 8, 25, 15, 10],
-                                    borderColor: '#3b82f6',
-                                    backgroundColor: 'rgba(59, 130, 246, 0.1)',
-                                    tension: 0.4,
-                                    fill: true
-                                }]
-                            },
-                            options: {
-                                responsive: true,
-                                maintainAspectRatio: false,
-                                plugins: { legend: { display: false } },
-                                scales: {
-                                    y: { beginAtZero: true, grid: { borderDash: [2, 4] } },
-                                    x: { grid: { display: false } }
-                                }
-                            }
-                        });
-                    }
-
-                    // 圓餅圖
-                    const ctxPie = document.getElementById('statusChart');
-                    if (ctxPie) {
-                        new Chart(ctxPie, {
-                            type: 'doughnut',
-                            data: {
-                                labels: ['已完成', '處理中', '待指派', '異常'],
-                                datasets: [{
-                                    data: [40, 30, 10, 5],
-                                    backgroundColor: ['#3b82f6', '#facc15', '#d1d5db', '#f87171'],
-                                    borderWidth: 0
-                                }]
-                            },
-                            options: {
-                                responsive: true,
-                                maintainAspectRatio: false,
-                                cutout: '75%',
-                                plugins: { legend: { display: false } }
-                            }
-                        });
-                    }
-                }
-            }
-        }
-    </script>
 </body>
 </html>
