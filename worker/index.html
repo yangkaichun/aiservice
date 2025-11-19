@@ -4,8 +4,20 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>HODS 醫院派工系統</title>
-    <!-- 修正圖示路徑 -->
     <link rel="shortcut icon" href="image/feticon.ico" type="image/x-icon">
+
+    <!-- Mobile Redirect Script -->
+    <script>
+        (function() {
+            var userAgent = navigator.userAgent || navigator.vendor || window.opera;
+            // 簡單的行動裝置偵測 (Android, iOS)
+            if (/android|iPad|iPhone|iPod/i.test(userAgent) && !window.MSStream) {
+                window.location.href = "mobile.html";
+            }
+            // 螢幕寬度輔助判斷 (可選，若視窗縮太小也跳轉)
+            // if (window.innerWidth < 768) { window.location.href = "mobile.html"; }
+        })();
+    </script>
 
     <!-- 1. Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
@@ -85,7 +97,12 @@
                 loading: true,
                 currentView: 'dashboard', // dashboard, list, detail, form
                 breadcrumbs: [],
-                currentModule: null,
+                
+                // 核心過濾狀態
+                filterMode: 'none', // 'none', 'module', 'stat'
+                filterValue: null,
+                filterTitle: '',
+
                 currentTask: null,
                 formSubmitting: false,
                 
@@ -102,10 +119,10 @@
 
                 // 資料定義
                 stats: [
-                    { title: "待處理維修", value: 12, bgClass: "bg-red-50", textClass: "text-red-500", icon: "fa-wrench" },
-                    { title: "今日請求", value: 45, bgClass: "bg-blue-50", textClass: "text-blue-500", icon: "fa-file-lines" },
-                    { title: "清潔任務", value: 8, bgClass: "bg-green-50", textClass: "text-green-500", icon: "fa-broom" },
-                    { title: "設備妥善率", value: "98%", bgClass: "bg-purple-50", textClass: "text-purple-500", icon: "fa-heart-pulse" },
+                    { id: 'stat_repair', title: "待處理維修", value: 12, bgClass: "bg-red-50", textClass: "text-red-500", icon: "fa-wrench" },
+                    { id: 'stat_today', title: "今日請求", value: 45, bgClass: "bg-blue-50", textClass: "text-blue-500", icon: "fa-file-lines" },
+                    { id: 'stat_clean', title: "清潔任務", value: 8, bgClass: "bg-green-50", textClass: "text-green-500", icon: "fa-broom" },
+                    { id: 'stat_rate', title: "設備妥善率", value: "98%", bgClass: "bg-purple-50", textClass: "text-purple-500", icon: "fa-heart-pulse" },
                 ],
                 modules: [
                     { id: 'repair', title: '儀器維修', icon: 'fa-stethoscope', desc: '醫療儀器故障排除與報修' },
@@ -119,11 +136,22 @@
                     { id: 103, type: 'maintain', title: 'MRI 季保養', location: 'Radiology', priority: 'Scheduled', status: 'Pending', time: '14:00', requester: '系統排程' },
                     { id: 104, type: 'repair', title: '輸液幫浦異常', location: 'ER-03', priority: 'High', status: 'Done', time: '09:00', requester: '王醫師' },
                     { id: 105, type: 'request', title: '備用氧氣鋼瓶補充', location: '5F 護理站', priority: 'High', status: 'Pending', time: '10:45', requester: '李護理師' },
+                    { id: 106, type: 'repair', title: '心電圖機校正', location: '3F 診間', priority: 'Normal', status: 'Pending', time: '11:00', requester: '張醫師' },
+                    { id: 107, type: 'clean', title: '手術室清潔 (OR-1)', location: 'OR', priority: 'High', status: 'Pending', time: '11:30', requester: '手術室控台' },
                 ],
 
+                // 統一過濾邏輯 (Getter)
                 get filteredTasks() {
-                    if (!this.currentModule) return [];
-                    return this.tasks.filter(t => t.type === this.currentModule.id);
+                    if (this.filterMode === 'module') {
+                        return this.tasks.filter(t => t.type === this.filterValue);
+                    } else if (this.filterMode === 'stat') {
+                        // 模擬卡片點擊的過濾邏輯
+                        if (this.filterValue === 'stat_repair') return this.tasks.filter(t => t.type === 'repair' && t.status === 'Pending');
+                        if (this.filterValue === 'stat_today') return this.tasks; // 顯示全部當作今日
+                        if (this.filterValue === 'stat_clean') return this.tasks.filter(t => t.type === 'clean');
+                        if (this.filterValue === 'stat_rate') return this.tasks.filter(t => t.type === 'maintain'); // 妥善率關聯維護
+                    }
+                    return [];
                 },
 
                 initApp() {
@@ -137,22 +165,34 @@
                 goHome() {
                     this.currentView = 'dashboard';
                     this.breadcrumbs = [];
-                    this.currentModule = null;
-                    this.currentTask = null;
+                    this.filterMode = 'none';
                     this.$nextTick(() => this.initCharts());
                 },
 
+                // 點擊模組
                 selectModule(mod) {
-                    this.currentModule = mod;
+                    this.filterMode = 'module';
+                    this.filterValue = mod.id;
+                    this.filterTitle = mod.title;
                     this.currentView = 'list';
-                    this.breadcrumbs = [{ label: mod.title, view: 'list', id: mod.id }];
+                    this.breadcrumbs = [{ label: mod.title, view: 'list' }];
+                },
+
+                // 點擊統計卡片
+                selectStat(stat) {
+                    this.filterMode = 'stat';
+                    this.filterValue = stat.id;
+                    this.filterTitle = stat.title;
+                    this.currentView = 'list';
+                    this.breadcrumbs = [{ label: stat.title, view: 'list' }];
                 },
 
                 selectTask(task) {
                     this.currentTask = task;
                     this.currentView = 'detail';
-                    const rootCrumb = this.breadcrumbs.length > 0 ? this.breadcrumbs[0] : { label: '任務列表', view: 'list', id: 'list' };
-                    this.breadcrumbs = [rootCrumb, { label: '任務詳情', view: 'detail', id: task.id }];
+                    // 確保麵包屑邏輯
+                    const rootCrumb = this.breadcrumbs.length > 0 ? this.breadcrumbs[0] : { label: '列表', view: 'list' };
+                    this.breadcrumbs = [rootCrumb, { label: '詳情', view: 'detail' }];
                 },
 
                 // === 第四層：開啟表單 ===
@@ -160,8 +200,8 @@
                     // 重置表單
                     this.formData = { location: '', priority: 'Normal', desc: '', repairDevice: '', requestType: '', cleanType: '' };
                     this.currentView = 'form';
-                    const rootCrumb = this.breadcrumbs.length > 0 ? this.breadcrumbs[0] : { label: '任務列表', view: 'list', id: 'list' };
-                    this.breadcrumbs = [rootCrumb, { label: '新增需求單', view: 'form', id: 'new' }];
+                    const rootCrumb = this.breadcrumbs.length > 0 ? this.breadcrumbs[0] : { label: '列表', view: 'list' };
+                    this.breadcrumbs = [rootCrumb, { label: '新增需求單', view: 'form' }];
                 },
 
                 // === 第四層：提交表單 ===
@@ -170,13 +210,13 @@
                     // 模擬 API 請求
                     setTimeout(() => {
                         this.formSubmitting = false;
-                        alert('需求單已成功送出！單號：#' + (Math.floor(Math.random() * 900) + 100));
+                        alert('需求單已成功送出！');
                         // 這裡可以將新資料 push 到 tasks array，這裡省略
                         this.navigateTo('list'); // 返回列表
                     }, 1500);
                 },
 
-                navigateTo(view, id) {
+                navigateTo(view) {
                     if (view === 'list') {
                         this.currentView = 'list';
                         // 保留第一層麵包屑
@@ -303,7 +343,7 @@
                 <div class="flex items-center">
                     <span class="mx-2 text-slate-300">/</span>
                     <button 
-                        @click="index !== breadcrumbs.length - 1 ? navigateTo(crumb.view, crumb.id) : null"
+                        @click="index !== breadcrumbs.length - 1 ? navigateTo(crumb.view) : null"
                         :class="index === breadcrumbs.length - 1 ? 'font-bold text-slate-800 cursor-default' : 'hover:text-blue-600 transition'"
                         x-text="crumb.label">
                     </button>
@@ -313,9 +353,10 @@
 
         <!-- ==================== Layer 1: Dashboard ==================== -->
         <div x-show="currentView === 'dashboard'" class="fade-in">
+            <!-- 統計卡片 (可點擊篩選) -->
             <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-                <template x-for="stat in stats" :key="stat.title">
-                    <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-100 card-hover">
+                <template x-for="stat in stats" :key="stat.id">
+                    <div @click="selectStat(stat)" class="bg-white p-6 rounded-2xl shadow-sm border border-slate-100 card-hover cursor-pointer relative group">
                         <div class="flex justify-between items-start">
                             <div>
                                 <p class="text-sm text-slate-500 mb-1" x-text="stat.title"></p>
@@ -325,10 +366,15 @@
                                 <i :class="`fa-solid ${stat.icon} text-xl`"></i>
                             </div>
                         </div>
+                        <!-- Hover 提示 -->
+                        <div class="absolute bottom-4 right-6 opacity-0 group-hover:opacity-100 transition-opacity text-xs text-blue-500">
+                            查看詳情 <i class="fa-solid fa-arrow-right ml-1"></i>
+                        </div>
                     </div>
                 </template>
             </div>
 
+            <!-- 派工模組 -->
             <h2 class="text-xl font-bold text-slate-800 mb-4 pl-2 border-l-4 border-blue-500">派工模組</h2>
             <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-10">
                 <template x-for="mod in modules" :key="mod.id">
@@ -342,6 +388,7 @@
                 </template>
             </div>
 
+            <!-- 圖表區 -->
             <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
                 <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-100 lg:col-span-2">
                     <h3 class="font-bold text-slate-700 mb-6">即時案件流量</h3>
@@ -368,7 +415,7 @@
         <div x-show="currentView === 'list'" class="fade-in">
             <div class="flex justify-between items-center mb-6">
                 <h2 class="text-2xl font-bold text-slate-800">
-                    <span x-text="currentModule?.title"></span>
+                    <span x-text="filterTitle"></span>
                     <span class="text-sm font-normal text-slate-400 ml-2">任務清單</span>
                 </h2>
                 <!-- 新增任務按鈕：觸發第四層 (openForm) -->
@@ -383,7 +430,7 @@
                         <thead class="bg-slate-50 border-b border-slate-100">
                             <tr>
                                 <th class="p-4 text-sm font-semibold text-slate-500">單號</th>
-                                <th class="p-4 text-sm font-semibold text-slate-500">主要事項</th>
+                                <th class="p-4 text-sm font-semibold text-slate-500">標題</th>
                                 <th class="p-4 text-sm font-semibold text-slate-500">地點</th>
                                 <th class="p-4 text-sm font-semibold text-slate-500">優先級</th>
                                 <th class="p-4 text-sm font-semibold text-slate-500">狀態</th>
@@ -421,7 +468,7 @@
                             <tr x-show="filteredTasks.length === 0">
                                 <td colspan="6" class="p-8 text-center text-slate-400">
                                     <i class="fa-regular fa-folder-open text-3xl mb-2 block"></i>
-                                    目前沒有此類別的待辦任務
+                                    目前沒有符合條件的任務
                                 </td>
                             </tr>
                         </tbody>
@@ -537,8 +584,8 @@
                 <!-- Form Header -->
                 <div class="p-6 bg-slate-50 border-b border-slate-100">
                     <h2 class="text-2xl font-bold text-slate-800 flex items-center">
-                        <i :class="`fa-solid ${currentModule?.icon} text-blue-500 mr-3`"></i>
-                        <span x-text="currentModule?.title + ' - 新增申請'"></span>
+                        <i class="fa-solid fa-pen-to-square text-blue-500 mr-3"></i>
+                        <span>新增需求單</span>
                     </h2>
                     <p class="text-slate-500 mt-1 text-sm">請填寫詳細資訊以利快速派工</p>
                 </div>
@@ -568,8 +615,10 @@
                             </div>
                         </div>
 
-                        <!-- 儀器維修專用欄位 -->
-                        <div x-show="currentModule?.id === 'repair'" class="fade-in">
+                        <!-- 根據 filterValue 顯示不同欄位 -->
+                        
+                        <!-- 儀器維修 or 預設 -->
+                        <div x-show="filterValue === 'repair' || filterMode === 'stat'" class="fade-in">
                             <label class="block text-sm font-medium text-slate-700 mb-2">設備名稱 / 財產編號</label>
                             <div class="relative">
                                 <span class="absolute inset-y-0 left-0 pl-3 flex items-center text-slate-400">
@@ -579,8 +628,8 @@
                             </div>
                         </div>
 
-                        <!-- 人員請求專用欄位 -->
-                        <div x-show="currentModule?.id === 'request'" class="fade-in">
+                        <!-- 人員請求 -->
+                        <div x-show="filterValue === 'request'" class="fade-in">
                             <label class="block text-sm font-medium text-slate-700 mb-2">需求類型</label>
                             <select x-model="formData.requestType" class="w-full px-4 py-2.5 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none bg-white">
                                 <option value="" disabled selected>請選擇類型</option>
@@ -591,8 +640,8 @@
                             </select>
                         </div>
 
-                        <!-- 清潔派工專用欄位 -->
-                        <div x-show="currentModule?.id === 'clean'" class="fade-in">
+                        <!-- 清潔派工 -->
+                        <div x-show="filterValue === 'clean' || filterValue === 'stat_clean'" class="fade-in">
                             <label class="block text-sm font-medium text-slate-700 mb-2">清潔類型</label>
                             <div class="grid grid-cols-2 gap-4">
                                 <button @click="formData.cleanType = 'daily'" :class="formData.cleanType === 'daily' ? 'bg-blue-50 border-blue-500 text-blue-700' : 'bg-white border-slate-200 text-slate-600 hover:bg-slate-50'" class="border rounded-lg p-3 text-center transition font-medium">
@@ -606,9 +655,7 @@
 
                         <!-- 描述與備註 -->
                         <div>
-                            <label class="block text-sm font-medium text-slate-700 mb-2">
-                                <span x-text="currentModule?.id === 'repair' ? '故障描述' : '詳細說明'"></span>
-                            </label>
+                            <label class="block text-sm font-medium text-slate-700 mb-2">詳細說明</label>
                             <textarea x-model="formData.desc" rows="4" class="w-full px-4 py-2.5 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition" placeholder="請描述詳細情況..."></textarea>
                         </div>
 
