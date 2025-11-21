@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>放射腫瘤科營運績效戰情室</title>
+    <title>放射腫瘤科營運績效戰情室 | 新光醫院</title>
     <link rel="icon" href="image/feticon.ico" type="image/x-icon">
 
     <!-- Tailwind CSS -->
@@ -36,7 +36,8 @@
 
         body { font-family: 'Microsoft JhengHei', 'Segoe UI', Roboto, sans-serif; background-color: #f8fafc; }
         
-        .data-table th { @apply bg-gray-50 text-left text-xs font-medium text-gray-500 uppercase tracking-wider py-3 px-4; }
+        /* Table Styles */
+        .data-table th { @apply bg-gray-50 text-left text-xs font-medium text-gray-500 uppercase tracking-wider py-3 px-4 border-b border-gray-200; }
         .data-table td { @apply whitespace-nowrap text-sm text-gray-700 py-3 px-4 border-b border-gray-100; }
         .data-table tr:hover { @apply bg-gray-50; }
         
@@ -51,15 +52,17 @@
     <script type="text/babel">
         const { useState, useEffect, useRef, useMemo } = React;
 
-        // --- Data Generators (Enhanced) ---
+        // --- Data Generators (Comprehensive) ---
+        
+        // Chart Data Logic
         const generateChartData = (range) => {
             if (range === 'daily') {
-                const hours = Array.from({length: 10}, (_, i) => `${i+8}:00`);
+                const hours = Array.from({length: 11}, (_, i) => `${i+8}:00`);
                 return {
                     labels: hours,
                     datasets: [
-                        { label: '即時營收 (萬)', data: hours.map(() => Math.random() * 5 + 2), color: '#0891b2', type: 'line' },
-                        { label: '治療人次', data: hours.map(() => Math.floor(Math.random() * 8) + 2), color: '#f59e0b', type: 'bar', yAxisID: 'y1' }
+                        { label: '即時營收 (萬)', data: hours.map(() => Math.random() * 4 + 1.5), color: '#0891b2', type: 'line' },
+                        { label: '治療人次', data: hours.map(() => Math.floor(Math.random() * 6) + 1), color: '#f59e0b', type: 'bar', yAxisID: 'y1' }
                     ]
                 };
             } else if (range === 'monthly') {
@@ -67,8 +70,8 @@
                 return {
                     labels: days,
                     datasets: [
-                        { label: '每日營收 (萬)', data: days.map(() => Math.random() * 15 + 10), color: '#0891b2', type: 'bar' },
-                        { label: '目標達成線', data: days.map(() => 20), color: '#ef4444', type: 'line', borderDash: [5,5] }
+                        { label: '每日營收 (萬)', data: days.map(() => Math.random() * 12 + 8), color: '#0891b2', type: 'bar' },
+                        { label: '目標線', data: days.map(() => 18), color: '#ef4444', type: 'line', borderDash: [5,5] }
                     ]
                 };
             } else {
@@ -76,41 +79,61 @@
                 return {
                     labels: months,
                     datasets: [
-                        { label: '2023 營收 (千萬)', data: months.map(() => Math.random() * 2 + 5), color: '#0891b2', type: 'bar' },
-                        { label: '2022 同期 (千萬)', data: months.map(() => Math.random() * 2 + 4), color: '#94a3b8', type: 'line' }
+                        { label: '2023 營收 (千萬)', data: months.map(() => Math.random() * 1.5 + 4), color: '#0891b2', type: 'bar' },
+                        { label: '2022 同期 (千萬)', data: months.map(() => Math.random() * 1.5 + 3.5), color: '#94a3b8', type: 'line' }
                     ]
                 };
             }
         };
 
+        // KPI Data Logic
         const getKpiData = (range) => {
             if (range === 'daily') {
                 return [
-                    { title: "今日門診收入", value: "NT$ 185,400", sub: "+12% 較昨日", trend: "up", icon: "fa-sack-dollar", color: "bg-cyan-600" },
-                    { title: "今日治療人次", value: "42 人", sub: "98% 預約出席", trend: "up", icon: "fa-user-group", color: "bg-blue-500" },
-                    { title: "健保申報點數", value: "24.5 萬", sub: "進度正常", trend: "up", icon: "fa-file-invoice-dollar", color: "bg-indigo-500" },
-                    { title: "儀器平均妥善率", value: "99.2%", sub: "Elekta 運轉中", trend: "up", icon: "fa-microchip", color: "bg-emerald-500" }
+                    { title: "今日門診收入", value: "NT$ 215,400", sub: "+8% 較昨日", trend: "up", icon: "fa-sack-dollar", color: "bg-cyan-600" },
+                    { title: "今日治療人次", value: "58 人", sub: "滿載率 92%", trend: "up", icon: "fa-user-group", color: "bg-blue-500" },
+                    { title: "熱治療排程", value: "6 人次", sub: "下午滿診", trend: "up", icon: "fa-temperature-high", color: "bg-orange-500" },
+                    { title: "Versa HD 狀態", value: "正常運轉", sub: "妥善率 99.9%", trend: "up", icon: "fa-circle-radiation", color: "bg-emerald-500" }
                 ];
             } else if (range === 'monthly') {
                 return [
-                    { title: "本月累計營收", value: "NT$ 5,240 萬", sub: "+5.4% 較上月", trend: "up", icon: "fa-chart-column", color: "bg-cyan-600" },
-                    { title: "本月治療總人次", value: "1,205 人次", sub: "-2% 較上月", trend: "down", icon: "fa-users", color: "bg-blue-500" },
-                    { title: "自費療程佔比", value: "35.8%", sub: "+3% SBRT成長", trend: "up", icon: "fa-percent", color: "bg-indigo-500" },
-                    { title: "設備總用電量", value: "4,500 kWh", sub: "成本 NT$ 1.8萬", trend: "down", icon: "fa-bolt", color: "bg-yellow-500" }
+                    { title: "本月累計營收", value: "NT$ 5,840 萬", sub: "+3.2% MoM", trend: "up", icon: "fa-chart-column", color: "bg-cyan-600" },
+                    { title: "本月治療總人次", value: "1,450 人次", sub: "-1.5% MoM", trend: "down", icon: "fa-users", color: "bg-blue-500" },
+                    { title: "VMAT 自費佔比", value: "42.5%", sub: "+2% 成長", trend: "up", icon: "fa-percent", color: "bg-indigo-500" },
+                    { title: "總用電成本", value: "NT$ 6.8 萬", sub: "熱治療機佔 15%", trend: "down", icon: "fa-bolt", color: "bg-yellow-500" }
                 ];
             } else {
                 return [
-                    { title: "年度總營收", value: "NT$ 6.8 億", sub: "+8.5% YoY", trend: "up", icon: "fa-trophy", color: "bg-cyan-600" },
-                    { title: "年度新病患數", value: "850 人", sub: "+120 人 YoY", trend: "up", icon: "fa-user-plus", color: "bg-blue-500" },
-                    { title: "年度平均點值", value: "0.91", sub: "較去年 -0.02", trend: "down", icon: "fa-coins", color: "bg-orange-500" },
-                    { title: "重大維修次數", value: "3 次", sub: "停機 < 24hr", trend: "up", icon: "fa-screwdriver-wrench", color: "bg-slate-500" }
+                    { title: "年度總營收", value: "NT$ 7.2 億", sub: "+6.5% YoY", trend: "up", icon: "fa-trophy", color: "bg-cyan-600" },
+                    { title: "年度新病患數", value: "920 人", sub: "+80 人 YoY", trend: "up", icon: "fa-user-plus", color: "bg-blue-500" },
+                    { title: "平均健保點值", value: "0.92", sub: "持平", trend: "right", icon: "fa-coins", color: "bg-orange-500" },
+                    { title: "設備維修總時", value: "48 小時", sub: "優於目標", trend: "up", icon: "fa-screwdriver-wrench", color: "bg-slate-500" }
                 ];
             }
         };
 
+        // Mock Table Data Generator
+        const generateTableData = (count, type) => {
+            return Array.from({length: count}, (_, i) => {
+                const id = Math.floor(Math.random() * 900000) + 100000;
+                const price = Math.floor(Math.random() * 15000) + 2000;
+                const codes = ['36012B', '36004C', '36016B', '自費VMAT', '熱治療-深部'];
+                const depts = ['直腸外科', '胸腔內科', '耳鼻喉科', '神經外科', '婦產科'];
+                return {
+                    date: `2023-11-${String(Math.floor(Math.random()*30)+1).padStart(2,'0')}`,
+                    chartNo: id,
+                    name: type === 'cost' ? `人員-${String.fromCharCode(65+i)}` : `病患-${id.toString().slice(-4)}`,
+                    code: codes[Math.floor(Math.random()*codes.length)],
+                    dept: depts[Math.floor(Math.random()*depts.length)],
+                    amount: price,
+                    status: Math.random() > 0.1 ? '已批價' : '待核價'
+                };
+            });
+        };
+
         // --- Components ---
 
-        // 1. Menu
+        // 1. Sidebar Menu
         const MenuItem = ({ item, level = 0, onSelect, currentView }) => {
             const [isOpen, setIsOpen] = useState(level < 2);
             const hasChildren = item.children && item.children.length > 0;
@@ -149,7 +172,7 @@
             );
         };
 
-        // 2. Generic Chart Component
+        // 2. Generic Chart
         const DynamicChart = ({ range, title }) => {
             const canvasRef = useRef(null);
             const chartRef = useRef(null);
@@ -162,14 +185,14 @@
                 if (chartRef.current) chartRef.current.destroy();
 
                 chartRef.current = new Chart(ctx, {
-                    type: 'bar', // Default base type
+                    type: 'bar',
                     data: {
                         labels: data.labels,
                         datasets: data.datasets.map(ds => ({
                             label: ds.label,
                             data: ds.data,
                             borderColor: ds.color,
-                            backgroundColor: ds.type === 'line' ? 'transparent' : `${ds.color}80`, // Add opacity for bars
+                            backgroundColor: ds.type === 'line' ? 'transparent' : `${ds.color}90`,
                             type: ds.type,
                             borderWidth: 2,
                             tension: 0.3,
@@ -182,7 +205,7 @@
                         interaction: { mode: 'index', intersect: false },
                         plugins: { legend: { position: 'top', align: 'end', labels: { usePointStyle: true, boxWidth: 6 } } },
                         scales: { 
-                            y: { beginAtZero: true, grid: { borderDash: [2, 4] }, title: { display: true, text: '營收金額' } },
+                            y: { beginAtZero: true, grid: { borderDash: [2, 4] }, title: { display: true, text: '金額' } },
                             y1: { display: range === 'daily', position: 'right', grid: { display: false }, title: { display: true, text: '人次' } },
                             x: { grid: { display: false } }
                         }
@@ -199,7 +222,7 @@
             );
         };
 
-        // 3. Doughnut Chart for Technique Breakdown
+        // 3. Doughnut Chart
         const TechniqueChart = ({ range }) => {
              const canvasRef = useRef(null);
              const chartRef = useRef(null);
@@ -208,16 +231,15 @@
                 const ctx = canvasRef.current.getContext('2d');
                 if (chartRef.current) chartRef.current.destroy();
                 
-                // Data changes slightly based on range
-                const data = range === 'daily' ? [10, 5, 15, 2] : [350, 120, 400, 80];
+                const data = range === 'daily' ? [12, 8, 6, 4] : [450, 280, 180, 120];
 
                 chartRef.current = new Chart(ctx, {
                     type: 'doughnut',
                     data: {
-                        labels: ['VMAT (弧形)', 'IMRT (強度調控)', '3D-CRT', 'SBRT/SRS (立體定位)'],
+                        labels: ['VMAT (Versa)', 'IMRT (Synergy)', '熱治療', '其他'],
                         datasets: [{
                             data: data,
-                            backgroundColor: ['#0891b2', '#22d3ee', '#94a3b8', '#f59e0b'],
+                            backgroundColor: ['#0891b2', '#3b82f6', '#f97316', '#94a3b8'],
                             borderWidth: 0
                         }]
                     },
@@ -237,44 +259,43 @@
             );
         };
 
-        // 4. Dashboard View with Time Range Logic
+        // 4. Dashboard View
         const DashboardView = () => {
-            const [timeRange, setTimeRange] = useState('daily'); // daily, monthly, yearly
+            const [timeRange, setTimeRange] = useState('daily');
             const kpis = getKpiData(timeRange);
+
+            // 新光醫院設備清單
+            const machines = [
+                { name: 'Elekta Versa HD', load: 92, status: '治療中', color: 'bg-green-500' },
+                { name: 'Elekta Synergy', load: 78, status: '準備中', color: 'bg-blue-500' },
+                { name: 'GE CT-Sim', load: 45, status: '排程空檔', color: 'bg-yellow-500' },
+                { name: '熱治療 (Hyperthermia)', load: 60, status: '升溫中', color: 'bg-orange-500' }
+            ];
 
             return (
                 <div className="space-y-6 fade-in">
-                    {/* Range Selector Tabs */}
-                    <div className="flex border-b border-gray-200 mb-4">
-                        <button 
-                            onClick={() => setTimeRange('daily')}
-                            className={`px-6 py-3 text-sm font-bold border-b-2 transition-colors flex items-center gap-2 ${timeRange === 'daily' ? 'tab-active' : 'tab-inactive'}`}
-                        >
-                            <i className="fa-solid fa-clock"></i> 今日即時
-                        </button>
-                        <button 
-                            onClick={() => setTimeRange('monthly')}
-                            className={`px-6 py-3 text-sm font-bold border-b-2 transition-colors flex items-center gap-2 ${timeRange === 'monthly' ? 'tab-active' : 'tab-inactive'}`}
-                        >
-                            <i className="fa-solid fa-calendar-days"></i> 月度分析
-                        </button>
-                        <button 
-                            onClick={() => setTimeRange('yearly')}
-                            className={`px-6 py-3 text-sm font-bold border-b-2 transition-colors flex items-center gap-2 ${timeRange === 'yearly' ? 'tab-active' : 'tab-inactive'}`}
-                        >
-                            <i className="fa-solid fa-chart-pie"></i> 年度報表
-                        </button>
+                    {/* Range Selector */}
+                    <div className="flex border-b border-gray-200 mb-4 bg-white px-4 rounded-t-xl">
+                        {['daily:今日即時', 'monthly:月度分析', 'yearly:年度報表'].map(t => {
+                            const [val, label] = t.split(':');
+                            return (
+                                <button key={val} onClick={() => setTimeRange(val)}
+                                    className={`px-6 py-4 text-sm font-bold border-b-2 transition-colors ${timeRange === val ? 'border-cyan-600 text-cyan-700' : 'border-transparent text-gray-500 hover:text-gray-700'}`}>
+                                    {label}
+                                </button>
+                            )
+                        })}
                     </div>
 
-                    {/* KPI Row */}
+                    {/* KPIs */}
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
                         {kpis.map((k, i) => (
                             <div key={i} className="bg-white p-5 rounded-xl shadow-sm border border-gray-100 flex justify-between items-start hover:shadow-md transition">
                                 <div>
                                     <p className="text-gray-500 text-xs font-bold uppercase">{k.title}</p>
                                     <h4 className="text-2xl font-bold text-gray-800 mt-1">{k.value}</h4>
-                                    <p className={`text-xs mt-2 font-bold ${k.trend === 'up' ? 'text-green-500' : 'text-red-500'}`}>
-                                        <i className={`fa-solid fa-arrow-${k.trend}`}></i> {k.sub}
+                                    <p className={`text-xs mt-2 font-bold ${k.trend === 'up' ? 'text-green-500' : k.trend === 'down' ? 'text-red-500' : 'text-orange-500'}`}>
+                                        <i className={`fa-solid fa-${k.trend === 'up' ? 'arrow-up' : k.trend === 'down' ? 'arrow-down' : 'minus'}`}></i> {k.sub}
                                     </p>
                                 </div>
                                 <div className={`p-3 bg-opacity-10 text-opacity-90 rounded-lg ${k.color.replace('bg-', 'text-')} ${k.color.replace('bg-', 'bg-')}`}>
@@ -284,66 +305,32 @@
                         ))}
                     </div>
                     
-                    {/* Main Charts Area */}
+                    {/* Charts & Widgets */}
                     <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                        {/* Large Main Chart */}
                         <div className="lg:col-span-2">
-                            <DynamicChart range={timeRange} title={
-                                timeRange === 'daily' ? "今日營收與人流時序圖" :
-                                timeRange === 'monthly' ? "本月營收目標達成分析" :
-                                "年度營收成長趨勢 (YoY)"
-                            } />
+                            <DynamicChart range={timeRange} title={timeRange === 'daily' ? "營收與人流監控" : "營運趨勢分析"} />
                         </div>
 
-                        {/* Right Column Widgets */}
                         <div className="space-y-6">
-                            {/* Technique Distribution */}
                             <TechniqueChart range={timeRange} />
-
-                            {/* Equipment Load / Top Referrals based on view */}
-                            <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100 flex flex-col h-64 overflow-hidden">
+                            
+                            {/* Machine Status Widget */}
+                            <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100 flex flex-col h-64">
                                 <h3 className="text-gray-700 font-bold mb-4 text-sm flex items-center gap-2">
-                                    <i className={`fa-solid ${timeRange === 'daily' ? 'fa-server' : 'fa-user-nurse'} text-cyan-600`}></i> 
-                                    {timeRange === 'daily' ? '設備負載即時監控' : '主要病患來源'}
+                                    <i className="fa-solid fa-server text-cyan-600"></i> 設備負載即時監控
                                 </h3>
-                                <div className="flex-1 overflow-y-auto space-y-4">
-                                    {timeRange === 'daily' ? (
-                                        // Daily: Equipment Status
-                                        [
-                                            { name: 'Elekta Versa HD', load: 85, status: '運轉中', color: 'bg-green-500' },
-                                            { name: 'Varian TrueBeam', load: 60, status: '待機中', color: 'bg-yellow-500' },
-                                            { name: 'CT-Sim', load: 45, status: '排程空檔', color: 'bg-blue-500' }
-                                        ].map((m, i) => (
-                                            <div key={i}>
-                                                <div className="flex justify-between text-sm mb-1">
-                                                    <span className="font-medium text-gray-700">{m.name}</span>
-                                                    <span className="text-xs text-gray-500">{m.status} ({m.load}%)</span>
-                                                </div>
-                                                <div className="w-full bg-gray-100 rounded-full h-2">
-                                                    <div className={`${m.color} h-2 rounded-full`} style={{width: `${m.load}%`}}></div>
-                                                </div>
+                                <div className="flex-1 overflow-y-auto space-y-4 pr-2">
+                                    {machines.map((m, i) => (
+                                        <div key={i}>
+                                            <div className="flex justify-between text-sm mb-1">
+                                                <span className="font-medium text-gray-700">{m.name}</span>
+                                                <span className="text-xs text-gray-500">{m.status} ({m.load}%)</span>
                                             </div>
-                                        ))
-                                    ) : (
-                                        // Monthly/Yearly: Referral Sources
-                                        [
-                                            { name: '血液腫瘤科', count: 145, pct: 45 },
-                                            { name: '胸腔外科', count: 82, pct: 25 },
-                                            { name: '耳鼻喉科', count: 48, pct: 15 },
-                                            { name: '直腸外科', count: 32, pct: 10 },
-                                        ].map((d, i) => (
-                                            <div key={i} className="flex items-center justify-between border-b border-gray-50 pb-2 last:border-0">
-                                                <div className="flex items-center gap-2">
-                                                    <div className="w-6 h-6 rounded bg-gray-100 text-gray-500 text-xs flex items-center justify-center font-bold">{i+1}</div>
-                                                    <span className="text-sm text-gray-700">{d.name}</span>
-                                                </div>
-                                                <div className="text-right">
-                                                    <span className="block text-sm font-bold text-gray-800">{d.count} 人</span>
-                                                    <span className="text-xs text-gray-400">{d.pct}%</span>
-                                                </div>
+                                            <div className="w-full bg-gray-100 rounded-full h-2">
+                                                <div className={`${m.color} h-2 rounded-full transition-all duration-1000`} style={{width: `${m.load}%`}}></div>
                                             </div>
-                                        ))
-                                    )}
+                                        </div>
+                                    ))}
                                 </div>
                             </div>
                         </div>
@@ -352,74 +339,215 @@
             );
         };
 
-        // 5. Other Views (Financial, Cost, Equipment) - Kept as provided previously but condensed for brevity in this file
-        // (In a real scenario, these would be separate files, but here we include them to make index.html complete)
-        
+        // 5. Detailed Financial View
         const FinancialView = ({ type }) => {
-             // ... (Simplified version of previous FinancialView logic for demo)
+             const data = generateTableData(12, 'revenue');
+             const titleMap = {
+                'nhi_trend': '健保點值收入明細', 'nhi_status': '健保申報狀態',
+                'self_vmat': '自費 VMAT 療程營收', 'self_sbrt': '自費 SBRT/熱治療營收',
+                'daily_reg': '每日掛號費明細', 'daily_part': '每日部分負擔明細'
+             };
+
              return (
-                <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-8 fade-in min-h-[500px]">
-                    <h2 className="text-xl font-bold text-gray-800 mb-4 flex items-center gap-2"><i className="fa-solid fa-file-invoice text-cyan-600"></i> {type} 報表細項</h2>
-                    <p className="text-gray-500">模擬資料：此處顯示財務詳細列表，包含健保代碼、病歷號、金額等。</p>
-                    <div className="mt-8 p-4 bg-yellow-50 border border-yellow-100 rounded text-yellow-800 text-sm">
-                        <i className="fa-solid fa-triangle-exclamation mr-2"></i> 
-                        為確保隱私，此預覽畫面僅顯示去識別化數據。
+                <div className="bg-white rounded-xl shadow-sm border border-gray-100 flex flex-col fade-in h-full">
+                    <div className="p-6 border-b border-gray-100 flex justify-between items-center">
+                        <h2 className="text-lg font-bold text-gray-800 flex items-center gap-2">
+                            <i className="fa-solid fa-table-list text-cyan-600"></i> {titleMap[type]}
+                        </h2>
+                        <div className="flex gap-2">
+                             <button className="px-3 py-1.5 border rounded text-sm hover:bg-gray-50"><i className="fa-solid fa-filter mr-1"></i> 篩選</button>
+                             <button className="px-3 py-1.5 bg-cyan-600 text-white rounded text-sm hover:bg-cyan-700"><i className="fa-solid fa-file-export mr-1"></i> 匯出</button>
+                        </div>
+                    </div>
+                    <div className="overflow-x-auto flex-1 p-6">
+                        <table className="w-full data-table">
+                            <thead>
+                                <tr>
+                                    <th>日期</th><th>病歷號</th><th>來源科別</th><th>健保代碼 / 項目</th><th>金額/點數</th><th>狀態</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {data.map((row, i) => (
+                                    <tr key={i}>
+                                        <td>{row.date}</td>
+                                        <td className="font-mono text-gray-600">{row.chartNo}</td>
+                                        <td>{row.dept}</td>
+                                        <td><span className="px-2 py-1 bg-gray-100 rounded text-xs font-mono mr-2">{row.code}</span></td>
+                                        <td className="font-mono font-bold text-right text-gray-800">{row.amount.toLocaleString()}</td>
+                                        <td>
+                                            <span className={`px-2 py-0.5 rounded-full text-xs font-bold ${row.status === '已批價' ? 'bg-green-100 text-green-700' : 'bg-yellow-100 text-yellow-700'}`}>
+                                                {row.status}
+                                            </span>
+                                        </td>
+                                    </tr>
+                                ))}
+                            </tbody>
+                        </table>
+                    </div>
+                    <div className="p-4 border-t border-gray-100 bg-gray-50 text-right text-xs text-gray-500">
+                        資料來源：HIS/批價系統 | 更新時間：{new Date().toLocaleTimeString()}
                     </div>
                 </div>
              );
         };
 
+        // 6. Cost View (TDABC)
         const CostView = ({ type }) => {
-            // ... (Reusing previous TDABC logic roughly)
-            const data = [
-                { role: '主治醫師', time: 25, cost: 2000 },
-                { role: '醫學物理師', time: 40, cost: 1800 },
-                { role: '放射師', time: 15, cost: 525 }
+            const personnelData = [
+                { role: '主治醫師', task: '靶區勾畫 (Contouring)', time: 35, cost: 2800 },
+                { role: '醫學物理師', task: '治療計畫 (Planning)', time: 60, cost: 2700 },
+                { role: '醫學物理師', task: 'QA 驗證', time: 20, cost: 900 },
+                { role: '放射師', task: '治療執行 (Treatment)', time: 15, cost: 525 },
+                { role: '護理師', task: '衛教與護理', time: 10, cost: 250 }
             ];
+
             return (
-                <div className="bg-white p-8 rounded-xl shadow-sm border border-gray-100 fade-in">
-                     <h2 className="text-xl font-bold text-gray-800 mb-6">TDABC 成本分析 ({type === 'energy_daily' ? '能源' : '人員'})</h2>
-                     {type !== 'energy_daily' && (
-                        <table className="w-full text-left">
-                            <thead><tr className="border-b"><th className="pb-2">職類</th><th className="pb-2 text-right">時間(分)</th><th className="pb-2 text-right">成本</th></tr></thead>
-                            <tbody>
-                                {data.map((r, i) => (
-                                    <tr key={i} className="border-b border-gray-50"><td className="py-3">{r.role}</td><td className="text-right font-mono">{r.time}</td><td className="text-right font-mono text-cyan-700 font-bold">${r.cost}</td></tr>
+                <div className="bg-white p-8 rounded-xl shadow-sm border border-gray-100 fade-in min-h-screen">
+                     <h2 className="text-xl font-bold text-gray-800 mb-6 flex items-center gap-2">
+                        <i className={`fa-solid ${type === 'energy_daily' ? 'fa-bolt' : 'fa-users-gear'} text-cyan-600`}></i>
+                        {type === 'energy_daily' ? '設備電力消耗分析' : 'TDABC 人員成本分析'}
+                     </h2>
+                     
+                     {type !== 'energy_daily' ? (
+                        <div>
+                            <div className="mb-6 grid grid-cols-3 gap-4">
+                                <div className="p-4 bg-blue-50 rounded-lg border border-blue-100">
+                                    <div className="text-xs text-blue-600 font-bold">單次 VMAT 療程總成本</div>
+                                    <div className="text-2xl font-bold text-blue-800">$ 7,175</div>
+                                </div>
+                                <div className="p-4 bg-gray-50 rounded-lg border border-gray-100">
+                                    <div className="text-xs text-gray-500 font-bold">總投入人力時間</div>
+                                    <div className="text-2xl font-bold text-gray-700">140 <span className="text-sm">min</span></div>
+                                </div>
+                            </div>
+                            <table className="w-full data-table">
+                                <thead><tr><th>職類</th><th>執行項目</th><th className="text-right">時間 (分)</th><th className="text-right">成本估算</th></tr></thead>
+                                <tbody>
+                                    {personnelData.map((r, i) => (
+                                        <tr key={i}>
+                                            <td className="font-bold text-gray-700">{r.role}</td>
+                                            <td>{r.task}</td>
+                                            <td className="text-right font-mono">{r.time}</td>
+                                            <td className="text-right font-mono font-bold text-cyan-700">$ {r.cost}</td>
+                                        </tr>
+                                    ))}
+                                </tbody>
+                            </table>
+                        </div>
+                     ) : (
+                        <div className="space-y-6">
+                            <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                                {['Elekta Versa', 'Elekta Synergy', 'GE CT', '熱治療機'].map((m, i) => (
+                                    <div key={i} className="p-4 border rounded-lg bg-gray-50">
+                                        <div className="text-xs text-gray-500 mb-1">{m}</div>
+                                        <div className="text-xl font-bold text-gray-800">{Math.floor(Math.random()*50)+20} <span className="text-xs font-normal">kWh</span></div>
+                                    </div>
                                 ))}
-                            </tbody>
-                        </table>
+                            </div>
+                            <div className="h-64 bg-gray-50 rounded flex items-center justify-center border border-gray-200 text-gray-400">
+                                <div className="text-center">
+                                    <i className="fa-solid fa-chart-area text-4xl mb-2"></i>
+                                    <p>電力消耗趨勢圖 (模擬數據)</p>
+                                </div>
+                            </div>
+                        </div>
                      )}
-                     {type === 'energy_daily' && <div className="h-64 bg-gray-50 flex items-center justify-center text-gray-400">能源消耗趨勢圖表區域</div>}
                 </div>
             );
         };
 
-        const EquipmentView = ({ device }) => {
-             const info = device === 'elekta' 
-                ? { name: 'Elekta Versa HD', img: 'image/elekta.jpg', status: '運轉中', uptime: '99.8%' }
-                : { name: device, img: null, status: '待機', uptime: '95%' };
+        // 7. Equipment Detail View (Updated for Shin Kong Hospital)
+        const EquipmentView = ({ deviceKey }) => {
+             // Device Data Map
+             const devices = {
+                 'elekta_versa': { 
+                     name: 'Elekta Versa HD', img: 'image/elekta.jpg', status: '治療中', uptime: '99.9%', 
+                     patients: 28, nextMaint: '2023/12/15', temp: '22.5°C'
+                 },
+                 'elekta_synergy': { 
+                     name: 'Elekta Synergy', img: null, status: '準備中', uptime: '98.5%', 
+                     patients: 22, nextMaint: '2023/12/20', temp: '23.0°C'
+                 },
+                 'ge_ct': { 
+                     name: 'GE CT-Sim', img: null, status: '待機', uptime: '99.2%', 
+                     patients: 12, nextMaint: '2024/01/10', temp: '21.0°C'
+                 },
+                 'hyperthermia': { 
+                     name: '熱治療 (Hyperthermia)', img: null, status: '升溫中', uptime: '95.0%', 
+                     patients: 5, nextMaint: '2023/12/05', temp: '42.5°C (Target)'
+                 }
+             };
+             
+             const info = devices[deviceKey] || devices['elekta_versa'];
+             const isHyperthermia = deviceKey === 'hyperthermia';
 
              return (
                 <div className="space-y-6 fade-in">
-                    <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100 flex flex-col md:flex-row gap-6">
-                         <div className="w-full md:w-1/3 h-56 bg-gray-100 rounded relative flex items-center justify-center overflow-hidden">
-                             <img src={info.img} alt={info.name} className="w-full h-full object-cover" onError={(e)=>{e.target.style.display='none';e.target.nextSibling.style.display='flex'}} />
-                             <div className="hidden flex-col items-center text-gray-400"><i className="fa-solid fa-image text-3xl mb-2"></i><span>{info.name}</span></div>
-                         </div>
-                         <div className="flex-1">
-                             <h2 className="text-2xl font-bold text-gray-800 mb-2">{info.name}</h2>
-                             <div className="flex gap-2 mb-4"><span className="px-2 py-1 bg-green-100 text-green-700 text-xs rounded font-bold">{info.status}</span></div>
-                             <div className="grid grid-cols-2 gap-4">
-                                 <div className="p-3 bg-gray-50 rounded"><div className="text-xs text-gray-500">妥善率</div><div className="text-lg font-bold">{info.uptime}</div></div>
-                                 <div className="p-3 bg-gray-50 rounded"><div className="text-xs text-gray-500">今日排程</div><div className="text-lg font-bold">28 人</div></div>
+                    {/* Header Card */}
+                    <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100 flex flex-col md:flex-row gap-8">
+                         <div className="w-full md:w-1/3 h-64 bg-slate-100 rounded-lg relative flex items-center justify-center overflow-hidden border border-slate-200">
+                             <img src={info.img} alt={info.name} className="w-full h-full object-cover" 
+                                  onError={(e)=>{e.target.style.display='none';e.target.nextSibling.style.display='flex'}} />
+                             <div className="hidden flex-col items-center text-gray-400">
+                                <i className={`fa-solid ${isHyperthermia ? 'fa-temperature-high' : 'fa-x-ray'} text-5xl mb-3`}></i>
+                                <span className="font-bold">{info.name}</span>
+                             </div>
+                             <div className={`absolute top-3 right-3 px-3 py-1 rounded-full text-xs font-bold shadow-sm text-white ${info.status.includes('中') ? 'bg-green-500' : 'bg-yellow-500'}`}>
+                                {info.status}
                              </div>
                          </div>
+                         
+                         <div className="flex-1 flex flex-col justify-center">
+                             <h2 className="text-3xl font-bold text-gray-800 mb-2">{info.name}</h2>
+                             <p className="text-gray-500 mb-6 text-sm"><i className="fa-solid fa-location-dot mr-2"></i>新光醫院 B2 放射腫瘤科</p>
+                             
+                             <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+                                 <div className="p-4 bg-gray-50 rounded-lg border border-gray-100">
+                                     <div className="text-xs text-gray-500 mb-1">妥善率</div>
+                                     <div className="text-xl font-bold text-cyan-700">{info.uptime}</div>
+                                 </div>
+                                 <div className="p-4 bg-gray-50 rounded-lg border border-gray-100">
+                                     <div className="text-xs text-gray-500 mb-1">今日排程</div>
+                                     <div className="text-xl font-bold text-gray-800">{info.patients} <span className="text-xs font-normal">人</span></div>
+                                 </div>
+                                 <div className="p-4 bg-gray-50 rounded-lg border border-gray-100">
+                                     <div className="text-xs text-gray-500 mb-1">{isHyperthermia ? '目標溫度' : '環境溫度'}</div>
+                                     <div className="text-xl font-bold text-orange-600">{info.temp}</div>
+                                 </div>
+                                 <div className="p-4 bg-gray-50 rounded-lg border border-gray-100">
+                                     <div className="text-xs text-gray-500 mb-1">下次保養</div>
+                                     <div className="text-sm font-bold text-gray-600 mt-1">{info.nextMaint}</div>
+                                 </div>
+                             </div>
+
+                             <div className="flex gap-3">
+                                 <button className="flex-1 py-2.5 bg-cyan-600 text-white rounded-lg hover:bg-cyan-700 transition text-sm font-bold shadow-sm">
+                                     <i className="fa-solid fa-calendar-days mr-2"></i> 查看詳細排程
+                                 </button>
+                                 <button className="flex-1 py-2.5 bg-white border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition text-sm font-bold">
+                                     <i className="fa-solid fa-wrench mr-2"></i> 報修與維護
+                                 </button>
+                             </div>
+                         </div>
+                    </div>
+
+                    {/* Maintenance Log */}
+                    <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
+                        <h3 className="font-bold text-gray-700 mb-4 flex items-center gap-2"><i className="fa-solid fa-clipboard-list text-gray-400"></i> 近期運轉日誌</h3>
+                        <table className="w-full data-table">
+                            <thead><tr><th>日期</th><th>事件</th><th>說明</th><th>處理人員</th><th>狀態</th></tr></thead>
+                            <tbody>
+                                <tr><td>2023-11-20</td><td><span className="text-green-600 font-bold">每日QA</span></td><td>晨間校正完成，數值正常</td><td>物理師陳xx</td><td><span className="text-green-600"><i className="fa-solid fa-check"></i> 正常</span></td></tr>
+                                <tr><td>2023-11-18</td><td><span className="text-orange-500 font-bold">異常警示</span></td><td>{isHyperthermia ? '水溫冷卻系統警示' : 'MLC 葉片定位誤差 0.5mm'}</td><td>原廠工程師</td><td><span className="text-green-600">已排除</span></td></tr>
+                                <tr><td>2023-11-10</td><td><span className="text-blue-600 font-bold">定期保養</span></td><td>月度保養與清潔</td><td>維修組</td><td>完成</td></tr>
+                            </tbody>
+                        </table>
                     </div>
                 </div>
              );
         };
 
-        // 6. App Container
+        // 8. App Container
         const App = () => {
             const [currentView, setCurrentView] = useState('dashboard');
 
@@ -434,7 +562,7 @@
                             icon: "fa-file-invoice-dollar",
                             children: [
                                 { title: "健保點值收入", icon: "fa-hospital-user", children: [{ title: "每日趨勢", icon: "fa-chart-line", view: "nhi_trend" }, { title: "申報狀態", icon: "fa-list-check", view: "nhi_status" }]},
-                                { title: "自費療程收入", icon: "fa-star-of-life", children: [{ title: "VMAT 營收", icon: "fa-bullseye", view: "self_vmat" }, { title: "SBRT/SRS", icon: "fa-crosshairs", view: "self_sbrt" }]},
+                                { title: "自費療程收入", icon: "fa-star-of-life", children: [{ title: "VMAT 營收", icon: "fa-bullseye", view: "self_vmat" }, { title: "熱治療/SBRT", icon: "fa-crosshairs", view: "self_sbrt" }]},
                                 { title: "每日門診收入", icon: "fa-cash-register", children: [{ title: "掛號費", icon: "fa-ticket", view: "daily_reg" }, { title: "部分負擔", icon: "fa-coins", view: "daily_part" }]}
                             ]
                         },
@@ -452,9 +580,10 @@
                     title: "放射設備管理",
                     icon: "fa-x-ray",
                     children: [
-                        { title: "Elekta Versa HD", icon: "fa-circle-radiation", children: [{ title: "妥善率與狀態", icon: "fa-heart-pulse", view: "elekta_status" }, { title: "維修紀錄", icon: "fa-screwdriver-wrench", view: "elekta_status" }] },
-                        { title: "Varian TrueBeam", icon: "fa-dharmachakra", view: "varian_status" },
-                        { title: "CT-Sim 模擬定位", icon: "fa-ring", view: "ct_status" }
+                        { title: "Elekta Versa HD", icon: "fa-circle-radiation", view: "elekta_versa" },
+                        { title: "Elekta Synergy", icon: "fa-circle-radiation", view: "elekta_synergy" },
+                        { title: "GE CT-Sim", icon: "fa-ring", view: "ge_ct" },
+                        { title: "熱治療 (Hyperthermia)", icon: "fa-temperature-high", view: "hyperthermia" }
                     ]
                 },
                 { title: "系統設定", icon: "fa-gear", view: "settings" }
@@ -464,10 +593,11 @@
                 if (currentView === 'dashboard') return <DashboardView />;
                 if (['nhi_trend', 'nhi_status', 'self_vmat', 'self_sbrt', 'daily_reg', 'daily_part'].includes(currentView)) return <FinancialView type={currentView} />;
                 if (currentView.startsWith('cost_') || currentView === 'energy_daily') return <CostView type={currentView} />;
-                if (currentView.startsWith('elekta')) return <EquipmentView device="elekta" />;
-                if (currentView.startsWith('varian')) return <EquipmentView device="Varian TrueBeam" />;
-                if (currentView.startsWith('ct')) return <EquipmentView device="CT-Sim" />;
-                return <div className="flex items-center justify-center h-full text-gray-400">開發中...</div>;
+                if (currentView === 'elekta_versa') return <EquipmentView deviceKey="elekta_versa" />;
+                if (currentView === 'elekta_synergy') return <EquipmentView deviceKey="elekta_synergy" />;
+                if (currentView === 'ge_ct') return <EquipmentView deviceKey="ge_ct" />;
+                if (currentView === 'hyperthermia') return <EquipmentView deviceKey="hyperthermia" />;
+                return <div className="flex items-center justify-center h-full text-gray-400">功能開發中...</div>;
             };
 
             return (
@@ -483,15 +613,18 @@
                         </div>
                         <div className="p-4 border-t border-gray-100 bg-gray-50 flex items-center gap-3">
                             <div className="w-9 h-9 rounded-full bg-cyan-600 flex items-center justify-center text-white text-xs font-bold">DR</div>
-                            <div><p className="text-xs font-bold text-gray-700">Dr. Chen</p><p className="text-[10px] text-gray-500">主任醫師 | 管理員</p></div>
+                            <div><p className="text-xs font-bold text-gray-700">Dr. Chen</p><p className="text-[10px] text-gray-500">新光醫院 | 主任醫師</p></div>
                         </div>
                     </aside>
 
                     <main className="flex-1 flex flex-col h-screen overflow-hidden bg-slate-50">
                         <header className="h-16 bg-white border-b border-gray-200 flex items-center justify-between px-8 shadow-sm shrink-0">
-                            <h2 className="text-lg font-bold text-gray-700">{currentView === 'dashboard' ? '營運總覽 Dashboard' : '詳細資料視圖'}</h2>
+                            <h2 className="text-lg font-bold text-gray-700">
+                                {menuData.find(m => m.view === currentView)?.title || '詳細資訊'}
+                            </h2>
                             <div className="flex items-center gap-4">
-                                <span className="text-xs bg-green-50 text-green-700 px-3 py-1 rounded-full border border-green-100 flex items-center gap-2"><span className="w-1.5 h-1.5 bg-green-500 rounded-full animate-pulse"></span>HIS 連線正常</span>
+                                <span className="text-xs bg-green-50 text-green-700 px-3 py-1 rounded-full border border-green-100 flex items-center gap-2"><span className="w-1.5 h-1.5 bg-green-500 rounded-full animate-pulse"></span>HIS 正常</span>
+                                <span className="text-xs bg-green-50 text-green-700 px-3 py-1 rounded-full border border-green-100 flex items-center gap-2"><span className="w-1.5 h-1.5 bg-green-500 rounded-full animate-pulse"></span>批價正常</span>
                                 <div className="h-8 w-px bg-gray-200"></div>
                                 <p className="text-xs text-gray-500 font-mono">{new Date().toLocaleDateString()}</p>
                             </div>
