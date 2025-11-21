@@ -1,0 +1,635 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>遠傳電信 AI 個人化精準疾病風險預測模型</title>
+    <link rel="icon" href="image/feticon.ico" type="image/x-icon">
+    <link rel="stylesheet" href="[https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css](https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css)">
+    
+    <style>
+        /* =========================================
+           1. CSS Variables & Reset (品牌識別)
+           ========================================= */
+        :root {
+            /* FET Brand Colors */
+            --fet-red: #E71A0F;       /* 遠傳標準紅 */
+            --fet-red-dark: #C4160C;  /* 深紅 (Hover) */
+            --fet-gray: #333333;      /* 主要文字 */
+            --fet-gray-light: #F2F2F2;/* 淺灰背景 (僅用於區隔) */
+            --white: #FFFFFF;         /* 純白底色 (UI核心) */
+            
+            /* Dimensions */
+            --sidebar-width: 260px;
+            --header-height: 70px;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: "Noto Sans TC", "Microsoft JhengHei", sans-serif;
+        }
+
+        body {
+            background-color: var(--white); /* 整體底色為白色 */
+            color: var(--fet-gray);
+            display: flex;
+            height: 100vh;
+            overflow: hidden;
+        }
+
+        a { text-decoration: none; color: inherit; cursor: pointer; }
+        ul { list-style: none; }
+
+        /* =========================================
+           2. Sidebar Layout (導航區)
+           ========================================= */
+       .sidebar {
+            width: var(--sidebar-width);
+            background-color: var(--white);
+            border-right: 1px solid #E0E0E0;
+            display: flex;
+            flex-direction: column;
+            z-index: 100;
+        }
+
+       .brand {
+            height: var(--header-height);
+            display: flex;
+            align-items: center;
+            padding: 0 24px;
+            border-bottom: 1px solid #E0E0E0;
+        }
+
+       .brand img {
+            height: 40px; /* 調整 Logo 大小 */
+            width: auto;
+        }
+
+       .menu {
+            padding: 24px 0;
+            flex: 1;
+        }
+
+       .menu-item {
+            padding: 16px 24px;
+            display: flex;
+            align-items: center;
+            color: #666;
+            transition: all 0.3s ease;
+            cursor: pointer;
+            font-size: 16px;
+        }
+
+       .menu-item i {
+            width: 24px;
+            margin-right: 12px;
+            text-align: center;
+            font-size: 18px; /* 單色 ICON */
+        }
+
+       .menu-item:hover {
+            color: var(--fet-red);
+            background-color: #FFF5F5; /* 極淡的紅色背景 */
+        }
+
+       .menu-item.active {
+            color: var(--fet-red);
+            font-weight: bold;
+            border-right: 4px solid var(--fet-red);
+            background-color: #FFF5F5;
+        }
+
+       .user-profile {
+            padding: 20px;
+            border-top: 1px solid #E0E0E0;
+            display: flex;
+            align-items: center;
+            font-size: 14px;
+        }
+
+       .user-avatar {
+            width: 40px;
+            height: 40px;
+            background-color: var(--fet-red);
+            color: white;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-right: 12px;
+        }
+
+        /* =========================================
+           3. Main Content (主內容區)
+           ========================================= */
+       .main-content {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            background-color: var(--white);
+            position: relative;
+            overflow-y: auto;
+        }
+
+       .header {
+            height: var(--header-height);
+            border-bottom: 1px solid #E0E0E0;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0 40px;
+            background-color: var(--white);
+            position: sticky;
+            top: 0;
+            z-index: 90;
+        }
+
+       .breadcrumb {
+            font-size: 14px;
+            color: #888;
+        }
+       .breadcrumb span.current {
+            color: var(--fet-gray);
+            font-weight: bold;
+        }
+
+        /* Views Container */
+       .view-container {
+            padding: 40px;
+            max-width: 1200px;
+            margin: 0 auto;
+            width: 100%;
+            animation: fadeIn 0.4s ease;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+       .section-title {
+            font-size: 28px;
+            font-weight: 700;
+            margin-bottom: 8px;
+            color: var(--fet-gray);
+        }
+
+       .section-subtitle {
+            font-size: 16px;
+            color: #666;
+            margin-bottom: 32px;
+        }
+
+        /* =========================================
+           4. Components (卡片、按鈕、表格)
+           ========================================= */
+       .card-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 24px;
+        }
+
+       .card {
+            background: var(--white);
+            border: 1px solid #E0E0E0;
+            border-radius: 8px;
+            padding: 24px;
+            transition: transform 0.2s, box-shadow 0.2s;
+            position: relative;
+            overflow: hidden;
+        }
+
+       .card:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 10px 20px rgba(0,0,0,0.05);
+            border-color: var(--fet-red);
+        }
+
+       .card-icon {
+            font-size: 32px;
+            color: var(--fet-gray); /* 單色 ICON */
+            margin-bottom: 16px;
+        }
+
+       .card-title {
+            font-size: 20px;
+            font-weight: 600;
+            margin-bottom: 8px;
+        }
+
+       .card-desc {
+            font-size: 14px;
+            color: #666;
+            line-height: 1.6;
+            margin-bottom: 20px;
+        }
+
+        /* Buttons */
+       .btn {
+            display: inline-block;
+            padding: 10px 20px;
+            border-radius: 4px;
+            font-size: 14px;
+            font-weight: 500;
+            text-align: center;
+            cursor: pointer;
+            border: 1px solid transparent;
+            transition: all 0.2s;
+        }
+
+       .btn-primary {
+            background-color: var(--fet-red);
+            color: white;
+        }
+       .btn-primary:hover {
+            background-color: var(--fet-red-dark);
+        }
+
+       .btn-outline {
+            border-color: #DDD;
+            color: var(--fet-gray);
+            background-color: transparent;
+        }
+       .btn-outline:hover {
+            border-color: var(--fet-red);
+            color: var(--fet-red);
+        }
+
+       .btn-back {
+            display: inline-flex;
+            align-items: center;
+            color: #666;
+            margin-bottom: 20px;
+            font-size: 14px;
+        }
+       .btn-back:hover { color: var(--fet-red); }
+       .btn-back i { margin-right: 8px; }
+
+        /* Status Tags */
+       .tag {
+            display: inline-block;
+            padding: 4px 10px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 600;
+        }
+       .tag-red { background: #FFF5F5; color: var(--fet-red); border: 1px solid #FFDCDC; }
+       .tag-green { background: #E8F5E9; color: #2E7D32; border: 1px solid #C8E6C9; }
+       .tag-gray { background: #F5F5F5; color: #666; }
+
+        /* Dashboard Specific */
+       .stat-row {
+            display: flex;
+            align-items: baseline;
+            margin-top: 10px;
+        }
+       .stat-val { font-size: 36px; font-weight: 700; color: var(--fet-red); margin-right: 8px; }
+       .stat-unit { font-size: 14px; color: #888; }
+
+        /* Charts Placeholder */
+       .chart-box {
+            height: 200px;
+            background-color: #FAFAFA;
+            border-radius: 4px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #AAA;
+            margin-top: 20px;
+            border: 1px dashed #DDD;
+        }
+
+        /* Timeline for Detail Page */
+       .timeline-item {
+            padding-left: 30px;
+            position: relative;
+            margin-bottom: 24px;
+            border-left: 2px solid #EEE;
+        }
+       .timeline-item::before {
+            content: '';
+            width: 12px;
+            height: 12px;
+            background: var(--white);
+            border: 3px solid var(--fet-red);
+            border-radius: 50%;
+            position: absolute;
+            left: -7px;
+            top: 0;
+        }
+       .timeline-date { font-size: 13px; color: #888; margin-bottom: 4px; }
+       .timeline-title { font-size: 16px; font-weight: 600; }
+
+        /* Utility: Hide/Show */
+       .hidden { display: none!important; }
+
+    </style>
+</head>
+<body>
+
+    <nav class="sidebar">
+        <div class="brand">
+            <img src="image/fetlogo.png" alt="Far EasTone Logo" onerror="this.src='[https://placehold.co/120x40?text=Far+EasTone](https://placehold.co/120x40?text=Far+EasTone)';">
+        </div>
+        
+        <ul class="menu">
+            <li class="menu-item active" onclick="navigateTo('dashboard')">
+                <i class="fas fa-th-large"></i> 總覽儀表板
+            </li>
+            <li class="menu-item" onclick="navigateTo('vaccine')">
+                <i class="fas fa-syringe"></i> 疫苗推播
+            </li>
+            <li class="menu-item" onclick="navigateTo('cancer')">
+                <i class="fas fa-microscope"></i> 智慧癌篩
+            </li>
+            <li class="menu-item" onclick="navigateTo('metabolic')">
+                <i class="fas fa-heartbeat"></i> 代謝管理
+            </li>
+        </ul>
+
+        <div class="user-profile">
+            <div class="user-avatar">王</div>
+            <div>
+                <div style="font-weight:600;">王小明 (45歲)</div>
+                <div style="font-size:12px; color:#888;">ID: A12****789</div>
+            </div>
+        </div>
+    </nav>
+
+    <main class="main-content">
+        <header class="header">
+            <div class="breadcrumb" id="breadcrumb">
+                首頁 / <span class="current">儀表板</span>
+            </div>
+            <div>
+                <i class="far fa-bell" style="font-size: 20px; color: var(--fet-gray); cursor: pointer;"></i>
+                <span style="position:absolute; top:20px; right:36px; width:8px; height:8px; background:var(--fet-red); border-radius:50%;"></span>
+            </div>
+        </header>
+
+        <div id="view-dashboard" class="view-container">
+            <h1 class="section-title">早安，王先生</h1>
+            <p class="section-subtitle">以下是您本月的健康風險摘要與建議事項。</p>
+
+            <div class="card-grid">
+                <div class="card">
+                    <div class="card-icon"><i class="fas fa-syringe"></i></div>
+                    <div class="card-title">待接種疫苗</div>
+                    <div class="stat-row">
+                        <span class="stat-val">1</span>
+                        <span class="stat-unit">項逾期</span>
+                    </div>
+                    <p class="card-desc">季節性流感疫苗已開放接種，請盡速安排。</p>
+                    <button class="btn btn-primary" onclick="navigateTo('vaccine')">前往查看</button>
+                </div>
+
+                <div class="card">
+                    <div class="card-icon"><i class="fas fa-clipboard-check"></i></div>
+                    <div class="card-title">USPSTF 篩檢建議</div>
+                    <div class="stat-row">
+                        <span class="stat-val">2</span>
+                        <span class="stat-unit">項建議 (A級)</span>
+                    </div>
+                    <p class="card-desc">根據您的年齡與風險因子，建議進行大腸直腸癌篩檢。</p>
+                    <button class="btn btn-primary" onclick="navigateTo('cancer')">查看指引</button>
+                </div>
+
+                <div class="card">
+                    <div class="card-icon"><i class="fas fa-running"></i></div>
+                    <div class="card-title">代謝風險指數</div>
+                    <div class="stat-row">
+                        <span class="stat-val" style="color: #F57F17;">中</span>
+                        <span class="stat-unit">風險等級</span>
+                    </div>
+                    <p class="card-desc">血壓與腰圍數值略高於標準，建議加強監測。</p>
+                    <button class="btn btn-primary" onclick="navigateTo('metabolic')">詳細數據</button>
+                </div>
+            </div>
+        </div>
+
+        <div id="view-vaccine" class="view-container hidden">
+            <h1 class="section-title">全齡疫苗推播</h1>
+            <p class="section-subtitle">整合疾管署與個人健康存摺，提供精準疫苗接種時程。</p>
+
+            <div style="margin-bottom: 24px;">
+                <button class="btn btn-primary">全部顯示</button>
+                <button class="btn btn-outline">僅顯示未接種</button>
+            </div>
+
+            <div class="card" style="margin-bottom: 20px; display: flex; justify-content: space-between; align-items: center;">
+                <div style="display: flex; align-items: center;">
+                    <div style="width: 50px; height: 50px; background: #FFF5F5; border-radius: 8px; display: flex; align-items: center; justify-content: center; margin-right: 16px;">
+                        <i class="fas fa-exclamation" style="color: var(--fet-red); font-size: 24px;"></i>
+                    </div>
+                    <div>
+                        <h3 style="font-size: 18px; font-weight: 600;">季節性流感疫苗 (Influenza)</h3>
+                        <p style="color: #666; font-size: 14px;">建議日期：2025/11/01 <span class="tag tag-red">已逾期</span></p>
+                    </div>
+                </div>
+                <button class="btn btn-outline" onclick="navigateTo('vaccine-detail')">立即預約</button>
+            </div>
+
+            <div class="card" style="display: flex; justify-content: space-between; align-items: center;">
+                <div style="display: flex; align-items: center;">
+                    <div style="width: 50px; height: 50px; background: #F5F5F5; border-radius: 8px; display: flex; align-items: center; justify-content: center; margin-right: 16px;">
+                        <i class="fas fa-check" style="color: #666; font-size: 20px;"></i>
+                    </div>
+                    <div>
+                        <h3 style="font-size: 18px; font-weight: 600; color: #888;">COVID-19 追加劑</h3>
+                        <p style="color: #999; font-size: 14px;">接種日期：2025/06/15 <span class="tag tag-green">已完成</span></p>
+                    </div>
+                </div>
+                <button class="btn btn-outline" style="border-color: #EEE; color: #AAA;" disabled>查看詳情</button>
+            </div>
+        </div>
+
+        <div id="view-cancer" class="view-container hidden">
+            <h1 class="section-title">智慧癌症篩檢建議</h1>
+            <p class="section-subtitle">介接 USPSTF API 資料庫，依據實證醫學等級提供建議。</p>
+
+            <div class="card-grid">
+                <div class="card" style="border-left: 5px solid var(--fet-red);">
+                    <div style="display:flex; justify-content:space-between; margin-bottom:12px;">
+                        <span class="tag tag-red">USPSTF Grade A</span>
+                        <i class="fas fa-info-circle" style="color:#DDD;"></i>
+                    </div>
+                    <h3 class="card-title">大腸直腸癌篩檢</h3>
+                    <p class="card-desc">針對 45-75 歲成人。強烈建議進行糞便潛血檢查 (FIT) 或大腸鏡檢查。</p>
+                    <div style="border-top: 1px solid #EEE; padding-top: 16px; margin-top: 16px;">
+                        <p style="font-size: 13px; color: #888; margin-bottom: 8px;">頻率：每 2 年一次</p>
+                        <button class="btn btn-primary" style="width: 100%;">查看附近篩檢站</button>
+                    </div>
+                </div>
+
+                <div class="card" style="border-left: 5px solid #F57F17;">
+                    <div style="display:flex; justify-content:space-between; margin-bottom:12px;">
+                        <span class="tag" style="background:#FFF8E1; color:#F57F17;">USPSTF Grade B</span>
+                        <i class="fas fa-info-circle" style="color:#DDD;"></i>
+                    </div>
+                    <h3 class="card-title">肺癌篩檢 (LDCT)</h3>
+                    <p class="card-desc">針對重度吸菸史族群。建議進行低劑量電腦斷層掃描。</p>
+                    <div style="border-top: 1px solid #EEE; padding-top: 16px; margin-top: 16px;">
+                        <p style="font-size: 13px; color: #888; margin-bottom: 8px;">狀態：需評估吸菸史</p>
+                        <button class="btn btn-outline" style="width: 100%;">自我評估問卷</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div id="view-metabolic" class="view-container hidden">
+            <h1 class="section-title">代謝症候群管理</h1>
+            <p class="section-subtitle">整合亞東醫院數據，追蹤五大核心指標。</p>
+
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 24px;">
+                <div class="card">
+                    <h3 class="card-title">最新生理數值</h3>
+                    <p style="font-size:12px; color:#888; margin-bottom: 20px;">更新日期：2025/11/18 (來自 EMR)</p>
+                    
+                    <div style="margin-bottom: 20px;">
+                        <div style="display:flex; justify-content:space-between; margin-bottom:4px;">
+                            <span>收縮壓 (SBP)</span>
+                            <span style="color:var(--fet-red); font-weight:bold;">135 mmHg</span>
+                        </div>
+                        <div style="height:6px; background:#EEE; border-radius:3px; overflow:hidden;">
+                            <div style="width:85%; height:100%; background:var(--fet-red);"></div>
+                        </div>
+                        <div style="font-size:12px; color:#888; text-align:right;">偏高 (標準 < 130)</div>
+                    </div>
+
+                    <div style="margin-bottom: 20px;">
+                        <div style="display:flex; justify-content:space-between; margin-bottom:4px;">
+                            <span>腰圍 (Waist)</span>
+                            <span style="color:#2E7D32; font-weight:bold;">88 cm</span>
+                        </div>
+                        <div style="height:6px; background:#EEE; border-radius:3px; overflow:hidden;">
+                            <div style="width:70%; height:100%; background:#2E7D32;"></div>
+                        </div>
+                        <div style="font-size:12px; color:#888; text-align:right;">正常 (標準 < 90)</div>
+                    </div>
+
+                    <div>
+                        <div style="display:flex; justify-content:space-between; margin-bottom:4px;">
+                            <span>空腹血糖 (AC)</span>
+                            <span style="color:var(--fet-red); font-weight:bold;">105 mg/dL</span>
+                        </div>
+                        <div style="height:6px; background:#EEE; border-radius:3px; overflow:hidden;">
+                            <div style="width:60%; height:100%; background:var(--fet-red);"></div>
+                        </div>
+                        <div style="font-size:12px; color:#888; text-align:right;">前期警示 (標準 < 100)</div>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <h3 class="card-title">血壓趨勢分析</h3>
+                    <div class="chart-box">
+                        <i class="fas fa-chart-line" style="margin-right:8px;"></i> [動態圖表區塊 - Chart.js]
+                    </div>
+                    <p class="card-desc" style="margin-top:16px;">
+                        您的血壓在過去三個月呈現緩慢上升趨勢，建議減少鈉攝取量並增加每週有氧運動時間。
+                    </p>
+                </div>
+            </div>
+        </div>
+
+        <div id="view-vaccine-detail" class="view-container hidden">
+            <a onclick="navigateTo('vaccine')" class="btn-back"><i class="fas fa-arrow-left"></i> 返回疫苗列表</a>
+            
+            <div class="card" style="border-top: 4px solid var(--fet-red);">
+                <div style="display:flex; justify-content:space-between; align-items:flex-start;">
+                    <div>
+                        <h1 class="section-title">季節性流感疫苗</h1>
+                        <p class="section-subtitle">Seasonal Influenza Vaccine (Quadrivalent)</p>
+                    </div>
+                    <span class="tag tag-red" style="font-size:14px; padding:6px 12px;">強烈建議</span>
+                </div>
+
+                <div style="background:#FFF5F5; padding:16px; border-radius:8px; margin: 20px 0;">
+                    <strong style="color:var(--fet-red);">為什麼您需要接種？</strong>
+                    <p style="font-size:14px; margin-top:8px;">根據您的年齡（45歲）與職業風險，您屬於流感高風險傳播群體。接種疫苗可降低 40-60% 的感染風險及重症機率。</p>
+                </div>
+
+                <h3 style="margin-bottom:16px; font-size:18px;">接種流程</h3>
+                <div class="timeline">
+                    <div class="timeline-item">
+                        <div class="timeline-date">步驟 1</div>
+                        <div class="timeline-title">線上預約</div>
+                        <p style="font-size:14px; color:#666;">選擇您方便的亞東醫院門診時段。</p>
+                    </div>
+                    <div class="timeline-item">
+                        <div class="timeline-date">步驟 2</div>
+                        <div class="timeline-title">醫師評估</div>
+                        <p style="font-size:14px; color:#666;">由家醫科醫師確認當日身體狀況。</p>
+                    </div>
+                    <div class="timeline-item">
+                        <div class="timeline-date">步驟 3</div>
+                        <div class="timeline-title">完成接種</div>
+                        <p style="font-size:14px; color:#666;">現場觀察 15-30 分鐘無不適後即可離開。</p>
+                    </div>
+                </div>
+
+                <div style="text-align:right; border-top:1px solid #EEE; padding-top:20px;">
+                    <button class="btn btn-outline" style="margin-right:10px;">下載衛教單張</button>
+                    <button class="btn btn-primary" onclick="alert('Demo: 已開啟亞東醫院掛號系統連結')">前往掛號</button>
+                </div>
+            </div>
+        </div>
+
+    </main>
+
+    <script>
+        // 定義頁面與麵包屑的對應
+        const routes = {
+            'dashboard': { title: '儀表板', level: '首頁' },
+            'vaccine': { title: '疫苗推播', level: '首頁' },
+            'cancer': { title: '智慧癌篩', level: '首頁' },
+            'metabolic': { title: '代謝管理', level: '首頁' },
+            'vaccine-detail': { title: '季節性流感疫苗詳情', level: '首頁 / 疫苗推播' }
+        };
+
+        function navigateTo(viewId) {
+            // 1. 隱藏所有視圖
+            document.querySelectorAll('.view-container').forEach(el => {
+                el.classList.add('hidden');
+            });
+
+            // 2. 顯示目標視圖
+            const target = document.getElementById('view-' + viewId);
+            if (target) {
+                target.classList.remove('hidden');
+                
+                // 重新觸發淡入動畫
+                target.style.animation = 'none';
+                target.offsetHeight; /* trigger reflow */
+                target.style.animation = 'fadeIn 0.4s ease';
+            }
+
+            // 3. 更新側邊欄 Active 狀態 (僅針對 Level 1 & 2)
+            document.querySelectorAll('.menu-item').forEach(el => {
+                el.classList.remove('active');
+            });
+            
+            // 如果是詳細頁，保持父層級 Active
+            let menuKey = viewId;
+            if (viewId === 'vaccine-detail') menuKey = 'vaccine';
+            
+            // 透過 onclick 屬性反查對應的 menu item (簡易實作)
+            const activeMenu = Array.from(document.querySelectorAll('.menu-item')).find(el => 
+                el.getAttribute('onclick').includes(`'${menuKey}'`)
+            );
+            if (activeMenu) activeMenu.classList.add('active');
+
+            // 4. 更新麵包屑
+            const routeInfo = routes[viewId];
+            const breadcrumbEl = document.getElementById('breadcrumb');
+            if (routeInfo) {
+                breadcrumbEl.innerHTML = `${routeInfo.level} / <span class="current">${routeInfo.title}</span>`;
+            }
+        }
+
+        // 初始化：預設顯示 Dashboard
+        navigateTo('dashboard');
+    </script>
+</body>
+</html>
