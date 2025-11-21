@@ -3,555 +3,482 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>放射腫瘤科營運績效儀表板 | Radiation Oncology Dashboard</title>
-    <link rel="shortcut icon" href="image/feticon.ico" type="image/x-icon">
-    <link href="[https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css](https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css)" rel="stylesheet">
-    <link href="[https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css](https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css)" rel="stylesheet">
+    <title>放射腫瘤科營運績效戰情室</title>
+    <link rel="icon" href="image/feticon.ico" type="image/x-icon">
+
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
     
+    <!-- FontAwesome 6 (Icons) -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+    <!-- React & ReactDOM -->
+    <script crossorigin src="https://unpkg.com/react@18/umd/react.development.js"></script>
+    <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
+    
+    <!-- Babel for JSX -->
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
     <style>
-        :root {
-            --sidebar-width: 280px;
-            --primary-color: #2c3e50; /* 深灰藍，單色風格 */
-            --hover-bg: #f8f9fa;
-            --border-color: #e9ecef;
+        /* Custom Scrollbar for Sidebar */
+        .scrollbar-hide::-webkit-scrollbar {
+            display: none;
+        }
+        .scrollbar-hide {
+            -ms-overflow-style: none;
+            scrollbar-width: none;
+        }
+        
+        /* Subtle animations */
+        .fade-in {
+            animation: fadeIn 0.5s ease-in-out;
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        /* Menu active state styling */
+        .menu-active {
+            background-color: #f3f4f6; /* gray-100 */
+            color: #0891b2; /* cyan-600 */
+            border-right: 3px solid #0891b2;
         }
 
         body {
-            font-family: 'Segoe UI', 'Microsoft JhengHei', sans-serif;
-            background-color: #ffffff; /* 全白背景 */
-            color: #333;
-            overflow-x: hidden;
+            font-family: 'Microsoft JhengHei', 'Segoe UI', Roboto, sans-serif;
+            background-color: #f8fafc; /* slate-50 */
         }
-
-        /* Sidebar Styling */
-        #sidebar-wrapper {
-            width: var(--sidebar-width);
-            height: 100vh;
-            position: fixed;
-            top: 0;
-            left: 0;
-            background-color: #ffffff;
-            border-right: 1px solid var(--border-color);
-            overflow-y: auto;
-            z-index: 1000;
-        }
-
-       .sidebar-heading {
-            padding: 1.5rem 1.25rem;
-            font-size: 1.2rem;
-            font-weight: bold;
-            border-bottom: 1px solid var(--border-color);
-            display: flex;
-            align-items: center;
-            gap: 10px;
-        }
-
-       .sidebar-heading img {
-            height: 30px;
-        }
-
-        /* 4-Level Menu Styling */
-       .list-group-item {
-            border: none;
-            padding: 10px 20px;
-            font-size: 0.95rem;
-            color: #555;
-            background: #fff;
-            cursor: pointer;
-            transition: all 0.2s;
-        }
-
-       .list-group-item:hover {
-            background-color: var(--hover-bg);
-            color: #000;
-        }
-
-       .list-group-item i {
-            width: 20px;
-            text-align: center;
-            margin-right: 8px;
-            color: #777;
-        }
-
-        /* Indentation for levels */
-       .level-1 { padding-left: 20px; font-weight: 600; }
-       .level-2 { padding-left: 40px; font-size: 0.9rem; }
-       .level-3 { padding-left: 60px; font-size: 0.85rem; }
-       .level-4 { padding-left: 80px; font-size: 0.85rem; border-left: 3px solid transparent; }
-       .level-4:hover { border-left: 3px solid var(--primary-color); }
-
-        /* Collapse arrow */
-       .menu-arrow {
-            float: right;
-            font-size: 0.8rem;
-            margin-top: 5px;
-            transition: transform 0.2s;
-        }
-       .collapsed.menu-arrow { transform: rotate(-90deg); }
-
-        /* Main Content */
-        #page-content-wrapper {
-            margin-left: var(--sidebar-width);
-            padding: 20px;
-            width: calc(100% - var(--sidebar-width));
-        }
-
-        /* Cards */
-       .kpi-card {
-            border: 1px solid var(--border-color);
-            border-radius: 8px;
-            background: #fff;
-            padding: 20px;
-            margin-bottom: 20px;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.02);
-            transition: transform 0.2s;
-        }
-       .kpi-card:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 4px 8px rgba(0,0,0,0.05);
-        }
-
-       .kpi-title {
-            font-size: 0.9rem;
-            color: #888;
-            margin-bottom: 10px;
-            text-transform: uppercase;
-            letter-spacing: 1px;
-        }
-
-       .kpi-value {
-            font-size: 1.8rem;
-            font-weight: 700;
-            color: #2c3e50;
-        }
-
-       .kpi-sub {
-            font-size: 0.8rem;
-            color: #28a745; /* Green for positive */
-        }
-        
-       .kpi-sub.negative {
-            color: #dc3545;
-        }
-
-        /* Status Indicators */
-       .system-status {
-            font-size: 0.8rem;
-            padding: 5px 10px;
-            border-radius: 20px;
-            background: #e8f5e9;
-            color: #2e7d32;
-            margin-left: 10px;
-            display: inline-flex;
-            align-items: center;
-            gap: 5px;
-        }
-
-       .status-dot {
-            width: 8px;
-            height: 8px;
-            background-color: #2e7d32;
-            border-radius: 50%;
-            display: inline-block;
-        }
-
-        /* Image Container */
-       .machine-image-container {
-            width: 100%;
-            height: 200px;
-            overflow: hidden;
-            border-radius: 8px;
-            margin-bottom: 15px;
-            background-color: #f8f9fa;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            border: 1px solid var(--border-color);
-        }
-        
-       .machine-image-container img {
-            width: 100%;
-            height: 100%;
-            object-fit: cover;
-        }
-
     </style>
 </head>
 <body>
+    <div id="root"></div>
 
-<div class="d-flex" id="wrapper">
+    <script type="text/babel">
+        const { useState, useEffect, useRef, useMemo } = React;
 
-    <div id="sidebar-wrapper">
-        <div class="sidebar-heading">
-            <img src="image/fetlogo.png" alt="Logo" onerror="this.src='[https://via.placeholder.com/30x30?text=L](https://via.placeholder.com/30x30?text=L)'"> 
-            <span>放射腫瘤科戰情室</span>
-        </div>
-        <div class="list-group list-group-flush">
-            <a href="#" class="list-group-item level-1 active-menu"><i class="fas fa-home"></i> 總覽 Dashboard</a>
-            
-            <a href="#menu-assets" class="list-group-item level-1" data-bs-toggle="collapse">
-                <i class="fas fa-server"></i> 資產設備管理 <i class="fas fa-chevron-down menu-arrow"></i>
-            </a>
-            <div class="collapse show" id="menu-assets">
-                <a href="#menu-linac" class="list-group-item level-2" data-bs-toggle="collapse">
-                    <i class="fas fa-notes-medical"></i> 放射治療儀 <i class="fas fa-chevron-down menu-arrow"></i>
-                </a>
-                <div class="collapse show" id="menu-linac">
-                    <a href="#menu-versa" class="list-group-item level-3" data-bs-toggle="collapse">
-                        <i class="fas fa-circle"></i> Elekta Versa HD <i class="fas fa-chevron-down menu-arrow"></i>
-                    </a>
-                    <div class="collapse show" id="menu-versa">
-                        <a href="#" class="list-group-item level-4">儀器妥善率 (CAI)</a>
-                        <a href="#" class="list-group-item level-4">每日用電量監控</a>
-                        <a href="#" class="list-group-item level-4">維修保養紀錄</a>
-                    </div>
-                    <a href="#" class="list-group-item level-3"><i class="far fa-circle"></i> Varian TrueBeam</a>
-                </div>
-                <a href="#" class="list-group-item level-2"><i class="fas fa-x-ray"></i> 電腦斷層定位儀 (CT-Sim)</a>
-            </div>
+        // --- Mock Data Generators ---
+        const generateDailyData = () => {
+            const hours = Array.from({length: 12}, (_, i) => `${i+8}:00`); // 8:00 to 19:00
+            const revenue = hours.map(() => Math.floor(Math.random() * 50000) + 20000);
+            const costs = hours.map(() => Math.floor(Math.random() * 20000) + 10000);
+            return { labels: hours, revenue, costs };
+        };
 
-            <a href="#menu-hr" class="list-group-item level-1 collapsed" data-bs-toggle="collapse">
-                <i class="fas fa-users"></i> 人力資源分析 <i class="fas fa-chevron-down menu-arrow"></i>
-            </a>
-            <div class="collapse" id="menu-hr">
-                <a href="#menu-cost" class="list-group-item level-2 collapsed" data-bs-toggle="collapse">
-                    <i class="fas fa-calculator"></i> 成本與工時 <i class="fas fa-chevron-down menu-arrow"></i>
-                </a>
-                <div class="collapse" id="menu-cost">
-                    <a href="#menu-tdabc" class="list-group-item level-3 collapsed" data-bs-toggle="collapse">
-                        <i class="fas fa-stopwatch"></i> TDABC 模型 <i class="fas fa-chevron-down menu-arrow"></i>
-                    </a>
-                    <div class="collapse" id="menu-tdabc">
-                        <a href="#" class="list-group-item level-4">人員投入程度</a>
-                        <a href="#" class="list-group-item level-4">人員單位成本計算</a>
-                    </div>
-                </div>
-            </div>
+        // --- Components ---
 
-            <a href="#menu-fin" class="list-group-item level-1 collapsed" data-bs-toggle="collapse">
-                <i class="fas fa-chart-line"></i> 財務績效管理 <i class="fas fa-chevron-down menu-arrow"></i>
-            </a>
-            <div class="collapse" id="menu-fin">
-                <a href="#menu-rev" class="list-group-item level-2 collapsed" data-bs-toggle="collapse">
-                    <i class="fas fa-file-invoice-dollar"></i> 營收報表 <i class="fas fa-chevron-down menu-arrow"></i>
-                </a>
-                <div class="collapse" id="menu-rev">
-                    <a href="#menu-daily-rev" class="list-group-item level-3 collapsed" data-bs-toggle="collapse">
-                        <i class="fas fa-calendar-day"></i> 每日營收細項 <i class="fas fa-chevron-down menu-arrow"></i>
-                    </a>
-                    <div class="collapse" id="menu-daily-rev">
-                        <a href="#" class="list-group-item level-4">每日門診收入</a>
-                        <a href="#" class="list-group-item level-4">健保點值收入</a>
-                        <a href="#" class="list-group-item level-4">自費/療程收入</a>
-                    </div>
-                </div>
-            </div>
+        // 1. Recursive Menu Component (Handles 4+ levels)
+        const MenuItem = ({ item, level = 0 }) => {
+            const [isOpen, setIsOpen] = useState(false);
+            const hasChildren = item.children && item.children.length > 0;
+            const paddingLeft = level * 16 + 20; // Indent based on level
 
-        </div>
-    </div>
-    <div id="page-content-wrapper">
-        <nav class="navbar navbar-expand-lg navbar-light bg-white border-bottom mb-4">
-            <div class="container-fluid">
-                <h4 class="mb-0 text-dark">營運總覽 Dashboard - Elekta Versa HD 專區</h4>
-                <div class="d-flex align-items-center">
-                    <div class="system-status" title="HIS 連線正常">
-                        <div class="status-dot"></div> HIS 系統連線
-                    </div>
-                    <div class="system-status" title="批價系統連線正常">
-                        <div class="status-dot"></div> 批價系統連線
-                    </div>
-                    <div class="ms-4 text-muted small">
-                        資料更新時間: <span id="update-time">2025-05-20 14:30:00</span>
-                    </div>
-                </div>
-            </div>
-        </nav>
+            const handleClick = () => {
+                if (hasChildren) setIsOpen(!isOpen);
+            };
 
-        <div class="container-fluid">
-            
-            <div class="row">
-                <div class="col-md-3">
-                    <div class="kpi-card">
-                        <div class="kpi-title">儀器妥善率 (CAI)</div>
-                        <div class="kpi-value">98.5%</div>
-                        <div class="kpi-sub"><i class="fas fa-arrow-up"></i> 較上週 +0.2%</div>
-                        <div class="text-muted small mt-2">含軟性延遲校正</div>
-                    </div>
-                </div>
-                <div class="col-md-3">
-                    <div class="kpi-card">
-                        <div class="kpi-title">今日預估總營收 (NTD)</div>
-                        <div class="kpi-value">452,000</div>
-                        <div class="kpi-sub"><i class="fas fa-arrow-up"></i> 達成率 105%</div>
-                        <div class="text-muted small mt-2">含健保點值預估 (0.92)</div>
-                    </div>
-                </div>
-                <div class="col-md-3">
-                    <div class="kpi-card">
-                        <div class="kpi-title">今日總用電量 (kWh)</div>
-                        <div class="kpi-value">185.4</div>
-                        <div class="kpi-sub negative"><i class="fas fa-arrow-up"></i> 較昨日 +5%</div>
-                        <div class="text-muted small mt-2">儀器 + 空調冷卻</div>
-                    </div>
-                </div>
-                <div class="col-md-3">
-                    <div class="kpi-card">
-                        <div class="kpi-title">人員投入效率 (TDABC)</div>
-                        <div class="kpi-value">82%</div>
-                        <div class="kpi-sub"><i class="fas fa-check"></i> 負載適中</div>
-                        <div class="text-muted small mt-2">有效工時/總工時</div>
-                    </div>
-                </div>
-            </div>
-
-            <div class="row">
-                <div class="col-lg-8">
-                    <div class="kpi-card">
-                        <div class="d-flex justify-content-between align-items-center mb-3">
-                            <h5 class="card-title m-0"><i class="fas fa-bolt"></i> 每日用電量與成本分析</h5>
-                            <select class="form-select form-select-sm" style="width: 150px;">
-                                <option>本週</option>
-                                <option>本月</option>
-                            </select>
+            return (
+                <div className="text-sm select-none">
+                    <div 
+                        className={`flex items-center py-3 px-4 cursor-pointer hover:bg-gray-50 transition-colors text-gray-600 ${isOpen ? 'bg-gray-50 text-cyan-700 font-medium' : ''}`}
+                        style={{ paddingLeft: `${paddingLeft}px` }}
+                        onClick={handleClick}
+                    >
+                        <div className="w-6 flex justify-center mr-2 text-gray-400">
+                            {item.icon && <i className={`fa-solid ${item.icon}`}></i>}
                         </div>
-                        <div id="powerChart" style="width: 100%; height: 350px;"></div>
+                        <span className="flex-1">{item.title}</span>
+                        {hasChildren && (
+                            <i className={`fa-solid fa-chevron-down text-xs transition-transform duration-200 ${isOpen ? 'transform rotate-180' : ''}`}></i>
+                        )}
+                    </div>
+                    
+                    {hasChildren && isOpen && (
+                        <div className="border-l border-gray-200 ml-6">
+                            {item.children.map((child, idx) => (
+                                <MenuItem key={idx} item={child} level={level + 1} />
+                            ))}
+                        </div>
+                    )}
+                </div>
+            );
+        };
+
+        // 2. Chart Components using Chart.js
+        const LineChart = ({ title, color }) => {
+            const canvasRef = useRef(null);
+            const chartRef = useRef(null);
+
+            useEffect(() => {
+                if (!canvasRef.current) return;
+                const ctx = canvasRef.current.getContext('2d');
+                const { labels, revenue, costs } = generateDailyData();
+                
+                if (chartRef.current) chartRef.current.destroy();
+
+                chartRef.current = new Chart(ctx, {
+                    type: 'line',
+                    data: {
+                        labels: labels,
+                        datasets: [
+                            {
+                                label: '門診營收',
+                                data: revenue,
+                                borderColor: '#0891b2', // cyan-600
+                                backgroundColor: 'rgba(8, 145, 178, 0.1)',
+                                tension: 0.4,
+                                fill: true
+                            },
+                            {
+                                label: '營運成本',
+                                data: costs,
+                                borderColor: '#ef4444', // red-500
+                                borderDash: [5, 5],
+                                tension: 0.4
+                            }
+                        ]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            legend: { position: 'top', align: 'end', labels: { usePointStyle: true, boxWidth: 8 } },
+                            title: { display: false }
+                        },
+                        scales: {
+                            y: { grid: { borderDash: [2, 4] }, beginAtZero: true },
+                            x: { grid: { display: false } }
+                        }
+                    }
+                });
+                return () => { if (chartRef.current) chartRef.current.destroy(); };
+            }, []);
+
+            return (
+                <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100 h-80 flex flex-col">
+                    <h3 className="text-gray-700 font-bold mb-4 flex items-center">
+                        <i className="fa-solid fa-chart-line mr-2 text-cyan-600"></i> {title}
+                    </h3>
+                    <div className="flex-1 relative">
+                        <canvas ref={canvasRef}></canvas>
                     </div>
                 </div>
-                <div class="col-lg-4">
-                    <div class="kpi-card">
-                        <h5 class="card-title mb-3"><i class="fas fa-microchip"></i> 設備狀態監控</h5>
-                        <div class="machine-image-container">
-                            <img src="image/elekta.jpg" alt="Elekta Versa HD" onerror="this.src='[https://via.placeholder.com/400x200?text=Elekta+Versa+HD+Image+Not+Found](https://via.placeholder.com/400x200?text=Elekta+Versa+HD+Image+Not+Found)'">
-                        </div>
-                        <div class="list-group list-group-flush small">
-                            <div class="list-group-item d-flex justify-content-between align-items-center px-0">
-                                <div><i class="fas fa-circle text-success"></i> 運轉狀態</div>
-                                <span class="badge bg-success rounded-pill">治療中 (Beam On)</span>
-                            </div>
-                            <div class="list-group-item d-flex justify-content-between align-items-center px-0">
-                                <div><i class="fas fa-thermometer-half"></i> 機房溫度</div>
-                                <span>22.5°C</span>
-                            </div>
-                            <div class="list-group-item d-flex justify-content-between align-items-center px-0">
-                                <div><i class="fas fa-fan"></i> 冰水機功耗</div>
-                                <span>12.5 kW</span>
-                            </div>
-                            <div class="list-group-item d-flex justify-content-between align-items-center px-0">
-                                <div><i class="fas fa-wrench"></i> 下次保養</div>
-                                <span>2025-06-01</span>
-                            </div>
-                        </div>
+            );
+        };
+
+        const PieChart = ({ title }) => {
+            const canvasRef = useRef(null);
+            const chartRef = useRef(null);
+
+            useEffect(() => {
+                const ctx = canvasRef.current.getContext('2d');
+                if (chartRef.current) chartRef.current.destroy();
+
+                chartRef.current = new Chart(ctx, {
+                    type: 'doughnut',
+                    data: {
+                        labels: ['醫師', '物理師', '放射師', '護理師', '行政'],
+                        datasets: [{
+                            data: [25, 15, 35, 15, 10],
+                            backgroundColor: ['#0e7490', '#06b6d4', '#22d3ee', '#67e8f9', '#cffafe'],
+                            borderWidth: 0
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            legend: { position: 'right', labels: { usePointStyle: true, boxWidth: 8 } }
+                        },
+                        cutout: '70%'
+                    }
+                });
+            }, []);
+
+            return (
+                <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100 h-64 flex flex-col">
+                    <h3 className="text-gray-700 font-bold mb-2 text-sm">{title}</h3>
+                    <div className="flex-1 relative">
+                        <canvas ref={canvasRef}></canvas>
                     </div>
+                    <div className="text-center text-xs text-gray-400 mt-2">TDABC 人員時間投入分析</div>
+                </div>
+            );
+        };
+
+        // 3. KPI Card
+        const KpiCard = ({ title, value, subtext, icon, colorClass, trend }) => (
+            <div className="bg-white p-5 rounded-xl shadow-sm border border-gray-100 flex items-start justify-between transition hover:shadow-md">
+                <div>
+                    <p className="text-gray-500 text-xs font-medium uppercase tracking-wider">{title}</p>
+                    <h4 className="text-2xl font-bold text-gray-800 mt-1">{value}</h4>
+                    <p className={`text-xs mt-2 font-medium ${trend === 'up' ? 'text-green-500' : 'text-red-500'}`}>
+                        {trend === 'up' ? <i className="fa-solid fa-arrow-up mr-1"></i> : <i className="fa-solid fa-arrow-down mr-1"></i>}
+                        {subtext}
+                    </p>
+                </div>
+                <div className={`p-3 rounded-lg ${colorClass} bg-opacity-10`}>
+                    <i className={`fa-solid ${icon} text-xl ${colorClass.replace('bg-', 'text-')}`}></i>
                 </div>
             </div>
+        );
 
-            <div class="row">
-                <div class="col-lg-6">
-                    <div class="kpi-card">
-                        <h5 class="card-title mb-3"><i class="fas fa-coins"></i> 每日營運收入結構 (Financial)</h5>
-                        <div id="revenueChart" style="width: 100%; height: 300px;"></div>
-                        <div class="text-center mt-2 small text-muted">
-                            *健保點值以 0.92 浮動計算 | 資料來源: 批價系統 & HIS
-                        </div>
-                    </div>
-                </div>
-                <div class="col-lg-6">
-                    <div class="kpi-card">
-                        <h5 class="card-title mb-3"><i class="fas fa-user-clock"></i> 人員投入與成本 (TDABC)</h5>
-                        <div id="staffChart" style="width: 100%; height: 300px;"></div>
-                        <div class="text-center mt-2 small text-muted">
-                            *成本包含醫師、物理師、放射師之每分鐘單位成本
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <div class="row">
-                <div class="col-12">
-                    <div class="kpi-card">
-                        <h5 class="card-title mb-3">最新療程收入與成本明細 (最近5筆)</h5>
-                        <div class="table-responsive">
-                            <table class="table table-hover table-sm align-middle">
-                                <thead class="table-light">
-                                    <tr>
-                                        <th>時間</th>
-                                        <th>病歷號</th>
-                                        <th>治療項目</th>
-                                        <th>健保點數</th>
-                                        <th>預估健保收入(0.92)</th>
-                                        <th>自費/掛號費</th>
-                                        <th>TDABC人員成本</th>
-                                        <th>設備/空間耗電成本</th>
-                                        <th>淨收益</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    <tr>
-                                        <td>14:15</td>
-                                        <td>8890123</td>
-                                        <td>VMAT (Complex)</td>
-                                        <td>4,500</td>
-                                        <td>4,140</td>
-                                        <td>3,000</td>
-                                        <td class="text-danger">-850</td>
-                                        <td class="text-danger">-120</td>
-                                        <td class="fw-bold text-success">6,170</td>
-                                    </tr>
-                                    <tr>
-                                        <td>13:50</td>
-                                        <td>8890125</td>
-                                        <td>IMRT</td>
-                                        <td>3,200</td>
-                                        <td>2,944</td>
-                                        <td>150</td>
-                                        <td class="text-danger">-600</td>
-                                        <td class="text-danger">-95</td>
-                                        <td class="fw-bold text-success">2,399</td>
-                                    </tr>
-                                    <tr>
-                                        <td>13:30</td>
-                                        <td>8890128</td>
-                                        <td>SRS (Stereotactic)</td>
-                                        <td>12,000</td>
-                                        <td>11,040</td>
-                                        <td>15,000</td>
-                                        <td class="text-danger">-2,400</td>
-                                        <td class="text-danger">-350</td>
-                                        <td class="fw-bold text-success">23,290</td>
-                                    </tr>
-                                    <tr>
-                                        <td>13:10</td>
-                                        <td>8890130</td>
-                                        <td>3D-CRT</td>
-                                        <td>2,100</td>
-                                        <td>1,932</td>
-                                        <td>150</td>
-                                        <td class="text-danger">-450</td>
-                                        <td class="text-danger">-80</td>
-                                        <td class="fw-bold text-success">1,552</td>
-                                    </tr>
-                                    <tr>
-                                        <td>11:45</td>
-                                        <td>8890133</td>
-                                        <td>VMAT</td>
-                                        <td>4,500</td>
-                                        <td>4,140</td>
-                                        <td>0</td>
-                                        <td class="text-danger">-800</td>
-                                        <td class="text-danger">-110</td>
-                                        <td class="fw-bold text-success">3,230</td>
-                                    </tr>
-                                </tbody>
-                            </table>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-        </div>
-    </div>
-</div>
-
-<script src="[https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js](https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js)"></script>
-<script src="[https://cdn.jsdelivr.net/npm/echarts@5.4.2/dist/echarts.min.js](https://cdn.jsdelivr.net/npm/echarts@5.4.2/dist/echarts.min.js)"></script>
-
-<script>
-    // Update Time
-    document.getElementById('update-time').innerText = new Date().toLocaleString('zh-TW');
-
-    // --- Chart 1: Power Consumption (Device vs Space) ---
-    var powerChart = echarts.init(document.getElementById('powerChart'));
-    var powerOption = {
-        tooltip: {
-            trigger: 'axis',
-            axisPointer: { type: 'shadow' }
-        },
-        legend: {
-            data:
-        },
-        grid: { left: '3%', right: '4%', bottom: '3%', containLabel: true },
-        xAxis: {
-            type: 'category',
-            data:
-        },
-        yAxis:,
-        series:
-            },
-            {
-                name: '空間空調/冷卻耗電',
-                type: 'bar',
-                stack: 'total',
-                itemStyle: { color: '#95a5a6' },
-                data: 
-            },
-            {
-                name: '累積電費(右軸)',
-                type: 'line',
-                yAxisIndex: 1,
-                itemStyle: { color: '#e74c3c' },
-                data:  // 假設每度電 4元
-            }
-        ]
-    };
-    powerChart.setOption(powerOption);
-
-    // --- Chart 2: Revenue Breakdown ---
-    var revenueChart = echarts.init(document.getElementById('revenueChart'));
-    var revenueOption = {
-        tooltip: { trigger: 'item' },
-        legend: { top: '5%', left: 'center' },
-        series: [
-            {
-                name: '營收來源',
-                type: 'pie',
-                radius: ['40%', '70%'],
-                avoidLabelOverlap: false,
-                itemStyle: {
-                    borderRadius: 10,
-                    borderColor: '#fff',
-                    borderWidth: 2
+        // 4. Main Application
+        const App = () => {
+            // Menu Data Structure (4 Levels)
+            const menuData = [
+                { title: "總覽 Dashboard", icon: "fa-table-columns", link: "#" },
+                { 
+                    title: "營運績效管理", 
+                    icon: "fa-chart-pie",
+                    children: [
+                        { 
+                            title: "財務分析", 
+                            children: [
+                                { title: "健保點值收入", children: [{ title: "每日趨勢" }, { title: "申報狀態" }] },
+                                { title: "自費療程收入", children: [{ title: "VMAT" }, { title: "SBRT/SRS" }] },
+                                { title: "每日門診收入", children: [{ title: "掛號費" }, { title: "部分負擔" }] }
+                            ]
+                        },
+                        { 
+                            title: "成本控制", 
+                            children: [
+                                { title: "人員成本 (TDABC)", children: [{ title: "醫師" }, { title: "物理師" }] },
+                                { title: "能源消耗", children: [{ title: "電力日報" }] }
+                            ]
+                        }
+                    ]
                 },
-                label: { show: false, position: 'center' },
-                emphasis: {
-                    label: { show: true, fontSize: '18', fontWeight: 'bold' }
+                {
+                    title: "放射設備管理",
+                    icon: "fa-x-ray",
+                    children: [
+                        {
+                            title: "Elekta Versa HD",
+                            children: [
+                                { title: "妥善率分析", children: [{title: "每日停機時間"}, {title: "維修紀錄"}] },
+                                { title: "排程與負載" }
+                            ]
+                        },
+                        { title: "Varian TrueBeam" },
+                        { title: "CT-Sim 模擬定位" }
+                    ]
                 },
-                labelLine: { show: false },
-                data:
-            }
-        ]
-    };
-    revenueChart.setOption(revenueOption);
+                { title: "系統設定", icon: "fa-gear" }
+            ];
 
-    // --- Chart 3: Personnel & Cost (TDABC) ---
-    var staffChart = echarts.init(document.getElementById('staffChart'));
-    var staffOption = {
-        tooltip: { trigger: 'axis' },
-        legend: { data: },
-        xAxis: {
-            type: 'category',
-            data: ['醫師', '物理師', '放射師', '護理師', '行政']
-        },
-        yAxis:,
-        series:
-            },
-            {
-                name: 'TDABC 總成本 (NTD)',
-                type: 'line',
-                yAxisIndex: 1,
-                itemStyle: { color: '#e67e22' },
-                data: 
-            }
-        ]
-    };
-    staffChart.setOption(staffOption);
+            return (
+                <div className="flex h-screen overflow-hidden text-gray-800">
+                    
+                    {/* Left Sidebar */}
+                    <aside className="w-64 bg-white border-r border-gray-200 flex flex-col z-10 shadow-[4px_0_24px_rgba(0,0,0,0.02)]">
+                        {/* Logo Area */}
+                        <div className="h-16 flex items-center px-6 border-b border-gray-100">
+                            <div className="flex items-center gap-3">
+                                {/* Using a div as fallback if image is missing, but trying image first */}
+                                <img 
+                                    src="image/fetlogo.png" 
+                                    alt="Logo" 
+                                    className="h-8 object-contain"
+                                    onError={(e) => {e.target.style.display='none'; e.target.nextSibling.style.display='flex'}}
+                                />
+                                <div className="hidden font-bold text-red-600 text-xl tracking-tighter" style={{fontFamily: 'Arial Black'}}>FET</div>
+                                <span className="font-semibold text-gray-700 text-sm">放射腫瘤戰情室</span>
+                            </div>
+                        </div>
 
-    // RWD Resize
-    window.onresize = function() {
-        powerChart.resize();
-        revenueChart.resize();
-        staffChart.resize();
-    };
-</script>
+                        {/* Navigation */}
+                        <div className="flex-1 overflow-y-auto scrollbar-hide py-4">
+                            {menuData.map((item, idx) => (
+                                <MenuItem key={idx} item={item} />
+                            ))}
+                        </div>
 
+                        {/* Footer / User Info */}
+                        <div className="p-4 border-t border-gray-100 bg-gray-50">
+                            <div className="flex items-center gap-3">
+                                <div className="w-8 h-8 rounded-full bg-cyan-600 flex items-center justify-center text-white text-xs font-bold">
+                                    DR
+                                </div>
+                                <div>
+                                    <p className="text-xs font-bold text-gray-700">Dr. Chen</p>
+                                    <p className="text-[10px] text-gray-500">主任醫師 | 管理員</p>
+                                </div>
+                            </div>
+                        </div>
+                    </aside>
+
+                    {/* Main Content */}
+                    <main className="flex-1 flex flex-col h-screen overflow-hidden bg-slate-50">
+                        
+                        {/* Top Header */}
+                        <header className="h-16 bg-white border-b border-gray-200 flex items-center justify-between px-8 shadow-sm">
+                            <h2 className="text-lg font-bold text-gray-700">營運總覽 Dashboard</h2>
+                            
+                            {/* System Status Indicators */}
+                            <div className="flex items-center gap-6">
+                                <div className="flex items-center gap-2 text-xs font-medium bg-green-50 px-3 py-1 rounded-full border border-green-100 text-green-700">
+                                    <span className="w-2 h-2 rounded-full bg-green-500 animate-pulse"></span>
+                                    HIS 系統連線正常
+                                </div>
+                                <div className="flex items-center gap-2 text-xs font-medium bg-green-50 px-3 py-1 rounded-full border border-green-100 text-green-700">
+                                    <span className="w-2 h-2 rounded-full bg-green-500 animate-pulse"></span>
+                                    批價系統連線正常
+                                </div>
+                                <div className="w-px h-6 bg-gray-200 mx-2"></div>
+                                <button className="text-gray-400 hover:text-gray-600"><i className="fa-regular fa-bell"></i></button>
+                                <button className="text-gray-400 hover:text-gray-600"><i className="fa-solid fa-rotate-right"></i></button>
+                            </div>
+                        </header>
+
+                        {/* Dashboard Content */}
+                        <div className="flex-1 overflow-y-auto p-8 fade-in">
+                            
+                            {/* KPI Row */}
+                            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+                                <KpiCard 
+                                    title="今日門診收入" 
+                                    value="NT$ 185,400" 
+                                    subtext="較昨日 +12%" 
+                                    trend="up" 
+                                    icon="fa-sack-dollar" 
+                                    colorClass="bg-cyan-600" 
+                                />
+                                <KpiCard 
+                                    title="健保申報點數" 
+                                    value="245,000 pts" 
+                                    subtext="達成率 98%" 
+                                    trend="up" 
+                                    icon="fa-file-invoice-dollar" 
+                                    colorClass="bg-blue-500" 
+                                />
+                                <KpiCard 
+                                    title="自費療程收入" 
+                                    value="NT$ 450,000" 
+                                    subtext="較上週 -5%" 
+                                    trend="down" 
+                                    icon="fa-star-of-life" 
+                                    colorClass="bg-indigo-500" 
+                                />
+                                <KpiCard 
+                                    title="今日治療人次" 
+                                    value="42 人" 
+                                    subtext="滿載率 85%" 
+                                    trend="up" 
+                                    icon="fa-user-group" 
+                                    colorClass="bg-teal-500" 
+                                />
+                            </div>
+
+                            {/* Main Section: Equipment & Finance */}
+                            <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 mb-8">
+                                
+                                {/* Left: Equipment Status (Elekta) */}
+                                <div className="lg:col-span-1 bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden flex flex-col">
+                                    <div className="p-4 border-b border-gray-100 flex justify-between items-center">
+                                        <h3 className="font-bold text-gray-700 flex items-center gap-2">
+                                            <i className="fa-solid fa-circle-radiation text-yellow-500"></i>
+                                            主要設備狀態
+                                        </h3>
+                                        <span className="text-xs bg-green-100 text-green-700 px-2 py-1 rounded font-bold">運轉中</span>
+                                    </div>
+                                    
+                                    {/* Machine Image */}
+                                    <div className="relative h-48 bg-gray-100">
+                                        <img 
+                                            src="image/elekta.jpg" 
+                                            alt="Elekta Versa HD" 
+                                            className="w-full h-full object-cover"
+                                            onError={(e) => {
+                                                e.target.style.display = 'none';
+                                                e.target.parentNode.classList.add('flex', 'items-center', 'justify-center', 'text-gray-400');
+                                                e.target.parentNode.innerText = '';
+                                            }}
+                                        />
+                                        <div className="absolute bottom-0 left-0 w-full bg-gradient-to-t from-black/70 to-transparent p-3">
+                                            <p className="text-white font-bold text-sm">Elekta Versa HD (LINAC-1)</p>
+                                        </div>
+                                    </div>
+
+                                    {/* Machine Stats */}
+                                    <div className="p-4 flex-1 space-y-4">
+                                        <div>
+                                            <div className="flex justify-between text-xs mb-1">
+                                                <span className="text-gray-500">妥善率 (Availability)</span>
+                                                <span className="font-bold text-cyan-700">99.2%</span>
+                                            </div>
+                                            <div className="w-full bg-gray-100 rounded-full h-2">
+                                                <div className="bg-cyan-600 h-2 rounded-full" style={{width: '99.2%'}}></div>
+                                            </div>
+                                        </div>
+                                        
+                                        <div className="grid grid-cols-2 gap-4 pt-2">
+                                            <div className="bg-slate-50 p-3 rounded-lg">
+                                                <p className="text-[10px] text-gray-500 uppercase">今日用電</p>
+                                                <p className="text-sm font-bold text-gray-700"><i className="fa-solid fa-bolt text-yellow-400 mr-1"></i> 145 kWh</p>
+                                            </div>
+                                            <div className="bg-slate-50 p-3 rounded-lg">
+                                                <p className="text-[10px] text-gray-500 uppercase">治療人次</p>
+                                                <p className="text-sm font-bold text-gray-700">28 / 35</p>
+                                            </div>
+                                        </div>
+                                        
+                                        <div className="text-xs text-gray-400 border-t border-gray-100 pt-3 mt-1">
+                                            上次保養: 2023/10/15 | 下次排程: 2023/11/15
+                                        </div>
+                                    </div>
+                                </div>
+
+                                {/* Center: Financial Chart */}
+                                <div className="lg:col-span-2 space-y-6">
+                                    <LineChart title="營運收入與成本分析 (Daily)" />
+                                    
+                                    <div className="grid grid-cols-2 gap-6">
+                                        <PieChart title="人員成本分攤 (TDABC)" />
+                                        
+                                        {/* Additional Metrics Card */}
+                                        <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100 h-64">
+                                            <h3 className="text-gray-700 font-bold mb-4 text-sm">關鍵成本指標</h3>
+                                            <ul className="space-y-4">
+                                                <li className="flex justify-between items-center">
+                                                    <span className="text-sm text-gray-600 flex items-center gap-2">
+                                                        <i className="fa-solid fa-plug text-gray-400 w-4"></i> 設備儀器空間用電
+                                                    </span>
+                                                    <span className="font-mono font-bold text-gray-800">NT$ 3,240 <span className="text-xs text-gray-400 font-normal">/日</span></span>
+                                                </li>
+                                                <li className="flex justify-between items-center">
+                                                    <span className="text-sm text-gray-600 flex items-center gap-2">
+                                                        <i className="fa-solid fa-user-doctor text-gray-400 w-4"></i> 單位治療人力成本
+                                                    </span>
+                                                    <span className="font-mono font-bold text-gray-800">NT$ 850 <span className="text-xs text-gray-400 font-normal">/人次</span></span>
+                                                </li>
+                                                <li className="flex justify-between items-center">
+                                                    <span className="text-sm text-gray-600 flex items-center gap-2">
+                                                        <i className="fa-solid fa-coins text-gray-400 w-4"></i> 平均健保點值
+                                                    </span>
+                                                    <span className="font-mono font-bold text-orange-600">0.92 <span className="text-xs text-gray-400 font-normal">(浮動)</span></span>
+                                                </li>
+                                            </ul>
+                                            <div className="mt-6 bg-blue-50 p-3 rounded text-xs text-blue-700 flex items-start gap-2">
+                                                <i className="fa-solid fa-circle-info mt-0.5"></i>
+                                                <span>數據來源整合：HIS 病歷系統、批價收費系統、台電智慧電表API。每 15 分鐘更新一次。</span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                        </div>
+                    </main>
+                </div>
+            );
+        };
+
+        const root = ReactDOM.createRoot(document.getElementById('root'));
+        root.render(<App />);
+    </script>
 </body>
 </html>
