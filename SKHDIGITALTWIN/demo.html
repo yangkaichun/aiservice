@@ -1,0 +1,233 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>入院疾病分析與預測 | SKH Digital Twin</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script crossorigin src="https://unpkg.com/react@18/umd/react.development.js"></script>
+    <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Noto+Sans+TC:wght@300;400;500;700&display=swap');
+        body { font-family: 'Inter', 'Noto Sans TC', sans-serif; background-color: #f8fafc; color: #1e293b; }
+        .glass-card {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(226, 232, 240, 0.8);
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.02);
+            border-radius: 0.75rem;
+        }
+        .text-glow { text-shadow: 0 0 10px rgba(14, 165, 233, 0.3); }
+    </style>
+</head>
+<body>
+    <div id="root"></div>
+
+    <script type="text/babel">
+        const { useState, useEffect, useRef } = React;
+
+        // --- Chart Component ---
+        const ChartComponent = ({ data }) => {
+            const canvasRef = useRef(null);
+            const chartRef = useRef(null);
+
+            useEffect(() => {
+                const ctx = canvasRef.current.getContext('2d');
+                if (chartRef.current) chartRef.current.destroy();
+
+                chartRef.current = new Chart(ctx, {
+                    type: 'line',
+                    data: {
+                        labels: ['1月', '2月', '3月', '4月', '5月 (Current)', '6月 (Pred)', '7月 (Pred)', '8月 (Pred)'],
+                        datasets: [
+                            {
+                                label: '歷史數據',
+                                data: [120, 132, 101, 134, 150, null, null, null], // Ends at current
+                                borderColor: '#0ea5e9', // Blue
+                                backgroundColor: '#0ea5e920',
+                                borderWidth: 3,
+                                tension: 0.4,
+                                pointRadius: 4,
+                                fill: true
+                            },
+                            {
+                                label: 'AI 預測趨勢',
+                                data: [null, null, null, null, 150, 165, 180, 175], // Starts from current to connect
+                                borderColor: '#f59e0b', // Orange/Amber
+                                borderDash: [5, 5], // Dashed line for prediction
+                                backgroundColor: '#f59e0b10',
+                                borderWidth: 3,
+                                tension: 0.4,
+                                pointRadius: 4,
+                                fill: false
+                            }
+                        ]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        interaction: { intersect: false, mode: 'index' },
+                        plugins: {
+                            legend: { position: 'top' },
+                            tooltip: {
+                                callbacks: {
+                                    label: function(context) {
+                                        let label = context.dataset.label || '';
+                                        if (label) label += ': ';
+                                        if (context.parsed.y !== null) label += context.parsed.y + ' 例';
+                                        return label;
+                                    }
+                                }
+                            }
+                        },
+                        scales: { y: { beginAtZero: true, grid: { color: '#f1f5f9' } }, x: { grid: { display: false } } }
+                    }
+                });
+                return () => chartRef.current?.destroy();
+            }, [data]);
+
+            return <div className="w-full h-80"><canvas ref={canvasRef}></canvas></div>;
+        };
+
+        const App = () => {
+            const [activeTab, setActiveTab] = useState('respiratory');
+            
+            // Simulated Data
+            const diseases = [
+                { id: 'J18', name: '肺炎 (Pneumonia)', cat: 'respiratory', count: 150, pred: 165, trend: 'up', risk: 'High' },
+                { id: 'I25', name: '缺血性心臟病', cat: 'cardio', count: 120, pred: 115, trend: 'down', risk: 'Med' },
+                { id: 'C18', name: '惡性結腸腫瘤', cat: 'oncology', count: 98, pred: 105, trend: 'up', risk: 'High' },
+                { id: 'E11', name: '第2型糖尿病', cat: 'meta', count: 200, pred: 210, trend: 'flat', risk: 'Low' },
+                { id: 'N18', name: '慢性腎臟病', cat: 'nephro', count: 85, pred: 88, trend: 'flat', risk: 'Med' },
+            ];
+
+            return (
+                <div className="min-h-screen bg-slate-50 p-6 flex flex-col">
+                    {/* Header */}
+                    <div className="flex justify-between items-center mb-6">
+                        <div className="flex items-center gap-4">
+                            <div className="w-12 h-12 bg-sky-500 rounded-xl flex items-center justify-center text-white text-2xl shadow-lg shadow-sky-200">
+                                <i className="fa-solid fa-chart-line"></i>
+                            </div>
+                            <div>
+                                <h1 className="text-2xl font-black text-slate-800 tracking-tight">入院疾病分析與趨勢預測</h1>
+                                <p className="text-sm text-slate-500 font-bold">AI Predictive Analytics Module</p>
+                            </div>
+                        </div>
+                        <div className="text-right">
+                            <span className="bg-sky-100 text-sky-700 px-3 py-1 rounded-full text-xs font-bold mr-2">Model: SKH-Med-v2.1</span>
+                            <span className="text-slate-400 text-sm font-mono">{new Date().toLocaleDateString()}</span>
+                        </div>
+                    </div>
+
+                    {/* Main Content Grid */}
+                    <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 flex-1">
+                        
+                        {/* Left: Trend Chart */}
+                        <div className="lg:col-span-2 space-y-6">
+                            <div className="glass-card p-6">
+                                <div className="flex justify-between items-center mb-4">
+                                    <h2 className="text-lg font-bold text-slate-700 flex items-center gap-2">
+                                        <i className="fa-solid fa-wave-square text-sky-500"></i> 全院入院疾病總量趨勢
+                                    </h2>
+                                    <div className="flex gap-2">
+                                        <span className="flex items-center text-xs text-slate-500"><div className="w-3 h-1 bg-sky-500 mr-1"></div> 歷史數據</span>
+                                        <span className="flex items-center text-xs text-slate-500"><div className="w-3 h-1 bg-amber-500 mr-1 border-b border-dashed"></div> AI 預測</span>
+                                    </div>
+                                </div>
+                                <ChartComponent />
+                            </div>
+
+                            <div className="glass-card p-6">
+                                <h2 className="text-lg font-bold text-slate-700 mb-4">重點關注疾病清單 (Top 5)</h2>
+                                <table className="w-full text-left text-sm">
+                                    <thead className="bg-slate-50 text-slate-500 uppercase font-bold text-xs border-b border-slate-200">
+                                        <tr>
+                                            <th className="p-3">ICD-10 Code</th>
+                                            <th className="p-3">疾病名稱</th>
+                                            <th className="p-3">本月案例 (Current)</th>
+                                            <th className="p-3">下月預測 (Forecast)</th>
+                                            <th className="p-3">趨勢</th>
+                                            <th className="p-3">風險等級</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody className="divide-y divide-slate-100">
+                                        {diseases.map((d, i) => (
+                                            <tr key={i} className="hover:bg-slate-50 transition-colors">
+                                                <td className="p-3 font-mono text-slate-600 font-bold">{d.id}</td>
+                                                <td className="p-3 font-bold text-slate-800">{d.name}</td>
+                                                <td className="p-3 text-lg font-bold text-sky-600">{d.count}</td>
+                                                <td className="p-3 text-lg font-bold text-amber-500">{d.pred}</td>
+                                                <td className="p-3">
+                                                    {d.trend === 'up' && <span className="text-rose-500 font-bold"><i className="fa-solid fa-arrow-trend-up mr-1"></i>上升</span>}
+                                                    {d.trend === 'down' && <span className="text-emerald-500 font-bold"><i className="fa-solid fa-arrow-trend-down mr-1"></i>下降</span>}
+                                                    {d.trend === 'flat' && <span className="text-slate-400 font-bold"><i className="fa-solid fa-minus mr-1"></i>持平</span>}
+                                                </td>
+                                                <td className="p-3">
+                                                    <span className={`px-2 py-1 rounded text-xs font-bold text-white ${d.risk === 'High' ? 'bg-rose-500' : d.risk === 'Med' ? 'bg-amber-400' : 'bg-emerald-400'}`}>
+                                                        {d.risk}
+                                                    </span>
+                                                </td>
+                                            </tr>
+                                        ))}
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+
+                        {/* Right: Insights & Actions */}
+                        <div className="space-y-6">
+                            <div className="glass-card p-6 bg-gradient-to-br from-slate-800 to-slate-900 text-white border-none">
+                                <h3 className="font-bold text-lg mb-4 flex items-center gap-2 text-sky-400">
+                                    <i className="fa-solid fa-robot"></i> AI 戰情室洞察
+                                </h3>
+                                <div className="space-y-4 text-sm text-slate-300 leading-relaxed">
+                                    <p>
+                                        <strong className="text-white">趨勢警示：</strong> 根據歷史數據模型，<span className="text-amber-400 font-bold">J18 肺炎</span> 病例預計在接下來兩個月內成長 10-15%。建議提早調度呼吸治療設備與床位。
+                                    </p>
+                                    <div className="h-px bg-slate-700"></div>
+                                    <p>
+                                        <strong className="text-white">資源建議：</strong> 預測下個月 ICU 需求量將達到 <span className="text-rose-400 font-bold">92%</span> 滿載水位。建議啟動第二階段調床機制。
+                                    </p>
+                                </div>
+                                <button className="mt-6 w-full py-2 bg-sky-500 hover:bg-sky-400 text-white font-bold rounded-lg transition-colors shadow-lg shadow-sky-900">
+                                    生成詳細報告
+                                </button>
+                            </div>
+
+                            <div className="glass-card p-6">
+                                <h3 className="font-bold text-slate-700 mb-4">科別佔比分析 (本月)</h3>
+                                <div className="space-y-3">
+                                    {[
+                                        { n: '胸腔內科', p: 35, c: 'bg-indigo-500' },
+                                        { n: '心臟內科', p: 25, c: 'bg-rose-500' },
+                                        { n: '一般外科', p: 20, c: 'bg-emerald-500' },
+                                        { n: '其他', p: 20, c: 'bg-slate-400' }
+                                    ].map((item, i) => (
+                                        <div key={i}>
+                                            <div className="flex justify-between text-xs font-bold text-slate-500 mb-1">
+                                                <span>{item.n}</span><span>{item.p}%</span>
+                                            </div>
+                                            <div className="w-full bg-slate-100 h-2 rounded-full overflow-hidden">
+                                                <div className={`h-full ${item.c}`} style={{width: `${item.p}%`}}></div>
+                                            </div>
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
+                        </div>
+
+                    </div>
+                </div>
+            );
+        };
+
+        const root = ReactDOM.createRoot(document.getElementById('root'));
+        root.render(<App />);
+    </script>
+</body>
+</html>
