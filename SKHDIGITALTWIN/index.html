@@ -21,7 +21,7 @@
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Noto+Sans+TC:wght@300;400;500;700&display=swap');
 
         :root {
-            --primary: #0ea5e9;
+            --primary: #0ea5e9; /* Sky 500 */
             --bg-app: #f8fafc;
         }
 
@@ -37,13 +37,12 @@
         @keyframes pulse-ring { 0% { transform: scale(0.8); box-shadow: 0 0 0 0 rgba(14, 165, 233, 0.7); } 70% { transform: scale(1); box-shadow: 0 0 0 10px rgba(14, 165, 233, 0); } 100% { transform: scale(0.8); box-shadow: 0 0 0 0 rgba(14, 165, 233, 0); } }
         @keyframes scan-line { 0% { top: 0%; } 100% { top: 100%; } }
         @keyframes ecg-draw { 0% { stroke-dashoffset: 1000; } 100% { stroke-dashoffset: 0; } }
-        @keyframes scroll-text { 0% { transform: translateY(0); } 100% { transform: translateY(-50%); } }
 
         .animate-fade-in { animation: fade-in 0.4s ease-out forwards; }
         .animate-pulse-ring { animation: pulse-ring 2s infinite; }
         .animate-scan { animation: scan-line 3s linear infinite; }
         
-        /* --- Components --- */
+        /* --- UI Components --- */
         .glass-card {
             background: rgba(255, 255, 255, 0.95);
             backdrop-filter: blur(12px);
@@ -58,29 +57,6 @@
             border-color: #bae6fd;
         }
 
-        /* Patient Human Body Concept */
-        .body-container {
-            position: relative;
-            background: radial-gradient(circle, #f0f9ff 0%, #ffffff 80%);
-        }
-        .organ-marker {
-            position: absolute;
-            width: 16px; height: 16px;
-            border-radius: 50%;
-            cursor: pointer;
-            z-index: 10;
-        }
-        .organ-marker::after {
-            content: ''; position: absolute; top: -4px; left: -4px; right: -4px; bottom: -4px;
-            border-radius: 50%; border: 2px solid currentColor; opacity: 0.5;
-            animation: pulse-ring 1.5s infinite;
-        }
-
-        /* Bed Status */
-        .bed-occupied { background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%); color: white; border: none; }
-        .bed-empty { background: white; color: #94a3b8; border: 1px solid #e2e8f0; }
-        .bed-cleaning { background: #f59e0b; color: white; border: none; }
-        
         /* Custom Scroll */
         ::-webkit-scrollbar { width: 6px; height: 6px; }
         ::-webkit-scrollbar-track { background: transparent; }
@@ -95,6 +71,25 @@
             stroke-dashoffset: 1000;
             animation: ecg-draw 2s linear infinite;
         }
+
+        /* Patient Body Markers */
+        .organ-marker {
+            position: absolute;
+            width: 16px; height: 16px;
+            border-radius: 50%;
+            cursor: pointer;
+            z-index: 20; /* Ensure above image */
+        }
+        .organ-marker::after {
+            content: ''; position: absolute; top: -4px; left: -4px; right: -4px; bottom: -4px;
+            border-radius: 50%; border: 2px solid currentColor; opacity: 0.5;
+            animation: pulse-ring 1.5s infinite;
+        }
+
+        /* Bed Status */
+        .bed-occupied { background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%); color: white; border: none; box-shadow: 0 4px 6px -1px rgba(59, 130, 246, 0.3); }
+        .bed-empty { background: white; color: #94a3b8; border: 1px solid #e2e8f0; }
+        .bed-cleaning { background: #f59e0b; color: white; border: none; }
     </style>
 </head>
 <body>
@@ -103,7 +98,7 @@
     <script type="text/babel">
         const { useState, useEffect, useRef } = React;
 
-        // --- 1. Simulation Engine ---
+        // --- 1. Simulation Engine (Global State) ---
         const useHospitalBrain = () => {
             const [time, setTime] = useState(new Date());
             const [stats, setStats] = useState({
@@ -130,7 +125,7 @@
             return { time, stats };
         };
 
-        // --- 2. Shared Components ---
+        // --- 2. Shared UI Components ---
         const LiveChart = ({ type, title, color, labels, data, height=200 }) => {
             const canvasRef = useRef(null);
             const chartRef = useRef(null);
@@ -184,9 +179,103 @@
             </div>
         );
 
-        // --- 3. Functional Modules ---
+        // --- 3. Modules ---
 
-        // A. Cybersecurity SOC (New Feature)
+        // A. Disease Analysis
+        const DiseaseAnalysis = () => {
+            const diagnoses = [
+                { name: 'C18 惡性結腸腫瘤', count: 145 },
+                { name: 'I25 慢性缺血性心臟病', count: 120 },
+                { name: 'J18 肺炎', count: 98 },
+                { name: 'C34 肺癌', count: 85 },
+                { name: 'N18 慢性腎臟病', count: 76 },
+            ];
+
+            return (
+                <div className="space-y-6 animate-fade-in">
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                        <div className="glass-card p-6 md:col-span-2">
+                            <h3 className="font-bold text-slate-700 mb-4 flex items-center gap-2">
+                                <i className="fa-solid fa-notes-medical text-sky-500"></i> 入院主診斷分佈 (ICD-10 Top 5)
+                            </h3>
+                            <div className="h-64">
+                                <LiveChart type="bar" color="#0ea5e9" title="Cases" 
+                                    labels={diagnoses.map(d => d.name.split(' ')[0])} 
+                                    data={diagnoses.map(d => d.count)} 
+                                    height={250}
+                                />
+                            </div>
+                        </div>
+                        <div className="glass-card p-6 flex flex-col">
+                            <h3 className="font-bold text-slate-700 mb-4">DRG 健保申報預測</h3>
+                            <div className="space-y-6 flex-1">
+                                <div className="p-4 bg-sky-50 rounded-xl border border-sky-100">
+                                    <div className="flex justify-between text-sm mb-2">
+                                        <span className="text-slate-500">CMI (病例組合指標)</span>
+                                        <span className="font-bold text-sky-700 text-lg">1.24</span>
+                                    </div>
+                                    <div className="w-full bg-white h-2 rounded-full overflow-hidden"><div className="bg-sky-500 h-full" style={{width: '75%'}}></div></div>
+                                </div>
+                                <div className="p-4 bg-emerald-50 rounded-xl border border-emerald-100">
+                                    <div className="flex justify-between text-sm mb-2">
+                                        <span className="text-slate-500">預估核刪率</span>
+                                        <span className="font-bold text-emerald-700 text-lg">1.2%</span>
+                                    </div>
+                                    <div className="w-full bg-white h-2 rounded-full overflow-hidden"><div className="bg-emerald-500 h-full" style={{width: '12%'}}></div></div>
+                                </div>
+                                <div className="flex items-center gap-3 p-3 bg-amber-50 rounded-lg border border-amber-100">
+                                    <i className="fa-solid fa-triangle-exclamation text-amber-500 text-xl"></i>
+                                    <div>
+                                        <p className="text-xs font-bold text-amber-800">異常申報偵測</p>
+                                        <p className="text-[10px] text-amber-600">15 筆病歷編碼衝突，建議人工審核</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div className="glass-card p-6">
+                            <h3 className="font-bold text-slate-700 mb-4 flex items-center gap-2">
+                                <i className="fa-solid fa-robot text-purple-500"></i> AI 病歷摘要與洞察 (NLP)
+                            </h3>
+                            <div className="bg-slate-50 p-4 rounded-xl border border-slate-100 h-48 overflow-y-auto custom-scroll text-sm leading-relaxed">
+                                <div className="mb-3 pb-3 border-b border-slate-200">
+                                    <span className="text-xs font-bold bg-purple-100 text-purple-700 px-2 py-0.5 rounded">全院趨勢</span>
+                                    <p className="text-slate-600 mt-1">本週呼吸道感染 (J00-J99) 入院比例較上週上升 15%，建議預留胸腔內科病床資源。</p>
+                                </div>
+                                <div className="mb-3 pb-3 border-b border-slate-200">
+                                    <span className="text-xs font-bold bg-blue-100 text-blue-700 px-2 py-0.5 rounded">品質監控</span>
+                                    <p className="text-slate-600 mt-1">腫瘤科術後平均住院日 (ALOS) 下降 0.5 天，術後感染率維持低檔 (0.2%)。</p>
+                                </div>
+                                <div>
+                                    <span className="text-xs font-bold bg-rose-100 text-rose-700 px-2 py-0.5 rounded">高風險</span>
+                                    <p className="text-slate-600 mt-1">偵測到 3 位急診待床病患具備敗血症早期特徵，已發送警示至急診護理站。</p>
+                                </div>
+                            </div>
+                        </div>
+                        <div className="glass-card p-6">
+                            <h3 className="font-bold text-slate-700 mb-4">檢驗數值異常分析 (Lab Abnormalities)</h3>
+                            <div className="grid grid-cols-2 gap-4">
+                                {[
+                                    {l: 'HbA1c > 8.0', v: '24.5%', c: 'text-rose-500', bg: 'bg-rose-50'},
+                                    {l: 'WBC Elevated', v: '12.8%', c: 'text-amber-500', bg: 'bg-amber-50'},
+                                    {l: 'Creatinine > 1.5', v: '8.4%', c: 'text-orange-500', bg: 'bg-orange-50'},
+                                    {l: 'CRP High', v: '32.1%', c: 'text-blue-500', bg: 'bg-blue-50'},
+                                ].map((item, i) => (
+                                    <div key={i} className={`p-4 rounded-xl border ${item.bg} border-opacity-50 flex flex-col justify-center items-center`}>
+                                        <p className="text-xs text-slate-500 font-bold mb-1">{item.l}</p>
+                                        <p className={`text-2xl font-black ${item.c}`}>{item.v}</p>
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            );
+        };
+
+        // B. Cybersecurity SOC
         const SecurityCenter = ({ stats }) => {
             const [logs, setLogs] = useState([]);
 
@@ -256,7 +345,7 @@
             );
         };
 
-        // B. Patient Digital Twin (Core Feature)
+        // C. Patient Digital Twin
         const PatientTwin = ({ patient, onBack }) => {
             const [vitals, setVitals] = useState({ hr: 75, bp: '120/80', spo2: 98 });
             const [searchId, setSearchId] = useState('');
@@ -295,7 +384,7 @@
             if (!localPatient && !loading) return (
                 <div className="h-full flex flex-col items-center justify-center animate-fade-in space-y-6">
                     <div className="text-center">
-                        <div className="w-24 h-24 bg-sky-100 rounded-full flex items-center justify-center mx-auto mb-4 text-sky-500 text-4xl">
+                        <div className="w-24 h-24 bg-sky-100 rounded-full flex items-center justify-center mx-auto mb-4 text-sky-500 text-4xl shadow-lg shadow-sky-200">
                             <i className="fa-solid fa-user-astronaut"></i>
                         </div>
                         <h2 className="text-2xl font-bold text-slate-800">病患數位孿生搜尋</h2>
@@ -309,7 +398,7 @@
                             value={searchId}
                             onChange={(e) => setSearchId(e.target.value)}
                         />
-                        <button onClick={handleSearch} className="bg-sky-500 text-white px-6 py-3 rounded-xl font-bold hover:bg-sky-600 shadow-lg shadow-sky-200">
+                        <button onClick={handleSearch} className="bg-sky-500 text-white px-6 py-3 rounded-xl font-bold hover:bg-sky-600 transition shadow-lg shadow-sky-200">
                             啟動
                         </button>
                     </div>
@@ -326,7 +415,7 @@
             return (
                 <div className="h-full flex flex-col animate-fade-in overflow-y-auto pr-2 pb-4">
                     <div className="flex items-center gap-4 mb-4">
-                        <button onClick={onBack} className="bg-white border border-slate-200 px-3 py-1 rounded-lg text-sm text-slate-500 hover:bg-slate-50">
+                        <button onClick={onBack} className="bg-white border border-slate-200 px-3 py-1 rounded-lg text-sm text-slate-500 hover:bg-slate-50 transition">
                             <i className="fa-solid fa-arrow-left mr-1"></i> 返回
                         </button>
                         <h2 className="text-xl font-bold text-slate-800 flex items-center gap-2">
@@ -335,19 +424,26 @@
                     </div>
 
                     <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
-                        {/* 3D Body Model Visualization */}
-                        <div className="glass-card p-0 body-container relative overflow-hidden flex items-center justify-center h-96 lg:h-auto border-2 border-sky-100">
+                        {/* 3D Body Model Visualization - MODIFIED */}
+                        <div className="glass-card p-0 relative overflow-hidden flex items-center justify-center h-96 lg:h-auto border-2 border-sky-100 bg-slate-50">
                             <div className="absolute top-0 left-0 w-full h-1 bg-sky-400/50 shadow-[0_0_15px_rgba(14,165,233,0.8)] animate-scan z-10"></div>
                             
-                            {/* Stylized Body */}
-                            <div className="relative h-4/5 aspect-[1/2] border-4 border-white/50 rounded-[60px] flex items-center justify-center backdrop-blur-sm shadow-xl">
-                                <i className="fa-solid fa-person text-9xl text-slate-300 opacity-50"></i>
-                                {/* Hotspots */}
-                                <div className="organ-marker bg-rose-500 text-rose-500" style={{top: '25%', left: '55%'}} title="Lungs: Risk"></div>
-                                <div className="organ-marker bg-amber-500 text-amber-500" style={{top: '40%', left: '45%'}} title="Liver: Watch"></div>
+                            {/* Replaced SVG with Image */}
+                            <div className="relative w-full h-full flex items-center justify-center">
+                                <img src="image/digitaltwin_Patient.png" className="h-full object-contain opacity-90" alt="Patient Digital Twin" onError={(e) => {e.target.style.display='none'; e.target.nextSibling.style.display='flex'}} />
+                                
+                                {/* Fallback if image missing */}
+                                <div className="hidden absolute inset-0 flex items-center justify-center flex-col text-slate-300">
+                                    <i className="fa-solid fa-person text-9xl opacity-50"></i>
+                                    <span className="text-sm mt-2">Twin Image Not Found</span>
+                                </div>
+
+                                {/* Organ Hotspots - Positioned over the image area */}
+                                <div className="organ-marker bg-rose-500 text-rose-500" style={{top: '25%', left: '52%'}} title="Lungs: Risk"></div>
+                                <div className="organ-marker bg-amber-500 text-amber-500" style={{top: '42%', left: '48%'}} title="Liver: Watch"></div>
                             </div>
 
-                            <div className="absolute bottom-4 left-4 bg-white/80 backdrop-blur p-3 rounded-xl border border-white/50">
+                            <div className="absolute bottom-4 left-4 bg-white/80 backdrop-blur p-3 rounded-xl border border-white/50 z-20">
                                 <p className="text-xs font-bold text-slate-400 uppercase">Organ Risk Heatmap</p>
                                 <div className="flex items-center gap-2 mt-1">
                                     <div className="w-2 h-2 rounded-full bg-rose-500"></div> <span className="text-xs text-slate-600">High</span>
@@ -415,7 +511,7 @@
             );
         };
 
-        // C. Ward Management (Bed Analysis)
+        // D. Ward Management (Bed Analysis)
         const WardView = ({ onSelect }) => {
             const [floor, setFloor] = useState('8F');
             const beds = Array.from({length: 32}, (_, i) => {
@@ -443,7 +539,7 @@
                     </div>
 
                     <div className="glass-card p-6">
-                        <h3 className="font-bold text-slate-700 mb-4">{floor} 智慧病房監控 (點擊病床查看孿生模型)</h3>
+                        <h3 className="font-bold text-slate-700 mb-4">{floor} 智慧病房監控 (點擊佔用病床查看孿生模型)</h3>
                         <div className="grid grid-cols-4 md:grid-cols-8 gap-4">
                             {beds.map(bed => (
                                 <div key={bed.id} 
@@ -465,9 +561,12 @@
             );
         };
 
-        // D. Equipment & Disease (Reused Logic)
+        // E. Equipment View
         const EquipmentView = () => (
              <div className="animate-fade-in space-y-6">
+                 <h2 className="text-xl font-bold text-slate-800 flex items-center gap-2">
+                    <i className="fa-solid fa-server text-sky-500"></i> 全院多模態儀器中心
+                 </h2>
                  <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                     {[
                         {n:'MRI 3T', c:42, l:92, i:'fa-magnet', color:'text-indigo-600'},
@@ -477,7 +576,7 @@
                         {n:'Sono', c:180, l:72, i:'fa-wave-square', color:'text-emerald-600'},
                         {n:'Linac', c:58, l:95, i:'fa-certificate', color:'text-rose-600'},
                     ].map((m,i) => (
-                        <div key={i} className="glass-card p-5 flex flex-col justify-between">
+                        <div key={i} className="glass-card p-5 flex flex-col justify-between hover:border-sky-300">
                             <div className="flex justify-between">
                                 <i className={`fa-solid ${m.i} text-3xl ${m.color} opacity-80`}></i>
                                 <span className="text-xs font-bold bg-slate-100 px-2 py-1 rounded h-fit">{m.l}% Load</span>
@@ -485,6 +584,9 @@
                             <div className="mt-4">
                                 <h3 className="font-bold text-slate-700">{m.n}</h3>
                                 <p className="text-sm text-slate-400">{m.c} exams today</p>
+                            </div>
+                            <div className="mt-3 w-full bg-slate-100 h-1.5 rounded-full overflow-hidden">
+                                <div className={`h-full ${m.l > 90 ? 'bg-red-500' : 'bg-sky-500'}`} style={{width: `${m.l}%`}}></div>
                             </div>
                         </div>
                     ))}
@@ -525,7 +627,15 @@
                         </div>
                         <div className="flex-1 overflow-y-auto py-6 space-y-1">
                             {menu.map(item => (
-                                <div key={item.id} onClick={() => { setView(item.id); if(item.id !== 'patient_twin') setSelectedPatient(null); }}
+                                <div key={item.id} 
+                                    onClick={() => {
+                                        if (item.id === 'rad_onc') {
+                                            window.open('https://yangkaichun.github.io/aiservice/SKH_RT/', '_blank');
+                                        } else {
+                                            setView(item.id);
+                                            if(item.id !== 'patient_twin') setSelectedPatient(null);
+                                        }
+                                    }}
                                     className={`px-6 py-3.5 flex items-center cursor-pointer text-sm font-medium border-l-4 transition-all
                                     ${view === item.id ? 'border-sky-500 bg-sky-50 text-sky-700' : 'border-transparent text-slate-500 hover:bg-slate-50'}`}>
                                     <i className={`fa-solid ${item.icon} w-6 text-center mr-3 text-lg`}></i>
@@ -542,11 +652,9 @@
                                 <span className="text-slate-400">Dashboard /</span> 
                                 {menu.find(m => m.id === view)?.label}
                             </h2>
-                            <div className="flex items-center gap-6">
-                                <div className="text-right border-l border-slate-200 pl-6">
-                                    <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">SYSTEM TIME</p>
-                                    <p className="text-lg font-mono font-bold text-slate-700 leading-none">{time.toLocaleTimeString()}</p>
-                                </div>
+                            <div className="text-right border-l border-slate-200 pl-6">
+                                <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">SYSTEM TIME</p>
+                                <p className="text-lg font-mono font-bold text-slate-700 leading-none">{time.toLocaleTimeString()}</p>
                             </div>
                         </header>
 
@@ -566,10 +674,14 @@
                                 <div className="flex-1 min-h-0">
                                     {view === 'overview' && (
                                         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 h-full">
-                                            <div className="glass-card p-6 flex flex-col justify-center items-center text-center">
-                                                <i className="fa-solid fa-hospital text-6xl text-slate-200 mb-4"></i>
-                                                <h3 className="text-xl font-bold text-slate-700">新光醫院 3D 營運總覽</h3>
-                                                <p className="text-slate-500 mt-2">數位孿生整合平台：請選擇左側功能選單</p>
+                                            <div className="glass-card p-0 relative overflow-hidden flex flex-col justify-center items-center text-center group">
+                                                {/* Background Image Update */}
+                                                <img src="image/digitaltwinhsp.png" className="absolute inset-0 w-full h-full object-cover opacity-20 group-hover:opacity-30 transition-opacity" onError={(e)=>{e.target.style.display='none'}} />
+                                                <div className="relative z-10 p-6">
+                                                    <i className="fa-solid fa-hospital text-6xl text-slate-400 mb-4"></i>
+                                                    <h3 className="text-xl font-bold text-slate-700">新光醫院 3D 營運總覽</h3>
+                                                    <p className="text-slate-500 mt-2">數位孿生整合平台：請選擇左側功能選單</p>
+                                                </div>
                                             </div>
                                             <div className="glass-card p-6">
                                                 <h3 className="font-bold text-slate-700 mb-4">全院即時人流監控</h3>
@@ -577,9 +689,8 @@
                                             </div>
                                         </div>
                                     )}
-                                    {view === 'rad_onc' && <div className="glass-card p-8 text-center text-slate-400">放射腫瘤中心模組</div>}
                                     {view === 'wards' && <WardView onSelect={(p) => { setSelectedPatient(p); setView('patient_twin'); }} />}
-                                    {view === 'disease' && <div className="glass-card p-8 text-center text-slate-400">疾病分析模組</div>}
+                                    {view === 'disease' && <DiseaseAnalysis />}
                                     {view === 'equipment' && <EquipmentView />}
                                     {view === 'patient_twin' && <PatientTwin patient={selectedPatient} onBack={() => { setView('wards'); setSelectedPatient(null); }} />}
                                     {view === 'security' && <SecurityCenter stats={stats} />}
