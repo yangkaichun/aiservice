@@ -7,6 +7,19 @@
     <link rel="icon" href="image/feticon.ico" type="image/x-icon">
 
     <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        primary: '#0891b2',
+                        secondary: '#334155',
+                    }
+                }
+            }
+        }
+    </script>
+
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <script crossorigin src="https://unpkg.com/react@18/umd/react.development.js"></script>
     <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
@@ -19,8 +32,6 @@
 
         :root {
             --primary: #0891b2; /* Cyan 600 */
-            --secondary: #334155; /* Slate 700 */
-            --accent: #f59e0b; /* Amber 500 */
             --bg-glass: rgba(255, 255, 255, 0.95);
         }
 
@@ -31,7 +42,7 @@
             overflow: hidden;
         }
 
-        /* Dynamic Animations */
+        /* Animations */
         @keyframes pulse-glow {
             0%, 100% { box-shadow: 0 0 0 0 rgba(8, 145, 178, 0.4); }
             50% { box-shadow: 0 0 0 6px rgba(8, 145, 178, 0); }
@@ -67,33 +78,18 @@
             border-color: #cbd5e1;
         }
 
-        /* Custom Scrollbar */
        .custom-scroll::-webkit-scrollbar { width: 6px; height: 6px; }
        .custom-scroll::-webkit-scrollbar-track { background: transparent; }
        .custom-scroll::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 3px; }
        .custom-scroll::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
 
-        /* Sidebar Navigation */
-       .nav-item {
-            position: relative;
-            overflow: hidden;
-        }
+       .nav-item { position: relative; overflow: hidden; }
        .nav-item::before {
-            content: '';
-            position: absolute;
-            left: 0; top: 0; bottom: 0; width: 4px;
-            background: var(--primary);
-            transform: scaleY(0);
-            transition: transform 0.2s ease;
+            content: ''; position: absolute; left: 0; top: 0; bottom: 0; width: 4px;
+            background: var(--primary); transform: scaleY(0); transition: transform 0.2s ease;
         }
        .nav-item.active::before { transform: scaleY(1); }
        .nav-item.active { background: #ecfeff; color: #0e7490; font-weight: 600; }
-
-        /* Status Dots */
-       .status-dot { width: 8px; height: 8px; border-radius: 50%; display: inline-block; margin-right: 6px; }
-       .status-green { background: #10b981; box-shadow: 0 0 8px #10b981; }
-       .status-red { background: #ef4444; box-shadow: 0 0 8px #ef4444; }
-       .status-orange { background: #f59e0b; box-shadow: 0 0 8px #f59e0b; }
     </style>
 </head>
 <body>
@@ -102,37 +98,7 @@
     <script type="text/babel">
         const { useState, useEffect, useRef, useMemo } = React;
 
-        // --- Data Simulation Logic (Based on Research Report) ---
-        
-        // 1. Asset Performance (CAI)
-        const simulateMachineData = () => {
-            const baseTime = 540; // 9 hours * 60 mins
-            const downTime = Math.floor(Math.random() * 10);
-            const softDelay = Math.floor(Math.random() * 25); // IGRT delay, setup errors
-            const qaOverrun = Math.floor(Math.random() * 15);
-            
-            const cai = ((baseTime - (downTime + softDelay + qaOverrun)) / baseTime * 100).toFixed(1);
-            return { cai, downTime, softDelay, qaOverrun };
-        };
-
-        // 2. TDABC Cost Generator
-        const calculateTDABC = (type) => {
-            // Rates per minute (Simulated based on average salary / working minutes)
-            const rates = { phys: 45, physicist: 25, rtt: 15, nurse: 12 }; 
-            
-            if (type === 'VMAT') {
-                // Physician (Contour 30m) + Physicist (Plan 60m) + RTTx2 (Treat 15m)
-                return (30 * rates.phys) + (60 * rates.physicist) + (15 * rates.rtt * 2); 
-            } else if (type === 'SRS') {
-                // More complex: Phys (60m) + Physicist (120m) + RTTx2 (40m) + Phys at console (20m)
-                return (60 * rates.phys) + (120 * rates.physicist) + (40 * rates.rtt * 2) + (20 * rates.phys);
-            }
-            return 0;
-        };
-
-        // --- Components ---
-
-        // Sidebar Menu
+        // --- Sidebar Component ---
         const Sidebar = ({ currentView, setView }) => {
             const menu = [
                 { id: 'dashboard', label: '總覽 Dashboard', icon: 'fa-chart-line' },
@@ -172,7 +138,10 @@
             return (
                 <aside className="w-64 bg-white border-r border-slate-200 flex flex-col z-20 shadow-xl h-screen">
                     <div className="h-20 flex items-center px-6 border-b border-slate-100">
-                        <img src="image/fetlogo.png" alt="Logo" className="h-10 object-contain mr-3" onError={(e) => e.target.style.display='none'} />
+                        {/* Add error handling for images to prevent broken icons */}
+                        <div className="w-10 h-10 mr-3 flex items-center justify-center bg-cyan-50 rounded-lg text-cyan-600">
+                            <i className="fa-solid fa-hospital-symbol text-2xl"></i>
+                        </div>
                         <div>
                             <h1 className="font-black text-slate-800 tracking-tighter text-lg leading-none">SKH <span className="text-cyan-600">RT</span></h1>
                             <span className="text-[10px] text-slate-400 font-medium tracking-widest">INTELLIGENCE</span>
@@ -223,13 +192,20 @@
             );
         };
 
-        // Chart Component (Reusable & Dynamic)
+        // --- Dynamic Chart Component (Improved Cleanup) ---
         const DynamicChart = ({ type, title, data, options }) => {
             const canvasRef = useRef(null);
             const chartRef = useRef(null);
 
             useEffect(() => {
-                if (chartRef.current) chartRef.current.destroy();
+                // Ensure canvas exists
+                if (!canvasRef.current) return;
+
+                // Cleanup previous instance
+                if (chartRef.current) {
+                    chartRef.current.destroy();
+                }
+
                 const ctx = canvasRef.current.getContext('2d');
                 
                 chartRef.current = new Chart(ctx, {
@@ -254,8 +230,15 @@
                        ...options
                     }
                 });
-                return () => chartRef.current?.destroy();
-            }, [data]); // Re-render when data changes
+
+                // Robust cleanup function
+                return () => {
+                    if (chartRef.current) {
+                        chartRef.current.destroy();
+                        chartRef.current = null;
+                    }
+                };
+            }, [data, type, options]); // Dependencies updated
 
             return (
                 <div className="w-full h-full relative">
@@ -269,28 +252,29 @@
             );
         };
 
-        // Views
-        
-        // 1. Dashboard View
+        // --- View 1: Dashboard (Fix: Infinite Loop in useEffect) ---
         const Dashboard = ({ setView }) => {
             const [time, setTime] = useState(new Date());
             const [revenue, setRevenue] = useState(215400);
             const [load, setLoad] = useState({ versa: 85, synergy: 45, ct: 12, hyper: 60 });
 
-            // Real-time simulation effect
+            // FIXED: Logic optimized to prevent dependency loops
             useEffect(() => {
                 const interval = setInterval(() => {
                     setTime(new Date());
-                    setRevenue(prev => prev + Math.floor(Math.random() * 500)); // Revenue tick
-                    setLoad({
-                        versa: Math.min(100, Math.max(0, load.versa + Math.floor(Math.random() * 5 - 2))),
-                        synergy: Math.min(100, Math.max(0, load.synergy + Math.floor(Math.random() * 5 - 2))),
-                        ct: Math.min(100, Math.max(0, load.ct + Math.floor(Math.random() * 5 - 2))),
-                        hyper: Math.min(100, Math.max(0, load.hyper + Math.floor(Math.random() * 5 - 2)))
-                    });
+                    
+                    // Use functional updates (prev => ...) so we don't need 'revenue' or 'load' in dependency array
+                    setRevenue(prev => prev + Math.floor(Math.random() * 500)); 
+                    
+                    setLoad(prev => ({
+                        versa: Math.min(100, Math.max(0, prev.versa + Math.floor(Math.random() * 5 - 2))),
+                        synergy: Math.min(100, Math.max(0, prev.synergy + Math.floor(Math.random() * 5 - 2))),
+                        ct: Math.min(100, Math.max(0, prev.ct + Math.floor(Math.random() * 5 - 2))),
+                        hyper: Math.min(100, Math.max(0, prev.hyper + Math.floor(Math.random() * 5 - 2)))
+                    }));
                 }, 2000);
                 return () => clearInterval(interval);
-            }, [load]);
+            }, []); // Empty dependency array = Stable timer
 
             // Cards Data
             const kpis = [
@@ -309,7 +293,6 @@
 
             return (
                 <div className="space-y-6 animate-slide-in">
-                    {/* Top Stats Row */}
                     <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
                         {kpis.map((k, i) => (
                             <div key={i} onClick={() => setView(k.link)} className="glass-card p-5 cursor-pointer group relative overflow-hidden">
@@ -325,15 +308,12 @@
                                         <i className={`fa-solid ${k.icon} text-xl`}></i>
                                     </div>
                                 </div>
-                                {/* Decoration */}
                                 <div className="absolute -bottom-4 -right-4 w-20 h-20 bg-gradient-to-br from-transparent to-slate-100 rounded-full opacity-50 group-hover:scale-150 transition-transform duration-500"></div>
                             </div>
                         ))}
                     </div>
 
-                    {/* Main Content Grid */}
                     <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 h-[500px]">
-                        {/* Main Chart: Patient Flow & Revenue */}
                         <div className="glass-card p-6 lg:col-span-2 flex flex-col">
                             <DynamicChart 
                                 type="line" 
@@ -354,7 +334,6 @@
                             />
                         </div>
 
-                        {/* Machine Status Side Panel */}
                         <div className="glass-card p-6 flex flex-col">
                             <div className="flex justify-between items-center mb-6">
                                 <h3 className="text-slate-500 text-xs font-bold uppercase flex items-center gap-2">
@@ -371,15 +350,16 @@
                                             <span className={`text-[10px] font-bold px-2 py-0.5 rounded ${m.status === 'BEAM ON'? 'bg-green-100 text-green-600' : m.status === 'IDLE'? 'bg-slate-100 text-slate-500' : 'bg-yellow-100 text-yellow-600'}`}>{m.status}</span>
                                         </div>
                                         <div className="relative h-12 bg-slate-100 rounded-lg overflow-hidden border border-slate-200">
-                                            {/* Load Bar Background */}
                                             <div 
                                                 className={`absolute top-0 left-0 h-full transition-all duration-1000 ease-out ${m.load > 80? 'bg-red-500' : m.load > 50? 'bg-cyan-500' : 'bg-emerald-500'} opacity-20`} 
                                                 style={{ width: `${m.load}%` }}
                                             ></div>
-                                            {/* Content overlay */}
                                             <div className="absolute inset-0 flex items-center px-3 justify-between">
                                                 <div className="flex items-center gap-2">
-                                                    <img src={m.img} className="w-8 h-8 rounded object-cover border border-white shadow-sm" onError={(e) => e.target.style.display='none'}/>
+                                                    {/* Fallback icon if image fails */}
+                                                    <div className="w-8 h-8 rounded bg-slate-200 flex items-center justify-center text-slate-400">
+                                                        <i className="fa-solid fa-radiation"></i>
+                                                    </div>
                                                     <span className="text-xs text-slate-500 font-mono">{m.load}% Load</span>
                                                 </div>
                                                 <i className="fa-solid fa-chevron-right text-xs text-slate-300 group-hover:text-cyan-500"></i>
@@ -394,18 +374,16 @@
             );
         };
 
-        // 2. Financial / Point Value Simulator
+        // --- View 2: Financial Simulator ---
         const FinancialSim = () => {
             const [pointValue, setPointValue] = useState(0.92);
-            const [points, setPoints] = useState(2450000); // Monthly points
-            const selfPay = 1200000; // Monthly self pay
-
+            const [points, setPoints] = useState(2450000); 
+            const selfPay = 1200000; 
             const estimatedRevenue = Math.floor((points * pointValue) + selfPay);
 
             return (
                 <div className="space-y-6 animate-slide-in h-full flex flex-col">
                     <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                        {/* Control Panel */}
                         <div className="glass-card p-8 flex flex-col justify-center space-y-8">
                             <div>
                                 <h2 className="text-xl font-bold text-slate-800 mb-2">健保點值動態模擬器</h2>
@@ -447,7 +425,6 @@
                             </div>
                         </div>
 
-                        {/* Breakdown Chart */}
                         <div className="glass-card p-6 lg:col-span-2">
                             <DynamicChart 
                                 type="bar"
@@ -475,7 +452,6 @@
                         </div>
                     </div>
 
-                    {/* Detailed Table */}
                     <div className="glass-card flex-1 flex flex-col overflow-hidden">
                         <div className="p-4 border-b border-slate-100 bg-slate-50/50">
                             <h3 className="font-bold text-slate-700"><i className="fa-solid fa-list mr-2 text-cyan-500"></i> 最新申報明細 (Live Stream)</h3>
@@ -506,7 +482,7 @@
             );
         };
 
-        // 3. Asset Performance (CAI) View
+        // --- View 3: Asset CAI ---
         const AssetCAI = () => (
             <div className="space-y-6 animate-slide-in">
                 <div className="grid grid-cols-2 gap-6">
@@ -553,7 +529,7 @@
             </div>
         );
 
-        // 4. Cost Analysis (TDABC)
+        // --- View 4: Cost Analysis ---
         const CostAnalysis = () => (
             <div className="glass-card p-8 animate-slide-in h-full">
                 <div className="flex justify-between items-end mb-8">
@@ -574,7 +550,6 @@
                 </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                    {/* VMAT Cost Card */}
                     <div className="border border-slate-200 rounded-xl p-6 relative overflow-hidden">
                         <div className="absolute top-0 right-0 bg-blue-100 text-blue-700 px-3 py-1 rounded-bl-xl text-xs font-bold">標準 VMAT</div>
                         <div className="mb-4">
@@ -595,7 +570,6 @@
                         </div>
                     </div>
 
-                    {/* SRS Cost Card */}
                     <div className="border border-orange-200 bg-orange-50/30 rounded-xl p-6 relative overflow-hidden">
                         <div className="absolute top-0 right-0 bg-orange-100 text-orange-700 px-3 py-1 rounded-bl-xl text-xs font-bold">高階 SRS/SBRT</div>
                         <div className="mb-4">
@@ -613,23 +587,23 @@
             </div>
         );
 
-        // 5. Equipment Details
+        // --- View 5: Equipment Detail ---
         const EquipmentDetail = ({ eqId }) => {
             const config = {
-                'eq_versa': { name: 'Elekta Versa HD', img: 'image/elekta.jpg', type: 'LINAC' },
-                'eq_synergy': { name: 'Elekta Synergy', img: 'image/synergy.jpg', type: 'LINAC' },
-                'eq_ge': { name: 'GE CT-Sim', img: 'image/ge.jpg', type: 'CT' },
-                'eq_hypers': { name: 'Hyperthermia (BSD)', img: 'image/hypers.jpg', type: 'THERAPY' }
+                'eq_versa': { name: 'Elekta Versa HD', type: 'LINAC' },
+                'eq_synergy': { name: 'Elekta Synergy', type: 'LINAC' },
+                'eq_ge': { name: 'GE CT-Sim', type: 'CT' },
+                'eq_hypers': { name: 'Hyperthermia (BSD)', type: 'THERAPY' }
             };
             const info = config[eqId] || config['eq_versa'];
 
             return (
                 <div className="glass-card p-6 animate-slide-in h-full flex flex-col">
                     <div className="flex flex-col md:flex-row gap-8 h-full">
-                        {/* Left: Image & Status */}
                         <div className="w-full md:w-1/3 flex flex-col gap-4">
-                            <div className="relative rounded-xl overflow-hidden border border-slate-200 shadow-inner h-64 bg-slate-100 group">
-                                <img src={info.img} alt={info.name} className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105" onError={(e) => e.target.style.display='none'}/>
+                            <div className="relative rounded-xl overflow-hidden border border-slate-200 shadow-inner h-64 bg-slate-100 group flex items-center justify-center">
+                                {/* Use Icon instead of potentially broken image */}
+                                <i className="fa-solid fa-notes-medical text-9xl text-slate-300"></i>
                                 <div className="absolute top-4 left-4 bg-white/90 backdrop-blur px-3 py-1 rounded-full text-xs font-bold text-emerald-600 shadow-sm flex items-center gap-2">
                                     <span className="animate-pulse-glow w-2 h-2 bg-emerald-500 rounded-full"></span> ONLINE
                                 </div>
@@ -647,7 +621,6 @@
                             </div>
                         </div>
 
-                        {/* Right: Details & Maintenance */}
                         <div className="flex-1 flex flex-col">
                             <h2 className="text-3xl font-black text-slate-800 mb-2">{info.name}</h2>
                             <p className="text-slate-500 mb-6 flex items-center gap-2">
@@ -684,7 +657,7 @@
             );
         };
 
-        // Main App Layout
+        // --- Main App ---
         const App = () => {
             const [view, setView] = useState('dashboard');
 
@@ -711,7 +684,6 @@
                 <div className="flex h-screen w-screen overflow-hidden bg-slate-50">
                     <Sidebar currentView={view} setView={setView} />
                     <main className="flex-1 flex flex-col relative overflow-hidden">
-                        {/* Header */}
                         <header className="h-20 bg-white/80 backdrop-blur border-b border-slate-100 flex justify-between items-center px-8 z-10">
                             <h2 className="text-xl font-bold text-slate-700 flex items-center gap-3">
                                 {view === 'dashboard' && <i className="fa-solid fa-house text-cyan-600"></i>}
@@ -726,10 +698,6 @@
                                     <span className="animate-pulse-glow w-2 h-2 bg-emerald-500 rounded-full"></span>
                                     HIS 連線正常
                                 </div>
-                                <div className="flex items-center gap-2 px-3 py-1.5 bg-blue-50 text-blue-700 rounded-full border border-blue-100 text-xs font-bold">
-                                    <span className="animate-pulse-glow w-2 h-2 bg-blue-500 rounded-full"></span>
-                                    PACS 同步中
-                                </div>
                                 <div className="text-right">
                                     <p className="text-xs text-slate-400 font-bold uppercase tracking-wider">System Time</p>
                                     <p className="text-sm font-mono font-bold text-slate-700">{new Date().toLocaleTimeString()}</p>
@@ -737,9 +705,7 @@
                             </div>
                         </header>
 
-                        {/* Content Area */}
                         <div className="flex-1 overflow-hidden p-8 relative">
-                            {/* Background decoration */}
                             <div className="absolute top-0 left-0 w-full h-full overflow-hidden -z-10 pointer-events-none">
                                 <div className="absolute top-10 left-10 w-64 h-64 bg-cyan-100 rounded-full mix-blend-multiply filter blur-3xl opacity-30 animate-pulse"></div>
                                 <div className="absolute bottom-10 right-10 w-64 h-64 bg-blue-100 rounded-full mix-blend-multiply filter blur-3xl opacity-30 animate-pulse" style={{animationDelay: '1s'}}></div>
