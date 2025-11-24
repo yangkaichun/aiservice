@@ -78,7 +78,7 @@
             width: 16px; height: 16px;
             border-radius: 50%;
             cursor: pointer;
-            z-index: 20; /* Ensure above image */
+            z-index: 20;
         }
         .organ-marker::after {
             content: ''; position: absolute; top: -4px; left: -4px; right: -4px; bottom: -4px;
@@ -351,6 +351,7 @@
             const [searchId, setSearchId] = useState('');
             const [localPatient, setLocalPatient] = useState(patient);
             const [loading, setLoading] = useState(false);
+            const [imageError, setImageError] = useState(false); // Track image error
 
             useEffect(() => {
                 if (localPatient) {
@@ -378,6 +379,7 @@
                         risk: 'Medium'
                     });
                     setLoading(false);
+                    setImageError(false); // Reset error state on new search
                 }, 1000);
             };
 
@@ -424,21 +426,26 @@
                     </div>
 
                     <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
-                        {/* 3D Body Model Visualization - MODIFIED */}
+                        {/* 3D Body Model Visualization */}
                         <div className="glass-card p-0 relative overflow-hidden flex items-center justify-center h-96 lg:h-auto border-2 border-sky-100 bg-slate-50">
                             <div className="absolute top-0 left-0 w-full h-1 bg-sky-400/50 shadow-[0_0_15px_rgba(14,165,233,0.8)] animate-scan z-10"></div>
                             
-                            {/* Replaced SVG with Image */}
+                            {/* Fallback Logic: If image fails, show CSS body */}
                             <div className="relative w-full h-full flex items-center justify-center">
-                                <img src="image/digitaltwin_Patient.png" className="h-full object-contain opacity-90" alt="Patient Digital Twin" onError={(e) => {e.target.style.display='none'; e.target.nextSibling.style.display='flex'}} />
-                                
-                                {/* Fallback if image missing */}
-                                <div className="hidden absolute inset-0 flex items-center justify-center flex-col text-slate-300">
-                                    <i className="fa-solid fa-person text-9xl opacity-50"></i>
-                                    <span className="text-sm mt-2">Twin Image Not Found</span>
-                                </div>
+                                {!imageError ? (
+                                    <img 
+                                        src="image/digitaltwin_Patient.png" 
+                                        className="h-full object-contain opacity-90" 
+                                        alt="Patient Twin" 
+                                        onError={() => setImageError(true)} 
+                                    />
+                                ) : (
+                                    <div className="relative h-4/5 aspect-[1/2] border-4 border-white/50 rounded-[60px] flex items-center justify-center backdrop-blur-sm shadow-xl">
+                                        <i className="fa-solid fa-person text-9xl text-slate-300 opacity-50"></i>
+                                    </div>
+                                )}
 
-                                {/* Organ Hotspots - Positioned over the image area */}
+                                {/* Organ Hotspots - Positioned over the image/placeholder area */}
                                 <div className="organ-marker bg-rose-500 text-rose-500" style={{top: '25%', left: '52%'}} title="Lungs: Risk"></div>
                                 <div className="organ-marker bg-amber-500 text-amber-500" style={{top: '42%', left: '48%'}} title="Liver: Watch"></div>
                             </div>
@@ -602,6 +609,7 @@
         const App = () => {
             const [view, setView] = useState('overview');
             const [selectedPatient, setSelectedPatient] = useState(null);
+            const [dashboardImgError, setDashboardImgError] = useState(false); // Track dashboard image error
             const { time, stats } = useHospitalBrain();
 
             const menu = [
@@ -675,8 +683,18 @@
                                     {view === 'overview' && (
                                         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 h-full">
                                             <div className="glass-card p-0 relative overflow-hidden flex flex-col justify-center items-center text-center group">
-                                                {/* Background Image Update */}
-                                                <img src="image/digitaltwinhsp.png" className="absolute inset-0 w-full h-full object-cover opacity-20 group-hover:opacity-30 transition-opacity" onError={(e)=>{e.target.style.display='none'}} />
+                                                {/* Smart Image Loading for Dashboard */}
+                                                {!dashboardImgError ? (
+                                                    <img 
+                                                        src="image/digitaltwinhsp.png" 
+                                                        className="absolute inset-0 w-full h-full object-cover opacity-20 group-hover:opacity-30 transition-opacity" 
+                                                        onError={() => setDashboardImgError(true)} 
+                                                    />
+                                                ) : (
+                                                    // Fallback if image missing
+                                                    <div className="absolute inset-0 w-full h-full bg-gradient-to-br from-slate-50 to-slate-100 opacity-50"></div>
+                                                )}
+                                                
                                                 <div className="relative z-10 p-6">
                                                     <i className="fa-solid fa-hospital text-6xl text-slate-400 mb-4"></i>
                                                     <h3 className="text-xl font-bold text-slate-700">新光醫院 3D 營運總覽</h3>
