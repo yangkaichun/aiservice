@@ -1,0 +1,759 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>新光醫院 | 放射腫瘤科智慧營運戰情室</title>
+    <link rel="icon" href="image/feticon.ico" type="image/x-icon">
+
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script crossorigin src="https://unpkg.com/react@18/umd/react.development.js"></script>
+    <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2.0.0"></script>
+
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&family=Noto+Sans+TC:wght@300;400;500;700&display=swap');
+
+        :root {
+            --primary: #0891b2; /* Cyan 600 */
+            --secondary: #334155; /* Slate 700 */
+            --accent: #f59e0b; /* Amber 500 */
+            --bg-glass: rgba(255, 255, 255, 0.95);
+        }
+
+        body {
+            font-family: 'Inter', 'Noto Sans TC', sans-serif;
+            background-color: #f8fafc;
+            color: #1e293b;
+            overflow: hidden;
+        }
+
+        /* Dynamic Animations */
+        @keyframes pulse-glow {
+            0%, 100% { box-shadow: 0 0 0 0 rgba(8, 145, 178, 0.4); }
+            50% { box-shadow: 0 0 0 6px rgba(8, 145, 178, 0); }
+        }
+        
+        @keyframes slide-in {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        @keyframes number-jump {
+            0% { transform: translateY(0); }
+            50% { transform: translateY(-2px); }
+            100% { transform: translateY(0); }
+        }
+
+       .animate-pulse-glow { animation: pulse-glow 2s infinite; }
+       .animate-slide-in { animation: slide-in 0.4s ease-out forwards; }
+       .number-update { animation: number-jump 0.2s ease-in-out; color: var(--primary); }
+
+        /* Glassmorphism Cards */
+       .glass-card {
+            background: var(--bg-glass);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.6);
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 10px 15px -3px rgba(0, 0, 0, 0.05);
+            border-radius: 1rem;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+       .glass-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1);
+            border-color: #cbd5e1;
+        }
+
+        /* Custom Scrollbar */
+       .custom-scroll::-webkit-scrollbar { width: 6px; height: 6px; }
+       .custom-scroll::-webkit-scrollbar-track { background: transparent; }
+       .custom-scroll::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 3px; }
+       .custom-scroll::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+
+        /* Sidebar Navigation */
+       .nav-item {
+            position: relative;
+            overflow: hidden;
+        }
+       .nav-item::before {
+            content: '';
+            position: absolute;
+            left: 0; top: 0; bottom: 0; width: 4px;
+            background: var(--primary);
+            transform: scaleY(0);
+            transition: transform 0.2s ease;
+        }
+       .nav-item.active::before { transform: scaleY(1); }
+       .nav-item.active { background: #ecfeff; color: #0e7490; font-weight: 600; }
+
+        /* Status Dots */
+       .status-dot { width: 8px; height: 8px; border-radius: 50%; display: inline-block; margin-right: 6px; }
+       .status-green { background: #10b981; box-shadow: 0 0 8px #10b981; }
+       .status-red { background: #ef4444; box-shadow: 0 0 8px #ef4444; }
+       .status-orange { background: #f59e0b; box-shadow: 0 0 8px #f59e0b; }
+    </style>
+</head>
+<body>
+    <div id="root"></div>
+
+    <script type="text/babel">
+        const { useState, useEffect, useRef, useMemo } = React;
+
+        // --- Data Simulation Logic (Based on Research Report) ---
+        
+        // 1. Asset Performance (CAI)
+        const simulateMachineData = () => {
+            const baseTime = 540; // 9 hours * 60 mins
+            const downTime = Math.floor(Math.random() * 10);
+            const softDelay = Math.floor(Math.random() * 25); // IGRT delay, setup errors
+            const qaOverrun = Math.floor(Math.random() * 15);
+            
+            const cai = ((baseTime - (downTime + softDelay + qaOverrun)) / baseTime * 100).toFixed(1);
+            return { cai, downTime, softDelay, qaOverrun };
+        };
+
+        // 2. TDABC Cost Generator
+        const calculateTDABC = (type) => {
+            // Rates per minute (Simulated based on average salary / working minutes)
+            const rates = { phys: 45, physicist: 25, rtt: 15, nurse: 12 }; 
+            
+            if (type === 'VMAT') {
+                // Physician (Contour 30m) + Physicist (Plan 60m) + RTTx2 (Treat 15m)
+                return (30 * rates.phys) + (60 * rates.physicist) + (15 * rates.rtt * 2); 
+            } else if (type === 'SRS') {
+                // More complex: Phys (60m) + Physicist (120m) + RTTx2 (40m) + Phys at console (20m)
+                return (60 * rates.phys) + (120 * rates.physicist) + (40 * rates.rtt * 2) + (20 * rates.phys);
+            }
+            return 0;
+        };
+
+        // --- Components ---
+
+        // Sidebar Menu
+        const Sidebar = ({ currentView, setView }) => {
+            const menu = [
+                { id: 'dashboard', label: '總覽 Dashboard', icon: 'fa-chart-line' },
+                { 
+                    id: 'financial', label: '財務績效管理', icon: 'fa-sack-dollar',
+                    sub: [
+                        { id: 'financial_nhi', label: '健保申報模擬 (NHI)' },
+                        { id: 'financial_self', label: '自費營收分析' }
+                    ]
+                },
+                { 
+                    id: 'asset', label: '資產效能 (CAI)', icon: 'fa-microchip',
+                    sub: [
+                        { id: 'asset_cai', label: '臨床可用性指數' },
+                        { id: 'asset_maint', label: '維修保養排程' }
+                    ]
+                },
+                {
+                    id: 'cost', label: '成本分析 (TDABC)', icon: 'fa-calculator',
+                    sub: [
+                        { id: 'tdabc_cost', label: '時間驅動成本模型' },
+                        { id: 'tdabc_resource', label: '人力資源配置' }
+                    ]
+                },
+                { 
+                    id: 'equipment', label: '設備即時監控', icon: 'fa-server',
+                    sub: [
+                        { id: 'eq_versa', label: 'Elekta Versa HD' },
+                        { id: 'eq_synergy', label: 'Elekta Synergy' },
+                        { id: 'eq_ge', label: 'GE CT-Sim' },
+                        { id: 'eq_hypers', label: 'Hyperthermia (BSD)' }
+                    ]
+                },
+                { id: 'energy', label: '能源永續 (ESG)', icon: 'fa-leaf' }
+            ];
+
+            return (
+                <aside className="w-64 bg-white border-r border-slate-200 flex flex-col z-20 shadow-xl h-screen">
+                    <div className="h-20 flex items-center px-6 border-b border-slate-100">
+                        <img src="image/fetlogo.png" alt="Logo" className="h-10 object-contain mr-3" onError={(e) => e.target.style.display='none'} />
+                        <div>
+                            <h1 className="font-black text-slate-800 tracking-tighter text-lg leading-none">SKH <span className="text-cyan-600">RT</span></h1>
+                            <span className="text-[10px] text-slate-400 font-medium tracking-widest">INTELLIGENCE</span>
+                        </div>
+                    </div>
+                    
+                    <div className="flex-1 overflow-y-auto py-4 custom-scroll">
+                        {menu.map(item => (
+                            <div key={item.id}>
+                                <div 
+                                    onClick={() => !item.sub && setView(item.id)}
+                                    className={`nav-item flex items-center py-3.5 px-6 cursor-pointer text-sm ${currentView === item.id ? 'active' : 'text-slate-500 hover:text-slate-800 hover:bg-slate-50'}`}
+                                >
+                                    <i className={`fa-solid ${item.icon} w-6 text-center mr-3 text-lg ${currentView === item.id ? 'text-cyan-600' : 'text-slate-400'}`}></i>
+                                    <span className="font-medium">{item.label}</span>
+                                </div>
+                                {item.sub && (
+                                    <div className="bg-slate-50 border-y border-slate-100">
+                                        {item.sub.map(sub => (
+                                            <div 
+                                                key={sub.id}
+                                                onClick={() => setView(sub.id)}
+                                                className={`pl-16 py-2.5 text-xs cursor-pointer transition-colors ${currentView === sub.id ? 'text-cyan-700 font-bold bg-cyan-50/50' : 'text-slate-500 hover:text-slate-800'}`}
+                                            >
+                                                {sub.label}
+                                            </div>
+                                        ))}
+                                    </div>
+                                )}
+                            </div>
+                        ))}
+                    </div>
+
+                    <div className="p-4 border-t border-slate-100">
+                        <div className="bg-slate-800 rounded-xl p-4 text-white relative overflow-hidden group cursor-pointer">
+                            <div className="absolute top-0 right-0 w-16 h-16 bg-white opacity-5 rounded-full -mr-8 -mt-8 group-hover:scale-150 transition-transform"></div>
+                            <p className="text-xs text-slate-400 mb-1">目前登入</p>
+                            <div className="flex items-center gap-3">
+                                <div className="w-8 h-8 rounded-full bg-cyan-500 flex items-center justify-center text-xs font-bold">DR</div>
+                                <div>
+                                    <p className="font-bold text-sm">Dr. Chen</p>
+                                    <p className="text-[10px] text-cyan-400">科主任權限</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </aside>
+            );
+        };
+
+        // Chart Component (Reusable & Dynamic)
+        const DynamicChart = ({ type, title, data, options }) => {
+            const canvasRef = useRef(null);
+            const chartRef = useRef(null);
+
+            useEffect(() => {
+                if (chartRef.current) chartRef.current.destroy();
+                const ctx = canvasRef.current.getContext('2d');
+                
+                chartRef.current = new Chart(ctx, {
+                    type: type,
+                    data: data,
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        animation: { duration: 750, easing: 'easeOutQuart' },
+                        plugins: { 
+                            legend: { position: 'top', align: 'end', labels: { boxWidth: 8, usePointStyle: true, font: { family: 'Inter', size: 11 } } },
+                            tooltip: { 
+                                backgroundColor: 'rgba(255, 255, 255, 0.9)', 
+                                titleColor: '#1e293b', 
+                                bodyColor: '#475569', 
+                                borderColor: '#e2e8f0', 
+                                borderWidth: 1,
+                                padding: 10,
+                                cornerRadius: 8
+                            }
+                        },
+                       ...options
+                    }
+                });
+                return () => chartRef.current?.destroy();
+            }, [data]); // Re-render when data changes
+
+            return (
+                <div className="w-full h-full relative">
+                    <h3 className="text-slate-500 text-xs font-bold uppercase mb-4 flex items-center gap-2">
+                        <span className="w-1 h-4 bg-cyan-500 rounded-full"></span> {title}
+                    </h3>
+                    <div className="flex-1 h-[calc(100%-2rem)]">
+                        <canvas ref={canvasRef}></canvas>
+                    </div>
+                </div>
+            );
+        };
+
+        // Views
+        
+        // 1. Dashboard View
+        const Dashboard = ({ setView }) => {
+            const [time, setTime] = useState(new Date());
+            const [revenue, setRevenue] = useState(215400);
+            const [load, setLoad] = useState({ versa: 85, synergy: 45, ct: 12, hyper: 60 });
+
+            // Real-time simulation effect
+            useEffect(() => {
+                const interval = setInterval(() => {
+                    setTime(new Date());
+                    setRevenue(prev => prev + Math.floor(Math.random() * 500)); // Revenue tick
+                    setLoad({
+                        versa: Math.min(100, Math.max(0, load.versa + Math.floor(Math.random() * 5 - 2))),
+                        synergy: Math.min(100, Math.max(0, load.synergy + Math.floor(Math.random() * 5 - 2))),
+                        ct: Math.min(100, Math.max(0, load.ct + Math.floor(Math.random() * 5 - 2))),
+                        hyper: Math.min(100, Math.max(0, load.hyper + Math.floor(Math.random() * 5 - 2)))
+                    });
+                }, 2000);
+                return () => clearInterval(interval);
+            }, [load]);
+
+            // Cards Data
+            const kpis = [
+                { title: "即時門診營收", val: `NT$ ${revenue.toLocaleString()}`, sub: "+12% 較昨日", icon: "fa-sack-dollar", color: "text-emerald-600", link: "financial" },
+                { title: "今日治療總人次", val: "58 人", sub: "92% 預約滿載", icon: "fa-user-group", color: "text-blue-600", link: "eq_versa" },
+                { title: "健保申報點數", val: "24.5 萬", sub: "本月進度 85%", icon: "fa-file-invoice", color: "text-cyan-600", link: "financial" },
+                { title: "設備異常警示", val: "1 件", sub: "CT 待校正 (P2)", icon: "fa-triangle-exclamation", color: "text-amber-500", link: "eq_ge" }
+            ];
+
+            const machines = [
+                { name: 'Elekta Versa HD', status: 'BEAM ON', load: load.versa, img: 'image/elekta.jpg' },
+                { name: 'Elekta Synergy', status: 'SETUP', load: load.synergy, img: 'image/synergy.jpg' },
+                { name: 'GE CT-Sim', status: 'IDLE', load: load.ct, img: 'image/ge.jpg' },
+                { name: 'Hyperthermia', status: 'HEATING', load: load.hyper, img: 'image/hypers.jpg' }
+            ];
+
+            return (
+                <div className="space-y-6 animate-slide-in">
+                    {/* Top Stats Row */}
+                    <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+                        {kpis.map((k, i) => (
+                            <div key={i} onClick={() => setView(k.link)} className="glass-card p-5 cursor-pointer group relative overflow-hidden">
+                                <div className="flex justify-between items-start relative z-10">
+                                    <div>
+                                        <p className="text-slate-400 text-xs font-bold uppercase tracking-wider">{k.title}</p>
+                                        <h3 className="text-2xl font-black text-slate-700 mt-1 group-hover:text-cyan-600 transition-colors number-update">{k.val}</h3>
+                                        <p className="text-xs text-slate-400 mt-2 flex items-center gap-1">
+                                            <i className="fa-solid fa-circle-info text-[10px]"></i> {k.sub}
+                                        </p>
+                                    </div>
+                                    <div className={`p-3 rounded-xl bg-slate-50 group-hover:scale-110 transition-transform ${k.color} bg-opacity-10`}>
+                                        <i className={`fa-solid ${k.icon} text-xl`}></i>
+                                    </div>
+                                </div>
+                                {/* Decoration */}
+                                <div className="absolute -bottom-4 -right-4 w-20 h-20 bg-gradient-to-br from-transparent to-slate-100 rounded-full opacity-50 group-hover:scale-150 transition-transform duration-500"></div>
+                            </div>
+                        ))}
+                    </div>
+
+                    {/* Main Content Grid */}
+                    <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 h-[500px]">
+                        {/* Main Chart: Patient Flow & Revenue */}
+                        <div className="glass-card p-6 lg:col-span-2 flex flex-col">
+                            <DynamicChart 
+                                type="line" 
+                                title="即時營運趨勢監控 (Real-time Traffic & Revenue)" 
+                                data={{
+                                    labels: ['08:00', '09:00', '10:00', '11:00', '12:00', '13:00', '14:00', '15:00', '16:00'],
+                                    datasets: [
+                                        { label: '累積營收 (萬)', data: [2, 5, 8, 15, 18, 22, 28, 32, 35], borderColor: '#0891b2', backgroundColor: 'rgba(8, 145, 178, 0.1)', fill: true, tension: 0.4, yAxisID: 'y' },
+                                        { label: '治療人次', data: [4, 8, 12, 10, 2, 8, 14, 12, 10], backgroundColor: '#f59e0b', type: 'bar', yAxisID: 'y1' }
+                                    ]
+                                }}
+                                options={{
+                                    scales: {
+                                        y: { position: 'left', title: {display: true, text: '金額'} },
+                                        y1: { position: 'right', grid: {display: false}, title: {display: true, text: '人次'} }
+                                    }
+                                }}
+                            />
+                        </div>
+
+                        {/* Machine Status Side Panel */}
+                        <div className="glass-card p-6 flex flex-col">
+                            <div className="flex justify-between items-center mb-6">
+                                <h3 className="text-slate-500 text-xs font-bold uppercase flex items-center gap-2">
+                                    <span className="animate-pulse-glow w-2 h-2 bg-green-500 rounded-full"></span> 設備負載監控
+                                </h3>
+                                <span className="text-[10px] bg-slate-100 px-2 py-1 rounded text-slate-500 font-mono">{time.toLocaleTimeString()}</span>
+                            </div>
+                            
+                            <div className="flex-1 space-y-6 overflow-y-auto pr-2 custom-scroll">
+                                {machines.map((m, i) => (
+                                    <div key={i} className="group cursor-pointer" onClick={() => setView(m.name.includes('Versa')? 'eq_versa' : m.name.includes('Synergy')? 'eq_synergy' : m.name.includes('CT')? 'eq_ge' : 'eq_hypers')}>
+                                        <div className="flex justify-between items-end mb-2">
+                                            <span className="text-sm font-bold text-slate-700">{m.name}</span>
+                                            <span className={`text-[10px] font-bold px-2 py-0.5 rounded ${m.status === 'BEAM ON'? 'bg-green-100 text-green-600' : m.status === 'IDLE'? 'bg-slate-100 text-slate-500' : 'bg-yellow-100 text-yellow-600'}`}>{m.status}</span>
+                                        </div>
+                                        <div className="relative h-12 bg-slate-100 rounded-lg overflow-hidden border border-slate-200">
+                                            {/* Load Bar Background */}
+                                            <div 
+                                                className={`absolute top-0 left-0 h-full transition-all duration-1000 ease-out ${m.load > 80? 'bg-red-500' : m.load > 50? 'bg-cyan-500' : 'bg-emerald-500'} opacity-20`} 
+                                                style={{ width: `${m.load}%` }}
+                                            ></div>
+                                            {/* Content overlay */}
+                                            <div className="absolute inset-0 flex items-center px-3 justify-between">
+                                                <div className="flex items-center gap-2">
+                                                    <img src={m.img} className="w-8 h-8 rounded object-cover border border-white shadow-sm" onError={(e) => e.target.style.display='none'}/>
+                                                    <span className="text-xs text-slate-500 font-mono">{m.load}% Load</span>
+                                                </div>
+                                                <i className="fa-solid fa-chevron-right text-xs text-slate-300 group-hover:text-cyan-500"></i>
+                                            </div>
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            );
+        };
+
+        // 2. Financial / Point Value Simulator
+        const FinancialSim = () => {
+            const [pointValue, setPointValue] = useState(0.92);
+            const [points, setPoints] = useState(2450000); // Monthly points
+            const selfPay = 1200000; // Monthly self pay
+
+            const estimatedRevenue = Math.floor((points * pointValue) + selfPay);
+
+            return (
+                <div className="space-y-6 animate-slide-in h-full flex flex-col">
+                    <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                        {/* Control Panel */}
+                        <div className="glass-card p-8 flex flex-col justify-center space-y-8">
+                            <div>
+                                <h2 className="text-xl font-bold text-slate-800 mb-2">健保點值動態模擬器</h2>
+                                <p className="text-sm text-slate-500">調整預估點值，即時試算科室總損益。</p>
+                            </div>
+                            
+                            <div>
+                                <div className="flex justify-between mb-2">
+                                    <span className="text-sm font-bold text-slate-600">預估點值 (Point Value)</span>
+                                    <span className="text-2xl font-black text-cyan-600">{pointValue.toFixed(2)}</span>
+                                </div>
+                                <input 
+                                    type="range" min="0.8" max="1.0" step="0.01" 
+                                    value={pointValue} 
+                                    onChange={(e) => setPointValue(parseFloat(e.target.value))}
+                                    className="w-full h-2 bg-slate-200 rounded-lg appearance-none cursor-pointer accent-cyan-600"
+                                />
+                                <div className="flex justify-between text-xs text-slate-400 mt-1">
+                                    <span>0.80 (悲觀)</span>
+                                    <span>0.90 (標準)</span>
+                                    <span>1.00 (樂觀)</span>
+                                </div>
+                            </div>
+
+                            <div className="bg-slate-50 rounded-xl p-4 border border-slate-100">
+                                <div className="flex justify-between items-center mb-2">
+                                    <span className="text-sm text-slate-500">健保申報點數</span>
+                                    <span className="font-mono font-bold">{points.toLocaleString()} pts</span>
+                                </div>
+                                <div className="flex justify-between items-center mb-2">
+                                    <span className="text-sm text-slate-500">自費項目營收</span>
+                                    <span className="font-mono font-bold text-orange-500">+ ${selfPay.toLocaleString()}</span>
+                                </div>
+                                <div className="h-px bg-slate-200 my-3"></div>
+                                <div className="flex justify-between items-center">
+                                    <span className="font-bold text-slate-700">預估總營收</span>
+                                    <span className="text-2xl font-black text-emerald-600 number-update">${estimatedRevenue.toLocaleString()}</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* Breakdown Chart */}
+                        <div className="glass-card p-6 lg:col-span-2">
+                            <DynamicChart 
+                                type="bar"
+                                title="營收結構分析 (Revenue Mix)"
+                                data={{
+                                    labels: ['VMAT', 'IMRT', 'SBRT', '3D-CRT', '其他'],
+                                    datasets: [
+                                        { 
+                                            label: '健保點數換算', 
+                                            data: [450000 * pointValue, 320000 * pointValue, 150000 * pointValue, 80000 * pointValue, 50000 * pointValue], 
+                                            backgroundColor: '#0891b2', stack: 'Stack 0' 
+                                        },
+                                        { 
+                                            label: '自費差額/全自費', 
+                                            data: [200000, 50000, 600000, 10000, 5000], 
+                                            backgroundColor: '#f59e0b', stack: 'Stack 0' 
+                                        }
+                                    ]
+                                }}
+                                options={{
+                                    indexAxis: 'y',
+                                    scales: { x: { stacked: true }, y: { stacked: true } }
+                                }}
+                            />
+                        </div>
+                    </div>
+
+                    {/* Detailed Table */}
+                    <div className="glass-card flex-1 flex flex-col overflow-hidden">
+                        <div className="p-4 border-b border-slate-100 bg-slate-50/50">
+                            <h3 className="font-bold text-slate-700"><i className="fa-solid fa-list mr-2 text-cyan-500"></i> 最新申報明細 (Live Stream)</h3>
+                        </div>
+                        <div className="flex-1 overflow-auto p-0">
+                            <table className="w-full text-left border-collapse">
+                                <thead className="bg-slate-50 text-xs uppercase text-slate-500 sticky top-0">
+                                    <tr>
+                                        <th className="p-4">時間</th><th className="p-4">病歷號</th><th className="p-4">項目代碼</th><th className="p-4">治療項目</th><th className="p-4 text-right">金額/點數</th><th className="p-4">狀態</th>
+                                    </tr>
+                                </thead>
+                                <tbody className="text-sm text-slate-700 divide-y divide-slate-100">
+                                    {[...Array(10)].map((_, i) => (
+                                        <tr key={i} className="hover:bg-slate-50/80 transition-colors">
+                                            <td className="p-4 font-mono text-slate-400">10:{30 + i}</td>
+                                            <td className="p-4 font-mono">8810{234 + i}</td>
+                                            <td className="p-4"><span className="bg-slate-100 px-2 py-1 rounded text-xs font-mono text-slate-600">36012B</span></td>
+                                            <td className="p-4">深部放射治療-VMAT</td>
+                                            <td className="p-4 text-right font-bold text-slate-800">4,200</td>
+                                            <td className="p-4"><span className="text-xs bg-green-100 text-green-700 px-2 py-1 rounded-full">已批價</span></td>
+                                        </tr>
+                                    ))}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            );
+        };
+
+        // 3. Asset Performance (CAI) View
+        const AssetCAI = () => (
+            <div className="space-y-6 animate-slide-in">
+                <div className="grid grid-cols-2 gap-6">
+                    <div className="glass-card p-6">
+                        <h2 className="font-bold text-slate-800 mb-4">臨床可用性指數 (CAI) 計算公式</h2>
+                        <div className="bg-slate-100 p-4 rounded-lg font-mono text-sm text-slate-600 mb-4">
+                            CAI = (BaseTime - (Down + Delay + QA_Overrun)) / BaseTime
+                        </div>
+                        <div className="grid grid-cols-2 gap-4">
+                            <div className="p-4 border rounded-lg">
+                                <p className="text-xs text-slate-400">Base Time</p>
+                                <p className="text-xl font-bold">540 min</p>
+                            </div>
+                            <div className="p-4 border rounded-lg border-red-100 bg-red-50">
+                                <p className="text-xs text-red-400">Down Time</p>
+                                <p className="text-xl font-bold text-red-600">0 min</p>
+                            </div>
+                            <div className="p-4 border rounded-lg border-orange-100 bg-orange-50">
+                                <p className="text-xs text-orange-400">Soft Delay</p>
+                                <p className="text-xl font-bold text-orange-600">12 min</p>
+                            </div>
+                            <div className="p-4 border rounded-lg border-blue-100 bg-blue-50">
+                                <p className="text-xs text-blue-400">QA Overrun</p>
+                                <p className="text-xl font-bold text-blue-600">5 min</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div className="glass-card p-6">
+                        <DynamicChart 
+                            type="doughnut"
+                            title="時間損失因子分析 (Time Loss Factors)"
+                            data={{
+                                labels: ['有效治療時間', '停機損失', '延遲損失', 'QA超時'],
+                                datasets: [{
+                                    data: [523, 0, 12, 5],
+                                    backgroundColor: ['#10b981', '#f59e0b', '#3b82f6', '#ef4444'],
+                                    borderWidth: 0
+                                }]
+                            }}
+                            options={{ cutout: '70%' }}
+                        />
+                    </div>
+                </div>
+            </div>
+        );
+
+        // 4. Cost Analysis (TDABC)
+        const CostAnalysis = () => (
+            <div className="glass-card p-8 animate-slide-in h-full">
+                <div className="flex justify-between items-end mb-8">
+                    <div>
+                        <h2 className="text-2xl font-bold text-slate-800">TDABC 成本分析模型</h2>
+                        <p className="text-slate-500 text-sm mt-1">Time-Driven Activity-Based Costing: VMAT vs SRS</p>
+                    </div>
+                    <div className="flex gap-4">
+                        <div className="text-right">
+                            <p className="text-xs text-slate-400">醫師每分鐘費率</p>
+                            <p className="font-mono font-bold text-slate-700">$45.0</p>
+                        </div>
+                        <div className="text-right">
+                            <p className="text-xs text-slate-400">物理師每分鐘費率</p>
+                            <p className="font-mono font-bold text-slate-700">$25.0</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                    {/* VMAT Cost Card */}
+                    <div className="border border-slate-200 rounded-xl p-6 relative overflow-hidden">
+                        <div className="absolute top-0 right-0 bg-blue-100 text-blue-700 px-3 py-1 rounded-bl-xl text-xs font-bold">標準 VMAT</div>
+                        <div className="mb-4">
+                            <span className="text-3xl font-black text-slate-800">$3,300</span>
+                            <span className="text-sm text-slate-400 ml-2">/ fraction</span>
+                        </div>
+                        <ul className="space-y-3 text-sm">
+                            <li className="flex justify-between"><span className="text-slate-500">醫師 (Contouring 30m)</span> <span>$1,350</span></li>
+                            <li className="flex justify-between"><span className="text-slate-500">物理師 (Planning 60m)</span> <span>$1,500</span></li>
+                            <li className="flex justify-between"><span className="text-slate-500">放射師 x2 (Treat 15m)</span> <span>$450</span></li>
+                        </ul>
+                        <div className="mt-4 pt-4 border-t border-slate-100">
+                            <div className="w-full bg-slate-100 h-2 rounded-full overflow-hidden flex">
+                                <div className="bg-blue-500 h-full" style={{width: '40%'}}></div>
+                                <div className="bg-cyan-500 h-full" style={{width: '45%'}}></div>
+                                <div className="bg-slate-400 h-full" style={{width: '15%'}}></div>
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* SRS Cost Card */}
+                    <div className="border border-orange-200 bg-orange-50/30 rounded-xl p-6 relative overflow-hidden">
+                        <div className="absolute top-0 right-0 bg-orange-100 text-orange-700 px-3 py-1 rounded-bl-xl text-xs font-bold">高階 SRS/SBRT</div>
+                        <div className="mb-4">
+                            <span className="text-3xl font-black text-orange-700">$7,800</span>
+                            <span className="text-sm text-orange-400 ml-2">/ fraction</span>
+                        </div>
+                        <ul className="space-y-3 text-sm">
+                            <li className="flex justify-between"><span className="text-slate-600">醫師 (Contour+Verify)</span> <span>$2,700</span></li>
+                            <li className="flex justify-between"><span className="text-slate-600">物理師 (Plan+QA+Console)</span> <span>$3,500</span></li>
+                            <li className="flex justify-between"><span className="text-slate-600">放射師 x2 (Treat 40m)</span> <span>$1,200</span></li>
+                            <li className="flex justify-between font-bold text-orange-600"><span>設備折舊攤提加成</span> <span>+$400</span></li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        );
+
+        // 5. Equipment Details
+        const EquipmentDetail = ({ eqId }) => {
+            const config = {
+                'eq_versa': { name: 'Elekta Versa HD', img: 'image/elekta.jpg', type: 'LINAC' },
+                'eq_synergy': { name: 'Elekta Synergy', img: 'image/synergy.jpg', type: 'LINAC' },
+                'eq_ge': { name: 'GE CT-Sim', img: 'image/ge.jpg', type: 'CT' },
+                'eq_hypers': { name: 'Hyperthermia (BSD)', img: 'image/hypers.jpg', type: 'THERAPY' }
+            };
+            const info = config[eqId] || config['eq_versa'];
+
+            return (
+                <div className="glass-card p-6 animate-slide-in h-full flex flex-col">
+                    <div className="flex flex-col md:flex-row gap-8 h-full">
+                        {/* Left: Image & Status */}
+                        <div className="w-full md:w-1/3 flex flex-col gap-4">
+                            <div className="relative rounded-xl overflow-hidden border border-slate-200 shadow-inner h-64 bg-slate-100 group">
+                                <img src={info.img} alt={info.name} className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105" onError={(e) => e.target.style.display='none'}/>
+                                <div className="absolute top-4 left-4 bg-white/90 backdrop-blur px-3 py-1 rounded-full text-xs font-bold text-emerald-600 shadow-sm flex items-center gap-2">
+                                    <span className="animate-pulse-glow w-2 h-2 bg-emerald-500 rounded-full"></span> ONLINE
+                                </div>
+                            </div>
+                            
+                            <div className="grid grid-cols-2 gap-4">
+                                <div className="p-4 bg-slate-50 rounded-xl text-center border border-slate-100">
+                                    <p className="text-xs text-slate-400 uppercase mb-1">妥善率</p>
+                                    <p className="text-xl font-black text-slate-700">99.8%</p>
+                                </div>
+                                <div className="p-4 bg-slate-50 rounded-xl text-center border border-slate-100">
+                                    <p className="text-xs text-slate-400 uppercase mb-1">今日排程</p>
+                                    <p className="text-xl font-black text-slate-700">32 人</p>
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* Right: Details & Maintenance */}
+                        <div className="flex-1 flex flex-col">
+                            <h2 className="text-3xl font-black text-slate-800 mb-2">{info.name}</h2>
+                            <p className="text-slate-500 mb-6 flex items-center gap-2">
+                                <i className="fa-solid fa-location-dot"></i> B2 治療室 01 | 資產編號: A-2023-001
+                            </p>
+
+                            <div className="mb-6">
+                                <h3 className="font-bold text-slate-700 mb-3 border-b pb-2">即時運轉參數</h3>
+                                <div className="grid grid-cols-3 gap-6">
+                                    <div><p className="text-xs text-slate-400">機房溫度</p><p className="font-mono font-bold">22.5°C</p></div>
+                                    <div><p className="text-xs text-slate-400">冰水機功耗</p><p className="font-mono font-bold">12.4 kW</p></div>
+                                    <div><p className="text-xs text-slate-400">累積劑量 (MU)</p><p className="font-mono font-bold text-cyan-600 number-update">4,582,100</p></div>
+                                </div>
+                            </div>
+
+                            <div className="flex-1 bg-slate-50 rounded-xl p-4 border border-slate-100 overflow-hidden flex flex-col">
+                                <h3 className="font-bold text-xs uppercase text-slate-400 mb-3">近期維修日誌</h3>
+                                <div className="flex-1 overflow-y-auto custom-scroll space-y-3">
+                                    {[1, 2, 3].map(i => (
+                                        <div key={i} className="flex items-start gap-3 text-sm border-b border-slate-200/50 pb-2 last:border-0">
+                                            <div className="text-xs font-mono text-slate-400 mt-0.5">2023-11-{20-i}</div>
+                                            <div className="flex-1">
+                                                <p className="font-bold text-slate-700">例行性晨間 QA 校正</p>
+                                                <p className="text-xs text-slate-500">物理師: 陳小明 - 結果: 通過</p>
+                                            </div>
+                                            <i className="fa-solid fa-check-circle text-emerald-500"></i>
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            );
+        };
+
+        // Main App Layout
+        const App = () => {
+            const [view, setView] = useState('dashboard');
+
+            const renderView = () => {
+                switch(view) {
+                    case 'dashboard': return <Dashboard setView={setView} />;
+                    case 'financial': case 'financial_nhi': case 'financial_self': return <FinancialSim />;
+                    case 'asset': case 'asset_cai': return <AssetCAI />;
+                    case 'cost': case 'tdabc_cost': return <CostAnalysis />;
+                    case 'eq_versa': case 'eq_synergy': case 'eq_ge': case 'eq_hypers':
+                        return <EquipmentDetail eqId={view} />;
+                    case 'energy': return (
+                        <div className="glass-card p-8 text-center flex flex-col items-center justify-center h-full">
+                            <i className="fa-solid fa-leaf text-6xl text-emerald-500 mb-4 animate-bounce"></i>
+                            <h2 className="text-2xl font-bold text-slate-800">ESG 能源監控模組</h2>
+                            <p className="text-slate-500 mt-2">即時計算碳足跡與電力消耗 (開發中)</p>
+                        </div>
+                    );
+                    default: return <Dashboard setView={setView} />;
+                }
+            };
+
+            return (
+                <div className="flex h-screen w-screen overflow-hidden bg-slate-50">
+                    <Sidebar currentView={view} setView={setView} />
+                    <main className="flex-1 flex flex-col relative overflow-hidden">
+                        {/* Header */}
+                        <header className="h-20 bg-white/80 backdrop-blur border-b border-slate-100 flex justify-between items-center px-8 z-10">
+                            <h2 className="text-xl font-bold text-slate-700 flex items-center gap-3">
+                                {view === 'dashboard' && <i className="fa-solid fa-house text-cyan-600"></i>}
+                                {view.includes('financial') && <i className="fa-solid fa-calculator text-orange-500"></i>}
+                                {view.includes('eq_') && <i className="fa-solid fa-server text-blue-500"></i>}
+                                {view === 'dashboard' ? '營運總覽 Dashboard' : 
+                                 view.includes('financial') ? '財務績效模擬' :
+                                 view.includes('eq_') ? '設備詳細監控' : '詳細分析視圖'}
+                            </h2>
+                            <div className="flex items-center gap-6">
+                                <div className="flex items-center gap-2 px-3 py-1.5 bg-emerald-50 text-emerald-700 rounded-full border border-emerald-100 text-xs font-bold">
+                                    <span className="animate-pulse-glow w-2 h-2 bg-emerald-500 rounded-full"></span>
+                                    HIS 連線正常
+                                </div>
+                                <div className="flex items-center gap-2 px-3 py-1.5 bg-blue-50 text-blue-700 rounded-full border border-blue-100 text-xs font-bold">
+                                    <span className="animate-pulse-glow w-2 h-2 bg-blue-500 rounded-full"></span>
+                                    PACS 同步中
+                                </div>
+                                <div className="text-right">
+                                    <p className="text-xs text-slate-400 font-bold uppercase tracking-wider">System Time</p>
+                                    <p className="text-sm font-mono font-bold text-slate-700">{new Date().toLocaleTimeString()}</p>
+                                </div>
+                            </div>
+                        </header>
+
+                        {/* Content Area */}
+                        <div className="flex-1 overflow-hidden p-8 relative">
+                            {/* Background decoration */}
+                            <div className="absolute top-0 left-0 w-full h-full overflow-hidden -z-10 pointer-events-none">
+                                <div className="absolute top-10 left-10 w-64 h-64 bg-cyan-100 rounded-full mix-blend-multiply filter blur-3xl opacity-30 animate-pulse"></div>
+                                <div className="absolute bottom-10 right-10 w-64 h-64 bg-blue-100 rounded-full mix-blend-multiply filter blur-3xl opacity-30 animate-pulse" style={{animationDelay: '1s'}}></div>
+                            </div>
+                            
+                            {renderView()}
+                        </div>
+                    </main>
+                </div>
+            );
+        };
+
+        const root = ReactDOM.createRoot(document.getElementById('root'));
+        root.render(<App />);
+    </script>
+</body>
+</html>
