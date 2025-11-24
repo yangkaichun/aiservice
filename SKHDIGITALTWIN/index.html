@@ -4,8 +4,6 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>新光醫院 | 全院數位孿生與資安指揮中心</title>
-    <link rel="icon" href="image/feticon.ico" type="image/x-icon">
-
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <script crossorigin src="https://unpkg.com/react@18/umd/react.development.js"></script>
@@ -17,7 +15,7 @@
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Noto+Sans+TC:wght@300;400;500;700&display=swap');
 
         :root {
-            --primary: #0ea5e9; /* Sky 500 */
+            --primary: #0ea5e9;
             --bg-app: #f8fafc;
         }
 
@@ -38,7 +36,6 @@
         .animate-pulse-ring { animation: pulse-ring 2s infinite; }
         .animate-scan { animation: scan-line 3s linear infinite; }
         
-        /* --- UI Components --- */
         .glass-card {
             background: rgba(255, 255, 255, 0.95);
             backdrop-filter: blur(12px);
@@ -53,12 +50,10 @@
             border-color: #bae6fd;
         }
 
-        /* Custom Scroll */
         ::-webkit-scrollbar { width: 6px; height: 6px; }
         ::-webkit-scrollbar-track { background: transparent; }
         ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 3px; }
         
-        /* ECG Animation Line */
         .ecg-path {
             fill: none;
             stroke: #10b981;
@@ -68,7 +63,6 @@
             animation: ecg-draw 2s linear infinite;
         }
 
-        /* Patient Body Markers */
         .organ-marker {
             position: absolute;
             width: 16px; height: 16px;
@@ -82,7 +76,6 @@
             animation: pulse-ring 1.5s infinite;
         }
 
-        /* Bed Status */
         .bed-occupied { background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%); color: white; border: none; box-shadow: 0 4px 6px -1px rgba(59, 130, 246, 0.3); }
         .bed-empty { background: white; color: #94a3b8; border: 1px solid #e2e8f0; }
         .bed-cleaning { background: #f59e0b; color: white; border: none; }
@@ -94,7 +87,7 @@
     <script type="text/babel">
         const { useState, useEffect, useRef } = React;
 
-        // --- 1. Simulation Engine (Global State) ---
+        // --- 1. Simulation Engine ---
         const useHospitalBrain = () => {
             const [time, setTime] = useState(new Date());
             const [stats, setStats] = useState({
@@ -122,7 +115,7 @@
         };
 
         // --- 2. Shared UI Components ---
-        const LiveChart = ({ type, title, color, labels, data, height=200, options={} }) => {
+        const LiveChart = ({ type, title, color, labels, data, height, options={} }) => {
             const canvasRef = useRef(null);
             const chartRef = useRef(null);
 
@@ -149,20 +142,21 @@
                     options: {
                         responsive: true,
                         maintainAspectRatio: false,
-                        plugins: { legend: { display: isDatasetFormat } },
+                        plugins: { legend: { display: isDatasetFormat || type === 'doughnut' } },
                         scales: { 
                             x: { display: type !== 'doughnut' && type !== 'radar' }, 
                             y: { display: type !== 'doughnut' && type !== 'radar' },
                             r: { display: type === 'radar', suggestedMin: 0, suggestedMax: 100 }
                         },
-                        animation: { duration: 0 }, // Static chart request
+                        animation: { duration: 0 },
                         ...options
                     }
                 });
                 return () => chartRef.current?.destroy();
             }, [type, title, color, data, options]);
 
-            return <div className="w-full" style={{height: `${height}px`}}><canvas ref={canvasRef}></canvas></div>;
+            // Fix: Use 100% height to fill parent container
+            return <div className="w-full h-full relative" style={{minHeight: height ? `${height}px` : '100%'}}><canvas ref={canvasRef}></canvas></div>;
         };
 
         const KpiCard = ({ title, value, sub, icon, color, onClick }) => (
@@ -197,10 +191,11 @@
             </div>
         );
 
-        // --- 3. Detailed Modal Views ---
+        // --- 3. View Components (Moved UP to ensure scope) ---
+
+        // A. Revenue Detail
         const RevenueDetail = () => {
             const [range, setRange] = useState('day');
-            
             const getData = () => {
                 if (range === 'day') return { labels: ['08:00','10:00','12:00','14:00','16:00','18:00'], nhi: [12,15,8,18,20,10], self: [5,8,3,10,12,5] };
                 if (range === 'month') return { labels: Array.from({length:15},(_,i)=>`${i+1}日`), nhi: Array.from({length:15},()=>Math.floor(Math.random()*50)+50), self: Array.from({length:15},()=>Math.floor(Math.random()*30)+20) };
@@ -216,7 +211,6 @@
                             return <button key={k} onClick={()=>setRange(k)} className={`px-4 py-2 rounded-lg text-sm font-bold ${range===k?'bg-sky-500 text-white':'bg-white text-slate-500 shadow-sm'}`}>{l}</button>
                         })}
                     </div>
-                    
                     <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
                         <div className="lg:col-span-2 glass-card p-6">
                             <h4 className="font-bold text-slate-700 mb-4">營收趨勢分析</h4>
@@ -242,6 +236,7 @@
             );
         };
 
+        // B. Occupancy Detail
         const OccupancyDetail = () => {
             const [range, setRange] = useState('day');
             const floors = [
@@ -250,7 +245,6 @@
                 { n: '5F ICU 重症', r: 88, c: 'bg-rose-500' },
                 { n: '3F 產科病房', r: 70, c: 'bg-emerald-500' },
             ];
-
             return (
                 <div className="space-y-6">
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -270,14 +264,7 @@
                             </div>
                         </div>
                         <div className="glass-card p-6">
-                            <div className="flex justify-between items-center mb-4">
-                                <h4 className="font-bold text-slate-700">統計分析平均佔床率</h4>
-                                <div className="flex gap-1">
-                                    {['日','週','月','年'].map(t => (
-                                        <button key={t} onClick={()=>setRange(t)} className={`px-3 py-1 text-xs rounded ${range===t?'bg-slate-800 text-white':'bg-slate-100 text-slate-500'}`}>{t}</button>
-                                    ))}
-                                </div>
-                            </div>
+                            <h4 className="font-bold text-slate-700 mb-4">統計分析平均佔床率</h4>
                             <div className="h-64">
                                 <LiveChart type="line" title="Occupancy" color="#6366f1" 
                                     labels={['T-6','T-5','T-4','T-3','T-2','T-1','Now']}
@@ -290,6 +277,7 @@
             );
         };
 
+        // C. ER Detail
         const ERDetail = () => {
             const patients = Array.from({length: 15}, (_, i) => ({
                 id: `ER-${1000+i}`,
@@ -298,31 +286,29 @@
                 dept: ['內科', '外科', '神經內科', '心臟內科'][Math.floor(Math.random()*4)],
                 triage: Math.floor(Math.random() * 3) + 1
             })).sort((a,b) => a.triage - b.triage);
-
             return (
-                <div className="space-y-6">
-                    <div className="glass-card overflow-hidden">
-                        <table className="w-full text-left text-sm">
-                            <thead className="bg-slate-50 text-slate-500 uppercase font-bold text-xs">
-                                <tr><th className="p-4">優先順序</th><th className="p-4">病歷號</th><th className="p-4">姓名</th><th className="p-4">診斷</th><th className="p-4">科別</th></tr>
-                            </thead>
-                            <tbody className="divide-y divide-slate-100">
-                                {patients.map((p, i) => (
-                                    <tr key={i} className="hover:bg-slate-50">
-                                        <td className="p-4"><span className={`w-6 h-6 flex items-center justify-center rounded-full text-xs font-bold text-white ${p.triage===1?'bg-rose-500':p.triage===2?'bg-amber-500':'bg-emerald-500'}`}>{p.triage}</span></td>
-                                        <td className="p-4 font-mono">{p.id}</td>
-                                        <td className="p-4 font-bold">{p.name}</td>
-                                        <td className="p-4">{p.diag}</td>
-                                        <td className="p-4">{p.dept}</td>
-                                    </tr>
-                                ))}
-                            </tbody>
-                        </table>
-                    </div>
+                <div className="glass-card overflow-hidden">
+                    <table className="w-full text-left text-sm">
+                        <thead className="bg-slate-50 text-slate-500 uppercase font-bold text-xs">
+                            <tr><th className="p-4">優先順序</th><th className="p-4">病歷號</th><th className="p-4">姓名</th><th className="p-4">診斷</th><th className="p-4">科別</th></tr>
+                        </thead>
+                        <tbody className="divide-y divide-slate-100">
+                            {patients.map((p, i) => (
+                                <tr key={i} className="hover:bg-slate-50">
+                                    <td className="p-4"><span className={`w-6 h-6 flex items-center justify-center rounded-full text-xs font-bold text-white ${p.triage===1?'bg-rose-500':p.triage===2?'bg-amber-500':'bg-emerald-500'}`}>{p.triage}</span></td>
+                                    <td className="p-4 font-mono">{p.id}</td>
+                                    <td className="p-4 font-bold">{p.name}</td>
+                                    <td className="p-4">{p.diag}</td>
+                                    <td className="p-4">{p.dept}</td>
+                                </tr>
+                            ))}
+                        </tbody>
+                    </table>
                 </div>
             );
         };
 
+        // D. Security View
         const SecurityCenterView = ({ stats }) => {
             const [logs, setLogs] = useState([]);
             useEffect(() => {
@@ -332,7 +318,6 @@
                 }, 1000);
                 return () => clearInterval(interval);
             }, []);
-
             return (
                 <div className="space-y-6">
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
@@ -348,11 +333,9 @@
             );
         };
 
-        // --- 4. Main Views (Modules) ---
-
-        // A. Disease Analysis (入院疾病分析 - 模擬資料修正版)
+        // E. Disease Analysis (Fixed & Simulated Data)
         const DiseaseAnalysis = () => {
-            // 模擬資料：靜態列表與動態圖表
+            // Simulated Data
             const diagnoses = [
                 { code: 'C18', name: '惡性結腸腫瘤', count: 145, change: '+12%' },
                 { code: 'I25', name: '慢性缺血性心臟病', count: 120, change: '-5%' },
@@ -367,12 +350,12 @@
                     <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
                         <div className="glass-card p-6 lg:col-span-2">
                             <h3 className="font-bold text-slate-700 mb-4 flex items-center gap-2">
-                                <i className="fa-solid fa-chart-line text-sky-500"></i> 入院疾病趨勢預測 (Trend Prediction)
+                                <i className="fa-solid fa-chart-line text-sky-500"></i> 入院疾病趨勢預測 (AI Trend Prediction)
                             </h3>
                             <div className="h-64">
                                 <LiveChart type="line" title="Prediction" color="#0ea5e9"
                                     labels={['T-3','T-2','T-1','Current','Future+1','Future+2']}
-                                    data={[120, 135, 140, 145, 155, 160]} // Simulated Trend Data
+                                    data={[120, 135, 140, 145, 155, 160]} 
                                 />
                             </div>
                         </div>
@@ -413,6 +396,9 @@
                                 <div className="w-full bg-slate-100 h-2 rounded-full"><div className="bg-sky-500 h-full" style={{width:'75%'}}></div></div>
                                 <div className="flex justify-between text-sm"><span>核刪風險</span><span className="font-bold text-rose-500">High</span></div>
                                 <div className="w-full bg-slate-100 h-2 rounded-full"><div className="bg-rose-500 h-full" style={{width:'80%'}}></div></div>
+                                <div className="p-3 bg-sky-50 rounded text-xs text-sky-700 mt-4">
+                                    <i className="fa-solid fa-robot mr-1"></i> AI 建議：請補強 C34 診斷依據文件以降低核刪風險。
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -420,6 +406,7 @@
             );
         };
 
+        // F. Equipment View
         const EquipmentView = () => (
              <div className="animate-fade-in space-y-6">
                  <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
@@ -447,15 +434,15 @@
                     ))}
                  </div>
                  <div className="glass-card p-6">
-                     <h3 className="font-bold text-slate-700 mb-4">全院儀器運轉統計 (Static)</h3>
+                     <h3 className="font-bold text-slate-700 mb-4">全院儀器運轉統計</h3>
                      <div className="h-64"><LiveChart type="bar" color="#6366f1" title="Usage" 
                         data={[85, 92, 78, 65, 88, 95]} 
-                        options={{animation: {duration: 0}}} 
                      /></div>
                  </div>
              </div>
         );
 
+        // G. Patient Twin
         const PatientTwin = ({ patient, onBack }) => {
             const [vitals, setVitals] = useState({ hr: 75, bp: '120/80', spo2: 98 });
             const [searchId, setSearchId] = useState('');
@@ -529,8 +516,8 @@
                             </div>
                             <div className="grid grid-cols-2 gap-6">
                                 <div className="glass-card p-6">
-                                    <h3 className="font-bold text-slate-700 mb-4">AI 風險預測 (Static)</h3>
-                                    <div className="h-48"><LiveChart type="radar" title="Risk" color="#ef4444" labels={['Sepsis', 'Fall', 'Readmission', 'AKI', 'Mortality']} data={[80, 20, 45, 60, 30]} options={{animation:{duration:0}}} /></div>
+                                    <h3 className="font-bold text-slate-700 mb-4">AI 風險預測</h3>
+                                    <div className="h-48"><LiveChart type="radar" title="Risk" color="#ef4444" labels={['Sepsis', 'Fall', 'Readmission', 'AKI', 'Mortality']} data={[80, 20, 45, 60, 30]} /></div>
                                 </div>
                                 <div className="glass-card p-6">
                                     <h3 className="font-bold text-slate-700 mb-4">病歷摘要</h3>
@@ -543,6 +530,7 @@
             );
         };
 
+        // H. Overview
         const Overview = ({ dashboardImgError, setDashboardImgError }) => {
             const [zoneCounts, setZoneCounts] = useState([120, 200, 50, 10, 40]);
             useEffect(() => {
@@ -562,7 +550,7 @@
                         <h3 className="font-bold text-slate-700 mb-4">全院各區人流監控</h3>
                         <div className="flex-1 flex flex-col">
                             <div className="h-48 mb-4 border-b border-slate-100 pb-4">
-                                <LiveChart type="bar" title="Today Avg" height={180} labels={['門診', '住院', '檢查', '產房', '急診']} data={[1200, 850, 450, 50, 320]} color="#64748b" options={{animation:{duration:0}}} />
+                                <LiveChart type="bar" title="Today Avg" height={180} labels={['門診', '住院', '檢查', '產房', '急診']} data={[1200, 850, 450, 50, 320]} color="#64748b" />
                             </div>
                             <div className="grid grid-cols-5 gap-2 text-center">
                                 {['門診區','住院區','檢查室','產房','急診'].map((name, i) => (
@@ -579,6 +567,7 @@
             );
         };
 
+        // I. WardView (Moved from bottom to here)
         const WardView = ({ onSelect }) => {
             const [floor, setFloor] = useState('8F');
             const beds = Array.from({length: 32}, (_, i) => {
@@ -596,7 +585,7 @@
             );
         };
 
-        // --- 5. Main App Shell ---
+        // --- 4. Main App Shell ---
         const App = () => {
             const [view, setView] = useState('overview');
             const [selectedPatient, setSelectedPatient] = useState(null);
@@ -610,7 +599,7 @@
                 { id: 'wards', label: '智慧病房監控', icon: 'fa-bed-pulse' },
                 { id: 'disease', label: '入院疾病分析', icon: 'fa-notes-medical' },
                 { id: 'equipment', label: '多模態儀器中心', icon: 'fa-server' },
-                { id: 'machin', label: '檢查室營運狀態', icon: 'fa-microscope' }, 
+                { id: 'machin', label: '檢查室營運狀態', icon: 'fa-microscope' },
                 { id: 'patient_twin', label: '病患數位孿生', icon: 'fa-user-astronaut' },
                 { id: 'security', label: '資安監控中心', icon: 'fa-shield-cat' },
             ];
