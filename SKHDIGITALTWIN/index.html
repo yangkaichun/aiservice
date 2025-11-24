@@ -275,6 +275,148 @@
             );
         };
 
+        // 2. Financial / Point Value Simulator
+        const FinancialSim = () => {
+            const [pointValue, setPointValue] = useState(0.92);
+            const [points, setPoints] = useState(2450000); // Monthly points
+            const selfPay = 1200000; // Monthly self pay
+            const [isExpanded, setIsExpanded] = useState(false); // 狀態：是否展開
+
+            const estimatedRevenue = Math.floor((points * pointValue) + selfPay);
+
+            return (
+                <div className="space-y-6 animate-slide-in h-full flex flex-col">
+                    <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                        {/* Control Panel */}
+                        <div className="glass-card p-8 flex flex-col justify-center space-y-8">
+                            <div>
+                                <h2 className="text-xl font-bold text-slate-800 mb-2">健保點值動態模擬器</h2>
+                                <p className="text-sm text-slate-500">調整預估點值，即時試算科室總損益。</p>
+                            </div>
+                            
+                            <div>
+                                <div className="flex justify-between mb-2">
+                                    <span className="text-sm font-bold text-slate-600">預估點值 (Point Value)</span>
+                                    <span className="text-2xl font-black text-cyan-600">{pointValue.toFixed(2)}</span>
+                                </div>
+                                <input 
+                                    type="range" min="0.8" max="1.0" step="0.01" 
+                                    value={pointValue} 
+                                    onChange={(e) => setPointValue(parseFloat(e.target.value))}
+                                    className="w-full h-2 bg-slate-200 rounded-lg appearance-none cursor-pointer accent-cyan-600"
+                                />
+                                <div className="flex justify-between text-xs text-slate-400 mt-1">
+                                    <span>0.80 (悲觀)</span>
+                                    <span>0.90 (標準)</span>
+                                    <span>1.00 (樂觀)</span>
+                                </div>
+                            </div>
+
+                            <div className="bg-slate-50 rounded-xl p-4 border border-slate-100">
+                                <div className="flex justify-between items-center mb-2">
+                                    <span className="text-sm text-slate-500">健保申報點數</span>
+                                    <span className="font-mono font-bold">{points.toLocaleString()} pts</span>
+                                </div>
+                                <div className="flex justify-between items-center mb-2">
+                                    <span className="text-sm text-slate-500">自費項目營收</span>
+                                    <span className="font-mono font-bold text-orange-500">+ ${selfPay.toLocaleString()}</span>
+                                </div>
+                                <div className="h-px bg-slate-200 my-3"></div>
+                                <div className="flex justify-between items-center">
+                                    <span className="font-bold text-slate-700">預估總營收</span>
+                                    <span className="text-2xl font-black text-emerald-600 number-update">${estimatedRevenue.toLocaleString()}</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* Breakdown Chart */}
+                        <div className="glass-card p-6 lg:col-span-2">
+                            <DynamicChart 
+                                type="bar"
+                                title="營收結構分析 (Revenue Mix)"
+                                data={{
+                                    labels: ['VMAT', 'IMRT', 'SBRT', '3D-CRT', '其他'],
+                                    datasets: [
+                                        { 
+                                            label: '健保點數換算', 
+                                            data: [450000 * pointValue, 320000 * pointValue, 150000 * pointValue, 80000 * pointValue, 50000 * pointValue], 
+                                            backgroundColor: '#0891b2', stack: 'Stack 0' 
+                                        },
+                                        { 
+                                            label: '自費差額/全自費', 
+                                            data: [200000, 50000, 600000, 10000, 5000], 
+                                            backgroundColor: '#f59e0b', stack: 'Stack 0' 
+                                        }
+                                    ]
+                                }}
+                                options={{
+                                    indexAxis: 'y',
+                                    scales: { x: { stacked: true }, y: { stacked: true } }
+                                }}
+                            />
+                        </div>
+                    </div>
+
+                    {/* Detailed Table (Expandable) */}
+                    <div 
+                        className={`glass-card flex flex-col overflow-hidden transition-all duration-300 ease-in-out
+                        ${isExpanded ? 'fixed inset-4 z-50 bg-white shadow-2xl ring-1 ring-slate-200' : 'flex-1'}`}
+                        style={isExpanded ? { margin: 0 } : {}}
+                    >
+                        <div className="p-4 border-b border-slate-100 bg-slate-50/50 flex justify-between items-center shrink-0">
+                            <h3 className="font-bold text-slate-700 flex items-center gap-2">
+                                <i className="fa-solid fa-list text-cyan-500"></i> 最新申報明細 (Live Stream)
+                            </h3>
+                            <button 
+                                onClick={() => setIsExpanded(!isExpanded)}
+                                className="w-8 h-8 flex items-center justify-center rounded-full hover:bg-slate-200 text-slate-500 transition-colors"
+                                title={isExpanded ? "還原" : "展開詳細清單"}
+                            >
+                                <i className={`fa-solid ${isExpanded ? 'fa-compress' : 'fa-expand'}`}></i>
+                            </button>
+                        </div>
+                        <div className="flex-1 overflow-auto p-0 bg-white">
+                            <table className="w-full text-left border-collapse">
+                                <thead className="bg-slate-50 text-xs uppercase text-slate-500 sticky top-0 z-10 shadow-sm">
+                                    <tr>
+                                        <th className="p-4">時間</th><th className="p-4">病歷號</th><th className="p-4">項目代碼</th><th className="p-4">治療項目</th><th className="p-4 text-right">金額/點數</th><th className="p-4">狀態</th>
+                                    </tr>
+                                </thead>
+                                <tbody className="text-sm text-slate-700 divide-y divide-slate-100">
+                                    {/* Generate more rows if expanded */}
+                                    {[...Array(isExpanded ? 50 : 10)].map((_, i) => (
+                                        <tr key={i} className="hover:bg-slate-50/80 transition-colors">
+                                            <td className="p-4 font-mono text-slate-400">10:{30 + (i%60)}</td>
+                                            <td className="p-4 font-mono">8810{234 + i}</td>
+                                            <td className="p-4"><span className="bg-slate-100 px-2 py-1 rounded text-xs font-mono text-slate-600">36012B</span></td>
+                                            <td className="p-4">深部放射治療-VMAT</td>
+                                            <td className="p-4 text-right font-bold text-slate-800">4,200</td>
+                                            <td className="p-4"><span className="text-xs bg-green-100 text-green-700 px-2 py-1 rounded-full">已批價</span></td>
+                                        </tr>
+                                    ))}
+                                </tbody>
+                            </table>
+                        </div>
+                        {isExpanded && (
+                            <div className="p-3 border-t border-slate-100 bg-slate-50 flex justify-end shrink-0">
+                                <button 
+                                    onClick={() => setIsExpanded(false)}
+                                    className="px-4 py-2 bg-slate-800 text-white text-sm font-bold rounded hover:bg-slate-700 transition-colors"
+                                >
+                                    關閉明細
+                                </button>
+                            </div>
+                        )}
+                    </div>
+                    
+                    {/* Backdrop Overlay */}
+                    {isExpanded && (
+                        <div className="fixed inset-0 bg-slate-900/20 backdrop-blur-sm z-40 transition-opacity" onClick={() => setIsExpanded(false)}></div>
+                    )}
+                </div>
+            );
+        };
+
         // B. Cybersecurity SOC
         const SecurityCenter = ({ stats }) => {
             const [logs, setLogs] = useState([]);
