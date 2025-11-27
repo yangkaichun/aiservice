@@ -2,501 +2,365 @@
 <html lang="zh-TW">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Health+ 行動辨識通 (模擬)</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Web OCR 相機掃描修復版 (Tesseract.js v5)</title>
     <script src='https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js'></script>
     <style>
-        :root {
-            --primary-color: #E60012; /* 遠傳紅 */
-            --bg-color: #121212;
-            --text-color: #ffffff;
-            --guide-border: #00C0F3;
-        }
         body {
-            font-family: -apple-system, BlinkMacSystemFont, "Microsoft JhengHei", sans-serif;
-            background-color: var(--bg-color);
-            color: var(--text-color);
-            margin: 0;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            background-color: #f0f2f5;
             display: flex;
             flex-direction: column;
-            height: 100vh;
-            overflow: hidden;
+            align-items: center;
+            padding: 20px;
+            margin: 0;
         }
-        /* 相機視窗區域 */
-        #camera-wrapper {
+        h1 { font-size: 1.5rem; color: #333; margin-bottom: 1rem; }
+        
+        /* 視訊容器：模擬相機觀景窗 */
+        #video-container {
             position: relative;
-            flex: 1;
+            width: 100%;
+            max-width: 640px;
+            aspect-ratio: 4/3;
             background: #000;
+            border-radius: 12px;
             overflow: hidden;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
         }
+        
         video {
             width: 100%;
             height: 100%;
-            object-fit: cover;
+            object-fit: cover; /* 確保畫面填滿 */
         }
-        /* 視覺引導框 */
-        #guide-box {
-            position: absolute;
-            top: 40%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            width: 80%;
-            height: 25%;
-            border: 2px solid var(--guide-border);
-            box-shadow: 0 0 0 9999px rgba(0, 0, 0, 0.6);
-            border-radius: 8px;
-            z-index: 10;
-            transition: all 0.3s ease;
-            pointer-events: none;
-        }
-        #guide-text {
-            position: absolute;
-            top: -30px;
-            left: 0;
-            width: 100%;
-            text-align: center;
-            color: var(--guide-border);
-            font-weight: bold;
-            text-shadow: 1px 1px 2px black;
-        }
-        /* Loading 遮罩 */
-       .loading-overlay {
-            display: none;
+
+        /* 掃描線動畫效果 */
+       .scan-overlay {
             position: absolute;
             top: 0; left: 0; width: 100%; height: 100%;
-            background: rgba(0,0,0,0.7);
-            z-index: 50;
-            justify-content: center;
-            align-items: center;
-            flex-direction: column;
-            color: white;
+            background: linear-gradient(to bottom, transparent, rgba(0, 255, 0, 0.2), transparent);
+            transform: translateY(-100%);
+            animation: scan 2s infinite;
+            display: none; /* 預設隱藏 */
+            pointer-events: none;
         }
-       .spinner {
-            border: 4px solid #f3f3f3;
-            border-top: 4px solid var(--primary-color);
-            border-radius: 50%;
-            width: 40px; height: 40px;
-            animation: spin 1s linear infinite;
-            margin-bottom: 10px;
+        @keyframes scan {
+            0% { transform: translateY(-100%); }
+            100% { transform: translateY(100%); }
         }
-        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
 
         /* 控制面板 */
-        #controls {
-            background: #1e1e1e;
-            padding: 20px;
-            border-top-left-radius: 20px;
-            border-top-right-radius: 20px;
-            box-shadow: 0 -2px 10px rgba(0,0,0,0.5);
-            z-index: 20;
-        }
-        /* 模式切換 Tabs */
-       .tabs {
+       .controls {
+            margin-top: 20px;
             display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
             justify-content: center;
-            margin-bottom: 15px;
-            background: #333;
-            border-radius: 20px;
-            padding: 4px;
         }
-       .tab {
-            flex: 1;
-            text-align: center;
-            padding: 10px;
-            border-radius: 16px;
-            cursor: pointer;
-            font-size: 14px;
-            transition: background 0.3s;
-        }
-       .tab.active {
-            background: var(--primary-color);
-            color: white;
-            font-weight: bold;
-        }
-        /* 主要按鈕 */
-       .btn {
-            width: 100%;
-            padding: 16px;
+        
+        button {
+            padding: 12px 24px;
             border: none;
-            border-radius: 12px;
-            font-size: 18px;
-            font-weight: bold;
+            border-radius: 8px;
+            font-size: 1rem;
+            font-weight: 600;
             cursor: pointer;
-            margin-bottom: 10px;
+            transition: all 0.2s;
         }
-       .btn-capture {
-            background: white;
-            color: var(--primary-color);
+        
+        #startBtn { background-color: #007bff; color: white; }
+        #startBtn:disabled { background-color: #ccc; cursor: not-allowed; }
+        
+        #scanBtn { background-color: #28a745; color: white; }
+        #scanBtn:disabled { background-color: #ccc; cursor: not-allowed; }
+        
+        #stopBtn { background-color: #dc3545; color: white; }
+        #stopBtn:disabled { background-color: #ccc; cursor: not-allowed; }
+
+        /* 狀態與結果顯示 */
+        #status {
+            margin-top: 15px;
+            font-size: 0.9rem;
+            color: #666;
+            min-height: 1.2em;
         }
-       .btn-upload {
-            background: var(--primary-color);
-            color: white;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 8px;
-        }
-       .btn-upload:disabled {
-            background: #555;
-            cursor: not-allowed;
-        }
-        /* 結果編輯彈窗 */
-        #result-modal {
-            display: none;
-            position: fixed;
-            top: 0; left: 0;
-            width: 100%; height: 100%;
-            background: rgba(0,0,0,0.95);
-            z-index: 100;
-            padding: 20px;
-            box-sizing: border-box;
-            overflow-y: auto;
-        }
-       .form-group {
-            margin-bottom: 15px;
-        }
-       .form-group label {
-            display: block;
-            color: #aaa;
-            margin-bottom: 5px;
-            font-size: 14px;
-        }
-       .form-group input {
+        
+        #result-box {
+            margin-top: 20px;
             width: 100%;
-            padding: 12px;
-            background: #333;
-            border: 1px solid #555;
-            border-radius: 6px;
-            color: white;
-            font-size: 16px;
-            box-sizing: border-box;
+            max-width: 640px;
+            min-height: 120px;
+            padding: 15px;
+            background: white;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            white-space: pre-wrap; /* 保留換行 */
+            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
         }
+        
+       .error-msg { color: #d93025; font-weight: bold; }
+       .success-msg { color: #188038; font-weight: bold; }
+        
+        /* 隱藏的 Canvas */
+        #process-canvas { display: none; }
     </style>
 </head>
 <body>
 
-<div id="camera-wrapper">
-    <video id="video" autoplay playsinline></video>
-    <div id="guide-box">
-        <div id="guide-text">請將數值/證件置於框內</div>
-    </div>
-    <div class="loading-overlay" id="loader">
-        <div class="spinner"></div>
-        <div id="loader-text">影像處理中...</div>
-    </div>
-    <canvas id="process-canvas" style="display:none;"></canvas>
-</div>
+    <h1>OCR 智能掃描 (Web Camera Fix)</h1>
 
-<div id="controls">
-    <div class="tabs">
-        <div class="tab active" onclick="switchMode('vital')">生理儀器</div>
-        <div class="tab" onclick="switchMode('id')">身分證/健保卡</div>
+    <div id="video-container">
+        <video id="camera-feed" playsinline muted autoplay></video>
+        <div id="scan-line" class="scan-overlay"></div>
     </div>
-    <button class="btn btn-capture" onclick="captureAndOCR()">拍照並辨識</button>
-    <div style="text-align: center; color: #666; font-size: 12px; margin-top: 8px;">
-        支援：血壓機、血糖機、體溫計、台灣身分證
-    </div>
-</div>
 
-<div id="result-modal">
-    <h2 style="margin-top: 0; color: white;">辨識結果確認</h2>
-    <p style="color: #aaa; font-size: 13px;">請核對數據，如有誤可直接修改。</p>
+    <div class="controls">
+        <button id="startBtn">開啟相機</button>
+        <button id="scanBtn" disabled>擷取文字</button>
+        <button id="stopBtn" disabled>關閉相機</button>
+    </div>
+
+    <div id="status">系統準備就緒，請開啟相機。</div>
     
-    <div id="dynamic-fields">
-        </div>
+    <div id="result-box" placeholder="辨識結果將顯示於此..."></div>
 
-    <button class="btn btn-upload" id="btn-submit" onclick="uploadToHealthPlus()">
-        <span>☁️</span> 上傳至遠傳 Health+
-    </button>
-    <button class="btn" style="background: transparent; border: 1px solid #555; color: #aaa;" onclick="closeModal()">
-        重新拍攝
-    </button>
-</div>
+    <canvas id="process-canvas"></canvas>
 
-<script>
-    // 全域變數與狀態
-    const video = document.getElementById('video');
-    const canvas = document.getElementById('process-canvas');
-    const ctx = canvas.getContext('2d');
-    const loader = document.getElementById('loader');
-    const loaderText = document.getElementById('loader-text');
-    let currentMode = 'vital'; // 'vital' 或 'id'
-    let worker = null; // Tesseract Worker
+    <script>
+        // DOM 元素參考
+        const video = document.getElementById('camera-feed');
+        const canvas = document.getElementById('process-canvas');
+        const startBtn = document.getElementById('startBtn');
+        const scanBtn = document.getElementById('scanBtn');
+        const stopBtn = document.getElementById('stopBtn');
+        const statusEl = document.getElementById('status');
+        const resultEl = document.getElementById('result-box');
+        const scanLine = document.getElementById('scan-line');
 
-    // 1. 初始化相機 (使用後置鏡頭)
-    async function initCamera() {
-        try {
-            const stream = await navigator.mediaDevices.getUserMedia({
+        // 全域變數管理狀態
+        let mediaStream = null;
+        let tesseractWorker = null;
+        let isWorkerReady = false;
+
+        // ---------------------------------------------------------
+        // 1. 安全環境檢查 (Secure Context Check)
+        // ---------------------------------------------------------
+        function checkEnvironment() {
+            // 檢查是否為 HTTPS 或 Localhost
+            if (!window.isSecureContext) {
+                const msg = "嚴重錯誤：相機功能僅能在安全連線 (HTTPS) 下運作。目前的連線不安全，瀏覽器已封鎖相機存取。";
+                statusEl.innerHTML = `<span class="error-msg">${msg}</span>`;
+                startBtn.disabled = true;
+                return false;
+            }
+            
+            // 檢查瀏覽器是否支援 mediaDevices
+            if (!navigator.mediaDevices ||!navigator.mediaDevices.getUserMedia) {
+                const msg = "您的瀏覽器不支援相機 API，請使用最新版 Chrome 或 Safari。";
+                statusEl.innerHTML = `<span class="error-msg">${msg}</span>`;
+                startBtn.disabled = true;
+                return false;
+            }
+            return true;
+        }
+
+        // ---------------------------------------------------------
+        // 2. Tesseract.js v5 初始化 (Worker Lifecycle)
+        // ---------------------------------------------------------
+        async function initOCR() {
+            if (!checkEnvironment()) return;
+
+            try {
+                statusEl.innerText = "正在載入 OCR 辨識核心 (WebAssembly)...";
+                
+                // v5 新語法：直接使用 createWorker 異步工廠
+                // 這裡載入英文 (eng)，可依需求改為 'chi_tra' (繁體中文)
+                // 注意：中文模型檔案較大，下載需時較長
+                tesseractWorker = await Tesseract.createWorker('eng');
+                
+                isWorkerReady = true;
+                statusEl.innerHTML = `<span class="success-msg">OCR 核心載入完成。請開啟相機。</span>`;
+                console.log("Tesseract Worker v5 Initialized");
+
+            } catch (err) {
+                console.error("OCR Init Failed:", err);
+                statusEl.innerHTML = `<span class="error-msg">OCR 初始化失敗: ${err.message}。請檢查網路連線 (需下載模型)。</span>`;
+            }
+        }
+
+        // 頁面載入時預先啟動 Worker
+        initOCR();
+
+        // ---------------------------------------------------------
+        // 3. 相機控制邏輯 (Camera Handling)
+        // ---------------------------------------------------------
+        startBtn.addEventListener('click', async () => {
+            if (mediaStream) return; // 防止重複點擊
+
+            statusEl.innerText = "正在請求相機權限...";
+
+            // 設置約束條件
+            const constraints = {
+                audio: false, // 不需要音訊
                 video: {
-                    facingMode: { exact: "environment" }, // 強制後鏡頭
-                    width: { ideal: 1920 },
-                    height: { ideal: 1080 }
+                    // 優先使用後置鏡頭，但不強制 (避免 PC 報錯)
+                    facingMode: 'environment', 
+                    // 理想解析度 720p，平衡效能與辨識率
+                    width: { ideal: 1280 },
+                    height: { ideal: 720 }
                 }
-            });
-            video.srcObject = stream;
-        } catch (err) {
-            console.warn("無法強制使用後置鏡頭，嘗試預設配置", err);
-            // Fallback 若不支援 exact 參數
-            navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" } })
-              .then(stream => video.srcObject = stream)
-              .catch(e => alert("無法存取相機，請確認瀏覽器權限或是否使用 HTTPS。\n錯誤：" + e.message));
-        }
-    }
+            };
 
-    // 2. 影像預處理：Otsu 二值化 (針對七段顯示器優化)
-    function preprocessImage(imageData) {
-        const d = imageData.data;
-        // (A) 加權灰階化
-        for (let i = 0; i < d.length; i += 4) {
-            const v = 0.299 * d[i] + 0.587 * d[i+1] + 0.114 * d[i+2];
-            d[i] = d[i+1] = d[i+2] = v;
-        }
+            try {
+                // 請求串流
+                mediaStream = await navigator.mediaDevices.getUserMedia(constraints);
+                
+                // 將串流綁定到 video 元素
+                video.srcObject = mediaStream;
+                
+                // 監聽載入完成事件，確保 video 真的準備好了
+                video.onloadedmetadata = () => {
+                    video.play()
+                       .then(() => {
+                            // UI 狀態更新
+                            statusEl.innerText = "相機已啟動。對準文字並點擊「擷取文字」。";
+                            startBtn.disabled = true;
+                            stopBtn.disabled = false;
+                            // 只有當 Worker 也準備好時才啟用掃描
+                            if (isWorkerReady) scanBtn.disabled = false;
+                            
+                            // 嘗試套用進階對焦設定 (若硬體支援)
+                            applyFocusPolyfill(mediaStream);
+                        })
+                       .catch(e => {
+                            console.error("Video Play Error:", e);
+                            statusEl.innerHTML = `<span class="error-msg">視訊播放失敗: ${e.message}</span>`;
+                        });
+                };
 
-        // (B) Otsu 閾值計算
-        let hist = new Array(256).fill(0);
-        for (let i = 0; i < d.length; i += 4) hist[d[i]]++;
-
-        let sum = 0, sumB = 0, wB = 0, wF = 0;
-        for (let i = 0; i < 256; i++) sum += i * hist[i];
-        
-        let maxVar = 0, threshold = 0;
-        const total = d.length / 4;
-
-        for (let t = 0; t < 256; t++) {
-            wB += hist[t];
-            if (wB === 0) continue;
-            wF = total - wB;
-            if (wF === 0) break;
-
-            sumB += t * hist[t];
-            let mB = sumB / wB;
-            let mF = (sum - sumB) / wF;
-            let varBetween = wB * wF * (mB - mF) * (mB - mF);
-
-            if (varBetween > maxVar) {
-                maxVar = varBetween;
-                threshold = t;
+            } catch (err) {
+                handleCameraError(err);
             }
-        }
-
-        // (C) 應用二值化
-        for (let i = 0; i < d.length; i += 4) {
-            const val = d[i] < threshold? 0 : 255;
-            d[i] = d[i+1] = d[i+2] = val;
-        }
-        return imageData;
-    }
-
-    // 3. Tesseract OCR 執行核心
-    async function captureAndOCR() {
-        loader.style.display = 'flex';
-        loaderText.innerText = "影像擷取與增強中...";
-
-        // 擷取當前畫面
-        canvas.width = video.videoWidth;
-        canvas.height = video.videoHeight;
-        ctx.drawImage(video, 0, 0);
-
-        // 計算 ROI (Region of Interest) 裁切區域
-        let roiW, roiH, roiX, roiY;
-        if (currentMode === 'vital') {
-            roiW = canvas.width * 0.8;
-            roiH = canvas.height * 0.25;
-            roiX = (canvas.width - roiW) / 2;
-            roiY = (canvas.height * 0.4) - (roiH / 2);
-        } else {
-            // 證件模式
-            roiW = canvas.width * 0.85;
-            roiH = canvas.width * 0.85 * 0.63; // ID-1 比例
-            roiX = (canvas.width - roiW) / 2;
-            roiY = (canvas.height * 0.4) - (roiH / 2);
-        }
-
-        let roiData = ctx.getImageData(roiX, roiY, roiW, roiH);
-
-        // 若為儀器模式，執行二值化增強
-        if (currentMode === 'vital') {
-            roiData = preprocessImage(roiData);
-        }
-        ctx.putImageData(roiData, 0, 0); 
-        
-        const dataUrl = canvas.toDataURL('image/png'); // 轉為 Base64
-        
-        loaderText.innerText = "OCR 辨識中...\n(初次執行需下載模型)";
-        
-        try {
-            if (!worker) {
-                worker = await Tesseract.createWorker('eng'); 
-            }
-            
-            // 根據模式設定參數
-            if (currentMode === 'vital') {
-                await worker.reinitialize('eng');
-                await worker.setParameters({
-                    tessedit_char_whitelist: '0123456789./', // 僅允許數字小數點
-                    tessedit_pageseg_mode: Tesseract.PSM.SINGLE_BLOCK,
-                });
-            } else {
-                // 證件模式：載入繁中與英文
-                loaderText.innerText = "下載中文模型中(約10MB)...\n請稍候";
-                await worker.loadLanguage('chi_tra');
-                await worker.reinitialize('chi_tra+eng');
-                await worker.setParameters({
-                    tessedit_char_whitelist: '', // 重置白名單
-                });
-            }
-
-            const { data: { text } } = await worker.recognize(dataUrl);
-            console.log("Raw OCR Text:", text);
-            
-            parseResult(text);
-        } catch (e) {
-            alert("辨識錯誤：" + e.message);
-        } finally {
-            loader.style.display = 'none';
-        }
-    }
-
-    // 4. 結果解析與 UI 呈現
-    function parseResult(text) {
-        const fieldsDiv = document.getElementById('dynamic-fields');
-        fieldsDiv.innerHTML = '';
-        
-        if (currentMode === 'vital') {
-            // 解析數字
-            const nums = text.match(/\d+(\.\d+)?/g) ||;
-            const uniqueNums =.map(Number);
-            
-            // 簡易啟發式邏輯 (Heuristic) 歸類數值
-            let sys = uniqueNums.find(n => n > 80 && n < 200) |
-
-| '';
-            let dia = uniqueNums.find(n => n > 40 && n < 120 && n!== sys) |
-
-| '';
-            let pulse = uniqueNums.find(n => n > 40 && n < 150 && n!== sys && n!== dia) |
-
-| '';
-            let temp = uniqueNums.find(n => n < 45 && n > 34 && n.toString().includes('.')) |
-
-| ''; 
-
-            if (temp) {
-                createInput("體溫 (°C)", temp);
-            } else {
-                createInput("收縮壓 (mmHg)", sys);
-                createInput("舒張壓 (mmHg)", dia);
-                createInput("脈搏 (bpm)", pulse);
-                if (!sys &&!dia &&!pulse) {
-                    createInput("血糖/血氧 (數值)", uniqueNums |
-
-| "");
-                }
-            }
-
-        } else {
-            // 台灣證件解析邏輯
-            // (1) 身分證字號 Regex
-            const idRegex = /[A-Z]\d{8}/;
-            const idMatch = text.match(idRegex);
-            const idVal = idMatch? idMatch : "";
-            
-            // (2) 民國日期 Regex (如 75/01/01 或 75.1.1)
-            const dateRegex = /(\d{2,3})[/\.年](\d{1,2})[/\.月](\d{1,2})/;
-            const dateMatch = text.match(dateRegex);
-            let birthVal = "";
-            
-            if (dateMatch) {
-                let rocYear = parseInt(dateMatch[1]);
-                // 民國轉西元
-                let fullYear = rocYear + 1911;
-                let month = dateMatch.[2]padStart(2, '0');
-                let day = dateMatch.[3]padStart(2, '0');
-                birthVal = `${fullYear}-${month}-${day}`;
-            }
-            
-            // (3) 姓名 (簡易過濾非中文字元)
-            let lines = text.split('\n').filter(l => l.trim().length > 1);
-            // 假設姓名通常在前幾行且長度較短
-            let potentialNames = lines.filter(l => /[\u4e00-\u9fa5]{2,4}/.test(l));
-            let nameVal = potentialNames.length > 0? potentialNames.replace(/[^\u4e00-\u9fa5]/g, '') : "";
-
-            createInput("身分證字號", idVal);
-            createInput("姓名", nameVal);
-            createInput("出生日期 (YYYY-MM-DD)", birthVal);
-        }
-
-        document.getElementById('result-modal').style.display = 'block';
-    }
-
-    function createInput(label, val) {
-        const div = document.createElement('div');
-        div.className = 'form-group';
-        div.innerHTML = `<label>${label}</label><input type="text" value="${val}" class="data-input">`;
-        document.getElementById('dynamic-fields').appendChild(div);
-    }
-
-    // 5. 模式切換
-    function switchMode(mode) {
-        currentMode = mode;
-        document.querySelectorAll('.tab').forEach(el => el.classList.remove('active'));
-        // 簡單透過 event target 找到被點擊的 tab
-        const tabs = document.querySelectorAll('.tab');
-        if(mode === 'vital') tabs.classList.add('active');
-        else tabs.[1]classList.add('active');
-        
-        // 更新引導框樣式
-        const guideBox = document.getElementById('guide-box');
-        const guideText = document.getElementById('guide-text');
-        
-        if (mode === 'vital') {
-            guideBox.style.height = '25%';
-            guideBox.style.width = '80%';
-            guideText.innerText = "請將數值置於框內";
-        } else {
-            guideBox.style.height = '53vw'; // 近似 ID-1 比例
-            guideBox.style.width = '85%';
-            guideText.innerText = "請對準證件正面";
-        }
-    }
-
-    function closeModal() {
-        document.getElementById('result-modal').style.display = 'none';
-    }
-
-    // 6. 模擬上傳至遠傳 Health+
-    function uploadToHealthPlus() {
-        const btn = document.getElementById('btn-submit');
-        const originalText = btn.innerHTML;
-        
-        // 收集數據
-        let payload = {};
-        document.querySelectorAll('.data-input').forEach(input => {
-            let key = input.previousElementSibling.innerText;
-            payload[key] = input.value;
         });
 
-        console.log("正在加密並傳輸至 FET Health+ API...", payload);
-        
-        // UI Loading 狀態
-        btn.disabled = true;
-        btn.innerHTML = `<div class="spinner" style="width:20px;height:20px;border-width:2px;border-top-color:white;display:inline-block;margin-right:5px;"></div> 傳輸中...`;
+        // 錯誤處理專用函數
+        function handleCameraError(err) {
+            console.error("Camera Error:", err);
+            let userMsg = "無法開啟相機。";
 
-        // 模擬網路請求 (Promise)
-        new Promise(resolve => setTimeout(resolve, 1500))
-          .then(() => {
-                alert("✅ 上傳成功！\n數據已同步至您的遠傳 Health+ 健康存摺。");
-                closeModal();
-            })
-          .catch(err => alert("上傳失敗，請稍後再試"))
-          .finally(() => {
-                btn.disabled = false;
-                btn.innerHTML = originalText;
-            });
-    }
+            if (err.name === 'NotAllowedError' |
 
-    // 啟動程式
-    initCamera();
-</script>
+| err.name === 'PermissionDeniedError') {
+                userMsg = "存取被拒絕。請檢查瀏覽器網址列設定，允許相機權限後重試。";
+            } else if (err.name === 'NotFoundError') {
+                userMsg = "找不到相機裝置。";
+            } else if (err.name === 'NotReadableError') {
+                userMsg = "相機正被其他程式使用，或發生硬體錯誤。";
+            } else if (err.name === 'OverconstrainedError') {
+                userMsg = "沒有符合需求的相機 (解析度或鏡頭類型不支援)。";
+            } else {
+                userMsg += ` (${err.name}: ${err.message})`;
+            }
+
+            statusEl.innerHTML = `<span class="error-msg">${userMsg}</span>`;
+        }
+
+        // 對焦優化嘗試
+        function applyFocusPolyfill(stream) {
+            const track = stream.getVideoTracks();
+            const capabilities = track.getCapabilities();
+            
+            // 檢查是否支援連續對焦
+            if (capabilities.focusMode && capabilities.focusMode.includes('continuous')) {
+                track.applyConstraints({
+                    advanced: [{ focusMode: 'continuous' }]
+                }).catch(err => console.log("Focus config failed:", err));
+            }
+        }
+
+        // ---------------------------------------------------------
+        // 4. 掃描與辨識邏輯 (Scanning & Processing)
+        // ---------------------------------------------------------
+        scanBtn.addEventListener('click', async () => {
+            if (!tesseractWorker ||!mediaStream) return;
+
+            // UI 鎖定
+            scanBtn.disabled = true;
+            stopBtn.disabled = true;
+            scanLine.style.display = 'block'; // 顯示掃描動畫
+            statusEl.innerText = "影像處理中... (Preprocessing)";
+            resultEl.innerText = "辨識中...";
+
+            try {
+                // A. 擷取影像到 Canvas
+                const ctx = canvas.getContext('2d');
+                canvas.width = video.videoWidth;
+                canvas.height = video.videoHeight;
+                ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+
+                // B. (可選) 影像預處理：這裡示範簡單的灰階化
+                // 讀取像素數據
+                // const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+                // const data = imageData.data;
+                // for (let i = 0; i < data.length; i += 4) {
+                //     const avg = (data[i] + data[i + 1] + data[i + 2]) / 3;
+                //     data[i] = avg; // R
+                //     data[i + 1] = avg; // G
+                //     data[i + 2] = avg; // B
+                // }
+                // ctx.putImageData(imageData, 0, 0);
+
+                // C. 轉換為 Data URL
+                const imgDataUrl = canvas.toDataURL('image/jpeg', 0.8);
+
+                // D. 傳送給 Tesseract
+                statusEl.innerText = "AI 識別中... (OCR Recognizing)";
+                const ret = await tesseractWorker.recognize(imgDataUrl);
+
+                // E. 顯示結果
+                const text = ret.data.text.trim();
+                resultEl.innerText = text.length > 0? text : "(未偵測到清晰文字)";
+                
+                statusEl.innerHTML = `<span class="success-msg">辨識完成 (信心度: ${ret.data.confidence}%)</span>`;
+
+            } catch (err) {
+                console.error("OCR Error:", err);
+                statusEl.innerHTML = `<span class="error-msg">辨識過程發生錯誤: ${err.message}</span>`;
+                resultEl.innerText = "錯誤";
+            } finally {
+                // 恢復 UI
+                scanBtn.disabled = false;
+                stopBtn.disabled = false;
+                scanLine.style.display = 'none';
+            }
+        });
+
+        // ---------------------------------------------------------
+        // 5. 資源清理 (Cleanup)
+        // ---------------------------------------------------------
+        stopBtn.addEventListener('click', () => {
+            if (mediaStream) {
+                // 停止所有軌道 (視訊與音訊)
+                mediaStream.getTracks().forEach(track => track.stop());
+                video.srcObject = null;
+                mediaStream = null;
+            }
+            
+            statusEl.innerText = "相機已關閉。";
+            startBtn.disabled = false;
+            stopBtn.disabled = true;
+            scanBtn.disabled = true;
+            scanLine.style.display = 'none';
+        });
+
+        // 視窗關閉前確保 Worker 被終止，防止記憶體洩漏
+        window.addEventListener('beforeunload', async () => {
+            if (tesseractWorker) {
+                await tesseractWorker.terminate();
+            }
+        });
+
+    </script>
 </body>
 </html>
