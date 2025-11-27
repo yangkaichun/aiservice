@@ -1,583 +1,610 @@
 <!DOCTYPE html>
-<html lang="zh-TW" class="dark">
+<html lang="zh-TW">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>醫療戰情中心 & AI 決策模擬器 (Demo 2)</title>
+    <title>入院疾病分析與預測戰情室 | SKH Digital Twin</title>
     
-    <script src="[https://cdn.tailwindcss.com](https://cdn.tailwindcss.com)"></script>
-    <script src="[https://cdnjs.cloudflare.com/ajax/libs/vue/3.3.4/vue.global.prod.min.js](https://cdnjs.cloudflare.com/ajax/libs/vue/3.3.4/vue.global.prod.min.js)"></script>
-    <script src="[https://cdnjs.cloudflare.com/ajax/libs/echarts/5.4.3/echarts.min.js](https://cdnjs.cloudflare.com/ajax/libs/echarts/5.4.3/echarts.min.js)"></script>
-    <link href="[https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&family=Inter:wght@300;400;600&display=swap](https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&family=Inter:wght@300;400;600&display=swap)" rel="stylesheet">
-
-    <script>
-        tailwind.config = {
-            darkMode: 'class',
-            theme: {
-                extend: {
-                    colors: {
-                        dashboard: {
-                            bg: '#121212',
-                            card: '#1E1E1E',
-                            border: '#333333',
-                            accent: '#42A5F5',
-                            alert: '#EF5350',
-                            warning: '#FFA726',
-                            success: '#66BB6A',
-                            text: '#E0E0E0',
-                            muted: '#9E9E9E'
-                        }
-                    },
-                    fontFamily: {
-                        mono:,
-                        sans: ['"Inter"', 'sans-serif']
-                    }
-                }
-            }
-        }
-    </script>
+    <!-- Libraries -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script crossorigin src="https://unpkg.com/react@18/umd/react.development.js"></script>
+    <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <!-- Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    
+    <!-- Fonts -->
     <style>
-        body { background-color: #121212; color: #E0E0E0; }
-       .chart-container { position: relative; height: 100%; width: 100%; overflow: hidden; }
-        /* 自定義捲軸 */
-        ::-webkit-scrollbar { width: 8px; height: 8px; }
-        ::-webkit-scrollbar-track { background: #1E1E1E; }
-        ::-webkit-scrollbar-thumb { background: #424242; border-radius: 4px; }
-        ::-webkit-scrollbar-thumb:hover { background: #616161; }
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Noto+Sans+TC:wght@300;400;500;700&display=swap');
         
-        /* 閃爍動畫用於緊急警報 */
-        @keyframes pulse-alert {
-            0% { box-shadow: 0 0 0 0 rgba(239, 83, 80, 0.4); }
-            70% { box-shadow: 0 0 0 10px rgba(239, 83, 80, 0); }
-            100% { box-shadow: 0 0 0 0 rgba(239, 83, 80, 0); }
+        body { 
+            font-family: 'Inter', 'Noto Sans TC', sans-serif; 
+            background-color: #f1f5f9; /* Slate-100 */
+            color: #0f172a; /* Slate-900 */
         }
-       .animate-pulse-alert {
-            animation: pulse-alert 2s infinite;
+
+        /* Custom Scrollbar */
+        ::-webkit-scrollbar {
+            width: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #f1f5f9; 
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #cbd5e1; 
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #94a3b8; 
+        }
+
+        .card-shadow {
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.03);
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
+        }
+        .card-shadow:hover {
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.05), 0 4px 6px -2px rgba(0, 0, 0, 0.025);
+        }
+
+        .animate-fade-in {
+            animation: fadeIn 0.5s ease-out forwards;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
         }
     </style>
 </head>
-<body class="h-screen flex flex-col overflow-hidden font-sans text-sm">
+<body>
+    <div id="root"></div>
 
-    <div id="app" class="flex h-full">
-        
-        <aside class="w-80 flex-shrink-0 bg-dashboard-card border-r border-dashboard-border flex flex-col z-20 shadow-lg">
-            <div class="p-4 border-b border-dashboard-border">
-                <h1 class="text-xl font-bold text-dashboard-accent tracking-wider flex items-center gap-2">
-                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"></path></svg>
-                    MCC SIMULATOR
-                </h1>
-                <p class="text-xs text-dashboard-muted mt-1">AI-Driven Patient Flow Digital Twin</p>
-            </div>
+    <script type="text/babel">
+        const { useState, useEffect, useRef } = React;
 
-            <div class="flex-1 overflow-y-auto p-4 space-y-8">
-                
-                <div class="space-y-4">
-                    <h3 class="text-xs font-bold text-dashboard-accent uppercase tracking-widest border-l-2 border-dashboard-accent pl-2">環境變數 (Environment)</h3>
+        // --- Icons (Using SVG directly for reliability in simple HTML setup if Lucide fails to load, but we rely on simple standard icons here) ---
+        const IconDashboard = () => <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect width="7" height="9" x="3" y="3" rx="1"/><rect width="7" height="5" x="14" y="3" rx="1"/><rect width="7" height="9" x="14" y="12" rx="1"/><rect width="7" height="5" x="3" y="16" rx="1"/></svg>;
+        const IconBrain = () => <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 5a3 3 0 1 0-5.997.125 4 4 0 0 0-2.526 5.77 4 4 0 0 0 .556 6.588A4 4 0 1 0 12 18Z"/><path d="M12 5a3 3 0 1 1 5.997.125 4 4 0 0 1 2.526 5.77 4 4 0 0 1-.556 6.588A4 4 0 1 1 12 18Z"/><path d="M15 13a4.5 4.5 0 0 1-3-4 4.5 4.5 0 0 1-3 4"/><path d="M17.599 6.5a3 3 0 0 0 .399-1.375"/><path d="M6.003 5.125A3 3 0 0 0 6.401 6.5"/><path d="M3.477 10.896a4 4 0 0 1 .585-.396"/><path d="M19.938 10.5a4 4 0 0 1 .585.396"/><path d="M6 18a4 4 0 0 1-1.97-3.284"/><path d="M17.97 14.716A4 4 0 0 1 16 18"/></svg>;
+        const IconActivity = () => <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg>;
+        const IconUsers = () => <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>;
+        const IconAlert = () => <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"/><path d="M12 9v4"/><path d="M12 17h.01"/></svg>;
+        const IconArrowUp = () => <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m5 12 7-7 7 7"/><path d="M12 19V5"/></svg>;
+        const IconArrowDown = () => <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 5v14"/><path d="m19 12-7 7-7-7"/></svg>;
+        const IconSearch = () => <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>;
+        const IconBed = () => <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M2 4v16"/><path d="M2 8h18a2 2 0 0 1 2 2v10"/><path d="M2 17h20"/><path d="M6 8v9"/></svg>;
+
+        // --- Components ---
+
+        // 1. Sidebar
+        const Sidebar = ({ activeTab, setActiveTab }) => {
+            const menuItems = [
+                { id: 'dashboard', label: '戰情總覽', icon: <IconDashboard /> },
+                { id: 'prediction', label: 'AI 模擬與決策', icon: <IconBrain /> },
+            ];
+
+            return (
+                <div className="w-64 bg-white border-r border-slate-200 h-screen fixed left-0 top-0 flex flex-col z-10 shadow-sm">
+                    <div className="p-6 flex items-center space-x-3 border-b border-slate-100">
+                        <div className="w-8 h-8 bg-indigo-600 rounded-lg flex items-center justify-center text-white font-bold text-lg">S</div>
+                        <span className="font-bold text-slate-800 text-lg">SKH 智慧決策</span>
+                    </div>
                     
-                    <div>
-                        <div class="flex justify-between mb-1">
-                            <label class="text-xs text-gray-400">氣溫 (Temperature)</label>
-                            <span :class="{'text-dashboard-alert': params.temperature > 32, 'text-dashboard-success': params.temperature <= 32}" class="font-mono">{{ params.temperature }}°C</span>
-                        </div>
-                        <input type="range" v-model.number="params.temperature" min="10" max="40" step="1" class="w-full accent-dashboard-accent h-1 bg-gray-700 rounded-lg appearance-none cursor-pointer">
-                        <p class="text-[10px] text-gray-500 mt-1" v-if="params.temperature > 32">⚠️ 高溫將增加 N17 (腎衰竭) 與 I20 (心血管) 入院率</p>
+                    <div className="flex-1 py-6 px-3 space-y-1">
+                        <div className="px-3 mb-2 text-xs font-semibold text-slate-400 uppercase tracking-wider">Main Menu</div>
+                        {menuItems.map(item => (
+                            <button
+                                key={item.id}
+                                onClick={() => setActiveTab(item.id)}
+                                className={`w-full flex items-center space-x-3 px-3 py-3 rounded-lg transition-all duration-200 font-medium ${
+                                    activeTab === item.id 
+                                    ? 'bg-indigo-50 text-indigo-700 shadow-sm' 
+                                    : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900'
+                                }`}
+                            >
+                                {item.icon}
+                                <span>{item.label}</span>
+                            </button>
+                        ))}
                     </div>
 
-                    <div>
-                        <div class="flex justify-between mb-1">
-                            <label class="text-xs text-gray-400">流感嚴重度 (Flu Severity)</label>
-                            <span class="font-mono text-dashboard-warning">Lv {{ params.fluIndex }}</span>
-                        </div>
-                        <input type="range" v-model.number="params.fluIndex" min="1" max="10" step="1" class="w-full accent-dashboard-warning h-1 bg-gray-700 rounded-lg appearance-none cursor-pointer">
-                        <p class="text-[10px] text-gray-500 mt-1">影響 J10/J11 呼吸道疾病入院量</p>
-                    </div>
-                </div>
-
-                <div class="space-y-4">
-                    <h3 class="text-xs font-bold text-dashboard-accent uppercase tracking-widest border-l-2 border-dashboard-accent pl-2">營運參數 (Operations)</h3>
-                    
-                    <div>
-                        <div class="flex justify-between mb-1">
-                            <label class="text-xs text-gray-400">護理人力 (Nurse Staffing)</label>
-                            <span class="font-mono">{{ params.staffingLevel }}%</span>
-                        </div>
-                        <input type="range" v-model.number="params.staffingLevel" min="50" max="120" step="5" class="w-full accent-dashboard-success h-1 bg-gray-700 rounded-lg appearance-none cursor-pointer">
-                    </div>
-
-                    <div>
-                        <div class="flex justify-between mb-1">
-                            <label class="text-xs text-gray-400">床位周轉時間 (Turnover Time)</label>
-                            <span class="font-mono">{{ params.turnoverTime }} min</span>
-                        </div>
-                        <input type="range" v-model.number="params.turnoverTime" min="30" max="240" step="15" class="w-full accent-purple-500 h-1 bg-gray-700 rounded-lg appearance-none cursor-pointer">
-                        <p class="text-[10px] text-gray-500 mt-1">影響急診滯留時間 (Boarding Time)</p>
-                    </div>
-
-                    <div class="flex items-center justify-between py-2 border-t border-gray-800">
-                        <label class="text-xs text-gray-400">大量傷患模式 (MCI Mode)</label>
-                        <button 
-                            @click="toggleMCI"
-                            :class="params.isMCI? 'bg-dashboard-alert animate-pulse-alert' : 'bg-gray-700'"
-                            class="relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none">
-                            <span :class="params.isMCI? 'translate-x-6' : 'translate-x-1'" class="inline-block h-4 w-4 transform rounded-full bg-white transition-transform"></span>
-                        </button>
-                    </div>
-                </div>
-
-                <div class="flex-1 min-h-[150px] bg-black/30 rounded p-2 font-mono text-[10px] overflow-y-auto border border-gray-800">
-                    <div v-for="(log, idx) in logs" :key="idx" class="mb-1" :class="log.type === 'alert'? 'text-red-400' : 'text-gray-500'">
-                        <span class="opacity-50">[{{ log.time }}]</span> {{ log.msg }}
-                    </div>
-                </div>
-            </div>
-        </aside>
-
-        <main class="flex-1 flex flex-col min-w-0 bg-dashboard-bg">
-            
-            <header class="h-16 border-b border-dashboard-border flex items-center justify-between px-6 bg-dashboard-bg/95 backdrop-blur z-10">
-                <div class="flex items-center gap-4">
-                    <h2 class="text-lg font-semibold">Hospital Command Center</h2>
-                    <span class="px-2 py-0.5 rounded text-xs border" 
-                          :class="systemStatus.class">
-                        {{ systemStatus.text }}
-                    </span>
-                </div>
-                <div class="flex items-center gap-6 font-mono">
-                    <div class="text-right">
-                        <div class="text-xs text-dashboard-muted">SIMULATION TIME</div>
-                        <div class="text-lg text-dashboard-accent">{{ currentTime }}</div>
-                    </div>
-                    <div class="h-8 w-px bg-dashboard-border"></div>
-                    <div class="text-right">
-                        <div class="text-xs text-dashboard-muted">NEDOCS SCORE</div>
-                        <div class="text-2xl font-bold" :class="nedocsColor">{{ nedocsScore }}</div>
-                    </div>
-                </div>
-            </header>
-
-            <div class="flex-1 overflow-y-auto p-6">
-                <div class="grid grid-cols-12 gap-6 auto-rows-min">
-                    
-                    <div class="col-span-3 bg-dashboard-card rounded-lg p-4 border border-dashboard-border relative overflow-hidden group hover:border-dashboard-accent transition-colors">
-                        <div class="absolute top-0 right-0 p-2 opacity-10 text-dashboard-accent">
-                            <svg class="w-16 h-16" fill="currentColor" viewBox="0 0 20 20"><path d="M2 10a8 8 0 018-8v8h8a8 8 0 11-16 0z"></path><path d="M12 2.252A8.014 8.014 0 0117.748 8H12V2.252z"></path></svg>
-                        </div>
-                        <h4 class="text-dashboard-muted text-xs uppercase mb-1">預測今日總入院數</h4>
-                        <div class="text-3xl font-mono font-bold">{{ metrics.predictedAdmissions }} <span class="text-sm text-dashboard-muted font-normal">人</span></div>
-                        <div class="mt-2 text-xs flex items-center gap-1" :class="metrics.admissionTrend > 0? 'text-dashboard-alert' : 'text-dashboard-success'">
-                            <span v-if="metrics.admissionTrend > 0">▲</span><span v-else>▼</span>
-                            {{ Math.abs(metrics.admissionTrend) }}% vs 30-day avg
-                        </div>
-                    </div>
-
-                    <div class="col-span-3 bg-dashboard-card rounded-lg p-4 border border-dashboard-border relative overflow-hidden">
-                        <h4 class="text-dashboard-muted text-xs uppercase mb-1">急診擁塞指標 (NEDOCS)</h4>
-                        <div class="flex items-end gap-2">
-                            <div class="text-3xl font-mono font-bold" :class="nedocsColor">{{ nedocsScore }}</div>
-                            <div class="text-xs pb-1 text-dashboard-muted">/ 200</div>
-                        </div>
-                        <div class="w-full bg-gray-700 h-1.5 mt-3 rounded-full overflow-hidden">
-                            <div class="h-full transition-all duration-500" 
-                                 :class="{'bg-dashboard-success': nedocsScore < 60, 'bg-dashboard-warning': nedocsScore >= 60 && nedocsScore < 100, 'bg-dashboard-alert': nedocsScore >= 100}"
-                                 :style="{width: Math.min(nedocsScore/2, 100) + '%'}"></div>
-                        </div>
-                    </div>
-
-                    <div class="col-span-3 bg-dashboard-card rounded-lg p-4 border border-dashboard-border">
-                        <h4 class="text-dashboard-muted text-xs uppercase mb-1">目前住院佔床率</h4>
-                        <div class="text-3xl font-mono font-bold">{{ metrics.occupancyRate }}%</div>
-                        <div class="mt-2 text-xs text-dashboard-muted">
-                            空床: <span class="text-dashboard-success font-bold">{{ metrics.availableBeds }}</span> / 總床: {{ metrics.totalBeds }}
-                        </div>
-                    </div>
-
-                    <div class="col-span-3 bg-dashboard-card rounded-lg p-4 border border-dashboard-border">
-                        <h4 class="text-dashboard-muted text-xs uppercase mb-1">未看診離院率 (LWBS)</h4>
-                        <div class="text-3xl font-mono font-bold" :class="metrics.lwbs > 5? 'text-dashboard-alert' : 'text-dashboard-text'">{{ metrics.lwbs }}%</div>
-                        <div class="mt-2 text-xs text-dashboard-muted">
-                            等待人數: <span class="font-bold">{{ metrics.waitingCount }}</span> 人
-                        </div>
-                    </div>
-
-                    <div class="col-span-8 bg-dashboard-card rounded-lg border border-dashboard-border flex flex-col h-[400px]">
-                        <div class="p-4 border-b border-dashboard-border flex justify-between items-center">
+                    <div className="p-4 border-t border-slate-100">
+                        <div className="flex items-center space-x-3">
+                            <div className="w-10 h-10 rounded-full bg-slate-200 overflow-hidden flex items-center justify-center text-slate-500">
+                                <IconUsers />
+                            </div>
                             <div>
-                                <h3 class="font-semibold text-dashboard-text">AI 入院流量預測 (24H)</h3>
-                                <p class="text-xs text-dashboard-muted">包含 95% 信心區間 (Confidence Interval)</p>
-                            </div>
-                            <div class="flex items-center gap-2 text-xs">
-                                <span class="w-3 h-3 rounded-full bg-dashboard-accent opacity-50"></span> 預測範圍
-                                <span class="w-3 h-3 rounded-sm bg-dashboard-accent"></span> 預測均值
+                                <div className="text-sm font-medium text-slate-900">Dr. Chang</div>
+                                <div className="text-xs text-slate-500">醫療副院長</div>
                             </div>
                         </div>
-                        <div class="flex-1 p-2 relative">
-                            <div ref="predictionChart" class="chart-container"></div>
+                    </div>
+                </div>
+            );
+        };
+
+        // 2. KPICard
+        const KPICard = ({ title, value, change, trend, icon, color }) => {
+            const isUp = trend === 'up';
+            return (
+                <div className="bg-white rounded-xl p-6 card-shadow border border-slate-100 flex flex-col justify-between h-full">
+                    <div className="flex justify-between items-start mb-4">
+                        <div>
+                            <p className="text-sm font-medium text-slate-500 mb-1">{title}</p>
+                            <h3 className="text-3xl font-bold text-slate-800">{value}</h3>
+                        </div>
+                        <div className={`p-3 rounded-lg bg-${color}-50 text-${color}-600`}>
+                            {icon}
+                        </div>
+                    </div>
+                    <div className="flex items-center text-sm">
+                        <span className={`flex items-center font-semibold ${isUp ? 'text-rose-500' : 'text-emerald-500'} mr-2`}>
+                            {isUp ? <IconArrowUp /> : <IconArrowDown />}
+                            {change}
+                        </span>
+                        <span className="text-slate-400">較上週</span>
+                    </div>
+                </div>
+            );
+        };
+
+        // 3. Charts Wrapper
+        const ChartCard = ({ title, children, action }) => (
+            <div className="bg-white rounded-xl p-6 card-shadow border border-slate-100 h-full flex flex-col">
+                <div className="flex justify-between items-center mb-6">
+                    <h3 className="text-lg font-bold text-slate-800">{title}</h3>
+                    {action}
+                </div>
+                <div className="flex-1 relative min-h-[250px] w-full">
+                    {children}
+                </div>
+            </div>
+        );
+
+        // --- View 1: Dashboard Content ---
+        const DashboardView = () => {
+            const lineChartRef = useRef(null);
+            const barChartRef = useRef(null);
+
+            useEffect(() => {
+                // Destroy previous charts if they exist
+                const lineCtx = document.getElementById('admissionTrendChart');
+                const barCtx = document.getElementById('diseaseDistChart');
+
+                if (lineChartRef.current) lineChartRef.current.destroy();
+                if (barChartRef.current) barChartRef.current.destroy();
+
+                // Line Chart
+                if (lineCtx) {
+                    lineChartRef.current = new Chart(lineCtx, {
+                        type: 'line',
+                        data: {
+                            labels: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'],
+                            datasets: [{
+                                label: '本週入院',
+                                data: [45, 52, 48, 60, 55, 40, 35],
+                                borderColor: '#4f46e5', // indigo-600
+                                backgroundColor: 'rgba(79, 70, 229, 0.1)',
+                                tension: 0.4,
+                                fill: true,
+                                borderWidth: 2
+                            }, {
+                                label: '上週同期',
+                                data: [40, 45, 42, 48, 45, 35, 30],
+                                borderColor: '#94a3b8', // slate-400
+                                borderDash: [5, 5],
+                                tension: 0.4,
+                                borderWidth: 2
+                            }]
+                        },
+                        options: {
+                            responsive: true,
+                            maintainAspectRatio: false,
+                            plugins: { legend: { position: 'top', align: 'end', labels: { usePointStyle: true } } },
+                            scales: {
+                                y: { grid: { borderDash: [2, 4], color: '#f1f5f9' }, beginAtZero: true },
+                                x: { grid: { display: false } }
+                            }
+                        }
+                    });
+                }
+
+                // Bar Chart
+                if (barCtx) {
+                    barChartRef.current = new Chart(barCtx, {
+                        type: 'bar',
+                        data: {
+                            labels: ['呼吸道', '心血管', '消化系', '創傷', '神經系'],
+                            datasets: [{
+                                label: '病患數',
+                                data: [120, 95, 80, 45, 30],
+                                backgroundColor: [
+                                    '#6366f1', '#ec4899', '#10b981', '#f59e0b', '#8b5cf6'
+                                ],
+                                borderRadius: 6,
+                            }]
+                        },
+                        options: {
+                            responsive: true,
+                            maintainAspectRatio: false,
+                            indexAxis: 'y',
+                            plugins: { legend: { display: false } },
+                            scales: {
+                                x: { grid: { borderDash: [2, 4], color: '#f1f5f9' } },
+                                y: { grid: { display: false } }
+                            }
+                        }
+                    });
+                }
+
+                return () => {
+                    if (lineChartRef.current) lineChartRef.current.destroy();
+                    if (barChartRef.current) barChartRef.current.destroy();
+                };
+            }, []);
+
+            return (
+                <div className="space-y-6 animate-fade-in">
+                    {/* Header */}
+                    <div className="flex justify-between items-end">
+                        <div>
+                            <h1 className="text-2xl font-bold text-slate-800">全院戰情總覽</h1>
+                            <p className="text-slate-500 text-sm mt-1">資料更新時間: 2024-05-24 14:30</p>
+                        </div>
+                        <div className="flex space-x-2">
+                            <button className="px-4 py-2 bg-white border border-slate-200 rounded-lg text-sm font-medium text-slate-600 hover:bg-slate-50">匯出報表</button>
+                            <button className="px-4 py-2 bg-indigo-600 text-white rounded-lg text-sm font-medium hover:bg-indigo-700 shadow-sm shadow-indigo-200">重新整理</button>
                         </div>
                     </div>
 
-                    <div class="col-span-4 flex flex-col gap-6">
-                        
-                        <div class="flex-1 bg-dashboard-card rounded-lg border border-dashboard-border flex flex-col overflow-hidden">
-                            <div class="p-4 border-b border-dashboard-border bg-dashboard-card z-10">
-                                <h3 class="font-semibold text-dashboard-text flex items-center gap-2">
-                                    <svg class="w-4 h-4 text-dashboard-accent" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z" /></svg>
-                                    AI 決策建議
-                                </h3>
-                            </div>
-                            <div class="flex-1 overflow-y-auto p-4 space-y-3">
-                                <div v-if="recommendations.length === 0" class="text-center text-dashboard-muted py-10 text-xs">
-                                    目前系統運作正常，無特殊建議。
-                                </div>
-                                <div v-for="(rec, idx) in recommendations" :key="idx" 
-                                     class="p-3 rounded border-l-4 bg-black/20 hover:bg-black/40 transition-colors cursor-pointer"
-                                     :class="{
-                                         'border-dashboard-alert': rec.priority === 'high',
-                                         'border-dashboard-warning': rec.priority === 'medium',
-                                         'border-dashboard-success': rec.priority === 'low'
-                                     }">
-                                    <div class="flex justify-between items-start mb-1">
-                                        <span class="text-xs font-bold uppercase" 
-                                              :class="{
-                                                  'text-dashboard-alert': rec.priority === 'high',
-                                                  'text-dashboard-warning': rec.priority === 'medium',
-                                                  'text-dashboard-success': rec.priority === 'low'
-                                              }">{{ rec.type }}</span>
-                                        <span class="text-[10px] text-dashboard-muted">{{ rec.time }}</span>
-                                    </div>
-                                    <p class="text-sm font-medium">{{ rec.message }}</p>
-                                    <div class="mt-2 text-[10px] text-gray-500 font-mono">
-                                        因子: {{ rec.factors }}
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
+                    {/* KPI Grid */}
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                        <KPICard title="今日入院人數" value="84" change="12%" trend="up" icon={<IconActivity />} color="indigo" />
+                        <KPICard title="急診待床數" value="18" change="5%" trend="up" icon={<IconAlert />} color="rose" />
+                        <KPICard title="全院佔床率" value="92.5%" change="1.2%" trend="down" icon={<IconBed />} color="emerald" />
+                        <KPICard title="預測明日入院" value="95" change="High" trend="up" icon={<IconBrain />} color="amber" />
+                    </div>
 
-                        <div class="h-48 bg-dashboard-card rounded-lg border border-dashboard-border flex flex-col">
-                             <div class="p-3 border-b border-dashboard-border">
-                                <h3 class="text-xs font-semibold text-dashboard-text uppercase">高風險 ICD-10 趨勢</h3>
-                            </div>
-                            <div class="flex-1 p-2 overflow-y-auto">
-                                <table class="w-full text-left text-xs">
-                                    <thead>
-                                        <tr class="text-dashboard-muted border-b border-gray-800">
-                                            <th class="pb-2 pl-2">Code</th>
-                                            <th class="pb-2">Diagnosis</th>
-                                            <th class="pb-2 text-right">Trend</th>
+                    {/* Main Charts Area */}
+                    <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 h-[400px]">
+                        <div className="lg:col-span-2 h-full">
+                            <ChartCard 
+                                title="入院人數趨勢 (7日)" 
+                                action={
+                                    <select className="text-xs border border-slate-200 rounded px-2 py-1 bg-slate-50 outline-none">
+                                        <option>最近 7 天</option>
+                                        <option>最近 30 天</option>
+                                    </select>
+                                }
+                            >
+                                <canvas id="admissionTrendChart"></canvas>
+                            </ChartCard>
+                        </div>
+                        <div className="h-full">
+                            <ChartCard title="疾病類別分佈 (Top 5)">
+                                <canvas id="diseaseDistChart"></canvas>
+                            </ChartCard>
+                        </div>
+                    </div>
+
+                    {/* Bottom Section */}
+                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                         <div className="bg-white rounded-xl p-6 card-shadow border border-slate-100">
+                            <h3 className="text-lg font-bold text-slate-800 mb-4">即時病房警示</h3>
+                            <div className="overflow-x-auto">
+                                <table className="w-full text-sm text-left text-slate-600">
+                                    <thead className="text-xs text-slate-400 uppercase bg-slate-50 border-b border-slate-100">
+                                        <tr>
+                                            <th className="px-4 py-3">病房區域</th>
+                                            <th className="px-4 py-3">科別</th>
+                                            <th className="px-4 py-3">佔床率</th>
+                                            <th className="px-4 py-3">狀態</th>
                                         </tr>
                                     </thead>
-                                    <tbody class="font-mono">
-                                        <tr v-for="d in topDiseases" :key="d.code" class="border-b border-gray-800/50 last:border-0">
-                                            <td class="py-2 pl-2 text-dashboard-accent">{{ d.code }}</td>
-                                            <td class="py-2 text-gray-400 truncate max-w-[120px]">{{ d.name }}</td>
-                                            <td class="py-2 text-right">
-                                                <span :class="d.trend > 0? 'text-dashboard-alert' : 'text-dashboard-success'">
-                                                    {{ d.trend > 0? '+' : ''}}{{ d.trend }}%
-                                                </span>
-                                            </td>
+                                    <tbody className="divide-y divide-slate-100">
+                                        <tr className="hover:bg-slate-50">
+                                            <td className="px-4 py-3 font-medium">Ward 7A</td>
+                                            <td className="px-4 py-3">胸腔內科</td>
+                                            <td className="px-4 py-3">98%</td>
+                                            <td className="px-4 py-3"><span className="px-2 py-1 rounded-full text-xs font-bold bg-rose-100 text-rose-600">滿床警戒</span></td>
+                                        </tr>
+                                        <tr className="hover:bg-slate-50">
+                                            <td className="px-4 py-3 font-medium">Ward 6B</td>
+                                            <td className="px-4 py-3">心臟內科</td>
+                                            <td className="px-4 py-3">85%</td>
+                                            <td className="px-4 py-3"><span className="px-2 py-1 rounded-full text-xs font-bold bg-amber-100 text-amber-600">高乘載</span></td>
+                                        </tr>
+                                        <tr className="hover:bg-slate-50">
+                                            <td className="px-4 py-3 font-medium">Ward 5C</td>
+                                            <td className="px-4 py-3">一般外科</td>
+                                            <td className="px-4 py-3">65%</td>
+                                            <td className="px-4 py-3"><span className="px-2 py-1 rounded-full text-xs font-bold bg-emerald-100 text-emerald-600">正常</span></td>
                                         </tr>
                                     </tbody>
                                 </table>
                             </div>
+                         </div>
+                         
+                         {/* Simple Recommendation List */}
+                         <div className="bg-gradient-to-br from-indigo-600 to-blue-700 rounded-xl p-6 text-white card-shadow relative overflow-hidden">
+                             <div className="absolute top-0 right-0 p-4 opacity-10">
+                                <IconBrain size={120} />
+                             </div>
+                             <h3 className="text-lg font-bold mb-1 z-10 relative">AI 每日摘要</h3>
+                             <p className="text-indigo-100 text-sm mb-6 z-10 relative">基於過去 24 小時數據分析</p>
+                             
+                             <div className="space-y-4 z-10 relative">
+                                <div className="flex items-start space-x-3 bg-white/10 p-3 rounded-lg backdrop-blur-sm border border-white/10">
+                                    <div className="mt-1"><IconAlert size={16} /></div>
+                                    <div>
+                                        <p className="font-bold text-sm">呼吸道疾病上升趨勢</p>
+                                        <p className="text-xs text-indigo-100 mt-1">預測未來 3 天急診呼吸道症狀患者將增加 15%。建議預留 7A 病房床位。</p>
+                                    </div>
+                                </div>
+                                <div className="flex items-start space-x-3 bg-white/10 p-3 rounded-lg backdrop-blur-sm border border-white/10">
+                                    <div className="mt-1"><IconActivity size={16} /></div>
+                                    <div>
+                                        <p className="font-bold text-sm">週末人力調度建議</p>
+                                        <p className="text-xs text-indigo-100 mt-1">預測週六上午為入院高峰，建議增加 2 名急診護理人力。</p>
+                                    </div>
+                                </div>
+                             </div>
+                         </div>
+                    </div>
+                </div>
+            );
+        };
+
+        // --- View 2: AI Simulation & Prediction ---
+        const AIPredictionView = () => {
+            const [simulationParams, setSimulationParams] = useState({
+                fluIndex: 50,
+                temperature: 24,
+                holidayEffect: false
+            });
+            
+            const [predictionResult, setPredictionResult] = useState(null);
+            const [isSimulating, setIsSimulating] = useState(false);
+            const predChartRef = useRef(null);
+
+            // Mock Simulation function
+            const runSimulation = () => {
+                setIsSimulating(true);
+                setTimeout(() => {
+                    const base = 80;
+                    const fluImpact = (simulationParams.fluIndex / 100) * 40;
+                    const tempImpact = (30 - simulationParams.temperature) * 1.5; // Lower temp = more sick
+                    const holiday = simulationParams.holidayEffect ? 15 : 0;
+                    
+                    const predictedValue = Math.round(base + fluImpact + tempImpact + holiday);
+                    const riskLevel = predictedValue > 120 ? 'Critical' : predictedValue > 100 ? 'High' : 'Normal';
+                    
+                    setPredictionResult({
+                        value: predictedValue,
+                        risk: riskLevel,
+                        increase: Math.round(((predictedValue - base)/base)*100),
+                        details: [
+                            { day: '+1 Day', val: predictedValue - 5 },
+                            { day: '+2 Days', val: predictedValue },
+                            { day: '+3 Days', val: predictedValue + 8 },
+                            { day: '+4 Days', val: predictedValue + 2 },
+                            { day: '+5 Days', val: predictedValue - 10 },
+                        ]
+                    });
+                    setIsSimulating(false);
+                }, 1000);
+            };
+
+            // Update chart when result changes
+            useEffect(() => {
+                if (predictionResult && document.getElementById('predChart')) {
+                    if (predChartRef.current) predChartRef.current.destroy();
+                    
+                    const ctx = document.getElementById('predChart');
+                    predChartRef.current = new Chart(ctx, {
+                        type: 'line',
+                        data: {
+                            labels: predictionResult.details.map(d => d.day),
+                            datasets: [{
+                                label: '模擬預測趨勢',
+                                data: predictionResult.details.map(d => d.val),
+                                borderColor: predictionResult.risk === 'Critical' ? '#e11d48' : '#4f46e5',
+                                backgroundColor: predictionResult.risk === 'Critical' ? 'rgba(225, 29, 72, 0.1)' : 'rgba(79, 70, 229, 0.1)',
+                                fill: true,
+                                tension: 0.4
+                            }]
+                        },
+                        options: {
+                            responsive: true,
+                            maintainAspectRatio: false,
+                            plugins: { legend: { display: false } },
+                            scales: { y: { beginAtZero: false } }
+                        }
+                    });
+                }
+            }, [predictionResult]);
+
+            return (
+                <div className="animate-fade-in space-y-6 h-full flex flex-col">
+                    <div className="flex justify-between items-center">
+                         <div>
+                            <h1 className="text-2xl font-bold text-slate-800 flex items-center gap-2">
+                                <IconBrain className="text-indigo-600" /> AI 決策沙盒
+                            </h1>
+                            <p className="text-slate-500 text-sm mt-1">調整環境參數，模擬未來入院壓力並獲取決策建議</p>
                         </div>
                     </div>
 
+                    <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 flex-1">
+                        
+                        {/* Left Column: Controls */}
+                        <div className="lg:col-span-4 space-y-6">
+                            <div className="bg-white rounded-xl p-6 card-shadow border border-slate-100">
+                                <h3 className="text-lg font-bold text-slate-800 mb-6 border-b border-slate-100 pb-2">參數設定</h3>
+                                
+                                <div className="space-y-8">
+                                    {/* Control 1 */}
+                                    <div>
+                                        <div className="flex justify-between mb-2">
+                                            <label className="text-sm font-semibold text-slate-700">流感傳播係數 (Rt)</label>
+                                            <span className="text-sm font-bold text-indigo-600">{simulationParams.fluIndex}%</span>
+                                        </div>
+                                        <input 
+                                            type="range" min="0" max="100" 
+                                            value={simulationParams.fluIndex}
+                                            onChange={(e) => setSimulationParams({...simulationParams, fluIndex: parseInt(e.target.value)})}
+                                            className="w-full h-2 bg-slate-200 rounded-lg appearance-none cursor-pointer accent-indigo-600"
+                                        />
+                                        <p className="text-xs text-slate-400 mt-1">模擬社區流感/呼吸道病毒活躍程度</p>
+                                    </div>
+
+                                    {/* Control 2 */}
+                                    <div>
+                                        <div className="flex justify-between mb-2">
+                                            <label className="text-sm font-semibold text-slate-700">平均氣溫 (°C)</label>
+                                            <span className="text-sm font-bold text-indigo-600">{simulationParams.temperature}°C</span>
+                                        </div>
+                                        <input 
+                                            type="range" min="10" max="35" 
+                                            value={simulationParams.temperature}
+                                            onChange={(e) => setSimulationParams({...simulationParams, temperature: parseInt(e.target.value)})}
+                                            className="w-full h-2 bg-slate-200 rounded-lg appearance-none cursor-pointer accent-indigo-600"
+                                        />
+                                        <p className="text-xs text-slate-400 mt-1">低溫通常與心血管及呼吸道入院呈負相關</p>
+                                    </div>
+
+                                    {/* Control 3 */}
+                                    <div className="flex items-center justify-between">
+                                        <div>
+                                            <label className="text-sm font-semibold text-slate-700 block">連假效應</label>
+                                            <p className="text-xs text-slate-400">模擬年節或長假後的回流效應</p>
+                                        </div>
+                                        <button 
+                                            onClick={() => setSimulationParams({...simulationParams, holidayEffect: !simulationParams.holidayEffect})}
+                                            className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${simulationParams.holidayEffect ? 'bg-indigo-600' : 'bg-slate-200'}`}
+                                        >
+                                            <span className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${simulationParams.holidayEffect ? 'translate-x-6' : 'translate-x-1'}`} />
+                                        </button>
+                                    </div>
+                                </div>
+
+                                <button 
+                                    onClick={runSimulation}
+                                    disabled={isSimulating}
+                                    className="w-full mt-8 py-3 bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-lg shadow-md shadow-indigo-200 transition-all flex justify-center items-center gap-2 disabled:opacity-70 disabled:cursor-not-allowed"
+                                >
+                                    {isSimulating ? (
+                                        <>
+                                            <svg className="animate-spin h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
+                                            運算中...
+                                        </>
+                                    ) : '開始模擬預測'}
+                                </button>
+                            </div>
+                        </div>
+
+                        {/* Right Column: Results */}
+                        <div className="lg:col-span-8 space-y-6">
+                            {!predictionResult ? (
+                                <div className="h-full border-2 border-dashed border-slate-300 rounded-xl flex flex-col items-center justify-center text-slate-400 p-12 bg-slate-50">
+                                    <IconBrain size={48} className="mb-4 opacity-50" />
+                                    <h3 className="text-lg font-medium">等待模擬</h3>
+                                    <p>請調整左側參數並點擊「開始模擬預測」</p>
+                                </div>
+                            ) : (
+                                <>
+                                    {/* Result Cards */}
+                                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                                        <div className="bg-white p-5 rounded-xl border border-slate-100 card-shadow">
+                                            <p className="text-xs text-slate-500 uppercase font-bold">預測入院人數 (日)</p>
+                                            <p className="text-3xl font-bold text-slate-800 mt-1">{predictionResult.value}</p>
+                                            <p className={`text-xs mt-2 font-semibold ${predictionResult.increase > 0 ? 'text-rose-500' : 'text-emerald-500'}`}>
+                                                {predictionResult.increase > 0 ? '+' : ''}{predictionResult.increase}% 較基準值
+                                            </p>
+                                        </div>
+                                        <div className="bg-white p-5 rounded-xl border border-slate-100 card-shadow">
+                                            <p className="text-xs text-slate-500 uppercase font-bold">風險等級</p>
+                                            <p className={`text-3xl font-bold mt-1 ${
+                                                predictionResult.risk === 'Critical' ? 'text-rose-600' : 
+                                                predictionResult.risk === 'High' ? 'text-amber-500' : 'text-emerald-600'
+                                            }`}>
+                                                {predictionResult.risk}
+                                            </p>
+                                            <p className="text-xs mt-2 text-slate-400">基於全院承載量運算</p>
+                                        </div>
+                                        <div className="bg-white p-5 rounded-xl border border-slate-100 card-shadow">
+                                            <p className="text-xs text-slate-500 uppercase font-bold">建議開放床數</p>
+                                            <p className="text-3xl font-bold text-slate-800 mt-1">{Math.max(0, predictionResult.value - 80)} <span className="text-sm font-normal text-slate-400">床</span></p>
+                                            <p className="text-xs mt-2 text-slate-500">以消化預期增量</p>
+                                        </div>
+                                    </div>
+
+                                    {/* Chart */}
+                                    <div className="bg-white p-6 rounded-xl border border-slate-100 card-shadow">
+                                        <h4 className="font-bold text-slate-700 mb-4">未來 5 日壓力趨勢模擬</h4>
+                                        <div className="h-64">
+                                            <canvas id="predChart"></canvas>
+                                        </div>
+                                    </div>
+
+                                    {/* AI Recommendations */}
+                                    <div className="bg-slate-800 text-white rounded-xl p-6 shadow-lg">
+                                        <div className="flex items-center gap-2 mb-4">
+                                            <div className="p-1 bg-indigo-500 rounded"><IconBrain size={16} /></div>
+                                            <h4 className="font-bold">AI 決策建議</h4>
+                                        </div>
+                                        <div className="space-y-3">
+                                            {predictionResult.risk === 'Critical' ? (
+                                                <>
+                                                    <div className="flex gap-3">
+                                                        <span className="text-rose-400 font-bold text-lg">!</span>
+                                                        <p className="text-sm text-slate-300">預測值達到紅色警戒。建議立即啟動 <span className="text-white font-bold border-b border-rose-400">滿床應變機制 Level 2</span>，暫停非緊急住院手術。</p>
+                                                    </div>
+                                                    <div className="flex gap-3">
+                                                        <span className="text-rose-400 font-bold text-lg">!</span>
+                                                        <p className="text-sm text-slate-300">建議調度 7B、8A 病房護理人力支援急診留觀區。</p>
+                                                    </div>
+                                                </>
+                                            ) : predictionResult.risk === 'High' ? (
+                                                <>
+                                                     <div className="flex gap-3">
+                                                        <span className="text-amber-400 font-bold text-lg">i</span>
+                                                        <p className="text-sm text-slate-300">入院壓力偏高，建議預先通知清潔組加快出院床位周轉速度。</p>
+                                                    </div>
+                                                </>
+                                            ) : (
+                                                <div className="flex gap-3">
+                                                    <span className="text-emerald-400 font-bold text-lg">✓</span>
+                                                    <p className="text-sm text-slate-300">預測流量在正常範圍內，維持目前人力配置即可。</p>
+                                                </div>
+                                            )}
+                                        </div>
+                                    </div>
+                                </>
+                            )}
+                        </div>
+                    </div>
                 </div>
-            </div>
-        </main>
+            );
+        };
 
-    </div>
+        // --- Main App Component ---
+        const App = () => {
+            const [activeTab, setActiveTab] = useState('dashboard');
 
-    <script>
-        const { createApp, ref, computed, onMounted, watch } = Vue;
-
-        createApp({
-            setup() {
-                // --- State ---
-                const params = ref({
-                    temperature: 28, // 攝氏度
-                    fluIndex: 2, // 1-10
-                    staffingLevel: 100, // %
-                    turnoverTime: 120, // minutes
-                    isMCI: false // Mass Casualty Incident
-                });
-
-                const metrics = ref({
-                    predictedAdmissions: 145,
-                    admissionTrend: 5,
-                    occupancyRate: 85,
-                    totalBeds: 500,
-                    availableBeds: 75,
-                    lwbs: 2.1,
-                    waitingCount: 12
-                });
-
-                const logs = ref();
-                const recommendations = ref();
-                const currentTime = ref(new Date().toLocaleTimeString('en-US', {hour12: false, hour: '2-digit', minute:'2-digit'}));
-                
-                // Charts instances
-                let chartInstance = null;
-
-                // --- Computed Logic for Simulation ---
-
-                // NEDOCS Score Calculation (Simplified Simulation)
-                // NEDOCS = -20 + 85.8(Ladmit) + 600(Lresp) + 13.4(Nvent) + 0.93(OED) + 5.64(Twait)
-                // We simulate these components based on our sliders
-                const nedocsScore = computed(() => {
-                    let baseScore = 40; 
+            return (
+                <div className="flex min-h-screen bg-slate-50 text-slate-900 font-sans">
+                    <Sidebar activeTab={activeTab} setActiveTab={setActiveTab} />
                     
-                    // Environmental Impact
-                    if (params.value.temperature > 32) baseScore += (params.value.temperature - 32) * 3; // Heatwave effect
-                    baseScore += params.value.fluIndex * 4; // Flu effect
-                    
-                    // Staffing Impact (Lower staffing = higher score)
-                    if (params.value.staffingLevel < 100) baseScore += (100 - params.value.staffingLevel) * 1.5;
-                    
-                    // Turnover Time Impact
-                    baseScore += (params.value.turnoverTime - 60) * 0.2;
+                    <main className="ml-64 flex-1 p-8 h-screen overflow-y-auto">
+                        {activeTab === 'dashboard' ? <DashboardView /> : <AIPredictionView />}
+                    </main>
+                </div>
+            );
+        };
 
-                    // MCI Impact
-                    if (params.value.isMCI) baseScore += 80;
-
-                    // Random noise
-                    return Math.min(200, Math.floor(baseScore + (Math.random() * 10 - 5)));
-                });
-
-                const nedocsColor = computed(() => {
-                    const s = nedocsScore.value;
-                    if (s > 100) return 'text-dashboard-alert animate-pulse';
-                    if (s > 60) return 'text-dashboard-warning';
-                    return 'text-dashboard-success';
-                });
-
-                const systemStatus = computed(() => {
-                    if (params.value.isMCI) return { text: 'CODE BLACK (MCI)', class: 'bg-red-900 text-white border-red-500 animate-pulse' };
-                    if (nedocsScore.value > 100) return { text: 'DANGEROUS OVERCROWDING', class: 'bg-red-900/50 text-red-200 border-red-500' };
-                    if (nedocsScore.value > 60) return { text: 'BUSY', class: 'bg-yellow-900/30 text-yellow-500 border-yellow-600' };
-                    return { text: 'NORMAL OPERATIONS', class: 'bg-green-900/30 text-green-400 border-green-600' };
-                });
-
-                const topDiseases = computed(() => {
-                    const list =;
-                    // Heat related
-                    if (params.value.temperature > 30) {
-                        list.push({ code: 'N17.9', name: 'Acute Kidney Failure', trend: Math.floor((params.value.temperature - 25) * 4) });
-                        list.push({ code: 'I20.9', name: 'Angina Pectoris', trend: Math.floor((params.value.temperature - 25) * 2.5) });
-                        list.push({ code: 'T67.0', name: 'Heatstroke', trend: Math.floor((params.value.temperature - 30) * 15) });
-                    }
-                    // Flu related
-                    if (params.value.fluIndex > 3) {
-                        list.push({ code: 'J10.1', name: 'Influenza w/ resp', trend: params.value.fluIndex * 8 });
-                        list.push({ code: 'J18.9', name: 'Pneumonia, unsp.', trend: params.value.fluIndex * 5 });
-                    }
-                    // Baseline
-                    list.push({ code: 'I50.9', name: 'Heart Failure', trend: 2 });
-                    list.push({ code: 'A41.9', name: 'Sepsis, unspec', trend: 5 + (params.value.fluIndex * 2) }); // Sepsis correlates with flu complications
-
-                    return list.sort((a, b) => b.trend - a.trend).slice(0, 5);
-                });
-
-                // --- Methods ---
-
-                const addLog = (msg, type = 'info') => {
-                    logs.value.unshift({
-                        time: new Date().toLocaleTimeString('en-US', {hour12: false}),
-                        msg,
-                        type
-                    });
-                    if (logs.value.length > 50) logs.value.pop();
-                };
-
-                const updateAIRecommendations = () => {
-                    const recs =;
-                    
-                    if (params.value.isMCI) {
-                        recs.push({
-                            type: 'CRITICAL',
-                            message: '啟動大量傷患機制 (Code Triage)。暫停所有非緊急手術，釋出 ICU 床位。',
-                            priority: 'high',
-                            factors: 'MCI Mode Active',
-                            time: 'Now'
-                        });
-                    }
-
-                    if (nedocsScore.value > 100) {
-                        recs.push({
-                            type: 'CAPACITY',
-                            message: '啟動滿床機制 (Full Capacity Protocol)。建議開放 5B 病房作為臨時留觀區。',
-                            priority: 'high',
-                            factors: `NEDOCS ${nedocsScore.value} > 100`,
-                            time: 'Now'
-                        });
-                    }
-
-                    if (params.value.temperature > 35) {
-                        recs.push({
-                            type: 'CLINICAL',
-                            message: '預測 N17 (腎衰竭) 病患將在 48 小時內增加 30%。建議通知腎臟科值班醫師待命。',
-                            priority: 'medium',
-                            factors: `Temp ${params.value.temperature}°C > 35°C`,
-                            time: 'Forecast +4h'
-                        });
-                    }
-
-                    if (params.value.staffingLevel < 80) {
-                        recs.push({
-                            type: 'STAFFING',
-                            message: '護理人力不足，預測 LWBS 將上升至 8%。建議調度休假人員或啟動跨單位支援。',
-                            priority: 'medium',
-                            factors: `Staffing ${params.value.staffingLevel}%`,
-                            time: 'Now'
-                        });
-                    }
-
-                    recommendations.value = recs;
-                };
-
-                const toggleMCI = () => {
-                    params.value.isMCI =!params.value.isMCI;
-                    addLog(params.value.isMCI? '啟動大量傷患模式 (MCI ACTIVATED)' : '解除大量傷患模式 (MCI DEACTIVATED)', 'alert');
-                };
-
-                // Generate Mock Data for Chart
-                const generateChartData = () => {
-                    const now = new Date();
-                    const hours =;
-                    const dataMean =;
-                    const dataLower =;
-                    const dataUpper =;
-
-                    // Base load sine wave
-                    const baseLoad = 10 + (params.value.fluIndex * 2) + (params.value.isMCI? 50 : 0);
-                    
-                    for (let i = 0; i < 24; i++) {
-                        const t = new Date(now.getTime() + i * 3600000);
-                        hours.push(t.getHours() + ':00');
-                        
-                        // Simulation Logic: Peak at 10am and 6pm
-                        const hourVal = t.getHours();
-                        const timeFactor = Math.sin((hourVal - 8) / 24 * Math.PI * 2); 
-                        
-                        let val = baseLoad + (timeFactor * 5);
-                        
-                        // Add Temperature Lag effect
-                        if (params.value.temperature > 32 && i > 4) val += (params.value.temperature - 32);
-
-                        // Random noise
-                        val += Math.random() * 4;
-
-                        // Confidence Interval (uncertainty increases with time)
-                        const uncertainty = 2 + (i * 0.5) + (params.value.fluIndex * 0.5); 
-
-                        dataMean.push(Math.floor(val));
-                        dataLower.push(Math.floor(val - uncertainty));
-                        dataUpper.push(Math.floor(val + uncertainty));
-                    }
-
-                    return { hours, dataMean, dataLower, dataUpper };
-                };
-
-                const initCharts = () => {
-                    const chartDom = document.querySelector('[ref="predictionChart"]'); // Note: Vue ref usage inside template logic below
-                    // Actually accessing via refs in setup
-                };
-                
-                // --- Lifecycle & Watchers ---
-
-                onMounted(() => {
-                    // Update Time
-                    setInterval(() => {
-                        currentTime.value = new Date().toLocaleTimeString('en-US', {hour12: false, hour: '2-digit', minute:'2-digit'});
-                    }, 1000);
-
-                    // Initialize Chart
-                    chartInstance = echarts.init(document.querySelector('.chart-container'));
-                    
-                    const updateChart = () => {
-                        const { hours, dataMean, dataLower, dataUpper } = generateChartData();
-                        
-                        // metrics update based on chart
-                        const totalPred = dataMean.reduce((a, b) => a + b, 0);
-                        metrics.value.predictedAdmissions = totalPred;
-                        metrics.value.lwbs = (2 + (nedocsScore.value / 40) + (100 - params.value.staffingLevel)/10).toFixed(1);
-                        metrics.value.occupancyRate = Math.min(100, Math.floor(80 + (totalPred / 50) - (params.value.turnoverTime / 60)));
-                        metrics.value.availableBeds = Math.floor(metrics.value.totalBeds * (1 - metrics.value.occupancyRate/100));
-
-                        const option = {
-                            backgroundColor: 'transparent',
-                            tooltip: {
-                                trigger: 'axis',
-                                backgroundColor: 'rgba(30,30,30,0.9)',
-                                borderColor: '#333',
-                                textStyle: { color: '#fff' }
-                            },
-                            grid: { left: '3%', right: '4%', bottom: '3%', top: '10%', containLabel: true },
-                            xAxis: {
-                                type: 'category',
-                                boundaryGap: false,
-                                data: hours,
-                                axisLine: { lineStyle: { color: '#555' } },
-                                axisLabel: { color: '#999' }
-                            },
-                            yAxis: {
-                                type: 'value',
-                                splitLine: { lineStyle: { color: '#333' } },
-                                axisLabel: { color: '#999' }
-                            },
-                            series:) // Stack logic needs difference
-                                },
-                                {
-                                    name: 'Predicted Admissions',
-                                    type: 'line',
-                                    symbol: 'circle',
-                                    symbolSize: 6,
-                                    itemStyle: { color: '#42A5F5' },
-                                    lineStyle: { width: 3 },
-                                    data: dataMean
-                                }
-                            ]
-                        };
-                        chartInstance.setOption(option);
-                    };
-
-                    // Initial render
-                    updateChart();
-                    updateAIRecommendations();
-
-                    // Reactive Loop
-                    watch(params, () => {
-                        updateChart();
-                        updateAIRecommendations();
-                        addLog('Simulation parameters updated. Recalculating models...');
-                    }, { deep: true });
-
-                    // Simulate Live Data Ticks
-                    setInterval(() => {
-                         // Random small fluctuation
-                         if(Math.random() > 0.7) {
-                             metrics.value.waitingCount += Math.floor(Math.random() * 3) - 1;
-                             if(metrics.value.waitingCount < 0) metrics.value.waitingCount = 0;
-                         }
-                    }, 2000);
-                    
-                    // Resize handler
-                    window.addEventListener('resize', () => chartInstance && chartInstance.resize());
-                });
-
-                return {
-                    params,
-                    metrics,
-                    logs,
-                    recommendations,
-                    currentTime,
-                    nedocsScore,
-                    nedocsColor,
-                    systemStatus,
-                    topDiseases,
-                    toggleMCI
-                };
-            }
-        }).mount('#app');
+        const root = ReactDOM.createRoot(document.getElementById('root'));
+        root.render(<App />);
     </script>
 </body>
 </html>
