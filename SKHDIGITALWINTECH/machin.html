@@ -1,0 +1,558 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>遠傳 FET | 智慧醫療儀器戰情室</title>
+    
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script crossorigin src="https://unpkg.com/react@18/umd/react.development.js"></script>
+    <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&family=JetBrains+Mono:wght@400;700&family=Orbitron:wght@500;700;900&display=swap" rel="stylesheet">
+
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                        mono: ['JetBrains Mono', 'monospace'],
+                        tech: ['Orbitron', 'sans-serif'],
+                    },
+                    colors: {
+                        dark: {
+                            900: '#0B1120', // Deepest background
+                            800: '#151e32', // Card background
+                            700: '#2a3b55', // Border
+                        },
+                        neon: {
+                            blue: '#0ea5e9',
+                            cyan: '#06b6d4',
+                            purple: '#8b5cf6',
+                            green: '#10b981',
+                            red: '#ef4444',
+                        }
+                    },
+                    boxShadow: {
+                        'neon-blue': '0 0 10px rgba(14, 165, 233, 0.5), 0 0 20px rgba(14, 165, 233, 0.3)',
+                        'neon-red': '0 0 10px rgba(239, 68, 68, 0.5), 0 0 20px rgba(239, 68, 68, 0.3)',
+                        'neon-green': '0 0 10px rgba(16, 185, 129, 0.5), 0 0 20px rgba(16, 185, 129, 0.3)',
+                    },
+                    animation: {
+                        'pulse-fast': 'pulse 1.5s cubic-bezier(0.4, 0, 0.6, 1) infinite',
+                        'spin-slow': 'spin 3s linear infinite',
+                    }
+                }
+            }
+        }
+    </script>
+
+    <style>
+        body {
+            background-color: #050911;
+            background-image: 
+                radial-gradient(circle at 50% 0%, #1e293b 0%, transparent 70%),
+                linear-gradient(rgba(6, 182, 212, 0.03) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(6, 182, 212, 0.03) 1px, transparent 1px);
+            background-size: 100% 100%, 40px 40px, 40px 40px;
+            color: #e2e8f0;
+        }
+
+        /* Custom Scrollbar */
+        ::-webkit-scrollbar { width: 8px; }
+        ::-webkit-scrollbar-track { background: #0f172a; }
+        ::-webkit-scrollbar-thumb { background: #334155; border-radius: 4px; border: 2px solid #0f172a; }
+        ::-webkit-scrollbar-thumb:hover { background: #475569; }
+
+        /* Glass Cards */
+        .glass-panel {
+            background: rgba(21, 30, 50, 0.7);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border: 1px solid rgba(6, 182, 212, 0.1);
+        }
+        
+        .glass-card-hover:hover {
+            border-color: rgba(6, 182, 212, 0.5);
+            background: rgba(30, 41, 59, 0.8);
+            transform: translateY(-2px);
+        }
+
+        /* Loader */
+        .tech-loader {
+            border: 2px solid rgba(6, 182, 212, 0.1);
+            border-left-color: #06b6d4;
+            border-radius: 50%;
+            width: 20px;
+            height: 20px;
+            animation: spin 1s linear infinite;
+        }
+
+        .grid-bg {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            top: 0;
+            left: 0;
+            pointer-events: none;
+            background-image: linear-gradient(0deg, transparent 24%, rgba(6, 182, 212, .05) 25%, rgba(6, 182, 212, .05) 26%, transparent 27%, transparent 74%, rgba(6, 182, 212, .05) 75%, rgba(6, 182, 212, .05) 76%, transparent 77%, transparent), linear-gradient(90deg, transparent 24%, rgba(6, 182, 212, .05) 25%, rgba(6, 182, 212, .05) 26%, transparent 27%, transparent 74%, rgba(6, 182, 212, .05) 75%, rgba(6, 182, 212, .05) 76%, transparent 77%, transparent);
+            background-size: 50px 50px;
+        }
+    </style>
+</head>
+<body>
+    <div id="root"></div>
+
+    <script type="text/babel">
+        const { useState, useEffect, useRef, useMemo } = React;
+
+        // --- 1. Enhanced Data Engine (AI & IoT Simulation) ---
+        const useMachineData = () => {
+            const [machines, setMachines] = useState([
+                // Radiology
+                { id: 'MR01', name: 'MRI 3T (GE)', type: 'MRI', dept: 'Radiology', status: 'Scanning', progress: 45, patients: 12, total: 25, nextMaint: '12/10', temp: 18.5, power: 85, health: 98, aiMsg: '冷卻系統運作正常' },
+                { id: 'MR02', name: 'MRI 1.5T (Siemens)', type: 'MRI', dept: 'Radiology', status: 'Idle', progress: 0, patients: 8, total: 20, nextMaint: '12/15', temp: 19.0, power: 12, health: 95, aiMsg: '待機模式：節能中' },
+                { id: 'CT01', name: 'CT 640 (Toshiba)', type: 'CT', dept: 'Radiology', status: 'Scanning', progress: 88, patients: 45, total: 60, nextMaint: '01/05', temp: 22.1, power: 78, health: 92, aiMsg: '偵測到高負載，建議稍後進行校正' },
+                { id: 'CT02', name: 'CT 256 (Philips)', type: 'CT', dept: 'Radiology', status: 'Scanning', progress: 20, patients: 38, total: 55, nextMaint: '01/20', temp: 21.5, power: 75, health: 96, aiMsg: '影像重建運算最佳化' },
+                
+                // Nuclear Medicine
+                { id: 'PT01', name: 'PET/CT (GE Discovery)', type: 'PET', dept: 'Nuclear Med', status: 'Injecting', progress: 10, patients: 5, total: 8, nextMaint: '12/01', temp: 20.0, power: 40, health: 88, aiMsg: '藥物衰減監控中' },
+                { id: 'SP01', name: 'SPECT/CT', type: 'SPECT', dept: 'Nuclear Med', status: 'Scanning', progress: 60, patients: 10, total: 15, nextMaint: '12/22', temp: 20.5, power: 65, health: 99, aiMsg: '系統穩定' },
+
+                // Radiation Oncology
+                { id: 'LN01', name: 'Elekta Versa HD', type: 'Linac', dept: 'Rad Oncology', status: 'Beam On', progress: 92, patients: 28, total: 35, nextMaint: '12/05', temp: 23.5, power: 92, health: 85, aiMsg: '波導管溫度微升，AI 持續監控' },
+                { id: 'LN02', name: 'Elekta Synergy', type: 'Linac', dept: 'Rad Oncology', status: 'Setup', progress: 15, patients: 22, total: 30, nextMaint: '12/12', temp: 21.0, power: 30, health: 94, aiMsg: '病患定位輔助啟動' },
+            ]);
+
+            const [summary, setSummary] = useState({
+                totalExams: 452,
+                utilization: 82.5,
+                alerts: 1,
+                aiSuggestions: 3
+            });
+
+            // Simulate real-time data changes
+            useEffect(() => {
+                const interval = setInterval(() => {
+                    setMachines(prev => prev.map(m => {
+                        if (m.status === 'Maintenance') return m;
+                        
+                        let newProgress = m.progress;
+                        let newStatus = m.status;
+                        let newPatients = m.patients;
+                        
+                        // Simulate Temperature & Power Fluctuations (IoT Data)
+                        let newTemp = m.temp + (Math.random() - 0.5) * 0.2;
+                        let newPower = m.power; 
+
+                        if (newStatus === 'Scanning' || newStatus === 'Beam On') {
+                            newProgress += 5;
+                            newPower = 70 + Math.random() * 25; // High power usage
+                            if (newProgress >= 100) {
+                                newProgress = 0;
+                                newStatus = 'Idle'; 
+                                newPatients += 1;
+                            }
+                        } else if (newStatus === 'Idle') {
+                             newPower = 10 + Math.random() * 5; // Low power
+                             if (Math.random() > 0.7) {
+                                newStatus = m.type === 'Linac' ? 'Setup' : m.type === 'PET' ? 'Injecting' : 'Scanning';
+                             }
+                        } else if ((newStatus === 'Setup' || newStatus === 'Injecting')) {
+                             newPower = 30 + Math.random() * 10;
+                             if (Math.random() > 0.5) {
+                                newStatus = m.type === 'Linac' ? 'Beam On' : 'Scanning';
+                             }
+                        }
+
+                        // AI Health Score Simulation
+                        let newHealth = m.health;
+                        if (newTemp > 24) newHealth -= 0.1;
+                        if (newTemp < 20) newHealth += 0.05;
+                        if (newHealth > 100) newHealth = 100;
+
+                        return { 
+                            ...m, 
+                            status: newStatus, 
+                            progress: newProgress, 
+                            patients: newPatients,
+                            temp: parseFloat(newTemp.toFixed(1)),
+                            power: Math.round(newPower),
+                            health: parseFloat(newHealth.toFixed(1))
+                        };
+                    }));
+
+                    setSummary(prev => ({
+                        totalExams: prev.totalExams + (Math.random() > 0.5 ? 1 : 0),
+                        utilization: +(80 + Math.random() * 5).toFixed(1),
+                        alerts: 1, // Keep demo constant
+                        aiSuggestions: 3
+                    }));
+
+                }, 2000);
+                return () => clearInterval(interval);
+            }, []);
+
+            return { machines, summary };
+        };
+
+        // --- 2. UI Components ---
+
+        const StatusBadge = ({ status }) => {
+            const styles = {
+                'Scanning': 'text-neon-cyan border-neon-cyan/30 bg-neon-cyan/10 shadow-neon-blue',
+                'Beam On': 'text-neon-red border-neon-red/30 bg-neon-red/10 shadow-neon-red',
+                'Injecting': 'text-neon-purple border-neon-purple/30 bg-neon-purple/10',
+                'Idle': 'text-slate-400 border-slate-600/30 bg-slate-700/10',
+                'Maintenance': 'text-orange-500 border-orange-500/30 bg-orange-500/10',
+                'Setup': 'text-yellow-400 border-yellow-400/30 bg-yellow-400/10',
+            };
+            
+            const baseClass = "px-2 py-1 rounded text-[10px] font-bold border flex items-center gap-1.5 uppercase tracking-wider transition-all duration-300";
+            const specificClass = styles[status] || styles['Idle'];
+            
+            return (
+                <span className={`${baseClass} ${specificClass}`}>
+                    <span className={`w-1.5 h-1.5 rounded-full ${['Scanning', 'Beam On'].includes(status) ? 'bg-current animate-ping' : 'bg-current'}`}></span>
+                    {status}
+                </span>
+            );
+        };
+
+        const CircularProgress = ({ value, color = '#06b6d4', size = 40 }) => {
+            const radius = 16;
+            const circumference = 2 * Math.PI * radius;
+            const offset = circumference - (value / 100) * circumference;
+
+            return (
+                <div className="relative flex items-center justify-center" style={{ width: size, height: size }}>
+                    <svg className="transform -rotate-90 w-full h-full">
+                        <circle cx="50%" cy="50%" r={radius} stroke="#1e293b" strokeWidth="4" fill="transparent" />
+                        <circle cx="50%" cy="50%" r={radius} stroke={color} strokeWidth="4" fill="transparent" 
+                            strokeDasharray={circumference} strokeDashoffset={offset} strokeLinecap="round"
+                            className="transition-all duration-1000 ease-out"
+                        />
+                    </svg>
+                    <span className="absolute text-[9px] font-mono font-bold text-slate-300">{Math.round(value)}%</span>
+                </div>
+            );
+        };
+
+        const Header = ({ summary }) => (
+            <header className="h-20 glass-panel border-b border-white/5 flex justify-between items-center px-8 shrink-0 z-30 sticky top-0">
+                <div className="flex items-center gap-4">
+                    {/* Logo Area */}
+                    <div className="flex flex-col">
+                        <h1 className="text-2xl font-tech font-black text-white tracking-widest leading-none">
+                            遠傳 <span className="text-neon-cyan drop-shadow-[0_0_8px_rgba(6,182,212,0.8)]">FET</span>
+                        </h1>
+                        <span className="text-[10px] text-neon-cyan/70 font-mono tracking-[0.2em] mt-1">智慧醫療戰情室</span>
+                    </div>
+                    <div className="h-8 w-px bg-slate-700 mx-2"></div>
+                    <div className="hidden md:flex gap-2">
+                        <span className="px-2 py-0.5 rounded border border-neon-cyan/20 bg-neon-cyan/5 text-neon-cyan text-[10px]">DEVICE CENTER</span>
+                        <span className="px-2 py-0.5 rounded border border-neon-purple/20 bg-neon-purple/5 text-neon-purple text-[10px]">AI MONITORING</span>
+                    </div>
+                </div>
+                
+                <div className="flex gap-8 items-center">
+                    <div className="hidden lg:flex gap-8">
+                        <div className="text-right">
+                            <p className="text-[9px] text-slate-400 font-bold uppercase tracking-wider mb-0.5">Total Exams</p>
+                            <p className="text-xl font-mono font-bold text-white">{summary.totalExams}</p>
+                        </div>
+                        <div className="text-right">
+                            <p className="text-[9px] text-slate-400 font-bold uppercase tracking-wider mb-0.5">Utilization</p>
+                            <p className="text-xl font-mono font-bold text-neon-green">{summary.utilization}%</p>
+                        </div>
+                        <div className="text-right">
+                            <p className="text-[9px] text-slate-400 font-bold uppercase tracking-wider mb-0.5">AI Insights</p>
+                            <div className="flex items-center justify-end gap-2">
+                                <span className="text-xl font-mono font-bold text-neon-cyan">{summary.aiSuggestions}</span>
+                                <i className="fa-solid fa-wand-magic-sparkles text-neon-cyan text-xs animate-pulse"></i>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div className="border-l border-slate-700 pl-6 flex items-center gap-4">
+                        <div className="text-right">
+                            <span className="block text-xs font-mono font-bold text-white">{new Date().toLocaleTimeString()}</span>
+                            <span className="block text-[10px] text-slate-500 uppercase">{new Date().toLocaleDateString()}</span>
+                        </div>
+                        <div className="w-8 h-8 rounded-full bg-gradient-to-tr from-neon-cyan to-blue-600 flex items-center justify-center shadow-lg shadow-cyan-500/20">
+                            <i className="fa-solid fa-user-astronaut text-white text-xs"></i>
+                        </div>
+                    </div>
+                </div>
+            </header>
+        );
+
+        const MachineCard = ({ machine, onClick }) => {
+            const isActive = ['Scanning', 'Beam On', 'Injecting'].includes(machine.status);
+            const isError = machine.status === 'Maintenance';
+            
+            // Dynamic border color based on status
+            const borderColor = isActive ? 'border-neon-cyan/40 hover:border-neon-cyan' : 
+                              isError ? 'border-red-500/40 hover:border-red-500' : 
+                              'border-slate-700 hover:border-slate-500';
+
+            const glowClass = isActive ? 'shadow-neon-blue' : '';
+
+            return (
+                <div onClick={() => onClick(machine)} 
+                    className={`glass-panel p-5 cursor-pointer group relative overflow-hidden rounded-xl border transition-all duration-300 ${borderColor} ${glowClass} glass-card-hover`}
+                >
+                    {/* Background Tech Elements */}
+                    <div className="absolute top-0 right-0 p-2 opacity-10 text-6xl group-hover:scale-110 transition-transform duration-500">
+                        <i className={`fa-solid ${machine.type === 'MRI' ? 'fa-magnet' : machine.type === 'CT' ? 'fa-ring' : machine.type === 'Linac' ? 'fa-certificate' : 'fa-x-ray'}`}></i>
+                    </div>
+
+                    <div className="relative z-10">
+                        <div className="flex justify-between items-start mb-4">
+                            <div className="flex items-center gap-3">
+                                <div className={`w-10 h-10 rounded-lg flex items-center justify-center text-lg bg-slate-800/80 border border-slate-700 text-slate-300 group-hover:text-white transition-colors`}>
+                                    <i className={`fa-solid ${machine.type === 'MRI' ? 'fa-magnet' : machine.type === 'CT' ? 'fa-ring' : machine.type === 'Linac' ? 'fa-certificate' : 'fa-x-ray'}`}></i>
+                                </div>
+                                <div>
+                                    <h3 className="font-tech font-bold text-white text-sm tracking-wide group-hover:text-neon-cyan transition-colors">{machine.name}</h3>
+                                    <p className="text-[10px] text-slate-500 font-mono mt-0.5">{machine.id} | {machine.dept}</p>
+                                </div>
+                            </div>
+                            <StatusBadge status={machine.status} />
+                        </div>
+
+                        {/* Metrics Grid */}
+                        <div className="grid grid-cols-2 gap-2 mb-4">
+                            <div className="bg-slate-800/50 rounded p-2 border border-slate-700/50">
+                                <p className="text-[9px] text-slate-400 uppercase">Temp</p>
+                                <p className={`font-mono text-sm ${machine.temp > 22 ? 'text-yellow-400' : 'text-white'}`}>
+                                    {machine.temp}°C
+                                </p>
+                            </div>
+                            <div className="bg-slate-800/50 rounded p-2 border border-slate-700/50">
+                                <p className="text-[9px] text-slate-400 uppercase">Power</p>
+                                <p className="font-mono text-sm text-white">{machine.power}W</p>
+                            </div>
+                        </div>
+
+                        <div className="space-y-3">
+                            <div className="flex justify-between text-xs text-slate-400 items-end">
+                                <span>Daily Load</span>
+                                <span className="font-mono text-white">{machine.patients} <span className="text-slate-600">/</span> {machine.total}</span>
+                            </div>
+                            
+                            {/* Main Progress Bar */}
+                            <div className="w-full bg-slate-800 h-1.5 rounded-full overflow-hidden">
+                                <div 
+                                    className={`h-full transition-all duration-500 relative ${isError ? 'bg-red-500' : 'bg-neon-cyan'}`} 
+                                    style={{width: `${(machine.patients / machine.total) * 100}%`}}
+                                >
+                                    <div className="absolute inset-0 bg-white/30 w-full animate-[shimmer_2s_infinite]"></div>
+                                </div>
+                            </div>
+                            
+                            {/* Active Scan Progress */}
+                            {isActive && (
+                                <div className="pt-2 border-t border-slate-700/50">
+                                    <div className="flex justify-between text-[10px] text-neon-cyan mb-1 items-center">
+                                        <span className="animate-pulse"><i className="fa-solid fa-microchip mr-1"></i> Processing</span>
+                                        <span className="font-mono">{machine.progress}%</span>
+                                    </div>
+                                    <div className="w-full bg-slate-800 h-1 rounded-full overflow-hidden">
+                                        <div className="h-full bg-gradient-to-r from-neon-blue to-neon-green transition-all duration-300" style={{width: `${machine.progress}%`}}></div>
+                                    </div>
+                                </div>
+                            )}
+                        </div>
+                    </div>
+                </div>
+            );
+        };
+
+        const DetailPanel = ({ machine, onClose }) => {
+            if (!machine) return null;
+
+            return (
+                <div className="fixed inset-y-0 right-0 w-[450px] bg-[#0B1120]/95 backdrop-blur-xl border-l border-neon-cyan/20 z-50 transform transition-transform duration-300 ease-in-out flex flex-col shadow-[-20px_0_50px_rgba(0,0,0,0.5)]">
+                    
+                    {/* Panel Header */}
+                    <div className="p-6 border-b border-slate-700/50 flex justify-between items-center bg-gradient-to-r from-slate-900 to-transparent">
+                        <div>
+                            <h3 className="font-tech font-bold text-xl text-white flex items-center gap-2">
+                                <i className="fa-solid fa-server text-neon-cyan"></i> {machine.name}
+                            </h3>
+                            <p className="text-xs text-slate-400 font-mono mt-1">ID: {machine.id} • {machine.dept}</p>
+                        </div>
+                        <button onClick={onClose} className="w-8 h-8 rounded-full border border-slate-600 text-slate-400 hover:text-white hover:border-white hover:bg-slate-800 transition-all flex items-center justify-center">
+                            <i className="fa-solid fa-xmark"></i>
+                        </button>
+                    </div>
+                    
+                    <div className="flex-1 overflow-y-auto p-6 space-y-6">
+                        
+                        {/* 1. Real-time Status & Gauge */}
+                        <div className="grid grid-cols-2 gap-4">
+                            <div className="glass-panel p-4 rounded-xl border border-slate-700/50 relative overflow-hidden">
+                                <div className="absolute top-0 right-0 p-2 text-slate-800 text-4xl -z-0"><i className="fa-solid fa-heart-pulse"></i></div>
+                                <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-2 relative z-10">Machine Status</p>
+                                <div className="relative z-10">
+                                    <span className="text-2xl font-tech font-bold text-white block mb-1">{machine.status}</span>
+                                    <span className="text-[10px] text-neon-green flex items-center gap-1">
+                                        <i className="fa-solid fa-circle text-[6px] animate-pulse"></i> Online
+                                    </span>
+                                </div>
+                            </div>
+                            <div className="glass-panel p-4 rounded-xl border border-slate-700/50 flex items-center justify-between">
+                                <div>
+                                    <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">Health Score</p>
+                                    <p className={`text-2xl font-mono font-bold ${machine.health > 90 ? 'text-neon-green' : 'text-yellow-400'}`}>{machine.health}%</p>
+                                </div>
+                                <CircularProgress value={machine.health} color={machine.health > 90 ? '#10b981' : '#facc15'} />
+                            </div>
+                        </div>
+
+                        {/* 2. AI & IoT Analysis Module (New) */}
+                        <div className="glass-panel rounded-xl border border-neon-purple/30 overflow-hidden">
+                            <div className="bg-neon-purple/10 px-4 py-2 border-b border-neon-purple/20 flex justify-between items-center">
+                                <h4 className="font-tech font-bold text-xs text-neon-purple flex items-center gap-2">
+                                    <i className="fa-solid fa-brain"></i> AI DIAGNOSTICS
+                                </h4>
+                                <span className="text-[9px] px-1.5 py-0.5 rounded bg-neon-purple/20 text-neon-purple font-mono">LIVE</span>
+                            </div>
+                            <div className="p-4 space-y-4">
+                                <div className="flex items-start gap-3">
+                                    <div className="w-8 h-8 rounded bg-slate-800 flex items-center justify-center shrink-0 border border-slate-700">
+                                        <i className="fa-solid fa-robot text-neon-cyan"></i>
+                                    </div>
+                                    <div>
+                                        <p className="text-xs text-slate-300 leading-relaxed">
+                                            <span className="text-neon-cyan font-bold">System:</span> {machine.aiMsg}
+                                        </p>
+                                        <div className="mt-2 flex gap-2">
+                                            {machine.health < 90 && <span className="text-[10px] px-2 py-1 rounded bg-red-500/20 text-red-400 border border-red-500/30">Warning: Heat</span>}
+                                            {machine.power > 80 && <span className="text-[10px] px-2 py-1 rounded bg-yellow-500/20 text-yellow-400 border border-yellow-500/30">High Power</span>}
+                                            <span className="text-[10px] px-2 py-1 rounded bg-slate-800 text-slate-400 border border-slate-700">Optimization On</span>
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                {/* IoT Data Visualization Mock */}
+                                <div className="bg-slate-900/50 rounded-lg p-3 border border-slate-800">
+                                    <div className="flex justify-between text-[10px] text-slate-500 mb-2">
+                                        <span>Temperature Trend (1h)</span>
+                                        <span>Avg: 21.0°C</span>
+                                    </div>
+                                    <div className="h-8 flex items-end gap-1">
+                                        {[40, 60, 45, 70, 65, 80, 50, 60, 75, 55, 65, 60].map((h, i) => (
+                                            <div key={i} className="flex-1 bg-neon-cyan/20 hover:bg-neon-cyan/60 transition-colors rounded-t-sm" style={{height: `${h}%`}}></div>
+                                        ))}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* 3. Patient List */}
+                        <div>
+                            <h4 className="font-tech font-bold text-xs text-slate-400 uppercase mb-3 flex justify-between items-center">
+                                <span>Schedule Queue</span>
+                                <span className="text-[10px] bg-slate-800 px-2 py-0.5 rounded text-slate-400">{machine.patients}/{machine.total}</span>
+                            </h4>
+                            <div className="space-y-2">
+                                {Array.from({length: 5}).map((_, i) => {
+                                    const isDone = i < (machine.patients % 5);
+                                    const isCurrent = i === (machine.patients % 5);
+                                    return (
+                                        <div key={i} className={`p-3 rounded-lg border flex justify-between items-center text-sm transition-all ${isCurrent ? 'bg-neon-blue/10 border-neon-blue/50 shadow-[0_0_10px_rgba(14,165,233,0.1)]' : isDone ? 'bg-slate-800/40 border-slate-800 text-slate-500' : 'bg-slate-900/40 border-slate-800'}`}>
+                                            <div className="flex items-center gap-3">
+                                                <span className="font-mono text-slate-500 text-xs">P-{100+i}</span>
+                                                <span className={`font-bold ${isCurrent ? 'text-white' : 'text-slate-400'}`}>
+                                                    Patient Name
+                                                </span>
+                                            </div>
+                                            {isDone ? <i className="fa-solid fa-check text-neon-green"></i> : 
+                                             isCurrent ? <span className="text-[10px] text-neon-cyan font-bold animate-pulse">PROCESSING</span> : 
+                                             <span className="text-[10px] text-slate-600">WAITING</span>}
+                                        </div>
+                                    );
+                                })}
+                            </div>
+                        </div>
+
+                        {/* 4. Maintenance Info */}
+                        <div className="mt-4 pt-4 border-t border-slate-800">
+                             <div className="flex justify-between items-center text-xs text-slate-500 mb-2">
+                                <span>Maintenance Schedule</span>
+                                <span className="text-white font-mono">{machine.nextMaint}</span>
+                             </div>
+                             <div className="flex justify-between items-center text-xs text-slate-500">
+                                <span>Engineer</span>
+                                <span className="text-white">Alex Chen (Ext. 7701)</span>
+                             </div>
+                        </div>
+                    </div>
+                </div>
+            );
+        };
+
+        // --- 3. Main Layout ---
+        const App = () => {
+            const { machines, summary } = useMachineData();
+            const [selectedMachine, setSelectedMachine] = useState(null);
+            const [filter, setFilter] = useState('All');
+
+            const depts = ['Radiology', 'Nuclear Med', 'Rad Oncology'];
+            const filteredMachines = filter === 'All' ? machines : machines.filter(m => m.dept === filter);
+
+            return (
+                <div className="flex flex-col h-screen w-screen overflow-hidden bg-transparent">
+                    {/* Background Grid Animation */}
+                    <div className="grid-bg"></div>
+
+                    <Header summary={summary} />
+
+                    <div className="flex-1 overflow-y-auto p-8 relative z-10">
+                        {/* Control Bar */}
+                        <div className="flex justify-between items-center mb-8">
+                            <div className="flex gap-2">
+                                <button onClick={() => setFilter('All')} className={`px-4 py-2 rounded-lg text-xs font-bold font-tech uppercase tracking-wider transition-all border ${filter === 'All' ? 'bg-neon-cyan/20 text-neon-cyan border-neon-cyan shadow-[0_0_15px_rgba(6,182,212,0.3)]' : 'bg-slate-800/50 text-slate-400 border-slate-700 hover:border-slate-500'}`}>All Systems</button>
+                                {depts.map(d => (
+                                    <button key={d} onClick={() => setFilter(d)} className={`px-4 py-2 rounded-lg text-xs font-bold font-tech uppercase tracking-wider transition-all border ${filter === d ? 'bg-neon-cyan/20 text-neon-cyan border-neon-cyan shadow-[0_0_15px_rgba(6,182,212,0.3)]' : 'bg-slate-800/50 text-slate-400 border-slate-700 hover:border-slate-500'}`}>
+                                        {d}
+                                    </button>
+                                ))}
+                            </div>
+                            <div className="flex items-center gap-3 text-xs text-slate-400">
+                                <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-neon-cyan"></span> Active</span>
+                                <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-slate-600"></span> Idle</span>
+                                <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-red-500"></span> Alert</span>
+                            </div>
+                        </div>
+
+                        {/* Grid */}
+                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 pb-20">
+                            {filteredMachines.map(machine => (
+                                <MachineCard key={machine.id} machine={machine} onClick={setSelectedMachine} />
+                            ))}
+                        </div>
+                    </div>
+
+                    {/* Detail Modal Overlay */}
+                    {selectedMachine && (
+                        <div className="fixed inset-0 z-40">
+                            <div className="absolute inset-0 bg-slate-950/60 backdrop-blur-sm transition-opacity" onClick={() => setSelectedMachine(null)}></div>
+                            <DetailPanel machine={selectedMachine} onClose={() => setSelectedMachine(null)} />
+                        </div>
+                    )}
+                </div>
+            );
+        };
+
+        const root = ReactDOM.createRoot(document.getElementById('root'));
+        root.render(<App />);
+    </script>
+</body>
+</html>
