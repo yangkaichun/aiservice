@@ -1,0 +1,979 @@
+<!DOCTYPE html>
+<html lang="zh-TW" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>遠傳 | SKH 放射腫瘤科智慧戰情室 (Dark Tech Ver.)</title>
+    <link rel="icon" href="https://cdn-icons-png.flaticon.com/512/1680/1680384.png" type="image/x-icon">
+
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        // 定義科技感霓虹色系
+                        'neon-cyan': '#06b6d4', // 主要亮青色
+                        'neon-blue': '#3b82f6', // 次要藍色
+                        'neon-purple': '#a855f7', // AI/特殊強調色
+                        'dark-bg': '#09090b', // 極深背景
+                        'dark-surface': '#18181b', // 稍微亮的表面
+                        'tech-border': '#27272a', // 邊框色
+                    },
+                    boxShadow: {
+                        'neon-cyan': '0 0 10px theme("colors.neon-cyan"), 0 0 20px theme("colors.neon-cyan")',
+                        'neon-blue': '0 0 10px theme("colors.neon-blue"), 0 0 20px theme("colors.neon-blue")',
+                        'neon-purple': '0 0 10px theme("colors.neon-purple"), 0 0 20px theme("colors.neon-purple")',
+                    }
+                }
+            }
+        }
+    </script>
+
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script crossorigin src="https://unpkg.com/react@18/umd/react.development.js"></script>
+    <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2.0.0"></script>
+
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&family=Noto+Sans+TC:wght@300;400;500;700&family=JetBrains+Mono:wght@400;700&display=swap');
+
+        :root {
+            --primary-glow: #06b6d4;
+        }
+
+        body {
+            font-family: 'Inter', 'Noto Sans TC', sans-serif;
+            background-color: #050505; /* 極深黑 */
+            color: #e2e8f0;
+            overflow: hidden;
+            /* 科技感背景網格 */
+            background-image: 
+                linear-gradient(rgba(6, 182, 212, 0.05) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(6, 182, 212, 0.05) 1px, transparent 1px);
+            background-size: 30px 30px;
+        }
+        
+        /* 數字字體使用 Monospace */
+        .font-mono { font-family: 'JetBrains Mono', monospace; }
+
+        /* Animations */
+        @keyframes pulse-glow {
+            0%, 100% { box-shadow: 0 0 5px var(--primary-glow), 0 0 10px var(--primary-glow) inset; opacity: 1; }
+            50% { box-shadow: 0 0 20px var(--primary-glow), 0 0 30px var(--primary-glow) inset; opacity: 0.7; }
+        }
+
+        @keyframes scanline {
+            0% { transform: translateY(-100%); }
+            100% { transform: translateY(100%); }
+        }
+        
+        @keyframes slide-in {
+            from { opacity: 0; transform: translateY(20px); filter: blur(5px); }
+            to { opacity: 1; transform: translateY(0); filter: blur(0); }
+        }
+
+        @keyframes number-jump {
+            0% { transform: scale(1); filter: brightness(1); }
+            50% { transform: scale(1.05); filter: brightness(1.5); text-shadow: 0 0 10px var(--primary-glow); }
+            100% { transform: scale(1); filter: brightness(1); }
+        }
+
+       .animate-pulse-glow { animation: pulse-glow 2s infinite; }
+       .animate-slide-in { animation: slide-in 0.5s cubic-bezier(0.23, 1, 0.32, 1) forwards; }
+       .number-update { animation: number-jump 0.3s ease-in-out; color: var(--primary-glow); }
+
+        /* Dark Tech Cards (Glassmorphism 2.0) */
+       .tech-card {
+            background: rgba(24, 24, 27, 0.7); /* 深色半透明 */
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(6, 182, 212, 0.2); /* 青色微光邊框 */
+            box-shadow: 0 10px 30px -10px rgba(0, 0, 0, 0.5);
+            border-radius: 0.75rem;
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        /* 卡片Hover時的邊框發光效果 */
+       .tech-card:hover {
+            border-color: rgba(6, 182, 212, 0.6);
+            box-shadow: 0 0 20px rgba(6, 182, 212, 0.2), inset 0 0 10px rgba(6, 182, 212, 0.1);
+        }
+
+        /* 卡片內部的掃描線裝飾 */
+        .tech-card::before {
+            content: ''; position: absolute; top: 0; left: 0; right: 0; height: 2px;
+            background: linear-gradient(90deg, transparent, rgba(6, 182, 212, 0.4), transparent);
+            animation: scanline 4s linear infinite; opacity: 0.2; pointer-events: none;
+        }
+
+       .custom-scroll::-webkit-scrollbar { width: 4px; height: 4px; }
+       .custom-scroll::-webkit-scrollbar-track { background: #18181b; }
+       .custom-scroll::-webkit-scrollbar-thumb { background: #3f3f46; border-radius: 2px; }
+       .custom-scroll::-webkit-scrollbar-thumb:hover { background: #06b6d4; }
+
+       /* 導航項目樣式優化 */
+       .nav-item { position: relative; overflow: hidden; transition: all 0.3s; border-left: 3px solid transparent;}
+       .nav-item.active { 
+           background: linear-gradient(90deg, rgba(6, 182, 212, 0.15), transparent);
+           color: #06b6d4; 
+           border-left-color: #06b6d4;
+           text-shadow: 0 0 10px rgba(6, 182, 212, 0.5);
+        }
+       
+       /* 設備圖片容器 - 科技感封裝 */
+       .img-containment-field {
+           position: relative;
+           border: 2px solid #27272a;
+           overflow: hidden;
+           border-radius: 0.75rem;
+           box-shadow: inset 0 0 20px rgba(0,0,0,0.8);
+       }
+       .img-containment-field::after {
+           content: ''; position: absolute; inset: 0;
+           border: 1px solid rgba(6, 182, 212, 0.3);
+           pointer-events: none;
+           box-shadow: inset 0 0 15px rgba(6, 182, 212, 0.1);
+       }
+       /* 讓白底圖片融入黑底的濾鏡 */
+       .tech-img-filter {
+           filter: brightness(0.8) contrast(1.2) sepia(0.2) hue-rotate(180deg) saturate(0.5);
+           transition: filter 0.5s ease;
+       }
+       .img-containment-field:hover .tech-img-filter {
+           filter: brightness(1) contrast(1.1) sepia(0) saturate(1);
+       }
+
+       /* AI 分析區塊特殊樣式 */
+       .ai-panel {
+           border-color: rgba(168, 85, 247, 0.4); /* 紫色邊框 */
+           background: linear-gradient(135deg, rgba(24, 24, 27, 0.8), rgba(88, 28, 135, 0.1));
+       }
+       .ai-text-glow { text-shadow: 0 0 8px rgba(168, 85, 247, 0.8); }
+
+       /* Chart.js Dark Mode 全局設定 */
+       Chart.defaults.color = '#94a3b8';
+       Chart.defaults.borderColor = '#3f3f46';
+    </style>
+</head>
+<body class="dark">
+    <div id="root"></div>
+
+    <script type="text/babel">
+        const { useState, useEffect, useRef, useMemo } = React;
+
+        // --- 新增組件: AI 建議終端機 (AI Insight Terminal) ---
+        const AiTerminal = ({ type, data }) => {
+            const [insights, setInsights] = useState([]);
+            const [loading, setLoading] = useState(true);
+
+            useEffect(() => {
+                // 模擬 AI 分析過程
+                setLoading(true);
+                setTimeout(() => {
+                    let newInsights = [];
+                    if (type === 'dashboard') {
+                        newInsights = [
+                            { icon: 'fa-arrow-trend-up', text: 'AI 預測：基於當前速率，今日總營收可能突破 28 萬 (高於平均 15%)。', color: 'text-neon-cyan' },
+                            { icon: 'fa-triangle-exclamation', text: '異常偵測：10:00-11:00 間 VMAT 治療排程密度過高，建議分散至下午時段。', color: 'text-orange-400' }
+                        ];
+                    } else if (type.includes('eq_')) {
+                         newInsights = [
+                            { icon: 'fa-microchip', text: '預測性維護：監測到波導系統輕微不穩定，AI 估計 48 小時內故障機率上升至 35%。建議提前安排 QA。', color: 'text-red-400' },
+                            { icon: 'fa-bolt', text: '效能優化：目前冷卻系統功耗高於基準值 8%，建議檢查冷卻液流速。', color: 'text-yellow-400' }
+                        ];
+                    }
+                    setInsights(newInsights);
+                    setLoading(false);
+                }, 1500);
+            }, [type, data]);
+
+            return (
+                <div className="tech-card ai-panel p-4 animate-slide-in relative">
+                    <div className="absolute top-0 left-0 bg-neon-purple px-2 py-0.5 text-[10px] font-bold text-black uppercase">AI Cortex Analysis</div>
+                    <h3 className="text-neon-purple text-sm font-bold uppercase mb-3 flex items-center gap-2 mt-4">
+                        <i className="fa-solid fa-brain ai-text-glow"></i> 智能戰略分析建議
+                        {loading && <span className="text-xs animate-pulse ml-2">分析數據中...</span>}
+                    </h3>
+                    <div className="space-y-3 font-mono text-xs">
+                        {loading ? (
+                            [1,2].map(i => <div key={i} className="h-6 bg-white/5 rounded animate-pulse"></div>)
+                        ) : (
+                            insights.map((item, i) => (
+                                <div key={i} className={`flex items-start gap-2 ${item.color} border-l-2 border-current pl-2 bg-white/5 p-2 rounded`}>
+                                    <i className={`fa-solid ${item.icon} mt-0.5`}></i>
+                                    <p className="leading-relaxed">{item.text}</p>
+                                </div>
+                            ))
+                        )}
+                    </div>
+                </div>
+            );
+        }
+
+
+        // --- Sidebar Component (Tech Redesign) ---
+        const Sidebar = ({ currentView, setView }) => {
+            const menu = [
+                { id: 'dashboard', label: '總覽 Dashboard', icon: 'fa-chart-line' },
+                { 
+                    id: 'financial', label: '財務績效管理', icon: 'fa-sack-dollar',
+                    sub: [
+                        { id: 'financial_nhi', label: '健保申報模擬 (NHI)' },
+                        { id: 'financial_self', label: '自費營收分析' }
+                    ]
+                },
+                { 
+                    id: 'asset', label: '資產效能 (CAI)', icon: 'fa-microchip',
+                    sub: [
+                        { id: 'asset_cai', label: '臨床可用性指數' },
+                        { id: 'asset_maint', label: '維修保養排程' }
+                    ]
+                },
+                {
+                    id: 'cost', label: '成本分析 (TDABC)', icon: 'fa-calculator',
+                    sub: [
+                        { id: 'tdabc_cost', label: '時間驅動成本模型' },
+                        { id: 'tdabc_resource', label: '人力資源配置' }
+                    ]
+                },
+                { 
+                    id: 'equipment', label: '設備即時監控', icon: 'fa-server',
+                    sub: [
+                        { id: 'eq_versa', label: 'Elekta Versa HD' },
+                        { id: 'eq_synergy', label: 'Elekta Synergy' },
+                        { id: 'eq_ge', label: 'GE CT-Sim' },
+                        { id: 'eq_hypers', label: 'Hyperthermia (BSD)' }
+                    ]
+                },
+                { id: 'energy', label: '能源永續 (ESG)', icon: 'fa-leaf' }
+            ];
+
+            return (
+                <aside className="w-64 bg-[#0c0c0e] border-r border-[#27272a] flex flex-col z-20 shadow-2xl h-screen relative overflow-hidden">
+                    {/* 側邊欄背景裝飾 */}
+                    <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_left,_var(--tw-gradient-stops))] from-neon-cyan/10 via-transparent to-transparent opacity-50 pointer-events-none"></div>
+                    
+                    <div className="h-24 flex items-center px-6 border-b border-[#27272a] relative z-10">
+                        {/* Logo 替換為遠傳文字 */}
+                        <div className="flex flex-col">
+                             <h1 className="text-2xl font-black tracking-tighter leading-none text-white flex items-center gap-2">
+                                <span className="text-neon-cyan drop-shadow-[0_0_8px_rgba(6,182,212,0.8)]">遠傳</span>
+                                <span className="text-slate-300">SKH RT</span>
+                            </h1>
+                            <div className="flex items-center gap-1 mt-1">
+                                <div className="w-2 h-2 bg-neon-cyan rounded-full animate-pulse-glow"></div>
+                                <span className="text-[9px] text-neon-cyan font-mono tracking-[0.2em] uppercase">Intelligence Core</span>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div className="flex-1 overflow-y-auto py-6 custom-scroll relative z-10 space-y-1">
+                        {menu.map(item => (
+                            <div key={item.id}>
+                                <div 
+                                    onClick={() => !item.sub && setView(item.id)}
+                                    className={`nav-item flex items-center py-3 px-6 cursor-pointer text-sm group ${currentView === item.id ? 'active' : 'text-slate-400 hover:text-slate-200 hover:bg-white/5'}`}
+                                >
+                                    <i className={`fa-solid ${item.icon} w-6 text-center mr-3 text-lg transition-all group-hover:text-neon-cyan ${currentView === item.id ? 'text-neon-cyan drop-shadow-[0_0_5px_rgba(6,182,212,0.5)]' : ''}`}></i>
+                                    <span className="font-medium tracking-wide">{item.label}</span>
+                                </div>
+                                {item.sub && (
+                                    <div className="bg-[#121214] border-y border-[#27272a]/50 py-2">
+                                        {item.sub.map(sub => (
+                                            <div 
+                                                key={sub.id}
+                                                onClick={() => setView(sub.id)}
+                                                className={`pl-16 py-2 text-xs cursor-pointer transition-all relative ${currentView === sub.id ? 'text-neon-cyan font-bold' : 'text-slate-500 hover:text-slate-300'}`}
+                                            >
+                                                {currentView === sub.id && <span className="absolute left-12 top-1/2 -translate-y-1/2 w-1.5 h-1.5 bg-neon-cyan rounded-full shadow-neon-cyan"></span>}
+                                                {sub.label}
+                                            </div>
+                                        ))}
+                                    </div>
+                                )}
+                            </div>
+                        ))}
+                    </div>
+
+                    <div className="p-4 border-t border-[#27272a] relative z-10">
+                        <div className="bg-gradient-to-r from-slate-900 to-slate-800 rounded-xl p-4 text-white relative overflow-hidden group cursor-pointer border border-slate-700/50 hover:border-neon-cyan/50 transition-all">
+                            <div className="absolute top-0 right-0 w-20 h-20 bg-neon-cyan opacity-10 rounded-full -mr-10 -mt-10 group-hover:scale-150 transition-transform blur-xl"></div>
+                            <p className="text-[10px] text-slate-400 mb-2 font-mono uppercase tracking-wider">System Access</p>
+                            <div className="flex items-center gap-3">
+                                <div className="w-10 h-10 rounded-full bg-cyan-950 border-2 border-neon-cyan flex items-center justify-center text-xs font-bold relative overflow-hidden shadow-neon-cyan">
+                                    <span className="relative z-10 text-neon-cyan">DR</span>
+                                    <div className="absolute inset-0 bg-neon-cyan opacity-20 animate-pulse"></div>
+                                </div>
+                                <div>
+                                    <p className="font-bold text-sm text-slate-100">Dr. Chen</p>
+                                    <p className="text-[10px] text-neon-cyan font-mono">Level 5 Administrator</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </aside>
+            );
+        };
+
+        // --- Dynamic Chart Component (Dark Theme Optimized) ---
+        const DynamicChart = ({ type, title, data, options, height }) => {
+            const canvasRef = useRef(null);
+            const chartRef = useRef(null);
+
+            useEffect(() => {
+                if (!canvasRef.current) return;
+                if (chartRef.current) chartRef.current.destroy();
+
+                const ctx = canvasRef.current.getContext('2d');
+                
+                // Chart.js Dark Mode specific tweaks
+                const darkOptions = {
+                    ...options,
+                    scales: options.scales ? Object.keys(options.scales).reduce((acc, key) => ({
+                        ...acc,
+                        [key]: {
+                            ...options.scales[key],
+                            grid: { color: 'rgba(255, 255, 255, 0.05)', borderColor: 'rgba(255, 255, 255, 0.1)' },
+                            ticks: { color: '#94a3b8', font: { family: 'JetBrains Mono' } },
+                            title: { ...options.scales[key].title, color: '#cbd5e1' }
+                        }
+                    }), {}) : {},
+                    plugins: {
+                        ...options.plugins,
+                        legend: { 
+                            ...options.plugins?.legend,
+                            labels: { ...options.plugins?.legend?.labels, color: '#cbd5e1' }
+                        },
+                        tooltip: { 
+                            backgroundColor: 'rgba(0, 0, 0, 0.8)', 
+                            titleColor: '#06b6d4', 
+                            bodyColor: '#e2e8f0', 
+                            borderColor: '#06b6d4', 
+                            borderWidth: 1,
+                            titleFont: { family: 'JetBrains Mono' },
+                            bodyFont: { family: 'JetBrains Mono' }
+                        }
+                    }
+                };
+
+                chartRef.current = new Chart(ctx, {
+                    type: type,
+                    data: data,
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        animation: { duration: 750, easing: 'easeOutQuart' },
+                       ...darkOptions
+                    }
+                });
+
+                return () => {
+                    if (chartRef.current) {
+                        chartRef.current.destroy();
+                        chartRef.current = null;
+                    }
+                };
+            }, [data, type, options]);
+
+            return (
+                <div className="w-full h-full relative flex flex-col">
+                    <h3 className="text-slate-300 text-xs font-bold uppercase mb-4 flex items-center gap-2 tracking-wider">
+                        <i className="fa-solid fa-chart-simple text-neon-cyan"></i> {title}
+                    </h3>
+                    <div className={`flex-1 ${height ? height : 'min-h-[250px]'}`}>
+                        <canvas ref={canvasRef}></canvas>
+                    </div>
+                </div>
+            );
+        };
+
+        // --- View 1: Dashboard (Enhanced Dark Tech) ---
+        const Dashboard = ({ setView }) => {
+            const [time, setTime] = useState(new Date());
+            const [revenue, setRevenue] = useState(215400);
+            const [load, setLoad] = useState({ versa: 85, synergy: 45, ct: 12, hyper: 60 });
+
+            useEffect(() => {
+                const interval = setInterval(() => {
+                    setTime(new Date());
+                    setRevenue(prev => prev + Math.floor(Math.random() * 500)); 
+                    setLoad(prev => ({
+                        versa: Math.min(100, Math.max(0, prev.versa + Math.floor(Math.random() * 5 - 2))),
+                        synergy: Math.min(100, Math.max(0, prev.synergy + Math.floor(Math.random() * 5 - 2))),
+                        ct: Math.min(100, Math.max(0, prev.ct + Math.floor(Math.random() * 5 - 2))),
+                        hyper: Math.min(100, Math.max(0, prev.hyper + Math.floor(Math.random() * 5 - 2)))
+                    }));
+                }, 2000);
+                return () => clearInterval(interval);
+            }, []);
+
+            const kpis = [
+                { title: "即時門診營收", val: `NT$ ${revenue.toLocaleString()}`, sub: "+12% 較昨日", icon: "fa-sack-dollar", color: "text-emerald-400", glow: "shadow-emerald-500/50", link: "financial" },
+                { title: "今日治療總人次", val: "58 人", sub: "92% 預約滿載", icon: "fa-user-group", color: "text-blue-400", glow: "shadow-blue-500/50", link: "eq_versa" },
+                { title: "健保申報點數", val: "24.5 萬", sub: "本月進度 85%", icon: "fa-file-invoice", color: "text-neon-cyan", glow: "shadow-cyan-500/50", link: "financial" },
+                { title: "設備異常警示", val: "1 件", sub: "CT 待校正 (P2)", icon: "fa-triangle-exclamation", color: "text-amber-400", glow: "shadow-amber-500/50", link: "eq_ge" }
+            ];
+
+            const machines = [
+                { name: 'Elekta Versa HD', status: 'BEAM ON', load: load.versa, img: 'image/elekta.jpg' },
+                { name: 'Elekta Synergy', status: 'SETUP', load: load.synergy, img: 'image/synergy.jpg' },
+                { name: 'GE CT-Sim', status: 'IDLE', load: load.ct, img: 'image/ge.jpg' },
+                { name: 'Hyperthermia', status: 'HEATING', load: load.hyper, img: 'image/hypers.jpg' }
+            ];
+
+            return (
+                <div className="space-y-6 animate-slide-in">
+                    {/* KPI Cards with Neon Glow */}
+                    <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+                        {kpis.map((k, i) => (
+                            <div key={i} onClick={() => setView(k.link)} className="tech-card p-5 cursor-pointer group relative">
+                                <div className="flex justify-between items-start relative z-10">
+                                    <div>
+                                        <p className="text-slate-400 text-[10px] font-bold uppercase tracking-wider font-mono">{k.title}</p>
+                                        <h3 className={`text-2xl font-black mt-1 transition-all number-update ${k.color} drop-shadow-[0_0_5px_rgba(0,0,0,0.8)]`}>{k.val}</h3>
+                                        <p className="text-xs text-slate-500 mt-2 flex items-center gap-1 font-mono">
+                                            <i className="fa-solid fa-caret-up"></i> {k.sub}
+                                        </p>
+                                    </div>
+                                    <div className={`p-3 rounded-xl bg-white/5 group-hover:scale-110 transition-transform ${k.color} border border-white/10 ${k.glow}`}>
+                                        <i className={`fa-solid ${k.icon} text-xl`}></i>
+                                    </div>
+                                </div>
+                                <div className={`absolute -bottom-10 -right-10 w-32 h-32 bg-${k.color.split('-')[1]}-500/20 rounded-full blur-[50px] group-hover:blur-[60px] transition-all duration-500`}></div>
+                            </div>
+                        ))}
+                    </div>
+
+                    <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 h-[550px]">
+                        {/* Main Chart & AI Panel */}
+                        <div className="lg:col-span-8 flex flex-col gap-6">
+                            <div className="tech-card p-6 flex-1">
+                                <DynamicChart 
+                                    type="line" 
+                                    title="即時營運趨勢監控 (Real-time Traffic & Revenue)" 
+                                    data={{
+                                        labels: ['08:00', '09:00', '10:00', '11:00', '12:00', '13:00', '14:00', '15:00', '16:00'],
+                                        datasets: [
+                                            { label: '累積營收 (萬)', data: [2, 5, 8, 15, 18, 22, 28, 32, 35], borderColor: '#06b6d4', backgroundColor: 'rgba(6, 182, 212, 0.2)', fill: true, tension: 0.4, yAxisID: 'y', pointBackgroundColor: '#06b6d4', pointBorderColor: '#fff' },
+                                            { label: '治療人次', data: [4, 8, 12, 10, 2, 8, 14, 12, 10], backgroundColor: 'rgba(245, 158, 11, 0.8)', borderColor: '#f59e0b', borderWidth: 1, type: 'bar', yAxisID: 'y1' }
+                                        ]
+                                    }}
+                                    options={{
+                                        scales: {
+                                            y: { position: 'left', title: {display: true, text: '金額 (萬)', color: '#64748b'} },
+                                            y1: { position: 'right', grid: {display: false}, title: {display: true, text: '人次', color: '#64748b'} }
+                                        }
+                                    }}
+                                />
+                            </div>
+                            {/* AI Insight Section placed below chart */}
+                            <AiTerminal type="dashboard" data={{revenue, load}} />
+                        </div>
+
+                        {/* Machine Load Monitor */}
+                        <div className="tech-card p-6 flex flex-col lg:col-span-4">
+                            <div className="flex justify-between items-center mb-6">
+                                <h3 className="text-slate-300 text-xs font-bold uppercase flex items-center gap-2 tracking-wider">
+                                    <span className="animate-pulse-glow w-2 h-2 bg-emerald-500 rounded-full shadow-emerald-500/50"></span> 設備負載監控
+                                </h3>
+                                <span className="text-[10px] bg-white/10 border border-white/20 px-2 py-1 rounded text-neon-cyan font-mono">{time.toLocaleTimeString()}</span>
+                            </div>
+                            
+                            <div className="flex-1 space-y-6 overflow-y-auto pr-2 custom-scroll">
+                                {machines.map((m, i) => (
+                                    <div key={i} className="group cursor-pointer" onClick={() => setView(m.name.includes('Versa')? 'eq_versa' : m.name.includes('Synergy')? 'eq_synergy' : m.name.includes('CT')? 'eq_ge' : 'eq_hypers')}>
+                                        <div className="flex justify-between items-end mb-2 font-mono">
+                                            <span className="text-sm font-bold text-slate-200 group-hover:text-neon-cyan transition-colors">{m.name}</span>
+                                            <span className={`text-[10px] font-bold px-2 py-0.5 rounded border ${m.status === 'BEAM ON'? 'bg-emerald-950/50 text-emerald-400 border-emerald-500/50' : m.status === 'IDLE'? 'bg-slate-800 text-slate-400 border-slate-600' : 'bg-amber-950/50 text-amber-400 border-amber-500/50'}`}>{m.status}</span>
+                                        </div>
+                                        {/* Tech Progress Bar */}
+                                        <div className="relative h-10 bg-[#0c0c0e] rounded-lg overflow-hidden border border-[#27272a] shadow-inner">
+                                            {/* Background Grid lines for progress bar */}
+                                            <div className="absolute inset-0 bg-[linear-gradient(90deg,transparent_2px,#000_2px)] bg-[size:10px_100%] opacity-30 z-0"></div>
+                                            <div 
+                                                className={`absolute top-0 left-0 h-full transition-all duration-1000 ease-out z-0 ${m.load > 80? 'bg-gradient-to-r from-red-900/50 to-red-500' : m.load > 50? 'bg-gradient-to-r from-cyan-900/50 to-neon-cyan' : 'bg-gradient-to-r from-emerald-900/50 to-emerald-500'} opacity-80`} 
+                                                style={{ width: `${m.load}%`, boxShadow: `0 0 15px ${m.load > 80 ? 'red' : m.load > 50 ? 'cyan' : 'emerald'}` }}
+                                            ></div>
+                                            <div className="absolute inset-0 flex items-center px-3 justify-between z-10">
+                                                <div className="flex items-center gap-3">
+                                                    {/* 圖片容器加上科技感邊框和濾鏡 */}
+                                                    <div className="w-8 h-8 rounded img-containment-field">
+                                                        <img src={m.img} className="w-full h-full object-cover tech-img-filter" onError={(e) => {e.target.style.display='none'; e.target.parentElement.innerHTML='<div class="flex items-center justify-center h-full bg-slate-800"><i class="fa-solid fa-microchip text-slate-500 text-xs"></i></div>'}}/>
+                                                    </div>
+                                                    <span className="text-xs text-white font-bold font-mono drop-shadow">{m.load}% Load</span>
+                                                </div>
+                                                <i className="fa-solid fa-chevron-right text-xs text-slate-500 group-hover:text-neon-cyan"></i>
+                                            </div>
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            );
+        };
+
+        // --- View 2: Financial Simulator (Dark Tech) ---
+        const FinancialSim = () => {
+            const [pointValue, setPointValue] = useState(0.92);
+            const [points, setPoints] = useState(2450000); 
+            const selfPay = 1200000; 
+            const estimatedRevenue = Math.floor((points * pointValue) + selfPay);
+
+            return (
+                <div className="space-y-6 animate-slide-in h-full flex flex-col">
+                    <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                        <div className="tech-card p-8 flex flex-col justify-center space-y-8 bg-gradient-to-br from-slate-900 to-[#0c0c0e]">
+                            <div>
+                                <h2 className="text-xl font-bold text-white mb-2 flex items-center gap-2"><i className="fa-solid fa-calculator text-neon-cyan"></i> 健保點值動態模擬器</h2>
+                                <p className="text-sm text-slate-400">調整預估點值，即時試算科室總損益。</p>
+                            </div>
+                            
+                            <div>
+                                <div className="flex justify-between mb-2 font-mono">
+                                    <span className="text-sm font-bold text-slate-300">預估點值 (Point Value)</span>
+                                    <span className="text-3xl font-black text-neon-cyan drop-shadow-[0_0_8px_rgba(6,182,212,0.8)]">{pointValue.toFixed(2)}</span>
+                                </div>
+                                <input 
+                                    type="range" min="0.8" max="1.0" step="0.01" 
+                                    value={pointValue} 
+                                    onChange={(e) => setPointValue(parseFloat(e.target.value))}
+                                    className="w-full h-2 bg-slate-800 rounded-lg appearance-none cursor-pointer accent-neon-cyan hover:accent-cyan-400"
+                                    style={{backgroundImage: 'linear-gradient(to right, #06b6d4, #3b82f6)'}}
+                                />
+                                <div className="flex justify-between text-[10px] text-slate-500 mt-2 font-mono uppercase">
+                                    <span>0.80 (PESSIMISTIC)</span>
+                                    <span className="text-neon-cyan">0.90 (STANDARD)</span>
+                                    <span>1.00 (OPTIMISTIC)</span>
+                                </div>
+                            </div>
+
+                            <div className="bg-black/30 rounded-xl p-5 border border-white/10 relative overflow-hidden">
+                                <div className="absolute inset-0 bg-neon-cyan/5 animate-pulse"></div>
+                                <div className="flex justify-between items-center mb-3 relative z-10">
+                                    <span className="text-sm text-slate-400">健保申報點數</span>
+                                    <span className="font-mono font-bold text-slate-200">{points.toLocaleString()} pts</span>
+                                </div>
+                                <div className="flex justify-between items-center mb-3 relative z-10">
+                                    <span className="text-sm text-slate-400">自費項目營收</span>
+                                    <span className="font-mono font-bold text-amber-400">+ ${selfPay.toLocaleString()}</span>
+                                </div>
+                                <div className="h-px bg-white/10 my-4 relative z-10"></div>
+                                <div className="flex justify-between items-center relative z-10">
+                                    <span className="font-bold text-slate-200">預估總營收</span>
+                                    <span className="text-3xl font-black text-emerald-400 number-update drop-shadow-[0_0_10px_rgba(52,211,153,0.6)] font-mono">${estimatedRevenue.toLocaleString()}</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div className="tech-card p-6 lg:col-span-2">
+                            <DynamicChart 
+                                type="bar"
+                                title="營收結構分析 (Revenue Mix Matrix)"
+                                data={{
+                                    labels: ['VMAT', 'IMRT', 'SBRT', '3D-CRT', '其他'],
+                                    datasets: [
+                                        { 
+                                            label: '健保點數換算', 
+                                            data: [450000 * pointValue, 320000 * pointValue, 150000 * pointValue, 80000 * pointValue, 50000 * pointValue], 
+                                            backgroundColor: 'rgba(6, 182, 212, 0.7)', borderColor: '#06b6d4', borderWidth: 1, stack: 'Stack 0' 
+                                        },
+                                        { 
+                                            label: '自費差額/全自費', 
+                                            data: [200000, 50000, 600000, 10000, 5000], 
+                                            backgroundColor: 'rgba(245, 158, 11, 0.7)', borderColor: '#f59e0b', borderWidth: 1, stack: 'Stack 0' 
+                                        }
+                                    ]
+                                }}
+                                options={{
+                                    indexAxis: 'y',
+                                    scales: { x: { stacked: true }, y: { stacked: true } }
+                                }}
+                            />
+                        </div>
+                    </div>
+
+                    <div className="tech-card flex-1 flex flex-col overflow-hidden font-mono text-sm">
+                        <div className="p-4 border-b border-white/10 bg-white/5 flex justify-between items-center">
+                            <h3 className="font-bold text-slate-200"><i className="fa-solid fa-list-ul mr-2 text-neon-cyan"></i> 最新申報明細 (LIVE DATA STREAM)</h3>
+                            <span className="flex h-2 w-2 relative">
+                                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-neon-cyan opacity-75"></span>
+                                <span className="relative inline-flex rounded-full h-2 w-2 bg-neon-cyan"></span>
+                            </span>
+                        </div>
+                        <div className="flex-1 overflow-auto p-0 custom-scroll relative">
+                             {/* 掃描線背景 */}
+                            <div className="absolute inset-0 pointer-events-none bg-[linear-gradient(transparent_50%,rgba(0,0,0,0.5)_50%)] bg-[size:100%_4px] z-0 opacity-30"></div>
+                            <table className="w-full text-left border-collapse relative z-10">
+                                <thead className="bg-[#0c0c0e] text-xs uppercase text-slate-400 sticky top-0 z-20">
+                                    <tr>
+                                        <th className="p-4 border-b border-white/10">時間</th><th className="p-4 border-b border-white/10">病歷號</th><th className="p-4 border-b border-white/10">項目代碼</th><th className="p-4 border-b border-white/10">治療項目</th><th className="p-4 text-right border-b border-white/10">金額/點數</th><th className="p-4 border-b border-white/10">狀態</th>
+                                    </tr>
+                                </thead>
+                                <tbody className="text-slate-300 divide-y divide-white/5">
+                                    {[...Array(10)].map((_, i) => (
+                                        <tr key={i} className="hover:bg-white/5 transition-colors group">
+                                            <td className="p-4 font-mono text-neon-cyan/70 group-hover:text-neon-cyan">10:{30 + i}</td>
+                                            <td className="p-4 font-mono">8810{234 + i}</td>
+                                            <td className="p-4"><span className="bg-white/10 border border-white/20 px-2 py-1 rounded text-xs font-mono text-slate-300">36012B</span></td>
+                                            <td className="p-4">深部放射治療-VMAT</td>
+                                            <td className="p-4 text-right font-bold text-white group-hover:text-neon-cyan">4,200</td>
+                                            <td className="p-4"><span className="text-xs bg-emerald-950/50 text-emerald-400 border border-emerald-500/50 px-3 py-1 rounded-full uppercase tracking-wider">已批價</span></td>
+                                        </tr>
+                                    ))}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            );
+        };
+
+        // --- View 3: Asset CAI (Dark Tech) ---
+        const AssetCAI = () => (
+            <div className="space-y-6 animate-slide-in">
+                <div className="grid grid-cols-2 gap-6 h-[500px]">
+                    <div className="tech-card p-8 flex flex-col justify-center">
+                        <h2 className="font-bold text-xl text-white mb-6 flex items-center gap-2"><i className="fa-solid fa-microchip text-neon-cyan"></i> 臨床可用性指數 (CAI) 計算核心</h2>
+                        <div className="bg-black/50 p-6 rounded-xl font-mono text-sm text-neon-cyan mb-8 border border-neon-cyan/30 shadow-[inset_0_0_20px_rgba(6,182,212,0.1)] relative overflow-hidden">
+                             <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-transparent via-neon-cyan to-transparent animate-scanline opacity-50"></div>
+                            CAI_Score = (BaseTime - (Down + Delay + QA_Overrun)) / BaseTime
+                        </div>
+                        <div className="grid grid-cols-2 gap-6 font-mono">
+                            <div className="p-4 border border-slate-700 bg-slate-800/50 rounded-xl text-center relative overflow-hidden group hover:border-neon-cyan/50 transition-all">
+                                <p className="text-xs text-slate-400 uppercase tracking-wider mb-2">Base Time</p>
+                                <p className="text-3xl font-black text-white group-hover:text-neon-cyan transition-colors">540 min</p>
+                            </div>
+                            <div className="p-4 border border-red-900/50 bg-red-950/30 rounded-xl text-center group hover:border-red-500/50 transition-all">
+                                <p className="text-xs text-red-400 uppercase tracking-wider mb-2">Down Time (Critical)</p>
+                                <p className="text-3xl font-black text-red-500 drop-shadow-[0_0_10px_rgba(239,68,68,0.6)]">0 min</p>
+                            </div>
+                            <div className="p-4 border border-amber-900/50 bg-amber-950/30 rounded-xl text-center group hover:border-amber-500/50 transition-all">
+                                <p className="text-xs text-amber-400 uppercase tracking-wider mb-2">Soft Delay</p>
+                                <p className="text-3xl font-black text-amber-500">12 min</p>
+                            </div>
+                            <div className="p-4 border border-blue-900/50 bg-blue-950/30 rounded-xl text-center group hover:border-blue-500/50 transition-all">
+                                <p className="text-xs text-blue-400 uppercase tracking-wider mb-2">QA Overrun</p>
+                                <p className="text-3xl font-black text-blue-500">5 min</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div className="tech-card p-8 flex items-center justify-center relative">
+                         <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,_var(--tw-gradient-stops))] from-neon-cyan/10 to-transparent opacity-30 pointer-events-none"></div>
+                        <div className="w-full h-full">
+                             <DynamicChart 
+                                type="doughnut"
+                                title="時間損失因子分析 (Time Loss Vector)"
+                                data={{
+                                    labels: ['有效治療時間', '停機損失', '延遲損失', 'QA超時'],
+                                    datasets: [{
+                                        data: [523, 0, 12, 5],
+                                        backgroundColor: ['#10b981', '#ef4444', '#f59e0b', '#3b82f6'],
+                                        borderColor: '#09090b',
+                                        borderWidth: 2,
+                                        hoverBorderColor: '#ffffff',
+                                        hoverBorderWidth: 3
+                                    }]
+                                }}
+                                options={{ 
+                                    cutout: '75%',
+                                    plugins: {
+                                        legend: { position: 'bottom', labels: { padding: 20, usePointStyle: true, pointStyle: 'rectRounded' } }
+                                    }
+                                }}
+                            />
+                        </div>
+                        {/* Center Text in Doughnut */}
+                         <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none mt-10">
+                            <p className="text-slate-400 text-xs uppercase tracking-widest font-mono mb-1">Current CAI</p>
+                            <p className="text-5xl font-black text-emerald-400 drop-shadow-[0_0_15px_rgba(52,211,153,0.6)]">96.8%</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        );
+
+        // --- View 4: Cost Analysis (Dark Tech) ---
+        const CostAnalysis = () => (
+            <div className="tech-card p-8 animate-slide-in h-full bg-[linear-gradient(45deg,rgba(0,0,0,0.6),rgba(20,20,25,0.8))]">
+                <div className="flex justify-between items-end mb-10 border-b border-white/10 pb-6">
+                    <div>
+                        <h2 className="text-3xl font-black text-white flex items-center gap-3">
+                            <i className="fa-solid fa-boxes-stacked text-neon-purple"></i> TDABC 成本分析模型
+                        </h2>
+                        <p className="text-neon-purple text-sm mt-2 font-mono tracking-wider">Time-Driven Activity-Based Costing: VMAT vs SRS Protocol</p>
+                    </div>
+                    <div className="flex gap-8 font-mono">
+                        <div className="text-right">
+                            <p className="text-[10px] text-slate-400 uppercase tracking-wider mb-1">Physician Rate (min)</p>
+                            <p className="text-xl font-bold text-slate-200">$45.00</p>
+                        </div>
+                        <div className="text-right">
+                            <p className="text-[10px] text-slate-400 uppercase tracking-wider mb-1">Physicist Rate (min)</p>
+                            <p className="text-xl font-bold text-slate-200">$25.00</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-10">
+                    {/* VMAT Card */}
+                    <div className="border border-blue-500/30 bg-blue-950/20 rounded-2xl p-8 relative overflow-hidden group hover:border-blue-400/60 transition-all shadow-[0_0_30px_rgba(59,130,246,0.1)]">
+                         <div className="absolute inset-0 bg-[linear-gradient(to_bottom,transparent,rgba(59,130,246,0.05))] pointer-events-none"></div>
+                        <div className="absolute top-0 right-0 bg-blue-600 text-white px-4 py-2 rounded-bl-2xl text-xs font-bold uppercase tracking-wider shadow-lg">標準 VMAT</div>
+                        <div className="mb-8 font-mono">
+                            <span className="text-5xl font-black text-blue-400 drop-shadow-[0_0_10px_rgba(59,130,246,0.5)]">$3,300</span>
+                            <span className="text-sm text-blue-300/70 ml-2">/ fraction</span>
+                        </div>
+                        <ul className="space-y-4 text-sm font-mono relative z-10">
+                            <li className="flex justify-between p-3 bg-white/5 rounded-lg border border-white/10"><span className="text-slate-300"><i className="fa-solid fa-user-doctor mr-2 text-blue-400"></i>醫師 (Contouring 30m)</span> <span className="font-bold">$1,350</span></li>
+                            <li className="flex justify-between p-3 bg-white/5 rounded-lg border border-white/10"><span className="text-slate-300"><i className="fa-solid fa-atom mr-2 text-blue-400"></i>物理師 (Planning 60m)</span> <span className="font-bold">$1,500</span></li>
+                            <li className="flex justify-between p-3 bg-white/5 rounded-lg border border-white/10"><span className="text-slate-300"><i className="fa-solid fa-radiation mr-2 text-blue-400"></i>放射師 x2 (Treat 15m)</span> <span className="font-bold">$450</span></li>
+                        </ul>
+                        <div className="mt-8 pt-6 border-t border-blue-500/30">
+                            <p className="text-xs text-blue-300 mb-2 uppercase tracking-wider">Resource Allocation</p>
+                            <div className="w-full bg-black/50 h-3 rounded-full overflow-hidden flex border border-blue-500/30">
+                                <div className="bg-blue-500 h-full shadow-[0_0_10px_rgba(59,130,246,0.8)]" style={{width: '40%'}}></div>
+                                <div className="bg-cyan-500 h-full shadow-[0_0_10px_rgba(6,182,212,0.8)]" style={{width: '45%'}}></div>
+                                <div className="bg-slate-600 h-full" style={{width: '15%'}}></div>
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* SRS Card */}
+                    <div className="border border-orange-500/30 bg-orange-950/20 rounded-2xl p-8 relative overflow-hidden group hover:border-orange-400/60 transition-all shadow-[0_0_30px_rgba(249,115,22,0.1)]">
+                         <div className="absolute inset-0 bg-[linear-gradient(to_bottom,transparent,rgba(249,115,22,0.05))] pointer-events-none"></div>
+                        <div className="absolute top-0 right-0 bg-orange-600 text-white px-4 py-2 rounded-bl-2xl text-xs font-bold uppercase tracking-wider shadow-lg">高階 SRS/SBRT</div>
+                        <div className="mb-8 font-mono">
+                            <span className="text-5xl font-black text-orange-400 drop-shadow-[0_0_10px_rgba(249,115,22,0.5)]">$7,800</span>
+                            <span className="text-sm text-orange-300/70 ml-2">/ fraction</span>
+                        </div>
+                        <ul className="space-y-4 text-sm font-mono relative z-10">
+                            <li className="flex justify-between p-3 bg-white/5 rounded-lg border border-white/10"><span className="text-slate-300"><i className="fa-solid fa-user-doctor mr-2 text-orange-400"></i>醫師 (Contour+Verify)</span> <span className="font-bold">$2,700</span></li>
+                            <li className="flex justify-between p-3 bg-white/5 rounded-lg border border-white/10"><span className="text-slate-300"><i className="fa-solid fa-atom mr-2 text-orange-400"></i>物理師 (Plan+QA+Console)</span> <span className="font-bold">$3,500</span></li>
+                            <li className="flex justify-between p-3 bg-white/5 rounded-lg border border-white/10"><span className="text-slate-300"><i className="fa-solid fa-radiation mr-2 text-orange-400"></i>放射師 x2 (Treat 40m)</span> <span className="font-bold">$1,200</span></li>
+                            <li className="flex justify-between p-3 bg-orange-900/30 rounded-lg border border-orange-500/50 font-bold text-orange-400 shadow-[inset_0_0_10px_rgba(249,115,22,0.2)]"><span><i className="fa-solid fa-plus mr-2"></i>設備折舊攤提加成</span> <span>+$400</span></li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        );
+
+        // --- View 5: Equipment Detail (Dark Tech with Image Integration & AI) ---
+        const EquipmentDetail = ({ eqId }) => {
+            const config = {
+                'eq_versa': { name: 'Elekta Versa HD', img: 'image/elekta.jpg', type: 'LINAC', location: 'B2 治療室 01', sn: 'A-2023-001' },
+                'eq_synergy': { name: 'Elekta Synergy', img: 'image/synergy.jpg', type: 'LINAC', location: 'B2 治療室 02', sn: 'A-2018-005' },
+                'eq_ge': { name: 'GE CT-Sim', img: 'image/ge.jpg', type: 'CT', location: 'B2 定位室', sn: 'C-2020-012' },
+                'eq_hypers': { name: 'Hyperthermia (BSD)', img: 'image/hypers.jpg', type: 'THERAPY', location: 'B2 熱治療室', sn: 'H-2015-003' }
+            };
+            
+            const info = config[eqId] || config['eq_versa'];
+            const [imgError, setImgError] = useState(false);
+            const [params, setParams] = useState({ temp: 22.5, power: 12.4, mu: 4582100 });
+
+            useEffect(() => {
+                setImgError(false);
+                // 模擬參數跳動
+                const interval = setInterval(() => {
+                    setParams(prev => ({
+                        temp: (prev.temp + (Math.random() * 0.2 - 0.1)).toFixed(1),
+                        power: (prev.power + (Math.random() * 0.4 - 0.2)).toFixed(1),
+                        mu: prev.mu + Math.floor(Math.random() * 50)
+                    }));
+                }, 1000);
+                return () => clearInterval(interval);
+            }, [eqId]);
+
+            return (
+                <div className="flex flex-col md:flex-row gap-8 h-full animate-slide-in">
+                    {/* Left Column: Image & Quick Stats */}
+                    <div className="w-full md:w-1/3 flex flex-col gap-6">
+                        {/* 圖片容器：使用科技感封裝樣式 */}
+                        <div className="tech-card p-2 h-80 group relative overflow-hidden">
+                            <div className="img-containment-field w-full h-full">
+                                {!imgError ? (
+                                    <img 
+                                        src={info.img} 
+                                        alt={info.name} 
+                                        className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105 tech-img-filter"
+                                        onError={() => setImgError(true)}
+                                    />
+                                ) : (
+                                    <div className="flex flex-col items-center justify-center h-full bg-slate-800 text-slate-500">
+                                        <i className="fa-solid fa-triangle-exclamation text-6xl mb-4 text-amber-500 opacity-50"></i>
+                                        <span className="text-sm font-mono uppercase tracking-widest">Optical Feed Lost</span>
+                                    </div>
+                                )}
+                                {/* 掃描線效果 */}
+                                <div className="absolute inset-0 bg-[linear-gradient(transparent_2px,rgba(0,0,0,0.5)_2px)] bg-[size:100%_4px] pointer-events-none opacity-50"></div>
+                            </div>
+                             <div className="absolute top-6 left-6 bg-black/80 backdrop-blur border border-emerald-500/50 px-4 py-2 rounded-full text-xs font-bold text-emerald-400 shadow-[0_0_15px_rgba(52,211,153,0.4)] flex items-center gap-3 z-20">
+                                <span className="animate-pulse-glow w-3 h-3 bg-emerald-500 rounded-full shadow-emerald-500"></span> 
+                                <span className="tracking-wider font-mono">SYSTEM ONLINE</span>
+                            </div>
+                        </div>
+                        
+                        <div className="grid grid-cols-2 gap-6 font-mono">
+                            <div className="tech-card p-6 text-center bg-emerald-950/20 border-emerald-500/30 hover:border-emerald-400/60 transition-all">
+                                <p className="text-[10px] text-emerald-300 uppercase mb-2 tracking-widest">Availability</p>
+                                <p className="text-3xl font-black text-emerald-400 drop-shadow-[0_0_8px_rgba(52,211,153,0.8)]">99.8%</p>
+                            </div>
+                            <div className="tech-card p-6 text-center bg-blue-950/20 border-blue-500/30 hover:border-blue-400/60 transition-all">
+                                <p className="text-[10px] text-blue-300 uppercase mb-2 tracking-widest">Today's Queue</p>
+                                <p className="text-3xl font-black text-blue-400 drop-shadow-[0_0_8px_rgba(59,130,246,0.8)]">32 Pts</p>
+                            </div>
+                        </div>
+
+                        {/* 新增：AI 預測性維護簡報 */}
+                        <AiTerminal type={eqId} />
+                    </div>
+
+                    {/* Right Column: Details, Params, Logs */}
+                    <div className="flex-1 flex flex-col gap-6">
+                        <div className="tech-card p-8 relative overflow-hidden">
+                            <div className="absolute top-0 right-0 p-4 opacity-20">
+                                <i className="fa-solid fa-server text-8xl text-neon-cyan"></i>
+                            </div>
+                            <h2 className="text-4xl font-black text-white mb-3 tracking-tight flex items-center gap-3">
+                                {info.name} <span className="text-sm px-3 py-1 rounded-full border border-neon-cyan/50 text-neon-cyan font-mono bg-cyan-950/30">{info.type}</span>
+                            </h2>
+                            <p className="text-slate-400 mb-8 flex items-center gap-4 font-mono text-sm">
+                                <span className="flex items-center gap-2"><i className="fa-solid fa-location-dot text-neon-cyan"></i> {info.location}</span>
+                                <span className="text-slate-600">|</span>
+                                <span className="flex items-center gap-2"><i className="fa-solid fa-barcode text-neon-cyan"></i> S/N: {info.sn}</span>
+                            </p>
+
+                            <div className="mb-8">
+                                <h3 className="font-bold text-slate-200 mb-6 pb-2 border-b border-white/10 flex items-center gap-2 uppercase tracking-wider text-sm">
+                                    <i className="fa-solid fa-gauge-high text-neon-cyan"></i> 即時運轉參數 (LIVE TELEMETRY)
+                                </h3>
+                                <div className="grid grid-cols-3 gap-8 font-mono">
+                                    <div className="bg-white/5 p-4 rounded-xl border border-white/10">
+                                        <p className="text-xs text-slate-400 uppercase mb-1"><i className="fa-solid fa-temperature-half mr-2 opacity-50"></i>機房溫度</p>
+                                        <p className="text-2xl font-bold text-white">{params.temp}°C</p>
+                                    </div>
+                                    <div className="bg-white/5 p-4 rounded-xl border border-white/10">
+                                        <p className="text-xs text-slate-400 uppercase mb-1"><i className="fa-solid fa-bolt mr-2 opacity-50"></i>冰水機功耗</p>
+                                        <p className="text-2xl font-bold text-white">{params.power} kW</p>
+                                    </div>
+                                    <div className="bg-cyan-950/30 p-4 rounded-xl border border-neon-cyan/30 relative overflow-hidden">
+                                         <div className="absolute inset-0 bg-neon-cyan/5 animate-pulse"></div>
+                                        <p className="text-xs text-neon-cyan uppercase mb-1 relative z-10"><i className="fa-solid fa-radiation mr-2"></i>累積劑量 (MU)</p>
+                                        <p className="text-2xl font-black text-neon-cyan relative z-10 drop-shadow-[0_0_5px_rgba(6,182,212,0.8)]">{parseInt(params.mu).toLocaleString()}</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div className="flex-1 tech-card p-6 overflow-hidden flex flex-col">
+                            <h3 className="font-bold text-xs uppercase text-slate-400 mb-4 flex items-center gap-2 tracking-wider">
+                                <i className="fa-solid fa-clipboard-check text-neon-cyan"></i> 近期維修日誌 (MAINTENANCE LOGS)
+                            </h3>
+                            <div className="flex-1 overflow-y-auto custom-scroll space-y-3 pr-2 font-mono">
+                                {[1, 2, 3, 4, 5].map(i => (
+                                    <div key={i} className="flex items-start gap-4 text-sm border-b border-white/5 pb-3 last:border-0 hover:bg-white/5 p-2 rounded transition-colors">
+                                        <div className="text-xs text-neon-cyan/70 mt-1">2023-11-{20-i} <br/><span className="text-slate-500">07:30</span></div>
+                                        <div className="flex-1">
+                                            <p className="font-bold text-slate-200 mb-1">例行性晨間 QA 校正程序 (Daily Protocol)</p>
+                                            <p className="text-xs text-slate-500">物理師: 陳小明 (ID: P005) | 檢查項目: 45 項</p>
+                                        </div>
+                                        <div className="px-3 py-1 bg-emerald-950/50 border border-emerald-500/50 rounded-full text-xs text-emerald-400 flex items-center gap-2 uppercase">
+                                            <i className="fa-solid fa-check-circle"></i> PASS
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            );
+        };
+
+        // --- Main App (Dark Tech Structure) ---
+        const App = () => {
+            const [view, setView] = useState('dashboard');
+
+            const renderView = () => {
+                switch(view) {
+                    case 'dashboard': return <Dashboard setView={setView} />;
+                    case 'financial': case 'financial_nhi': case 'financial_self': return <FinancialSim />;
+                    case 'asset': case 'asset_cai': return <AssetCAI />;
+                    case 'cost': case 'tdabc_cost': return <CostAnalysis />;
+                    case 'eq_versa': case 'eq_synergy': case 'eq_ge': case 'eq_hypers':
+                        return <EquipmentDetail eqId={view} />;
+                    case 'energy': return (
+                        <div className="tech-card p-8 text-center flex flex-col items-center justify-center h-full relative overflow-hidden">
+                            <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,_var(--tw-gradient-stops))] from-emerald-500/20 to-transparent pointer-events-none animate-pulse"></div>
+                            <i className="fa-solid fa-seedling text-8xl text-emerald-500 mb-8 animate-bounce drop-shadow-[0_0_20px_rgba(52,211,153,0.6)]"></i>
+                            <h2 className="text-4xl font-black text-white mb-4 tracking-tight">ESG 能源監控模組</h2>
+                            <p className="text-slate-400 text-lg font-mono border-b-2 border-emerald-500/50 pb-2">即時計算碳足跡與電力消耗</p>
+                            <span className="mt-4 px-4 py-2 bg-emerald-950 border border-emerald-500 rounded text-emerald-400 text-sm font-bold uppercase tracking-widest animate-pulse">System Under Development</span>
+                        </div>
+                    );
+                    default: return <Dashboard setView={setView} />;
+                }
+            };
+
+            return (
+                <div className="flex h-screen w-screen overflow-hidden bg-[#050505]">
+                    <Sidebar currentView={view} setView={setView} />
+                    <main className="flex-1 flex flex-col relative overflow-hidden">
+                        {/* Header - Dark Tech Style */}
+                        <header className="h-24 bg-[#0c0c0e]/80 backdrop-blur-md border-b border-[#27272a] flex justify-between items-center px-8 z-10 relative shadow-lg">
+                             <div className="absolute bottom-0 left-0 right-0 h-[1px] bg-gradient-to-r from-transparent via-neon-cyan/50 to-transparent"></div>
+                            <h2 className="text-2xl font-black text-white flex items-center gap-4 tracking-tight">
+                                <span className="p-3 bg-white/5 border border-white/10 rounded-xl shadow-[inset_0_0_10px_rgba(0,0,0,0.5)]">
+                                    {view === 'dashboard' && <i className="fa-solid fa-house-signal text-neon-cyan drop-shadow"></i>}
+                                    {view.includes('financial') && <i className="fa-solid fa-calculator text-amber-400 drop-shadow"></i>}
+                                    {view.includes('eq_') && <i className="fa-solid fa-server text-blue-400 drop-shadow"></i>}
+                                    {view.includes('asset') && <i className="fa-solid fa-microchip text-emerald-400 drop-shadow"></i>}
+                                    {view.includes('cost') && <i className="fa-solid fa-boxes-stacked text-neon-purple drop-shadow"></i>}
+                                    {view === 'energy' && <i className="fa-solid fa-leaf text-emerald-500 drop-shadow"></i>}
+                                </span>
+                                <span className="bg-clip-text text-transparent bg-gradient-to-r from-white to-slate-400">
+                                    {view === 'dashboard' ? '營運總覽 Dashboard' : 
+                                     view.includes('financial') ? '財務績效模擬' :
+                                     view.includes('eq_') ? '設備詳細監控' : 
+                                     view.includes('asset') ? '資產效能分析' :
+                                     view.includes('cost') ? '成本分析模型' : 'ESG 能源監控'}
+                                </span>
+                            </h2>
+                            <div className="flex items-center gap-8">
+                                {/* Status Indicators - Digital Style */}
+                                <div className="flex items-center gap-3 px-4 py-2 bg-[#050505] border border-emerald-500/30 rounded-lg text-emerald-400 text-xs font-bold font-mono shadow-[0_0_10px_rgba(52,211,153,0.2)] relative overflow-hidden">
+                                    <span className="absolute inset-0 bg-emerald-500/5 animate-pulse"></span>
+                                    <span className="animate-pulse-glow w-2 h-2 bg-emerald-500 rounded-full shadow-emerald-500"></span>
+                                    HIS LINK: STABLE
+                                </div>
+                                <div className="text-right font-mono">
+                                    <p className="text-[10px] text-neon-cyan font-bold uppercase tracking-[0.2em] mb-1">System Time</p>
+                                    <p className="text-lg font-bold text-white drop-shadow-[0_0_5px_rgba(255,255,255,0.5)]">{new Date().toLocaleTimeString()}</p>
+                                </div>
+                            </div>
+                        </header>
+
+                        <div className="flex-1 overflow-hidden p-8 relative z-0">
+                            {/* Ambient Background Light Effects */}
+                            <div className="absolute top-0 left-0 w-full h-full overflow-hidden -z-10 pointer-events-none">
+                                <div className="absolute -top-[20%] -left-[10%] w-[40%] h-[40%] bg-neon-cyan/20 rounded-full filter blur-[150px] opacity-40 animate-pulse-slow"></div>
+                                <div className="absolute -bottom-[20%] -right-[10%] w-[40%] h-[40%] bg-neon-blue/20 rounded-full filter blur-[150px] opacity-40 animate-pulse-slow" style={{animationDelay: '2s'}}></div>
+                            </div>
+                            
+                            {renderView()}
+                        </div>
+                    </main>
+                </div>
+            );
+        };
+
+        const root = ReactDOM.createRoot(document.getElementById('root'));
+        root.render(<App />);
+    </script>
+</body>
+</html>
