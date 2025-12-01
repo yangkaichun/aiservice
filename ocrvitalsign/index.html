@@ -3,844 +3,371 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Health+ OCR 智能健康助理</title>
-    <script src='https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js'></script>
+    <title>Health+ OCR (Google Cloud Vision 版)</title>
     <style>
         :root {
-            --primary-color: #E60012;
-            --secondary-color: #00C0F3;
+            --primary-color: #4285F4; /* Google Blue */
             --bg-color: #121212;
             --text-color: #ffffff;
-            --guide-color: #00C0F3;
-            --success-color: #4CAF50;
+            --guide-color: #34A853; /* Google Green */
         }
         
-        * {
-            box-sizing: border-box;
-            -webkit-tap-highlight-color: transparent;
-        }
+        * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
         
         body {
-            font-family: -apple-system, BlinkMacSystemFont, "Microsoft JhengHei", "Segoe UI", sans-serif;
-            background-color: var(--bg-color);
-            color: var(--text-color);
-            margin: 0;
-            display: flex;
-            flex-direction: column;
-            height: 100vh;
-            overflow: hidden;
-            touch-action: manipulation;
+            font-family: -apple-system, BlinkMacSystemFont, "Microsoft JhengHei", sans-serif;
+            background-color: var(--bg-color); color: var(--text-color);
+            margin: 0; display: flex; flex-direction: column; height: 100vh; overflow: hidden;
         }
 
-        /* 上方顯示區域 */
-        #display-container {
-            position: relative;
-            flex: 1;
-            background: #000;
-            overflow: hidden;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-        }
-        
-        video, #preview-img {
-            width: 100%;
-            height: 100%;
-            object-fit: cover;
-        }
-        
-        #preview-img { 
-            display: none;
-        }
-
-        /* 掃描引導框 */
-        #guide-box {
-            position: absolute;
-            top: 45%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            width: 80%;
-            height: 25%;
-            border: 3px solid var(--guide-color);
-            box-shadow: 0 0 0 9999px rgba(0, 0, 0, 0.65);
-            border-radius: 12px;
-            z-index: 10;
-            pointer-events: none;
-            transition: all 0.4s ease;
-        }
-        
-        /* 四角動畫 */
-        #guide-box::before,
-        #guide-box::after {
-            content: '';
-            position: absolute;
-            width: 20px;
-            height: 20px;
-            border: 3px solid var(--guide-color);
-        }
-        
-        #guide-box::before {
-            top: -3px;
-            left: -3px;
-            border-right: none;
-            border-bottom: none;
-            animation: corner-pulse 2s infinite;
-        }
-        
-        #guide-box::after {
-            bottom: -3px;
-            right: -3px;
-            border-left: none;
-            border-top: none;
-            animation: corner-pulse 2s infinite 1s;
-        }
-        
-        @keyframes corner-pulse {
-            0%, 100% { opacity: 1; }
-            50% { opacity: 0.3; }
-        }
-        
-        #guide-text {
-            position: absolute;
-            top: -40px;
-            left: 0;
-            width: 100%;
-            text-align: center;
-            color: var(--guide-color);
-            font-weight: bold;
-            text-shadow: 2px 2px 4px rgba(0,0,0,0.8);
-            font-size: 15px;
-            letter-spacing: 0.5px;
-        }
-
-        /* 下方控制區 */
-        #controls {
-            background: linear-gradient(180deg, #1e1e1e 0%, #161616 100%);
-            padding: 20px;
-            border-top-left-radius: 24px;
-            border-top-right-radius: 24px;
-            box-shadow: 0 -4px 20px rgba(0,0,0,0.5);
-            z-index: 20;
-            flex-shrink: 0;
-        }
-
-        /* 模式切換 Tabs */
-        .tabs {
-            display: flex;
-            justify-content: center;
-            margin-bottom: 18px;
-            background: #2a2a2a;
-            border-radius: 24px;
-            padding: 5px;
-            gap: 5px;
-        }
-        
-        .tab {
-            flex: 1;
-            text-align: center;
-            padding: 12px;
-            border-radius: 20px;
-            cursor: pointer;
-            font-size: 14px;
-            font-weight: 500;
-            transition: all 0.3s ease;
-            color: #aaa;
-            user-select: none;
-        }
-        
-        .tab.active {
-            background: var(--primary-color);
-            color: white;
-            font-weight: bold;
-            box-shadow: 0 2px 8px rgba(230, 0, 18, 0.4);
-        }
-        
-        .tab:not(.active):active {
-            transform: scale(0.95);
-        }
-
-        /* 按鈕樣式 */
-        .btn {
-            width: 100%;
-            padding: 16px;
-            border: none;
-            border-radius: 14px;
-            font-size: 17px;
-            font-weight: bold;
-            cursor: pointer;
-            margin-bottom: 10px;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            gap: 8px;
-            transition: all 0.2s ease;
-            user-select: none;
-        }
-        
-        .btn:active:not(:disabled) {
-            transform: scale(0.98);
-        }
-        
-        .btn-capture { 
-            background: white; 
-            color: var(--primary-color);
-            box-shadow: 0 4px 12px rgba(255,255,255,0.2);
-        }
-        
-        .btn-upload { 
-            background: var(--primary-color); 
-            color: white;
-            box-shadow: 0 4px 12px rgba(230, 0, 18, 0.3);
-        }
-        
-        .btn-upload:disabled { 
-            background: #555; 
-            color: #888;
-            box-shadow: none;
-        }
-
-        /* 隱藏的原生檔案輸入框 */
-        #native-camera-input { 
-            display: none; 
-        }
-
-        /* 狀態提示 */
-        #status-bar {
-            text-align: center;
-            font-size: 13px;
-            color: #888;
-            margin-top: 8px;
-            height: 24px;
-            line-height: 24px;
-        }
-
-        /* 編輯結果彈窗 */
-        #result-modal {
-            display: none;
-            position: fixed;
-            top: 0; 
-            left: 0;
-            width: 100%; 
-            height: 100%;
-            background: rgba(0,0,0,0.97);
+        /* API Key 輸入區 (測試用) */
+        #api-key-bar {
+            background: #202124; padding: 10px;
+            display: flex; gap: 10px; border-bottom: 1px solid #444;
             z-index: 100;
-            padding: 20px;
-            overflow-y: auto;
-            animation: slideUp 0.3s ease;
         }
-        
-        @keyframes slideUp {
-            from {
-                transform: translateY(100%);
-            }
-            to {
-                transform: translateY(0);
-            }
-        }
-        
-        .modal-header {
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            margin-bottom: 20px;
-        }
-        
-        .modal-header h2 {
-            margin: 0;
-            color: white;
-            font-size: 22px;
-        }
-        
-        .form-group { 
-            margin-bottom: 16px; 
-        }
-        
-        .form-group label { 
-            display: block; 
-            color: #aaa; 
-            margin-bottom: 6px; 
-            font-size: 14px;
-            font-weight: 500;
-        }
-        
-        .form-group input {
-            width: 100%; 
-            padding: 14px;
-            background: #2a2a2a; 
-            border: 2px solid #444;
-            border-radius: 10px; 
-            color: white; 
-            font-size: 16px;
-            transition: border-color 0.3s;
-        }
-        
-        .form-group input:focus {
-            outline: none;
-            border-color: var(--primary-color);
+        #api-key-input {
+            flex: 1; background: #333; border: 1px solid #555;
+            color: white; padding: 8px; border-radius: 4px; font-size: 12px;
         }
 
-        /* Loading 動畫 */
-        .loading-overlay {
-            display: none;
-            position: absolute;
-            top: 0; 
-            left: 0; 
-            width: 100%; 
-            height: 100%;
-            background: rgba(0,0,0,0.85);
-            z-index: 50;
-            justify-content: center; 
-            align-items: center; 
-            flex-direction: column;
+        /* 顯示區 */
+        #display-container {
+            position: relative; flex: 1; background: #000;
+            display: flex; justify-content: center; align-items: center; overflow: hidden;
         }
         
+        video, #preview-img { width: 100%; height: 100%; object-fit: cover; }
+        #preview-img { display: none; }
+
+        /* 掃描框 */
+        #guide-box {
+            position: absolute; top: 45%; left: 50%; transform: translate(-50%, -50%);
+            width: 80%; height: 30%; border: 3px solid var(--guide-color);
+            border-radius: 12px; box-shadow: 0 0 0 9999px rgba(0, 0, 0, 0.7);
+            pointer-events: none; z-index: 10;
+        }
+        #guide-text {
+            position: absolute; top: -40px; width: 100%; text-align: center;
+            color: var(--guide-color); font-weight: bold; text-shadow: 1px 1px 2px black;
+        }
+
+        /* 控制區 */
+        #controls {
+            background: #202124; padding: 20px; border-radius: 20px 20px 0 0;
+            box-shadow: 0 -5px 20px rgba(0,0,0,0.5); z-index: 20;
+        }
+
+        .tabs { display: flex; gap: 10px; margin-bottom: 15px; }
+        .tab {
+            flex: 1; padding: 12px; background: #333; border-radius: 8px;
+            text-align: center; color: #aaa; cursor: pointer; transition: 0.3s;
+        }
+        .tab.active { background: var(--primary-color); color: white; font-weight: bold; }
+
+        .btn {
+            width: 100%; padding: 16px; border: none; border-radius: 8px;
+            font-size: 16px; font-weight: bold; cursor: pointer; margin-bottom: 10px;
+        }
+        .btn-capture { background: white; color: var(--primary-color); }
+        .btn-upload { background: var(--primary-color); color: white; }
+
+        #native-input { display: none; }
+
+        /* 結果視窗 */
+        #result-modal {
+            display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.95); z-index: 200; padding: 20px; overflow-y: auto;
+        }
+        .form-group { margin-bottom: 15px; }
+        .form-group label { color: #aaa; font-size: 13px; margin-bottom: 5px; display: block; }
+        .form-group input {
+            width: 100%; padding: 12px; background: #303134; border: 1px solid #555;
+            color: white; border-radius: 6px; font-size: 16px;
+        }
+
+        /* Loading */
+        #loader {
+            display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.8); z-index: 300;
+            flex-direction: column; justify-content: center; align-items: center;
+        }
         .spinner {
-            border: 5px solid rgba(255,255,255,0.1); 
-            border-top: 5px solid var(--primary-color);
-            border-radius: 50%; 
-            width: 50px; 
-            height: 50px;
-            animation: spin 1s linear infinite; 
-            margin-bottom: 15px;
+            width: 40px; height: 40px; border: 4px solid #fff3;
+            border-top: 4px solid var(--primary-color); border-radius: 50%;
+            animation: spin 1s linear infinite; margin-bottom: 15px;
         }
-        
-        @keyframes spin { 
-            0% { transform: rotate(0deg); } 
-            100% { transform: rotate(360deg); } 
-        }
-        
-        #loader-text {
-            color: white;
-            font-size: 15px;
-            font-weight: 500;
-            text-align: center;
-            padding: 0 20px;
-        }
-        
-        /* 成功提示 */
-        .success-toast {
-            position: fixed;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            background: var(--success-color);
-            color: white;
-            padding: 20px 30px;
-            border-radius: 12px;
-            font-size: 16px;
-            font-weight: bold;
-            z-index: 200;
-            display: none;
-            box-shadow: 0 4px 20px rgba(76, 175, 80, 0.5);
-            animation: fadeInOut 2s ease;
-        }
-        
-        @keyframes fadeInOut {
-            0%, 100% { opacity: 0; }
-            10%, 90% { opacity: 1; }
-        }
+        @keyframes spin { 100% { transform: rotate(360deg); } }
     </style>
 </head>
 <body>
 
-<div id="display-container">
-    <video id="video" autoplay playsinline muted></video>
-    <img id="preview-img" alt="拍攝預覽">
-    
-    <div id="guide-box">
-        <div id="guide-text">請將儀器數值置於框內</div>
-    </div>
-
-    <div class="loading-overlay" id="loader">
-        <div class="spinner"></div>
-        <div id="loader-text">系統初始化中...</div>
-    </div>
+<div id="api-key-bar">
+    <input type="password" id="api-key-input" placeholder="在此貼上 Google Cloud Vision API Key">
 </div>
 
-<canvas id="process-canvas" style="display:none;"></canvas>
-<input type="file" id="native-camera-input" accept="image/*" capture="environment">
+<div id="display-container">
+    <video id="video" autoplay playsinline muted></video>
+    <img id="preview-img">
+    <div id="guide-box"><div id="guide-text"></div></div>
+</div>
+
+<div id="loader">
+    <div class="spinner"></div>
+    <div style="color:white">Google 雲端運算中...</div>
+</div>
+
+<input type="file" id="native-input" accept="image/*" capture="environment">
 
 <div id="controls">
     <div class="tabs">
-        <div class="tab active" data-mode="vital">📊 生理儀器</div>
-        <div class="tab" data-mode="id">🪪 身分證/健保卡</div>
+        <div class="tab active" data-mode="vital">📟 生理儀器</div>
+        <div class="tab" data-mode="id">🪪 身分證</div>
     </div>
-
-    <button class="btn btn-capture" id="main-btn">
-        📷 啟動相機 / 拍照
-    </button>
-    
-    <div id="status-bar">準備就緒</div>
+    <button class="btn btn-capture" id="main-btn">📷 拍攝辨識</button>
 </div>
 
 <div id="result-modal">
-    <div class="modal-header">
-        <h2>✅ 辨識結果</h2>
-    </div>
+    <h2 style="color:white; margin-top:0">✅ Google 辨識結果</h2>
     <div id="dynamic-fields"></div>
     <br>
-    <button class="btn btn-upload" id="upload-btn">
-        ☁️ 上傳至遠傳 Health+
-    </button>
-    <button class="btn" style="background:transparent; border:2px solid #555; color:#ccc;" onclick="closeModal()">
-        🔄 重新拍攝
-    </button>
-</div>
-
-<div class="success-toast" id="success-toast">
-    ✅ 上傳成功！數據已同步至 Health+
+    <button class="btn btn-upload" onclick="alert('上傳成功！'); closeModal()">☁️ 確認上傳</button>
+    <button class="btn" style="background:#444; color:#white" onclick="closeModal()">🔄 重新拍攝</button>
 </div>
 
 <script>
-    // ========== 全域變數 ==========
+    // ========== 變數 ==========
+    let currentMode = 'vital';
     const video = document.getElementById('video');
-    const previewImg = document.getElementById('preview-img');
-    const canvas = document.getElementById('process-canvas');
-    const ctx = canvas.getContext('2d');
-    const nativeInput = document.getElementById('native-camera-input');
-    const statusBar = document.getElementById('status-bar');
+    const nativeInput = document.getElementById('native-input');
+    const modal = document.getElementById('result-modal');
     const loader = document.getElementById('loader');
-    const mainBtn = document.getElementById('main-btn');
-    const resultModal = document.getElementById('result-modal');
-    const uploadBtn = document.getElementById('upload-btn');
     
-    let currentMode = 'vital'; // 'vital' | 'id'
-    let useNativeCamera = false;
-    let worker = null;
-    let videoStream = null;
+    // 初始化
+    initCamera();
+    setMode('vital');
 
-    // ========== 1. 系統初始化 ==========
-    async function initSystem() {
-        showLoader("系統初始化中...");
-        
-        const isSecure = window.isSecureContext;
-        const hasMediaAPI = navigator.mediaDevices && navigator.mediaDevices.getUserMedia;
-
-        if (isSecure && hasMediaAPI) {
+    // ========== 1. 相機與模式 ==========
+    async function initCamera() {
+        if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
             try {
-                videoStream = await navigator.mediaDevices.getUserMedia({
-                    video: { 
-                        facingMode: "environment",
-                        width: { ideal: 1920 }, // 嘗試請求高畫質
-                        height: { ideal: 1080 }
-                    }, 
-                    audio: false 
+                const stream = await navigator.mediaDevices.getUserMedia({
+                    video: { facingMode: "environment", width: { ideal: 1920 } }
                 });
-                
-                video.srcObject = videoStream;
-                await video.play();
-                
-                useNativeCamera = false;
-                statusBar.innerText = "📹 視訊就緒 | 請盡量保持鏡頭穩定";
-                mainBtn.innerHTML = '📷 拍攝辨識';
-                
-            } catch (err) {
-                console.warn("相機啟動失敗", err);
-                enableNativeMode("相機權限被拒或不支援，已切換至相容模式");
+                video.srcObject = stream;
+            } catch (e) {
+                console.warn("Camera failed, fallback to file input");
             }
-        } else {
-            enableNativeMode("環境不支援即時視訊 (需 HTTPS)");
         }
+    }
+
+    document.querySelectorAll('.tab').forEach(t => t.addEventListener('click', function() {
+        document.querySelectorAll('.tab').forEach(x => x.classList.remove('active'));
+        this.classList.add('active');
+        setMode(this.dataset.mode);
+    }));
+
+    function setMode(mode) {
+        currentMode = mode;
+        const box = document.getElementById('guide-box');
+        const txt = document.getElementById('guide-text');
         
-        hideLoader();
-    }
-
-    function enableNativeMode(reason) {
-        useNativeCamera = true;
-        video.style.display = 'none';
-        previewImg.style.display = 'block';
-        previewImg.src = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 200 150'%3E%3Crect width='200' height='150' fill='%23222'/%3E%3Ctext x='100' y='75' fill='%23666' font-size='14' text-anchor='middle' font-family='Arial'%3E點擊啟動相機%3C/text%3E%3C/svg%3E";
-        statusBar.innerText = reason;
-        mainBtn.innerHTML = "📱 開啟手機相機";
-    }
-
-    // ========== 2. 按鈕處理 ==========
-    mainBtn.addEventListener('click', handleMainButton);
-    
-    function handleMainButton() {
-        if (useNativeCamera) {
-            nativeInput.click();
+        if (mode === 'vital') {
+            box.style.height = '40%';
+            box.style.width = '70%';
+            txt.innerText = "請將儀器數值置於框內";
         } else {
-            captureFromVideo();
+            box.style.height = '50%';
+            box.style.width = '85%';
+            txt.innerText = "請將證件正面置於框內";
         }
     }
 
-    // 原生相機檔案選取
-    nativeInput.addEventListener('change', (e) => {
-        if (e.target.files && e.target.files[0]) {
-            const file = e.target.files[0];
-            const reader = new FileReader();
-            
-            showLoader("讀取照片中...");
-            
-            reader.onload = function(evt) {
-                const img = new Image();
-                img.onload = () => {
-                    processImageOnCanvas(img);
-                };
-                img.src = evt.target.result;
-            };
-            
-            reader.readAsDataURL(file);
+    // ========== 2. 拍攝與 API 呼叫 ==========
+    document.getElementById('main-btn').addEventListener('click', () => {
+        const apiKey = document.getElementById('api-key-input').value.trim();
+        if (!apiKey) return alert("請先在上方輸入 Google API Key");
+
+        if (video.srcObject) {
+            captureVideo(apiKey);
+        } else {
+            nativeInput.click();
         }
     });
 
-    // 從 Video 截圖
-    function captureFromVideo() {
-        if (!video.videoWidth) {
-            alert("相機尚未就緒，請稍候");
-            return;
+    nativeInput.addEventListener('change', (e) => {
+        const apiKey = document.getElementById('api-key-input').value.trim();
+        if (e.target.files[0] && apiKey) {
+            processFile(e.target.files[0], apiKey);
         }
+    });
+
+    function captureVideo(apiKey) {
+        const canvas = document.createElement('canvas');
+        canvas.width = video.videoWidth;
+        canvas.height = video.videoHeight;
+        canvas.getContext('2d').drawImage(video, 0, 0);
         
-        showLoader("影像擷取中...");
-        
-        // 建立暫時的 Image 物件來共用處理邏輯
-        const tempCanvas = document.createElement('canvas');
-        tempCanvas.width = video.videoWidth;
-        tempCanvas.height = video.videoHeight;
-        const tempCtx = tempCanvas.getContext('2d');
-        tempCtx.drawImage(video, 0, 0);
-        
-        const img = new Image();
-        img.onload = () => processImageOnCanvas(img);
-        img.src = tempCanvas.toDataURL('image/jpeg');
+        // 轉 Base64 並移除檔頭 (Google API 只需要 raw base64)
+        const base64 = canvas.toDataURL('image/jpeg', 0.9).split(',')[1];
+        callGoogleVision(base64, apiKey);
     }
 
-    // 共用的影像處理進入點
-    function processImageOnCanvas(img) {
-        // 1. 設定 Canvas 大小
-        canvas.width = img.width;
-        canvas.height = img.height;
-        ctx.drawImage(img, 0, 0);
-        previewImg.src = canvas.toDataURL(); // 顯示當前處理的圖片
-
-        // 2. 裁切 (ROI)
-        const w = canvas.width;
-        const h = canvas.height;
-        let sx, sy, sw, sh;
-
-        if (currentMode === 'vital') {
-            sw = w * 0.7; // 儀器通常在中間
-            sh = h * 0.4;
-        } else {
-            sw = w * 0.9; // 證件較寬
-            sh = sw * 0.63; 
-        }
-        sx = (w - sw) / 2;
-        sy = (h - sh) / 2;
-
-        const imgData = ctx.getImageData(sx, sy, sw, sh);
-        
-        // 3. 根據模式進行影像增強
-        if (currentMode === 'vital') {
-            // 儀器模式：高對比二值化 (適合 LCD)
-            enhanceImageForVital(imgData);
-        } else {
-            // 證件模式：灰階化 + 輕微對比 (保留細節)
-            enhanceImageForID(imgData);
-        }
-
-        // 4. 將處理後的圖片放回 Canvas (給 OCR 用)
-        canvas.width = sw;
-        canvas.height = sh;
-        ctx.putImageData(imgData, 0, 0);
-
-        // 5. 開始辨識
-        performOCR();
+    function processFile(file, apiKey) {
+        const reader = new FileReader();
+        reader.onload = (e) => {
+            const base64 = e.target.result.split(',')[1];
+            callGoogleVision(base64, apiKey);
+        };
+        reader.readAsDataURL(file);
     }
 
-    // ========== 3. 影像增強演算法 ==========
-    
-    // 針對儀器 LCD (二值化)
-    function enhanceImageForVital(imgData) {
-        const d = imgData.data;
-        // 簡單的二值化：先轉灰階，再閾值處理
-        for (let i = 0; i < d.length; i += 4) {
-            const r = d[i];
-            const g = d[i+1];
-            const b = d[i+2];
-            // 灰階公式
-            const v = 0.2126*r + 0.7152*g + 0.0722*b;
-            // 閾值 (Threshold)，數字通常較黑或較亮，這裡假設背景較亮
-            // 如果是亮字黑底，Tesseract 通常也能處理，但高對比最好
-            const threshold = 100; 
-            const bin = v > threshold ? 255 : 0; // 二值化
-            d[i] = d[i+1] = d[i+2] = bin;
-        }
-    }
-
-    // 針對證件 (灰階 + 對比)
-    function enhanceImageForID(imgData) {
-        const d = imgData.data;
-        const contrast = 1.2; // 提高對比度
-        const intercept = 128 * (1 - contrast);
+    // ========== 3. Google Vision API 核心 ==========
+    async function callGoogleVision(base64Image, apiKey) {
+        loader.style.display = 'flex';
         
-        for (let i = 0; i < d.length; i += 4) {
-            let v = 0.2126*d[i] + 0.7152*d[i+1] + 0.0722*d[i+2];
-            v = v * contrast + intercept; // 調整對比
-            v = v > 255 ? 255 : (v < 0 ? 0 : v);
-            d[i] = d[i+1] = d[i+2] = v;
-        }
-    }
-
-    // ========== 4. OCR 核心 ==========
-    async function performOCR() {
-        showLoader(currentMode === 'vital' ? "AI 讀取儀器數值..." : "AI 辨識證件資料...");
-        
-        const finalImage = canvas.toDataURL('image/jpeg', 1.0);
+        const url = `https://vision.googleapis.com/v1/images:annotate?key=${apiKey}`;
+        const payload = {
+            requests: [{
+                image: { content: base64Image },
+                features: [{ type: "TEXT_DETECTION" }] // 使用一般文字偵測即可，DOCUMENT_TEXT_DETECTION 也可以
+            }]
+        };
 
         try {
-            if (!worker) {
-                statusBar.innerText = "啟動 AI 引擎...";
-                worker = await Tesseract.createWorker();
-            }
-
-            let resultText = "";
-
-            if (currentMode === 'vital') {
-                // 儀器模式：只載入英文/數字，使用單塊模式
-                await worker.loadLanguage('eng');
-                await worker.reinitialize('eng');
-                await worker.setParameters({
-                    tessedit_char_whitelist: '0123456789.', // 只允許數字和小數點
-                    tessedit_pageseg_mode: Tesseract.PSM.SINGLE_BLOCK, // 假設是整塊文字
-                });
-                const ret = await worker.recognize(finalImage);
-                resultText = ret.data.text;
-
+            const response = await fetch(url, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
+            });
+            const data = await response.json();
+            
+            if (data.responses && data.responses[0].textAnnotations) {
+                // index 0 是完整文字，後面是個別單字
+                const fullText = data.responses[0].textAnnotations[0].description;
+                console.log("Google OCR Result:", fullText);
+                parseResult(fullText);
             } else {
-                // 證件模式：載入繁體中文
-                statusBar.innerText = "載入中文模型 (首次較慢)...";
-                await worker.loadLanguage('chi_tra+eng'); // 中英混合
-                await worker.reinitialize('chi_tra+eng');
-                await worker.setParameters({
-                    tessedit_char_whitelist: '', // 不限制
-                    tessedit_pageseg_mode: Tesseract.PSM.SPARSE_TEXT, // 證件文字較分散
-                });
-                const ret = await worker.recognize(finalImage);
-                resultText = ret.data.text;
+                alert("無法辨識文字，請重試");
+                loader.style.display = 'none';
             }
-
-            console.log("OCR 原始輸出:", resultText);
-            parseAndShowResult(resultText);
-
-        } catch (e) {
-            console.error("OCR Error:", e);
-            alert("辨識發生錯誤，請重試");
-            hideLoader();
+        } catch (error) {
+            console.error(error);
+            alert("API 呼叫失敗，請檢查 Key 是否正確或額度是否足夠");
+            loader.style.display = 'none';
         }
     }
 
-    // ========== 5. 結果解析 (Regex 與 邏輯) ==========
-    function parseAndShowResult(text) {
+    // ========== 4. 智慧解析邏輯 ==========
+    function parseResult(text) {
+        loader.style.display = 'none';
+        modal.style.display = 'block';
         const container = document.getElementById('dynamic-fields');
         container.innerHTML = '';
 
         if (currentMode === 'vital') {
-            parseVitalSigns(text, container);
+            parseVital(text, container);
         } else {
-            parseIDCard(text, container);
+            parseID(text, container);
         }
-
-        resultModal.style.display = 'block';
-        hideLoader();
     }
 
-    function parseVitalSigns(text, container) {
-        // 移除多餘空格，將換行轉空格
-        const cleanText = text.replace(/\n/g, ' ');
-        // 抓取所有數字 (包含小數點)
-        let nums = (cleanText.match(/\d+(\.\d+)?/g) || []).map(Number);
+    // 解析生理數據 (Google 版)
+    function parseVital(text, container) {
+        // 1. 抓出所有數字
+        let nums = (text.match(/\d+(\.\d+)?/g) || []).map(Number);
         
-        // 過濾雜訊：太小或太大的數字通常是誤判 (例如 1, 0.2, 9999)
-        nums = nums.filter(n => n > 20 && n < 300);
-        // 去除重複並排序 (大到小)
+        // 2. 過濾雜訊 (時間 7:30, 日期 2023, 極小值)
+        // 假設收縮壓不會超過 250，脈搏不會低於 40
+        nums = nums.filter(n => n >= 40 && n <= 250);
+        
+        // 3. 去重並排序 (通常 Sys > Dia > Pulse，或者依照位置由上而下)
+        // 這裡先用簡單的大小排序法
         nums = [...new Set(nums)].sort((a, b) => b - a);
+        
+        let sys = nums[0] || "";
+        let dia = nums[1] || "";
+        let pulse = nums[2] || "";
 
-        console.log("過濾後數字:", nums);
-
-        let sys, dia, pulse;
-
-        if (nums.length >= 2) {
-            // 假設最大的兩個分別是收縮壓與舒張壓
-            sys = nums[0];
-            dia = nums[1];
-            // 剩下的找脈搏 (通常在 40-120 之間)
-            if (nums.length >= 3) {
-                pulse = nums.find((n, idx) => idx > 1 && n >= 40 && n <= 150);
-            }
-        }
-
-        if (sys && dia) {
-            addInput(container, "收縮壓 (Sys)", sys, "blood-pressure-sys");
-            addInput(container, "舒張壓 (Dia)", dia, "blood-pressure-dia");
-            addInput(container, "脈搏 (Pulse)", pulse || "", "heart-rate");
-        } else {
-            // 如果抓不到完整一組，顯示原始數值讓用戶選
-            addInput(container, "測量數值 (請確認)", nums.join(', '), "generic");
-            const hint = document.createElement('div');
-            hint.style.color = '#aaa';
-            hint.style.fontSize = '12px';
-            hint.innerText = "* 未偵測到完整血壓數據，請手動修正";
-            container.appendChild(hint);
+        // 特殊修正：如果脈搏比舒張壓高 (少見但可能)，可能需要交換
+        // 但 Google Vision 通常會照順序讀，我們假設最大的兩個是血壓
+        
+        addInput(container, "收縮壓 (Sys)", sys);
+        addInput(container, "舒張壓 (Dia)", dia);
+        addInput(container, "脈搏 (Pulse)", pulse);
+        
+        if (nums.length === 0) {
+            container.innerHTML += `<div style="color:orange">* 未偵測到數值</div>`;
         }
     }
 
-    function parseIDCard(text, container) {
-        // 清理文字：移除多餘空行
-        const lines = text.split('\n').map(l => l.replace(/\s+/g, '').trim()).filter(l => l.length > 0);
-        const fullTextOneLine = lines.join(''); // 用於 Regex 全文搜索
+    // 解析身分證 (Google 版 - 強大！)
+    function parseID(text, container) {
+        // 移除多餘空格，方便 Regex
+        const cleanText = text.replace(/ /g, ''); 
         
-        console.log("解析證件行:", lines);
+        // 1. 身分證字號 (1英+9數)
+        const idMatch = cleanText.match(/[A-Z][0-9]{9}/);
+        let idVal = idMatch ? idMatch[0] : "";
 
-        let nameVal = "";
-        let idVal = "";
+        // 2. 生日 (民國/西元)
         let birthVal = "";
-
-        // 1. 解析身分證字號 (1英 + 9數)
-        // 容錯：有時候 OCR 把 0 看成 O，把 1 看成 I
-        // 策略：找 10 碼，第一碼是英文字母
-        const idRegex = /[A-Z][0-9O]{9}/g;
-        const idMatches = fullTextOneLine.match(idRegex);
-        if (idMatches) {
-            idVal = idMatches[0].replace(/O/g, '0'); // 修正 O -> 0
-        }
-
-        // 2. 解析出生年月日
-        // 策略：尋找民國年格式 (例如 78年1月1日 或 78.1.1)
-        const dateRegex = /(\d{2,3})[年\./](\d{1,2})[月\./](\d{1,2})/;
-        const dateMatch = text.match(dateRegex); // 用原始 text 比較容易保留分隔符
+        // 嘗試抓取 民國xx年xx月xx日
+        const dateMatch = text.match(/(\d{2,3})\s*[年/.]\s*(\d{1,2})\s*[月/.]\s*(\d{1,2})/);
         if (dateMatch) {
             let y = parseInt(dateMatch[1]);
             let m = dateMatch[2].padStart(2, '0');
             let d = dateMatch[3].padStart(2, '0');
-            // 轉西元
-            if (y < 1911) y += 1911;
+            if (y < 1911) y += 1911; // 轉西元
             birthVal = `${y}-${m}-${d}`;
         }
 
-        // 3. 解析姓名
-        // 策略 A：尋找 "姓名" 關鍵字，取其後的 2-4 個中文字
-        let nameFound = false;
+        // 3. 姓名 (尋找 "姓名" 關鍵字)
+        let nameVal = "";
+        // 將文字按行分割
+        const lines = text.split('\n');
         for (let i = 0; i < lines.length; i++) {
-            if (lines[i].includes("姓名")) {
-                // 如果 "姓名" 後面有字，取後面的
-                let temp = lines[i].replace("姓名", "");
-                if (temp.length >= 2 && temp.length <= 4) {
+            let line = lines[i].trim();
+            if (line.includes("姓名")) {
+                // 情況 1: "姓名 陳筱玲" 在同一行
+                let temp = line.replace(/姓名/g, '').replace(/[:：]/g, '').trim();
+                if (temp.length > 1) {
                     nameVal = temp;
-                    nameFound = true;
-                } else if (i + 1 < lines.length) {
-                    // 否則取下一行
-                    let nextLine = lines[i+1];
-                    if (nextLine.length >= 2 && nextLine.length <= 4) {
-                        nameVal = nextLine;
-                        nameFound = true;
-                    }
+                } 
+                // 情況 2: "姓名" 是一行，名字在下一行
+                else if (i + 1 < lines.length) {
+                    nameVal = lines[i+1].trim();
                 }
                 break;
             }
         }
         
-        // 策略 B：如果沒找到關鍵字，嘗試找第一行純中文 (通常姓名在最上方)
-        if (!nameFound) {
-            for (let line of lines) {
-                // 排除含有 "身分證" 或 "中華民國" 的標題行
-                if (line.includes("身分") || line.includes("中華")) continue;
-                // 純中文且長度 2-4
-                if (/^[\u4e00-\u9fa5]{2,4}$/.test(line)) {
-                    nameVal = line;
-                    break;
-                }
-            }
+        // Google 有時會把 "姓名陳筱玲" 讀得很準，如果上述沒抓到，
+        // 嘗試找純中文字串 (2-4字) 且非標題
+        if (!nameVal) {
+             for (let line of lines) {
+                 if (/^[\u4e00-\u9fa5]{2,4}$/.test(line) && !line.includes("身分") && !line.includes("中華")) {
+                     nameVal = line;
+                     break;
+                 }
+             }
         }
 
-        addInput(container, "姓名", nameVal, "name");
-        addInput(container, "身分證字號", idVal, "id-number");
-        addInput(container, "出生日期", birthVal, "birthdate");
+        addInput(container, "姓名", nameVal);
+        addInput(container, "身分證字號", idVal);
+        addInput(container, "出生日期", birthVal);
     }
 
-    function addInput(parent, label, value, type) {
+    function addInput(parent, label, value) {
         const div = document.createElement('div');
         div.className = 'form-group';
-        div.innerHTML = `
-            <label>${label}</label>
-            <input type="text" value="${value}" data-type="${type}" placeholder="請確認或手動輸入">
-        `;
+        div.innerHTML = `<label>${label}</label><input type="text" value="${value}">`;
         parent.appendChild(div);
     }
 
-    // ========== 6. 模式切換與 UI ==========
-    document.querySelectorAll('.tab').forEach(tab => {
-        tab.addEventListener('click', function() {
-            const mode = this.getAttribute('data-mode');
-            setMode(mode);
-        });
-    });
-
-    function setMode(mode) {
-        currentMode = mode;
-        document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
-        document.querySelector(`.tab[data-mode="${mode}"]`).classList.add('active');
-
-        const box = document.getElementById('guide-box');
-        const txt = document.getElementById('guide-text');
-        
-        if (mode === 'vital') {
-            box.style.height = '25%';
-            box.style.width = '80%';
-            txt.innerText = "請將儀器數字置於框內 (避免反光)";
-        } else {
-            box.style.height = '50%';
-            box.style.width = '85%';
-            txt.innerText = "請將證件正面置於框內 (文字清晰)";
-        }
+    function closeModal() {
+        modal.style.display = 'none';
     }
-
-    // 上傳邏輯
-    uploadBtn.addEventListener('click', simulateUpload);
-
-    function simulateUpload() {
-        const inputs = document.querySelectorAll('#dynamic-fields input');
-        const data = {};
-        
-        inputs.forEach(input => {
-            const label = input.parentElement.querySelector('label').innerText;
-            const type = input.getAttribute('data-type');
-            data[type] = input.value;
-        });
-
-        console.log("上傳數據:", data);
-        uploadBtn.disabled = true;
-        uploadBtn.innerHTML = "🔒 資料加密上傳中...";
-
-        setTimeout(() => {
-            document.getElementById('success-toast').style.display = 'block';
-            setTimeout(() => {
-                document.getElementById('success-toast').style.display = 'none';
-                closeModal();
-                uploadBtn.disabled = false;
-                uploadBtn.innerHTML = "☁️ 上傳至遠傳 Health+";
-            }, 2000);
-        }, 1500);
-    }
-
-    // UI Helper
-    function showLoader(msg) {
-        loader.style.display = 'flex';
-        document.getElementById('loader-text').innerText = msg;
-    }
-    function hideLoader() { loader.style.display = 'none'; }
-    function closeModal() { resultModal.style.display = 'none'; }
-
-    // 初始化
-    window.addEventListener('load', initSystem);
-    
-    // 清理
-    window.addEventListener('beforeunload', () => {
-        if (worker) worker.terminate();
-        if (videoStream) videoStream.getTracks().forEach(track => track.stop());
-    });
-
 </script>
 </body>
 </html>
