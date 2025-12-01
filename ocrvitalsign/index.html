@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Health+ 智能量測站 (健保卡優化版)</title>
+    <title>Health+ 智能量測站 (精準裁切版)</title>
     <style>
         :root {
             --primary-color: #E60012;
@@ -68,6 +68,11 @@
         }
         video { width: 100%; height: 100%; object-fit: cover; }
         
+        /* 注意：這裡的 width/height 比例非常重要，
+           JS 裁切時會依照這個比例去計算範圍。
+           身分證框：寬 85%, 高 50%
+           儀器框：寬 70%, 高 35%
+        */
         .guide-box {
             position: absolute; border: 3px solid var(--guide-color);
             border-radius: 12px; box-shadow: 0 0 0 9999px rgba(0, 0, 0, 0.7);
@@ -152,7 +157,7 @@
     <header>步驟 1：掃描證件</header>
     <div class="camera-container">
         <video id="video-id" autoplay playsinline muted></video>
-        <div class="guide-box" style="width: 85%; height: 50%;">
+        <div class="guide-box" id="guide-box-id" style="width: 85%; height: 50%;">
             <div class="guide-text">請將「身分證 或 健保卡」正面置於框內</div>
         </div>
     </div>
@@ -195,7 +200,7 @@
     <header>步驟 3：掃描儀器數值</header>
     <div class="camera-container">
         <video id="video-vital" autoplay playsinline muted></video>
-        <div class="guide-box" style="width: 70%; height: 35%;">
+        <div class="guide-box" id="guide-box-vital" style="width: 70%; height: 35%;">
             <div class="guide-text" id="vital-guide-text">請將螢幕數值置於框內</div>
         </div>
     </div>
@@ -214,6 +219,9 @@
             </div>
             <div id="preview-vital-fields"></div>
         </div>
+        <p style="color:#888; font-size:13px; text-align:center; padding:0 20px;">
+            <small>※ 系統僅辨識藍框內影像，請確保螢幕對準框框</small>
+        </p>
     </div>
     <div class="controls-area">
         <button class="btn btn-success" onclick="confirmVitalAndNext()">✅ 數值正確，完成</button>
@@ -354,13 +362,37 @@
         }
     }
 
-    function captureImage(videoId) {
+    // ========= 核心優化：裁切功能 (Crop Image) =========
+    function captureImage(videoId, type) {
         const videoEl = document.getElementById(videoId);
+        
+        // 1. 計算來源與目標尺寸
+        const vw = videoEl.videoWidth;
+        const vh = videoEl.videoHeight;
+        
+        // 2. 取得對應的 Guide Box 比例 (必須與 CSS 完全一致)
+        // 身分證框: width: 85%, height: 50%
+        // 儀器框: width: 70%, height: 35%
+        let boxW_ratio = (type === 'id') ? 0.85 : 0.70;
+        let boxH_ratio = (type === 'id') ? 0.50 : 0.35;
+        
+        // 計算裁切區域 (Region of Interest)
+        // 假設框框是置中的
+        const sWidth = vw * boxW_ratio;
+        const sHeight = vh * boxH_ratio;
+        const sX = (vw - sWidth) / 2;
+        const sY = (vh - sHeight) / 2;
+
+        // 3. 繪製到 Canvas (只畫裁切區域)
         const canvas = document.createElement('canvas');
-        canvas.width = videoEl.videoWidth;
-        canvas.height = videoEl.videoHeight;
-        canvas.getContext('2d').drawImage(videoEl, 0, 0);
-        return canvas.toDataURL('image/jpeg', 0.9).split(',')[1];
+        canvas.width = sWidth;
+        canvas.height = sHeight;
+        
+        const ctx = canvas.getContext('2d');
+        // drawImage 參數: 來源, 來源X, 來源Y, 來源寬, 來源高, 目標X, 目標Y, 目標寬, 目標高
+        ctx.drawImage(videoEl, sX, sY, sWidth, sHeight, 0, 0, sWidth, sHeight);
+        
+        return canvas.toDataURL('image/jpeg', 0.95).split(',')[1];
     }
 
     document.getElementById('btn-scan-id').addEventListener('click', () => handleScan('id', 'video-id'));
@@ -371,6 +403,7 @@
             const reader = new FileReader();
             reader.onload = (evt) => {
                 const base64 = evt.target.result.split(',')[1];
+                // 原生上傳無法裁切(因為不知道用戶怎麼拍)，直接全圖傳送
                 callGoogleAPI(base64, 'id'); 
             };
             reader.readAsDataURL(e.target.files[0]);
@@ -379,7 +412,8 @@
 
     function handleScan(mode, videoId) {
         if (!API_KEY) return alert("API Key 未載入");
-        const base64 = captureImage(videoId);
+        // 傳入 mode 以便計算裁切比例
+        const base64 = captureImage(videoId, mode);
         callGoogleAPI(base64, mode);
     }
 
@@ -422,18 +456,14 @@
         }
     }
 
-    // ========= 解析證件 (身分證/健保卡) =========
+    // 解析證件
     function parseIDCard(text) {
         const cleanText = text.replace(/\s/g, '');
         const idMatch = cleanText.match(/[A-Z][0-9]{9}/);
         collectedData.id = idMatch ? idMatch[0] : "";
 
         let birthVal = "";
-        
-        // 1. 身分證格式: 民國XX年XX月XX日
         const dateMatchID = text.match(/(\d{2,3})\s*[年\.]\s*(\d{1,2})\s*[月\.]\s*(\d{1,2})/);
-        
-        // 2. 健保卡格式: YY/MM/DD 或 YYY/MM/DD (容錯空白)
         const dateMatchHealth = text.match(/(\d{2,3})\s*\/\s*(\d{1,2})\s*\/\s*(\d{1,2})/);
 
         if (dateMatchID) {
@@ -441,17 +471,14 @@
             if (y < 1911) y += 1911;
             birthVal = `${y}-${dateMatchID[2].padStart(2,'0')}-${dateMatchID[3].padStart(2,'0')}`;
         } else if (dateMatchHealth) {
-            // 處理健保卡: 67/11/15 -> 1978-11-15
             let y = parseInt(dateMatchHealth[1]);
             let m = dateMatchHealth[2].padStart(2,'0');
             let d = dateMatchHealth[3].padStart(2,'0');
-            // 民國轉西元 (通常健保卡年份是2位或3位，如 67 或 100)
             if (y < 1911) y += 1911;
             birthVal = `${y}-${m}-${d}`;
         }
         collectedData.birth = birthVal;
 
-        // 姓名解析
         let nameFound = "";
         const lines = text.split('\n');
         const keywordsToExclude = ['中華民國', '國民身分證', '出生年月日', '統一編號', '性別', '發證日期', '全民健康保險', '全民', '健康', '保險', 'National', 'Health', 'Insurance'];
@@ -459,9 +486,7 @@
         for (let line of lines) {
             if (line.includes("姓名")) {
                 let temp = line.replace(/姓名/g, '').replace(/[:：\s]/g, '');
-                if (temp.length >= 2 && temp.length <= 4) {
-                    nameFound = temp; break;
-                }
+                if (temp.length >= 2 && temp.length <= 4) { nameFound = temp; break; }
             }
             let raw = line.replace(/\s/g, ''); 
             if (/^[\u4e00-\u9fa5]{2,4}$/.test(raw)) {
@@ -472,20 +497,33 @@
         collectedData.name = nameFound;
     }
 
-    // 解析生理儀器
+    // ========= 儀器數值解析 (依據裁切後的乾淨圖像) =========
     function parseVital(text) {
         collectedData.vital = {};
         let candidates = [];
+        
+        // 因為已經精準裁切，我們只會收到螢幕內的數字
+        // Google Vision 回傳的順序是 由上而下、由左至右
+        // 這符合市面上 90% 血壓計的邏輯 (Sys -> Dia -> Pulse)
+        
         let cleanText = text.replace(/O/g, '0').replace(/o/g, '0');
+        // 移除所有非數字與非換行符
+        // 但要保留小數點 (血糖機可能有小數點)
         const lines = cleanText.split('\n');
 
         lines.forEach(line => {
-            if (line.includes(':') || line.includes('/') || line.includes('-')) return;
+            // 排除時間雜訊 (若還有漏網之魚)
+            if (line.includes(':') || line.includes('/')) return;
+
+            // 抓取每一行的數字
             let numsInLine = line.match(/\d+(\.\d+)?/g);
             if (numsInLine) {
                 numsInLine.forEach(n => {
                     let val = parseFloat(n);
-                    if (val > 30 && val < 600 && (val < 1900 || val > 2100)) {
+                    // 嚴格過濾：排除編號(1,2)與年份(2024)
+                    // 收縮壓通常 > 60, 脈搏 > 40
+                    // 血糖可能 > 20
+                    if (val > 20 && val < 300) {
                         candidates.push(val);
                     }
                 });
@@ -493,16 +531,14 @@
         });
 
         if (currentDevice === 'bp') {
+            // 血壓計邏輯：依序填入
             if (candidates.length >= 2) {
-                let sys = candidates[0];
-                let dia = candidates[1];
-                let pulse = (candidates.length >= 3) ? candidates[2] : "";
-                if (dia > sys) { let temp = sys; sys = dia; dia = temp; }
-                collectedData.vital.sys = sys;
-                collectedData.vital.dia = dia;
-                collectedData.vital.pulse = pulse;
+                collectedData.vital.sys = candidates[0]; // 最上面的一定是收縮壓
+                collectedData.vital.dia = candidates[1]; // 中間的是舒張壓
+                collectedData.vital.pulse = (candidates.length >= 3) ? candidates[2] : ""; // 下面是脈搏
             }
         } else {
+            // 血糖機邏輯：通常字體最大的那個
             if (candidates.length >= 1) collectedData.vital.glucose = candidates[0];
         }
     }
