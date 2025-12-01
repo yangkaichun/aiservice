@@ -3,19 +3,21 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Google OCR 除錯模式</title>
+    <title>Google OCR 自動載入 Key 版</title>
     <style>
         body { background: #121212; color: white; font-family: sans-serif; margin: 0; display: flex; flex-direction: column; height: 100vh; }
         
-        /* API Key 輸入區 */
-        .input-area { padding: 15px; background: #222; border-bottom: 1px solid #444; }
-        input { width: 100%; padding: 10px; background: #333; color: white; border: 1px solid #555; border-radius: 5px; }
+        /* API Key 顯示區 */
+        .input-area { padding: 15px; background: #222; border-bottom: 1px solid #444; display: flex; align-items: center; gap: 10px; }
+        .key-status { font-size: 12px; color: #aaa; }
+        input { flex: 1; padding: 10px; background: #333; color: white; border: 1px solid #555; border-radius: 5px; }
+        input:disabled { background: #1a1a1a; color: #4CAF50; border-color: #4CAF50; }
         
         /* 影像區 */
         .preview-area { flex: 1; position: relative; background: black; overflow: hidden; display: flex; justify-content: center; align-items: center; }
         video, img { max-width: 100%; max-height: 100%; }
         
-        /* 除錯紀錄區 (重點) */
+        /* 除錯紀錄區 */
         #debug-log {
             height: 150px; background: #000; color: #0f0; 
             font-family: monospace; font-size: 12px; 
@@ -30,16 +32,17 @@
         .btn-file { background: #444; color: white; }
         
         /* 結果彈窗 */
-        #result-box { display: none; position: fixed; top: 10%; left: 5%; width: 90%; background: #333; padding: 20px; border-radius: 10px; border: 1px solid #666; box-shadow: 0 0 20px black; }
+        #result-box { display: none; position: fixed; top: 10%; left: 5%; width: 90%; background: #333; padding: 20px; border-radius: 10px; border: 1px solid #666; box-shadow: 0 0 20px black; z-index: 100; max-height: 80%; overflow-y: auto;}
         .field { margin-bottom: 10px; }
         .field label { display: block; color: #aaa; font-size: 12px; }
-        .field input { font-size: 16px; font-weight: bold; }
+        .field input { width: 100%; font-size: 16px; font-weight: bold; padding: 8px; border-radius: 4px; border: 1px solid #555; background: #222; color: white; }
     </style>
 </head>
 <body>
 
 <div class="input-area">
-    <input type="text" id="api-key" placeholder="在此貼上 Google API Key (必填)">
+    <div class="key-status" id="key-status-icon">🔑</div>
+    <input type="text" id="api-key" placeholder="正在讀取 apikey/key.json...">
 </div>
 
 <div class="preview-area">
@@ -47,7 +50,7 @@
     <img id="preview-img" style="display:none">
 </div>
 
-<div id="debug-log">=== 系統準備就緒 ===<br>請輸入 Key 並開始拍攝...</div>
+<div id="debug-log">=== 系統啟動 ===<br>等待載入 Key...</div>
 
 <div class="controls">
     <button class="btn-file" onclick="document.getElementById('file-input').click()">📂 選照片</button>
@@ -59,42 +62,68 @@
     <h3>解析結果</h3>
     <div id="parsed-fields"></div>
     <br>
-    <button onclick="document.getElementById('result-box').style.display='none'" style="background:#555; color:white;">關閉</button>
+    <button onclick="document.getElementById('result-box').style.display='none'" style="width:100%; padding:10px; background:#555; color:white; border:none; border-radius:5px;">關閉</button>
 </div>
 
 <script>
     const logBox = document.getElementById('debug-log');
     const video = document.getElementById('video');
     const previewImg = document.getElementById('preview-img');
+    const apiKeyInput = document.getElementById('api-key');
     
-    // 1. 啟動相機
-    navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } })
-        .then(stream => video.srcObject = stream)
-        .catch(err => log("相機啟動失敗: " + err));
+    // 1. 自動載入 Key (本次修改重點)
+    window.addEventListener('load', async () => {
+        log("正在嘗試讀取 apikey/key.json...");
+        try {
+            const response = await fetch('apikey/key.json');
+            if (!response.ok) throw new Error("找不到檔案 (404)");
+            
+            const data = await response.json();
+            if (data.key) {
+                apiKeyInput.value = data.key;
+                apiKeyInput.disabled = true; // 鎖定輸入框，表示成功
+                document.getElementById('key-status-icon').innerText = "✅";
+                log("成功載入 API Key！");
+            } else {
+                throw new Error("JSON 格式錯誤 (缺少 key 欄位)");
+            }
+        } catch (e) {
+            log("❌ 自動載入失敗: " + e.message);
+            log("提示: 請確保使用 Live Server 開啟網頁，並確認檔案路徑正確。");
+            apiKeyInput.placeholder = "請手動輸入 API Key";
+        }
+        
+        initCamera();
+    });
 
-    // 2. 顯示 Log 的工具
+    // 2. 啟動相機
+    function initCamera() {
+        navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } })
+            .then(stream => video.srcObject = stream)
+            .catch(err => log("相機啟動失敗: " + err));
+    }
+
     function log(msg) {
         const time = new Date().toLocaleTimeString();
         logBox.innerHTML += `\n[${time}] ${msg}`;
         logBox.scrollTop = logBox.scrollHeight;
     }
 
-    // 3. 處理按鈕
+    // 3. 拍照與選檔
     document.getElementById('snap-btn').addEventListener('click', () => {
-        const key = document.getElementById('api-key').value.trim();
-        if (!key) return alert("請先輸入 API Key！");
+        const key = apiKeyInput.value.trim();
+        if (!key) return alert("沒有 API Key，無法進行辨識！");
         
         const canvas = document.createElement('canvas');
         canvas.width = video.videoWidth;
         canvas.height = video.videoHeight;
         canvas.getContext('2d').drawImage(video, 0, 0);
-        
         processImage(canvas.toDataURL('image/jpeg', 0.8), key);
     });
 
     document.getElementById('file-input').addEventListener('change', (e) => {
-        const key = document.getElementById('api-key').value.trim();
-        if (!key) return alert("請先輸入 API Key！");
+        const key = apiKeyInput.value.trim();
+        if (!key) return alert("沒有 API Key，無法進行辨識！");
         if (!e.target.files[0]) return;
 
         const reader = new FileReader();
@@ -107,36 +136,29 @@
         reader.readAsDataURL(e.target.files[0]);
     });
 
-    // 4. 呼叫 Google API (關鍵部分)
+    // 4. 呼叫 Google Vision API
     async function processImage(base64Data, apiKey) {
         log("-----------------------------");
-        log("準備上傳圖片至 Google...");
+        log("準備傳送請求至 Google...");
         
-        // 移除 Data URI header
         const base64Content = base64Data.split(',')[1];
-        
         const url = `https://vision.googleapis.com/v1/images:annotate?key=${apiKey}`;
-        const body = {
-            requests: [{
-                image: { content: base64Content },
-                features: [{ type: "TEXT_DETECTION" }, { type: "DOCUMENT_TEXT_DETECTION" }]
-            }]
-        };
-
+        
         try {
-            log("發送請求中 (POST)...");
             const res = await fetch(url, {
                 method: 'POST',
-                body: JSON.stringify(body),
+                body: JSON.stringify({
+                    requests: [{
+                        image: { content: base64Content },
+                        features: [{ type: "TEXT_DETECTION" }, { type: "DOCUMENT_TEXT_DETECTION" }]
+                    }]
+                }),
                 headers: { 'Content-Type': 'application/json' }
             });
-
-            log(`HTTP 狀態碼: ${res.status}`);
 
             if (!res.ok) {
                 const errData = await res.json();
                 log("❌ API 錯誤: " + JSON.stringify(errData.error, null, 2));
-                alert("API 呼叫失敗，請看下方紀錄");
                 return;
             }
 
@@ -144,74 +166,89 @@
             const annotations = data.responses[0].textAnnotations;
 
             if (!annotations || annotations.length === 0) {
-                log("⚠️ Google 回傳成功，但沒有偵測到任何文字！");
-                alert("圖片清晰度不足，或無文字");
+                log("⚠️ Google 回傳成功，但未發現文字");
+                alert("未偵測到文字，請重試");
                 return;
             }
 
-            // 成功抓到文字
             const fullText = annotations[0].description;
-            log("✅ 辨識成功！原始文字如下：\n" + fullText);
-            
+            log("✅ 辨識成功，開始解析...");
             parseAndShow(fullText);
 
         } catch (e) {
-            log("❌ 網路或程式錯誤: " + e.message);
+            log("❌ 系統錯誤: " + e.message);
         }
     }
 
-    // 5. 解析邏輯 (更寬鬆的判斷)
+    // 5. 解析邏輯 (包含血壓計與身分證)
     function parseAndShow(text) {
         const container = document.getElementById('parsed-fields');
         container.innerHTML = '';
         const lines = text.split('\n');
 
-        // === 嘗試解析血壓 ===
-        // 找數字，過濾掉不像血壓的
+        // --- 數字解析 (血壓計) ---
+        // 排除掉像年份的數字 (19xx, 20xx) 和極端值
         let nums = (text.match(/\d+/g) || []).map(Number);
-        nums = nums.filter(n => n > 30 && n < 250); // 過濾掉極端值
-        // 排除掉可能是日期的 (例如 2023, 1999)
-        nums = nums.filter(n => n < 1900); 
-
-        // === 嘗試解析身分證 ===
+        nums = nums.filter(n => n > 30 && n < 280 && (n < 1900 || n > 2100));
+        
+        // --- 證件解析 (身分證) ---
         let name = "", id = "", birth = "";
         
-        // ID Regex
+        // ID Regex (抓取 A123456789)
         const idMatch = text.replace(/\s/g,'').match(/[A-Z][0-9]{9}/);
         if (idMatch) id = idMatch[0];
 
-        // 姓名 Regex (寬鬆)
+        // 姓名解析 (嘗試抓取關鍵字後的內容)
         for(let line of lines) {
             if(line.includes("姓名")) {
-                let temp = line.replace(/姓名/g, '').replace(/[^\u4e00-\u9fa5]/g, ''); // 只留中文
-                if(temp.length > 1) name = temp;
+                let temp = line.replace(/姓名/g, '').replace(/[^\u4e00-\u9fa5]/g, '');
+                if(temp.length >= 2) name = temp;
             }
         }
-        // 如果沒找到姓名標籤，找純中文短字串
+        // 備用姓名解析 (純中文行)
         if(!name) {
             for(let line of lines) {
-                if(/^[\u4e00-\u9fa5]{2,4}$/.test(line.trim())) {
-                    if(!line.includes("身分") && !line.includes("中華")) name = line.trim();
+                let clean = line.replace(/\s/g, '');
+                if(/^[\u4e00-\u9fa5]{2,4}$/.test(clean) && !clean.includes("身分") && !clean.includes("中華") && !clean.includes("男女")) {
+                    name = clean;
                 }
             }
         }
 
-        // 顯示結果
+        // --- 判斷模式並顯示 ---
         log("--- 解析結果 ---");
-        if(id) {
-            log("模式: 身分證");
+        
+        if (id) {
+            log("判定為: 身分證");
             addInput("姓名", name);
-            addInput("身分證", id);
+            addInput("身分證字號", id);
+            
+            // 嘗試抓生日 (民國 xx 年 xx 月 xx 日)
+            const dateMatch = text.match(/(\d{2,3})\s*年\s*(\d{1,2})\s*月\s*(\d{1,2})/);
+            if(dateMatch) {
+                let y = parseInt(dateMatch[1]);
+                if(y < 1911) y += 1911;
+                addInput("出生日期", `${y}-${dateMatch[2]}-${dateMatch[3]}`);
+            }
+
         } else if (nums.length >= 2) {
-            log("模式: 生理儀器");
-            // 排序: 假設大的是血壓
+            log("判定為: 生理儀器");
+            // 排序：通常收縮壓最高
             nums.sort((a,b) => b-a);
-            addInput("收縮壓", nums[0]);
-            addInput("舒張壓", nums[1]);
-            if(nums[2]) addInput("脈搏", nums[2]);
+            
+            let sys = nums[0];
+            let dia = nums[1];
+            let pulse = nums.length > 2 ? nums[2] : "";
+
+            // 邏輯檢查: 如果 dia > sys 則交換 (防呆)
+            if (dia > sys) { [sys, dia] = [dia, sys]; }
+
+            addInput("收縮壓 (Sys)", sys);
+            addInput("舒張壓 (Dia)", dia);
+            addInput("脈搏 (Pulse)", pulse);
         } else {
-            log("⚠️ 無法自動歸類，顯示原始文字");
-            addInput("原始內容", text);
+            log("⚠️ 無法自動歸類");
+            addInput("原始文字", text);
         }
 
         document.getElementById('result-box').style.display = 'block';
