@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Health+ 智能量測站 (雙證件版)</title>
+    <title>Health+ 智能量測站 (健保卡優化版)</title>
     <style>
         :root {
             --primary-color: #E60012;
@@ -172,9 +172,9 @@
             </div>
             <div class="form-group"><label>姓名</label><input type="text" id="preview-id-name"></div>
             <div class="form-group"><label>身分證字號</label><input type="text" id="preview-id-no"></div>
-            <div class="form-group"><label>出生日期</label><input type="text" id="preview-id-birth"></div>
+            <div class="form-group"><label>出生日期 (YYYY-MM-DD)</label><input type="text" id="preview-id-birth"></div>
         </div>
-        <p style="color:#888; font-size:13px; text-align:center;">支援健保卡與身分證，請確認資料無誤</p>
+        <p style="color:#888; font-size:13px; text-align:center;">支援健保卡(民國年)自動轉西元</p>
     </div>
     <div class="controls-area">
         <button class="btn btn-success" onclick="confirmIDAndNext()">✅ 資料正確，下一步</button>
@@ -422,67 +422,57 @@
         }
     }
 
-    // ========= (雙證件支援) 身分證與健保卡解析 =========
+    // ========= 解析證件 (身分證/健保卡) =========
     function parseIDCard(text) {
-        // 1. 身分證字號 (通用)
         const cleanText = text.replace(/\s/g, '');
         const idMatch = cleanText.match(/[A-Z][0-9]{9}/);
         collectedData.id = idMatch ? idMatch[0] : "";
 
-        // 2. 出生日期 (支援兩種格式)
-        // 格式 A: 身分證 (民國XX年XX月XX日)
         let birthVal = "";
+        
+        // 1. 身分證格式: 民國XX年XX月XX日
         const dateMatchID = text.match(/(\d{2,3})\s*[年\.]\s*(\d{1,2})\s*[月\.]\s*(\d{1,2})/);
-        // 格式 B: 健保卡 (XX/XX/XX 或 XXX/XX/XX)
-        const dateMatchHealth = text.match(/(\d{2,3})\/(\d{1,2})\/(\d{1,2})/);
+        
+        // 2. 健保卡格式: YY/MM/DD 或 YYY/MM/DD (容錯空白)
+        const dateMatchHealth = text.match(/(\d{2,3})\s*\/\s*(\d{1,2})\s*\/\s*(\d{1,2})/);
 
         if (dateMatchID) {
             let y = parseInt(dateMatchID[1]);
             if (y < 1911) y += 1911;
             birthVal = `${y}-${dateMatchID[2].padStart(2,'0')}-${dateMatchID[3].padStart(2,'0')}`;
         } else if (dateMatchHealth) {
+            // 處理健保卡: 67/11/15 -> 1978-11-15
             let y = parseInt(dateMatchHealth[1]);
+            let m = dateMatchHealth[2].padStart(2,'0');
+            let d = dateMatchHealth[3].padStart(2,'0');
+            // 民國轉西元 (通常健保卡年份是2位或3位，如 67 或 100)
             if (y < 1911) y += 1911;
-            birthVal = `${y}-${dateMatchHealth[2].padStart(2,'0')}-${dateMatchHealth[3].padStart(2,'0')}`;
+            birthVal = `${y}-${m}-${d}`;
         }
         collectedData.birth = birthVal;
 
-        // 3. 姓名解析 (強化版)
+        // 姓名解析
         let nameFound = "";
         const lines = text.split('\n');
-        
-        // 策略：尋找「純中文行」，長度2-4，且排除關鍵字
-        // 關鍵字排除清單：包含健保卡特有的 "全民健康保險"
         const keywordsToExclude = ['中華民國', '國民身分證', '出生年月日', '統一編號', '性別', '發證日期', '全民健康保險', '全民', '健康', '保險', 'National', 'Health', 'Insurance'];
 
         for (let line of lines) {
-            // 先嘗試找「姓名」標籤 (身分證用)
             if (line.includes("姓名")) {
                 let temp = line.replace(/姓名/g, '').replace(/[:：\s]/g, '');
                 if (temp.length >= 2 && temp.length <= 4) {
-                    nameFound = temp;
-                    break;
+                    nameFound = temp; break;
                 }
             }
-            
-            // 如果沒標籤，找孤立中文行 (健保卡/身分證通用)
             let raw = line.replace(/\s/g, ''); 
-            // 條件：純中文、長度2-4
             if (/^[\u4e00-\u9fa5]{2,4}$/.test(raw)) {
-                // 檢查是否包含排除字詞
                 let isKeyword = keywordsToExclude.some(k => raw.includes(k));
-                if (!isKeyword) {
-                    nameFound = raw;
-                    // 注意：不break，因為有時候雜訊在前面，我們盡量抓靠近中間或符合特徵的
-                    // 這裡簡單起見抓第一個符合的非關鍵字
-                    break;
-                }
+                if (!isKeyword) { nameFound = raw; break; }
             }
         }
         collectedData.name = nameFound;
     }
 
-    // 解析生理儀器 (保持優化版)
+    // 解析生理儀器
     function parseVital(text) {
         collectedData.vital = {};
         let candidates = [];
@@ -532,7 +522,7 @@
     function renderFinalResult() {
         document.getElementById('final-name').value = collectedData.name;
         document.getElementById('final-id').value = collectedData.id;
-        document.getElementById('final-birth').value = collectedData.birth; // 顯示生日
+        document.getElementById('final-birth').value = collectedData.birth;
 
         const container = document.getElementById('final-vital-fields');
         container.innerHTML = '';
