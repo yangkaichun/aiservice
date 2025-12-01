@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Health+ 智能量測站 (Pro)</title>
+    <title>Health+ 智能量測站 (雙證件版)</title>
     <style>
         :root {
             --primary-color: #E60012;
@@ -144,16 +144,16 @@
 <div id="view-home" class="view-section">
     <div class="logo-circle">Health+</div>
     <h1>生理資訊辨識系統</h1>
-    <p style="color:#aaa; margin-bottom:40px;">自動辨識身分證與測量儀器</p>
+    <p style="color:#aaa; margin-bottom:40px;">支援：身分證 / 健保卡 / 生理儀器</p>
     <button class="btn btn-primary" onclick="goToStep('scan-id')">🚀 開始量測</button>
 </div>
 
 <div id="view-scan-id" class="view-section">
-    <header>步驟 1：掃描身分證</header>
+    <header>步驟 1：掃描證件</header>
     <div class="camera-container">
         <video id="video-id" autoplay playsinline muted></video>
         <div class="guide-box" style="width: 85%; height: 50%;">
-            <div class="guide-text">請將「身分證正面」置於框內</div>
+            <div class="guide-text">請將「身分證 或 健保卡」正面置於框內</div>
         </div>
     </div>
     <div class="controls-area">
@@ -163,7 +163,7 @@
 </div>
 
 <div id="view-preview-id" class="view-section">
-    <header>確認身分資料</header>
+    <header>確認個案資料</header>
     <div class="content-scroll">
         <div class="result-card">
             <div class="result-title">
@@ -174,7 +174,7 @@
             <div class="form-group"><label>身分證字號</label><input type="text" id="preview-id-no"></div>
             <div class="form-group"><label>出生日期</label><input type="text" id="preview-id-birth"></div>
         </div>
-        <p style="color:#888; font-size:13px; text-align:center;">請確認資料正確，若模糊請重新拍攝</p>
+        <p style="color:#888; font-size:13px; text-align:center;">支援健保卡與身分證，請確認資料無誤</p>
     </div>
     <div class="controls-area">
         <button class="btn btn-success" onclick="confirmIDAndNext()">✅ 資料正確，下一步</button>
@@ -214,7 +214,6 @@
             </div>
             <div id="preview-vital-fields"></div>
         </div>
-        <p style="color:#888; font-size:13px; text-align:center;">(若數值順序錯誤，請直接修正)</p>
     </div>
     <div class="controls-area">
         <button class="btn btn-success" onclick="confirmVitalAndNext()">✅ 數值正確，完成</button>
@@ -229,6 +228,7 @@
             <div class="result-title">👤 個案資料</div>
             <div class="form-group"><label>姓名</label><input type="text" id="final-name" readonly></div>
             <div class="form-group"><label>身分證</label><input type="text" id="final-id" readonly></div>
+            <div class="form-group"><label>出生日期</label><input type="text" id="final-birth" readonly></div>
         </div>
         <div class="result-card">
             <div class="result-title">📊 量測結果</div>
@@ -422,59 +422,79 @@
         }
     }
 
-    // 解析身分證 (不變)
+    // ========= (雙證件支援) 身分證與健保卡解析 =========
     function parseIDCard(text) {
+        // 1. 身分證字號 (通用)
         const cleanText = text.replace(/\s/g, '');
         const idMatch = cleanText.match(/[A-Z][0-9]{9}/);
         collectedData.id = idMatch ? idMatch[0] : "";
 
-        const dateMatch = text.match(/(\d{2,3})\s*[年\.]\s*(\d{1,2})\s*[月\.]\s*(\d{1,2})/);
-        if (dateMatch) {
-            let y = parseInt(dateMatch[1]);
-            if (y < 1911) y += 1911;
-            collectedData.birth = `${y}-${dateMatch[2].padStart(2,'0')}-${dateMatch[3].padStart(2,'0')}`;
-        }
+        // 2. 出生日期 (支援兩種格式)
+        // 格式 A: 身分證 (民國XX年XX月XX日)
+        let birthVal = "";
+        const dateMatchID = text.match(/(\d{2,3})\s*[年\.]\s*(\d{1,2})\s*[月\.]\s*(\d{1,2})/);
+        // 格式 B: 健保卡 (XX/XX/XX 或 XXX/XX/XX)
+        const dateMatchHealth = text.match(/(\d{2,3})\/(\d{1,2})\/(\d{1,2})/);
 
+        if (dateMatchID) {
+            let y = parseInt(dateMatchID[1]);
+            if (y < 1911) y += 1911;
+            birthVal = `${y}-${dateMatchID[2].padStart(2,'0')}-${dateMatchID[3].padStart(2,'0')}`;
+        } else if (dateMatchHealth) {
+            let y = parseInt(dateMatchHealth[1]);
+            if (y < 1911) y += 1911;
+            birthVal = `${y}-${dateMatchHealth[2].padStart(2,'0')}-${dateMatchHealth[3].padStart(2,'0')}`;
+        }
+        collectedData.birth = birthVal;
+
+        // 3. 姓名解析 (強化版)
         let nameFound = "";
         const lines = text.split('\n');
-        for (let i = 0; i < lines.length; i++) {
-            if (lines[i].includes("姓名")) {
-                let temp = lines[i].replace(/姓名/g, '').replace(/[:：\s]/g, '');
-                if (temp.length >= 2 && temp.length <= 4) nameFound = temp;
-                break;
+        
+        // 策略：尋找「純中文行」，長度2-4，且排除關鍵字
+        // 關鍵字排除清單：包含健保卡特有的 "全民健康保險"
+        const keywordsToExclude = ['中華民國', '國民身分證', '出生年月日', '統一編號', '性別', '發證日期', '全民健康保險', '全民', '健康', '保險', 'National', 'Health', 'Insurance'];
+
+        for (let line of lines) {
+            // 先嘗試找「姓名」標籤 (身分證用)
+            if (line.includes("姓名")) {
+                let temp = line.replace(/姓名/g, '').replace(/[:：\s]/g, '');
+                if (temp.length >= 2 && temp.length <= 4) {
+                    nameFound = temp;
+                    break;
+                }
             }
-        }
-        if (!nameFound) {
-            for (let line of lines) {
-                let raw = line.replace(/\s/g, ''); 
-                if (/^[\u4e00-\u9fa5]{2,4}$/.test(raw) && !['中華民國','國民身分證','出生年月日'].some(k=>raw.includes(k))) {
-                    nameFound = raw; break;
+            
+            // 如果沒標籤，找孤立中文行 (健保卡/身分證通用)
+            let raw = line.replace(/\s/g, ''); 
+            // 條件：純中文、長度2-4
+            if (/^[\u4e00-\u9fa5]{2,4}$/.test(raw)) {
+                // 檢查是否包含排除字詞
+                let isKeyword = keywordsToExclude.some(k => raw.includes(k));
+                if (!isKeyword) {
+                    nameFound = raw;
+                    // 注意：不break，因為有時候雜訊在前面，我們盡量抓靠近中間或符合特徵的
+                    // 這裡簡單起見抓第一個符合的非關鍵字
+                    break;
                 }
             }
         }
         collectedData.name = nameFound;
     }
 
-    // ========= 重點優化：解析生理儀器 (Line-based) =========
+    // 解析生理儀器 (保持優化版)
     function parseVital(text) {
         collectedData.vital = {};
         let candidates = [];
-        
-        // 1. 預處理：取代常見錯誤 (O -> 0)
         let cleanText = text.replace(/O/g, '0').replace(/o/g, '0');
         const lines = cleanText.split('\n');
 
-        // 2. 逐行分析 (保留垂直順序)
         lines.forEach(line => {
-            // 排除時間 (如 12:30) 和日期 (如 2023/10)
             if (line.includes(':') || line.includes('/') || line.includes('-')) return;
-
-            // 抓取行內所有數字
             let numsInLine = line.match(/\d+(\.\d+)?/g);
             if (numsInLine) {
                 numsInLine.forEach(n => {
                     let val = parseFloat(n);
-                    // 範圍過濾：排除記憶編號 (1,2) 或年份 (2024)
                     if (val > 30 && val < 600 && (val < 1900 || val > 2100)) {
                         candidates.push(val);
                     }
@@ -482,23 +502,17 @@
             }
         });
 
-        // 3. 根據候選數字分配
         if (currentDevice === 'bp') {
-            // 預設順序：上(Sys) -> 中(Dia) -> 下(Pulse)
             if (candidates.length >= 2) {
                 let sys = candidates[0];
                 let dia = candidates[1];
                 let pulse = (candidates.length >= 3) ? candidates[2] : "";
-                
-                // 防呆：如果舒張壓竟然比收縮壓高，交換 (物理上不可能)
                 if (dia > sys) { let temp = sys; sys = dia; dia = temp; }
-
                 collectedData.vital.sys = sys;
                 collectedData.vital.dia = dia;
                 collectedData.vital.pulse = pulse;
             }
         } else {
-            // 血糖機：找第一個合格數值
             if (candidates.length >= 1) collectedData.vital.glucose = candidates[0];
         }
     }
@@ -518,6 +532,8 @@
     function renderFinalResult() {
         document.getElementById('final-name').value = collectedData.name;
         document.getElementById('final-id').value = collectedData.id;
+        document.getElementById('final-birth').value = collectedData.birth; // 顯示生日
+
         const container = document.getElementById('final-vital-fields');
         container.innerHTML = '';
         if (currentDevice === 'bp') {
