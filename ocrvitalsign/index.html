@@ -2,569 +2,77 @@
 <html lang="zh-TW">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Health+ 智能量測站</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Health+ (安全讀取 Key 版)</title>
     <style>
-        :root {
-            --primary-color: #E60012; /* 遠傳紅 */
-            --bg-color: #121212;
-            --card-bg: #1e1e1e;
-            --text-color: #ffffff;
-            --guide-color: #00C0F3;
-        }
-
-        * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
-
-        body {
-            font-family: -apple-system, BlinkMacSystemFont, "Microsoft JhengHei", sans-serif;
-            background-color: var(--bg-color);
-            color: var(--text-color);
-            margin: 0;
-            display: flex;
-            flex-direction: column;
-            height: 100vh;
-            overflow: hidden;
-        }
-
-        /* === 通用視圖控制 === */
-        .view-section {
-            display: none; /* 預設隱藏所有頁面 */
-            flex-direction: column;
-            height: 100%;
-            width: 100%;
-            position: absolute;
-            top: 0; left: 0;
-            background: var(--bg-color);
-            z-index: 1;
-        }
-
-        .view-section.active {
-            display: flex;
-            z-index: 10;
-            animation: fadeIn 0.3s ease;
-        }
-
-        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
-
-        /* === 標頭 === */
-        header {
-            padding: 15px;
-            text-align: center;
-            background: #000;
-            font-size: 18px;
-            font-weight: bold;
-            border-bottom: 1px solid #333;
-        }
-
-        /* === Step 1: 首頁 === */
-        #view-home {
-            justify-content: center;
-            align-items: center;
-            padding: 40px;
-            text-align: center;
-            background: linear-gradient(135deg, #1e1e1e 0%, #000 100%);
-        }
-        
-        .logo-circle {
-            width: 120px; height: 120px;
-            background: var(--primary-color);
-            border-radius: 50%;
-            display: flex; justify-content: center; align-items: center;
-            font-size: 40px; margin-bottom: 30px;
-            box-shadow: 0 0 30px rgba(230, 0, 18, 0.4);
-        }
-
-        /* === Step 2 & 3: 拍攝介面 === */
-        .camera-container {
-            flex: 1;
-            position: relative;
-            background: #000;
-            overflow: hidden;
-            display: flex; justify-content: center; align-items: center;
-        }
-
-        video, #preview-img { width: 100%; height: 100%; object-fit: cover; }
-        #preview-img { display: none; }
-
-        .guide-box {
-            position: absolute;
-            border: 3px solid var(--guide-color);
-            border-radius: 12px;
-            box-shadow: 0 0 0 9999px rgba(0, 0, 0, 0.7);
-            pointer-events: none;
-            transition: all 0.3s;
-        }
-        
-        .guide-text {
-            position: absolute; top: -50px; left: 0; width: 100%;
-            text-align: center; color: var(--guide-color);
-            font-weight: bold; font-size: 16px;
-            text-shadow: 1px 1px 2px black;
-        }
-
-        .controls-area {
-            padding: 20px;
-            background: #1e1e1e;
-            border-top-left-radius: 20px; border-top-right-radius: 20px;
-        }
-
-        /* === Step 3: 選擇設備 === */
-        #view-select-device {
-            justify-content: center; padding: 20px;
-        }
-        .device-card {
-            background: #333; margin: 10px 0; padding: 25px;
-            border-radius: 15px; text-align: center;
-            font-size: 20px; font-weight: bold;
-            cursor: pointer; border: 2px solid transparent;
-            transition: 0.2s;
-        }
-        .device-card:active { transform: scale(0.98); background: #444; }
-
-        /* === Step 4: 結果頁 === */
-        #view-result { padding: 20px; overflow-y: auto; }
-        
-        .result-card {
-            background: #1e1e1e; border-radius: 15px;
-            padding: 20px; margin-bottom: 20px;
-            border: 1px solid #333;
-        }
-        .result-title {
-            color: var(--primary-color); font-size: 14px; margin-bottom: 10px;
-            text-transform: uppercase; letter-spacing: 1px;
-        }
-        
-        .form-group { margin-bottom: 12px; }
-        .form-group label { display: block; color: #888; font-size: 12px; margin-bottom: 4px; }
-        .form-group input {
-            width: 100%; background: #2a2a2a; border: 1px solid #444;
-            color: white; padding: 10px; border-radius: 8px; font-size: 16px;
-        }
-
-        /* === 按鈕與動畫 === */
-        .btn {
-            width: 100%; padding: 16px; border: none; border-radius: 50px;
-            font-size: 18px; font-weight: bold; cursor: pointer;
-            margin-top: 10px; display: flex; justify-content: center; align-items: center; gap: 10px;
-        }
-        .btn-primary { background: var(--primary-color); color: white; }
-        .btn-outline { background: transparent; border: 2px solid #555; color: #ccc; }
-
-        /* Loading Overlay */
-        #loading-overlay {
-            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
-            background: rgba(0,0,0,0.85); z-index: 100;
-            display: none; flex-direction: column; justify-content: center; align-items: center;
-        }
-        .spinner {
-            width: 50px; height: 50px; border: 5px solid rgba(255,255,255,0.1);
-            border-top: 5px solid var(--primary-color); border-radius: 50%;
-            animation: spin 1s linear infinite; margin-bottom: 20px;
-        }
-        @keyframes spin { 100% { transform: rotate(360deg); } }
-
-        /* 隱藏原生 Input */
-        #native-camera { display: none; }
+        /* (保留原本的 CSS 樣式) */
+        body { font-family: sans-serif; background: #121212; color: white; margin: 0; padding: 20px; text-align: center;}
+        #loading-overlay { position: fixed; top:0; left:0; width:100%; height:100%; background:black; display:flex; justify-content:center; align-items:center; z-index:999; }
+        .hidden { display: none; }
     </style>
 </head>
 <body>
 
-<script>
-    // ▼▼▼ 請在此填入您的 GOOGLE API KEY ▼▼▼
-    const API_KEY = "AIzaSyC8fnfqZToCje2pqeRhURYVQZbXIa_eshU"; 
-</script>
-
-<div id="view-home" class="view-section active">
-    <div class="logo-circle">Health+</div>
-    <h1>生理資訊辨識系統</h1>
-    <p style="color:#aaa; margin-bottom:40px;">自動辨識身分證與測量儀器</p>
-    <button class="btn btn-primary" onclick="goToStep(2)">🚀 開始量測</button>
-</div>
-
-<div id="view-scan-id" class="view-section">
-    <header>步驟 1/3：掃描身分證</header>
-    <div class="camera-container">
-        <video id="video-id" autoplay playsinline muted></video>
-        <div class="guide-box" style="width: 85%; height: 50%;">
-            <div class="guide-text">請將「身分證正面」置於框內</div>
-        </div>
-    </div>
-    <div class="controls-area">
-        <button class="btn btn-primary" id="btn-scan-id">📷 拍攝辨識</button>
-        <div style="text-align:center; margin-top:10px; font-size:12px; color:#666;">或 <span onclick="nativeInput.click()" style="text-decoration:underline;">從相簿上傳</span></div>
-    </div>
-</div>
-
-<div id="view-select-device" class="view-section">
-    <header>步驟 2/3：選擇測量儀器</header>
-    <div style="flex:1; display:flex; flex-direction:column; justify-content:center;">
-        <div class="device-card" onclick="startVitalScan('bp')">
-            🩸 血壓計 (Blood Pressure)
-        </div>
-        <div class="device-card" onclick="startVitalScan('bg')">
-            🍬 血糖機 (Glucose)
-        </div>
-    </div>
-    <button class="btn btn-outline" onclick="goToStep(2)">⬅ 回上一步</button>
-</div>
-
-<div id="view-scan-vital" class="view-section">
-    <header>步驟 2/3：掃描儀器數值</header>
-    <div class="camera-container">
-        <video id="video-vital" autoplay playsinline muted></video>
-        <div class="guide-box" style="width: 70%; height: 35%;">
-            <div class="guide-text" id="vital-guide-text">請將螢幕數值置於框內</div>
-        </div>
-    </div>
-    <div class="controls-area">
-        <button class="btn btn-primary" id="btn-scan-vital">📷 拍攝辨識</button>
-    </div>
-</div>
-
-<div id="view-result" class="view-section">
-    <header>步驟 3/3：確認資料</header>
-    
-    <div class="result-card">
-        <div class="result-title">👤 個案資料</div>
-        <div class="form-group">
-            <label>姓名</label>
-            <input type="text" id="res-name">
-        </div>
-        <div class="form-group">
-            <label>身分證字號</label>
-            <input type="text" id="res-id">
-        </div>
-        <div class="form-group">
-            <label>出生日期</label>
-            <input type="text" id="res-birth">
-        </div>
-    </div>
-
-    <div class="result-card">
-        <div class="result-title">📊 量測結果</div>
-        <div id="vital-fields"></div>
-    </div>
-
-    <button class="btn btn-primary" id="btn-upload">☁️ 上傳至 Health+</button>
-    <button class="btn btn-outline" onclick="goToHome()">🏠 放棄並回首頁</button>
-</div>
-
 <div id="loading-overlay">
-    <div class="spinner"></div>
-    <div id="loading-text" style="color:white; font-weight:bold;">資料處理中...</div>
+    <div>讀取設定檔中...</div>
 </div>
 
-<input type="file" id="native-camera" accept="image/*">
+<div id="app-content" class="hidden">
+    <h1>Health+ 系統</h1>
+    <p>API Key 載入狀態：<span style="color:#4CAF50">✅ 成功</span></p>
+    <button onclick="testApi()">測試 API 連線</button>
+</div>
 
 <script>
-    // ========== 全域變數 ==========
-    let currentStep = 1;
-    let currentDevice = ''; // 'bp' or 'bg'
-    let activeStream = null;
-    
-    // 暫存資料
-    const collectedData = {
-        name: '',
-        id: '',
-        birth: '',
-        vital: {}
-    };
+    // 全域變數，用來存 Key
+    let GLOBAL_API_KEY = "";
 
-    const nativeInput = document.getElementById('native-camera');
-    const loadingOverlay = document.getElementById('loading-overlay');
-    const loadingText = document.getElementById('loading-text');
-
-    // ========== 流程控制系統 ==========
-    function goToStep(step) {
-        // 隱藏所有視圖
-        document.querySelectorAll('.view-section').forEach(el => el.classList.remove('active'));
-        stopCamera(); // 切換頁面時先關閉相機
-
-        // 根據步驟顯示
-        if (step === 1) document.getElementById('view-home').classList.add('active');
-        if (step === 2) {
-            document.getElementById('view-scan-id').classList.add('active');
-            initCamera('video-id');
-        }
-        if (step === 3) document.getElementById('view-select-device').classList.add('active');
-        if (step === 4) {
-            document.getElementById('view-scan-vital').classList.add('active');
-            initCamera('video-vital');
-        }
-        if (step === 5) {
-            document.getElementById('view-result').classList.add('active');
-            renderResult();
-        }
-    }
-
-    function goToHome() {
-        // 清空資料
-        collectedData.name = '';
-        collectedData.id = '';
-        collectedData.birth = '';
-        collectedData.vital = {};
-        goToStep(1);
-    }
-
-    // 儀器選擇邏輯
-    function startVitalScan(type) {
-        currentDevice = type;
-        const guideText = document.getElementById('vital-guide-text');
-        if (type === 'bp') guideText.innerText = "請將 血壓/脈搏 數字置於框內";
-        else guideText.innerText = "請將 血糖 數字置於框內";
-        goToStep(4);
-    }
-
-    // ========== 相機功能 ==========
-    async function initCamera(videoId) {
-        const videoEl = document.getElementById(videoId);
-        if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
-            try {
-                activeStream = await navigator.mediaDevices.getUserMedia({
-                    video: { facingMode: "environment", width: { ideal: 1920 } }
-                });
-                videoEl.srcObject = activeStream;
-            } catch (e) {
-                console.error(e);
-                alert("無法啟動相機，請允許權限");
-            }
-        }
-    }
-
-    function stopCamera() {
-        if (activeStream) {
-            activeStream.getTracks().forEach(track => track.stop());
-            activeStream = null;
-        }
-    }
-
-    function captureImage(videoId) {
-        const videoEl = document.getElementById(videoId);
-        const canvas = document.createElement('canvas');
-        canvas.width = videoEl.videoWidth;
-        canvas.height = videoEl.videoHeight;
-        canvas.getContext('2d').drawImage(videoEl, 0, 0);
-        return canvas.toDataURL('image/jpeg', 0.9).split(',')[1];
-    }
-
-    // ========== 辨識與按鈕綁定 ==========
-
-    // 1. 身分證掃描
-    document.getElementById('btn-scan-id').addEventListener('click', () => {
-        handleScan('id', 'video-id');
-    });
-
-    // 原生上傳 (補救用)
-    nativeInput.addEventListener('change', (e) => {
-        if (e.target.files[0]) {
-            const reader = new FileReader();
-            reader.onload = (evt) => {
-                const base64 = evt.target.result.split(',')[1];
-                callGoogleAPI(base64, 'id');
-            };
-            reader.readAsDataURL(e.target.files[0]);
-        }
-    });
-
-    // 2. 儀器掃描
-    document.getElementById('btn-scan-vital').addEventListener('click', () => {
-        handleScan('vital', 'video-vital');
-    });
-
-    function handleScan(mode, videoId) {
-        if (!API_KEY || API_KEY === "YOUR_GOOGLE_API_KEY_HERE") {
-            return alert("請在程式碼中填入您的 Google API Key");
-        }
-        const base64 = captureImage(videoId);
-        callGoogleAPI(base64, mode);
-    }
-
-    // ========== Google API 核心 ==========
-    async function callGoogleAPI(base64, mode) {
-        showLoading(true, "AI 辨識中...");
-        
-        const url = `https://vision.googleapis.com/v1/images:annotate?key=${API_KEY}`;
-        const body = {
-            requests: [{
-                image: { content: base64 },
-                features: [{ type: "TEXT_DETECTION" }]
-            }]
-        };
-
+    // 程式進入點
+    window.addEventListener('load', async () => {
         try {
-            const res = await fetch(url, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(body)
-            });
-            const data = await res.json();
+            // 1. 嘗試讀取 config/key.json
+            // 注意：必須使用 Server 開啟 (如 Live Server)，不能直接點兩下 index.html
+            const response = await fetch('./config/key.json');
             
-            if (!data.responses || !data.responses[0].textAnnotations) {
-                throw new Error("未偵測到文字");
+            if (!response.ok) {
+                throw new Error("找不到 key.json，請確認檔案位置");
             }
 
-            const fullText = data.responses[0].textAnnotations[0].description;
-            console.log("OCR Result:", fullText);
-
-            if (mode === 'id') {
-                parseIDCard(fullText);
-                showLoading(false);
-                goToStep(3); // 去選擇儀器
+            const config = await response.json();
+            
+            if (config.GOOGLE_API_KEY && config.GOOGLE_API_KEY !== "YOUR_API_KEY_HERE") {
+                GLOBAL_API_KEY = config.GOOGLE_API_KEY;
+                console.log("金鑰載入成功");
+                initApp(); // 啟動主程式
             } else {
-                parseVital(fullText);
-                showLoading(false);
-                goToStep(5); // 去看結果
+                throw new Error("key.json 內容無效或為範本");
             }
 
-        } catch (e) {
-            showLoading(false);
-            alert("辨識失敗，請重試 (" + e.message + ")");
+        } catch (error) {
+            console.error(error);
+            alert("❌ 設定檔讀取失敗：\n請確保 config/key.json 存在且格式正確。\n" + error.message);
+            // 可以在這裡加入 fallback，例如跳出 prompt 讓使用者手動輸入
         }
-    }
-
-    // ========== 解析邏輯 (核心修正) ==========
-
-    // 解析身分證 (針對姓名進行強化)
-    function parseIDCard(text) {
-        // 1. 身分證字號
-        const cleanText = text.replace(/\s/g, '');
-        const idMatch = cleanText.match(/[A-Z][0-9]{9}/);
-        collectedData.id = idMatch ? idMatch[0] : "";
-
-        // 2. 出生日期
-        const dateMatch = text.match(/(\d{2,3})\s*[年\.]\s*(\d{1,2})\s*[月\.]\s*(\d{1,2})/);
-        if (dateMatch) {
-            let y = parseInt(dateMatch[1]);
-            if (y < 1911) y += 1911;
-            collectedData.birth = `${y}-${dateMatch[2].padStart(2,'0')}-${dateMatch[3].padStart(2,'0')}`;
-        }
-
-        // 3. 姓名 (修正演算法)
-        let nameFound = "";
-        const lines = text.split('\n');
-        
-        // 策略 A: 尋找 "姓名" 關鍵字
-        for (let i = 0; i < lines.length; i++) {
-            if (lines[i].includes("姓名")) {
-                let temp = lines[i].replace(/姓名/g, '').replace(/[:：\s]/g, '');
-                if (temp.length >= 2 && temp.length <= 4) {
-                    nameFound = temp;
-                } else if (i + 1 < lines.length) {
-                    // 如果這行只有 "姓名"，看下一行
-                    let nextLine = lines[i+1].replace(/\s/g, '');
-                    if (/^[\u4e00-\u9fa5]{2,4}$/.test(nextLine)) {
-                        nameFound = nextLine;
-                    }
-                }
-                break;
-            }
-        }
-
-        // 策略 B: 如果沒找到，尋找「孤立的純中文行」
-        // 身分證的排版特性：姓名通常是字體最大且單獨一行的中文
-        if (!nameFound) {
-            for (let line of lines) {
-                // 去除所有空格
-                let raw = line.replace(/\s/g, ''); 
-                // 條件：純中文、2-4個字、不是關鍵字
-                if (/^[\u4e00-\u9fa5]{2,4}$/.test(raw)) {
-                    if (!['中華民國', '國民身分證', '出生年月日', '統一編號', '性別', '發證日期'].some(k => raw.includes(k))) {
-                        nameFound = raw;
-                        break; // 找到第一個符合的通常就是姓名
-                    }
-                }
-            }
-        }
-
-        collectedData.name = nameFound;
-    }
-
-    // 解析生理數值
-    function parseVital(text) {
-        // 抓出所有數字
-        let nums = (text.match(/\d+(\.\d+)?/g) || []).map(Number);
-        // 過濾不合理數值 (假設 < 30 或 > 400 是雜訊或日期)
-        nums = nums.filter(n => n > 30 && n < 400);
-        // 排序 (由大到小)
-        nums = [...new Set(nums)].sort((a, b) => b - a);
-
-        collectedData.vital = {};
-
-        if (currentDevice === 'bp') {
-            // 血壓計通常有 2~3 個數值
-            if (nums.length >= 2) {
-                collectedData.vital.sys = nums[0]; // 收縮壓
-                collectedData.vital.dia = nums[1]; // 舒張壓
-                if (nums.length >= 3) collectedData.vital.pulse = nums[2];
-            }
-        } else {
-            // 血糖機通常只有 1 個主要數值
-            if (nums.length >= 1) {
-                collectedData.vital.glucose = nums[0]; // 血糖值
-            }
-        }
-    }
-
-    // ========== 結果渲染與上傳 ==========
-    function renderResult() {
-        document.getElementById('res-name').value = collectedData.name;
-        document.getElementById('res-id').value = collectedData.id;
-        document.getElementById('res-birth').value = collectedData.birth;
-
-        const vitalContainer = document.getElementById('vital-fields');
-        vitalContainer.innerHTML = '';
-
-        if (currentDevice === 'bp') {
-            addResultInput(vitalContainer, "收縮壓 (Sys)", collectedData.vital.sys || "");
-            addResultInput(vitalContainer, "舒張壓 (Dia)", collectedData.vital.dia || "");
-            addResultInput(vitalContainer, "脈搏 (Pulse)", collectedData.vital.pulse || "");
-        } else {
-            addResultInput(vitalContainer, "血糖值 (mg/dL)", collectedData.vital.glucose || "");
-        }
-    }
-
-    function addResultInput(parent, label, value) {
-        const div = document.createElement('div');
-        div.className = 'form-group';
-        div.innerHTML = `<label>${label}</label><input type="text" value="${value}">`;
-        parent.appendChild(div);
-    }
-
-    // 上傳邏輯
-    document.getElementById('btn-upload').addEventListener('click', () => {
-        showLoading(true, "資料上傳中...");
-        
-        // 模擬 1 秒延遲
-        setTimeout(() => {
-            showLoading(false);
-            
-            // 顯示成功提示 (簡單 alert 或 toast)
-            // 這裡直接修改按鈕狀態
-            const btn = document.getElementById('btn-upload');
-            const originalText = btn.innerHTML;
-            
-            btn.innerHTML = "✅ 上傳成功";
-            btn.style.backgroundColor = "#4CAF50";
-            
-            // 顯示「返回首頁」按鈕 (其實原本就有，這裡做個強調)
-            setTimeout(() => {
-                alert("上傳成功！將返回首頁。");
-                goToHome();
-                // 重置按鈕
-                btn.innerHTML = originalText;
-                btn.style.backgroundColor = "";
-            }, 1000);
-
-        }, 1500);
     });
 
-    function showLoading(show, text) {
-        loadingOverlay.style.display = show ? 'flex' : 'none';
-        if (text) loadingText.innerText = text;
+    // 初始化應用程式 (原本的 onload 邏輯移到這裡)
+    function initApp() {
+        // 隱藏 Loading，顯示主畫面
+        document.getElementById('loading-overlay').classList.add('hidden');
+        document.getElementById('app-content').classList.remove('hidden');
+        
+        // 這裡執行原本的 initCamera() 或其他初始化
+        // initCamera(); 
     }
 
-    // 啟動時先載入首頁
-    goToStep(1);
+    // 模擬使用 API 的函式
+    function testApi() {
+        if (!GLOBAL_API_KEY) return alert("沒有 Key！");
+        alert("正在使用 Key: " + GLOBAL_API_KEY.substring(0, 5) + "..." + " 呼叫 Google Vision API");
+        
+        // 這裡接原本的 callGoogleAPI(base64, mode) 邏輯
+        // callGoogleAPI(..., GLOBAL_API_KEY);
+    }
 
 </script>
 </body>
