@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>亞東醫院高解析版面產生器 (可自訂文字版)</title>
+<title>亞東醫院高解析版面產生器 (完整功能版)</title>
 <style>
     /* === 基礎設定 === */
     body {
@@ -30,7 +30,7 @@
         transition: all 0.3s;
     }
 
-    /* 縮放容器：讓 2500px 的畫布能在螢幕上預覽 */
+    /* 縮放容器 */
     #scale-wrapper {
         transform-origin: center center;
         transform: scale(0.25); /* 預設縮小 */
@@ -38,7 +38,7 @@
         transition: transform 0.3s;
     }
 
-    /* === 核心畫布：真實尺寸 2500x1686 === */
+    /* === 核心畫布 === */
     #main-canvas {
         width: 2500px;
         height: 1686px;
@@ -67,11 +67,18 @@
         position: relative;
     }
 
-    /* 被選取狀態 */
+    /* 被選取狀態 (紅框) */
     .slot-card.active-slot {
         border-color: #ff3333;
         box-shadow: 0 0 50px rgba(255, 50, 50, 0.4);
         z-index: 10;
+    }
+
+    /* === [新增功能] 隱藏紅框的樣式 override === */
+    #main-canvas.hide-selection .slot-card.active-slot {
+        border-color: transparent !important;
+        box-shadow: 0 10px 25px rgba(0,0,0,0.05) !important; /* 恢復原本陰影 */
+        z-index: auto !important;
     }
 
     /* 綠色特殊卡片 */
@@ -119,12 +126,12 @@
         color: #333;
         line-height: 1.3;
         pointer-events: none;
-        white-space: pre-wrap; /* 允許換行 */
+        white-space: pre-wrap;
     }
 
-    /* === 下半部：控制面板 (圖示庫 + 編輯器) === */
+    /* === 下半部：控制面板 === */
     #library-area {
-        height: 320px; /* 增加高度給編輯區 */
+        height: 320px;
         background-color: #fff;
         border-top: 1px solid #ccc;
         display: flex;
@@ -135,7 +142,6 @@
         z-index: 100;
     }
 
-    /* 隱藏狀態 */
     #library-area.hidden {
         height: 0;
         border-top: none;
@@ -212,11 +218,18 @@
         color: #555;
     }
 
-    /* === 懸浮開關按鈕 === */
-    #toggle-btn {
+    /* === 懸浮按鈕群組 === */
+    .floating-btns {
         position: fixed;
         bottom: 20px;
         right: 20px;
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+        z-index: 200;
+    }
+
+    .float-btn {
         background-color: #00854a;
         color: white;
         border: none;
@@ -225,14 +238,27 @@
         font-size: 16px;
         cursor: pointer;
         box-shadow: 0 4px 10px rgba(0,0,0,0.3);
-        z-index: 200;
-        transition: background-color 0.2s;
+        transition: background-color 0.2s, transform 0.1s;
         display: flex;
         align-items: center;
         gap: 8px;
+        justify-content: center;
+        min-width: 160px;
     }
-    #toggle-btn:hover {
+    .float-btn:hover {
         background-color: #006633;
+        transform: translateY(-2px);
+    }
+    .float-btn:active {
+        transform: translateY(0);
+    }
+
+    /* 隱藏紅框按鈕的特殊色 (灰色，區分功能) */
+    #toggle-border-btn {
+        background-color: #555;
+    }
+    #toggle-border-btn:hover {
+        background-color: #333;
     }
 
     .status-badge {
@@ -253,9 +279,15 @@
     </div>
 </div>
 
-<button id="toggle-btn" onclick="toggleLibrary()">
-    <span>👁️</span> <span id="btn-text">隱藏控制面板</span>
-</button>
+<div class="floating-btns">
+    <button id="toggle-border-btn" class="float-btn" onclick="toggleRedBorder()">
+        <span>🔳</span> <span id="border-btn-text">隱藏選取框</span>
+    </button>
+    
+    <button id="toggle-panel-btn" class="float-btn" onclick="toggleLibrary()">
+        <span>👁️</span> <span id="panel-btn-text">隱藏控制面板</span>
+    </button>
+</div>
 
 <div id="library-area">
     
@@ -304,7 +336,6 @@
     ];
 
     // === 2. 初始狀態資料 ===
-    // 這裡改用物件陣列，儲存 iconIndex 和 customText
     let slotState = [
         { iconIndex: 0, customText: iconData[0].name },
         { iconIndex: 1, customText: iconData[1].name },
@@ -320,7 +351,8 @@
     const statusText = document.getElementById('status-text');
     const textInput = document.getElementById('text-input');
     const libraryArea = document.getElementById('library-area');
-    const toggleBtnText = document.getElementById('btn-text');
+    const panelBtnText = document.getElementById('panel-btn-text');
+    const borderBtnText = document.getElementById('border-btn-text');
 
     // === 3. 渲染主畫布 ===
     function renderCanvas() {
@@ -371,9 +403,6 @@
         // 將該格子的目前文字帶入輸入框
         textInput.value = slotState[index].customText;
         
-        // 確保輸入框取得焦點 (選擇性)
-        // textInput.focus();
-
         renderCanvas(); // 更新紅色框
     }
 
@@ -403,7 +432,7 @@
                 <div class="lib-name">${icon.name.replace('\n', '')}</div>
             `;
 
-            // 點擊圖示庫：替換圖示，並重置文字為該圖示預設名稱
+            // 點擊圖示庫：替換圖示
             item.onclick = () => {
                 slotState[selectedSlotIndex].iconIndex = index;
                 slotState[selectedSlotIndex].customText = icon.name; // 重置文字
@@ -415,18 +444,29 @@
         });
     }
 
-    // === 7. 顯示/隱藏控制面板 ===
+    // === 7. 切換顯示功能 ===
+    
+    // (A) 切換控制面板
     function toggleLibrary() {
         libraryArea.classList.toggle('hidden');
         if (libraryArea.classList.contains('hidden')) {
-            toggleBtnText.textContent = '顯示控制面板';
+            panelBtnText.textContent = '顯示控制面板';
         } else {
-            toggleBtnText.textContent = '隱藏控制面板';
+            panelBtnText.textContent = '隱藏控制面板';
+        }
+    }
+
+    // (B) [新增] 切換選取紅框
+    function toggleRedBorder() {
+        mainCanvas.classList.toggle('hide-selection');
+        if (mainCanvas.classList.contains('hide-selection')) {
+            borderBtnText.textContent = '顯示選取框';
+        } else {
+            borderBtnText.textContent = '隱藏選取框';
         }
     }
 
     // === 8. 啟動 ===
-    // 初始化輸入框文字
     textInput.value = slotState[0].customText;
     renderCanvas();
     renderLibrary();
