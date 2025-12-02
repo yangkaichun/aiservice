@@ -1,0 +1,436 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>亞東醫院高解析版面產生器 (可自訂文字版)</title>
+<style>
+    /* === 基礎設定 === */
+    body {
+        margin: 0;
+        padding: 0;
+        font-family: "Microsoft JhengHei", "Heiti TC", sans-serif;
+        background-color: #333;
+        display: flex;
+        flex-direction: column;
+        height: 100vh;
+        overflow: hidden;
+    }
+
+    /* === 上半部：預覽區 === */
+    #preview-area {
+        flex: 1;
+        background-color: #222;
+        overflow: auto; /* 允許捲動 */
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        padding: 20px;
+        position: relative;
+        transition: all 0.3s;
+    }
+
+    /* 縮放容器：讓 2500px 的畫布能在螢幕上預覽 */
+    #scale-wrapper {
+        transform-origin: center center;
+        transform: scale(0.25); /* 預設縮小 */
+        box-shadow: 0 0 50px rgba(0,0,0,0.5);
+        transition: transform 0.3s;
+    }
+
+    /* === 核心畫布：真實尺寸 2500x1686 === */
+    #main-canvas {
+        width: 2500px;
+        height: 1686px;
+        background-color: #f4f6f8;
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        grid-template-rows: repeat(2, 1fr);
+        gap: 50px;
+        padding: 60px;
+        box-sizing: border-box;
+    }
+
+    /* === 卡片樣式 === */
+    .slot-card {
+        background-color: #ffffff;
+        border-radius: 40px;
+        box-shadow: 0 10px 25px rgba(0,0,0,0.05);
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        align-items: center;
+        text-align: center;
+        cursor: pointer;
+        border: 10px solid transparent; 
+        transition: border-color 0.2s, background-color 0.2s;
+        position: relative;
+    }
+
+    /* 被選取狀態 */
+    .slot-card.active-slot {
+        border-color: #ff3333;
+        box-shadow: 0 0 50px rgba(255, 50, 50, 0.4);
+        z-index: 10;
+    }
+
+    /* 綠色特殊卡片 */
+    .slot-card.special-green {
+        background-color: #00854a;
+    }
+    .slot-card.special-green .icon-display,
+    .slot-card.special-green .label-display {
+        fill: #ffffff !important;
+        stroke: #ffffff !important;
+        color: #ffffff !important;
+    }
+    .slot-card.special-green .icon-outline {
+        fill: none !important; 
+        stroke: #ffffff !important;
+    }
+    .slot-card.special-green .icon-fill {
+        fill: #ffffff !important;
+        stroke: none !important;
+    }
+
+    /* 畫布內的文字與圖標 */
+    .icon-display {
+        width: 250px;
+        height: 250px;
+        margin-bottom: 40px;
+        fill: #00854a;
+        pointer-events: none;
+    }
+    .icon-display.icon-outline {
+        fill: none;
+        stroke: #00854a;
+        stroke-width: 5;
+        stroke-linecap: round;
+        stroke-linejoin: round;
+    }
+    .icon-display.icon-fill {
+        fill: #00854a;
+        stroke: none;
+    }
+
+    .label-display {
+        font-size: 80px;
+        font-weight: bold;
+        color: #333;
+        line-height: 1.3;
+        pointer-events: none;
+        white-space: pre-wrap; /* 允許換行 */
+    }
+
+    /* === 下半部：控制面板 (圖示庫 + 編輯器) === */
+    #library-area {
+        height: 320px; /* 增加高度給編輯區 */
+        background-color: #fff;
+        border-top: 1px solid #ccc;
+        display: flex;
+        flex-direction: column;
+        transition: height 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        overflow: hidden;
+        position: relative;
+        z-index: 100;
+    }
+
+    /* 隱藏狀態 */
+    #library-area.hidden {
+        height: 0;
+        border-top: none;
+    }
+
+    /* 控制面板表頭 */
+    .control-header {
+        padding: 15px 20px;
+        background: #eee;
+        border-bottom: 1px solid #ddd;
+        display: flex;
+        align-items: center;
+        gap: 20px;
+    }
+
+    /* 文字編輯區 */
+    .edit-group {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        flex: 1;
+    }
+    .edit-group input {
+        padding: 8px 12px;
+        font-size: 16px;
+        border: 1px solid #ccc;
+        border-radius: 5px;
+        width: 300px;
+    }
+    .edit-group label {
+        font-weight: bold;
+        color: #333;
+    }
+
+    /* 圖示捲動區 */
+    .library-scroll {
+        flex: 1;
+        overflow-x: auto;
+        display: flex;
+        padding: 15px;
+        gap: 15px;
+        align-items: center;
+        background-color: #fafafa;
+    }
+    
+    .lib-item {
+        min-width: 110px;
+        height: 130px;
+        border: 1px solid #ddd;
+        border-radius: 8px;
+        background: #fff;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+        transition: all 0.2s;
+        padding: 10px;
+        text-align: center;
+    }
+    .lib-item:hover {
+        background-color: #e8f5e9;
+        border-color: #00854a;
+        transform: translateY(-3px);
+    }
+    .lib-item svg {
+        width: 40px;
+        height: 40px;
+        margin-bottom: 8px;
+        fill: #00854a;
+    }
+    .lib-item .lib-name {
+        font-size: 13px;
+        color: #555;
+    }
+
+    /* === 懸浮開關按鈕 === */
+    #toggle-btn {
+        position: fixed;
+        bottom: 20px;
+        right: 20px;
+        background-color: #00854a;
+        color: white;
+        border: none;
+        padding: 12px 20px;
+        border-radius: 30px;
+        font-size: 16px;
+        cursor: pointer;
+        box-shadow: 0 4px 10px rgba(0,0,0,0.3);
+        z-index: 200;
+        transition: background-color 0.2s;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    }
+    #toggle-btn:hover {
+        background-color: #006633;
+    }
+
+    .status-badge {
+        background: #00854a;
+        color: white;
+        padding: 4px 10px;
+        border-radius: 4px;
+        font-size: 14px;
+    }
+</style>
+</head>
+<body>
+
+<div id="preview-area">
+    <div id="scale-wrapper">
+        <div id="main-canvas">
+            </div>
+    </div>
+</div>
+
+<button id="toggle-btn" onclick="toggleLibrary()">
+    <span>👁️</span> <span id="btn-text">隱藏控制面板</span>
+</button>
+
+<div id="library-area">
+    
+    <div class="control-header">
+        <span class="status-badge" id="status-text">選取中：第 1 格</span>
+        
+        <div class="edit-group">
+            <label for="text-input">自訂文字：</label>
+            <input type="text" id="text-input" placeholder="請點選上方格子後在此輸入..." oninput="updateText(this.value)">
+        </div>
+
+        <div style="font-size: 14px; color: #666;">
+            💡 提示：點擊上方格子選取，下方選圖示，左側改文字
+        </div>
+    </div>
+
+    <div class="library-scroll" id="icon-library">
+        </div>
+</div>
+
+<script>
+    // === 1. 圖示資料 ===
+    const iconData = [
+        // 主功能
+        { id: 'guide', name: '掛號及\n就醫指南', type: 'outline', svg: '<svg viewBox="0 0 100 100"><path d="M50,90 C50,90 10,65 10,35 C10,15 25,5 45,15 C50,18 50,18 55,15 C75,5 90,15 90,35 C90,65 50,90 50,90 Z" /><polyline points="25,35 35,35 45,20 55,50 65,35 75,35" /></svg>' },
+        { id: 'news', name: '最新消息', type: 'fill', svg: '<svg viewBox="0 0 24 24"><path d="M20,3H4C2.9,3,2,3.9,2,5v14c0,1.1,0.9,2,2,2h16c1.1,0,2-0.9,2-2V5C22,3.9,21.1,3,20,3z M19,19H5v-2h14V19z M19,15H5v-2h14V15z M19,11H5V7h14V11z"/></svg>' },
+        { id: 'app', name: 'APP下載及\n病人參與問卷', type: 'outline', svg: '<svg viewBox="0 0 24 24"><rect x="5" y="2" width="14" height="20" rx="2" ry="2" stroke-width="2"/><line x1="11" y1="18" x2="13" y2="18" stroke-width="2"/></svg>' },
+        { id: 'feature', name: '特色醫療及\n衛教專區', type: 'fill', svg: '<svg viewBox="0 0 24 24"><path d="M19,11h-5V6c0-0.55-0.45-1-1-1h-2c-0.55,0-1,0.45-1,1v5H5c-0.55,0-1,0.45-1,1v2c0,0.55,0.45,1,1,1h5v5c0,0.55,0.45,1,1,1h2c0.55,0,1-0.45,1-1v-5h5c0.55,0,1-0.45,1-1v-2C20,11.45,19.55,11,19,11z"/></svg>' },
+        { id: 'heart', name: '亞東❤️健康', type: 'special', svg: '<svg viewBox="0 0 24 24"><path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/></svg>' },
+        { id: 'bind', name: '綁定資訊', type: 'outline', svg: '<svg viewBox="0 0 24 24"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71" /><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71" /></svg>' },
+        // 細項
+        { id: 'team', name: '醫療團隊', type: 'fill', svg: '<svg viewBox="0 0 24 24"><path d="M16 11c1.66 0 2.99-1.34 2.99-3S17.66 5 16 5c-1.66 0-3 1.34-3 3s1.34 3 3 3zm-8 0c1.66 0 2.99-1.34 2.99-3S9.66 5 8 5C6.34 5 5 6.34 5 8s1.34 3 3 3zm0 2c-2.33 0-7 1.17-7 3.5V19h14v-2.5c0-2.33-4.67-3.5-7-3.5zm8 0c-.29 0-.62.02-.97.05 1.16.84 1.97 1.97 1.97 3.45V19h6v-2.5c0-2.33-4.67-3.5-7-3.5z"/></svg>' },
+        { id: 'service', name: '為民服務', type: 'fill', svg: '<svg viewBox="0 0 24 24"><path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35zM12 11c1.1 0 2-.9 2-2s-.9-2-2-2-2 .9-2 2 .9 2 2 2z"/></svg>' },
+        { id: 'line_msg', name: '更多消息', type: 'fill', svg: '<svg viewBox="0 0 24 24"><path d="M20 2H4c-1.1 0-2 .9-2 2v18l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zM6 9h12v2H6V9zm8 5H6v-2h8v2zm4-6H6V6h12v2z"/></svg>' },
+        { id: 'line_act', name: '近期活動', type: 'fill', svg: '<svg viewBox="0 0 24 24"><path d="M19 3h-1V1h-2v2H8V1H6v2H5c-1.11 0-2 .9-2 2v14c0 1.1.89 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm0 16H5V8h14v11zM12 10l1.25 3.25L16 14l-2.25 1.5L14.5 19 12 17.25 9.5 19l.75-3.5L8 14l2.75-.75L12 10z"/></svg>' },
+        { id: 'info', name: '亞東訊息', type: 'fill', svg: '<svg viewBox="0 0 24 24"><path d="M14,2H6A2,2 0 0,0 4,4V20A2,2 0 0,0 6,22H18A2,2 0 0,0 20,20V8L14,2M12,18C9.5,18 7,16.5 7,14C7,11.5 9.5,10 12,10C14.5,10 17,11.5 17,14C17,16.5 14.5,18 12,18M13,9V3.5L18.5,9H13Z"/></svg>' },
+        { id: 'slow', name: '慢箋預約', type: 'fill', svg: '<svg viewBox="0 0 24 24"><path d="M13,3A9,9 0 0,0 4,12H1l4.89,5.73L10.79,12H7.93A7,7 0 0,1 13,5A7,7 0 0,1 20,12A7,7 0 0,1 13,19C11.07,19 9.32,18.21 8.06,16.94L6.64,18.36C8.27,20 10.5,21 13,21A9,9 0 0,0 22,12A9,9 0 0,0 13,3M12,7V12.25L16.5,14.92L17.25,13.65L13.5,11.5V7H12Z"/></svg>' },
+        { id: 'tele', name: '遠距醫療', type: 'fill', svg: '<svg viewBox="0 0 24 24"><path d="M18 10.48V6c0-1.1-.9-2-2-2H4c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2v-4.48l4 3.98v-11l-4 3.98zM9 12c0 1.66 1.34 3 3 3s3-1.34 3-3-1.34-3-3-3-3 1.34-3 3 1.34 3 3 1.34 3 3 3zm0 2c-1.47 0-4.27.81-5.6 2.14C-.27 16.81 0 18.19 0 18.19V20h6v-2.58c0-2.57 3-3.42 3-3.42H5z"/></svg>' },
+        { id: 'pay', name: '醫指付', type: 'fill', svg: '<svg viewBox="0 0 24 24"><path d="M17,18H7V6H17M17,4H7A2,2 0 0,0 5,6V18A2,2 0 0,0 7,20H17A2,2 0 0,0 19,18V6C19,4.89 18.1,4 17,4M13,15H11V13H13V15M13,11H11V9H13V11Z"/></svg>' },
+        { id: 'sign', name: '電子簽名', type: 'fill', svg: '<svg viewBox="0 0 24 24"><path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04c.39-.39.39-1.02 0-1.41l-2.34-2.34c-.39-.39-1.02-.39-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z"/></svg>' },
+        { id: 'decl', name: '健康聲明', type: 'fill', svg: '<svg viewBox="0 0 24 24"><path d="M14,2H6A2,2 0 0,0 4,4V20A2,2 0 0,0 6,22H18A2,2 0 0,0 20,20V8L14,2M12,18C9.5,18 7,16.5 7,14C7,11.5 9.5,10 12,10C14.5,10 17,11.5 17,14C17,16.5 14.5,18 12,18M13,9V3.5L18.5,9H13Z"/></svg>' },
+        { id: 'survey', name: '健康問卷', type: 'fill', svg: '<svg viewBox="0 0 24 24"><path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-7 14H7v-2h5v2zm4-4H7v-2h9v2zm0-4H7V7h9v2z"/></svg>' },
+        { id: 'how', name: '如何綁定', type: 'fill', svg: '<svg viewBox="0 0 24 24"><path d="M11 17H7c-1.1 0-2-.9-2-2V9c0-1.1.9-2 2-2h4v2H7v6h4v2zm6-10h-4v2h4v6h-4v2h4c1.1 0 2-.9 2-2V9c0-1.1-.9-2-2-2z"/></svg>' },
+        { id: 'manual', name: '使用方式', type: 'fill', svg: '<svg viewBox="0 0 24 24"><path d="M18 2H6c-1.1 0-2 .9-2 2v16c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zM6 4h5v8l-2.5-1.5L6 12V4z"/></svg>' },
+        { id: 'other', name: '其他', type: 'fill', svg: '<svg viewBox="0 0 24 24"><path d="M6 10c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2zm12 0c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2zm-6 0c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2z"/></svg>' },
+    ];
+
+    // === 2. 初始狀態資料 ===
+    // 這裡改用物件陣列，儲存 iconIndex 和 customText
+    let slotState = [
+        { iconIndex: 0, customText: iconData[0].name },
+        { iconIndex: 1, customText: iconData[1].name },
+        { iconIndex: 2, customText: iconData[2].name },
+        { iconIndex: 3, customText: iconData[3].name },
+        { iconIndex: 4, customText: iconData[4].name },
+        { iconIndex: 5, customText: iconData[5].name },
+    ];
+    let selectedSlotIndex = 0; // 預設選取第一個
+
+    const mainCanvas = document.getElementById('main-canvas');
+    const iconLibrary = document.getElementById('icon-library');
+    const statusText = document.getElementById('status-text');
+    const textInput = document.getElementById('text-input');
+    const libraryArea = document.getElementById('library-area');
+    const toggleBtnText = document.getElementById('btn-text');
+
+    // === 3. 渲染主畫布 ===
+    function renderCanvas() {
+        mainCanvas.innerHTML = '';
+        
+        slotState.forEach((state, slotIndex) => {
+            const icon = iconData[state.iconIndex];
+            const slot = document.createElement('div');
+            slot.className = 'slot-card';
+            
+            // 判斷是否為「亞東愛健康」的特殊樣式
+            if (icon.type === 'special') {
+                slot.classList.add('special-green');
+            }
+
+            // 判斷是否為目前選取的編輯框
+            if (slotIndex === selectedSlotIndex) {
+                slot.classList.add('active-slot');
+            }
+
+            // 處理 SVG Class
+            let svgContent = icon.svg;
+            if (icon.type === 'outline') {
+                svgContent = svgContent.replace('<svg', '<svg class="icon-display icon-outline"');
+            } else {
+                svgContent = svgContent.replace('<svg', '<svg class="icon-display icon-fill"');
+            }
+
+            slot.innerHTML = `
+                ${svgContent}
+                <div class="label-display">${state.customText}</div>
+            `;
+
+            // 點擊格子的事件
+            slot.onclick = () => {
+                selectSlot(slotIndex);
+            };
+
+            mainCanvas.appendChild(slot);
+        });
+    }
+
+    // === 4. 選取格子的邏輯 ===
+    function selectSlot(index) {
+        selectedSlotIndex = index;
+        statusText.textContent = `選取中：第 ${index + 1} 格`;
+        
+        // 將該格子的目前文字帶入輸入框
+        textInput.value = slotState[index].customText;
+        
+        // 確保輸入框取得焦點 (選擇性)
+        // textInput.focus();
+
+        renderCanvas(); // 更新紅色框
+    }
+
+    // === 5. 更新文字邏輯 ===
+    function updateText(val) {
+        slotState[selectedSlotIndex].customText = val;
+        renderCanvas();
+    }
+
+    // === 6. 渲染圖示庫 ===
+    function renderLibrary() {
+        iconLibrary.innerHTML = '';
+        iconData.forEach((icon, index) => {
+            const item = document.createElement('div');
+            item.className = 'lib-item';
+            
+            // 小圖示樣式
+            let smallSvg = icon.svg;
+            if (icon.type === 'outline') {
+                smallSvg = smallSvg.replace('<svg', '<svg style="fill:none; stroke:#00854a; stroke-width:5"');
+            } else {
+                smallSvg = smallSvg.replace('<svg', '<svg style="fill:#00854a"');
+            }
+
+            item.innerHTML = `
+                ${smallSvg}
+                <div class="lib-name">${icon.name.replace('\n', '')}</div>
+            `;
+
+            // 點擊圖示庫：替換圖示，並重置文字為該圖示預設名稱
+            item.onclick = () => {
+                slotState[selectedSlotIndex].iconIndex = index;
+                slotState[selectedSlotIndex].customText = icon.name; // 重置文字
+                textInput.value = icon.name; // 更新輸入框
+                renderCanvas();
+            };
+
+            iconLibrary.appendChild(item);
+        });
+    }
+
+    // === 7. 顯示/隱藏控制面板 ===
+    function toggleLibrary() {
+        libraryArea.classList.toggle('hidden');
+        if (libraryArea.classList.contains('hidden')) {
+            toggleBtnText.textContent = '顯示控制面板';
+        } else {
+            toggleBtnText.textContent = '隱藏控制面板';
+        }
+    }
+
+    // === 8. 啟動 ===
+    // 初始化輸入框文字
+    textInput.value = slotState[0].customText;
+    renderCanvas();
+    renderLibrary();
+
+</script>
+</body>
+</html>
