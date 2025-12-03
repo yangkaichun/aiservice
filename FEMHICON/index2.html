@@ -44,7 +44,7 @@
     #main-canvas {
         width: 2500px;
         height: 1686px;
-        background-color: #f4f6f8; /* 淺灰背景 */
+        background-color: #f4f6f8; /* [關鍵] 灰色背景 */
         display: grid;
         grid-template-columns: repeat(3, 1fr);
         grid-template-rows: repeat(2, 1fr);
@@ -55,8 +55,8 @@
 
     /* === 卡片樣式 === */
     .slot-card {
-        background-color: #ffffff;
-        border-radius: 40px; /* 圓角設定 */
+        background-color: #ffffff; /* [關鍵] 白色卡片 */
+        border-radius: 40px;       /* [關鍵] 圓角 */
         box-shadow: 0 12px 40px rgba(0,0,0,0.06); 
         display: flex;
         flex-direction: column;
@@ -82,7 +82,7 @@
         z-index: 10;
     }
 
-    /* 下載時隱藏選取框 */
+    /* 下載時隱藏選取框 (透過 JS 添加 class) */
     #main-canvas.hide-selection .slot-card.active-slot {
         border-color: transparent !important;
         box-shadow: 0 12px 40px rgba(0,0,0,0.06) !important;
@@ -150,7 +150,7 @@
 
     /* === 下半部：控制面板 === */
     #library-area {
-        height: 380px; /* 加高以顯示更多列表 */
+        height: 380px;
         background-color: #fff;
         border-top: 1px solid #ccc;
         display: flex;
@@ -245,7 +245,7 @@
         text-align: center;
     }
 
-    /* 外部輸入區 (當選擇外部來源時顯示在列表上方) */
+    /* 外部輸入區 */
     #manual-input-container {
         width: 100%;
         padding: 10px 15px;
@@ -338,7 +338,7 @@
         </div>
         
         <div style="font-size: 14px; color: #666; margin-left: auto;">
-            💡 選擇來源後，點擊下方列表自動套用
+            💡 支援內建與外部CDN圖示，下載確保圓角與灰底。
         </div>
     </div>
 
@@ -741,7 +741,7 @@
     }
 
     // ==========================================
-    // 6. 介面控制與下載
+    // 6. 介面控制與下載 (修正版)
     // ==========================================
     function toggleLibrary() {
         libraryArea.classList.toggle('hidden');
@@ -753,41 +753,70 @@
         borderBtnText.textContent = mainCanvas.classList.contains('hide-selection') ? '顯示選取框' : '隱藏選取框';
     }
 
+// 定義一個變數來存放 dom-to-image 是否已加載
+    let isDomToImageLoaded = false;
+
     function saveAsJpeg() {
-        const originalHideState = mainCanvas.classList.contains('hide-selection');
-        if (!originalHideState) mainCanvas.classList.add('hide-selection');
+        // 1. 動態載入 dom-to-image 函式庫 (這是目前公認圓角截圖效果最好的庫)
+        if (!isDomToImageLoaded) {
+            const script = document.createElement('script');
+            script.src = 'https://cdnjs.cloudflare.com/ajax/libs/dom-to-image/2.6.0/dom-to-image.min.js';
+            script.onload = () => {
+                isDomToImageLoaded = true;
+                performCapture(); // 載入完成後執行截圖
+            };
+            document.head.appendChild(script);
+        } else {
+            performCapture(); // 若已載入直接執行
+        }
 
-        const original = document.getElementById('main-canvas');
-        const clone = original.cloneNode(true);
+        function performCapture() {
+            const node = document.getElementById('main-canvas');
+            const wrapper = document.getElementById('scale-wrapper');
+            const originalTransform = wrapper.style.transform;
 
-        document.body.appendChild(clone);
-        clone.style.position = "fixed";
-        clone.style.left = "-9999px"; 
-        clone.style.top = "0";
-        clone.style.margin = "0";
-        clone.style.transform = "none"; 
-        clone.style.width = "2500px";
-        clone.style.height = "1686px";
-        clone.style.backgroundColor = "#f4f6f8"; 
+            // 2. [關鍵步驟] 暫時還原縮放比例
+            // 為了確保截出 2500x1686 的高解析度，我們必須暫時把畫面上的元素「放大」回原始尺寸
+            // 這樣瀏覽器就會用最高畫質渲染圓角
+            wrapper.style.transition = 'none'; // 關閉動畫避免閃爍
+            wrapper.style.transform = 'scale(1)'; 
+            wrapper.style.transformOrigin = 'top left'; // 確保從左上角開始
 
-        html2canvas(clone, {
-            width: 2500,
-            height: 1686,
-            scale: 1, 
-            useCORS: true,
-            allowTaint: true, // 允許 CDN 字型渲染
-            backgroundColor: "#f4f6f8" 
-        }).then(canvas => {
-            const link = document.createElement('a');
-            link.download = 'hospital-menu-final.jpg';
-            link.href = canvas.toDataURL('image/jpeg', 0.95);
-            link.click();
+            // 3. 使用 dom-to-image 進行「無損」截圖
+            // 這會直接將 DOM 轉為 SVG 再轉為 PNG，完美保留圓角與陰影
+            domtoimage.toPng(node, {
+                width: 2500,
+                height: 1686,
+                bgcolor: '#f4f6f8', // 確保背景色正確
+                style: {
+                    // 強制修正截圖時的樣式，確保不受外部干擾
+                    transform: 'none',
+                    transformOrigin: 'top left',
+                    margin: '0'
+                }
+            })
+            .then(function (dataUrl) {
+                // 4. 下載檔案
+                const link = document.createElement('a');
+                link.download = 'hospital-menu-final.png'; // PNG 格式確保圓角不失真
+                link.href = dataUrl;
+                link.click();
 
-            document.body.removeChild(clone);
-            if (!originalHideState) mainCanvas.classList.remove('hide-selection');
-        });
+                // 5. [還原] 恢復原本的預覽縮放狀態
+                wrapper.style.transform = originalTransform;
+                wrapper.style.transformOrigin = 'center center';
+                setTimeout(() => { wrapper.style.transition = 'transform 0.3s'; }, 50);
+            })
+            .catch(function (error) {
+                console.error('截圖失敗:', error);
+                alert('截圖發生錯誤，請稍後再試');
+                // 發生錯誤也要記得還原
+                wrapper.style.transform = originalTransform;
+                wrapper.style.transformOrigin = 'center center';
+            });
+        }
     }
-
+	
     // 初始化
     textInput.value = slotState[0].customText;
     renderInternalLibrary(); // 預設顯示內建庫
