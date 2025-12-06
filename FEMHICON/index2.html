@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>亞東醫院高解析版面產生器 (含字體控制功能)</title>
+<title>亞東醫院高解析版面產生器 (完整控制版)</title>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/dom-to-image/2.6.0/dom-to-image.min.js"></script>
 
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -41,8 +41,7 @@
     .icon-display.icon-fill{fill:#00854a;stroke:none}
     .external-icon-render{font-size:180px;line-height:1;color:#00854a;margin-bottom:40px;display:inline-block;pointer-events:none}
     .material-icons.external-icon-render{font-size:220px}
-    
-    /* 修改 label-display，移除固定的 font-size，改由 JS 控制 inline style */
+    /* 移除固定 font-size，改由 JS 控制 */
     .label-display{font-weight:700;color:#333;line-height:1.3;pointer-events:none;white-space:pre-wrap;min-height:1.3em}
     
     #library-area{height:380px;background-color:#fff;border-top:1px solid #ccc;display:flex;flex-direction:column;transition:height .3s cubic-bezier(.4,0,.2,1);overflow:hidden;position:relative;z-index:100}
@@ -101,25 +100,30 @@
 
         <div class="edit-group">
             <label for="font-size-input">字級:</label>
-            <input type="number" id="font-size-input" value="80" min="20" max="200" step="2" onchange="updateFontSize(this.value)" style="width: 60px;">
+            <input type="number" id="font-size-input" value="80" min="20" max="200" step="2" onchange="updateFontSize(this.value)" style="width: 50px;">
+        </div>
+
+        <div class="edit-group">
+            <label for="icon-size-input">圖示大小:</label>
+            <input type="number" id="icon-size-input" value="250" min="50" max="500" step="10" onchange="updateIconSize(this.value)" style="width: 50px;">
         </div>
 
         <div class="edit-group">
             <label for="font-family-select">字型:</label>
-            <select id="font-family-select" onchange="updateFontFamily(this.value)" style="width: 130px;">
-                <option value='"Microsoft JhengHei", "Heiti TC", sans-serif'>微軟正黑 (預設)</option>
+            <select id="font-family-select" onchange="updateFontFamily(this.value)" style="width: 120px;">
+                <option value='"Microsoft JhengHei", "Heiti TC", sans-serif'>微軟正黑</option>
                 <option value='"Noto Sans TC", sans-serif'>思源黑體</option>
                 <option value='"Noto Serif TC", serif'>思源宋體</option>
                 <option value='"Zen Maru Gothic", sans-serif'>圓體 (Zen Maru)</option>
             </select>
         </div>
         <div class="edit-group">
-            <label for="icon-source-select">來源:</label>
-            <select id="icon-source-select" onchange="changeIconSource(this.value)" style="width: 120px;">
-                <option value="internal">內建圖庫 (356+)</option>
-                <option value="none">🚫 無圖示</option>
-                <option value="fontawesome">Font Awesome</option>
-                <option value="material">Material Icons</option>
+            <label for="icon-source-select">圖庫:</label>
+            <select id="icon-source-select" onchange="changeIconSource(this.value)" style="width: 110px;">
+                <option value="internal">內建 (350+)</option>
+                <option value="none">🚫 無</option>
+                <option value="fontawesome">FontAwesome</option>
+                <option value="material">Material</option>
                 <option value="bootstrap">Bootstrap</option>
                 <option value="remix">Remix</option>
                 <option value="boxicons">Boxicons</option>
@@ -130,7 +134,7 @@
         </div>
         <div class="edit-group">
             <label for="text-input">文字:</label>
-            <input type="text" id="text-input" placeholder="輸入文字..." oninput="updateText(this.value)" style="width: 150px;">
+            <input type="text" id="text-input" placeholder="輸入文字..." oninput="updateText(this.value)" style="width: 140px;">
         </div>
     </div>
 
@@ -145,15 +149,18 @@
 </div>
 
 <script>
-/* JS 部分 */
+/* JS Logic merged from script.js */
 
 const mainCanvas = document.getElementById("main-canvas");
 const iconLibrary = document.getElementById("icon-library");
 const manualInputContainer = document.getElementById("manual-input-container");
 const statusText = document.getElementById("status-text");
 const textInput = document.getElementById("text-input");
-const fontSizeInput = document.getElementById("font-size-input"); // 新增
-const fontFamilySelect = document.getElementById("font-family-select"); // 新增
+// 新增 DOM 參考
+const fontSizeInput = document.getElementById("font-size-input");
+const iconSizeInput = document.getElementById("icon-size-input");
+const fontFamilySelect = document.getElementById("font-family-select");
+
 const libraryArea = document.getElementById("library-area");
 const panelBtnText = document.getElementById("panel-btn-text");
 const borderBtnText = document.getElementById("border-btn-text");
@@ -190,14 +197,14 @@ const phString = "ph ph-house,ph ph-magnifying-glass,ph ph-user,ph ph-gear,ph ph
 const ionString = "icon ion-md-home,icon ion-ios-home,icon ion-md-search,icon ion-ios-search,icon ion-md-settings,icon ion-ios-settings,icon ion-md-person,icon ion-ios-person,icon ion-md-mail,icon ion-ios-mail,icon ion-md-call,icon ion-ios-call,icon ion-md-heart,icon ion-ios-heart,icon ion-md-star,icon ion-ios-star,icon ion-md-close,icon ion-ios-close,icon ion-md-add,icon ion-ios-add,icon ion-md-trash,icon ion-ios-trash,icon ion-md-cloud,icon ion-ios-cloud,icon ion-md-download,icon ion-ios-download,icon ion-md-camera,icon ion-ios-camera,icon ion-md-mic,icon ion-ios-mic,icon ion-md-map,icon ion-ios-map,icon ion-md-navigate,icon ion-ios-navigate,icon ion-md-car,icon ion-ios-car,icon ion-md-bus,icon ion-ios-bus,icon ion-md-bicycle,icon ion-ios-bicycle,icon ion-md-medkit,icon ion-ios-medkit,icon ion-md-pulse,icon ion-ios-pulse,icon ion-md-thermometer,icon ion-ios-thermometer,icon ion-md-wifi,icon ion-ios-wifi,icon ion-md-bluetooth,icon ion-ios-bluetooth,icon ion-md-battery-full,icon ion-ios-battery-full,icon ion-md-code,icon ion-ios-code,icon ion-md-lock,icon ion-ios-lock,icon ion-md-cart,icon ion-ios-cart,icon ion-logo-facebook,icon ion-logo-twitter,icon ion-logo-instagram,icon ion-logo-linkedin,icon ion-logo-youtube,icon ion-logo-whatsapp,icon ion-logo-skype,icon ion-logo-github,icon ion-logo-google,icon ion-logo-apple,icon ion-logo-android,icon ion-logo-windows";
 
 // === 3. 初始化 Slot State ===
-// 新增 fontSize 和 fontFamily 屬性
+// 新增 fontSize, fontFamily, iconSize 屬性
 let slotState = [
-    { type: "internal", val: 0, customText: originalIcons[0].name, style: "white", fontSize: 80, fontFamily: '"Microsoft JhengHei", "Heiti TC", sans-serif' },
-    { type: "internal", val: 1, customText: originalIcons[1].name, style: "white", fontSize: 80, fontFamily: '"Microsoft JhengHei", "Heiti TC", sans-serif' },
-    { type: "internal", val: 2, customText: originalIcons[2].name, style: "white", fontSize: 80, fontFamily: '"Microsoft JhengHei", "Heiti TC", sans-serif' },
-    { type: "internal", val: 3, customText: originalIcons[3].name, style: "white", fontSize: 80, fontFamily: '"Microsoft JhengHei", "Heiti TC", sans-serif' },
-    { type: "internal", val: 4, customText: originalIcons[4].name, style: "green", fontSize: 80, fontFamily: '"Microsoft JhengHei", "Heiti TC", sans-serif' },
-    { type: "internal", val: 5, customText: originalIcons[5].name, style: "white", fontSize: 80, fontFamily: '"Microsoft JhengHei", "Heiti TC", sans-serif' }
+    { type: "internal", val: 0, customText: originalIcons[0].name, style: "white", fontSize: 80, fontFamily: '"Microsoft JhengHei", "Heiti TC", sans-serif', iconSize: 250 },
+    { type: "internal", val: 1, customText: originalIcons[1].name, style: "white", fontSize: 80, fontFamily: '"Microsoft JhengHei", "Heiti TC", sans-serif', iconSize: 250 },
+    { type: "internal", val: 2, customText: originalIcons[2].name, style: "white", fontSize: 80, fontFamily: '"Microsoft JhengHei", "Heiti TC", sans-serif', iconSize: 250 },
+    { type: "internal", val: 3, customText: originalIcons[3].name, style: "white", fontSize: 80, fontFamily: '"Microsoft JhengHei", "Heiti TC", sans-serif', iconSize: 250 },
+    { type: "internal", val: 4, customText: originalIcons[4].name, style: "green", fontSize: 80, fontFamily: '"Microsoft JhengHei", "Heiti TC", sans-serif', iconSize: 250 },
+    { type: "internal", val: 5, customText: originalIcons[5].name, style: "white", fontSize: 80, fontFamily: '"Microsoft JhengHei", "Heiti TC", sans-serif', iconSize: 250 }
 ];
 
 // === 4. 主程式邏輯 ===
@@ -219,35 +226,29 @@ function renderCanvas() {
         let iconHTML = "";
         
         if (state.type === "none") {
-            iconHTML = ""; // 空白
+            iconHTML = ""; 
         } else if (state.type === "internal") {
             const icon = internalIconData[state.val] || internalIconData[0];
             let svgContent = icon.svg;
+            // 內建 SVG: 直接在標籤上設定 width/height
             if (icon.type === "outline") {
-                svgContent = svgContent.replace("<svg", '<svg class="icon-display icon-outline"');
+                svgContent = svgContent.replace("<svg", `<svg style="width:${state.iconSize}px;height:${state.iconSize}px;" class="icon-display icon-outline"`);
             } else {
-                svgContent = svgContent.replace("<svg", '<svg class="icon-display icon-fill"');
+                svgContent = svgContent.replace("<svg", `<svg style="width:${state.iconSize}px;height:${state.iconSize}px;" class="icon-display icon-fill"`);
             }
             iconHTML = svgContent;
-        } else if (state.type === "fontawesome") {
-            iconHTML = `<i class="${state.val} external-icon-render"></i>`;
-        } else if (state.type === "material") {
-            iconHTML = `<span class="material-icons external-icon-render">${state.val}</span>`;
-        } else if (state.type === "bootstrap") {
-            iconHTML = `<i class="bi ${state.val} external-icon-render"></i>`;
-        } else if (state.type === "remix") {
-            iconHTML = `<i class="${state.val} external-icon-render"></i>`;
-        } else if (state.type === "boxicons") {
-            iconHTML = `<i class="${state.val} external-icon-render"></i>`;
-        } else if (state.type === "tabler") {
-            iconHTML = `<i class="${state.val} external-icon-render"></i>`;
-        } else if (state.type === "phosphor") {
-            iconHTML = `<i class="${state.val} external-icon-render"></i>`;
-        } else if (state.type === "ionicons") {
-            iconHTML = `<i class="${state.val} external-icon-render"></i>`;
+        } else {
+            // 外部 Font Icon: 透過 font-size 控制大小
+            let iconClass = state.val;
+            if (state.type === "material") {
+                 iconHTML = `<span style="font-size:${state.iconSize}px;" class="material-icons external-icon-render">${state.val}</span>`;
+            } else if (state.type === "bootstrap") {
+                 iconHTML = `<i style="font-size:${state.iconSize}px;" class="bi ${state.val} external-icon-render"></i>`;
+            } else {
+                 iconHTML = `<i style="font-size:${state.iconSize}px;" class="${state.val} external-icon-render"></i>`;
+            }
         }
 
-        // 套用 fontSize 和 fontFamily
         slot.innerHTML = `${iconHTML}<div class="label-display" style="font-size: ${state.fontSize}px; font-family: ${state.fontFamily};">${state.customText}</div>`;
         slot.onclick = () => selectSlot(slotIndex);
         mainCanvas.appendChild(slot);
@@ -262,6 +263,7 @@ function selectSlot(index) {
     
     // 同步 UI 控制項
     fontSizeInput.value = state.fontSize;
+    iconSizeInput.value = state.iconSize;
     fontFamilySelect.value = state.fontFamily;
     
     // 根據狀態更新下拉選單
@@ -299,6 +301,12 @@ function updateFontSize(val) {
 // 新增：更新字型
 function updateFontFamily(val) {
     slotState[selectedSlotIndex].fontFamily = val;
+    renderCanvas();
+}
+
+// 新增：更新圖示大小
+function updateIconSize(val) {
+    slotState[selectedSlotIndex].iconSize = val;
     renderCanvas();
 }
 
