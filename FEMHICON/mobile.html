@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-<title>亞東醫院版面產生器 (Mobile UX Optimized)</title>
+<title>亞東醫院版面產生器 (Mobile Pro)</title>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
 
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -51,12 +51,10 @@
         backdrop-filter: blur(10px);
         display: flex;
         align-items: center;
-        justify-content: center; /* Title Centered */
-        padding: 0 16px;
+        justify-content: center;
         border-bottom: 1px solid #333;
         z-index: 200;
         flex-shrink: 0;
-        position: relative;
     }
 
     .app-title {
@@ -80,7 +78,7 @@
         align-items: center;
         overflow: hidden;
         position: relative;
-        padding: 20px 20px 100px 20px; /* Bottom padding for floating dock */
+        padding: 20px 20px 100px 20px;
     }
 
     #scale-wrapper {
@@ -99,12 +97,13 @@
         gap: 50px;
         padding: 60px;
         box-sizing: border-box;
+        /* 背景直角 */
     }
 
     /* === Cards === */
     .slot-card {
         background-color: #ffffff;
-        border-radius: 40px;
+        border-radius: 40px; /* 卡片圓角 */
         box-shadow: 0 10px 25px rgba(0,0,0,0.05);
         display: flex;
         flex-direction: column;
@@ -165,14 +164,11 @@
         bottom: 0;
         left: 0;
         right: 0;
-        transform: translateY(110%); /* Default hidden */
+        transform: translateY(110%);
     }
 
-    #library-area.visible {
-        transform: translateY(0);
-    }
+    #library-area.visible { transform: translateY(0); }
 
-    /* Overlay for panel */
     #panel-overlay {
         position: fixed;
         top: 0; left: 0; right: 0; bottom: 0;
@@ -182,10 +178,7 @@
         pointer-events: none;
         transition: opacity 0.3s;
     }
-    #panel-overlay.visible {
-        opacity: 1;
-        pointer-events: auto;
-    }
+    #panel-overlay.visible { opacity: 1; pointer-events: auto; }
 
     .panel-handle {
         width: 100%;
@@ -272,6 +265,7 @@
         grid-template-columns: repeat(auto-fill, minmax(60px, 1fr));
         gap: 8px;
         margin-top: 10px;
+        padding-bottom: 80px;
     }
     
     .lib-item {
@@ -309,7 +303,7 @@
     #manual-input-container.active { display: flex; }
     #manual-code { flex: 1; }
 
-    /* === NEW: Floating Action Dock (底部懸浮工具列) === */
+    /* === Floating Dock === */
     .floating-dock {
         position: fixed;
         bottom: 30px;
@@ -327,11 +321,7 @@
         z-index: 300;
         transition: transform 0.3s;
     }
-    
-    /* 當面板打開時，工具列稍微隱藏或下移 (這裡選擇保留但變透明一點) */
-    body.panel-open .floating-dock {
-        transform: translate(-50%, 150%);
-    }
+    body.panel-open .floating-dock { transform: translate(-50%, 150%); }
 
     .dock-btn {
         background: transparent;
@@ -347,13 +337,7 @@
         cursor: pointer;
         transition: all 0.2s;
     }
-    
-    .dock-btn.active {
-        background: rgba(255,255,255,0.1);
-        color: white;
-    }
-
-    /* 下載按鈕特別樣式 */
+    .dock-btn.active { background: rgba(255,255,255,0.1); color: white; }
     .dock-btn.primary {
         background: var(--primary);
         color: white;
@@ -364,12 +348,8 @@
         font-weight: bold;
         gap: 8px;
     }
-    
     .dock-btn:active { transform: scale(0.92); }
-    
-    /* 隱藏預覽紅框時的按鈕狀態 */
     .dock-btn.toggled-off { opacity: 0.5; }
-
 </style>
 </head>
 <body>
@@ -478,7 +458,7 @@
 <script src="scriptmobile.js"></script>
 
 <script>
-    // 覆蓋/新增 UI 相關邏輯
+    // UI 控制腳本
     const overlay = document.getElementById('panel-overlay');
     const libraryPanel = document.getElementById('library-area');
 
@@ -494,19 +474,20 @@
         document.body.classList.remove('panel-open');
     }
 
-    // 修改 scriptmobile.js 中的 selectSlot，讓它點擊時自動開啟面板
-    const originalSelectSlot = selectSlot;
-    selectSlot = function(index) {
-        originalSelectSlot(index);
-        openPanel(); // 自動打開面板
+    // 覆寫 selectSlot 以自動開啟面板
+    const originalSelectSlot = window.selectSlot;
+    window.selectSlot = function(index) {
+        if(typeof originalSelectSlot === 'function') originalSelectSlot(index);
+        openPanel();
     }
 
-    // 修改 toggleRedBorder 以更新按鈕樣式
-    const originalToggleRedBorder = toggleRedBorder;
-    toggleRedBorder = function() {
-        originalToggleRedBorder();
+    // 覆寫 toggleRedBorder 更新按鈕外觀
+    const originalToggleRedBorder = window.toggleRedBorder;
+    window.toggleRedBorder = function() {
+        if(typeof originalToggleRedBorder === 'function') originalToggleRedBorder();
         const btn = document.getElementById("toggle-border-btn");
-        if(mainCanvas.classList.contains("hide-selection")){
+        const canvas = document.getElementById("main-canvas");
+        if(canvas.classList.contains("hide-selection")){
             btn.classList.add('toggled-off');
             btn.innerHTML = '<i class="fa-solid fa-square-check"></i>';
         } else {
