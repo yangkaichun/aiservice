@@ -1,500 +1,385 @@
 <!DOCTYPE html>
 <html lang="zh-TW">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-<title>亞東醫院版面產生器 (Mobile Pro)</title>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
-
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;700&family=Noto+Serif+TC:wght@400;700&family=Zen+Maru+Gothic:wght@400;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-<link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
-<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
-<link href="https://cdn.jsdelivr.net/npm/remixicon@3.5.0/fonts/remixicon.css" rel="stylesheet">
-<link href='https://unpkg.com/boxicons@2.1.4/css/boxicons.min.css' rel='stylesheet'>
-<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/tabler-icons.min.css">
-<script src="https://unpkg.com/@phosphor-icons/web"></script>
-<link href="https://unpkg.com/ionicons@4.5.10-0/dist/css/ionicons.min.css" rel="stylesheet">
-
-<style>
-    :root {
-        --primary: #00854a;
-        --primary-dark: #006633;
-        --accent: #d84315;
-        --bg-dark: #1a1a1a;
-        --panel-bg: #ffffff;
-        --border: #e0e0e0;
-        --text: #333;
-        --text-sub: #666;
-    }
-
-    * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>北投共照雲 - 行動端</title>
+    <link rel="icon" href="images/feticon.ico" type="image/x-icon">
+    <!-- Bootstrap 5 CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- FontAwesome Icons -->
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
     
-    body {
-        margin: 0;
-        padding: 0;
-        font-family: "Noto Sans TC", sans-serif;
-        background-color: var(--bg-dark);
-        display: flex;
-        flex-direction: column;
-        height: 100vh;
-        height: 100dvh;
-        overflow: hidden;
-    }
+    <style>
+        /* 全域設定：模擬 App 的全螢幕體驗 */
+        body { 
+            background-color: #fff; 
+            height: 100vh; 
+            display: flex; 
+            flex-direction: column; 
+            overflow: hidden; 
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif; 
+        }
+        
+        /* --- 1. 登入遮罩層 (Login Overlay) --- */
+        #login-overlay {
+            position: fixed; 
+            top: 0; 
+            left: 0; 
+            width: 100%; 
+            height: 100%;
+            background: linear-gradient(160deg, #27ae60 0%, #2c3e50 100%); /* 醫療綠漸層 */
+            z-index: 9999; 
+            display: flex; 
+            flex-direction: column; 
+            justify-content: center; 
+            align-items: center;
+            padding: 20px; 
+            color: white; 
+            transition: opacity 0.5s ease-out, visibility 0.5s;
+        }
+        
+        /* 登入卡片 */
+        .login-box { 
+            background: rgba(255,255,255,0.95); 
+            padding: 30px; 
+            border-radius: 20px; 
+            width: 100%; 
+            max-width: 320px; 
+            color: #333; 
+            box-shadow: 0 10px 30px rgba(0,0,0,0.3); 
+            text-align: center;
+        }
 
-    /* === Top Bar === */
-    .app-header {
-        height: 60px;
-        background: rgba(30, 30, 30, 0.95);
-        backdrop-filter: blur(10px);
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        border-bottom: 1px solid #333;
-        z-index: 200;
-        flex-shrink: 0;
-    }
+        /* --- 2. LINE 風格聊天介面 --- */
+        
+        /* 頂部導覽列 */
+        .chat-header { 
+            background: #2c3e50; 
+            color: white; 
+            padding: 15px; 
+            height: 60px;
+            display: flex; 
+            align-items: center; 
+            justify-content: space-between; 
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1); 
+            flex-shrink: 0;
+        }
 
-    .app-title {
-        color: white;
-        font-weight: 700;
-        font-size: 16px;
-        display: flex;
-        align-items: center;
-        gap: 8px;
-    }
-    .app-title span { background: var(--primary); padding: 2px 6px; border-radius: 4px; font-size: 12px; }
+        /* 聊天內容區域 */
+        .chat-body { 
+            flex: 1; 
+            background: #7289da1a; /* 淡藍色背景 */
+            padding: 15px; 
+            overflow-y: auto; 
+            display: flex; 
+            flex-direction: column; 
+            gap: 15px; 
+            scroll-behavior: smooth;
+        }
 
-    /* === Preview Area === */
-    #preview-area {
-        flex: 1;
-        background-color: var(--bg-dark);
-        background-image: radial-gradient(#333 1px, transparent 1px);
-        background-size: 20px 20px;
-        display: flex;
-        justify-content: center;
-        align-items: center;
-        overflow: hidden;
-        position: relative;
-        padding: 20px 20px 100px 20px;
-    }
+        /* 對話氣泡共用樣式 */
+        .bubble { 
+            max-width: 75%; 
+            padding: 10px 14px; 
+            border-radius: 18px; 
+            font-size: 14px; 
+            line-height: 1.5; 
+            position: relative; 
+            word-wrap: break-word; 
+            box-shadow: 0 1px 2px rgba(0,0,0,0.1);
+        }
 
-    #scale-wrapper {
-        transform-origin: center center;
-        box-shadow: 0 20px 50px rgba(0,0,0,0.5);
-        transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-    }
+        /* AI (左側) 氣泡 */
+        .bubble.ai { 
+            align-self: flex-start; 
+            background: white; 
+            color: #333;
+            border-top-left-radius: 4px; 
+            margin-left: 40px; /* 留給頭像空間 */
+        }
+        /* AI 頭像 */
+        .bubble.ai::before { 
+            content: ''; 
+            position: absolute; 
+            left: -42px; 
+            top: 0; 
+            width: 36px; 
+            height: 36px; 
+            background: #fff url('https://cdn-icons-png.flaticon.com/512/4712/4712035.png') center/cover; /* 樹苗 Icon */
+            border-radius: 50%; 
+            border: 1px solid #eee;
+        }
+        /* AI 名字標籤 */
+        .bubble.ai::after {
+            content: '小樹 AI';
+            position: absolute;
+            top: -18px;
+            left: 0;
+            font-size: 11px;
+            color: #666;
+        }
 
-    #main-canvas {
-        width: 2500px;
-        height: 1686px;
-        background-color: #f4f6f8; 
-        display: grid;
-        grid-template-columns: repeat(3, 1fr);
-        grid-template-rows: repeat(2, 1fr);
-        gap: 50px;
-        padding: 60px;
-        box-sizing: border-box;
-        /* 背景直角 */
-    }
+        /* 使用者 (右側) 氣泡 */
+        .bubble.user { 
+            align-self: flex-end; 
+            background: #06c755; /* LINE Green */
+            color: white; 
+            border-top-right-radius: 4px; 
+        }
 
-    /* === Cards === */
-    .slot-card {
-        background-color: #ffffff;
-        border-radius: 40px; /* 卡片圓角 */
-        box-shadow: 0 10px 25px rgba(0,0,0,0.05);
-        display: flex;
-        flex-direction: column;
-        justify-content: center;
-        align-items: center;
-        text-align: center;
-        cursor: pointer;
-        border: 10px solid transparent; 
-        position: relative;
-        overflow: hidden;
-    }
+        /* --- 3. 底部輸入區 --- */
+        .footer-input { 
+            background: white; 
+            padding: 8px 10px; 
+            border-top: 1px solid #ddd; 
+            display: flex; 
+            align-items: center; 
+            gap: 10px; 
+            flex-shrink: 0;
+        }
+        .footer-input input { 
+            background: #f3f3f3; 
+            border: none; 
+            border-radius: 20px; 
+            padding: 10px 15px; 
+            width: 100%; 
+            outline: none;
+        }
 
-    .slot-card.active-slot {
-        border-color: #ff3333;
-        box-shadow: 0 0 0 15px rgba(255, 50, 50, 0.2);
-        z-index: 10;
-    }
-    
-    #main-canvas.hide-selection .slot-card.active-slot {
-        border-color: transparent !important;
-        box-shadow: 0 10px 25px rgba(0,0,0,0.05) !important;
-    }
+        /* --- 4. 底部 Rich Menu (圖文選單) --- */
+        .rich-menu { 
+            background: #fcfcfc; 
+            border-top: 1px solid #ccc; 
+            display: grid; 
+            grid-template-columns: repeat(4, 1fr); 
+            height: 60px; 
+            flex-shrink: 0;
+            padding-bottom: env(safe-area-inset-bottom); /* 適配 iPhone 底部橫條 */
+        }
+        .menu-item { 
+            display: flex; 
+            flex-direction: column; 
+            align-items: center; 
+            justify-content: center; 
+            font-size: 10px; 
+            color: #888; 
+            cursor: pointer; 
+            transition: 0.2s;
+        }
+        .menu-item:active { background-color: #f0f0f0; }
+        .menu-item.active { color: #27ae60; font-weight: bold; }
+        .menu-item i { font-size: 22px; margin-bottom: 3px; }
 
-    .slot-card.special-green { background-color: var(--primary); }
-    .slot-card.special-green .external-icon-render,
-    .slot-card.special-green .icon-display,
-    .slot-card.special-green .label-display { fill: #fff!important; stroke: #fff!important; color: #fff!important; }
-    .slot-card.special-green .icon-outline { fill: none!important; stroke: #fff!important; }
-    .slot-card.special-green .icon-fill { fill: #fff!important; stroke: none!important; }
-
-    .icon-display { width: 250px; height: 250px; margin-bottom: 40px; fill: var(--primary); pointer-events: none; }
-    .icon-display.icon-outline { fill: none; stroke: var(--primary); stroke-width: 5; stroke-linecap: round; stroke-linejoin: round; }
-    .icon-display.icon-fill { fill: var(--primary); stroke: none; }
-    
-    .external-icon-render { font-size:180px; line-height:1; color:var(--primary); margin-bottom:40px; display:inline-block; pointer-events:none; }
-    .material-icons.external-icon-render { font-size:220px; }
-    
-    .label-display {
-        font-weight: 700;
-        color: #333;
-        line-height: 1.3;
-        pointer-events: none;
-        white-space: pre-wrap;
-        min-height: 1.3em;
-    }
-
-    /* === Bottom Panel (Editor) === */
-    #library-area {
-        background-color: var(--panel-bg);
-        border-radius: 24px 24px 0 0;
-        box-shadow: 0 -5px 30px rgba(0,0,0,0.3);
-        display: flex;
-        flex-direction: column;
-        height: 55%;
-        transition: transform 0.3s cubic-bezier(0.2, 0.8, 0.2, 1);
-        z-index: 100;
-        position: fixed;
-        bottom: 0;
-        left: 0;
-        right: 0;
-        transform: translateY(110%);
-    }
-
-    #library-area.visible { transform: translateY(0); }
-
-    #panel-overlay {
-        position: fixed;
-        top: 0; left: 0; right: 0; bottom: 0;
-        background: rgba(0,0,0,0.5);
-        z-index: 90;
-        opacity: 0;
-        pointer-events: none;
-        transition: opacity 0.3s;
-    }
-    #panel-overlay.visible { opacity: 1; pointer-events: auto; }
-
-    .panel-handle {
-        width: 100%;
-        height: 30px;
-        display: flex;
-        justify-content: center;
-        align-items: center;
-        cursor: pointer;
-    }
-    .panel-handle::after {
-        content: '';
-        width: 40px;
-        height: 5px;
-        background: #ddd;
-        border-radius: 10px;
-    }
-
-    .editor-container {
-        padding: 0 20px 40px 20px;
-        overflow-y: auto;
-        flex: 1;
-    }
-
-    .section-title {
-        font-size: 12px;
-        color: var(--text-sub);
-        text-transform: uppercase;
-        letter-spacing: 1px;
-        margin: 15px 0 8px 0;
-        font-weight: 700;
-    }
-
-    .control-grid {
-        display: grid;
-        grid-template-columns: 1fr 1fr;
-        gap: 12px;
-    }
-    .control-full { grid-column: span 2; }
-
-    .input-wrapper {
-        position: relative;
-        background: #f5f5f5;
-        border-radius: 12px;
-        padding: 8px 12px;
-        border: 1px solid transparent;
-        transition: all 0.2s;
-    }
-    .input-wrapper:focus-within {
-        background: #fff;
-        border-color: var(--primary);
-        box-shadow: 0 0 0 3px rgba(0, 133, 74, 0.1);
-    }
-    .input-label {
-        font-size: 10px;
-        color: var(--text-sub);
-        display: block;
-        margin-bottom: 2px;
-    }
-    .styled-input {
-        width: 100%;
-        border: none;
-        background: transparent;
-        font-size: 15px;
-        color: var(--text);
-        font-weight: 500;
-        outline: none;
-        padding: 0;
-    }
-    
-    .style-toggle {
-        background: #f0fdf4;
-        color: var(--primary);
-        border: 1px solid var(--primary);
-        padding: 10px;
-        border-radius: 12px;
-        font-weight: 700;
-        width: 100%;
-        text-align: center;
-        cursor: pointer;
-    }
-
-    .library-scroll {
-        display: grid;
-        grid-template-columns: repeat(auto-fill, minmax(60px, 1fr));
-        gap: 8px;
-        margin-top: 10px;
-        padding-bottom: 80px;
-    }
-    
-    .lib-item {
-        aspect-ratio: 1;
-        border: 1px solid #eee;
-        border-radius: 12px;
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        justify-content: center;
-        background: #fff;
-        transition: all 0.2s;
-    }
-    .lib-item:active { background-color: #e8f5e9; border-color: var(--primary); transform: scale(0.95); }
-    .lib-item svg { width: 28px; height: 28px; fill: var(--primary); }
-    .lib-item i, .lib-item span { font-size: 26px; color: var(--primary); }
-    .lib-item .lib-name { display: none; } 
-
-    .status-bar {
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        margin-bottom: 10px;
-    }
-    .current-slot-badge {
-        background: var(--primary);
-        color: white;
-        padding: 4px 10px;
-        border-radius: 20px;
-        font-size: 12px;
-        font-weight: bold;
-    }
-    
-    #manual-input-container { display: none; gap: 8px; margin-top: 10px; }
-    #manual-input-container.active { display: flex; }
-    #manual-code { flex: 1; }
-
-    /* === Floating Dock === */
-    .floating-dock {
-        position: fixed;
-        bottom: 30px;
-        left: 50%;
-        transform: translateX(-50%);
-        background: rgba(35, 35, 35, 0.9);
-        backdrop-filter: blur(15px);
-        padding: 8px;
-        border-radius: 50px;
-        display: flex;
-        align-items: center;
-        gap: 12px;
-        box-shadow: 0 10px 30px rgba(0,0,0,0.4);
-        border: 1px solid rgba(255,255,255,0.1);
-        z-index: 300;
-        transition: transform 0.3s;
-    }
-    body.panel-open .floating-dock { transform: translate(-50%, 150%); }
-
-    .dock-btn {
-        background: transparent;
-        color: #aaa;
-        border: none;
-        width: 44px;
-        height: 44px;
-        border-radius: 50%;
-        font-size: 20px;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        cursor: pointer;
-        transition: all 0.2s;
-    }
-    .dock-btn.active { background: rgba(255,255,255,0.1); color: white; }
-    .dock-btn.primary {
-        background: var(--primary);
-        color: white;
-        width: auto;
-        padding: 0 20px;
-        border-radius: 40px;
-        font-size: 16px;
-        font-weight: bold;
-        gap: 8px;
-    }
-    .dock-btn:active { transform: scale(0.92); }
-    .dock-btn.toggled-off { opacity: 0.5; }
-</style>
+        /* 隱藏 Scrollbar 但保持捲動功能 */
+        .chat-body::-webkit-scrollbar { display: none; }
+        
+        /* 系統訊息樣式 */
+        .system-msg {
+            text-align: center;
+            font-size: 11px;
+            color: #999;
+            margin: 10px 0;
+            background: rgba(0,0,0,0.05);
+            padding: 2px 10px;
+            border-radius: 10px;
+            align-self: center;
+        }
+    </style>
 </head>
 <body>
 
-<header class="app-header">
-    <div class="app-title">
-        <span>Mobile</span> 版面產生器
+    <!-- 1. 登入轉場畫面 -->
+    <div id="login-overlay">
+        <!-- Logo: 若找不到圖片會顯示替代文字 -->
+        <img src="images/fetlogo.png" style="max-width: 180px; margin-bottom: 30px; filter: brightness(0) invert(1);" alt="FET Logo" onerror="this.style.display='none'">
+        
+        <div class="login-box">
+            <h5 class="text-center fw-bold mb-4" style="color:#2c3e50;">個案登入</h5>
+            
+            <div class="mb-3">
+                <div class="input-group">
+                    <span class="input-group-text bg-light border-end-0"><i class="fas fa-user text-muted"></i></span>
+                    <input type="text" class="form-control border-start-0" placeholder="病歷號 / 手機號碼" value="A123456789">
+                </div>
+            </div>
+            
+            <div class="mb-4">
+                <div class="input-group">
+                    <span class="input-group-text bg-light border-end-0"><i class="fas fa-lock text-muted"></i></span>
+                    <input type="password" class="form-control border-start-0" placeholder="密碼" value="123456">
+                </div>
+            </div>
+            
+            <button class="btn btn-success w-100 rounded-pill fw-bold py-2 shadow-sm" onclick="login()">
+                登入 LINE 共照雲
+            </button>
+            
+            <div class="mt-3 text-muted small" style="font-size: 12px;">
+                <a href="#" class="text-decoration-none text-secondary me-3">忘記密碼？</a>
+                <a href="#" class="text-decoration-none text-secondary">首次註冊</a>
+            </div>
+        </div>
+        
+        <div class="mt-5 small opacity-75">
+            &copy; 2025 北投智慧遠距精神醫療照護平台
+        </div>
     </div>
-</header>
 
-<div id="preview-area" onclick="closePanel()"> 
-    <div id="scale-wrapper">
-        <div id="main-canvas"></div>
-    </div>
-</div>
-
-<div id="panel-overlay" onclick="closePanel()"></div>
-
-<div class="floating-dock">
-    <button class="dock-btn" id="toggle-panel-btn" onclick="openPanel()">
-        <i class="fa-solid fa-sliders"></i>
-    </button>
-    <button class="dock-btn" id="toggle-border-btn" onclick="toggleRedBorder()">
-        <i class="fa-regular fa-square"></i>
-    </button>
-    <div style="width:1px; height:24px; background:rgba(255,255,255,0.2);"></div>
-    <button class="dock-btn primary" onclick="saveAsJpeg()">
-        <i class="fa-solid fa-download"></i> <span>下載</span>
-    </button>
-</div>
-
-<div id="library-area">
-    <div class="panel-handle" onclick="closePanel()"></div> 
+    <!-- 2. 主畫面結構 -->
     
-    <div class="editor-container">
-        <div class="status-bar">
-            <div class="current-slot-badge" id="status-text">正在編輯 #1</div>
-            <button class="style-toggle" style="width:auto; padding:4px 12px; font-size:12px;" onclick="closePanel()">
-                <i class="fa-solid fa-chevron-down"></i> 收起
-            </button>
-        </div>
-
-        <div class="section-title">內容設定</div>
-        <div class="control-grid">
-            <div class="input-wrapper control-full">
-                <span class="input-label">顯示文字</span>
-                <input type="text" id="text-input" class="styled-input" placeholder="輸入文字..." oninput="updateText(this.value)">
-            </div>
-            
-            <button class="style-toggle" onclick="toggleSlotStyle()">
-                <i class="fa-solid fa-fill-drip"></i> 綠色/白色
-            </button>
-
-            <div class="input-wrapper">
-                <span class="input-label">字體大小</span>
-                <input type="number" id="font-size-input" class="styled-input" value="80" step="2" onchange="updateFontSize(this.value)">
-            </div>
-            
-            <div class="input-wrapper control-full">
-                <span class="input-label">字型</span>
-                <select id="font-family-select" class="styled-input" onchange="updateFontFamily(this.value)">
-                    <option value='"Microsoft JhengHei", "Heiti TC", sans-serif'>微軟正黑</option>
-                    <option value='"Noto Sans TC", sans-serif'>思源黑體</option>
-                    <option value='"Noto Serif TC", serif'>思源宋體</option>
-                    <option value='"Zen Maru Gothic", sans-serif'>圓體 (Zen Maru)</option>
-                </select>
+    <!-- Header -->
+    <div class="chat-header">
+        <div class="d-flex align-items-center gap-3">
+            <i class="fas fa-chevron-left fa-lg" onclick="alert('返回上一頁')"></i>
+            <div>
+                <div class="fw-bold" style="font-size: 16px;">小樹 AI 個管師</div>
+                <div style="font-size: 11px; opacity: 0.8;"><i class="fas fa-circle text-success" style="font-size:8px;"></i> 24h 在線陪伴</div>
             </div>
         </div>
-
-        <div class="section-title">圖示設定</div>
-        <div class="control-grid">
-             <div class="input-wrapper control-full">
-                <span class="input-label">來源圖庫 (1000+ Icons)</span>
-                <select id="icon-source-select" class="styled-input" onchange="changeIconSource(this.value)">
-                    <option value="internal">內建精選 (350+)</option>
-                    <option value="none">無圖示</option>
-                    <option value="fontawesome">Font Awesome</option>
-                    <option value="material">Google Material</option>
-                    <option value="bootstrap">Bootstrap</option>
-                    <option value="remix">Remix Icons</option>
-                    <option value="boxicons">Boxicons</option>
-                    <option value="tabler">Tabler Icons</option>
-                    <option value="phosphor">Phosphor Icons</option>
-                    <option value="ionicons">Ionicons</option>
-                </select>
-            </div>
-             <div class="input-wrapper control-full">
-                <span class="input-label">圖示大小</span>
-                <input type="number" id="icon-size-input" class="styled-input" value="250" step="10" onchange="updateIconSize(this.value)">
-            </div>
+        <div>
+            <i class="fas fa-phone-alt me-4 fa-lg"></i>
+            <i class="fas fa-bars fa-lg"></i>
         </div>
-
-        <div id="manual-input-container">
-            <div class="input-wrapper" style="flex:1;">
-                <span class="input-label" id="manual-label">代碼</span>
-                <input type="text" id="manual-code" class="styled-input" placeholder="Icon Code">
-            </div>
-            <button class="style-toggle" style="width: auto;" onclick="applyManualIcon()">OK</button>
-        </div>
-
-        <div class="section-title">選擇圖示</div>
-        <div class="library-scroll" id="icon-library"></div>
     </div>
-</div>
 
-<script src="scriptmobile.js"></script>
+    <!-- Chat Body -->
+    <div class="chat-body" id="chat">
+        <div class="system-msg">今天 09:30</div>
+        
+        <!-- AI 預設訊息 -->
+        <div class="bubble ai">
+            早安！我是小樹 🌱<br>
+            今天北投的天氣有點涼，出門記得帶件外套喔。<br>
+            昨晚睡得好嗎？有沒有做夢呢？
+        </div>
+    </div>
 
-<script>
-    // UI 控制腳本
-    const overlay = document.getElementById('panel-overlay');
-    const libraryPanel = document.getElementById('library-area');
+    <!-- Footer Input -->
+    <div class="footer-input">
+        <i class="fas fa-plus text-secondary fa-lg"></i>
+        <i class="fas fa-camera text-secondary fa-lg"></i>
+        <i class="far fa-image text-secondary fa-lg"></i>
+        <input type="text" id="msgInput" placeholder="輸入訊息..." onkeypress="handleEnter(event)">
+        <button class="btn btn-primary rounded-circle shadow-sm" style="width: 35px; height: 35px; display: flex; align-items: center; justify-content: center;" onclick="send()">
+            <i class="fas fa-paper-plane" style="font-size: 14px; margin-left: -2px;"></i>
+        </button>
+    </div>
 
-    function openPanel() {
-        libraryPanel.classList.add('visible');
-        overlay.classList.add('visible');
-        document.body.classList.add('panel-open');
-    }
+    <!-- Bottom Rich Menu -->
+    <div class="rich-menu">
+        <div class="menu-item active">
+            <i class="fas fa-comment-dots"></i>
+            聊天室
+        </div>
+        <div class="menu-item" onclick="alert('開啟 LIFF 生理數據表單')">
+            <i class="fas fa-heartbeat"></i>
+            生理數據
+        </div>
+        <!-- 修改部分開始：AI陪伴員 -->
+        <div class="menu-item" onclick="window.open('https://studio.d-id.com/agents/share?id=v2_agt_X6Okp3IY&utm_source=copy&key=WjI5dloyeGxMVzloZFhSb01ud3hNVEF5TVRZd05UZ3dPRGcyTlRreU16QXdORGc2V0ZaMFJERnJXWEkxYVhkd1VUWlNjek0wY1dZdA==', '_blank')">
+            <i class="fas fa-robot"></i>
+            AI陪伴員
+        </div>
+        <!-- 修改部分結束 -->
+        <div class="menu-item" onclick="alert('開啟個人健康存摺')">
+            <i class="fas fa-user-circle"></i>
+            個人中心
+        </div>
+    </div>
 
-    function closePanel() {
-        libraryPanel.classList.remove('visible');
-        overlay.classList.remove('visible');
-        document.body.classList.remove('panel-open');
-    }
-
-    // 覆寫 selectSlot 以自動開啟面板
-    const originalSelectSlot = window.selectSlot;
-    window.selectSlot = function(index) {
-        if(typeof originalSelectSlot === 'function') originalSelectSlot(index);
-        openPanel();
-    }
-
-    // 覆寫 toggleRedBorder 更新按鈕外觀
-    const originalToggleRedBorder = window.toggleRedBorder;
-    window.toggleRedBorder = function() {
-        if(typeof originalToggleRedBorder === 'function') originalToggleRedBorder();
-        const btn = document.getElementById("toggle-border-btn");
-        const canvas = document.getElementById("main-canvas");
-        if(canvas.classList.contains("hide-selection")){
-            btn.classList.add('toggled-off');
-            btn.innerHTML = '<i class="fa-solid fa-square-check"></i>';
-        } else {
-            btn.classList.remove('toggled-off');
-            btn.innerHTML = '<i class="fa-regular fa-square"></i>';
+    <!-- JavaScript 互動邏輯 -->
+    <script>
+        // 1. 登入動畫
+        function login() {
+            const overlay = document.getElementById('login-overlay');
+            const btn = overlay.querySelector('button');
+            
+            // 按鈕 Loading 效果
+            btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> 登入中...';
+            
+            setTimeout(() => {
+                overlay.style.opacity = '0';
+                overlay.style.visibility = 'hidden';
+            }, 800);
         }
-    }
-</script>
+
+        // 2. 處理 Enter 鍵發送
+        function handleEnter(e) {
+            if (e.key === 'Enter') send();
+        }
+
+        // 3. 發送訊息與 AI 模擬回應
+        function send() {
+            const input = document.getElementById('msgInput');
+            const val = input.value.trim();
+            if(!val) return;
+
+            const chat = document.getElementById('chat');
+            
+            // 建立使用者訊息 (右側)
+            const uDiv = document.createElement('div');
+            uDiv.className = 'bubble user';
+            uDiv.innerText = val;
+            chat.appendChild(uDiv);
+            
+            // 清空輸入框並捲動到底部
+            input.value = '';
+            scrollToBottom();
+
+            // 顯示 "小樹正在輸入..." 狀態
+            showTypingIndicator();
+
+            // 模擬網路延遲與 AI 回應邏輯
+            setTimeout(() => {
+                removeTypingIndicator();
+                
+                const aDiv = document.createElement('div');
+                aDiv.className = 'bubble ai';
+                
+                // 簡單的關鍵字回應規則 (Mock NLP)
+                let text = "我聽到了，謝謝你願意跟我分享。";
+                
+                if(val.includes('藥') || val.includes('吃藥')) {
+                    text = "藥物能幫助大腦休息。如果擔心副作用，我們可以紀錄下來，下次門診跟醫生討論喔。";
+                } else if(val.includes('累') || val.includes('睡') || val.includes('失眠')) {
+                    text = "聽起來你很疲憊。今晚試試看睡前不做複雜思考，做個 5 分鐘腹式呼吸放鬆一下好嗎？";
+                } else if(val.includes('死') || val.includes('不想活') || val.includes('痛苦')) {
+                    text = "我感覺到你現在非常痛苦。請記得，我們都在這裡陪你。若有緊急狀況，請撥打 1925 安心專線。";
+                } else if(val.includes('好') || val.includes('謝謝')) {
+                    text = "不客氣！記得多喝水，保持好心情喔 😊";
+                }
+                
+                aDiv.innerText = text;
+                chat.appendChild(aDiv);
+                
+                scrollToBottom();
+            }, 1200 + Math.random() * 500); // 隨機延遲 1.2~1.7 秒，更像真人
+        }
+
+        // 輔助功能：捲動到底部
+        function scrollToBottom() {
+            const chat = document.getElementById('chat');
+            chat.scrollTop = chat.scrollHeight;
+        }
+
+        // 輔助功能：顯示輸入中
+        function showTypingIndicator() {
+            const chat = document.getElementById('chat');
+            const typingDiv = document.createElement('div');
+            typingDiv.id = 'typing-indicator';
+            typingDiv.className = 'bubble ai';
+            typingDiv.style.color = '#aaa';
+            typingDiv.innerHTML = '<i class="fas fa-ellipsis-h fa-beat"></i>'; // 跳動的三個點
+            chat.appendChild(typingDiv);
+            scrollToBottom();
+        }
+
+        // 輔助功能：移除輸入中
+        function removeTypingIndicator() {
+            const indicator = document.getElementById('typing-indicator');
+            if(indicator) indicator.remove();
+        }
+    </script>
 </body>
 </html>
