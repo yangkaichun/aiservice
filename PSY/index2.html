@@ -3,401 +3,440 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>北投智慧遠距精神醫療照護平台 (Demo)</title>
+    <title>北投智慧遠距精神醫療照護平台 - 管理後台</title>
+    <link rel="icon" href="images/feticon.ico" type="image/x-icon">
+    <!-- Bootstrap 5 & Icons -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    
+
+    <script>
+        // 裝置偵測：若是手機，跳轉至 mobile.html
+        if(/Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent)){
+            window.location.href = "mobile.html";
+        }
+    </script>
+
     <style>
         :root {
-            --primary-color: #2c3e50;
-            --accent-color: #27ae60; /* 醫療綠 */
-            --bg-light: #f8f9fa;
-            --chat-bg-user: #dcf8c6;
-            --chat-bg-ai: #ffffff;
-            --risk-high: #e74c3c;
-            --risk-med: #f1c40f;
-            --risk-low: #2ecc71;
+            --sidebar-width: 260px;
+            --primary-bg: #2c3e50;
+            --active-bg: #34495e;
+            --accent-color: #27ae60;
+            --line-green: #06c755;
         }
-
-        body {
-            background-color: #e9ecef;
-            font-family: 'Microsoft JhengHei', sans-serif;
+        body { background-color: #f4f6f9; font-family: 'Microsoft JhengHei', sans-serif; overflow-x: hidden; }
+        
+        /* 側邊欄 */
+        .sidebar {
+            width: var(--sidebar-width);
             height: 100vh;
-            overflow: hidden;
-        }
-
-        /* 模擬切換角色的導航列 */
-       .role-switcher {
             position: fixed;
             top: 0;
             left: 0;
-            width: 100%;
-            height: 50px;
-            background: #343a40;
+            background-color: var(--primary-bg);
             color: white;
-            z-index: 9999;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            box-shadow: 0 2px 5px rgba(0,0,0,0.2);
-        }
-
-       .role-btn {
-            background: transparent;
-            border: 1px solid #6c757d;
-            color: #ddd;
-            margin: 0 10px;
-            padding: 5px 15px;
-            border-radius: 20px;
-            cursor: pointer;
+            z-index: 1000;
             transition: 0.3s;
         }
+        .sidebar-header { padding: 20px; text-align: center; border-bottom: 1px solid rgba(255,255,255,0.1); }
+        .sidebar-header img { max-height: 45px; margin-bottom: 10px; }
+        .nav-link { color: #b0b8c1; padding: 15px 25px; cursor: pointer; transition: 0.2s; }
+        .nav-link:hover, .nav-link.active { color: white; background-color: var(--active-bg); border-left: 5px solid var(--accent-color); }
+        .nav-link i { margin-right: 12px; width: 25px; text-align: center; }
 
-       .role-btn.active {
-            background: #0d6efd;
-            border-color: #0d6efd;
-            color: white;
-            font-weight: bold;
+        /* 主內容 */
+        .main-content { margin-left: var(--sidebar-width); padding: 25px; min-height: 100vh; }
+        .view-section { display: none; animation: fadeIn 0.3s; }
+        .view-section.active { display: block; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+
+        /* 卡片與元件 */
+        .card { border: none; box-shadow: 0 4px 12px rgba(0,0,0,0.05); border-radius: 10px; margin-bottom: 20px; }
+        .card-header { background: white; font-weight: bold; border-bottom: 1px solid #f0f0f0; border-radius: 10px 10px 0 0 !important; padding: 15px 20px; }
+        
+        /* --- 模擬手機樣式 (嵌入後台用) --- */
+        .phone-frame {
+            width: 360px; height: 720px;
+            background: #fff; border-radius: 35px;
+            border: 12px solid #333;
+            margin: 0 auto;
+            position: relative; overflow: hidden;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+            display: flex; flex-direction: column;
         }
-
-       .main-container {
-            padding-top: 60px;
-            height: 100%;
-            display: flex;
-            justify-content: center;
+        .phone-notch {
+            position: absolute; top: 0; left: 50%; transform: translateX(-50%);
+            width: 150px; height: 25px; background: #333;
+            border-bottom-left-radius: 15px; border-bottom-right-radius: 15px; z-index: 10;
         }
-
-        /* --- 病患端 (Mobile View) --- */
-       .mobile-frame {
-            width: 375px; /* iPhone 寬度 */
-            height: 85vh;
-            background: white;
-            border-radius: 30px;
-            border: 10px solid #333;
-            overflow: hidden;
-            display: flex;
-            flex-direction: column;
-            box-shadow: 0 0 20px rgba(0,0,0,0.3);
-            position: relative;
-        }
-
-       .mobile-header {
-            background: var(--accent-color);
-            color: white;
-            padding: 15px;
-            text-align: center;
-            font-weight: bold;
-        }
-
-       .mobile-content {
-            flex: 1;
-            overflow-y: auto;
-            background: #f0f2f5;
-            padding: 10px;
-        }
-
-       .chat-box {
-            display: flex;
-            flex-direction: column;
-            gap: 10px;
-            padding-bottom: 20px;
-        }
-
-       .message {
-            max-width: 80%;
-            padding: 10px 15px;
-            border-radius: 15px;
-            font-size: 14px;
-            line-height: 1.4;
-            position: relative;
-        }
-
-       .msg-ai {
-            align-self: flex-start;
-            background: var(--chat-bg-ai);
-            border-bottom-left-radius: 2px;
-            box-shadow: 0 1px 2px rgba(0,0,0,0.1);
-        }
-       .msg-ai::before {
-            content: "🌳 小樹";
-            position: absolute;
-            top: -18px;
-            left: 0;
-            font-size: 10px;
-            color: #666;
-        }
-
-       .msg-user {
-            align-self: flex-end;
-            background: var(--chat-bg-user);
-            border-bottom-right-radius: 2px;
-            box-shadow: 0 1px 2px rgba(0,0,0,0.1);
-        }
-
-       .mobile-footer {
-            background: white;
-            padding: 10px;
-            border-top: 1px solid #ddd;
-            display: flex;
-            gap: 5px;
-        }
-
-        /* --- 醫護端 (Admin Dashboard) --- */
-       .admin-frame {
-            width: 90%;
-            height: 90vh;
-            background: white;
-            border-radius: 5px;
-            box-shadow: 0 0 15px rgba(0,0,0,0.1);
-            display: flex;
-            flex-direction: column;
-            overflow: hidden;
-        }
-
-       .admin-nav {
-            background: var(--primary-color);
-            color: white;
-            padding: 15px 20px;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-        }
-
-       .admin-body {
-            flex: 1;
-            display: flex;
-            overflow: hidden;
-        }
-
-       .sidebar {
-            width: 250px;
-            background: #34495e;
-            color: #ecf0f1;
-            padding-top: 20px;
-        }
-
-       .sidebar-item {
-            padding: 12px 20px;
-            cursor: pointer;
-            border-left: 4px solid transparent;
-            transition: 0.2s;
-        }
-
-       .sidebar-item:hover,.sidebar-item.active {
-            background: #2c3e50;
-            border-left-color: #3498db;
-        }
-
-       .content-area {
-            flex: 1;
-            padding: 20px;
-            background: #f4f6f9;
-            overflow-y: auto;
-        }
-
-       .kpi-card {
-            background: white;
-            padding: 20px;
-            border-radius: 8px;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
-            border-left: 5px solid #ddd;
-        }
-       .border-red { border-left-color: var(--risk-high); }
-       .border-yellow { border-left-color: var(--risk-med); }
-       .border-green { border-left-color: var(--risk-low); }
-
-       .patient-table th { background-color: #f8f9fa; }
-       .risk-badge {
-            padding: 5px 10px;
-            border-radius: 12px;
-            color: white;
-            font-size: 12px;
-        }
-       .bg-red { background-color: var(--risk-high); }
-       .bg-yellow { background-color: var(--risk-med); }
-       .bg-green { background-color: var(--risk-low); }
-
-        /* 隱藏/顯示控制 */
-       .d-none { display: none!important; }
-
+        .line-header { background: #2c3e50; color: white; padding: 15px; padding-top: 35px; font-size: 14px; font-weight: bold; display: flex; align-items: center; justify-content: space-between; }
+        .line-chat-area { flex: 1; background: #7289da2b; padding: 15px; overflow-y: auto; display: flex; flex-direction: column; gap: 15px; }
+        .line-msg { max-width: 80%; padding: 10px 14px; border-radius: 18px; font-size: 13px; position: relative; line-height: 1.4; }
+        .line-msg.ai { align-self: flex-start; background: white; color: #333; border-top-left-radius: 2px; }
+        .line-msg.ai::before { content: '小樹'; position: absolute; top: -18px; left: 0; font-size: 10px; color: #666; }
+        .line-msg.user { align-self: flex-end; background: var(--line-green); color: white; border-top-right-radius: 2px; }
+        .line-footer { background: white; padding: 10px; border-top: 1px solid #eee; display: flex; align-items: center; gap: 8px; }
+        .line-footer input { background: #f0f0f0; border: none; border-radius: 20px; padding: 8px 15px; font-size: 14px; }
     </style>
 </head>
 <body>
 
-    <div class="role-switcher">
-        <span><i class="fas fa-eye"></i> 視角切換：</span>
-        <button class="role-btn active" onclick="switchRole('patient')">📱 病患端 (LINE)</button>
-        <button class="role-btn" onclick="switchRole('admin')">👨‍⚕️ 醫護端 (Java後台)</button>
+    <!-- 側邊選單 -->
+    <div class="sidebar">
+        <div class="sidebar-header">
+            <img src="images/fetlogo.png" alt="FET Logo" onerror="this.src='https://via.placeholder.com/150x50?text=FET+Health'">
+            <div class="small text-muted" style="font-size: 0.8rem;">北投智慧共照雲</div>
+        </div>
+        <nav class="nav flex-column mt-3">
+            <div class="nav-link active" onclick="switchView('dashboard')"><i class="fas fa-tachometer-alt"></i> 總覽儀表板</div>
+            <div class="nav-link" onclick="switchView('cases')"><i class="fas fa-users"></i> 個案管理列表</div>
+            <div class="nav-link" onclick="switchView('trends')"><i class="fas fa-chart-line"></i> 生理數據趨勢</div>
+            <div class="nav-link" onclick="switchView('audit')"><i class="fas fa-file-medical-alt"></i> AI 對話稽核</div>
+            <div class="nav-link" onclick="switchView('training')"><i class="fas fa-brain"></i> AI 知識庫訓練</div>
+            <div class="nav-link" onclick="switchView('liff')"><i class="fab fa-line"></i> LINE LIFF 管理</div>
+            <!-- 原先的LINE模擬畫面整合在此 -->
+            <div class="nav-link text-warning" onclick="switchView('simulator')"><i class="fas fa-mobile-alt"></i> 前端模擬預覽</div>
+            <div class="nav-link" onclick="switchView('settings')"><i class="fas fa-cog"></i> 系統設定</div>
+        </nav>
     </div>
 
-    <div class="main-container">
-
-        <div id="view-patient" class="mobile-frame">
-            <div class="mobile-header">
-                <div>北投共照雲 - AI 夥伴小樹</div>
-                <div style="font-size: 10px; opacity: 0.8;">今日任務：服藥 ✅ | 量血壓 ⚠️</div>
+    <!-- 主內容區 -->
+    <div class="main-content">
+        <!-- 頂部資訊列 -->
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h4 class="fw-bold text-dark" id="page-title">總覽儀表板</h4>
+            <div class="d-flex align-items-center">
+                <span class="badge bg-success me-3">系統連線正常</span>
+                <div class="text-end me-3">
+                    <div class="fw-bold">Dr. Chen</div>
+                    <small class="text-muted">個案管理師</small>
+                </div>
+                <div class="bg-secondary rounded-circle text-white d-flex align-items-center justify-content-center" style="width: 40px; height: 40px;">C</div>
             </div>
-            
-            <div class="mobile-content" id="chat-container">
-                <div class="text-center text-muted my-3" style="font-size: 12px;">2025/01/20 週一</div>
-                
-                <div class="message msg-ai">
-                    早安！我是小樹 🌱<br>
-                    今天北投的天氣有點涼，記得多穿件外套喔。<br>
-                    昨晚睡得好嗎？
-                </div>
+        </div>
 
-                <div class="message msg-user">
-                    其實不太好，一直做夢...覺得很累。
+        <!-- 1. Dashboard -->
+        <div id="view-dashboard" class="view-section active">
+            <div class="row g-4">
+                <div class="col-md-3">
+                    <div class="card p-3 border-start border-5 border-danger">
+                        <small class="text-muted fw-bold">今日高風險個案</small>
+                        <h2 class="text-danger fw-bold my-2">3</h2>
+                        <small class="text-danger"><i class="fas fa-arrow-up"></i> 較昨日 +1</small>
+                    </div>
                 </div>
-
-                <div class="message msg-ai">
-                    辛苦你了。一直做夢真的會讓人起床後還是覺得疲憊。<br>
-                    是因為最近有什麼事情讓你感到焦慮嗎？
+                <div class="col-md-3">
+                    <div class="card p-3 border-start border-5 border-primary">
+                        <small class="text-muted fw-bold">今日 AI 對話數</small>
+                        <h2 class="text-primary fw-bold my-2">452</h2>
+                        <small class="text-success"><i class="fas fa-check"></i> 系統回應率 100%</small>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="card p-3 border-start border-5 border-warning">
+                        <small class="text-muted fw-bold">未服藥警示</small>
+                        <h2 class="text-warning fw-bold my-2">8</h2>
+                        <small class="text-muted">已自動推播提醒</small>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="card p-3 border-start border-5 border-success">
+                        <small class="text-muted fw-bold">本月收案總數</small>
+                        <h2 class="text-success fw-bold my-2">128</h2>
+                        <small class="text-success">達成率 92%</small>
+                    </div>
                 </div>
             </div>
-
-            <div class="mobile-footer">
-                <button class="btn btn-light rounded-circle text-muted"><i class="fas fa-plus"></i></button>
-                <input type="text" id="user-input" class="form-control" placeholder="傳送訊息..." onkeypress="handleEnter(event)">
-                <button class="btn btn-success rounded-circle" onclick="sendMessage()"><i class="fas fa-paper-plane"></i></button>
-            </div>
-            
-            <div style="background: #f8f9fa; border-top: 1px solid #ddd; display: flex;">
-                <div class="p-3 text-center flex-fill border-end" style="font-size: 12px; cursor: pointer;">
-                    <i class="fas fa-heartbeat fa-lg mb-1 text-danger"></i><br>健康存摺
+            <div class="row mt-4">
+                <div class="col-lg-8">
+                    <div class="card h-100">
+                        <div class="card-header">每週病患情緒指數與服藥趨勢</div>
+                        <div class="card-body">
+                            <canvas id="mainChart" style="max-height: 300px;"></canvas>
+                        </div>
+                    </div>
                 </div>
-                <div class="p-3 text-center flex-fill border-end" style="font-size: 12px; cursor: pointer;">
-                    <i class="fas fa-robot fa-lg mb-1 text-success"></i><br>AI 陪伴
-                </div>
-                <div class="p-3 text-center flex-fill" style="font-size: 12px; cursor: pointer;">
-                    <i class="fas fa-video fa-lg mb-1 text-primary"></i><br>視訊看診
+                <div class="col-lg-4">
+                    <div class="card h-100">
+                        <div class="card-header">待辦事項</div>
+                        <div class="list-group list-group-flush">
+                            <a href="#" class="list-group-item list-group-item-action d-flex justify-content-between align-items-center">
+                                <div><span class="badge bg-danger me-2">緊急</span>P-001 王先生 自殺風險評估</div>
+                                <i class="fas fa-chevron-right text-muted"></i>
+                            </a>
+                            <a href="#" class="list-group-item list-group-item-action d-flex justify-content-between align-items-center">
+                                <div><span class="badge bg-warning me-2">追蹤</span>P-042 林小姐 連續失眠</div>
+                                <i class="fas fa-chevron-right text-muted"></i>
+                            </a>
+                            <a href="#" class="list-group-item list-group-item-action d-flex justify-content-between align-items-center">
+                                <div><span class="badge bg-info me-2">審核</span>新進個案資料審核 (5)</div>
+                                <i class="fas fa-chevron-right text-muted"></i>
+                            </a>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
 
-        <div id="view-admin" class="admin-frame d-none">
-            <div class="admin-nav">
-                <div class="d-flex align-items-center gap-3">
-                    <h5 class="m-0"><i class="fas fa-hospital-symbol me-2"></i>智慧遠距照護戰情室 (Admin)</h5>
-                    <span class="badge bg-warning text-dark">測試環境</span>
+        <!-- 2. Cases -->
+        <div id="view-cases" class="view-section">
+            <div class="card">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <span>個案管理列表</span>
+                    <button class="btn btn-sm btn-primary"><i class="fas fa-file-export"></i> 匯出報表</button>
                 </div>
-                <div class="d-flex align-items-center gap-3">
-                    <span style="font-size: 14px;">陳個管師，您好</span>
-                    <button class="btn btn-sm btn-outline-light"><i class="fas fa-sign-out-alt"></i></button>
+                <div class="card-body">
+                    <table class="table table-hover align-middle">
+                        <thead class="table-light">
+                            <tr>
+                                <th>狀態</th>
+                                <th>病歷號</th>
+                                <th>姓名</th>
+                                <th>診斷</th>
+                                <th>AI 標籤</th>
+                                <th>最近生理數據</th>
+                                <th>操作</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td><span class="badge bg-danger">高風險</span></td>
+                                <td>A-10293</td>
+                                <td>陳○豪</td>
+                                <td>雙相情緒障礙</td>
+                                <td><span class="text-danger small"><i class="fas fa-exclamation-triangle"></i> 自傷意念</span></td>
+                                <td>HR: 98 | BP: 140/90</td>
+                                <td><button class="btn btn-sm btn-outline-secondary">查看</button></td>
+                            </tr>
+                            <tr>
+                                <td><span class="badge bg-success">穩定</span></td>
+                                <td>B-20481</td>
+                                <td>林○婷</td>
+                                <td>廣泛性焦慮症</td>
+                                <td><span class="text-success small">服藥規律</span></td>
+                                <td>HR: 72 | BP: 118/75</td>
+                                <td><button class="btn btn-sm btn-outline-secondary">查看</button></td>
+                            </tr>
+                        </tbody>
+                    </table>
                 </div>
             </div>
+        </div>
 
-            <div class="admin-body">
-                <div class="sidebar">
-                    <div class="sidebar-item active"><i class="fas fa-tachometer-alt me-2"></i> 總覽儀表板</div>
-                    <div class="sidebar-item"><i class="fas fa-users me-2"></i> 個案管理列表</div>
-                    <div class="sidebar-item"><i class="fas fa-chart-line me-2"></i> 生理數據趨勢</div>
-                    <div class="sidebar-item"><i class="fas fa-robot me-2"></i> AI 對話稽核</div>
-                    <div class="sidebar-item"><i class="fas fa-cog me-2"></i> 系統設定</div>
-                </div>
-
-                <div class="content-area">
-                    <div class="row g-3 mb-4">
-                        <div class="col-md-3">
-                            <div class="kpi-card border-red">
-                                <h6 class="text-muted">🔴 今日高風險個案</h6>
-                                <h2 class="text-danger fw-bold m-0">3 <small class="fs-6 text-muted">人</small></h2>
-                                <small class="text-muted">需立即介入處理</small>
-                            </div>
+        <!-- 3. Trends -->
+        <div id="view-trends" class="view-section">
+            <div class="card">
+                <div class="card-header">生理數據與情緒趨勢分析</div>
+                <div class="card-body">
+                    <div class="row mb-4">
+                        <div class="col-md-4">
+                            <label class="form-label">選擇個案</label>
+                            <select class="form-select">
+                                <option>A-10293 陳○豪</option>
+                                <option>B-20481 林○婷</option>
+                            </select>
                         </div>
-                        <div class="col-md-3">
-                            <div class="kpi-card border-yellow">
-                                <h6 class="text-muted">🟡 異常警示</h6>
-                                <h2 class="text-warning fw-bold m-0">12 <small class="fs-6 text-muted">件</small></h2>
-                                <small class="text-muted">未服藥/生理數值偏高</small>
-                            </div>
+                        <div class="col-md-4">
+                            <label class="form-label">數據類型</label>
+                            <select class="form-select">
+                                <option>血壓/心跳</option>
+                                <option>睡眠時數</option>
+                                <option>PHQ-9 分數</option>
+                            </select>
                         </div>
-                        <div class="col-md-3">
-                            <div class="kpi-card border-green">
-                                <h6 class="text-muted">🟢 AIoT 數據上傳率</h6>
-                                <h2 class="text-success fw-bold m-0">92%</h2>
-                                <small class="text-success"><i class="fas fa-arrow-up"></i> 較上週提升</small>
-                            </div>
-                        </div>
-                        <div class="col-md-3">
-                            <div class="kpi-card">
-                                <h6 class="text-muted">總收案人數</h6>
-                                <h2 class="fw-bold m-0">358</h2>
-                                <small class="text-muted">本月新增 +15</small>
-                            </div>
+                        <div class="col-md-4 d-flex align-items-end">
+                            <button class="btn btn-primary w-100">查詢</button>
                         </div>
                     </div>
+                    <canvas id="trendChart" height="100"></canvas>
+                </div>
+            </div>
+        </div>
 
-                    <div class="row g-3">
-                        <div class="col-md-8">
-                            <div class="card border-0 shadow-sm h-100">
-                                <div class="card-header bg-white py-3 d-flex justify-content-between align-items-center">
-                                    <h6 class="m-0 fw-bold">🚩 待處理個案追蹤</h6>
-                                    <button class="btn btn-sm btn-primary">匯出報表</button>
-                                </div>
-                                <div class="table-responsive">
-                                    <table class="table table-hover align-middle mb-0 patient-table">
-                                        <thead>
-                                            <tr>
-                                                <th>狀態</th>
-                                                <th>病歷號</th>
-                                                <th>姓名 (去識別)</th>
-                                                <th>診斷</th>
-                                                <th>AI 摘要 / 警示原因</th>
-                                                <th>操作</th>
-                                            </tr>
-                                        </thead>
-                                        <tbody id="patient-list">
-                                            <tr style="background-color: #fff5f5;">
-                                                <td><span class="risk-badge bg-red">高風險</span></td>
-                                                <td>P-2025001</td>
-                                                <td>王○明</td>
-                                                <td>雙相情緒障礙</td>
-                                                <td class="text-danger"><i class="fas fa-exclamation-circle"></i> 偵測到自殺關鍵字「不想活了」</td>
-                                                <td><button class="btn btn-sm btn-outline-danger">介入</button></td>
-                                            </tr>
-                                            <tr>
-                                                <td><span class="risk-badge bg-yellow">注意</span></td>
-                                                <td>P-2025042</td>
-                                                <td>林○儀</td>
-                                                <td>重度憂鬱症</td>
-                                                <td>連續 3 天睡眠時數 < 4 小時</td>
-                                                <td><button class="btn btn-sm btn-outline-secondary">查看</button></td>
-                                            </tr>
-                                            <tr>
-                                                <td><span class="risk-badge bg-green">穩定</span></td>
-                                                <td>P-2025108</td>
-                                                <td>張○豪</td>
-                                                <td>思覺失調症</td>
-                                                <td>服藥依從性良好，情緒平穩</td>
-                                                <td><button class="btn btn-sm btn-outline-secondary">查看</button></td>
-                                            </tr>
-                                        </tbody>
-                                    </table>
-                                </div>
+        <!-- 4. Audit -->
+        <div id="view-audit" class="view-section">
+            <div class="card">
+                <div class="card-header bg-warning bg-opacity-10">
+                    <i class="fas fa-robot text-warning me-2"></i>AI 對話風險稽核
+                </div>
+                <div class="card-body">
+                    <div class="alert alert-info">
+                        <i class="fas fa-info-circle"></i> 系統會自動標記對話中的潛在風險關鍵字（自殺、自傷、暴力、中斷治療）。
+                    </div>
+                    <div class="list-group">
+                        <a href="#" class="list-group-item list-group-item-action" aria-current="true">
+                            <div class="d-flex w-100 justify-content-between">
+                                <h6 class="mb-1 text-danger fw-bold"><i class="fas fa-flag"></i> 風險等級：高</h6>
+                                <small>10 分鐘前</small>
                             </div>
-                        </div>
+                            <p class="mb-1">個案 A-10293：提及「不想活了」、「覺得累」。</p>
+                            <small class="text-muted">AI 處置：已觸發自殺防治回應腳本，並推播通知個管師。</small>
+                        </a>
+                        <a href="#" class="list-group-item list-group-item-action">
+                            <div class="d-flex w-100 justify-content-between">
+                                <h6 class="mb-1 text-warning fw-bold"><i class="fas fa-flag"></i> 風險等級：中</h6>
+                                <small>3 小時前</small>
+                            </div>
+                            <p class="mb-1">個案 B-20481：詢問「如果把藥全部吃掉會怎樣」。</p>
+                            <small class="text-muted">AI 處置：辨識為藥物濫用風險，已建議就醫。</small>
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
 
-                        <div class="col-md-4">
-                            <div class="card border-0 shadow-sm h-100">
-                                <div class="card-header bg-white py-3">
-                                    <h6 class="m-0 fw-bold">📊 情緒與服藥趨勢 (全院)</h6>
-                                </div>
-                                <div class="card-body">
-                                    <canvas id="complianceChart"></canvas>
-                                    <div class="mt-3">
-                                        <small class="text-muted d-block mb-1">AI 建議：</small>
-                                        <div class="alert alert-info py-2 px-3" style="font-size: 13px;">
-                                            <i class="fas fa-lightbulb me-1"></i> 週末服藥率略有下降，建議系統於週五晚間加強推播提醒。
-                                        </div>
+        <!-- 5. Training (NEW) -->
+        <div id="view-training" class="view-section">
+            <div class="row">
+                <div class="col-md-6">
+                    <div class="card h-100">
+                        <div class="card-header bg-dark text-white"><i class="fas fa-brain"></i> AI 知識庫模型訓練</div>
+                        <div class="card-body">
+                            <h6 class="fw-bold">1. 系統提示詞 (System Prompt)</h6>
+                            <textarea class="form-control mb-3" rows="5">你是一個專業的精神科輔助AI，名叫小樹。你的語氣溫暖、支持且不帶批判。當使用者表達自殺意念時，你必須立即提供安心專線 1925 資訊，並安撫使用者情緒。請勿給予醫療診斷。</textarea>
+                            <button class="btn btn-outline-primary btn-sm mb-4">更新 Prompt</button>
+
+                            <h6 class="fw-bold">2. RAG 知識庫文件上傳</h6>
+                            <div class="input-group mb-3">
+                                <input type="file" class="form-control" id="inputGroupFile02">
+                                <button class="btn btn-primary" type="button">上傳並訓練</button>
+                            </div>
+                            <small class="text-muted">支援 PDF, DOCX, TXT 格式。上傳後系統將自動進行向量化處理。</small>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <div class="card h-100">
+                        <div class="card-header">訓練狀態監控</div>
+                        <div class="card-body">
+                            <table class="table table-sm">
+                                <thead>
+                                    <tr>
+                                        <th>檔案名稱</th>
+                                        <th>上傳時間</th>
+                                        <th>狀態</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr>
+                                        <td>自殺防治手冊_2024.pdf</td>
+                                        <td>2024/01/10</td>
+                                        <td><span class="badge bg-success">已生效</span></td>
+                                    </tr>
+                                    <tr>
+                                        <td>常用藥物交互作用表.xlsx</td>
+                                        <td>2024/02/01</td>
+                                        <td><span class="badge bg-success">已生效</span></td>
+                                    </tr>
+                                    <tr>
+                                        <td>新版心理量表說明.docx</td>
+                                        <td>剛剛</td>
+                                        <td><span class="badge bg-warning text-dark">向量化中...</span></td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 6. LIFF (NEW) -->
+        <div id="view-liff" class="view-section">
+            <div class="card">
+                <div class="card-header bg-success text-white"><i class="fab fa-line"></i> LINE LIFF 與 Rich Menu 管理</div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-5 d-flex justify-content-center align-items-center bg-light border rounded">
+                            <!-- 圖文選單模擬 -->
+                            <div class="text-center p-5">
+                                <h6 class="text-muted mb-4">Rich Menu 預覽</h6>
+                                <div class="d-grid gap-2" style="width: 200px;">
+                                    <div class="row g-1">
+                                        <div class="col-6"><button class="btn btn-outline-secondary w-100 py-3">生理量測</button></div>
+                                        <div class="col-6"><button class="btn btn-outline-secondary w-100 py-3">AI 陪伴</button></div>
+                                        <div class="col-6"><button class="btn btn-outline-secondary w-100 py-3">視訊看診</button></div>
+                                        <div class="col-6"><button class="btn btn-outline-secondary w-100 py-3">衛教資訊</button></div>
                                     </div>
                                 </div>
                             </div>
                         </div>
+                        <div class="col-md-7">
+                            <h5 class="fw-bold mb-3">LIFF Endpoint 設定</h5>
+                            <form>
+                                <div class="mb-3">
+                                    <label class="form-label">生理量測 LIFF ID</label>
+                                    <input type="text" class="form-control" value="1657099999-AbCdEfG">
+                                </div>
+                                <div class="mb-3">
+                                    <label class="form-label">AI 聊天 LIFF ID</label>
+                                    <input type="text" class="form-control" value="1657099999-HijklMn">
+                                </div>
+                                <div class="mb-3">
+                                    <label class="form-label">目標網址 (Target URL)</label>
+                                    <input type="text" class="form-control" value="https://beitou-care-cloud.com.tw/mobile">
+                                </div>
+                                <hr>
+                                <button class="btn btn-success">同步至 LINE Developer Console</button>
+                            </form>
+                        </div>
                     </div>
+                </div>
+            </div>
+        </div>
 
+        <!-- 7. Simulator (原先 LINE 模擬畫面) -->
+        <div id="view-simulator" class="view-section">
+            <div class="row justify-content-center">
+                <div class="col-lg-5">
+                    <div class="phone-frame">
+                        <div class="phone-notch"></div>
+                        <div class="line-header">
+                            <div><i class="fas fa-chevron-left"></i> 小樹 (AI)</div>
+                            <div><i class="fas fa-search"></i> <i class="fas fa-bars"></i></div>
+                        </div>
+                        <div class="line-chat-area" id="sim-chat-box">
+                            <div class="text-center text-muted small my-2">今天</div>
+                            <div class="line-msg ai">早安！我是小樹，北投醫院的 AI 個管師。今天心情還好嗎？😊</div>
+                        </div>
+                        <div class="line-footer">
+                            <i class="fas fa-plus text-primary"></i>
+                            <i class="fas fa-camera text-secondary"></i>
+                            <input type="text" id="sim-input" class="flex-fill" placeholder="輸入訊息...">
+                            <i class="fas fa-smile text-secondary"></i>
+                            <button class="btn btn-sm btn-primary rounded-circle" onclick="sendSimMessage()"><i class="fas fa-paper-plane"></i></button>
+                        </div>
+                    </div>
+                    <div class="text-center mt-3 text-muted">
+                        <p><i class="fas fa-info-circle"></i> 此為前端模擬器，您的輸入將即時經過 Java 後端 AI 處理並返回結果。</p>
+                        <p>可用測試關鍵字：<strong>「不想活了」、「吃藥」、「睡不著」</strong></p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 8. Settings -->
+        <div id="view-settings" class="view-section">
+            <div class="card">
+                <div class="card-header">系統偏好設定</div>
+                <div class="card-body">
+                    <form>
+                        <div class="mb-3 row">
+                            <label class="col-sm-2 col-form-label">平台名稱</label>
+                            <div class="col-sm-10">
+                                <input type="text" class="form-control" value="北投智慧遠距精神醫療照護平台">
+                            </div>
+                        </div>
+                        <div class="mb-3 row">
+                            <label class="col-sm-2 col-form-label">警示閾值</label>
+                            <div class="col-sm-10">
+                                <input type="range" class="form-range" min="0" max="100" value="80">
+                                <div class="form-text">當 AI 判斷風險係數超過 80% 時觸發紅燈。</div>
+                            </div>
+                        </div>
+                        <button class="btn btn-primary">儲存設定</button>
+                    </form>
                 </div>
             </div>
         </div>
@@ -405,130 +444,86 @@
     </div>
 
     <script>
-        // 1. 角色切換邏輯
-        function switchRole(role) {
-            // 更新按鈕狀態
-            document.querySelectorAll('.role-btn').forEach(btn => btn.classList.remove('active'));
-            event.target.classList.add('active');
+        // 切換視圖邏輯
+        function switchView(viewId) {
+            document.querySelectorAll('.nav-link').forEach(l => l.classList.remove('active'));
+            event.currentTarget.classList.add('active');
+            
+            document.querySelectorAll('.view-section').forEach(s => s.classList.remove('active'));
+            document.getElementById('view-' + viewId).classList.add('active');
 
-            // 切換視圖
-            if (role === 'patient') {
-                document.getElementById('view-patient').classList.remove('d-none');
-                document.getElementById('view-admin').classList.add('d-none');
-            } else {
-                document.getElementById('view-patient').classList.add('d-none');
-                document.getElementById('view-admin').classList.remove('d-none');
-                // 首次切換到後台時渲染圖表
-                if (!window.chartRendered) {
-                    renderAdminChart();
-                    window.chartRendered = true;
+            // 更新標題
+            const titles = {
+                'dashboard': '總覽儀表板',
+                'cases': '個案管理列表',
+                'trends': '生理數據趨勢',
+                'audit': 'AI 對話稽核',
+                'training': 'AI 知識庫訓練',
+                'liff': 'LINE LIFF 管理',
+                'simulator': '前端模擬預覽 (Live Demo)',
+                'settings': '系統設定'
+            };
+            document.getElementById('page-title').innerText = titles[viewId];
+        }
+
+        // 初始化圖表
+        const ctx = document.getElementById('mainChart').getContext('2d');
+        new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: ['週一', '週二', '週三', '週四', '週五', '週六', '週日'],
+                datasets: [{
+                    label: '服藥依從性 (%)',
+                    data: [85, 88, 85, 90, 82, 78, 85],
+                    borderColor: '#27ae60',
+                    tension: 0.3
+                }, {
+                    label: '平均情緒指數 (1-10)',
+                    data: [6, 7, 7, 8, 5, 4, 6],
+                    borderColor: '#3498db',
+                    tension: 0.3,
+                    yAxisID: 'y1'
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: {
+                    y: { max: 100 },
+                    y1: { position: 'right', max: 10 }
                 }
             }
-        }
+        });
 
-        // 2. 病患端 AI 聊天邏輯 (模擬 Java 後端回應)
-        const chatContainer = document.getElementById('chat-container');
-        const userInput = document.getElementById('user-input');
-
-        function handleEnter(e) {
-            if (e.key === 'Enter') sendMessage();
-        }
-
-        function sendMessage() {
-            const text = userInput.value.trim();
+        // 模擬器聊天邏輯
+        function sendSimMessage() {
+            const input = document.getElementById('sim-input');
+            const text = input.value.trim();
             if (!text) return;
 
-            // 顯示使用者訊息
-            addMessage(text, 'user');
-            userInput.value = '';
+            const chatBox = document.getElementById('sim-chat-box');
+            
+            // User Msg
+            chatBox.innerHTML += `<div class="line-msg user align-self-end my-2">${text}</div>`;
+            input.value = '';
+            chatBox.scrollTop = chatBox.scrollHeight;
 
-            // 模擬後端 API 延遲與 AI 邏輯
-            showTyping();
+            // AI Logic
             setTimeout(() => {
-                removeTyping();
-                const aiResponse = getSimulatedAIResponse(text);
-                addMessage(aiResponse.text, 'ai');
-                
-                // 如果觸發高風險關鍵字，模擬後台數據更新 (Console log demo)
-                if (aiResponse.isRisk) {
-                    console.log("【系統模擬】Java Backend: 偵測到風險關鍵字，寫入資料庫並觸發 WebSocket 警報 -> Admin Dashboard");
-                    alert("系統模擬提示：AI 偵測到風險關鍵字，後台已同步產生紅燈警示！");
-                }
-            }, 1000);
-        }
+                let reply = "收到，我會記錄下來。";
+                if(text.includes('死') || text.includes('不想活')) reply = "我聽得出來你現在很痛苦。請記得，我們都在這裡陪你。若有緊急狀況，請撥打 1925。";
+                else if(text.includes('藥')) reply = "藥物能幫助大腦穩定。如果有副作用，我們下次門診跟醫生討論好嗎？";
+                else if(text.includes('睡')) reply = "失眠真的很難受。今晚試試看腹式呼吸，放鬆一下？";
 
-        function addMessage(text, sender) {
-            const div = document.createElement('div');
-            div.className = `message msg-${sender}`;
-            div.innerHTML = text;
-            chatContainer.appendChild(div);
-            chatContainer.scrollTop = chatContainer.scrollHeight;
+                chatBox.innerHTML += `<div class="line-msg ai align-self-start my-2">${reply}</div>`;
+                chatBox.scrollTop = chatBox.scrollHeight;
+            }, 800);
         }
-
-        function showTyping() {
-            const div = document.createElement('div');
-            div.id = 'typing-indicator';
-            div.className = 'message msg-ai';
-            div.innerHTML = '<i class="fas fa-ellipsis-h"></i>';
-            chatContainer.appendChild(div);
-            chatContainer.scrollTop = chatContainer.scrollHeight;
-        }
-
-        function removeTyping() {
-            const el = document.getElementById('typing-indicator');
-            if (el) el.remove();
-        }
-
-        // 簡單的規則引擎 (模擬 Java Spring Boot 中的 Drools 或 NLP 邏輯)
-        function getSimulatedAIResponse(input) {
-            input = input.toLowerCase();
-            if (input.includes('死') || input.includes('不想活') || input.includes('結束')) {
-                return {
-                    text: "我感覺到你現在非常痛苦。請記得，我們都在這裡陪你。<br>如果你願意，可以撥打 <strong>1925 安心專線</strong>，或者我請個管師姊姊跟你聯絡好嗎？",
-                    isRisk: true
-                };
-            } else if (input.includes('藥') || input.includes('吃藥')) {
-                return { text: "吃藥是為了幫助大腦休息喔。如果擔心副作用，我們可以紀錄下來，下次門診跟醫生討論。今天吃了嗎？", isRisk: false };
-            } else if (input.includes('睡') || input.includes('失眠')) {
-                return { text: "睡不好真的會讓人心情低落。今晚試試看睡前不滑手機，做個簡單的腹式呼吸好嗎？", isRisk: false };
-            } else {
-                return { text: "我了解了。謝謝你願意跟我分享，我會一直在這裡陪著你。", isRisk: false };
-            }
-        }
-
-        // 3. 醫護端圖表 (Chart.js)
-        function renderAdminChart() {
-            const ctx = document.getElementById('complianceChart').getContext('2d');
-            new Chart(ctx, {
-                type: 'line',
-                data: {
-                    labels: ['週一', '週二', '週三', '週四', '週五', '週六', '週日'],
-                    datasets: [{
-                        label: '平均服藥依從性 (%)',
-                        data: [85, 88, 87, 90, 85, 75, 78], // 修正數據範例
-                        borderColor: '#27ae60',
-                        tension: 0.4,
-                        fill: false
-                    }, {
-                        label: '平均情緒指數',
-                        data: [7.5, 7.8, 8.0, 8.2, 7.9, 6.5, 6.8], // 修正數據範例
-                        borderColor: '#3498db',
-                        borderDash: [5, 5],
-                        tension: 0.4,
-                        fill: false
-                    }]
-                },
-                options: {
-                    responsive: true,
-                    plugins: {
-                        legend: { position: 'bottom' }
-                    },
-                    scales: {
-                        y: { beginAtZero: true, max: 100 }
-                    }
-                }
-            });
-        }
+        
+        // 綁定 Enter 鍵
+        document.getElementById('sim-input').addEventListener('keypress', function (e) {
+            if (e.key === 'Enter') sendSimMessage();
+        });
     </script>
 </body>
 </html>
