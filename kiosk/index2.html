@@ -31,7 +31,7 @@
             overflow: hidden;
         }
 
-        /* --- Header (Clean & Minimal) --- */
+        /* --- Header --- */
         header {
             height: 70px;
             display: flex;
@@ -54,7 +54,7 @@
             flex: 1;
             position: relative;
             overflow: hidden;
-            background: #f8fcf9; /* Very subtle light green tint bg */
+            background: #f8fcf9;
         }
 
         /* --- Screens State --- */
@@ -68,7 +68,7 @@
         }
         .screen.active { opacity: 1; pointer-events: all; }
 
-        /* --- SCREEN 1: Insert Card (Modernized) --- */
+        /* --- SCREEN 1: Insert Card --- */
         .card-cta-container {
             text-align: center;
             padding: 60px;
@@ -99,7 +99,7 @@
         }
         .anim-card {
             width: 160px; height: 100px;
-            background: linear-gradient(135deg, #f6d365 0%, #fda085 100%); /* Gold-ish IC card look */
+            background: linear-gradient(135deg, #f6d365 0%, #fda085 100%);
             position: absolute; bottom: -110px; left: 40px;
             border-radius: 8px;
             display: flex; align-items: flex-end; padding: 10px;
@@ -118,37 +118,39 @@
         p.cta-subtitle { color: var(--c-text-light); font-size: 20px; margin: 0; }
 
 
-        /* --- SCREEN 2: Split Screen Avatar Interaction (The Big Change) --- */
+        /* --- SCREEN 2: Split Screen Avatar Interaction --- */
         #screen-2 {
-            flex-direction: row; /* Horizontal layout */
-            align-items: stretch; /* Full height */
+            flex-direction: row;
+            align-items: stretch;
         }
 
-        /* Left Side: The Full-Height Avatar */
+        /* Left Side: Video Avatar Stage */
         .avatar-stage {
-            flex: 1; /* Takes 50% width roughly */
+            flex: 1;
             height: 100%;
             position: relative;
-            background: linear-gradient(to right, #eef2f3, #ffffff); /* Subtle backdrop for avatar */
+            background: linear-gradient(to right, #eef2f3, #ffffff);
             overflow: hidden;
         }
-        .avatar-img-full {
+        
+        /* Video Styling to replace IMG */
+        .avatar-video-full {
             width: 100%;
             height: 100%;
-            object-fit: cover; /* Ensures it fills the space nicely */
-            object-position: center top; /* Focus on the face area */
-            filter: drop-shadow(5px 0 15px rgba(0,0,0,0.1));
+            object-fit: cover; /* Ensures video fills the space nicely */
+            object-position: center top;
+            display: block;
         }
 
-        /* Right Side: Glassmorphism Interaction Panel */
+        /* Right Side: Interaction Panel */
         .interaction-panel {
             flex: 1;
             height: 100%;
             display: flex;
             flex-direction: column;
             padding: 40px;
-            background: var(--glass-bg); /* Glass effect */
-            backdrop-filter: blur(25px); /* Blur the background behind it */
+            background: var(--glass-bg);
+            backdrop-filter: blur(25px);
             border-left: var(--glass-border);
             box-shadow: -10px 0 30px rgba(0,0,0,0.05);
         }
@@ -162,7 +164,6 @@
             gap: 25px;
         }
 
-        /* Speech Bubbles */
         .msg {
             max-width: 85%;
             padding: 20px 25px;
@@ -191,7 +192,6 @@
             text-align: right;
         }
 
-        /* Voice Controls Section */
         .controls-area {
             margin-top: auto;
             padding-top: 30px;
@@ -213,7 +213,6 @@
         }
         .lang-pill.active { border-color: var(--c-primary); color: var(--c-primary); background: var(--c-primary-light); }
         
-        /* Big Mic Button */
         .mic-btn-large {
             width: 100px; height: 100px;
             background: var(--c-secondary);
@@ -227,7 +226,6 @@
         }
         .mic-btn-large:active { transform: scale(0.95); }
         
-        /* Recording animation state */
         .mic-btn-large.recording::after {
             content: '';
             position: absolute; width: 100%; height: 100%;
@@ -277,7 +275,6 @@
             font-size: 13px; color: #aaa; border-top: 1px solid #eee;
         }
         
-        /* Simulation Hints */
         .sim-hint {
             position: absolute; bottom: 20px; width: 100%; text-align: center;
             font-size: 14px; color: #aaa; font-style: italic; pointer-events: none;
@@ -312,7 +309,10 @@
 
         <div id="screen-2" class="screen">
             <div class="avatar-stage">
-                <img src="images/avatar1.png" alt="AI Avatar" class="avatar-img-full">
+                <video id="avatarVideo" class="avatar-video-full" muted playsinline>
+                    <source src="images/avataropening.mp4" type="video/mp4">
+                    您的瀏覽器不支援影片播放。
+                </video>
             </div>
             
             <div class="interaction-panel">
@@ -360,7 +360,7 @@
     </footer>
 
     <script>
-        // --- Simulation Logic (與之前相同，但增加了 UI 互動反饋) ---
+        // --- Simulation Logic ---
 
         // 1. Clock
         setInterval(() => {
@@ -373,12 +373,33 @@
             document.getElementById(screenId).classList.add('active');
         }
 
-        // 2. Simulate Card Insert
+        // 2. Simulate Card Insert & Video Control
         function simulateInsertCard() {
             console.log("Card detected...");
-            // 簡單的轉場延遲
+            
+            // 轉場
             setTimeout(() => {
                 goToScreen('screen-2');
+                
+                // --- 影片控制邏輯 ---
+                const video = document.getElementById('avatarVideo');
+                
+                // 重置為開場影片
+                video.src = "images/avataropening.mp4";
+                video.loop = false; // 開場影片不循環
+                video.currentTime = 0;
+                
+                // 播放 (因為是使用者點擊觸發，瀏覽器通常允許帶聲音播放，但為保險起見這裡預設muted，可視需求移除muted屬性)
+                video.play().catch(e => console.log("Auto-play blocked:", e));
+
+                // 監聽：當開場影片播完後
+                video.onended = function() {
+                    console.log("Opening finished, switching to idle loop.");
+                    video.src = "images/avatarMOV.mp4"; // 切換到聆聽/待機影片
+                    video.loop = true; // 開啟循環
+                    video.play();
+                };
+
             }, 600);
         }
 
@@ -392,7 +413,7 @@
             const listenText = document.getElementById('listeningText');
             const chatBox = document.getElementById('chat-box');
 
-            // A. Start "Recording" State (Visual Feedback)
+            // A. Start "Recording" State
             micBtn.classList.add('recording');
             listenText.innerText = "正在聆聽中...";
             
@@ -419,12 +440,12 @@
                     // D. Auto transition to confirmation
                     setTimeout(() => {
                         goToScreen('screen-3');
-                        isRecording = false; // reset state
+                        isRecording = false; 
                     }, 3000);
 
-                }, 1500); // AI thinking delay
+                }, 1500); 
 
-            }, 2000); // User speaking duration
+            }, 2000);
         }
 
         function scrollToBottom() {
