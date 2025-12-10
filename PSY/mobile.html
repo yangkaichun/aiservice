@@ -11,7 +11,7 @@
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
     
     <style>
-        /* 全域設定：模擬 App 的全螢幕體驗 */
+        /* 全域設定 */
         body { 
             background-color: #fff; 
             height: 100vh; 
@@ -21,217 +21,144 @@
             font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif; 
         }
         
-        /* --- 1. 登入遮罩層 (Login Overlay) --- */
+        /* --- 1. 登入遮罩層 --- */
         #login-overlay {
-            position: fixed; 
-            top: 0; 
-            left: 0; 
-            width: 100%; 
-            height: 100%;
-            background: linear-gradient(160deg, #27ae60 0%, #2c3e50 100%); /* 醫療綠漸層 */
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: linear-gradient(160deg, #27ae60 0%, #2c3e50 100%);
             z-index: 9999; 
-            display: flex; 
-            flex-direction: column; 
-            justify-content: center; 
-            align-items: center;
-            padding: 20px; 
-            color: white; 
+            display: flex; flex-direction: column; justify-content: center; align-items: center;
+            padding: 20px; color: white; 
             transition: opacity 0.5s ease-out, visibility 0.5s;
         }
-        
-        /* 登入卡片 */
         .login-box { 
-            background: rgba(255,255,255,0.95); 
-            padding: 30px; 
-            border-radius: 20px; 
-            width: 100%; 
-            max-width: 320px; 
-            color: #333; 
-            box-shadow: 0 10px 30px rgba(0,0,0,0.3); 
-            text-align: center;
+            background: rgba(255,255,255,0.95); padding: 30px; border-radius: 20px; 
+            width: 100%; max-width: 320px; color: #333; box-shadow: 0 10px 30px rgba(0,0,0,0.3); text-align: center;
         }
 
-        /* --- 2. LINE 風格聊天介面 --- */
+        /* --- 2. Avatar 虛擬陪伴模擬層 (NEW) --- */
+        #avatar-overlay {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: linear-gradient(180deg, #a8c0ff 0%, #3f2b96 100%); /* 柔和漸層背景 */
+            z-index: 5000;
+            display: flex; flex-direction: column; align-items: center; justify-content: space-between;
+            padding: 40px 20px;
+            opacity: 0; visibility: hidden; transition: all 0.5s;
+        }
+        #avatar-overlay.active {
+            opacity: 1; visibility: visible;
+        }
         
-        /* 頂部導覽列 */
-        .chat-header { 
-            background: #2c3e50; 
-            color: white; 
-            padding: 15px; 
-            height: 60px;
-            display: flex; 
-            align-items: center; 
-            justify-content: space-between; 
-            box-shadow: 0 2px 5px rgba(0,0,0,0.1); 
-            flex-shrink: 0;
+        .avatar-container {
+            width: 200px; height: 200px;
+            border-radius: 50%;
+            border: 5px solid rgba(255,255,255,0.5);
+            overflow: hidden;
+            background: white;
+            box-shadow: 0 0 30px rgba(255,255,255,0.3);
+            margin-top: 60px;
+            position: relative;
+        }
+        .avatar-img {
+            width: 100%; height: 100%; object-fit: cover;
+        }
+        
+        /* 說話波紋動畫 */
+        .speaking-waves {
+            position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
+            width: 210px; height: 210px; border-radius: 50%;
+            border: 2px solid rgba(255,255,255,0.6);
+            animation: ripple 2s infinite;
+            z-index: -1;
+            display: none; /* 說話時開啟 */
+        }
+        @keyframes ripple {
+            0% { width: 200px; height: 200px; opacity: 0.8; }
+            100% { width: 300px; height: 300px; opacity: 0; }
         }
 
-        /* 聊天內容區域 */
-        .chat-body { 
-            flex: 1; 
-            background: #7289da1a; /* 淡藍色背景 */
-            padding: 15px; 
-            overflow-y: auto; 
-            display: flex; 
-            flex-direction: column; 
-            gap: 15px; 
-            scroll-behavior: smooth;
+        .dialogue-box {
+            background: rgba(255, 255, 255, 0.9);
+            padding: 20px; border-radius: 20px;
+            width: 100%; max-width: 350px;
+            text-align: center;
+            min-height: 100px;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 16px; color: #333; font-weight: 500;
+            box-shadow: 0 10px 20px rgba(0,0,0,0.2);
+            margin-bottom: 20px;
         }
 
-        /* 對話氣泡共用樣式 */
-        .bubble { 
-            max-width: 75%; 
-            padding: 10px 14px; 
-            border-radius: 18px; 
-            font-size: 14px; 
-            line-height: 1.5; 
-            position: relative; 
-            word-wrap: break-word; 
-            box-shadow: 0 1px 2px rgba(0,0,0,0.1);
+        .control-panel {
+            display: flex; gap: 30px; margin-bottom: 20px;
         }
+        .control-btn {
+            width: 60px; height: 60px; border-radius: 50%;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 24px; color: white; cursor: pointer;
+            transition: transform 0.2s;
+        }
+        .control-btn:active { transform: scale(0.9); }
+        .btn-mic { background: rgba(255,255,255,0.2); }
+        .btn-end { background: #ff4757; }
 
-        /* AI (左側) 氣泡 */
-        .bubble.ai { 
-            align-self: flex-start; 
-            background: white; 
-            color: #333;
-            border-top-left-radius: 4px; 
-            margin-left: 40px; /* 留給頭像空間 */
-        }
-        /* AI 頭像 */
-        .bubble.ai::before { 
-            content: ''; 
-            position: absolute; 
-            left: -42px; 
-            top: 0; 
-            width: 36px; 
-            height: 36px; 
-            background: #fff url('https://cdn-icons-png.flaticon.com/512/4712/4712035.png') center/cover; /* 樹苗 Icon */
-            border-radius: 50%; 
-            border: 1px solid #eee;
-        }
-        /* AI 名字標籤 */
-        .bubble.ai::after {
-            content: '小樹 AI';
-            position: absolute;
-            top: -18px;
-            left: 0;
-            font-size: 11px;
-            color: #666;
-        }
+        /* --- 3. LINE 聊天介面 --- */
+        .chat-header { background: #2c3e50; color: white; padding: 15px; height: 60px; display: flex; align-items: center; justify-content: space-between; flex-shrink: 0; }
+        .chat-body { flex: 1; background: #7289da1a; padding: 15px; overflow-y: auto; display: flex; flex-direction: column; gap: 15px; }
+        .footer-input { background: white; padding: 8px 10px; border-top: 1px solid #ddd; display: flex; align-items: center; gap: 10px; flex-shrink: 0; }
+        .footer-input input { background: #f3f3f3; border: none; border-radius: 20px; padding: 10px 15px; width: 100%; outline: none; }
 
-        /* 使用者 (右側) 氣泡 */
-        .bubble.user { 
-            align-self: flex-end; 
-            background: #06c755; /* LINE Green */
-            color: white; 
-            border-top-right-radius: 4px; 
-        }
+        .bubble { max-width: 75%; padding: 10px 14px; border-radius: 18px; font-size: 14px; line-height: 1.5; position: relative; word-wrap: break-word; box-shadow: 0 1px 2px rgba(0,0,0,0.1); }
+        .bubble.ai { align-self: flex-start; background: white; margin-left: 40px; border-top-left-radius: 4px; }
+        .bubble.ai::before { content: ''; position: absolute; left: -42px; top: 0; width: 36px; height: 36px; background: #fff url('images/avatar1.png') center/cover; border-radius: 50%; border: 1px solid #eee; }
+        .bubble.user { align-self: flex-end; background: #06c755; color: white; border-top-right-radius: 4px; }
 
-        /* --- 3. 底部輸入區 --- */
-        .footer-input { 
-            background: white; 
-            padding: 8px 10px; 
-            border-top: 1px solid #ddd; 
-            display: flex; 
-            align-items: center; 
-            gap: 10px; 
-            flex-shrink: 0;
-        }
-        .footer-input input { 
-            background: #f3f3f3; 
-            border: none; 
-            border-radius: 20px; 
-            padding: 10px 15px; 
-            width: 100%; 
-            outline: none;
-        }
-
-        /* --- 4. 底部 Rich Menu (圖文選單) --- */
-        .rich-menu { 
-            background: #fcfcfc; 
-            border-top: 1px solid #ccc; 
-            display: grid; 
-            grid-template-columns: repeat(4, 1fr); 
-            height: 60px; 
-            flex-shrink: 0;
-            padding-bottom: env(safe-area-inset-bottom); /* 適配 iPhone 底部橫條 */
-        }
-        .menu-item { 
-            display: flex; 
-            flex-direction: column; 
-            align-items: center; 
-            justify-content: center; 
-            font-size: 10px; 
-            color: #888; 
-            cursor: pointer; 
-            transition: 0.2s;
-        }
-        .menu-item:active { background-color: #f0f0f0; }
+        .rich-menu { background: #fcfcfc; border-top: 1px solid #ccc; display: grid; grid-template-columns: repeat(4, 1fr); height: 60px; flex-shrink: 0; padding-bottom: env(safe-area-inset-bottom); }
+        .menu-item { display: flex; flex-direction: column; align-items: center; justify-content: center; font-size: 10px; color: #888; cursor: pointer; }
         .menu-item.active { color: #27ae60; font-weight: bold; }
         .menu-item i { font-size: 22px; margin-bottom: 3px; }
-
-        /* 隱藏 Scrollbar 但保持捲動功能 */
-        .chat-body::-webkit-scrollbar { display: none; }
-        
-        /* 系統訊息樣式 */
-        .system-msg {
-            text-align: center;
-            font-size: 11px;
-            color: #999;
-            margin: 10px 0;
-            background: rgba(0,0,0,0.05);
-            padding: 2px 10px;
-            border-radius: 10px;
-            align-self: center;
-        }
     </style>
 </head>
 <body>
 
-    <!-- 1. 登入轉場畫面 -->
+    <!-- 1. 登入畫面 -->
     <div id="login-overlay">
-        <!-- Logo: 若找不到圖片會顯示替代文字 -->
         <img src="images/fetlogo.png" style="max-width: 180px; margin-bottom: 30px; filter: brightness(0) invert(1);" alt="FET Logo" onerror="this.style.display='none'">
-        
         <div class="login-box">
             <h5 class="text-center fw-bold mb-4" style="color:#2c3e50;">個案登入</h5>
-            
             <div class="mb-3">
-                <div class="input-group">
-                    <span class="input-group-text bg-light border-end-0"><i class="fas fa-user text-muted"></i></span>
-                    <input type="text" class="form-control border-start-0" placeholder="病歷號 / 手機號碼" value="A123456789">
-                </div>
+                <input type="text" class="form-control rounded-pill" placeholder="病歷號 / 手機號碼" value="A123456789">
             </div>
-            
             <div class="mb-4">
-                <div class="input-group">
-                    <span class="input-group-text bg-light border-end-0"><i class="fas fa-lock text-muted"></i></span>
-                    <input type="password" class="form-control border-start-0" placeholder="密碼" value="123456">
-                </div>
+                <input type="password" class="form-control rounded-pill" placeholder="密碼" value="123456">
             </div>
-            
-            <button class="btn btn-success w-100 rounded-pill fw-bold py-2 shadow-sm" onclick="login()">
-                登入 LINE 共照雲
-            </button>
-            
-            <div class="mt-3 text-muted small" style="font-size: 12px;">
-                <a href="#" class="text-decoration-none text-secondary me-3">忘記密碼？</a>
-                <a href="#" class="text-decoration-none text-secondary">首次註冊</a>
-            </div>
+            <button class="btn btn-success w-100 rounded-pill fw-bold py-2 shadow-sm" onclick="login()">登入 LINE 共照雲</button>
         </div>
+        <div class="mt-5 small opacity-75">&copy; 2025 北投智慧遠距精神醫療照護平台</div>
+    </div>
+
+    <!-- 2. Avatar 虛擬陪伴模擬層 (NEW) -->
+    <div id="avatar-overlay">
+        <div class="text-white mt-4 fw-bold" style="font-size: 1.2rem; text-shadow: 0 2px 4px rgba(0,0,0,0.2);">AI 虛擬陪伴中...</div>
         
-        <div class="mt-5 small opacity-75">
-            &copy; 2025 北投智慧遠距精神醫療照護平台
+        <div class="avatar-container">
+            <img src="images/avatar1.png" alt="Avatar" class="avatar-img" id="call-avatar-img">
+            <div class="speaking-waves" id="waves"></div>
+        </div>
+
+        <div class="dialogue-box">
+            <span id="avatar-text">正在連線到 AI 陪伴員...</span>
+        </div>
+
+        <div class="control-panel">
+            <div class="control-btn btn-mic" onclick="toggleMic()"><i class="fas fa-microphone"></i></div>
+            <div class="control-btn btn-end" onclick="closeAvatarSession()"><i class="fas fa-phone-slash"></i></div>
         </div>
     </div>
 
-    <!-- 2. 主畫面結構 -->
-    
-    <!-- Header -->
+    <!-- 3. LINE 主介面 -->
     <div class="chat-header">
         <div class="d-flex align-items-center gap-3">
-            <i class="fas fa-chevron-left fa-lg" onclick="alert('返回上一頁')"></i>
+            <i class="fas fa-chevron-left fa-lg" onclick="alert('返回')"></i>
             <div>
                 <div class="fw-bold" style="font-size: 16px;">小樹 AI 個管師</div>
                 <div style="font-size: 11px; opacity: 0.8;"><i class="fas fa-circle text-success" style="font-size:8px;"></i> 24h 在線陪伴</div>
@@ -243,19 +170,13 @@
         </div>
     </div>
 
-    <!-- Chat Body -->
     <div class="chat-body" id="chat">
-        <div class="system-msg">今天 09:30</div>
-        
-        <!-- AI 預設訊息 -->
+        <div class="text-center text-muted small my-2">今天 09:30</div>
         <div class="bubble ai">
-            早安！我是小樹 🌱<br>
-            今天北投的天氣有點涼，出門記得帶件外套喔。<br>
-            昨晚睡得好嗎？有沒有做夢呢？
+            早安！我是小樹 🌱<br>今天北投的天氣有點涼，出門記得帶件外套喔。<br>昨晚睡得好嗎？
         </div>
     </div>
 
-    <!-- Footer Input -->
     <div class="footer-input">
         <i class="fas fa-plus text-secondary fa-lg"></i>
         <i class="fas fa-camera text-secondary fa-lg"></i>
@@ -276,9 +197,10 @@
             <i class="fas fa-heartbeat"></i>
             生理數據
         </div>
-        <div class="menu-item" onclick="alert('連接視訊看診系統')">
-            <i class="fas fa-video"></i>
-            視訊看診
+        <!-- 修改重點：AI 虛擬陪伴 -->
+        <div class="menu-item" onclick="openAvatarSession()">
+            <i class="fas fa-robot"></i> <!-- 使用 Robot Icon -->
+            AI虛擬陪伴
         </div>
         <div class="menu-item" onclick="alert('開啟個人健康存摺')">
             <i class="fas fa-user-circle"></i>
@@ -286,100 +208,105 @@
         </div>
     </div>
 
-    <!-- JavaScript 互動邏輯 -->
     <script>
         // 1. 登入動畫
         function login() {
             const overlay = document.getElementById('login-overlay');
             const btn = overlay.querySelector('button');
-            
-            // 按鈕 Loading 效果
             btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> 登入中...';
-            
             setTimeout(() => {
                 overlay.style.opacity = '0';
                 overlay.style.visibility = 'hidden';
             }, 800);
         }
 
-        // 2. 處理 Enter 鍵發送
+        // 2. Avatar 模擬對話邏輯 (NEW)
+        const avatarOverlay = document.getElementById('avatar-overlay');
+        const avatarText = document.getElementById('avatar-text');
+        const waves = document.getElementById('waves');
+        let sessionTimer;
+
+        function openAvatarSession() {
+            // 顯示遮罩
+            avatarOverlay.classList.add('active');
+            avatarText.innerText = "連線中...";
+            
+            // 模擬連線後開始對話
+            setTimeout(() => {
+                avatarText.innerText = "你好！我是小樹，很高興見到你。今天想聊聊什麼呢？";
+                waves.style.display = "block"; // 開啟波紋動畫
+            }, 1500);
+
+            // 模擬 AI 自言自語 (Demo效果)
+            sessionTimer = setInterval(() => {
+                const scripts = [
+                    "你看起來氣色不錯喔！",
+                    "最近有按時吃藥嗎？",
+                    "記得深呼吸，放鬆心情...",
+                    "我會一直陪著你的。"
+                ];
+                const randomScript = scripts[Math.floor(Math.random() * scripts.length)];
+                
+                // 模擬說話狀態
+                waves.style.display = "block";
+                avatarText.innerText = randomScript;
+                
+                // 說完話後停止波紋
+                setTimeout(() => {
+                    waves.style.display = "none";
+                }, 2000);
+                
+            }, 5000);
+        }
+
+        function closeAvatarSession() {
+            avatarOverlay.classList.remove('active');
+            clearInterval(sessionTimer);
+            waves.style.display = "none";
+        }
+
+        function toggleMic() {
+            alert("模擬功能：麥克風已開啟，請說話...");
+            avatarText.innerText = "正在聆聽...";
+            waves.style.display = "none";
+            setTimeout(() => {
+                avatarText.innerText = "我聽到了，你是說心情有點悶嗎？";
+                waves.style.display = "block";
+            }, 2000);
+        }
+
+        // 3. 一般聊天發送邏輯
         function handleEnter(e) {
             if (e.key === 'Enter') send();
         }
 
-        // 3. 發送訊息與 AI 模擬回應
         function send() {
             const input = document.getElementById('msgInput');
             const val = input.value.trim();
             if(!val) return;
-
             const chat = document.getElementById('chat');
             
-            // 建立使用者訊息 (右側)
+            // User Msg
             const uDiv = document.createElement('div');
             uDiv.className = 'bubble user';
             uDiv.innerText = val;
             chat.appendChild(uDiv);
-            
-            // 清空輸入框並捲動到底部
             input.value = '';
-            scrollToBottom();
+            chat.scrollTop = chat.scrollHeight;
 
-            // 顯示 "小樹正在輸入..." 狀態
-            showTypingIndicator();
-
-            // 模擬網路延遲與 AI 回應邏輯
+            // AI Reply
             setTimeout(() => {
-                removeTypingIndicator();
-                
                 const aDiv = document.createElement('div');
                 aDiv.className = 'bubble ai';
                 
-                // 簡單的關鍵字回應規則 (Mock NLP)
-                let text = "我聽到了，謝謝你願意跟我分享。";
-                
-                if(val.includes('藥') || val.includes('吃藥')) {
-                    text = "藥物能幫助大腦休息。如果擔心副作用，我們可以紀錄下來，下次門診跟醫生討論喔。";
-                } else if(val.includes('累') || val.includes('睡') || val.includes('失眠')) {
-                    text = "聽起來你很疲憊。今晚試試看睡前不做複雜思考，做個 5 分鐘腹式呼吸放鬆一下好嗎？";
-                } else if(val.includes('死') || val.includes('不想活') || val.includes('痛苦')) {
-                    text = "我感覺到你現在非常痛苦。請記得，我們都在這裡陪你。若有緊急狀況，請撥打 1925 安心專線。";
-                } else if(val.includes('好') || val.includes('謝謝')) {
-                    text = "不客氣！記得多喝水，保持好心情喔 😊";
-                }
+                let text = "我聽到了，謝謝你願意分享。";
+                if(val.includes('藥')) text = "藥物能幫助大腦休息，記得按時服用喔。";
+                if(val.includes('累') || val.includes('睡')) text = "聽起來你很疲憊，試著做個深呼吸放鬆一下？";
                 
                 aDiv.innerText = text;
                 chat.appendChild(aDiv);
-                
-                // 播放音效 (可選)
-                // new Audio('message_tone.mp3').play().catch(e=>{}); 
-                
-                scrollToBottom();
-            }, 1200 + Math.random() * 500); // 隨機延遲 1.2~1.7 秒，更像真人
-        }
-
-        // 輔助功能：捲動到底部
-        function scrollToBottom() {
-            const chat = document.getElementById('chat');
-            chat.scrollTop = chat.scrollHeight;
-        }
-
-        // 輔助功能：顯示輸入中
-        function showTypingIndicator() {
-            const chat = document.getElementById('chat');
-            const typingDiv = document.createElement('div');
-            typingDiv.id = 'typing-indicator';
-            typingDiv.className = 'bubble ai';
-            typingDiv.style.color = '#aaa';
-            typingDiv.innerHTML = '<i class="fas fa-ellipsis-h fa-beat"></i>'; // 跳動的三個點
-            chat.appendChild(typingDiv);
-            scrollToBottom();
-        }
-
-        // 輔助功能：移除輸入中
-        function removeTypingIndicator() {
-            const indicator = document.getElementById('typing-indicator');
-            if(indicator) indicator.remove();
+                chat.scrollTop = chat.scrollHeight;
+            }, 1000);
         }
     </script>
 </body>
