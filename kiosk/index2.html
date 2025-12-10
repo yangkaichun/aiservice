@@ -118,10 +118,11 @@
         p.cta-subtitle { color: var(--c-text-light); font-size: 20px; margin: 0; }
 
 
-        /* --- SCREEN 2: Split Screen Avatar Interaction --- */
+        /* --- SCREEN 2: Avatar Interaction (No Borders Fix) --- */
         #screen-2 {
             flex-direction: row;
             align-items: stretch;
+            background: #ffffff; /* Ensure white background behind everything */
         }
 
         /* Left Side: Video Avatar Stage */
@@ -129,17 +130,19 @@
             flex: 1;
             height: 100%;
             position: relative;
-            background: linear-gradient(to right, #eef2f3, #ffffff);
+            background: #ffffff; /* Set to white to remove black borders */
             overflow: hidden;
         }
         
-        /* Video Styling to replace IMG */
+        /* Video Styling: Object-Fit Cover is Key */
         .avatar-video-full {
             width: 100%;
             height: 100%;
-            object-fit: cover; /* Ensures video fills the space nicely */
+            object-fit: cover; /* Ensures video fills 100% space without black bars */
             object-position: center top;
             display: block;
+            border: none; /* Double check no border */
+            background: #ffffff;
         }
 
         /* Right Side: Interaction Panel */
@@ -309,7 +312,7 @@
 
         <div id="screen-2" class="screen">
             <div class="avatar-stage">
-                <video id="avatarVideo" class="avatar-video-full" muted playsinline>
+                <video id="avatarVideo" class="avatar-video-full" playsinline>
                     <source src="images/avataropening.mp4" type="video/mp4">
                     您的瀏覽器不支援影片播放。
                 </video>
@@ -377,26 +380,37 @@
         function simulateInsertCard() {
             console.log("Card detected...");
             
-            // 轉場
+            // 轉場延遲
             setTimeout(() => {
                 goToScreen('screen-2');
                 
-                // --- 影片控制邏輯 ---
+                // --- 影片控制邏輯 (修正聲音播放) ---
                 const video = document.getElementById('avatarVideo');
                 
-                // 重置為開場影片
+                // 1. 重置影片來源與狀態
                 video.src = "images/avataropening.mp4";
                 video.loop = false; // 開場影片不循環
                 video.currentTime = 0;
                 
-                // 播放 (因為是使用者點擊觸發，瀏覽器通常允許帶聲音播放，但為保險起見這裡預設muted，可視需求移除muted屬性)
-                video.play().catch(e => console.log("Auto-play blocked:", e));
+                // 2. 關鍵修正：確保聲音開啟
+                // 由於此函式是由使用者 click 觸發的，瀏覽器允許開啟聲音的 autoplay
+                video.muted = false; 
+                video.volume = 1.0; 
+                
+                // 3. 播放
+                video.play().catch(e => {
+                    console.log("Auto-play error (Check browser policy):", e);
+                    // 如果還是被擋，可能需要顯示一個「播放」按鈕讓使用者再點一次，但在 Kiosk 環境通常不會發生
+                });
 
-                // 監聽：當開場影片播完後
+                // 4. 監聽：當開場影片 (avataropening.mp4) 播完後
                 video.onended = function() {
                     console.log("Opening finished, switching to idle loop.");
-                    video.src = "images/avatarMOV.mp4"; // 切換到聆聽/待機影片
+                    // 切換到聆聽/待機影片
+                    video.src = "images/avatarMOV.mp4"; 
                     video.loop = true; // 開啟循環
+                    
+                    // 確保待機影片繼續播放
                     video.play();
                 };
 
