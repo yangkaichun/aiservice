@@ -1,0 +1,373 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>中山醫大 智慧掛號服務 Kiosk</title>
+    <link rel="icon" href="images/feticon.ico" type="image/x-icon">
+    <style>
+        /* --- CSS Reset & Base --- */
+        :root {
+            --c-primary: #009944; /* CSMUH Green concept */
+            --c-secondary: #E60012; /* FET Red */
+            --c-bg: #f4f7f6;
+            --c-text: #333;
+            --c-white: #ffffff;
+            --font-main: "Microsoft JhengHei", "Heiti TC", sans-serif;
+        }
+
+        * { box-sizing: border-box; user-select: none; }
+        body {
+            margin: 0;
+            padding: 0;
+            font-family: --font-main;
+            background-color: var(--c-bg);
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        /* --- Header --- */
+        header {
+            background: var(--c-white);
+            height: 80px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0 40px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.05);
+            z-index: 100;
+        }
+        .header-left { display: flex; align-items: center; gap: 20px; }
+        .hosp-name { font-size: 24px; font-weight: bold; color: var(--c-text); letter-spacing: 1px; }
+        .fet-logo { height: 40px; } /* FET Logo */
+        .system-status { font-size: 14px; color: #666; display: flex; gap: 15px; }
+        .status-dot { width: 10px; height: 10px; background: #2ecc71; border-radius: 50%; display: inline-block; }
+
+        /* --- Main Container --- */
+        main {
+            flex: 1;
+            position: relative;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+
+        /* --- Screens (State Management) --- */
+        .screen {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            top: 0;
+            left: 0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.5s ease;
+        }
+        .screen.active { opacity: 1; pointer-events: all; }
+
+        /* --- Screen 1: Idle / Insert Card --- */
+        .card-instruction {
+            text-align: center;
+            background: var(--c-white);
+            padding: 60px;
+            border-radius: 20px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+            animation: float 3s ease-in-out infinite;
+            cursor: pointer; /* Simulation trigger */
+        }
+        @keyframes float { 0% { transform: translateY(0px); } 50% { transform: translateY(-10px); } 100% { transform: translateY(0px); } }
+        
+        .card-slot-visual {
+            width: 200px;
+            height: 120px;
+            background: #ddd;
+            margin: 0 auto 30px;
+            border-radius: 10px;
+            position: relative;
+            border: 4px solid #bbb;
+        }
+        .card-slot-visual::after {
+            content: "請插入健保卡";
+            position: absolute;
+            top: 50%; left: 50%;
+            transform: translate(-50%, -50%);
+            color: #888;
+            font-weight: bold;
+        }
+        .card-chip {
+            width: 60px; height: 40px; background: #ffd700;
+            position: absolute; bottom: -20px; left: 70px;
+            border-radius: 5px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+            animation: insert 2s infinite;
+        }
+        @keyframes insert { 0% { bottom: -40px; opacity: 0; } 50% { bottom: 10px; opacity: 1; } 100% { bottom: 10px; opacity: 0; } }
+
+        h1 { color: var(--c-primary); margin-bottom: 10px; font-size: 32px; }
+        p.subtitle { color: #666; font-size: 18px; }
+
+        /* --- Screen 2: Avatar Interaction --- */
+        .avatar-container {
+            width: 250px;
+            height: 250px;
+            border-radius: 50%;
+            overflow: hidden;
+            border: 5px solid var(--c-white);
+            box-shadow: 0 8px 16px rgba(0,0,0,0.15);
+            margin-bottom: 20px;
+            background: #eef;
+        }
+        .avatar-img { width: 100%; height: 100%; object-fit: cover; }
+
+        .dialog-box {
+            width: 80%;
+            max-width: 800px;
+            background: var(--c-white);
+            border-radius: 15px;
+            padding: 30px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.05);
+            min-height: 200px;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+        }
+        
+        .chat-history {
+            flex: 1;
+            margin-bottom: 20px;
+            font-size: 20px;
+            line-height: 1.6;
+            max-height: 300px;
+            overflow-y: auto;
+        }
+        .msg-ai { color: var(--c-primary); font-weight: bold; margin-bottom: 15px; }
+        .msg-user { color: #333; text-align: right; margin-bottom: 15px; padding: 10px; background: #f0f0f0; border-radius: 10px; }
+
+        .voice-controls {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 20px;
+            border-top: 1px solid #eee;
+            padding-top: 20px;
+        }
+        
+        .lang-btn {
+            padding: 10px 20px;
+            border: 2px solid #ddd;
+            background: white;
+            border-radius: 30px;
+            font-size: 16px;
+            cursor: pointer;
+            font-weight: bold;
+        }
+        .lang-btn.active { border-color: var(--c-primary); color: var(--c-primary); background: #eafff0; }
+        
+        .mic-visual {
+            width: 60px; height: 60px;
+            background: var(--c-secondary);
+            border-radius: 50%;
+            display: flex; align-items: center; justify-content: center;
+            color: white; font-size: 24px;
+            box-shadow: 0 0 0 0 rgba(230, 0, 18, 0.7);
+            animation: pulse-red 1.5s infinite;
+        }
+        @keyframes pulse-red {
+            0% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(230, 0, 18, 0.7); }
+            70% { transform: scale(1); box-shadow: 0 0 0 10px rgba(230, 0, 18, 0); }
+            100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(230, 0, 18, 0); }
+        }
+
+        /* --- Screen 3: Confirmation --- */
+        .confirm-card {
+            background: var(--c-white);
+            width: 600px;
+            padding: 40px;
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+        }
+        .info-row {
+            display: flex;
+            justify-content: space-between;
+            border-bottom: 1px solid #eee;
+            padding: 15px 0;
+            font-size: 20px;
+        }
+        .info-label { color: #888; }
+        .info-val { font-weight: bold; color: #333; }
+        
+        .action-btns {
+            margin-top: 30px;
+            display: flex;
+            gap: 20px;
+        }
+        .btn {
+            flex: 1;
+            padding: 20px;
+            border: none;
+            border-radius: 10px;
+            font-size: 22px;
+            cursor: pointer;
+        }
+        .btn-cancel { background: #eee; color: #555; }
+        .btn-confirm { background: var(--c-primary); color: white; }
+
+        /* --- Footer --- */
+        footer {
+            height: 50px;
+            background: #eee;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 12px;
+            color: #999;
+        }
+
+    </style>
+</head>
+<body>
+
+    <header>
+        <div class="header-left">
+            <img src="images/fetlogo.png" alt="FET Logo" class="fet-logo"> 
+            <div class="hosp-name">中山醫學大學附設醫院 | 智慧掛號櫃台</div>
+        </div>
+        <div class="system-status">
+            <span><div class="status-dot"></div> Intranet Online</span>
+            <span>Knowledge Base: v2.4</span>
+            <span id="clock">12:00</span>
+        </div>
+    </header>
+
+    <main>
+        <div id="screen-1" class="screen active">
+            <div class="card-instruction" onclick="simulateInsertCard()">
+                <div class="card-slot-visual">
+                    <div class="card-chip"></div>
+                </div>
+                <h1>請插入健保卡</h1>
+                <p class="subtitle">Insert Health Insurance Card to Start</p>
+                <p style="font-size:12px; color:#999; margin-top:20px;">(點擊此處模擬插卡動作)</p>
+            </div>
+        </div>
+
+        <div id="screen-2" class="screen">
+            <div class="avatar-container">
+                <img src="images/avatar1.png" alt="AI Avatar" class="avatar-img">
+            </div>
+            
+            <div class="dialog-box">
+                <div class="chat-history" id="chat-box">
+                    <div class="msg-ai">您好，我是您的智慧掛號助理。請問您今天哪裡不舒服？或者想掛哪一位醫師？(可使用國、台、客語)</div>
+                </div>
+                
+                <div class="voice-controls">
+                    <div style="display:flex; gap:10px;">
+                        <button class="lang-btn active">國語</button>
+                        <button class="lang-btn">臺語</button>
+                        <button class="lang-btn">客語</button>
+                    </div>
+                    <div class="mic-visual" onclick="simulateVoiceInput()">🎤</div>
+                </div>
+                <div style="text-align:center; font-size:12px; color:#999; margin-top:5px;">(點擊麥克風模擬病患語音輸入)</div>
+            </div>
+        </div>
+
+        <div id="screen-3" class="screen">
+            <div class="confirm-card">
+                <h2 style="color:var(--c-primary); text-align:center;">掛號確認</h2>
+                <div class="info-row">
+                    <span class="info-label">病患姓名</span>
+                    <span class="info-val">王大明 (健保讀取)</span>
+                </div>
+                <div class="info-row">
+                    <span class="info-label">建議科別</span>
+                    <span class="info-val">心臟內科</span>
+                </div>
+                <div class="info-row">
+                    <span class="info-label">醫師</span>
+                    <span class="info-val">林醫師 (2102診)</span>
+                </div>
+                <div class="info-row">
+                    <span class="info-label">時間</span>
+                    <span class="info-val">2025/12/12 上午診</span>
+                </div>
+
+                <div class="action-btns">
+                    <button class="btn btn-cancel" onclick="location.reload()">重新輸入</button>
+                    <button class="btn btn-confirm" onclick="alert('掛號資料已傳送至 HIS 系統！')">確認掛號</button>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <footer>
+        System provided by Far EasTone Telecommunications. Powered by CSMUH Knowledge Base.
+    </footer>
+
+    <script>
+        // --- Simulation Logic ---
+
+        // 1. Clock
+        setInterval(() => {
+            const now = new Date();
+            document.getElementById('clock').innerText = now.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
+        }, 1000);
+
+        // 2. State Navigation
+        function goToScreen(screenId) {
+            document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+            document.getElementById(screenId).classList.add('active');
+        }
+
+        // 3. Simulate Card Insertion (Requirement 4)
+        function simulateInsertCard() {
+            // In real scenario: Listener for hardware event
+            console.log("Card detected. Reading IC data...");
+            setTimeout(() => {
+                goToScreen('screen-2');
+                // Auto-trigger greeting voice here in real app
+            }, 800);
+        }
+
+        // 4. Simulate Voice Input & LLM Processing (Requirement 5, 6, 8)
+        function simulateVoiceInput() {
+            const chatBox = document.getElementById('chat-box');
+            
+            // A. User Speaking (Visual feedback)
+            const userMsg = document.createElement('div');
+            userMsg.className = 'msg-user';
+            userMsg.innerText = "用聽寫模擬中...";
+            chatBox.appendChild(userMsg);
+            chatBox.scrollTop = chatBox.scrollHeight;
+
+            setTimeout(() => {
+                // Simulate "Long Context" input (Requirement 6)
+                userMsg.innerText = "我覺得胸口悶悶的，有時候會痛到背後，而且走路會喘，想掛號看心臟。";
+                
+                // B. System Processing (Simulate connection to CSMUH KB Logic)
+                setTimeout(() => {
+                    const aiMsg = document.createElement('div');
+                    aiMsg.className = 'msg-ai';
+                    aiMsg.innerText = "收到，根據您的症狀描述(胸悶、背痛、喘)，建議您掛號「心臟內科」。系統為您查詢到林醫師尚有號碼，是否為您安排？";
+                    chatBox.appendChild(aiMsg);
+                    chatBox.scrollTop = chatBox.scrollHeight;
+                    
+                    // C. Auto-transition to confirmation for demo purposes (Requirement 3, 5)
+                    setTimeout(() => {
+                        goToScreen('screen-3');
+                    }, 3500);
+
+                }, 1500); // Latency for AI processing
+            }, 1000); // Latency for speech-to-text
+        }
+    </script>
+</body>
+</html>
