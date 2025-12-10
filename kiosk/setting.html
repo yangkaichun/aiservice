@@ -1,0 +1,429 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Kiosk 後台管理系統 | 中山醫大 x FET</title>
+    <link rel="icon" href="images/feticon.ico" type="image/x-icon">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        :root {
+            --c-primary: #009944; /* CSMUH Green */
+            --c-primary-dark: #007a36;
+            --c-secondary: #E60012; /* FET Red */
+            --c-bg: #f4f7f6;
+            --c-sidebar: #ffffff;
+            --c-text: #333;
+            --c-border: #e0e0e0;
+            --font-main: "Microsoft JhengHei", "Heiti TC", sans-serif;
+        }
+
+        * { box-sizing: border-box; }
+        body {
+            margin: 0; padding: 0;
+            font-family: var(--font-main);
+            background: var(--c-bg);
+            display: flex;
+            height: 100vh;
+            color: var(--c-text);
+        }
+
+        /* --- Sidebar --- */
+        aside {
+            width: 260px;
+            background: var(--c-sidebar);
+            border-right: 1px solid var(--c-border);
+            display: flex; flex-direction: column;
+            flex-shrink: 0;
+        }
+        .brand {
+            height: 70px;
+            display: flex; align-items: center; padding: 0 20px;
+            border-bottom: 1px solid var(--c-border);
+            gap: 10px;
+        }
+        .brand img { height: 28px; }
+        .brand span { font-weight: bold; font-size: 16px; color: #555; }
+
+        .nav-menu { flex: 1; padding: 20px 0; }
+        .nav-item {
+            padding: 15px 25px;
+            display: flex; align-items: center; gap: 15px;
+            cursor: pointer;
+            transition: all 0.2s;
+            color: #666;
+            font-size: 15px;
+            text-decoration: none;
+        }
+        .nav-item:hover { background: #f0f9f4; color: var(--c-primary); }
+        .nav-item.active {
+            background: #e6fff0;
+            color: var(--c-primary);
+            border-right: 4px solid var(--c-primary);
+            font-weight: bold;
+        }
+        .nav-footer {
+            padding: 20px;
+            border-top: 1px solid var(--c-border);
+            font-size: 12px; color: #999;
+        }
+
+        /* --- Main Content --- */
+        main {
+            flex: 1;
+            padding: 30px;
+            overflow-y: auto;
+        }
+
+        header {
+            display: flex; justify-content: space-between; align-items: center;
+            margin-bottom: 30px;
+        }
+        h1 { margin: 0; font-size: 24px; color: #2c3e50; }
+        .user-profile { display: flex; align-items: center; gap: 10px; font-size: 14px; }
+        .avatar-circle { width: 36px; height: 36px; background: #ddd; border-radius: 50%; display: flex; align-items: center; justify-content: center; color: #fff; background: var(--c-primary); }
+
+        /* --- Content Cards (Sections) --- */
+        .content-section { display: none; animation: fadeIn 0.3s; }
+        .content-section.active { display: block; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+
+        .card {
+            background: #fff;
+            border-radius: 12px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+            padding: 25px;
+            margin-bottom: 25px;
+        }
+        .card-header {
+            display: flex; justify-content: space-between; align-items: center;
+            margin-bottom: 20px; padding-bottom: 15px;
+            border-bottom: 1px solid #eee;
+        }
+        .card-title { font-size: 18px; font-weight: bold; color: var(--c-primary); }
+
+        /* --- Forms & Inputs --- */
+        .form-group { margin-bottom: 20px; }
+        .form-label { display: block; margin-bottom: 8px; font-weight: bold; font-size: 14px; color: #555; }
+        .form-control {
+            width: 100%; padding: 10px 12px;
+            border: 1px solid #ddd; border-radius: 6px;
+            font-size: 14px; font-family: inherit;
+        }
+        .form-control:focus { border-color: var(--c-primary); outline: none; box-shadow: 0 0 0 3px rgba(0,153,68,0.1); }
+        textarea.form-control { resize: vertical; min-height: 100px; }
+
+        .btn {
+            padding: 10px 20px; border: none; border-radius: 6px;
+            cursor: pointer; font-size: 14px; font-weight: bold;
+            transition: background 0.2s;
+        }
+        .btn-primary { background: var(--c-primary); color: white; }
+        .btn-primary:hover { background: var(--c-primary-dark); }
+        .btn-secondary { background: #e9ecef; color: #333; }
+        .btn-danger { background: white; color: var(--c-secondary); border: 1px solid var(--c-secondary); }
+        .btn-danger:hover { background: #fff0f0; }
+
+        /* --- Specific Modules Styles --- */
+        /* Table */
+        .data-table { width: 100%; border-collapse: collapse; font-size: 14px; }
+        .data-table th, .data-table td { padding: 12px; text-align: left; border-bottom: 1px solid #eee; }
+        .data-table th { background: #f8f9fa; color: #666; font-weight: 600; }
+        .status-badge {
+            padding: 4px 10px; border-radius: 20px; font-size: 12px;
+        }
+        .status-ready { background: #d4edda; color: #155724; }
+        .status-processing { background: #fff3cd; color: #856404; }
+
+        /* API Keys Grid */
+        .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+
+        /* Avatar Preview */
+        .avatar-preview-box {
+            width: 100%; height: 200px; background: #eee;
+            border-radius: 8px; display: flex; align-items: center; justify-content: center;
+            overflow: hidden; margin-bottom: 15px; border: 2px dashed #ccc;
+        }
+        .avatar-preview-box video { height: 100%; width: 100%; object-fit: cover; }
+
+    </style>
+</head>
+<body>
+
+    <aside>
+        <div class="brand">
+            <img src="images/fetlogo.png" alt="FET">
+            <span>Kiosk Admin</span>
+        </div>
+        <nav class="nav-menu">
+            <div class="nav-item active" onclick="switchTab('tab-kb', this)">
+                <i class="fa-solid fa-book"></i> 知識庫管理
+            </div>
+            <div class="nav-item" onclick="switchTab('tab-logic', this)">
+                <i class="fa-solid fa-brain"></i> AI 邏輯設定
+            </div>
+            <div class="nav-item" onclick="switchTab('tab-api', this)">
+                <i class="fa-solid fa-network-wired"></i> 系統 API 介接
+            </div>
+            <div class="nav-item" onclick="switchTab('tab-avatar', this)">
+                <i class="fa-solid fa-user-astronaut"></i> 虛擬人 Avatar
+            </div>
+        </nav>
+        <div class="nav-footer">
+            v1.2.0 | CSMUH IT Dept.
+        </div>
+    </aside>
+
+    <main>
+        <header>
+            <h1 id="page-title">知識庫管理 (RAG)</h1>
+            <div class="user-profile">
+                <span>Admin User</span>
+                <div class="avatar-circle">A</div>
+                <button class="btn btn-secondary" onclick="alert('已登出')"><i class="fa-solid fa-right-from-bracket"></i></button>
+            </div>
+        </header>
+
+        <section id="tab-kb" class="content-section active">
+            <div class="card">
+                <div class="card-header">
+                    <div class="card-title">文本資料列表</div>
+                    <button class="btn btn-primary"><i class="fa-solid fa-upload"></i> 上傳新文件</button>
+                </div>
+                <p style="color:#666; font-size:14px; margin-bottom:15px;">此處上傳的 PDF/TXT 文件將被向量化並用於 AI 問答檢索。</p>
+                <table class="data-table">
+                    <thead>
+                        <tr>
+                            <th>檔案名稱</th>
+                            <th>類別</th>
+                            <th>上傳日期</th>
+                            <th>狀態</th>
+                            <th>操作</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>2025_醫師門診時間表_Q4.pdf</td>
+                            <td>門診資訊</td>
+                            <td>2025/12/01</td>
+                            <td><span class="status-badge status-ready">已索引</span></td>
+                            <td><button class="btn btn-danger" style="padding:5px 10px; font-size:12px;">刪除</button></td>
+                        </tr>
+                        <tr>
+                            <td>心臟內科_症狀對照邏輯.txt</td>
+                            <td>醫療知識</td>
+                            <td>2025/11/20</td>
+                            <td><span class="status-badge status-ready">已索引</span></td>
+                            <td><button class="btn btn-danger" style="padding:5px 10px; font-size:12px;">刪除</button></td>
+                        </tr>
+                        <tr>
+                            <td>醫院樓層導覽_V2.pdf</td>
+                            <td>行政資訊</td>
+                            <td>2025/12/10</td>
+                            <td><span class="status-badge status-processing">處理中...</span></td>
+                            <td><button class="btn btn-secondary" disabled style="padding:5px 10px; font-size:12px;">刪除</button></td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </section>
+
+        <section id="tab-logic" class="content-section">
+            <div class="card">
+                <div class="card-header">
+                    <div class="card-title">LLM 角色與提示詞 (System Prompt)</div>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">System Prompt (角色設定)</label>
+                    <textarea class="form-control" rows="8">
+你是一位親切、專業的中山醫學大學附設醫院「智慧掛號助理」。
+你的任務是協助病患根據口語描述的症狀，推薦合適的科別與醫師。
+1. 請優先使用「同理心」的語氣。
+2. 若病患描述不清，請追問細節（例如：痛多久了？）。
+3. 必須參考知識庫中的醫師專長進行推薦。
+4. 支援國語、台語、客語的輸入辨識。
+5. 禁止提供醫療診斷或開立處方建議，僅提供掛號指引。
+                    </textarea>
+                </div>
+                <div class="grid-2">
+                    <div class="form-group">
+                        <label class="form-label">Temperature (創意度 0.0 - 1.0)</label>
+                        <input type="number" class="form-control" value="0.2" step="0.1" min="0" max="1">
+                        <small style="color:#999">建議設為 0.1-0.3 以保持回答精準度。</small>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">最大回應長度 (Tokens)</label>
+                        <input type="number" class="form-control" value="512">
+                    </div>
+                </div>
+                <div style="text-align: right;">
+                    <button class="btn btn-primary" onclick="saveSettings()">儲存設定</button>
+                </div>
+            </div>
+        </section>
+
+        <section id="tab-api" class="content-section">
+            <div class="card">
+                <div class="card-header">
+                    <div class="card-title">語音服務 (STT / TTS)</div>
+                </div>
+                <div class="grid-2">
+                    <div class="form-group">
+                        <label class="form-label">STT 服務供應商</label>
+                        <select class="form-control">
+                            <option>Microsoft Azure Speech SDK</option>
+                            <option>Google Cloud Speech-to-Text</option>
+                            <option>FET AI Voice Service (Internal)</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">API Region</label>
+                        <input type="text" class="form-control" value="eastasia">
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">API Key (Masked)</label>
+                    <input type="password" class="form-control" value="sk-xxxxxxxxxxxxxxxxxxxx">
+                </div>
+                <div class="form-group">
+                    <label class="form-label">語系支援設定</label>
+                    <input type="text" class="form-control" value="zh-TW, zh-TW-MinNan, zh-TW-Hakka">
+                </div>
+            </div>
+
+            <div class="card">
+                <div class="card-header">
+                    <div class="card-title">HIS 掛號系統介接</div>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">API Endpoint URL (Intranet)</label>
+                    <input type="text" class="form-control" value="http://192.168.10.50/api/v2/registration">
+                </div>
+                <div class="grid-2">
+                    <div class="form-group">
+                        <label class="form-label">Client ID</label>
+                        <input type="text" class="form-control" value="Kiosk_01_Lobby">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Timeout (ms)</label>
+                        <input type="number" class="form-control" value="5000">
+                    </div>
+                </div>
+                <div style="text-align: right; margin-top:10px;">
+                    <button class="btn btn-secondary">測試連線</button>
+                    <button class="btn btn-primary" onclick="saveSettings()">儲存連線設定</button>
+                </div>
+            </div>
+        </section>
+
+        <section id="tab-avatar" class="content-section">
+            <div class="card">
+                <div class="card-header">
+                    <div class="card-title">Avatar 素材管理</div>
+                </div>
+                
+                <div class="grid-2">
+                    <div>
+                        <label class="form-label">目前待機影片 (Idle Video)</label>
+                        <div class="avatar-preview-box">
+                            <video src="images/avatarMOV.mp4" autoplay loop muted></video>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">更換影片 (mp4, webm)</label>
+                            <input type="file" class="form-control">
+                            <small style="color:#666">建議解析度：1080x1920 (9:16) 或 1080x1080 (1:1)</small>
+                        </div>
+                    </div>
+
+                    <div>
+                        <label class="form-label">預設靜態圖 (Fallback Image)</label>
+                        <div class="avatar-preview-box" style="background-image: url('images/avatar1.png'); background-size: contain; background-repeat: no-repeat; background-position: center;">
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">更換圖片 (png, jpg)</label>
+                            <input type="file" class="form-control">
+                        </div>
+                    </div>
+                </div>
+
+                <hr style="border:0; border-top:1px solid #eee; margin: 20px 0;">
+
+                <div class="form-group">
+                    <label class="form-label">Avatar 顯示設定</label>
+                    <div class="grid-2">
+                        <div>
+                            <label style="display:flex; align-items:center; gap:10px;">
+                                <input type="checkbox" checked> 啟用閒置自動播放
+                            </label>
+                        </div>
+                        <div>
+                            <label style="display:flex; align-items:center; gap:10px;">
+                                <input type="checkbox"> 強制全螢幕模式
+                            </label>
+                        </div>
+                    </div>
+                </div>
+
+                <div style="text-align: right;">
+                    <button class="btn btn-primary" onclick="saveSettings()">更新 Avatar 素材</button>
+                </div>
+            </div>
+        </section>
+
+    </main>
+
+    <script>
+        // Tab Switching Logic
+        function switchTab(tabId, navElement) {
+            // 1. Hide all sections
+            document.querySelectorAll('.content-section').forEach(sec => {
+                sec.classList.remove('active');
+            });
+
+            // 2. Remove active class from all nav items
+            document.querySelectorAll('.nav-item').forEach(item => {
+                item.classList.remove('active');
+            });
+
+            // 3. Show target section
+            document.getElementById(tabId).classList.add('active');
+
+            // 4. Add active class to clicked nav
+            navElement.classList.add('active');
+
+            // 5. Update Title
+            const titles = {
+                'tab-kb': '知識庫管理 (RAG)',
+                'tab-logic': 'AI 邏輯設定',
+                'tab-api': '系統 API 介接',
+                'tab-avatar': '虛擬人 Avatar 設定'
+            };
+            document.getElementById('page-title').innerText = titles[tabId];
+        }
+
+        // Mock Save Function
+        function saveSettings() {
+            // In real world, this would be a POST request to your backend (Node.js/Python)
+            // fetch('/api/settings', { method: 'POST', body: ... })
+            
+            const btn = event.target;
+            const originalText = btn.innerText;
+            
+            btn.innerText = "儲存中...";
+            btn.disabled = true;
+
+            setTimeout(() => {
+                btn.innerText = "已儲存！";
+                btn.style.backgroundColor = "#2ecc71"; // Success Green
+                
+                setTimeout(() => {
+                    btn.innerText = originalText;
+                    btn.disabled = false;
+                    btn.style.backgroundColor = ""; // Reset
+                    alert("設定已成功更新至系統。");
+                }, 1000);
+            }, 800);
+        }
+    </script>
+</body>
+</html>
