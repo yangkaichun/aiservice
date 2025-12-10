@@ -118,34 +118,31 @@
         p.cta-subtitle { color: var(--c-text-light); font-size: 20px; margin: 0; }
 
 
-        /* --- SCREEN 2: Avatar Interaction (No Borders Fix) --- */
+        /* --- SCREEN 2: Avatar Interaction --- */
         #screen-2 {
             flex-direction: row;
             align-items: stretch;
-            background: #ffffff; /* Ensure white background behind everything */
+            background: #ffffff;
         }
 
-        /* Left Side: Video Avatar Stage */
         .avatar-stage {
             flex: 1;
             height: 100%;
             position: relative;
-            background: #ffffff; /* Set to white to remove black borders */
+            background: #ffffff;
             overflow: hidden;
         }
         
-        /* Video Styling: Object-Fit Cover is Key */
         .avatar-video-full {
             width: 100%;
             height: 100%;
-            object-fit: cover; /* Ensures video fills 100% space without black bars */
+            object-fit: cover;
             object-position: center top;
             display: block;
-            border: none; /* Double check no border */
+            border: none;
             background: #ffffff;
         }
 
-        /* Right Side: Interaction Panel */
         .interaction-panel {
             flex: 1;
             height: 100%;
@@ -193,6 +190,32 @@
             box-shadow: 0 5px 15px rgba(0,0,0,0.1);
             border-bottom-right-radius: 5px;
             text-align: right;
+        }
+
+        /* --- New: Chat Action Buttons within Bubble --- */
+        .chat-actions {
+            margin-top: 15px;
+            display: flex;
+            gap: 15px;
+        }
+        .chat-btn {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 10px;
+            font-size: 18px;
+            cursor: pointer;
+            font-weight: bold;
+            transition: background 0.2s;
+        }
+        .chat-btn-confirm {
+            background: var(--c-primary);
+            color: white;
+            box-shadow: 0 4px 10px rgba(0,153,68,0.3);
+        }
+        .chat-btn-confirm:active { transform: scale(0.95); }
+        .chat-btn-secondary {
+            background: #eee;
+            color: #555;
         }
 
         .controls-area {
@@ -380,37 +403,26 @@
         function simulateInsertCard() {
             console.log("Card detected...");
             
-            // 轉場延遲
             setTimeout(() => {
                 goToScreen('screen-2');
                 
-                // --- 影片控制邏輯 (修正聲音播放) ---
                 const video = document.getElementById('avatarVideo');
-                
-                // 1. 重置影片來源與狀態
                 video.src = "images/avataropening.mp4";
-                video.loop = false; // 開場影片不循環
+                video.loop = false;
                 video.currentTime = 0;
                 
-                // 2. 關鍵修正：確保聲音開啟
-                // 由於此函式是由使用者 click 觸發的，瀏覽器允許開啟聲音的 autoplay
+                // Force sound on
                 video.muted = false; 
                 video.volume = 1.0; 
                 
-                // 3. 播放
                 video.play().catch(e => {
-                    console.log("Auto-play error (Check browser policy):", e);
-                    // 如果還是被擋，可能需要顯示一個「播放」按鈕讓使用者再點一次，但在 Kiosk 環境通常不會發生
+                    console.log("Auto-play error:", e);
                 });
 
-                // 4. 監聽：當開場影片 (avataropening.mp4) 播完後
                 video.onended = function() {
                     console.log("Opening finished, switching to idle loop.");
-                    // 切換到聆聽/待機影片
                     video.src = "images/avatarMOV.mp4"; 
-                    video.loop = true; // 開啟循環
-                    
-                    // 確保待機影片繼續播放
+                    video.loop = true; 
                     video.play();
                 };
 
@@ -447,15 +459,21 @@
                     listenText.innerText = "";
                     const aiMsg = document.createElement('div');
                     aiMsg.className = 'msg msg-ai';
-                    aiMsg.innerText = "收到。根據您的描述(胸悶、喘)，建議您掛號「心臟內科」。已為您找到林醫師的診，是否確認掛號？";
+                    
+                    // --- 修改點：這裡插入了HTML按鈕，而不是直接轉場 ---
+                    aiMsg.innerHTML = `
+                        收到。根據您的描述(胸悶、喘)，建議您掛號「心臟內科」。已為您找到林醫師的診，是否確認掛號？
+                        <div class="chat-actions">
+                            <button class="chat-btn chat-btn-confirm" onclick="goToScreen('screen-3')">確認掛號</button>
+                            <button class="chat-btn chat-btn-secondary" onclick="alert('模擬重置：請再次點擊麥克風')">再說一次</button>
+                        </div>
+                    `;
+                    
                     chatBox.appendChild(aiMsg);
                     scrollToBottom();
                     
-                    // D. Auto transition to confirmation
-                    setTimeout(() => {
-                        goToScreen('screen-3');
-                        isRecording = false; 
-                    }, 3000);
+                    // 重置錄音狀態，但不自動跳轉
+                    isRecording = false;
 
                 }, 1500); 
 
