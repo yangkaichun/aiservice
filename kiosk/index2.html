@@ -6,230 +6,282 @@
     <title>中山醫大 智慧掛號服務 Kiosk</title>
     <link rel="icon" href="images/feticon.ico" type="image/x-icon">
     <style>
-        /* --- CSS Reset & Base --- */
+        /* --- CSS Variables & Reset --- */
         :root {
-            --c-primary: #009944; /* CSMUH Green concept */
+            --c-primary: #009944; /* CSMUH Green */
+            --c-primary-light: #eafff0;
             --c-secondary: #E60012; /* FET Red */
-            --c-bg: #f4f7f6;
+            --c-bg: #ffffff;
             --c-text: #333;
-            --c-white: #ffffff;
+            --c-text-light: #666;
+            --glass-bg: rgba(255, 255, 255, 0.85);
+            --glass-border: 1px solid rgba(255, 255, 255, 0.5);
+            --shadow-soft: 0 8px 32px rgba(0, 0, 0, 0.1);
             --font-main: "Microsoft JhengHei", "Heiti TC", sans-serif;
         }
 
-        * { box-sizing: border-box; user-select: none; }
+        * { box-sizing: border-box; user-select: none; -webkit-tap-highlight-color: transparent; }
         body {
-            margin: 0;
-            padding: 0;
-            font-family: --font-main;
-            background-color: var(--c-bg);
+            margin: 0; padding: 0;
+            font-family: var(--font-main);
+            background: var(--c-bg);
             height: 100vh;
             display: flex;
             flex-direction: column;
             overflow: hidden;
         }
 
-        /* --- Header --- */
+        /* --- Header (Clean & Minimal) --- */
         header {
-            background: var(--c-white);
-            height: 80px;
+            height: 70px;
             display: flex;
             align-items: center;
             justify-content: space-between;
             padding: 0 40px;
-            box-shadow: 0 4px 6px rgba(0,0,0,0.05);
+            background: var(--c-bg);
+            border-bottom: 1px solid #eee;
             z-index: 100;
         }
         .header-left { display: flex; align-items: center; gap: 20px; }
-        .hosp-name { font-size: 24px; font-weight: bold; color: var(--c-text); letter-spacing: 1px; }
-        .fet-logo { height: 40px; } /* FET Logo */
-        .system-status { font-size: 14px; color: #666; display: flex; gap: 15px; }
-        .status-dot { width: 10px; height: 10px; background: #2ecc71; border-radius: 50%; display: inline-block; }
+        .fet-logo { height: 36px; }
+        .hosp-name { font-size: 22px; font-weight: bold; color: var(--c-text); }
+        .system-status { font-size: 14px; color: var(--c-text-light); display: flex; gap: 20px; align-items: center; }
+        .status-dot { width: 8px; height: 8px; background: #2ecc71; border-radius: 50%; display: inline-block; margin-right: 5px;}
+        #clock { font-weight: bold; font-size: 16px; }
 
         /* --- Main Container --- */
         main {
             flex: 1;
             position: relative;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            padding: 20px;
+            overflow: hidden;
+            background: #f8fcf9; /* Very subtle light green tint bg */
         }
 
-        /* --- Screens (State Management) --- */
+        /* --- Screens State --- */
         .screen {
             position: absolute;
-            width: 100%;
-            height: 100%;
-            top: 0;
-            left: 0;
+            top: 0; left: 0; width: 100%; height: 100%;
             display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            opacity: 0;
-            pointer-events: none;
-            transition: opacity 0.5s ease;
+            align-items: center; justify-content: center;
+            opacity: 0; pointer-events: none;
+            transition: all 0.6s cubic-bezier(0.25, 0.8, 0.25, 1);
         }
         .screen.active { opacity: 1; pointer-events: all; }
 
-        /* --- Screen 1: Idle / Insert Card --- */
-        .card-instruction {
+        /* --- SCREEN 1: Insert Card (Modernized) --- */
+        .card-cta-container {
             text-align: center;
-            background: var(--c-white);
             padding: 60px;
-            border-radius: 20px;
-            box-shadow: 0 10px 25px rgba(0,0,0,0.1);
-            animation: float 3s ease-in-out infinite;
-            cursor: pointer; /* Simulation trigger */
+            background: var(--c-bg);
+            border-radius: 30px;
+            box-shadow: var(--shadow-soft);
+            cursor: pointer;
+            transform: scale(0.95);
+            transition: transform 0.3s;
         }
-        @keyframes float { 0% { transform: translateY(0px); } 50% { transform: translateY(-10px); } 100% { transform: translateY(0px); } }
+        .card-cta-container:active { transform: scale(0.98); }
         
-        .card-slot-visual {
-            width: 200px;
-            height: 120px;
-            background: #ddd;
-            margin: 0 auto 30px;
-            border-radius: 10px;
+        .slot-machine {
+            width: 240px; height: 160px;
+            background: #eee;
+            border: 6px solid #ddd;
+            border-radius: 12px;
+            margin: 0 auto 40px;
             position: relative;
-            border: 4px solid #bbb;
-        }
-        .card-slot-visual::after {
-            content: "請插入健保卡";
-            position: absolute;
-            top: 50%; left: 50%;
-            transform: translate(-50%, -50%);
-            color: #888;
-            font-weight: bold;
-        }
-        .card-chip {
-            width: 60px; height: 40px; background: #ffd700;
-            position: absolute; bottom: -20px; left: 70px;
-            border-radius: 5px;
-            box-shadow: 0 2px 5px rgba(0,0,0,0.2);
-            animation: insert 2s infinite;
-        }
-        @keyframes insert { 0% { bottom: -40px; opacity: 0; } 50% { bottom: 10px; opacity: 1; } 100% { bottom: 10px; opacity: 0; } }
-
-        h1 { color: var(--c-primary); margin-bottom: 10px; font-size: 32px; }
-        p.subtitle { color: #666; font-size: 18px; }
-
-        /* --- Screen 2: Avatar Interaction --- */
-        .avatar-container {
-            width: 250px;
-            height: 250px;
-            border-radius: 50%;
             overflow: hidden;
-            border: 5px solid var(--c-white);
-            box-shadow: 0 8px 16px rgba(0,0,0,0.15);
-            margin-bottom: 20px;
-            background: #eef;
+            box-shadow: inset 0 5px 10px rgba(0,0,0,0.1);
         }
-        .avatar-img { width: 100%; height: 100%; object-fit: cover; }
+        .slot-entry {
+            width: 180px; height: 20px; background: #333;
+            position: absolute; top: 50%; left: 50%;
+            transform: translate(-50%, -50%);
+            border-radius: 10px;
+        }
+        .anim-card {
+            width: 160px; height: 100px;
+            background: linear-gradient(135deg, #f6d365 0%, #fda085 100%); /* Gold-ish IC card look */
+            position: absolute; bottom: -110px; left: 40px;
+            border-radius: 8px;
+            display: flex; align-items: flex-end; padding: 10px;
+            box-shadow: 0 -5px 15px rgba(0,0,0,0.2);
+            animation: insertCardAnim 2.5s ease-in-out infinite;
+        }
+        .anim-chip { width: 40px; height: 30px; background: #d4af37; border-radius: 4px; }
+        @keyframes insertCardAnim {
+            0%, 20% { bottom: -110px; opacity: 0; }
+            40% { opacity: 1; }
+            60% { bottom: 40px; }
+            80% { bottom: 40px; opacity: 0;}
+            100% { bottom: -110px; opacity: 0; }
+        }
+        h1.cta-title { color: var(--c-primary); font-size: 40px; margin: 0 0 15px 0; }
+        p.cta-subtitle { color: var(--c-text-light); font-size: 20px; margin: 0; }
 
-        .dialog-box {
-            width: 80%;
-            max-width: 800px;
-            background: var(--c-white);
-            border-radius: 15px;
-            padding: 30px;
-            box-shadow: 0 5px 15px rgba(0,0,0,0.05);
-            min-height: 200px;
+
+        /* --- SCREEN 2: Split Screen Avatar Interaction (The Big Change) --- */
+        #screen-2 {
+            flex-direction: row; /* Horizontal layout */
+            align-items: stretch; /* Full height */
+        }
+
+        /* Left Side: The Full-Height Avatar */
+        .avatar-stage {
+            flex: 1; /* Takes 50% width roughly */
+            height: 100%;
+            position: relative;
+            background: linear-gradient(to right, #eef2f3, #ffffff); /* Subtle backdrop for avatar */
+            overflow: hidden;
+        }
+        .avatar-img-full {
+            width: 100%;
+            height: 100%;
+            object-fit: cover; /* Ensures it fills the space nicely */
+            object-position: center top; /* Focus on the face area */
+            filter: drop-shadow(5px 0 15px rgba(0,0,0,0.1));
+        }
+
+        /* Right Side: Glassmorphism Interaction Panel */
+        .interaction-panel {
+            flex: 1;
+            height: 100%;
             display: flex;
             flex-direction: column;
-            justify-content: space-between;
+            padding: 40px;
+            background: var(--glass-bg); /* Glass effect */
+            backdrop-filter: blur(25px); /* Blur the background behind it */
+            border-left: var(--glass-border);
+            box-shadow: -10px 0 30px rgba(0,0,0,0.05);
         }
-        
-        .chat-history {
-            flex: 1;
-            margin-bottom: 20px;
-            font-size: 20px;
-            line-height: 1.6;
-            max-height: 300px;
-            overflow-y: auto;
-        }
-        .msg-ai { color: var(--c-primary); font-weight: bold; margin-bottom: 15px; }
-        .msg-user { color: #333; text-align: right; margin-bottom: 15px; padding: 10px; background: #f0f0f0; border-radius: 10px; }
 
-        .voice-controls {
+        .chat-container {
+            flex: 1;
+            overflow-y: auto;
+            padding: 20px 0;
             display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 20px;
-            border-top: 1px solid #eee;
-            padding-top: 20px;
+            flex-direction: column;
+            gap: 25px;
         }
+
+        /* Speech Bubbles */
+        .msg {
+            max-width: 85%;
+            padding: 20px 25px;
+            border-radius: 20px;
+            font-size: 22px;
+            line-height: 1.5;
+            position: relative;
+            animation: popIn 0.3s ease-out;
+        }
+        @keyframes popIn { from { opacity: 0; transform: translateY(20px) scale(0.95); } to { opacity: 1; transform: translateY(0) scale(1); }}
         
-        .lang-btn {
-            padding: 10px 20px;
-            border: 2px solid #ddd;
-            background: white;
-            border-radius: 30px;
-            font-size: 16px;
-            cursor: pointer;
+        .msg-ai {
+            align-self: flex-start;
+            background: var(--c-bg);
+            color: var(--c-primary);
             font-weight: bold;
+            box-shadow: 0 5px 15px rgba(0,153,68,0.15);
+            border-bottom-left-radius: 5px;
         }
-        .lang-btn.active { border-color: var(--c-primary); color: var(--c-primary); background: #eafff0; }
+        .msg-user {
+            align-self: flex-end;
+            background: var(--c-primary);
+            color: white;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+            border-bottom-right-radius: 5px;
+            text-align: right;
+        }
+
+        /* Voice Controls Section */
+        .controls-area {
+            margin-top: auto;
+            padding-top: 30px;
+            border-top: 1px solid rgba(0,0,0,0.08);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 25px;
+        }
         
-        .mic-visual {
-            width: 60px; height: 60px;
+        .lang-selector { display: flex; gap: 15px; }
+        .lang-pill {
+            padding: 10px 24px;
+            border-radius: 30px;
+            background: #fff;
+            border: 2px solid #eee;
+            font-size: 18px; color: var(--c-text-light);
+            font-weight: bold; transition: all 0.3s;
+        }
+        .lang-pill.active { border-color: var(--c-primary); color: var(--c-primary); background: var(--c-primary-light); }
+        
+        /* Big Mic Button */
+        .mic-btn-large {
+            width: 100px; height: 100px;
             background: var(--c-secondary);
             border-radius: 50%;
             display: flex; align-items: center; justify-content: center;
-            color: white; font-size: 24px;
-            box-shadow: 0 0 0 0 rgba(230, 0, 18, 0.7);
-            animation: pulse-red 1.5s infinite;
-        }
-        @keyframes pulse-red {
-            0% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(230, 0, 18, 0.7); }
-            70% { transform: scale(1); box-shadow: 0 0 0 10px rgba(230, 0, 18, 0); }
-            100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(230, 0, 18, 0); }
-        }
-
-        /* --- Screen 3: Confirmation --- */
-        .confirm-card {
-            background: var(--c-white);
-            width: 600px;
-            padding: 40px;
-            border-radius: 15px;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
-        }
-        .info-row {
-            display: flex;
-            justify-content: space-between;
-            border-bottom: 1px solid #eee;
-            padding: 15px 0;
-            font-size: 20px;
-        }
-        .info-label { color: #888; }
-        .info-val { font-weight: bold; color: #333; }
-        
-        .action-btns {
-            margin-top: 30px;
-            display: flex;
-            gap: 20px;
-        }
-        .btn {
-            flex: 1;
-            padding: 20px;
-            border: none;
-            border-radius: 10px;
-            font-size: 22px;
+            color: white; font-size: 40px;
             cursor: pointer;
+            box-shadow: 0 10px 30px rgba(230, 0, 18, 0.4);
+            transition: transform 0.2s;
+            position: relative;
         }
-        .btn-cancel { background: #eee; color: #555; }
-        .btn-confirm { background: var(--c-primary); color: white; }
+        .mic-btn-large:active { transform: scale(0.95); }
+        
+        /* Recording animation state */
+        .mic-btn-large.recording::after {
+            content: '';
+            position: absolute; width: 100%; height: 100%;
+            border-radius: 50%;
+            border: 4px solid var(--c-secondary);
+            animation: ripple 1.5s infinite ease-out;
+            z-index: -1;
+        }
+        @keyframes ripple {
+            0% { transform: scale(1); opacity: 0.8; border-width: 4px;}
+            100% { transform: scale(2); opacity: 0; border-width: 1px;}
+        }
+        .listening-text { font-size: 16px; color: var(--c-text-light); font-weight: bold; height: 20px; }
+
+
+        /* --- SCREEN 3: Confirmation Card --- */
+        .confirm-card-modern {
+            background: var(--c-bg);
+            width: 90%; max-width: 650px;
+            padding: 50px;
+            border-radius: 30px;
+            box-shadow: var(--shadow-soft);
+            text-align: center;
+        }
+        .confirm-header { color: var(--c-primary); font-size: 36px; margin-bottom: 30px; font-weight: bold;}
+        
+        .data-grid { display: grid; grid-template-columns: auto 1fr; gap: 20px 30px; text-align: left; margin-bottom: 40px; }
+        .data-label { color: var(--c-text-light); font-size: 20px; text-align: right; font-weight: bold;}
+        .data-value { color: var(--c-text); font-size: 22px; font-weight: bold; }
+        .highlight-val { color: var(--c-primary); font-size: 26px; }
+
+        .mega-btns { display: flex; gap: 25px; }
+        .mega-btn {
+            flex: 1; padding: 25px; border: none; border-radius: 15px;
+            font-size: 24px; font-weight: bold; cursor: pointer;
+            transition: transform 0.2s;
+        }
+        .mega-btn:active { transform: scale(0.97); }
+        .btn-back { background: #f0f0f0; color: #666; }
+        .btn-ok { background: var(--c-primary); color: white; box-shadow: 0 10px 25px rgba(0,153,68,0.3); }
 
         /* --- Footer --- */
         footer {
-            height: 50px;
-            background: #eee;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 12px;
-            color: #999;
+            height: 40px;
+            background: var(--c-bg);
+            display: flex; align-items: center; justify-content: center;
+            font-size: 13px; color: #aaa; border-top: 1px solid #eee;
         }
-
+        
+        /* Simulation Hints */
+        .sim-hint {
+            position: absolute; bottom: 20px; width: 100%; text-align: center;
+            font-size: 14px; color: #aaa; font-style: italic; pointer-events: none;
+        }
     </style>
 </head>
 <body>
@@ -240,80 +292,75 @@
             <div class="hosp-name">中山醫學大學附設醫院 | 智慧掛號櫃台</div>
         </div>
         <div class="system-status">
-            <span><div class="status-dot"></div> Intranet Online</span>
-            <span>Knowledge Base: v2.4</span>
+            <span><div class="status-dot"></div> Intranet Connected</span>
             <span id="clock">12:00</span>
         </div>
     </header>
 
     <main>
         <div id="screen-1" class="screen active">
-            <div class="card-instruction" onclick="simulateInsertCard()">
-                <div class="card-slot-visual">
-                    <div class="card-chip"></div>
+            <div class="card-cta-container" onclick="simulateInsertCard()">
+                <div class="slot-machine">
+                    <div class="slot-entry"></div>
+                    <div class="anim-card"><div class="anim-chip"></div></div>
                 </div>
-                <h1>請插入健保卡</h1>
-                <p class="subtitle">Insert Health Insurance Card to Start</p>
-                <p style="font-size:12px; color:#999; margin-top:20px;">(點擊此處模擬插卡動作)</p>
+                <h1 class="cta-title">請插入健保卡</h1>
+                <p class="cta-subtitle">請將健保卡晶片朝上插入卡槽</p>
             </div>
+            <div class="sim-hint">(模擬操作：點擊中間區塊以插入卡片)</div>
         </div>
 
         <div id="screen-2" class="screen">
-            <div class="avatar-container">
-                <img src="images/avatar1.png" alt="AI Avatar" class="avatar-img">
+            <div class="avatar-stage">
+                <img src="images/avatar1.png" alt="AI Avatar" class="avatar-img-full">
             </div>
             
-            <div class="dialog-box">
-                <div class="chat-history" id="chat-box">
-                    <div class="msg-ai">您好，我是您的智慧掛號助理。請問您今天哪裡不舒服？或者想掛哪一位醫師？(可使用國、台、客語)</div>
+            <div class="interaction-panel">
+                <div class="chat-container" id="chat-box">
+                    <div class="msg msg-ai">您好，我是您的智慧掛號助理。請問您今天哪裡不舒服？(您可以直接用說的)</div>
                 </div>
                 
-                <div class="voice-controls">
-                    <div style="display:flex; gap:10px;">
-                        <button class="lang-btn active">國語</button>
-                        <button class="lang-btn">臺語</button>
-                        <button class="lang-btn">客語</button>
+                <div class="controls-area">
+                    <div class="lang-selector">
+                        <div class="lang-pill active">國語</div>
+                        <div class="lang-pill">臺語</div>
+                        <div class="lang-pill">客語</div>
                     </div>
-                    <div class="mic-visual" onclick="simulateVoiceInput()">🎤</div>
+                    <div id="micBtn" class="mic-btn-large" onclick="simulateVoiceInput()">🎤</div>
+                    <div id="listeningText" class="listening-text"></div>
                 </div>
-                <div style="text-align:center; font-size:12px; color:#999; margin-top:5px;">(點擊麥克風模擬病患語音輸入)</div>
             </div>
+            <div class="sim-hint" style="right: 40px; text-align:right; bottom: 10px; width: auto;">(模擬操作：點擊紅色麥克風說話)</div>
         </div>
 
         <div id="screen-3" class="screen">
-            <div class="confirm-card">
-                <h2 style="color:var(--c-primary); text-align:center;">掛號確認</h2>
-                <div class="info-row">
-                    <span class="info-label">病患姓名</span>
-                    <span class="info-val">王大明 (健保讀取)</span>
-                </div>
-                <div class="info-row">
-                    <span class="info-label">建議科別</span>
-                    <span class="info-val">心臟內科</span>
-                </div>
-                <div class="info-row">
-                    <span class="info-label">醫師</span>
-                    <span class="info-val">林醫師 (2102診)</span>
-                </div>
-                <div class="info-row">
-                    <span class="info-label">時間</span>
-                    <span class="info-val">2025/12/12 上午診</span>
+            <div class="confirm-card-modern">
+                <div class="confirm-header">掛號資訊確認</div>
+                <div class="data-grid">
+                    <div class="data-label">病患姓名</div>
+                    <div class="data-value">王大明</div>
+                    <div class="data-label">建議科別</div>
+                    <div class="data-value highlight-val">心臟內科</div>
+                    <div class="data-label">預約醫師</div>
+                    <div class="data-value">林醫師 (2102診)</div>
+                    <div class="data-label">看診時間</div>
+                    <div class="data-value">2025/12/12 (五) 上午診</div>
                 </div>
 
-                <div class="action-btns">
-                    <button class="btn btn-cancel" onclick="location.reload()">重新輸入</button>
-                    <button class="btn btn-confirm" onclick="alert('掛號資料已傳送至 HIS 系統！')">確認掛號</button>
+                <div class="mega-btns">
+                    <button class="mega-btn btn-back" onclick="location.reload()">重新輸入</button>
+                    <button class="mega-btn btn-ok" onclick="alert('掛號成功！請列印掛號單。')">確認掛號</button>
                 </div>
             </div>
         </div>
     </main>
 
     <footer>
-        System provided by Far EasTone Telecommunications. Powered by CSMUH Knowledge Base.
+        System provided by Far EasTone Telecommunications. Powered by CSMUH Knowledge Base (Intranet Only).
     </footer>
 
     <script>
-        // --- Simulation Logic ---
+        // --- Simulation Logic (與之前相同，但增加了 UI 互動反饋) ---
 
         // 1. Clock
         setInterval(() => {
@@ -321,52 +368,68 @@
             document.getElementById('clock').innerText = now.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
         }, 1000);
 
-        // 2. State Navigation
         function goToScreen(screenId) {
             document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
             document.getElementById(screenId).classList.add('active');
         }
 
-        // 3. Simulate Card Insertion (Requirement 4)
+        // 2. Simulate Card Insert
         function simulateInsertCard() {
-            // In real scenario: Listener for hardware event
-            console.log("Card detected. Reading IC data...");
+            console.log("Card detected...");
+            // 簡單的轉場延遲
             setTimeout(() => {
                 goToScreen('screen-2');
-                // Auto-trigger greeting voice here in real app
-            }, 800);
+            }, 600);
         }
 
-        // 4. Simulate Voice Input & LLM Processing (Requirement 5, 6, 8)
+        // 3. Simulate Voice Input Flow
+        let isRecording = false;
         function simulateVoiceInput() {
-            const chatBox = document.getElementById('chat-box');
+            if(isRecording) return;
+            isRecording = true;
             
-            // A. User Speaking (Visual feedback)
-            const userMsg = document.createElement('div');
-            userMsg.className = 'msg-user';
-            userMsg.innerText = "用聽寫模擬中...";
-            chatBox.appendChild(userMsg);
-            chatBox.scrollTop = chatBox.scrollHeight;
+            const micBtn = document.getElementById('micBtn');
+            const listenText = document.getElementById('listeningText');
+            const chatBox = document.getElementById('chat-box');
 
+            // A. Start "Recording" State (Visual Feedback)
+            micBtn.classList.add('recording');
+            listenText.innerText = "正在聆聽中...";
+            
             setTimeout(() => {
-                // Simulate "Long Context" input (Requirement 6)
-                userMsg.innerText = "我覺得胸口悶悶的，有時候會痛到背後，而且走路會喘，想掛號看心臟。";
-                
-                // B. System Processing (Simulate connection to CSMUH KB Logic)
+                // B. "Stop" Recording & Show User Text
+                micBtn.classList.remove('recording');
+                listenText.innerText = "處理中...";
+
+                const userMsg = document.createElement('div');
+                userMsg.className = 'msg msg-user';
+                userMsg.innerText = "我覺得胸口悶悶的，走路會喘，想掛號看心臟。";
+                chatBox.appendChild(userMsg);
+                scrollToBottom();
+
+                // C. Simulate AI Thinking & Response
                 setTimeout(() => {
+                    listenText.innerText = "";
                     const aiMsg = document.createElement('div');
-                    aiMsg.className = 'msg-ai';
-                    aiMsg.innerText = "收到，根據您的症狀描述(胸悶、背痛、喘)，建議您掛號「心臟內科」。系統為您查詢到林醫師尚有號碼，是否為您安排？";
+                    aiMsg.className = 'msg msg-ai';
+                    aiMsg.innerText = "收到。根據您的描述(胸悶、喘)，建議您掛號「心臟內科」。已為您找到林醫師的診，是否確認掛號？";
                     chatBox.appendChild(aiMsg);
-                    chatBox.scrollTop = chatBox.scrollHeight;
+                    scrollToBottom();
                     
-                    // C. Auto-transition to confirmation for demo purposes (Requirement 3, 5)
+                    // D. Auto transition to confirmation
                     setTimeout(() => {
                         goToScreen('screen-3');
-                    }, 3500);
+                        isRecording = false; // reset state
+                    }, 3000);
 
-                }, 1500); // Latency for AI processing
-            }, 1000); // Latency for speech-to-text
+                }, 1500); // AI thinking delay
+
+            }, 2000); // User speaking duration
+        }
+
+        function scrollToBottom() {
+            const chatBox = document.getElementById('chat-box');
+            chatBox.scrollTop = chatBox.scrollHeight;
         }
     </script>
 </body>
