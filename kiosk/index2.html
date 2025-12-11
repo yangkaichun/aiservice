@@ -31,6 +31,59 @@
             overflow: hidden;
         }
 
+        /* --- 1. Intro Animation Overlay --- */
+        #intro-overlay {
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: #ffffff;
+            z-index: 9999; /* Highest priority */
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            transition: opacity 0.8s ease-out; /* Smooth fade out */
+        }
+        
+        .intro-logo {
+            height: 80px;
+            margin-bottom: 30px;
+            animation: logoFloat 2s ease-in-out infinite;
+        }
+        
+        .intro-text {
+            font-size: 24px;
+            color: var(--c-primary);
+            font-weight: bold;
+            letter-spacing: 2px;
+            margin-bottom: 10px;
+        }
+
+        .loading-bar {
+            width: 200px;
+            height: 4px;
+            background: #eee;
+            border-radius: 2px;
+            overflow: hidden;
+            position: relative;
+        }
+        
+        .loading-progress {
+            position: absolute;
+            left: 0; top: 0; height: 100%; width: 0%;
+            background: linear-gradient(90deg, var(--c-primary), var(--c-secondary));
+            animation: loadProgress 2.8s ease-in-out forwards; /* Runs for approx 3s */
+        }
+
+        @keyframes logoFloat { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-10px); } }
+        @keyframes loadProgress { 0% { width: 0%; } 100% { width: 100%; } }
+        
+        /* Hide class for JS to toggle */
+        .hidden-overlay {
+            opacity: 0;
+            pointer-events: none;
+        }
+
+
         /* --- Header --- */
         header {
             height: 70px;
@@ -192,7 +245,6 @@
             text-align: right;
         }
 
-        /* --- New: Chat Action Buttons within Bubble --- */
         .chat-actions {
             margin-top: 15px;
             display: flex;
@@ -309,6 +361,15 @@
 </head>
 <body>
 
+    <div id="intro-overlay">
+        <img src="images/fetlogo.png" alt="FET Logo" class="intro-logo">
+        <div class="intro-text">中山醫學大學附設醫院 | 智慧掛號櫃台</div>
+        <div class="intro-text" style="font-size: 16px; color:#666; margin-top:5px;">System Loading...</div>
+        <div class="loading-bar">
+            <div class="loading-progress"></div>
+        </div>
+    </div>
+
     <header>
         <div class="header-left">
             <img src="images/fetlogo.png" alt="FET Logo" class="fet-logo"> 
@@ -386,9 +447,44 @@
     </footer>
 
     <script>
-        // --- Simulation Logic ---
+        // --- 1. Intro Animation Logic ---
+        // 頁面載入後，等待 3 秒，然後淡出 Overlay
+        window.addEventListener('load', () => {
+            setTimeout(() => {
+                const overlay = document.getElementById('intro-overlay');
+                overlay.classList.add('hidden-overlay');
+                // 完全移除 DOM 以免擋到操作
+                setTimeout(() => {
+                    overlay.style.display = 'none';
+                }, 800); // Wait for CSS transition
+            }, 3000); // 3 seconds duration
+        });
 
-        // 1. Clock
+        // --- 2. Idle Timer Logic (Auto Refresh) ---
+        // 60秒無操作則 reload
+        const IDLE_LIMIT = 60000; // 60 seconds
+        let idleTimer;
+
+        function resetIdleTimer() {
+            clearTimeout(idleTimer);
+            idleTimer = setTimeout(() => {
+                // Time's up! Reload the page to show intro again
+                location.reload();
+            }, IDLE_LIMIT);
+        }
+
+        // 監聽各種使用者操作來重置計時器
+        ['mousemove', 'mousedown', 'keypress', 'touchstart', 'click'].forEach(evt => {
+            document.addEventListener(evt, resetIdleTimer);
+        });
+
+        // 初始化計時器
+        resetIdleTimer();
+
+
+        // --- 3. Existing Simulation Logic ---
+
+        // Clock
         setInterval(() => {
             const now = new Date();
             document.getElementById('clock').innerText = now.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
@@ -399,7 +495,7 @@
             document.getElementById(screenId).classList.add('active');
         }
 
-        // 2. Simulate Card Insert & Video Control
+        // Simulate Card Insert & Video Control
         function simulateInsertCard() {
             console.log("Card detected...");
             
@@ -429,7 +525,7 @@
             }, 600);
         }
 
-        // 3. Simulate Voice Input Flow
+        // Simulate Voice Input Flow
         let isRecording = false;
         function simulateVoiceInput() {
             if(isRecording) return;
@@ -439,12 +535,12 @@
             const listenText = document.getElementById('listeningText');
             const chatBox = document.getElementById('chat-box');
 
-            // A. Start "Recording" State
+            // Start "Recording"
             micBtn.classList.add('recording');
             listenText.innerText = "正在聆聽中...";
             
             setTimeout(() => {
-                // B. "Stop" Recording & Show User Text
+                // Stop Recording
                 micBtn.classList.remove('recording');
                 listenText.innerText = "處理中...";
 
@@ -454,13 +550,13 @@
                 chatBox.appendChild(userMsg);
                 scrollToBottom();
 
-                // C. Simulate AI Thinking & Response
+                // AI Response
                 setTimeout(() => {
                     listenText.innerText = "";
                     const aiMsg = document.createElement('div');
                     aiMsg.className = 'msg msg-ai';
                     
-                    // --- 修改點：這裡插入了HTML按鈕，而不是直接轉場 ---
+                    // Insert Action Buttons
                     aiMsg.innerHTML = `
                         收到。根據您的描述(胸悶、喘)，建議您掛號「心臟內科」。已為您找到林醫師的診，是否確認掛號？
                         <div class="chat-actions">
@@ -471,8 +567,6 @@
                     
                     chatBox.appendChild(aiMsg);
                     scrollToBottom();
-                    
-                    // 重置錄音狀態，但不自動跳轉
                     isRecording = false;
 
                 }, 1500); 
