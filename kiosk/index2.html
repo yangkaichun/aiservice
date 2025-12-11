@@ -41,7 +41,7 @@
             background: var(--c-bg);
             border-bottom: 1px solid #eee;
             z-index: 100;
-            position: relative; /* Ensure header stays below loading overlay */
+            position: relative;
         }
         .header-left { display: flex; align-items: center; gap: 20px; }
         .fet-logo { height: 36px; }
@@ -70,14 +70,56 @@
         }
         .screen.active { opacity: 1; pointer-events: all; z-index: 2; }
 
-        /* --- Loading Overlay (New Feature) --- */
+
+        /* =========================================
+           1. INTRO ANIMATION (5 Seconds)
+           開場動畫層
+        ========================================= */
+        #intro-overlay {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: #fff;
+            z-index: 9999; /* Highest priority */
+            display: flex; flex-direction: column; align-items: center; justify-content: center;
+            transition: opacity 1s ease-out;
+        }
+        #intro-overlay.hidden { opacity: 0; pointer-events: none; }
+
+        .intro-logos { display: flex; align-items: center; gap: 40px; margin-bottom: 50px; opacity: 0; animation: fadeUp 1s ease forwards 0.5s; }
+        .intro-logo-fet { height: 60px; }
+        .intro-divider { width: 2px; height: 60px; background: #ddd; }
+        .intro-title { font-size: 32px; font-weight: bold; color: #333; }
+        
+        .intro-bar-container {
+            width: 300px; height: 6px; background: #eee; border-radius: 3px;
+            overflow: hidden; opacity: 0; animation: fadeIn 0.5s ease forwards 1s;
+        }
+        .intro-bar-fill {
+            height: 100%; background: linear-gradient(90deg, var(--c-primary), var(--c-secondary));
+            width: 0%;
+            animation: loadingFill 4s cubic-bezier(0.22, 1, 0.36, 1) forwards 1s; /* 4s loading + 1s delay = 5s total */
+        }
+        .intro-text {
+            margin-top: 15px; color: #999; font-size: 14px; letter-spacing: 2px;
+            opacity: 0; animation: pulseText 2s infinite 1.5s;
+        }
+
+        @keyframes fadeUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+        @keyframes loadingFill { 0% { width: 0%; } 100% { width: 100%; } }
+        @keyframes pulseText { 0% { opacity: 0.5; } 50% { opacity: 1; } 100% { opacity: 0.5; } }
+
+
+        /* =========================================
+           2. LOADING SPINNER (Card Reading)
+           讀卡過場
+        ========================================= */
         #loading-overlay {
             position: absolute; top: 0; left: 0; width: 100%; height: 100%;
             background: rgba(255, 255, 255, 0.9);
             backdrop-filter: blur(10px);
             display: flex; flex-direction: column; align-items: center; justify-content: center;
             opacity: 0; pointer-events: none; transition: opacity 0.3s;
-            z-index: 999; /* Highest priority */
+            z-index: 1000;
         }
         #loading-overlay.active { opacity: 1; pointer-events: all; }
         
@@ -89,229 +131,140 @@
             margin-bottom: 20px;
         }
         @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
-        
         .loading-text { font-size: 24px; font-weight: bold; color: var(--c-primary); margin-bottom: 10px; }
-        .loading-subtext { font-size: 16px; color: #666; }
+
+
+        /* =========================================
+           3. TIMEOUT WARNING (Inactivity)
+           閒置逾時動畫
+        ========================================= */
+        #timeout-overlay {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0, 0, 0, 0.85);
+            z-index: 5000; /* Above normal screens, below intro */
+            display: flex; flex-direction: column; align-items: center; justify-content: center;
+            opacity: 0; pointer-events: none; transition: opacity 0.5s;
+            color: white;
+        }
+        #timeout-overlay.active { opacity: 1; pointer-events: all; }
+        
+        .timeout-circle {
+            width: 150px; height: 150px; border: 4px solid var(--c-secondary);
+            border-radius: 50%; display: flex; align-items: center; justify-content: center;
+            font-size: 60px; font-weight: bold; margin-bottom: 30px;
+            box-shadow: 0 0 30px rgba(230, 0, 18, 0.5);
+            animation: pulse-red 1s infinite;
+        }
+        .timeout-msg { font-size: 28px; margin-bottom: 10px; }
+        .timeout-sub { font-size: 18px; color: #ccc; margin-bottom: 40px; }
+        .btn-continue {
+            padding: 15px 40px; background: var(--c-primary); color: white;
+            border: none; border-radius: 50px; font-size: 22px; cursor: pointer;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+        }
+
+        @keyframes pulse-red { 0% { transform: scale(1); } 50% { transform: scale(1.05); } 100% { transform: scale(1); } }
+
 
         /* --- SCREEN 1: Insert Card --- */
         .card-cta-container {
-            text-align: center;
-            padding: 60px;
-            background: var(--c-bg);
-            border-radius: 30px;
-            box-shadow: var(--shadow-soft);
-            cursor: pointer;
-            transform: scale(0.95);
-            transition: transform 0.3s;
+            text-align: center; padding: 60px; background: var(--c-bg); border-radius: 30px;
+            box-shadow: var(--shadow-soft); cursor: pointer; transform: scale(0.95); transition: transform 0.3s;
         }
         .card-cta-container:active { transform: scale(0.98); }
-        
         .slot-machine {
-            width: 240px; height: 160px;
-            background: #eee;
-            border: 6px solid #ddd;
-            border-radius: 12px;
-            margin: 0 auto 40px;
-            position: relative;
-            overflow: hidden;
-            box-shadow: inset 0 5px 10px rgba(0,0,0,0.1);
+            width: 240px; height: 160px; background: #eee; border: 6px solid #ddd; border-radius: 12px;
+            margin: 0 auto 40px; position: relative; overflow: hidden; box-shadow: inset 0 5px 10px rgba(0,0,0,0.1);
         }
         .slot-entry {
-            width: 180px; height: 20px; background: #333;
-            position: absolute; top: 50%; left: 50%;
-            transform: translate(-50%, -50%);
-            border-radius: 10px;
+            width: 180px; height: 20px; background: #333; position: absolute; top: 50%; left: 50%;
+            transform: translate(-50%, -50%); border-radius: 10px;
         }
         .anim-card {
-            width: 160px; height: 100px;
-            background: linear-gradient(135deg, #f6d365 0%, #fda085 100%);
-            position: absolute; bottom: -110px; left: 40px;
-            border-radius: 8px;
-            display: flex; align-items: flex-end; padding: 10px;
-            box-shadow: 0 -5px 15px rgba(0,0,0,0.2);
-            animation: insertCardAnim 2.5s ease-in-out infinite;
+            width: 160px; height: 100px; background: linear-gradient(135deg, #f6d365 0%, #fda085 100%);
+            position: absolute; bottom: -110px; left: 40px; border-radius: 8px; display: flex; align-items: flex-end; padding: 10px;
+            box-shadow: 0 -5px 15px rgba(0,0,0,0.2); animation: insertCardAnim 2.5s ease-in-out infinite;
         }
         .anim-chip { width: 40px; height: 30px; background: #d4af37; border-radius: 4px; }
-        @keyframes insertCardAnim {
-            0%, 20% { bottom: -110px; opacity: 0; }
-            40% { opacity: 1; }
-            60% { bottom: 40px; }
-            80% { bottom: 40px; opacity: 0;}
-            100% { bottom: -110px; opacity: 0; }
-        }
+        @keyframes insertCardAnim { 0%, 20% { bottom: -110px; opacity: 0; } 40% { opacity: 1; } 60% { bottom: 40px; } 80% { bottom: 40px; opacity: 0;} 100% { bottom: -110px; opacity: 0; } }
         h1.cta-title { color: var(--c-primary); font-size: 40px; margin: 0 0 15px 0; }
         p.cta-subtitle { color: var(--c-text-light); font-size: 20px; margin: 0; }
 
-
         /* --- SCREEN 2: Avatar Interaction --- */
-        #screen-2 {
-            flex-direction: row;
-            align-items: stretch;
-            background: #ffffff;
-        }
-
-        .avatar-stage {
-            flex: 1;
-            height: 100%;
-            position: relative;
-            background: #ffffff;
-            overflow: hidden;
-        }
-        
-        /* Video Styling */
+        #screen-2 { flex-direction: row; align-items: stretch; background: #ffffff; }
+        .avatar-stage { flex: 1; height: 100%; position: relative; background: #ffffff; overflow: hidden; }
         .avatar-video-full {
-            width: 100%;
-            height: 100%;
-            object-fit: cover;
-            object-position: center top;
-            display: block;
-            border: none;
-            background: #ffffff;
+            width: 100%; height: 100%; object-fit: cover; object-position: center top; display: block;
+            border: none; background: #ffffff;
         }
-        /* 隱藏瀏覽器預設控制項與畫中畫按鈕的 CSS Hack */
+        /* Hide controls */
         video::-webkit-media-controls { display:none !important; }
         video::-webkit-media-controls-enclosure { display:none !important; }
-        video::-webkit-picture-in-picture-button { display: none !important; }
 
         .interaction-panel {
-            flex: 1;
-            height: 100%;
-            display: flex;
-            flex-direction: column;
-            padding: 40px;
-            background: var(--glass-bg);
-            backdrop-filter: blur(25px);
-            border-left: var(--glass-border);
+            flex: 1; height: 100%; display: flex; flex-direction: column; padding: 40px;
+            background: var(--glass-bg); backdrop-filter: blur(25px); border-left: var(--glass-border);
             box-shadow: -10px 0 30px rgba(0,0,0,0.05);
         }
-
-        .chat-container {
-            flex: 1;
-            overflow-y: auto;
-            padding: 20px 0;
-            display: flex;
-            flex-direction: column;
-            gap: 25px;
-        }
-
-        .msg {
-            max-width: 85%;
-            padding: 20px 25px;
-            border-radius: 20px;
-            font-size: 22px;
-            line-height: 1.5;
-            position: relative;
-            animation: popIn 0.3s ease-out;
-        }
-        @keyframes popIn { from { opacity: 0; transform: translateY(20px) scale(0.95); } to { opacity: 1; transform: translateY(0) scale(1); }}
-        
-        .msg-ai {
-            align-self: flex-start;
-            background: var(--c-bg);
-            color: var(--c-primary);
-            font-weight: bold;
-            box-shadow: 0 5px 15px rgba(0,153,68,0.15);
-            border-bottom-left-radius: 5px;
-        }
-        .msg-user {
-            align-self: flex-end;
-            background: var(--c-primary);
-            color: white;
-            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
-            border-bottom-right-radius: 5px;
-            text-align: right;
-        }
-
-        .controls-area {
-            margin-top: auto;
-            padding-top: 30px;
-            border-top: 1px solid rgba(0,0,0,0.08);
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            gap: 25px;
-        }
-        
+        .chat-container { flex: 1; overflow-y: auto; padding: 20px 0; display: flex; flex-direction: column; gap: 25px; }
+        .msg { max-width: 85%; padding: 20px 25px; border-radius: 20px; font-size: 22px; line-height: 1.5; animation: popIn 0.3s ease-out; }
+        .msg-ai { align-self: flex-start; background: var(--c-bg); color: var(--c-primary); font-weight: bold; box-shadow: 0 5px 15px rgba(0,153,68,0.15); border-bottom-left-radius: 5px; }
+        .msg-user { align-self: flex-end; background: var(--c-primary); color: white; box-shadow: 0 5px 15px rgba(0,0,0,0.1); border-bottom-right-radius: 5px; text-align: right; }
+        .controls-area { margin-top: auto; padding-top: 30px; border-top: 1px solid rgba(0,0,0,0.08); display: flex; flex-direction: column; align-items: center; gap: 25px; }
         .lang-selector { display: flex; gap: 15px; }
-        .lang-pill {
-            padding: 10px 24px;
-            border-radius: 30px;
-            background: #fff;
-            border: 2px solid #eee;
-            font-size: 18px; color: var(--c-text-light);
-            font-weight: bold; transition: all 0.3s;
-        }
+        .lang-pill { padding: 10px 24px; border-radius: 30px; background: #fff; border: 2px solid #eee; font-size: 18px; color: var(--c-text-light); font-weight: bold; transition: all 0.3s; }
         .lang-pill.active { border-color: var(--c-primary); color: var(--c-primary); background: var(--c-primary-light); }
-        
         .mic-btn-large {
-            width: 100px; height: 100px;
-            background: var(--c-secondary);
-            border-radius: 50%;
-            display: flex; align-items: center; justify-content: center;
-            color: white; font-size: 40px;
-            cursor: pointer;
-            box-shadow: 0 10px 30px rgba(230, 0, 18, 0.4);
-            transition: transform 0.2s;
-            position: relative;
+            width: 100px; height: 100px; background: var(--c-secondary); border-radius: 50%;
+            display: flex; align-items: center; justify-content: center; color: white; font-size: 40px;
+            cursor: pointer; box-shadow: 0 10px 30px rgba(230, 0, 18, 0.4); transition: transform 0.2s; position: relative;
         }
         .mic-btn-large:active { transform: scale(0.95); }
-        
         .mic-btn-large.recording::after {
-            content: '';
-            position: absolute; width: 100%; height: 100%;
-            border-radius: 50%;
-            border: 4px solid var(--c-secondary);
-            animation: ripple 1.5s infinite ease-out;
-            z-index: -1;
+            content: ''; position: absolute; width: 100%; height: 100%; border-radius: 50%;
+            border: 4px solid var(--c-secondary); animation: ripple 1.5s infinite ease-out; z-index: -1;
         }
-        @keyframes ripple {
-            0% { transform: scale(1); opacity: 0.8; border-width: 4px;}
-            100% { transform: scale(2); opacity: 0; border-width: 1px;}
-        }
+        @keyframes ripple { 0% { transform: scale(1); opacity: 0.8; border-width: 4px;} 100% { transform: scale(2); opacity: 0; border-width: 1px;} }
         .listening-text { font-size: 16px; color: var(--c-text-light); font-weight: bold; height: 20px; }
 
-
-        /* --- SCREEN 3: Confirmation Card --- */
-        .confirm-card-modern {
-            background: var(--c-bg);
-            width: 90%; max-width: 650px;
-            padding: 50px;
-            border-radius: 30px;
-            box-shadow: var(--shadow-soft);
-            text-align: center;
-        }
+        /* --- SCREEN 3: Confirmation --- */
+        .confirm-card-modern { background: var(--c-bg); width: 90%; max-width: 650px; padding: 50px; border-radius: 30px; box-shadow: var(--shadow-soft); text-align: center; }
         .confirm-header { color: var(--c-primary); font-size: 36px; margin-bottom: 30px; font-weight: bold;}
-        
         .data-grid { display: grid; grid-template-columns: auto 1fr; gap: 20px 30px; text-align: left; margin-bottom: 40px; }
         .data-label { color: var(--c-text-light); font-size: 20px; text-align: right; font-weight: bold;}
         .data-value { color: var(--c-text); font-size: 22px; font-weight: bold; }
         .highlight-val { color: var(--c-primary); font-size: 26px; }
-
         .mega-btns { display: flex; gap: 25px; }
-        .mega-btn {
-            flex: 1; padding: 25px; border: none; border-radius: 15px;
-            font-size: 24px; font-weight: bold; cursor: pointer;
-            transition: transform 0.2s;
-        }
+        .mega-btn { flex: 1; padding: 25px; border: none; border-radius: 15px; font-size: 24px; font-weight: bold; cursor: pointer; transition: transform 0.2s; }
         .mega-btn:active { transform: scale(0.97); }
         .btn-back { background: #f0f0f0; color: #666; }
         .btn-ok { background: var(--c-primary); color: white; box-shadow: 0 10px 25px rgba(0,153,68,0.3); }
 
         /* --- Footer --- */
-        footer {
-            height: 40px;
-            background: var(--c-bg);
-            display: flex; align-items: center; justify-content: center;
-            font-size: 13px; color: #aaa; border-top: 1px solid #eee;
-        }
-        
-        .sim-hint {
-            position: absolute; bottom: 20px; width: 100%; text-align: center;
-            font-size: 14px; color: #aaa; font-style: italic; pointer-events: none;
-        }
+        footer { height: 40px; background: var(--c-bg); display: flex; align-items: center; justify-content: center; font-size: 13px; color: #aaa; border-top: 1px solid #eee; }
+        .sim-hint { position: absolute; bottom: 20px; width: 100%; text-align: center; font-size: 14px; color: #aaa; font-style: italic; pointer-events: none; }
     </style>
 </head>
-<body>
+<body onload="startIntro()">
+
+    <div id="intro-overlay">
+        <div class="intro-logos">
+            <img src="images/fetlogo.png" alt="FET" class="intro-logo-fet">
+            <div class="intro-divider"></div>
+            <div class="intro-title">中山醫學大學附設醫院</div>
+        </div>
+        <div class="intro-bar-container">
+            <div class="intro-bar-fill"></div>
+        </div>
+        <div class="intro-text">SMART KIOSK SYSTEM INITIALIZING...</div>
+    </div>
+
+    <div id="timeout-overlay">
+        <div class="timeout-circle" id="timeout-countdown">10</div>
+        <div class="timeout-msg">您還在嗎？</div>
+        <div class="timeout-sub">系統即將回到首頁，以保護您的資料安全</div>
+        <button class="btn-continue" onclick="cancelTimeout()">我還在，繼續操作</button>
+    </div>
 
     <header>
         <div class="header-left">
@@ -396,9 +349,77 @@
     </footer>
 
     <script>
-        // --- Simulation Logic ---
+        // --- System Globals ---
+        let idleTime = 0;
+        let idleLimit = 30; // 30秒無動作觸發警告
+        let warningTime = 10; // 警告倒數10秒
+        let warningTimer = null;
+        let isIdleWarningActive = false;
+        
+        // --- 1. Intro Animation Logic ---
+        function startIntro() {
+            // Intro runs for 5 seconds (matched with CSS animations)
+            setTimeout(() => {
+                document.getElementById('intro-overlay').classList.add('hidden');
+                // Start Idle Timer only after intro
+                setInterval(idleTimerIncrement, 1000); 
+            }, 5000);
+        }
 
-        // 1. Clock
+        // --- 2. Idle Timer Logic (System Wide) ---
+        function idleTimerIncrement() {
+            // Only count if not on Screen 1 (Initial screen doesn't need timeout usually, or maybe it resets intro)
+            // But usually Kiosk resets TO Screen 1. Let's assume we monitor all screens.
+            
+            idleTime++;
+            if (idleTime > idleLimit && !isIdleWarningActive) {
+                showTimeoutWarning();
+            }
+        }
+
+        function resetIdleTimer() {
+            if (!isIdleWarningActive) {
+                idleTime = 0;
+            }
+        }
+
+        // Add event listeners to reset timer on user interaction
+        document.body.addEventListener('click', resetIdleTimer);
+        document.body.addEventListener('touchstart', resetIdleTimer);
+        document.body.addEventListener('mousemove', resetIdleTimer);
+
+        // --- 3. Timeout Warning Logic ---
+        function showTimeoutWarning() {
+            isIdleWarningActive = true;
+            const overlay = document.getElementById('timeout-overlay');
+            const counter = document.getElementById('timeout-countdown');
+            overlay.classList.add('active');
+            
+            let timeLeft = warningTime;
+            counter.innerText = timeLeft;
+
+            warningTimer = setInterval(() => {
+                timeLeft--;
+                counter.innerText = timeLeft;
+                if (timeLeft <= 0) {
+                    clearInterval(warningTimer);
+                    // Timeout Reached: Reset Kiosk
+                    location.reload(); 
+                }
+            }, 1000);
+        }
+
+        function cancelTimeout() {
+            isIdleWarningActive = false;
+            clearInterval(warningTimer);
+            document.getElementById('timeout-overlay').classList.remove('active');
+            idleTime = 0;
+        }
+
+
+        // --- Normal Application Logic ---
+
+        // Clock
         setInterval(() => {
             const now = new Date();
             document.getElementById('clock').innerText = now.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
@@ -409,63 +430,51 @@
             document.getElementById(screenId).classList.add('active');
         }
 
-        // 2. Simulate Card Insert & Loading Logic
+        // Simulate Card Insert
         function simulateInsertCard() {
             console.log("Card detected...");
             
-            // 步驟 A: 顯示「讀取中」遮罩 (模擬讀卡過程)
             const loadingOverlay = document.getElementById('loading-overlay');
             loadingOverlay.classList.add('active');
 
-            // 步驟 B: 模擬讀取延遲 (2秒)
             setTimeout(() => {
-                loadingOverlay.classList.remove('active'); // 隱藏讀取遮罩
-                goToScreen('screen-2'); // 進入 Avatar 畫面
+                loadingOverlay.classList.remove('active');
+                goToScreen('screen-2');
                 
-                // --- 影片控制邏輯 ---
                 const video = document.getElementById('avatarVideo');
-                
-                // 重置影片
                 video.src = "images/avataropening.mp4";
                 video.loop = false; 
                 video.currentTime = 0;
-                
-                // 強制開啟聲音
                 video.muted = false; 
                 video.volume = 1.0; 
                 
-                // 播放
-                video.play().catch(e => {
-                    console.log("Auto-play error:", e);
-                });
+                video.play().catch(e => { console.log("Auto-play error:", e); });
 
-                // 監聽：開場影片播完後
                 video.onended = function() {
-                    console.log("Opening finished, switching to idle loop.");
+                    console.log("Switching to idle loop.");
                     video.src = "images/avatarMOV.mp4"; 
                     video.loop = true; 
                     video.play();
                 };
 
-            }, 2000); // 2000ms = 2秒讀取時間
+            }, 2000);
         }
 
-        // 3. Simulate Voice Input Flow
+        // Simulate Voice Input
         let isRecording = false;
         function simulateVoiceInput() {
             if(isRecording) return;
             isRecording = true;
+            resetIdleTimer(); // Reset timer on specific action too
             
             const micBtn = document.getElementById('micBtn');
             const listenText = document.getElementById('listeningText');
             const chatBox = document.getElementById('chat-box');
 
-            // A. Start "Recording" State
             micBtn.classList.add('recording');
             listenText.innerText = "正在聆聽中...";
             
             setTimeout(() => {
-                // B. "Stop" Recording & Show User Text
                 micBtn.classList.remove('recording');
                 listenText.innerText = "處理中...";
 
@@ -475,7 +484,6 @@
                 chatBox.appendChild(userMsg);
                 scrollToBottom();
 
-                // C. Simulate AI Thinking & Response
                 setTimeout(() => {
                     listenText.innerText = "";
                     const aiMsg = document.createElement('div');
@@ -484,7 +492,6 @@
                     chatBox.appendChild(aiMsg);
                     scrollToBottom();
                     
-                    // D. Auto transition to confirmation
                     setTimeout(() => {
                         goToScreen('screen-3');
                         isRecording = false; 
