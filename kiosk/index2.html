@@ -5,24 +5,19 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>中山醫大 智慧掛號服務 Kiosk</title>
     <link rel="icon" href="images/feticon.ico" type="image/x-icon">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
         /* --- CSS Variables & Reset --- */
         :root {
             --c-primary: #009944; /* CSMUH Green */
+            --c-primary-light: #eafff0;
             --c-secondary: #E60012; /* FET Red */
-            
-            /* Tech Colors */
-            --c-tech-bg: #05080f;
-            --c-neon-cyan: #00f3ff;
-            --c-neon-pink: #bc13fe;
-            --c-neon-yellow: #faff00;
-            --c-alert-red: #ff3333;
-            
             --c-bg: #ffffff;
             --c-text: #333;
+            --c-text-light: #666;
+            --glass-bg: rgba(255, 255, 255, 0.85);
+            --glass-border: 1px solid rgba(255, 255, 255, 0.5);
+            --shadow-soft: 0 8px 32px rgba(0, 0, 0, 0.1);
             --font-main: "Microsoft JhengHei", "Heiti TC", sans-serif;
-            --glass-bg: rgba(255, 255, 255, 0.95);
         }
 
         * { box-sizing: border-box; user-select: none; -webkit-tap-highlight-color: transparent; }
@@ -31,231 +26,292 @@
             font-family: var(--font-main);
             background: var(--c-bg);
             height: 100vh;
-            display: flex; flex-direction: column; overflow: hidden;
-        }
-
-        /* =========================================
-           1. 5-SECOND COLORFUL TECH INTRO (保留)
-           ========================================= */
-        #intro-overlay {
-            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            background-color: var(--c-tech-bg);
-            background-image: radial-gradient(circle at 50% 50%, #1a1f35 0%, #000000 100%);
-            z-index: 9999;
-            display: flex; align-items: center; justify-content: center;
-            overflow: hidden;
-            transition: transform 0.8s cubic-bezier(0.8, 0, 0.2, 1), opacity 0.8s;
-        }
-        #intro-overlay::before {
-            content: ''; position: absolute; top: -50%; left: -50%; width: 200%; height: 200%;
-            background: 
-                linear-gradient(rgba(0, 243, 255, 0.1) 1px, transparent 1px),
-                linear-gradient(90deg, rgba(188, 19, 254, 0.1) 1px, transparent 1px);
-            background-size: 50px 50px;
-            transform: perspective(500px) rotateX(60deg);
-            animation: gridMove 10s linear infinite;
-            pointer-events: none;
-        }
-        .intro-center-stage { position: relative; width: 100%; height: 100%; display: flex; flex-direction: column; align-items: center; justify-content: center; z-index: 10; }
-        .holo-avatar-container { width: 220px; height: 220px; position: relative; margin-bottom: 50px; display: flex; align-items: center; justify-content: center; }
-        .holo-avatar-img { width: 180px; height: 180px; filter: drop-shadow(0 0 15px var(--c-neon-cyan)); animation: floatAvatar 3s ease-in-out infinite, glitchEntry 1.5s ease-out forwards; z-index: 5; }
-        .tech-ring { position: absolute; border-radius: 50%; border: 2px solid transparent; box-shadow: 0 0 10px currentColor; }
-        .ring-1 { width: 220px; height: 220px; border-top: 2px solid var(--c-neon-cyan); border-bottom: 2px solid var(--c-neon-cyan); animation: spin 4s linear infinite; }
-        .ring-2 { width: 250px; height: 250px; border-left: 4px solid var(--c-neon-pink); border-right: 4px solid var(--c-neon-pink); animation: spinReverse 6s linear infinite; }
-        .ring-3 { width: 280px; height: 280px; border: 1px dashed var(--c-neon-yellow); animation: spin 12s linear infinite; opacity: 0.5; }
-        .tech-title-box { text-align: center; margin-bottom: 30px; }
-        .tech-title { font-size: 32px; color: #fff; letter-spacing: 6px; font-weight: 800; background: linear-gradient(90deg, var(--c-neon-cyan), #fff, var(--c-neon-pink)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; animation: shimmer 3s infinite linear; }
-        .tech-subtitle { font-size: 14px; color: var(--c-neon-cyan); letter-spacing: 2px; margin-top: 5px; opacity: 0.8; font-family: 'Courier New', monospace; }
-        .loader-wrapper { width: 320px; height: 6px; background: rgba(255,255,255,0.1); border-radius: 3px; overflow: hidden; position: relative; box-shadow: 0 0 20px rgba(0,0,0,0.5); }
-        .loader-fill { height: 100%; width: 0%; background: linear-gradient(90deg, var(--c-neon-cyan), var(--c-neon-pink), var(--c-neon-yellow)); box-shadow: 0 0 15px var(--c-neon-cyan); animation: load5s 4.8s cubic-bezier(0.22, 1, 0.36, 1) forwards; }
-        .sys-check-list { position: absolute; left: 40px; top: 50%; transform: translateY(-50%); font-family: 'Courier New', monospace; font-size: 12px; color: rgba(255,255,255,0.7); line-height: 2; border-left: 2px solid var(--c-neon-pink); padding-left: 15px; }
-        .sys-item { opacity: 0; animation: slideIn 0.3s forwards; }
-        .intro-exit { transform: scale(1.5); opacity: 0; pointer-events: none; filter: blur(20px); }
-
-        @keyframes gridMove { 0% { transform: perspective(500px) rotateX(60deg) translateY(0); } 100% { transform: perspective(500px) rotateX(60deg) translateY(50px); } }
-        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
-        @keyframes spinReverse { 0% { transform: rotate(360deg); } 100% { transform: rotate(0deg); } }
-        @keyframes floatAvatar { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-10px); } }
-        @keyframes shimmer { 0% { background-position: -200%; } 100% { background-position: 200%; } }
-        @keyframes load5s { 0% { width: 0%; } 100% { width: 100%; } }
-        @keyframes slideIn { from { opacity: 0; transform: translateX(-10px); } to { opacity: 1; transform: translateX(0); } }
-        @keyframes glitchEntry { 0% { opacity: 0; transform: scale(0.5); filter: hue-rotate(90deg) blur(5px); } 50% { opacity: 1; transform: scale(1.1); filter: hue-rotate(0deg) blur(0px); } 100% { transform: scale(1); } }
-
-
-        /* =========================================
-           2. TIMEOUT WARNING OVERLAY (NEW)
-           ========================================= */
-        #timeout-overlay {
-            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            background: rgba(10, 0, 0, 0.9);
-            z-index: 9000;
-            display: none; /* Hidden by default */
-            align-items: center; justify-content: center;
+            display: flex;
             flex-direction: column;
-            backdrop-filter: blur(10px);
+            overflow: hidden;
         }
-        #timeout-overlay.active { display: flex; animation: flashRed 2s infinite; }
-        
-        .timeout-box {
-            border: 2px solid var(--c-alert-red);
-            padding: 40px 60px;
-            background: rgba(40, 0, 0, 0.8);
-            text-align: center;
-            border-radius: 10px;
-            box-shadow: 0 0 50px rgba(255, 51, 51, 0.4);
-            position: relative;
-        }
-        .timeout-icon { font-size: 60px; color: var(--c-alert-red); margin-bottom: 20px; animation: pulse 1s infinite; }
-        .timeout-title { font-size: 30px; color: #fff; font-weight: bold; margin-bottom: 10px; text-transform: uppercase; letter-spacing: 2px; }
-        .timeout-desc { font-size: 16px; color: #aaa; margin-bottom: 30px; }
-        .countdown-circle {
-            width: 80px; height: 80px;
-            border: 4px solid var(--c-alert-red);
-            border-radius: 50%;
-            display: flex; align-items: center; justify-content: center;
-            font-size: 40px; font-weight: bold; color: #fff;
-            margin: 0 auto;
-        }
-        
-        @keyframes flashRed { 0%, 100% { box-shadow: inset 0 0 50px rgba(255,0,0,0.1); } 50% { box-shadow: inset 0 0 100px rgba(255,0,0,0.3); } }
-        @keyframes pulse { 0% { transform: scale(1); } 50% { transform: scale(1.1); } 100% { transform: scale(1); } }
 
-
-        /* =========================================
-           3. MAIN UI
-           ========================================= */
-        header { height: 70px; display: flex; align-items: center; justify-content: space-between; padding: 0 40px; background: var(--c-bg); border-bottom: 1px solid #eee; z-index: 100; }
+        /* --- Header --- */
+        header {
+            height: 70px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0 40px;
+            background: var(--c-bg);
+            border-bottom: 1px solid #eee;
+            z-index: 100;
+            position: relative; /* Ensure header stays below loading overlay */
+        }
         .header-left { display: flex; align-items: center; gap: 20px; }
         .fet-logo { height: 36px; }
         .hosp-name { font-size: 22px; font-weight: bold; color: var(--c-text); }
-        .system-status { font-size: 14px; color: #666; display: flex; gap: 20px; align-items: center; }
+        .system-status { font-size: 14px; color: var(--c-text-light); display: flex; gap: 20px; align-items: center; }
         .status-dot { width: 8px; height: 8px; background: #2ecc71; border-radius: 50%; display: inline-block; margin-right: 5px;}
         #clock { font-weight: bold; font-size: 16px; }
 
-        main { flex: 1; position: relative; overflow: hidden; background: #f8fcf9; }
-        .screen { position: absolute; top: 0; left: 0; width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; opacity: 0; pointer-events: none; transition: all 0.6s cubic-bezier(0.25, 0.8, 0.25, 1); }
-        .screen.active { opacity: 1; pointer-events: all; }
-
-        /* --- SCREEN 1: Insert Card + Avatar (UPDATED) --- */
-        #screen-1 {
-            flex-direction: row; /* Split Layout */
-            gap: 50px;
-        }
-        
-        .welcome-avatar-container {
-            width: 400px; height: 500px;
+        /* --- Main Container --- */
+        main {
+            flex: 1;
             position: relative;
-            background: #000;
-            border-radius: 20px;
             overflow: hidden;
-            border: 4px solid #333;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
-        }
-        .welcome-avatar-container::after {
-            content: 'AI ASSISTANT // ONLINE';
-            position: absolute; bottom: 20px; left: 0; width: 100%;
-            text-align: center; color: var(--c-tech-accent);
-            font-family: 'Courier New', monospace; font-weight: bold;
-            text-shadow: 0 0 5px var(--c-tech-accent);
-        }
-        .welcome-video {
-            width: 100%; height: 100%; object-fit: cover;
-            opacity: 0.9;
+            background: #f8fcf9;
         }
 
-        .card-cta-container { 
-            text-align: center; padding: 60px; 
-            background: var(--c-bg); border-radius: 30px; 
-            box-shadow: var(--shadow-soft); cursor: pointer; 
-            transform: scale(0.95); transition: transform 0.3s;
-            min-width: 400px;
+        /* --- Screens State --- */
+        .screen {
+            position: absolute;
+            top: 0; left: 0; width: 100%; height: 100%;
+            display: flex;
+            align-items: center; justify-content: center;
+            opacity: 0; pointer-events: none;
+            transition: all 0.6s cubic-bezier(0.25, 0.8, 0.25, 1);
+            z-index: 1;
+        }
+        .screen.active { opacity: 1; pointer-events: all; z-index: 2; }
+
+        /* --- Loading Overlay (New Feature) --- */
+        #loading-overlay {
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(255, 255, 255, 0.9);
+            backdrop-filter: blur(10px);
+            display: flex; flex-direction: column; align-items: center; justify-content: center;
+            opacity: 0; pointer-events: none; transition: opacity 0.3s;
+            z-index: 999; /* Highest priority */
+        }
+        #loading-overlay.active { opacity: 1; pointer-events: all; }
+        
+        .loader-spinner {
+            width: 60px; height: 60px;
+            border: 6px solid #eee; border-top: 6px solid var(--c-primary);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin-bottom: 20px;
+        }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+        
+        .loading-text { font-size: 24px; font-weight: bold; color: var(--c-primary); margin-bottom: 10px; }
+        .loading-subtext { font-size: 16px; color: #666; }
+
+        /* --- SCREEN 1: Insert Card --- */
+        .card-cta-container {
+            text-align: center;
+            padding: 60px;
+            background: var(--c-bg);
+            border-radius: 30px;
+            box-shadow: var(--shadow-soft);
+            cursor: pointer;
+            transform: scale(0.95);
+            transition: transform 0.3s;
         }
         .card-cta-container:active { transform: scale(0.98); }
-        .slot-machine { width: 240px; height: 160px; background: #eee; border: 6px solid #ddd; border-radius: 12px; margin: 0 auto 40px; position: relative; overflow: hidden; box-shadow: inset 0 5px 10px rgba(0,0,0,0.1); }
-        .slot-entry { width: 180px; height: 20px; background: #333; position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); border-radius: 10px; }
-        .anim-card { width: 160px; height: 100px; background: linear-gradient(135deg, #f6d365 0%, #fda085 100%); position: absolute; bottom: -110px; left: 40px; border-radius: 8px; display: flex; align-items: flex-end; padding: 10px; box-shadow: 0 -5px 15px rgba(0,0,0,0.2); animation: insertCardAnim 2.5s ease-in-out infinite; }
+        
+        .slot-machine {
+            width: 240px; height: 160px;
+            background: #eee;
+            border: 6px solid #ddd;
+            border-radius: 12px;
+            margin: 0 auto 40px;
+            position: relative;
+            overflow: hidden;
+            box-shadow: inset 0 5px 10px rgba(0,0,0,0.1);
+        }
+        .slot-entry {
+            width: 180px; height: 20px; background: #333;
+            position: absolute; top: 50%; left: 50%;
+            transform: translate(-50%, -50%);
+            border-radius: 10px;
+        }
+        .anim-card {
+            width: 160px; height: 100px;
+            background: linear-gradient(135deg, #f6d365 0%, #fda085 100%);
+            position: absolute; bottom: -110px; left: 40px;
+            border-radius: 8px;
+            display: flex; align-items: flex-end; padding: 10px;
+            box-shadow: 0 -5px 15px rgba(0,0,0,0.2);
+            animation: insertCardAnim 2.5s ease-in-out infinite;
+        }
         .anim-chip { width: 40px; height: 30px; background: #d4af37; border-radius: 4px; }
-        @keyframes insertCardAnim { 0%, 20% { bottom: -110px; opacity: 0; } 40% { opacity: 1; } 60% { bottom: 40px; } 80% { bottom: 40px; opacity: 0;} 100% { bottom: -110px; opacity: 0; } }
+        @keyframes insertCardAnim {
+            0%, 20% { bottom: -110px; opacity: 0; }
+            40% { opacity: 1; }
+            60% { bottom: 40px; }
+            80% { bottom: 40px; opacity: 0;}
+            100% { bottom: -110px; opacity: 0; }
+        }
         h1.cta-title { color: var(--c-primary); font-size: 40px; margin: 0 0 15px 0; }
-        p.cta-subtitle { color: #666; font-size: 20px; margin: 0; }
+        p.cta-subtitle { color: var(--c-text-light); font-size: 20px; margin: 0; }
 
-        /* Screen 2 */
-        #screen-2 { flex-direction: row; align-items: stretch; background: #ffffff; }
-        .avatar-stage { flex: 1; height: 100%; position: relative; background: #ffffff; overflow: hidden; }
-        .avatar-video-full { width: 100%; height: 100%; object-fit: cover; object-position: center top; display: block; background: #ffffff; }
-        .interaction-panel { flex: 1; height: 100%; display: flex; flex-direction: column; padding: 40px; background: var(--glass-bg); backdrop-filter: blur(25px); border-left: var(--glass-border); box-shadow: -10px 0 30px rgba(0,0,0,0.05); }
-        .chat-container { flex: 1; overflow-y: auto; padding: 20px 0; display: flex; flex-direction: column; gap: 25px; scroll-behavior: smooth; }
-        .msg { max-width: 85%; padding: 20px 25px; border-radius: 20px; font-size: 22px; line-height: 1.5; position: relative; animation: popIn 0.3s ease-out; }
-        .msg-ai { align-self: flex-start; background: #f0fdf4; color: var(--c-primary); font-weight: bold; box-shadow: 0 2px 5px rgba(0,0,0,0.05); border-bottom-left-radius: 5px; border: 1px solid #dcfce7; }
-        .msg-user { align-self: flex-end; background: var(--c-primary); color: white; box-shadow: 0 5px 15px rgba(0,0,0,0.1); border-bottom-right-radius: 5px; text-align: right; }
-        .chat-actions { margin-top: 15px; display: flex; gap: 15px; flex-wrap: wrap; }
-        .chat-btn { padding: 12px 24px; border: none; border-radius: 12px; font-size: 18px; cursor: pointer; font-weight: bold; transition: transform 0.2s; }
-        .chat-btn-confirm { background: var(--c-primary); color: white; box-shadow: 0 4px 15px rgba(0,153,68,0.3); }
-        .chat-btn-confirm:active { transform: scale(0.95); }
-        .chat-btn-secondary { background: #f1f5f9; color: #475569; }
-        .controls-area { margin-top: auto; padding-top: 30px; border-top: 1px solid rgba(0,0,0,0.08); display: flex; flex-direction: column; align-items: center; gap: 25px; }
+
+        /* --- SCREEN 2: Avatar Interaction --- */
+        #screen-2 {
+            flex-direction: row;
+            align-items: stretch;
+            background: #ffffff;
+        }
+
+        .avatar-stage {
+            flex: 1;
+            height: 100%;
+            position: relative;
+            background: #ffffff;
+            overflow: hidden;
+        }
+        
+        /* Video Styling */
+        .avatar-video-full {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            object-position: center top;
+            display: block;
+            border: none;
+            background: #ffffff;
+        }
+        /* 隱藏瀏覽器預設控制項與畫中畫按鈕的 CSS Hack */
+        video::-webkit-media-controls { display:none !important; }
+        video::-webkit-media-controls-enclosure { display:none !important; }
+        video::-webkit-picture-in-picture-button { display: none !important; }
+
+        .interaction-panel {
+            flex: 1;
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+            padding: 40px;
+            background: var(--glass-bg);
+            backdrop-filter: blur(25px);
+            border-left: var(--glass-border);
+            box-shadow: -10px 0 30px rgba(0,0,0,0.05);
+        }
+
+        .chat-container {
+            flex: 1;
+            overflow-y: auto;
+            padding: 20px 0;
+            display: flex;
+            flex-direction: column;
+            gap: 25px;
+        }
+
+        .msg {
+            max-width: 85%;
+            padding: 20px 25px;
+            border-radius: 20px;
+            font-size: 22px;
+            line-height: 1.5;
+            position: relative;
+            animation: popIn 0.3s ease-out;
+        }
+        @keyframes popIn { from { opacity: 0; transform: translateY(20px) scale(0.95); } to { opacity: 1; transform: translateY(0) scale(1); }}
+        
+        .msg-ai {
+            align-self: flex-start;
+            background: var(--c-bg);
+            color: var(--c-primary);
+            font-weight: bold;
+            box-shadow: 0 5px 15px rgba(0,153,68,0.15);
+            border-bottom-left-radius: 5px;
+        }
+        .msg-user {
+            align-self: flex-end;
+            background: var(--c-primary);
+            color: white;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+            border-bottom-right-radius: 5px;
+            text-align: right;
+        }
+
+        .controls-area {
+            margin-top: auto;
+            padding-top: 30px;
+            border-top: 1px solid rgba(0,0,0,0.08);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 25px;
+        }
+        
         .lang-selector { display: flex; gap: 15px; }
-        .lang-pill { padding: 10px 24px; border-radius: 30px; background: #fff; border: 2px solid #eee; font-size: 18px; color: #666; font-weight: bold; transition: all 0.3s; }
-        .lang-pill.active { border-color: var(--c-primary); color: var(--c-primary); background: #f0fdf4; }
-        .mic-btn-large { width: 100px; height: 100px; background: var(--c-secondary); border-radius: 50%; display: flex; align-items: center; justify-content: center; color: white; font-size: 40px; cursor: pointer; box-shadow: 0 10px 30px rgba(230, 0, 18, 0.4); transition: transform 0.2s; position: relative; }
+        .lang-pill {
+            padding: 10px 24px;
+            border-radius: 30px;
+            background: #fff;
+            border: 2px solid #eee;
+            font-size: 18px; color: var(--c-text-light);
+            font-weight: bold; transition: all 0.3s;
+        }
+        .lang-pill.active { border-color: var(--c-primary); color: var(--c-primary); background: var(--c-primary-light); }
+        
+        .mic-btn-large {
+            width: 100px; height: 100px;
+            background: var(--c-secondary);
+            border-radius: 50%;
+            display: flex; align-items: center; justify-content: center;
+            color: white; font-size: 40px;
+            cursor: pointer;
+            box-shadow: 0 10px 30px rgba(230, 0, 18, 0.4);
+            transition: transform 0.2s;
+            position: relative;
+        }
         .mic-btn-large:active { transform: scale(0.95); }
-        .mic-btn-large.recording::after { content: ''; position: absolute; width: 100%; height: 100%; border-radius: 50%; border: 4px solid var(--c-secondary); animation: ripple 1.5s infinite ease-out; z-index: -1; }
-        .listening-text { font-size: 16px; color: #666; font-weight: bold; height: 20px; }
+        
+        .mic-btn-large.recording::after {
+            content: '';
+            position: absolute; width: 100%; height: 100%;
+            border-radius: 50%;
+            border: 4px solid var(--c-secondary);
+            animation: ripple 1.5s infinite ease-out;
+            z-index: -1;
+        }
+        @keyframes ripple {
+            0% { transform: scale(1); opacity: 0.8; border-width: 4px;}
+            100% { transform: scale(2); opacity: 0; border-width: 1px;}
+        }
+        .listening-text { font-size: 16px; color: var(--c-text-light); font-weight: bold; height: 20px; }
 
-        /* Screen 3 */
-        .confirm-card-modern { background: var(--c-bg); width: 90%; max-width: 650px; padding: 50px; border-radius: 30px; box-shadow: var(--shadow-soft); text-align: center; }
+
+        /* --- SCREEN 3: Confirmation Card --- */
+        .confirm-card-modern {
+            background: var(--c-bg);
+            width: 90%; max-width: 650px;
+            padding: 50px;
+            border-radius: 30px;
+            box-shadow: var(--shadow-soft);
+            text-align: center;
+        }
         .confirm-header { color: var(--c-primary); font-size: 36px; margin-bottom: 30px; font-weight: bold;}
+        
         .data-grid { display: grid; grid-template-columns: auto 1fr; gap: 20px 30px; text-align: left; margin-bottom: 40px; }
-        .data-label { color: #888; font-size: 20px; text-align: right; font-weight: bold;}
-        .data-value { color: #333; font-size: 22px; font-weight: bold; }
+        .data-label { color: var(--c-text-light); font-size: 20px; text-align: right; font-weight: bold;}
+        .data-value { color: var(--c-text); font-size: 22px; font-weight: bold; }
         .highlight-val { color: var(--c-primary); font-size: 26px; }
+
         .mega-btns { display: flex; gap: 25px; }
-        .mega-btn { flex: 1; padding: 25px; border: none; border-radius: 15px; font-size: 24px; font-weight: bold; cursor: pointer; transition: transform 0.2s; }
+        .mega-btn {
+            flex: 1; padding: 25px; border: none; border-radius: 15px;
+            font-size: 24px; font-weight: bold; cursor: pointer;
+            transition: transform 0.2s;
+        }
         .mega-btn:active { transform: scale(0.97); }
-        .btn-back { background: #f1f5f9; color: #64748b; }
+        .btn-back { background: #f0f0f0; color: #666; }
         .btn-ok { background: var(--c-primary); color: white; box-shadow: 0 10px 25px rgba(0,153,68,0.3); }
 
-        footer { height: 40px; background: var(--c-bg); display: flex; align-items: center; justify-content: center; font-size: 13px; color: #aaa; border-top: 1px solid #eee; }
-        .sim-hint { position: absolute; bottom: 20px; width: 100%; text-align: center; font-size: 14px; color: #aaa; font-style: italic; pointer-events: none; }
+        /* --- Footer --- */
+        footer {
+            height: 40px;
+            background: var(--c-bg);
+            display: flex; align-items: center; justify-content: center;
+            font-size: 13px; color: #aaa; border-top: 1px solid #eee;
+        }
+        
+        .sim-hint {
+            position: absolute; bottom: 20px; width: 100%; text-align: center;
+            font-size: 14px; color: #aaa; font-style: italic; pointer-events: none;
+        }
     </style>
 </head>
 <body>
-
-    <div id="intro-overlay">
-        <div class="intro-center-stage">
-            <div class="holo-avatar-container">
-                <div class="tech-ring ring-1"></div>
-                <div class="tech-ring ring-2"></div>
-                <div class="tech-ring ring-3"></div>
-                <img src="https://api.dicebear.com/9.x/bottts/svg?seed=KioskMaster" class="holo-avatar-img" alt="Tech Avatar">
-            </div>
-            <div class="tech-title-box">
-                <div class="tech-title">AI SMART KIOSK</div>
-                <div class="tech-subtitle">SYSTEM INITIALIZATION</div>
-            </div>
-            <div class="loader-wrapper"><div class="loader-fill"></div></div>
-            <div class="sys-check-list" id="sys-check-list"></div>
-        </div>
-    </div>
-
-    <div id="timeout-overlay">
-        <div class="timeout-box">
-            <div class="timeout-icon"><i class="fa-solid fa-triangle-exclamation"></i></div>
-            <div class="timeout-title">操作逾時</div>
-            <div class="timeout-desc">系統偵測到您已長時間無操作</div>
-            <div class="countdown-circle" id="timeout-countdown">5</div>
-            <div style="margin-top:20px; color:#fff; font-size:14px;">系統即將重置並導入首頁...</div>
-        </div>
-    </div>
-
-    <div id="card-popup">
-        <div class="popup-box">
-            <div id="popup-spinner" class="spinner"></div>
-            <div id="popup-check" class="check-icon"><i class="fa-solid fa-check"></i></div>
-            <div id="popup-msg" class="popup-msg">正在讀取健保卡...</div>
-            <div id="popup-sub" class="popup-sub">請勿移除卡片</div>
-        </div>
-    </div>
 
     <header>
         <div class="header-left">
@@ -269,11 +325,13 @@
     </header>
 
     <main>
-        <div id="screen-1" class="screen active">
-            <div class="welcome-avatar-container">
-                <video src="images/avatarMOV.mp4" class="welcome-video" autoplay loop muted playsinline></video>
-            </div>
+        <div id="loading-overlay">
+            <div class="loader-spinner"></div>
+            <div class="loading-text">正在讀取健保卡...</div>
+            <div class="loading-subtext">請勿移除卡片 / Do not remove card</div>
+        </div>
 
+        <div id="screen-1" class="screen active">
             <div class="card-cta-container" onclick="simulateInsertCard()">
                 <div class="slot-machine">
                     <div class="slot-entry"></div>
@@ -287,14 +345,17 @@
 
         <div id="screen-2" class="screen">
             <div class="avatar-stage">
-                <video id="avatarVideo" class="avatar-video-full" playsinline>
+                <video id="avatarVideo" class="avatar-video-full" playsinline disablePictureInPicture controlsList="nodownload nofullscreen noremoteplayback">
                     <source src="images/avataropening.mp4" type="video/mp4">
                     您的瀏覽器不支援影片播放。
                 </video>
             </div>
             
             <div class="interaction-panel">
-                <div class="chat-container" id="chat-box"></div>
+                <div class="chat-container" id="chat-box">
+                    <div class="msg msg-ai">您好，我是您的智慧掛號助理。請問您今天哪裡不舒服？(您可以直接用說的)</div>
+                </div>
+                
                 <div class="controls-area">
                     <div class="lang-selector">
                         <div class="lang-pill active">國語</div>
@@ -305,7 +366,7 @@
                     <div id="listeningText" class="listening-text"></div>
                 </div>
             </div>
-            <div class="sim-hint" style="right: 40px; text-align:right; bottom: 10px; width: auto;">(模擬：點擊麥克風進行對話)</div>
+            <div class="sim-hint" style="right: 40px; text-align:right; bottom: 10px; width: auto;">(模擬操作：點擊紅色麥克風說話)</div>
         </div>
 
         <div id="screen-3" class="screen">
@@ -315,12 +376,13 @@
                     <div class="data-label">病患姓名</div>
                     <div class="data-value">王大明</div>
                     <div class="data-label">建議科別</div>
-                    <div class="data-value highlight-val" id="final-dept">一般內科</div>
+                    <div class="data-value highlight-val">心臟內科</div>
                     <div class="data-label">預約醫師</div>
-                    <div class="data-value">系統自動分配</div>
+                    <div class="data-value">林醫師 (2102診)</div>
                     <div class="data-label">看診時間</div>
                     <div class="data-value">2025/12/12 (五) 上午診</div>
                 </div>
+
                 <div class="mega-btns">
                     <button class="mega-btn btn-back" onclick="location.reload()">重新輸入</button>
                     <button class="mega-btn btn-ok" onclick="alert('掛號成功！請列印掛號單。')">確認掛號</button>
@@ -329,202 +391,113 @@
         </div>
     </main>
 
-    <footer>System provided by Far EasTone Telecommunications.</footer>
+    <footer>
+        System provided by Far EasTone Telecommunications. Powered by CSMUH Knowledge Base (Intranet Only).
+    </footer>
 
     <script>
-        // --- 1. Tech Intro Logic ---
-        window.addEventListener('load', () => {
-            const checks = [
-                "Linking to 5G Network...",
-                "Retrieving AI Model...",
-                "Avatar Module Loaded.",
-                "<span>READY.</span>"
-            ];
-            const listContainer = document.getElementById('sys-check-list');
-            
-            checks.forEach((text, index) => {
-                setTimeout(() => {
-                    const div = document.createElement('div');
-                    div.className = 'sys-item';
-                    div.innerHTML = `> ${text}`;
-                    listContainer.appendChild(div);
-                }, 800 + (index * 1000));
-            });
+        // --- Simulation Logic ---
 
-            setTimeout(() => {
-                const overlay = document.getElementById('intro-overlay');
-                overlay.classList.add('intro-exit');
-                setTimeout(() => { overlay.style.display = 'none'; }, 800);
-            }, 5000);
-        });
-
-        // --- 2. Idle Timer with Timeout Warning ---
-        const IDLE_LIMIT = 60000; // 60 seconds
-        let idleTimer;
-        let isTimingOut = false; // Prevent multiple triggers
-
-        function resetIdleTimer() {
-            if(isTimingOut) return; // Don't reset if we are already in timeout sequence
-            clearTimeout(idleTimer);
-            idleTimer = setTimeout(triggerTimeoutSequence, IDLE_LIMIT);
-        }
-
-        function triggerTimeoutSequence() {
-            isTimingOut = true;
-            const overlay = document.getElementById('timeout-overlay');
-            const countdownEl = document.getElementById('timeout-countdown');
-            overlay.classList.add('active');
-            
-            let count = 5;
-            countdownEl.innerText = count;
-
-            const interval = setInterval(() => {
-                count--;
-                countdownEl.innerText = count;
-                if(count <= 0) {
-                    clearInterval(interval);
-                    location.reload(); // Reload triggers Intro again
-                }
-            }, 1000);
-        }
-
-        ['mousemove', 'mousedown', 'keypress', 'touchstart', 'click'].forEach(evt => {
-            document.addEventListener(evt, resetIdleTimer);
-        });
-        resetIdleTimer();
-
-        // --- Other Logic ---
-        setInterval(() => { document.getElementById('clock').innerText = new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}); }, 1000);
+        // 1. Clock
+        setInterval(() => {
+            const now = new Date();
+            document.getElementById('clock').innerText = now.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
+        }, 1000);
 
         function goToScreen(screenId) {
             document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
             document.getElementById(screenId).classList.add('active');
         }
-        function scrollToBottom() {
-            const chatBox = document.getElementById('chat-box');
-            chatBox.scrollTop = chatBox.scrollHeight;
-        }
 
-        // --- 3. Card Reading ---
+        // 2. Simulate Card Insert & Loading Logic
         function simulateInsertCard() {
-            const popup = document.getElementById('card-popup');
-            const pSpinner = document.getElementById('popup-spinner');
-            const pCheck = document.getElementById('popup-check');
-            const pMsg = document.getElementById('popup-msg');
-            const pSub = document.getElementById('popup-sub');
+            console.log("Card detected...");
+            
+            // 步驟 A: 顯示「讀取中」遮罩 (模擬讀卡過程)
+            const loadingOverlay = document.getElementById('loading-overlay');
+            loadingOverlay.classList.add('active');
 
-            pSpinner.style.display = 'block';
-            pCheck.style.display = 'none';
-            pMsg.innerText = "正在讀取健保卡...";
-            pSub.innerText = "請勿移除卡片";
-            popup.classList.add('active');
-
+            // 步驟 B: 模擬讀取延遲 (2秒)
             setTimeout(() => {
-                pSpinner.style.display = 'none';
-                pCheck.style.display = 'block';
-                pMsg.innerText = "讀取成功！";
-                pSub.innerText = "王大明 先生 您好";
-                pMsg.style.color = "#009944";
+                loadingOverlay.classList.remove('active'); // 隱藏讀取遮罩
+                goToScreen('screen-2'); // 進入 Avatar 畫面
+                
+                // --- 影片控制邏輯 ---
+                const video = document.getElementById('avatarVideo');
+                
+                // 重置影片
+                video.src = "images/avataropening.mp4";
+                video.loop = false; 
+                video.currentTime = 0;
+                
+                // 強制開啟聲音
+                video.muted = false; 
+                video.volume = 1.0; 
+                
+                // 播放
+                video.play().catch(e => {
+                    console.log("Auto-play error:", e);
+                });
 
-                setTimeout(() => {
-                    popup.classList.remove('active');
-                    startConversationSession(); 
-                }, 1500);
+                // 監聽：開場影片播完後
+                video.onended = function() {
+                    console.log("Opening finished, switching to idle loop.");
+                    video.src = "images/avatarMOV.mp4"; 
+                    video.loop = true; 
+                    video.play();
+                };
 
-            }, 1500);
+            }, 2000); // 2000ms = 2秒讀取時間
         }
 
-        // --- 4. Randomized Multi-turn Dialogue ---
-        let currentScenario = null;
-        let conversationStep = 0;
+        // 3. Simulate Voice Input Flow
         let isRecording = false;
-
-        const scenarios = [
-            { id: 'chest', dept: '心臟內科', turns: [ { u: "我覺得胸口悶悶的，好像被石頭壓住。", a: "這種感覺持續多久了？是否有延伸到背部？" }, { u: "大概兩三天了，背部也會痛。", a: "請問您走路或爬樓梯時會覺得喘嗎？" }, { u: "走一點路就會很喘。", a: "了解。根據您的症狀(胸悶、背痛、易喘)，建議掛號【心臟內科】。" } ] },
-            { id: 'stomach', dept: '肝膽腸胃科', turns: [ { u: "我肚子好痛，很不舒服。", a: "請問是上腹部痛還是下腹部？飯前還是飯後痛？" }, { u: "肚臍上面這邊痛，吃飽更痛。", a: "請問這幾天有拉肚子或嘔吐的症狀嗎？" }, { u: "有一點拉肚子。", a: "了解。根據您的症狀，建議您掛號【肝膽腸胃科】。" } ] },
-            { id: 'skin', dept: '皮膚科', turns: [ { u: "我的手臂上長了很多紅疹子。", a: "請問這些疹子會癢嗎？還是會痛？" }, { u: "非常癢，抓了會破皮。", a: "最近是否有接觸到特殊的植物或食物？" }, { u: "昨天有去爬山，可能碰到植物。", a: "了解。這可能是接觸性皮膚炎，建議您掛號【皮膚科】。" } ] }
-        ];
-
-        function startConversationSession() {
-            goToScreen('screen-2');
-            currentScenario = scenarios[Math.floor(Math.random() * scenarios.length)];
-            conversationStep = 0;
-            
-            const chatBox = document.getElementById('chat-box');
-            chatBox.innerHTML = '<div class="msg msg-ai">您好，我是您的智慧掛號助理。請問您今天哪裡不舒服？(您可以直接用說的)</div>';
-            
-            const video = document.getElementById('avatarVideo');
-            video.src = "images/avataropening.mp4";
-            video.loop = false;
-            video.currentTime = 0;
-            video.muted = false; video.volume = 1.0;
-            video.play().catch(e => console.log(e));
-            video.onended = function() {
-                video.src = "images/avatarMOV.mp4"; 
-                video.loop = true; 
-                video.play();
-            };
-        }
-
         function simulateVoiceInput() {
-            if(isRecording || !currentScenario) return;
+            if(isRecording) return;
             isRecording = true;
-
+            
             const micBtn = document.getElementById('micBtn');
             const listenText = document.getElementById('listeningText');
+            const chatBox = document.getElementById('chat-box');
+
+            // A. Start "Recording" State
             micBtn.classList.add('recording');
             listenText.innerText = "正在聆聽中...";
-
-            if (conversationStep >= currentScenario.turns.length) {
-                micBtn.classList.remove('recording');
-                listenText.innerText = "";
-                isRecording = false;
-                return;
-            }
-
-            const currentTurn = currentScenario.turns[conversationStep];
-            const isLastTurn = conversationStep === currentScenario.turns.length - 1;
-
+            
             setTimeout(() => {
+                // B. "Stop" Recording & Show User Text
                 micBtn.classList.remove('recording');
                 listenText.innerText = "處理中...";
-                appendMsg('user', currentTurn.u);
 
+                const userMsg = document.createElement('div');
+                userMsg.className = 'msg msg-user';
+                userMsg.innerText = "我覺得胸口悶悶的，走路會喘，想掛號看心臟。";
+                chatBox.appendChild(userMsg);
+                scrollToBottom();
+
+                // C. Simulate AI Thinking & Response
                 setTimeout(() => {
                     listenText.innerText = "";
+                    const aiMsg = document.createElement('div');
+                    aiMsg.className = 'msg msg-ai';
+                    aiMsg.innerText = "收到。根據您的描述(胸悶、喘)，建議您掛號「心臟內科」。已為您找到林醫師的診，是否確認掛號？";
+                    chatBox.appendChild(aiMsg);
+                    scrollToBottom();
                     
-                    if (isLastTurn) {
-                        const finalHtml = `
-                            ${currentTurn.a}
-                            <div class="chat-actions">
-                                <button class="chat-btn chat-btn-confirm" onclick="finishBooking('${currentScenario.dept}')">確認掛號</button>
-                                <button class="chat-btn chat-btn-secondary" onclick="location.reload()">重新開始</button>
-                            </div>
-                        `;
-                        appendMsg('ai', finalHtml);
-                    } else {
-                        appendMsg('ai', currentTurn.a);
-                    }
+                    // D. Auto transition to confirmation
+                    setTimeout(() => {
+                        goToScreen('screen-3');
+                        isRecording = false; 
+                    }, 3000);
 
-                    conversationStep++;
-                    isRecording = false;
+                }, 1500); 
 
-                }, 1500);
             }, 2000);
         }
 
-        function appendMsg(role, html) {
+        function scrollToBottom() {
             const chatBox = document.getElementById('chat-box');
-            const div = document.createElement('div');
-            div.className = `msg msg-${role}`;
-            div.innerHTML = html;
-            chatBox.appendChild(div);
-            scrollToBottom();
-        }
-
-        function finishBooking(deptName) {
-            document.getElementById('final-dept').innerText = deptName;
-            goToScreen('screen-3');
+            chatBox.scrollTop = chatBox.scrollHeight;
         }
     </script>
 </body>
