@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>中山醫大 智慧掛號服務 Kiosk</title>
     <link rel="icon" href="images/feticon.ico" type="image/x-icon">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
         /* --- CSS Variables & Reset --- */
         :root {
@@ -14,7 +15,7 @@
             --c-bg: #ffffff;
             --c-text: #333;
             --c-text-light: #666;
-            --glass-bg: rgba(255, 255, 255, 0.85);
+            --glass-bg: rgba(255, 255, 255, 0.95);
             --glass-border: 1px solid rgba(255, 255, 255, 0.5);
             --shadow-soft: 0 8px 32px rgba(0, 0, 0, 0.1);
             --font-main: "Microsoft JhengHei", "Heiti TC", sans-serif;
@@ -26,75 +27,49 @@
             font-family: var(--font-main);
             background: var(--c-bg);
             height: 100vh;
-            display: flex;
-            flex-direction: column;
-            overflow: hidden;
+            display: flex; flex-direction: column; overflow: hidden;
         }
 
         /* --- 1. Intro Animation Overlay --- */
         #intro-overlay {
-            position: fixed;
-            top: 0; left: 0; width: 100%; height: 100%;
-            background: #ffffff;
-            z-index: 9999; /* Highest priority */
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            transition: opacity 0.8s ease-out; /* Smooth fade out */
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: #ffffff; z-index: 9999;
+            display: flex; flex-direction: column; align-items: center; justify-content: center;
+            transition: opacity 0.8s ease-out;
         }
-        
-        .intro-logo {
-            height: 80px;
-            margin-bottom: 30px;
-            animation: logoFloat 2s ease-in-out infinite;
-        }
-        
-        .intro-text {
-            font-size: 24px;
-            color: var(--c-primary);
-            font-weight: bold;
-            letter-spacing: 2px;
-            margin-bottom: 10px;
-        }
-
-        .loading-bar {
-            width: 200px;
-            height: 4px;
-            background: #eee;
-            border-radius: 2px;
-            overflow: hidden;
-            position: relative;
-        }
-        
-        .loading-progress {
-            position: absolute;
-            left: 0; top: 0; height: 100%; width: 0%;
-            background: linear-gradient(90deg, var(--c-primary), var(--c-secondary));
-            animation: loadProgress 2.8s ease-in-out forwards; /* Runs for approx 3s */
-        }
-
+        .intro-logo { height: 80px; margin-bottom: 30px; animation: logoFloat 2s ease-in-out infinite; }
+        .intro-text { font-size: 24px; color: var(--c-primary); font-weight: bold; letter-spacing: 2px; margin-bottom: 10px; }
+        .loading-bar { width: 200px; height: 4px; background: #eee; border-radius: 2px; overflow: hidden; position: relative; }
+        .loading-progress { position: absolute; left: 0; top: 0; height: 100%; width: 0%; background: linear-gradient(90deg, var(--c-primary), var(--c-secondary)); animation: loadProgress 2.8s ease-in-out forwards; }
+        .hidden-overlay { opacity: 0; pointer-events: none; }
         @keyframes logoFloat { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-10px); } }
         @keyframes loadProgress { 0% { width: 0%; } 100% { width: 100%; } }
-        
-        /* Hide class for JS to toggle */
-        .hidden-overlay {
-            opacity: 0;
-            pointer-events: none;
+
+        /* --- 2. Card Reading Popup (New) --- */
+        #card-popup {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.5); z-index: 5000;
+            display: flex; align-items: center; justify-content: center;
+            opacity: 0; pointer-events: none; transition: opacity 0.3s;
         }
+        #card-popup.active { opacity: 1; pointer-events: all; }
+        .popup-box {
+            background: white; width: 320px; padding: 40px; border-radius: 20px;
+            text-align: center; box-shadow: 0 10px 40px rgba(0,0,0,0.2);
+            transform: scale(0.9); transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        }
+        #card-popup.active .popup-box { transform: scale(1); }
+        
+        .spinner { width: 50px; height: 50px; border: 5px solid #eee; border-top: 5px solid var(--c-primary); border-radius: 50%; margin: 0 auto 20px; animation: spin 1s linear infinite; }
+        .check-icon { font-size: 50px; color: var(--c-primary); margin-bottom: 20px; display: none; animation: popCheck 0.5s; }
+        .popup-msg { font-size: 20px; font-weight: bold; color: #333; margin-bottom: 5px;}
+        .popup-sub { font-size: 16px; color: #666; }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+        @keyframes popCheck { 0% { transform: scale(0); } 80% { transform: scale(1.2); } 100% { transform: scale(1); } }
 
 
         /* --- Header --- */
-        header {
-            height: 70px;
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            padding: 0 40px;
-            background: var(--c-bg);
-            border-bottom: 1px solid #eee;
-            z-index: 100;
-        }
+        header { height: 70px; display: flex; align-items: center; justify-content: space-between; padding: 0 40px; background: var(--c-bg); border-bottom: 1px solid #eee; z-index: 100; }
         .header-left { display: flex; align-items: center; gap: 20px; }
         .fet-logo { height: 36px; }
         .hosp-name { font-size: 22px; font-weight: bold; color: var(--c-text); }
@@ -102,261 +77,65 @@
         .status-dot { width: 8px; height: 8px; background: #2ecc71; border-radius: 50%; display: inline-block; margin-right: 5px;}
         #clock { font-weight: bold; font-size: 16px; }
 
-        /* --- Main Container --- */
-        main {
-            flex: 1;
-            position: relative;
-            overflow: hidden;
-            background: #f8fcf9;
-        }
-
-        /* --- Screens State --- */
-        .screen {
-            position: absolute;
-            top: 0; left: 0; width: 100%; height: 100%;
-            display: flex;
-            align-items: center; justify-content: center;
-            opacity: 0; pointer-events: none;
-            transition: all 0.6s cubic-bezier(0.25, 0.8, 0.25, 1);
-        }
+        /* --- Main --- */
+        main { flex: 1; position: relative; overflow: hidden; background: #f8fcf9; }
+        .screen { position: absolute; top: 0; left: 0; width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; opacity: 0; pointer-events: none; transition: all 0.6s cubic-bezier(0.25, 0.8, 0.25, 1); }
         .screen.active { opacity: 1; pointer-events: all; }
 
-        /* --- SCREEN 1: Insert Card --- */
-        .card-cta-container {
-            text-align: center;
-            padding: 60px;
-            background: var(--c-bg);
-            border-radius: 30px;
-            box-shadow: var(--shadow-soft);
-            cursor: pointer;
-            transform: scale(0.95);
-            transition: transform 0.3s;
-        }
+        /* Screen 1 */
+        .card-cta-container { text-align: center; padding: 60px; background: var(--c-bg); border-radius: 30px; box-shadow: var(--shadow-soft); cursor: pointer; transform: scale(0.95); transition: transform 0.3s; }
         .card-cta-container:active { transform: scale(0.98); }
-        
-        .slot-machine {
-            width: 240px; height: 160px;
-            background: #eee;
-            border: 6px solid #ddd;
-            border-radius: 12px;
-            margin: 0 auto 40px;
-            position: relative;
-            overflow: hidden;
-            box-shadow: inset 0 5px 10px rgba(0,0,0,0.1);
-        }
-        .slot-entry {
-            width: 180px; height: 20px; background: #333;
-            position: absolute; top: 50%; left: 50%;
-            transform: translate(-50%, -50%);
-            border-radius: 10px;
-        }
-        .anim-card {
-            width: 160px; height: 100px;
-            background: linear-gradient(135deg, #f6d365 0%, #fda085 100%);
-            position: absolute; bottom: -110px; left: 40px;
-            border-radius: 8px;
-            display: flex; align-items: flex-end; padding: 10px;
-            box-shadow: 0 -5px 15px rgba(0,0,0,0.2);
-            animation: insertCardAnim 2.5s ease-in-out infinite;
-        }
+        .slot-machine { width: 240px; height: 160px; background: #eee; border: 6px solid #ddd; border-radius: 12px; margin: 0 auto 40px; position: relative; overflow: hidden; box-shadow: inset 0 5px 10px rgba(0,0,0,0.1); }
+        .slot-entry { width: 180px; height: 20px; background: #333; position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); border-radius: 10px; }
+        .anim-card { width: 160px; height: 100px; background: linear-gradient(135deg, #f6d365 0%, #fda085 100%); position: absolute; bottom: -110px; left: 40px; border-radius: 8px; display: flex; align-items: flex-end; padding: 10px; box-shadow: 0 -5px 15px rgba(0,0,0,0.2); animation: insertCardAnim 2.5s ease-in-out infinite; }
         .anim-chip { width: 40px; height: 30px; background: #d4af37; border-radius: 4px; }
-        @keyframes insertCardAnim {
-            0%, 20% { bottom: -110px; opacity: 0; }
-            40% { opacity: 1; }
-            60% { bottom: 40px; }
-            80% { bottom: 40px; opacity: 0;}
-            100% { bottom: -110px; opacity: 0; }
-        }
+        @keyframes insertCardAnim { 0%, 20% { bottom: -110px; opacity: 0; } 40% { opacity: 1; } 60% { bottom: 40px; } 80% { bottom: 40px; opacity: 0;} 100% { bottom: -110px; opacity: 0; } }
         h1.cta-title { color: var(--c-primary); font-size: 40px; margin: 0 0 15px 0; }
         p.cta-subtitle { color: var(--c-text-light); font-size: 20px; margin: 0; }
 
-
-        /* --- SCREEN 2: Avatar Interaction --- */
-        #screen-2 {
-            flex-direction: row;
-            align-items: stretch;
-            background: #ffffff;
-        }
-
-        .avatar-stage {
-            flex: 1;
-            height: 100%;
-            position: relative;
-            background: #ffffff;
-            overflow: hidden;
-        }
+        /* Screen 2 */
+        #screen-2 { flex-direction: row; align-items: stretch; background: #ffffff; }
+        .avatar-stage { flex: 1; height: 100%; position: relative; background: #ffffff; overflow: hidden; }
+        .avatar-video-full { width: 100%; height: 100%; object-fit: cover; object-position: center top; display: block; background: #ffffff; }
+        .interaction-panel { flex: 1; height: 100%; display: flex; flex-direction: column; padding: 40px; background: var(--glass-bg); backdrop-filter: blur(25px); border-left: var(--glass-border); box-shadow: -10px 0 30px rgba(0,0,0,0.05); }
+        .chat-container { flex: 1; overflow-y: auto; padding: 20px 0; display: flex; flex-direction: column; gap: 25px; scroll-behavior: smooth; }
         
-        .avatar-video-full {
-            width: 100%;
-            height: 100%;
-            object-fit: cover;
-            object-position: center top;
-            display: block;
-            border: none;
-            background: #ffffff;
-        }
-
-        .interaction-panel {
-            flex: 1;
-            height: 100%;
-            display: flex;
-            flex-direction: column;
-            padding: 40px;
-            background: var(--glass-bg);
-            backdrop-filter: blur(25px);
-            border-left: var(--glass-border);
-            box-shadow: -10px 0 30px rgba(0,0,0,0.05);
-        }
-
-        .chat-container {
-            flex: 1;
-            overflow-y: auto;
-            padding: 20px 0;
-            display: flex;
-            flex-direction: column;
-            gap: 25px;
-        }
-
-        .msg {
-            max-width: 85%;
-            padding: 20px 25px;
-            border-radius: 20px;
-            font-size: 22px;
-            line-height: 1.5;
-            position: relative;
-            animation: popIn 0.3s ease-out;
-        }
+        .msg { max-width: 85%; padding: 20px 25px; border-radius: 20px; font-size: 22px; line-height: 1.5; position: relative; animation: popIn 0.3s ease-out; }
         @keyframes popIn { from { opacity: 0; transform: translateY(20px) scale(0.95); } to { opacity: 1; transform: translateY(0) scale(1); }}
-        
-        .msg-ai {
-            align-self: flex-start;
-            background: var(--c-bg);
-            color: var(--c-primary);
-            font-weight: bold;
-            box-shadow: 0 5px 15px rgba(0,153,68,0.15);
-            border-bottom-left-radius: 5px;
-        }
-        .msg-user {
-            align-self: flex-end;
-            background: var(--c-primary);
-            color: white;
-            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
-            border-bottom-right-radius: 5px;
-            text-align: right;
-        }
+        .msg-ai { align-self: flex-start; background: var(--c-bg); color: var(--c-primary); font-weight: bold; box-shadow: 0 5px 15px rgba(0,153,68,0.15); border-bottom-left-radius: 5px; }
+        .msg-user { align-self: flex-end; background: var(--c-primary); color: white; box-shadow: 0 5px 15px rgba(0,0,0,0.1); border-bottom-right-radius: 5px; text-align: right; }
 
-        .chat-actions {
-            margin-top: 15px;
-            display: flex;
-            gap: 15px;
-        }
-        .chat-btn {
-            padding: 10px 20px;
-            border: none;
-            border-radius: 10px;
-            font-size: 18px;
-            cursor: pointer;
-            font-weight: bold;
-            transition: background 0.2s;
-        }
-        .chat-btn-confirm {
-            background: var(--c-primary);
-            color: white;
-            box-shadow: 0 4px 10px rgba(0,153,68,0.3);
-        }
+        .chat-actions { margin-top: 15px; display: flex; gap: 15px; flex-wrap: wrap; }
+        .chat-btn { padding: 10px 20px; border: none; border-radius: 10px; font-size: 18px; cursor: pointer; font-weight: bold; transition: background 0.2s; }
+        .chat-btn-confirm { background: var(--c-primary); color: white; box-shadow: 0 4px 10px rgba(0,153,68,0.3); }
         .chat-btn-confirm:active { transform: scale(0.95); }
-        .chat-btn-secondary {
-            background: #eee;
-            color: #555;
-        }
+        .chat-btn-secondary { background: #eee; color: #555; }
 
-        .controls-area {
-            margin-top: auto;
-            padding-top: 30px;
-            border-top: 1px solid rgba(0,0,0,0.08);
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            gap: 25px;
-        }
-        
+        .controls-area { margin-top: auto; padding-top: 30px; border-top: 1px solid rgba(0,0,0,0.08); display: flex; flex-direction: column; align-items: center; gap: 25px; }
         .lang-selector { display: flex; gap: 15px; }
-        .lang-pill {
-            padding: 10px 24px;
-            border-radius: 30px;
-            background: #fff;
-            border: 2px solid #eee;
-            font-size: 18px; color: var(--c-text-light);
-            font-weight: bold; transition: all 0.3s;
-        }
+        .lang-pill { padding: 10px 24px; border-radius: 30px; background: #fff; border: 2px solid #eee; font-size: 18px; color: var(--c-text-light); font-weight: bold; transition: all 0.3s; }
         .lang-pill.active { border-color: var(--c-primary); color: var(--c-primary); background: var(--c-primary-light); }
-        
-        .mic-btn-large {
-            width: 100px; height: 100px;
-            background: var(--c-secondary);
-            border-radius: 50%;
-            display: flex; align-items: center; justify-content: center;
-            color: white; font-size: 40px;
-            cursor: pointer;
-            box-shadow: 0 10px 30px rgba(230, 0, 18, 0.4);
-            transition: transform 0.2s;
-            position: relative;
-        }
+        .mic-btn-large { width: 100px; height: 100px; background: var(--c-secondary); border-radius: 50%; display: flex; align-items: center; justify-content: center; color: white; font-size: 40px; cursor: pointer; box-shadow: 0 10px 30px rgba(230, 0, 18, 0.4); transition: transform 0.2s; position: relative; }
         .mic-btn-large:active { transform: scale(0.95); }
-        
-        .mic-btn-large.recording::after {
-            content: '';
-            position: absolute; width: 100%; height: 100%;
-            border-radius: 50%;
-            border: 4px solid var(--c-secondary);
-            animation: ripple 1.5s infinite ease-out;
-            z-index: -1;
-        }
-        @keyframes ripple {
-            0% { transform: scale(1); opacity: 0.8; border-width: 4px;}
-            100% { transform: scale(2); opacity: 0; border-width: 1px;}
-        }
+        .mic-btn-large.recording::after { content: ''; position: absolute; width: 100%; height: 100%; border-radius: 50%; border: 4px solid var(--c-secondary); animation: ripple 1.5s infinite ease-out; z-index: -1; }
+        @keyframes ripple { 0% { transform: scale(1); opacity: 0.8; border-width: 4px;} 100% { transform: scale(2); opacity: 0; border-width: 1px;} }
         .listening-text { font-size: 16px; color: var(--c-text-light); font-weight: bold; height: 20px; }
 
-
-        /* --- SCREEN 3: Confirmation Card --- */
-        .confirm-card-modern {
-            background: var(--c-bg);
-            width: 90%; max-width: 650px;
-            padding: 50px;
-            border-radius: 30px;
-            box-shadow: var(--shadow-soft);
-            text-align: center;
-        }
+        /* Screen 3 */
+        .confirm-card-modern { background: var(--c-bg); width: 90%; max-width: 650px; padding: 50px; border-radius: 30px; box-shadow: var(--shadow-soft); text-align: center; }
         .confirm-header { color: var(--c-primary); font-size: 36px; margin-bottom: 30px; font-weight: bold;}
-        
         .data-grid { display: grid; grid-template-columns: auto 1fr; gap: 20px 30px; text-align: left; margin-bottom: 40px; }
         .data-label { color: var(--c-text-light); font-size: 20px; text-align: right; font-weight: bold;}
         .data-value { color: var(--c-text); font-size: 22px; font-weight: bold; }
         .highlight-val { color: var(--c-primary); font-size: 26px; }
-
         .mega-btns { display: flex; gap: 25px; }
-        .mega-btn {
-            flex: 1; padding: 25px; border: none; border-radius: 15px;
-            font-size: 24px; font-weight: bold; cursor: pointer;
-            transition: transform 0.2s;
-        }
+        .mega-btn { flex: 1; padding: 25px; border: none; border-radius: 15px; font-size: 24px; font-weight: bold; cursor: pointer; transition: transform 0.2s; }
         .mega-btn:active { transform: scale(0.97); }
         .btn-back { background: #f0f0f0; color: #666; }
         .btn-ok { background: var(--c-primary); color: white; box-shadow: 0 10px 25px rgba(0,153,68,0.3); }
 
-        /* --- Footer --- */
-        footer {
-            height: 40px;
-            background: var(--c-bg);
-            display: flex; align-items: center; justify-content: center;
-            font-size: 13px; color: #aaa; border-top: 1px solid #eee;
-        }
-        
-        .sim-hint {
-            position: absolute; bottom: 20px; width: 100%; text-align: center;
-            font-size: 14px; color: #aaa; font-style: italic; pointer-events: none;
-        }
+        footer { height: 40px; background: var(--c-bg); display: flex; align-items: center; justify-content: center; font-size: 13px; color: #aaa; border-top: 1px solid #eee; }
+        .sim-hint { position: absolute; bottom: 20px; width: 100%; text-align: center; font-size: 14px; color: #aaa; font-style: italic; pointer-events: none; }
     </style>
 </head>
 <body>
@@ -365,8 +144,15 @@
         <img src="images/fetlogo.png" alt="FET Logo" class="intro-logo">
         <div class="intro-text">中山醫學大學附設醫院 | 智慧掛號櫃台</div>
         <div class="intro-text" style="font-size: 16px; color:#666; margin-top:5px;">System Loading...</div>
-        <div class="loading-bar">
-            <div class="loading-progress"></div>
+        <div class="loading-bar"><div class="loading-progress"></div></div>
+    </div>
+
+    <div id="card-popup">
+        <div class="popup-box">
+            <div id="popup-spinner" class="spinner"></div>
+            <div id="popup-check" class="check-icon"><i class="fa-solid fa-check"></i></div>
+            <div id="popup-msg" class="popup-msg">正在讀取健保卡...</div>
+            <div id="popup-sub" class="popup-sub">請勿移除卡片</div>
         </div>
     </div>
 
@@ -403,9 +189,7 @@
             </div>
             
             <div class="interaction-panel">
-                <div class="chat-container" id="chat-box">
-                    <div class="msg msg-ai">您好，我是您的智慧掛號助理。請問您今天哪裡不舒服？(您可以直接用說的)</div>
-                </div>
+                <div class="chat-container" id="chat-box"></div>
                 
                 <div class="controls-area">
                     <div class="lang-selector">
@@ -417,7 +201,7 @@
                     <div id="listeningText" class="listening-text"></div>
                 </div>
             </div>
-            <div class="sim-hint" style="right: 40px; text-align:right; bottom: 10px; width: auto;">(模擬操作：點擊紅色麥克風說話)</div>
+            <div class="sim-hint" style="right: 40px; text-align:right; bottom: 10px; width: auto;">(模擬：點擊麥克風進行對話)</div>
         </div>
 
         <div id="screen-3" class="screen">
@@ -427,13 +211,12 @@
                     <div class="data-label">病患姓名</div>
                     <div class="data-value">王大明</div>
                     <div class="data-label">建議科別</div>
-                    <div class="data-value highlight-val">心臟內科</div>
+                    <div class="data-value highlight-val" id="final-dept">一般內科</div>
                     <div class="data-label">預約醫師</div>
-                    <div class="data-value">林醫師 (2102診)</div>
+                    <div class="data-value">系統自動分配</div>
                     <div class="data-label">看診時間</div>
                     <div class="data-value">2025/12/12 (五) 上午診</div>
                 </div>
-
                 <div class="mega-btns">
                     <button class="mega-btn btn-back" onclick="location.reload()">重新輸入</button>
                     <button class="mega-btn btn-ok" onclick="alert('掛號成功！請列印掛號單。')">確認掛號</button>
@@ -442,141 +225,202 @@
         </div>
     </main>
 
-    <footer>
-        System provided by Far EasTone Telecommunications. Powered by CSMUH Knowledge Base (Intranet Only).
-    </footer>
+    <footer>System provided by Far EasTone Telecommunications.</footer>
 
     <script>
-        // --- 1. Intro Animation Logic ---
-        // 頁面載入後，等待 3 秒，然後淡出 Overlay
+        // --- Intro & Idle ---
         window.addEventListener('load', () => {
             setTimeout(() => {
                 const overlay = document.getElementById('intro-overlay');
                 overlay.classList.add('hidden-overlay');
-                // 完全移除 DOM 以免擋到操作
-                setTimeout(() => {
-                    overlay.style.display = 'none';
-                }, 800); // Wait for CSS transition
-            }, 3000); // 3 seconds duration
+                setTimeout(() => { overlay.style.display = 'none'; }, 800);
+            }, 3000);
         });
 
-        // --- 2. Idle Timer Logic (Auto Refresh) ---
-        // 60秒無操作則 reload
-        const IDLE_LIMIT = 60000; // 60 seconds
+        const IDLE_LIMIT = 60000;
         let idleTimer;
-
         function resetIdleTimer() {
             clearTimeout(idleTimer);
-            idleTimer = setTimeout(() => {
-                // Time's up! Reload the page to show intro again
-                location.reload();
-            }, IDLE_LIMIT);
+            idleTimer = setTimeout(() => { location.reload(); }, IDLE_LIMIT);
         }
-
-        // 監聽各種使用者操作來重置計時器
         ['mousemove', 'mousedown', 'keypress', 'touchstart', 'click'].forEach(evt => {
             document.addEventListener(evt, resetIdleTimer);
         });
-
-        // 初始化計時器
         resetIdleTimer();
-
-
-        // --- 3. Existing Simulation Logic ---
-
-        // Clock
-        setInterval(() => {
-            const now = new Date();
-            document.getElementById('clock').innerText = now.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
-        }, 1000);
+        setInterval(() => { document.getElementById('clock').innerText = new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}); }, 1000);
 
         function goToScreen(screenId) {
             document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
             document.getElementById(screenId).classList.add('active');
         }
-
-        // Simulate Card Insert & Video Control
-        function simulateInsertCard() {
-            console.log("Card detected...");
-            
-            setTimeout(() => {
-                goToScreen('screen-2');
-                
-                const video = document.getElementById('avatarVideo');
-                video.src = "images/avataropening.mp4";
-                video.loop = false;
-                video.currentTime = 0;
-                
-                // Force sound on
-                video.muted = false; 
-                video.volume = 1.0; 
-                
-                video.play().catch(e => {
-                    console.log("Auto-play error:", e);
-                });
-
-                video.onended = function() {
-                    console.log("Opening finished, switching to idle loop.");
-                    video.src = "images/avatarMOV.mp4"; 
-                    video.loop = true; 
-                    video.play();
-                };
-
-            }, 600);
-        }
-
-        // Simulate Voice Input Flow
-        let isRecording = false;
-        function simulateVoiceInput() {
-            if(isRecording) return;
-            isRecording = true;
-            
-            const micBtn = document.getElementById('micBtn');
-            const listenText = document.getElementById('listeningText');
-            const chatBox = document.getElementById('chat-box');
-
-            // Start "Recording"
-            micBtn.classList.add('recording');
-            listenText.innerText = "正在聆聽中...";
-            
-            setTimeout(() => {
-                // Stop Recording
-                micBtn.classList.remove('recording');
-                listenText.innerText = "處理中...";
-
-                const userMsg = document.createElement('div');
-                userMsg.className = 'msg msg-user';
-                userMsg.innerText = "我覺得胸口悶悶的，走路會喘，想掛號看心臟。";
-                chatBox.appendChild(userMsg);
-                scrollToBottom();
-
-                // AI Response
-                setTimeout(() => {
-                    listenText.innerText = "";
-                    const aiMsg = document.createElement('div');
-                    aiMsg.className = 'msg msg-ai';
-                    
-                    // Insert Action Buttons
-                    aiMsg.innerHTML = `
-                        收到。根據您的描述(胸悶、喘)，建議您掛號「心臟內科」。已為您找到林醫師的診，是否確認掛號？
-                        <div class="chat-actions">
-                            <button class="chat-btn chat-btn-confirm" onclick="goToScreen('screen-3')">確認掛號</button>
-                            <button class="chat-btn chat-btn-secondary" onclick="alert('模擬重置：請再次點擊麥克風')">再說一次</button>
-                        </div>
-                    `;
-                    
-                    chatBox.appendChild(aiMsg);
-                    scrollToBottom();
-                    isRecording = false;
-
-                }, 1500); 
-
-            }, 2000);
-        }
-
         function scrollToBottom() {
             const chatBox = document.getElementById('chat-box');
             chatBox.scrollTop = chatBox.scrollHeight;
+        }
+
+        // --- 1. Card Reading Logic ---
+        function simulateInsertCard() {
+            // Show Popup
+            const popup = document.getElementById('card-popup');
+            const pSpinner = document.getElementById('popup-spinner');
+            const pCheck = document.getElementById('popup-check');
+            const pMsg = document.getElementById('popup-msg');
+            const pSub = document.getElementById('popup-sub');
+
+            // Reset Popup State
+            pSpinner.style.display = 'block';
+            pCheck.style.display = 'none';
+            pMsg.innerText = "正在讀取健保卡...";
+            pSub.innerText = "請勿移除卡片";
+            popup.classList.add('active');
+
+            // Simulate Reading Delay
+            setTimeout(() => {
+                // Success State
+                pSpinner.style.display = 'none';
+                pCheck.style.display = 'block';
+                pMsg.innerText = "讀取成功！";
+                pSub.innerText = "王大明 先生 您好";
+                pMsg.style.color = "#009944";
+
+                // Transition to Screen 2
+                setTimeout(() => {
+                    popup.classList.remove('active');
+                    startConversationSession(); // Init dialogue
+                }, 1500);
+
+            }, 1500);
+        }
+
+        // --- 2. Randomized Multi-turn Dialogue System ---
+        
+        let currentScenario = null;
+        let conversationStep = 0;
+        let isRecording = false;
+
+        // Scenarios Data
+        const scenarios = [
+            {
+                id: 'chest',
+                dept: '心臟內科',
+                turns: [
+                    { u: "我覺得胸口悶悶的，好像被石頭壓住。", a: "這種感覺持續多久了？是否有延伸到背部？" },
+                    { u: "大概兩三天了，背部也會痛。", a: "請問您走路或爬樓梯時會覺得喘嗎？" },
+                    { u: "走一點路就會很喘。", a: "了解。根據您的症狀(胸悶、背痛、易喘)，建議掛號【心臟內科】。" }
+                ]
+            },
+            {
+                id: 'stomach',
+                dept: '肝膽腸胃科',
+                turns: [
+                    { u: "我肚子好痛，很不舒服。", a: "請問是上腹部痛還是下腹部？飯前還是飯後痛？" },
+                    { u: "肚臍上面這邊痛，吃飽更痛。", a: "請問這幾天有拉肚子或嘔吐的症狀嗎？" },
+                    { u: "有一點拉肚子。", a: "了解。根據您的症狀，建議您掛號【肝膽腸胃科】。" }
+                ]
+            },
+            {
+                id: 'skin',
+                dept: '皮膚科',
+                turns: [
+                    { u: "我的手臂上長了很多紅疹子。", a: "請問這些疹子會癢嗎？還是會痛？" },
+                    { u: "非常癢，抓了會破皮。", a: "最近是否有接觸到特殊的植物或食物？" },
+                    { u: "昨天有去爬山，可能碰到植物。", a: "了解。這可能是接觸性皮膚炎，建議您掛號【皮膚科】。" }
+                ]
+            }
+        ];
+
+        function startConversationSession() {
+            goToScreen('screen-2');
+            
+            // Randomly select a scenario
+            currentScenario = scenarios[Math.floor(Math.random() * scenarios.length)];
+            conversationStep = 0;
+            
+            // Reset Chat
+            const chatBox = document.getElementById('chat-box');
+            chatBox.innerHTML = '<div class="msg msg-ai">您好，我是您的智慧掛號助理。請問您今天哪裡不舒服？(您可以直接用說的)</div>';
+            
+            // Play Opening Video
+            const video = document.getElementById('avatarVideo');
+            video.src = "images/avataropening.mp4";
+            video.loop = false;
+            video.currentTime = 0;
+            video.muted = false; video.volume = 1.0;
+            video.play().catch(e => console.log(e));
+            video.onended = function() {
+                video.src = "images/avatarMOV.mp4"; 
+                video.loop = true; 
+                video.play();
+            };
+        }
+
+        function simulateVoiceInput() {
+            if(isRecording || !currentScenario) return;
+            isRecording = true;
+
+            // UI Feedback
+            const micBtn = document.getElementById('micBtn');
+            const listenText = document.getElementById('listeningText');
+            micBtn.classList.add('recording');
+            listenText.innerText = "正在聆聽中...";
+
+            // Check if conversation is over
+            if (conversationStep >= currentScenario.turns.length) {
+                // Already finished, do nothing or reset
+                micBtn.classList.remove('recording');
+                listenText.innerText = "";
+                isRecording = false;
+                return;
+            }
+
+            // Get current turn data
+            const currentTurn = currentScenario.turns[conversationStep];
+            const isLastTurn = conversationStep === currentScenario.turns.length - 1;
+
+            setTimeout(() => {
+                // User Speak
+                micBtn.classList.remove('recording');
+                listenText.innerText = "處理中...";
+                appendMsg('user', currentTurn.u);
+
+                setTimeout(() => {
+                    // AI Response
+                    listenText.innerText = "";
+                    
+                    if (isLastTurn) {
+                        // Final Turn: Show Result & Buttons
+                        const finalHtml = `
+                            ${currentTurn.a}
+                            <div class="chat-actions">
+                                <button class="chat-btn chat-btn-confirm" onclick="finishBooking('${currentScenario.dept}')">確認掛號</button>
+                                <button class="chat-btn chat-btn-secondary" onclick="location.reload()">重新開始</button>
+                            </div>
+                        `;
+                        appendMsg('ai', finalHtml);
+                    } else {
+                        // Normal Turn
+                        appendMsg('ai', currentTurn.a);
+                    }
+
+                    conversationStep++;
+                    isRecording = false;
+
+                }, 1500);
+            }, 2000);
+        }
+
+        function appendMsg(role, html) {
+            const chatBox = document.getElementById('chat-box');
+            const div = document.createElement('div');
+            div.className = `msg msg-${role}`;
+            div.innerHTML = html;
+            chatBox.appendChild(div);
+            scrollToBottom();
+        }
+
+        function finishBooking(deptName) {
+            document.getElementById('final-dept').innerText = deptName;
+            goToScreen('screen-3');
         }
     </script>
 </body>
