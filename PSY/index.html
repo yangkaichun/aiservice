@@ -4,781 +4,408 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>北投智慧遠距精神醫療照護平台 - 管理後台</title>
-    <!-- Favicon -->
     <link rel="icon" href="images/feticon.ico" type="image/x-icon">
     
-    <!-- Bootstrap 5 CSS -->
+    <!-- CSS Libraries -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-    <!-- FontAwesome Icons -->
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
     <!-- Chart.js -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <!-- SweetAlert2 -->
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 
     <style>
-        /* --- UI/UX 設計系統 (White Theme - 專業醫療白) --- */
+        /* --- UI/UX 核心變數 (White/Teal Theme) --- */
         :root {
-            --primary-color: #00897b; /* 醫療湖水綠 (Teal) */
+            --primary-color: #00897b;
             --primary-light: #e0f2f1;
-            --accent-color: #0288d1;  /* 專業藍 */
+            --accent-color: #0288d1;
             --text-dark: #2c3e50;
-            --text-grey: #636e72;
-            --bg-body: #f7f9fb;       /* 極淡灰背景 */
+            --bg-body: #f7f9fb;
             --bg-white: #ffffff;
             --sidebar-width: 270px;
-            --shadow-sm: 0 2px 8px rgba(0,0,0,0.04);
-            --shadow-md: 0 4px 12px rgba(0,0,0,0.08);
             --radius: 12px;
         }
 
-        body {
-            background-color: var(--bg-body);
-            font-family: 'Segoe UI', 'Microsoft JhengHei', sans-serif;
-            color: var(--text-dark);
-            overflow-x: hidden;
-        }
+        body { background-color: var(--bg-body); font-family: 'Segoe UI', 'Microsoft JhengHei', sans-serif; color: var(--text-dark); overflow-x: hidden; }
 
-        /* --- 側邊欄設計 --- */
-        .sidebar {
-            width: var(--sidebar-width);
-            height: 100vh;
-            position: fixed;
-            top: 0;
-            left: 0;
-            background-color: var(--bg-white);
-            border-right: 1px solid #eaeaea;
-            z-index: 1000;
-            display: flex;
-            flex-direction: column;
-            box-shadow: var(--shadow-sm);
-        }
+        /* --- 側邊欄 --- */
+        .sidebar { width: var(--sidebar-width); height: 100vh; position: fixed; top: 0; left: 0; background: var(--bg-white); border-right: 1px solid #eaeaea; z-index: 1000; display: flex; flex-direction: column; box-shadow: 0 2px 10px rgba(0,0,0,0.05); }
+        .sidebar-header { padding: 25px 20px; text-align: center; border-bottom: 1px solid #f0f0f0; }
+        .sidebar-header img { max-height: 50px; width: auto; margin-bottom: 8px; }
+        .nav-menu { flex: 1; padding: 20px 0; overflow-y: auto; }
+        .nav-group-title { padding: 10px 25px 5px; font-size: 0.75rem; text-transform: uppercase; color: #999; font-weight: 600; letter-spacing: 1px; }
+        .nav-item { padding: 12px 25px; cursor: pointer; color: #636e72; font-weight: 500; display: flex; align-items: center; border-left: 4px solid transparent; transition: all 0.2s; }
+        .nav-item:hover { color: var(--primary-color); background: #fafafa; }
+        .nav-item.active { color: var(--primary-color); background: var(--primary-light); border-left-color: var(--primary-color); font-weight: 600; }
+        .nav-item i { width: 24px; margin-right: 12px; text-align: center; font-size: 1.1rem; }
 
-        .sidebar-header {
-            padding: 25px 20px;
-            text-align: center;
-            border-bottom: 1px solid #f0f0f0;
-        }
-        .sidebar-header img {
-            max-height: 50px;
-            width: auto;
-            margin-bottom: 8px;
-        }
+        /* --- 主內容 --- */
+        .main-content { margin-left: var(--sidebar-width); padding: 30px; min-height: 100vh; }
+        .page-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 30px; }
+        .page-title { font-size: 1.5rem; font-weight: 700; color: var(--text-dark); }
+        .card { border: none; border-radius: var(--radius); background: var(--bg-white); box-shadow: 0 2px 8px rgba(0,0,0,0.04); margin-bottom: 24px; transition: transform 0.2s; }
+        .card:hover { box-shadow: 0 4px 12px rgba(0,0,0,0.08); }
+        .card-header { background: transparent; border-bottom: 1px solid #f0f0f0; padding: 20px 24px; font-weight: 600; font-size: 1.1rem; display: flex; align-items: center; justify-content: space-between; }
+        .view-section { display: none; animation: fadeIn 0.4s ease; }
+        .view-section.active { display: block; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
 
-        .nav-menu {
-            flex: 1;
-            padding: 20px 0;
-            overflow-y: auto;
-        }
+        /* --- AI Avatar Card --- */
+        .ai-card { border: 2px solid transparent; cursor: pointer; text-align: center; transition: 0.3s; padding: 15px; border-radius: 12px; background: #fff; }
+        .ai-card:hover { transform: translateY(-5px); box-shadow: 0 5px 15px rgba(0,0,0,0.1); }
+        .ai-card.selected { border-color: var(--primary-color); background: var(--primary-light); }
+        .ai-avatar { width: 80px; height: 80px; border-radius: 50%; margin: 0 auto 10px; overflow: hidden; border: 3px solid #fff; box-shadow: 0 3px 8px rgba(0,0,0,0.1); }
+        .ai-avatar img { width: 100%; height: 100%; object-fit: cover; }
+        .ai-stats { font-size: 0.8rem; color: #666; margin-top: 10px; background: rgba(255,255,255,0.6); padding: 5px; border-radius: 8px; }
 
-        .nav-group-title {
-            padding: 10px 25px 5px;
-            font-size: 0.75rem;
-            text-transform: uppercase;
-            letter-spacing: 1px;
-            color: #999;
-            font-weight: 600;
-        }
-
-        .nav-item {
-            padding: 12px 25px;
-            cursor: pointer;
-            color: var(--text-grey);
-            font-weight: 500;
-            transition: all 0.2s;
-            display: flex;
-            align-items: center;
-            border-left: 4px solid transparent;
-        }
-
-        .nav-item:hover {
-            color: var(--primary-color);
-            background-color: #fafafa;
-        }
-
-        .nav-item.active {
-            color: var(--primary-color);
-            background-color: var(--primary-light);
-            border-left-color: var(--primary-color);
-            font-weight: 600;
-        }
-
-        .nav-item i {
-            width: 24px;
-            margin-right: 12px;
-            text-align: center;
-            font-size: 1.1rem;
-        }
-
-        /* --- 主內容區 --- */
-        .main-content {
-            margin-left: var(--sidebar-width);
-            padding: 30px;
-            min-height: 100vh;
-        }
-
-        .page-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 30px;
-        }
-        
-        .page-title {
-            font-size: 1.5rem;
-            font-weight: 700;
-            color: var(--text-dark);
-        }
-
-        /* --- 卡片優化 --- */
-        .card {
-            border: none;
-            border-radius: var(--radius);
-            background: var(--bg-white);
-            box-shadow: var(--shadow-sm);
-            transition: transform 0.2s;
-            margin-bottom: 24px;
-        }
-        
-        .card:hover {
-            box-shadow: var(--shadow-md);
-        }
-
-        .card-header {
-            background: transparent;
-            border-bottom: 1px solid #f0f0f0;
-            padding: 20px 24px;
-            font-weight: 600;
-            color: var(--text-dark);
-            font-size: 1.1rem;
-            display: flex;
-            align-items: center;
-        }
-        
-        .card-body {
-            padding: 24px;
-        }
-
-        /* --- 視圖切換動畫 --- */
-        .view-section {
-            display: none;
-            animation: fadeIn 0.4s ease;
-        }
-        .view-section.active {
-            display: block;
-        }
-
-        @keyframes fadeIn {
-            from { opacity: 0; transform: translateY(10px); }
-            to { opacity: 1; transform: translateY(0); }
-        }
-
-        /* --- AI 角色選擇卡片 --- */
-        .ai-card {
-            border: 2px solid transparent;
-            cursor: pointer;
-            text-align: center;
-            transition: all 0.3s;
-        }
-        .ai-card:hover {
-            transform: translateY(-5px);
-        }
-        .ai-card.selected {
-            border-color: var(--primary-color);
-            background-color: var(--primary-light);
-        }
-        /* AI 頭像 (支援圖片) */
-        .ai-avatar {
-            width: 80px;
-            height: 80px;
-            border-radius: 50%;
-            margin: 0 auto 15px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            background: #f8f9fa;
-            overflow: hidden;
-            box-shadow: 0 4px 10px rgba(0,0,0,0.1);
-        }
-        .ai-avatar img {
-            width: 100%;
-            height: 100%;
-            object-fit: cover;
-        }
-
-        /* --- 手機模擬框 --- */
+        /* --- 手機模擬器 --- */
         .phone-mockup {
-            width: 320px;
-            height: 650px;
-            border: 12px solid #2c3e50;
-            border-radius: 40px;
-            margin: 0 auto;
-            overflow: hidden;
-            position: relative;
-            background: white;
-            box-shadow: 0 20px 50px rgba(0,0,0,0.15);
+            width: 360px; height: 740px;
+            border: 12px solid #2c3e50; border-radius: 45px;
+            margin: 0 auto; overflow: hidden; position: relative;
+            background: #fff; box-shadow: 0 25px 50px rgba(0,0,0,0.2);
+            display: flex; flex-direction: column;
         }
-        .phone-iframe {
-            width: 100%;
-            height: 100%;
-            border: none;
-            background: #fff;
-        }
+        
+        .sim-status-bar { height: 35px; background: #2c3e50; color: white; display: flex; justify-content: space-between; align-items: center; padding: 0 25px; font-size: 12px; flex-shrink: 0; }
+        .sim-nav-bar { height: 55px; background: #f8f9fa; border-bottom: 1px solid #eee; display: flex; align-items: center; padding: 0 15px; gap: 12px; flex-shrink: 0; }
+        .sim-nav-url { flex: 1; background: #e9ecef; height: 32px; border-radius: 16px; font-size: 11px; color: #555; display: flex; align-items: center; padding: 0 12px; overflow: hidden; white-space: nowrap; font-family: monospace; }
+        .sim-content { flex: 1; overflow-y: auto; position: relative; background: #fff; }
+        .sim-content::-webkit-scrollbar { display: none; }
 
-        /* --- 初診表單專用樣式 --- */
-        .accordion-button:not(.collapsed) {
-            color: var(--primary-color);
-            background-color: var(--primary-light);
-            font-weight: bold;
+        /* Simulator Chat */
+        .chat-msg { max-width: 80%; padding: 10px 14px; border-radius: 18px; font-size: 14px; line-height: 1.4; margin-bottom: 15px; position: relative; box-shadow: 0 1px 2px rgba(0,0,0,0.05); }
+        .chat-msg.ai { background: #f2f2f2; color: #333; border-top-left-radius: 4px; margin-left: 45px; }
+        .chat-msg.ai::before { content:''; position: absolute; left: -40px; top: 0; width: 32px; height: 32px; background: url('images/avatar1.png') center/cover; border-radius: 50%; border: 1px solid #eee; }
+        .chat-msg.user { background: #06c755; color: white; border-top-right-radius: 4px; align-self: flex-end; margin-left: auto; }
+
+        /* Simulator Menu */
+        .rich-menu { height: 65px; border-top: 1px solid #ddd; display: grid; grid-template-columns: repeat(4, 1fr); background: #fcfcfc; flex-shrink: 0; }
+        .rich-item { display: flex; flex-direction: column; align-items: center; justify-content: center; font-size: 10px; color: #888; cursor: pointer; border-right: 1px solid #eee; transition: 0.2s; }
+        .rich-item:hover, .rich-item.active { background: #f0f0f0; color: #00897b; }
+        .rich-item i { font-size: 22px; margin-bottom: 4px; }
+
+        .menu-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; padding: 20px; }
+        .menu-card { background: #fff; border: 1px solid #f0f0f0; border-radius: 16px; padding: 25px 15px; text-align: center; box-shadow: 0 4px 10px rgba(0,0,0,0.03); cursor: pointer; transition: 0.2s; }
+        .menu-card:hover { transform: translateY(-3px); border-color: var(--primary-color); box-shadow: 0 8px 15px rgba(0,137,123,0.1); }
+
+        /* AI Call Selection Overlay (2 Avatars) */
+        #sim-avatar-select {
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.85); z-index: 150; display: none;
+            flex-direction: column; align-items: center; justify-content: center;
+            animation: fadeIn 0.3s;
         }
-        .accordion-button:focus {
-            box-shadow: none;
-            border-color: rgba(0,137,123,0.1);
+        .avatar-option {
+            background: white; width: 280px; padding: 15px; margin: 12px; border-radius: 15px;
+            display: flex; align-items: center; cursor: pointer; transition: 0.2s;
         }
-        .form-label.small { font-size: 0.85rem; color: #7f8c8d; }
+        .avatar-option:hover { transform: scale(1.05); }
+        .avatar-option img { width: 50px; height: 50px; border-radius: 50%; margin-right: 15px; object-fit: cover; border: 2px solid #eee; }
+
+        /* AI Call Interface */
+        #sim-call-overlay {
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            background: linear-gradient(180deg, #a8c0ff 0%, #3f2b96 100%);
+            z-index: 200; display: none; flex-direction: column; align-items: center; justify-content: space-between; padding: 40px 20px;
+            animation: slideUp 0.4s ease-out;
+        }
+        .call-avatar { width: 180px; height: 180px; border-radius: 50%; border: 4px solid rgba(255,255,255,0.5); overflow: hidden; margin-top: 50px; background: #fff; box-shadow: 0 0 30px rgba(255,255,255,0.3); }
+        .call-controls { display: flex; gap: 20px; }
+        .call-btn { width: 60px; height: 60px; border-radius: 50%; display: flex; align-items: center; justify-content: center; color: white; font-size: 24px; cursor: pointer; transition: 0.2s; }
+        .call-btn:active { transform: scale(0.9); }
+        .btn-hangup { background: #ff4757; }
+        .btn-mic { background: rgba(255,255,255,0.2); }
+
+        /* Animations */
+        @keyframes slideUp { from { transform: translateY(100%); } to { transform: translateY(0); } }
+        .accordion-button:not(.collapsed) { color: var(--primary-color); background-color: var(--primary-light); font-weight: bold; }
+        .accordion-button:focus { box-shadow: none; border-color: rgba(0,137,123,0.1); }
     </style>
 </head>
 <body>
 
-    <!-- 1. 左側導覽列 -->
+    <!-- Sidebar -->
     <div class="sidebar">
         <div class="sidebar-header">
-            <!-- Logo 區域 -->
-            <img src="images/fetlogo.png" alt="FET Logo" onerror="this.src='https://via.placeholder.com/150x50/ffffff/00897b?text=FET+Logo'">
-            <div class="text-secondary small mt-1" style="font-weight: 500;">北投智慧遠距精神醫療照護</div>
+            <img src="images/fetlogo.png" alt="FET Logo" onerror="this.src='https://via.placeholder.com/150x50?text=FET'">
+            <div class="small mt-1 text-muted fw-bold">北投智慧共照雲</div>
         </div>
-        
         <div class="nav-menu">
-            <div class="nav-item active" onclick="switchView('dashboard')"><i class="fas fa-th-large"></i> 總覽儀表板</div>
-            
+            <div class="nav-item active" onclick="nav('dashboard')"><i class="fas fa-th-large"></i> 總覽儀表板</div>
             <div class="nav-group-title">臨床服務</div>
-            <div class="nav-item" onclick="switchView('intake')"><i class="fas fa-file-medical"></i> 精神科初診填表</div>
-            <div class="nav-item" onclick="switchView('screening')"><i class="fas fa-clipboard-check"></i> 數位篩檢流程</div>
-            <div class="nav-item" onclick="switchView('cases')"><i class="fas fa-user-injured"></i> 個案管理列表</div>
-            <div class="nav-item" onclick="switchView('trends')"><i class="fas fa-chart-area"></i> 生理數據趨勢</div>
-            
-            <div class="nav-group-title">AI 與系統管理</div>
-            <div class="nav-item" onclick="switchView('ai-settings')"><i class="fas fa-robot"></i> AI 虛擬陪伴設定</div>
-            <div class="nav-item" onclick="switchView('audit')"><i class="fas fa-shield-alt"></i> AI 對話稽核</div>
-            <div class="nav-item" onclick="switchView('liff')"><i class="fab fa-line"></i> LINE 介面管理</div>
-            <div class="nav-item" onclick="switchView('simulator')"><i class="fas fa-mobile-alt"></i> 前端模擬預覽</div>
+            <div class="nav-item" onclick="nav('intake')"><i class="fas fa-file-medical"></i> 精神科初診填表</div>
+            <div class="nav-item" onclick="nav('screening')"><i class="fas fa-clipboard-check"></i> 數位篩檢流程</div>
+            <div class="nav-item" onclick="nav('cases')"><i class="fas fa-user-injured"></i> 個案管理列表</div>
+            <div class="nav-item" onclick="nav('trends')"><i class="fas fa-chart-area"></i> 生理數據趨勢</div>
+            <div class="nav-group-title">AI 與系統</div>
+            <div class="nav-item" onclick="nav('ai-set')"><i class="fas fa-robot"></i> AI 虛擬陪伴設定</div>
+            <div class="nav-item" onclick="nav('audit')"><i class="fas fa-shield-alt"></i> AI 對話稽核</div>
+            <div class="nav-item" onclick="nav('liff')"><i class="fab fa-line"></i> LINE 介面管理</div>
+            <div class="nav-item text-primary fw-bold bg-light" onclick="nav('simulator')"><i class="fas fa-mobile-alt"></i> 前端模擬預覽</div>
         </div>
-
         <div class="p-3 border-top bg-light">
             <div class="d-flex align-items-center">
                 <div class="bg-primary text-white rounded-circle d-flex align-items-center justify-content-center me-3" style="width: 40px; height: 40px; font-weight:bold;">A</div>
-                <div>
-                    <div class="fw-bold text-dark" style="font-size: 0.9rem;">Admin User</div>
-                    <div class="text-muted" style="font-size: 0.75rem;">系統管理員</div>
+                <div style="line-height:1.2">
+                    <div class="fw-bold text-dark" style="font-size:0.9rem">Admin</div>
+                    <div class="text-muted" style="font-size:0.75rem">系統管理員</div>
                 </div>
             </div>
         </div>
     </div>
 
-    <!-- 2. 主內容區域 -->
+    <!-- Main Content -->
     <div class="main-content">
         <div class="page-header">
             <div class="page-title" id="page-title">總覽儀表板</div>
             <div class="d-flex gap-2">
-                <button class="btn btn-white border shadow-sm text-secondary position-relative">
-                    <i class="fas fa-bell"></i>
-                    <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger">3</span>
-                </button>
+                <button class="btn btn-white border shadow-sm text-secondary"><i class="fas fa-bell"></i><span class="badge bg-danger ms-1">3</span></button>
                 <button class="btn btn-primary shadow-sm"><i class="fas fa-plus me-1"></i> 新增個案</button>
             </div>
         </div>
 
-        <!-- ================= 各功能視圖 ================= -->
-
-        <!-- A. 總覽儀表板 -->
+        <!-- A. 儀表板 -->
         <div id="view-dashboard" class="view-section active">
             <div class="row g-4 mb-4">
-                <div class="col-md-3">
-                    <div class="card h-100 border-start border-4 border-danger">
-                        <div class="card-body">
-                            <h6 class="text-muted text-uppercase small mb-2">今日高風險個案</h6>
-                            <h2 class="mb-0 fw-bold text-danger">5 <span class="fs-6 text-muted fw-normal">人</span></h2>
-                            <small class="text-danger"><i class="fas fa-arrow-up"></i> 需優先介入</small>
-                        </div>
-                    </div>
-                </div>
-                <div class="col-md-3">
-                    <div class="card h-100 border-start border-4 border-success">
-                        <div class="card-body">
-                            <h6 class="text-muted text-uppercase small mb-2">已完成篩檢</h6>
-                            <h2 class="mb-0 fw-bold text-success">42 <span class="fs-6 text-muted fw-normal">份</span></h2>
-                            <small class="text-success">本週達成率 95%</small>
-                        </div>
-                    </div>
-                </div>
-                <div class="col-md-3">
-                    <div class="card h-100 border-start border-4 border-info">
-                        <div class="card-body">
-                            <h6 class="text-muted text-uppercase small mb-2">初診預約</h6>
-                            <h2 class="mb-0 fw-bold text-info">18 <span class="fs-6 text-muted fw-normal">人</span></h2>
-                            <small class="text-muted">等待分流評估</small>
-                        </div>
-                    </div>
-                </div>
-                <div class="col-md-3">
-                    <div class="card h-100 border-start border-4 border-warning">
-                        <div class="card-body">
-                            <h6 class="text-muted text-uppercase small mb-2">AI 互動次數</h6>
-                            <h2 class="mb-0 fw-bold text-warning">864 <span class="fs-6 text-muted fw-normal">次</span></h2>
-                            <small class="text-muted">活躍度上升</small>
-                        </div>
-                    </div>
-                </div>
+                <div class="col-md-3"><div class="card h-100 border-start border-4 border-danger p-3"><h5>今日高風險</h5><h2 class="text-danger fw-bold">5</h2></div></div>
+                <div class="col-md-3"><div class="card h-100 border-start border-4 border-success p-3"><h5>已完成篩檢</h5><h2 class="text-success fw-bold">42</h2></div></div>
+                <div class="col-md-3"><div class="card h-100 border-start border-4 border-info p-3"><h5>初診預約</h5><h2 class="text-info fw-bold">18</h2></div></div>
+                <div class="col-md-3"><div class="card h-100 border-start border-4 border-warning p-3"><h5>AI 互動</h5><h2 class="text-warning fw-bold">864</h2></div></div>
             </div>
-
-            <div class="row">
-                <div class="col-lg-8">
-                    <div class="card h-100">
-                        <div class="card-header d-flex justify-content-between">
-                            <span><i class="fas fa-chart-line me-2 text-primary"></i>全院個案情緒與依從性趨勢</span>
-                            <select class="form-select form-select-sm w-auto border-0 bg-light">
-                                <option>最近 7 天</option>
-                                <option>最近 30 天</option>
-                            </select>
-                        </div>
-                        <div class="card-body">
-                            <canvas id="mainChart" height="120"></canvas>
-                        </div>
-                    </div>
-                </div>
-                <div class="col-lg-4">
-                    <div class="card h-100">
-                        <div class="card-header"><i class="fas fa-tasks me-2 text-primary"></i>待辦事項清單</div>
-                        <div class="list-group list-group-flush">
-                            <label class="list-group-item d-flex gap-3 align-items-center">
-                                <input class="form-check-input flex-shrink-0" type="checkbox">
-                                <div>
-                                    <div class="fw-bold text-dark">P-001 陳○豪 自殺風險評估</div>
-                                    <small class="text-danger">AI 標記：高度風險關鍵字</small>
-                                </div>
-                            </label>
-                            <label class="list-group-item d-flex gap-3 align-items-center">
-                                <input class="form-check-input flex-shrink-0" type="checkbox">
-                                <div>
-                                    <div class="fw-bold text-dark">P-042 林○華 初診資料審核</div>
-                                    <small class="text-muted">來源：LINE 初診表單</small>
-                                </div>
-                            </label>
-                        </div>
-                    </div>
-                </div>
-            </div>
+            <div class="card p-4"><canvas id="mainChart" height="100"></canvas></div>
         </div>
 
-        <!-- B. 精神科初診填表 (三軍總醫院電子化版 - Accordion) -->
+        <!-- B. 精神科初診填表 -->
         <div id="view-intake" class="view-section">
             <div class="card">
-                <div class="card-header bg-white d-flex justify-content-between">
-                    <span><i class="fas fa-file-medical-alt text-primary me-2"></i>精神醫學部 - 門診初診基本資料表</span>
+                <div class="card-header bg-white"><span><i class="fas fa-file-medical-alt text-primary me-2"></i>精神醫學部 - 門診初診基本資料表</span>
                     <div>
-                        <button class="btn btn-outline-secondary btn-sm me-2"><i class="fas fa-print"></i> 列印</button>
-                        <button class="btn btn-outline-primary btn-sm"><i class="fas fa-file-import"></i> 匯入 HIS</button>
+                        <button class="btn btn-sm btn-warning me-2 text-white" onclick="autoFillIntake()"><i class="fas fa-magic"></i> 一鍵帶入</button>
+                        <button class="btn btn-outline-secondary btn-sm me-2">列印</button>
+                        <button class="btn btn-outline-primary btn-sm">匯入 HIS</button>
                     </div>
                 </div>
                 <div class="card-body">
                     <form id="intakeForm">
-                        <div class="accordion" id="intakeAccordion">
-                            
-                            <!-- 1. 基本資料 -->
-                            <div class="accordion-item border-0 mb-3 shadow-sm rounded overflow-hidden">
-                                <h2 class="accordion-header" id="headingOne">
-                                    <button class="accordion-button fw-bold" type="button" data-bs-toggle="collapse" data-bs-target="#collapseOne">
-                                        I. 基本資料 (Patient Profile)
-                                    </button>
-                                </h2>
-                                <div id="collapseOne" class="accordion-collapse collapse show" data-bs-parent="#intakeAccordion">
-                                    <div class="accordion-body bg-white">
-                                        <div class="row g-3">
-                                            <div class="col-md-3">
-                                                <label class="form-label small">姓名</label>
-                                                <input type="text" class="form-control" placeholder="姓名">
-                                            </div>
-                                            <div class="col-md-3">
-                                                <label class="form-label small">身分證字號</label>
-                                                <input type="text" class="form-control" placeholder="A123456789">
-                                            </div>
-                                            <div class="col-md-3">
-                                                <label class="form-label small">性別</label>
-                                                <select class="form-select">
-                                                    <option>男</option>
-                                                    <option>女</option>
-                                                </select>
-                                            </div>
-                                            <div class="col-md-3">
-                                                <label class="form-label small">出生日期</label>
-                                                <input type="date" class="form-control">
-                                            </div>
-                                            <div class="col-md-4">
-                                                <label class="form-label small">教育程度</label>
-                                                <select class="form-select">
-                                                    <option>國小及以下</option>
-                                                    <option>國中</option>
-                                                    <option>高中職</option>
-                                                    <option>大專院校</option>
-                                                    <option>碩博士</option>
-                                                </select>
-                                            </div>
-                                            <div class="col-md-4">
-                                                <label class="form-label small">婚姻狀況</label>
-                                                <select class="form-select">
-                                                    <option>未婚</option>
-                                                    <option>已婚</option>
-                                                    <option>離婚</option>
-                                                    <option>喪偶</option>
-                                                </select>
-                                            </div>
-                                            <div class="col-md-4">
-                                                <label class="form-label small">職業</label>
-                                                <input type="text" class="form-control" placeholder="目前職業">
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
+                        <div class="accordion" id="accIntake">
+                            <div class="accordion-item border-0 mb-3 shadow-sm rounded">
+                                <h2 class="accordion-header"><button class="accordion-button fw-bold" type="button" data-bs-toggle="collapse" data-bs-target="#c1">I. 基本資料 (Profile)</button></h2>
+                                <div id="c1" class="accordion-collapse collapse show"><div class="accordion-body bg-white"><div class="row g-3">
+                                    <div class="col-md-3"><label class="form-label small">姓名</label><input class="form-control" id="in-name"></div>
+                                    <div class="col-md-3"><label class="form-label small">身分證</label><input class="form-control" id="in-id"></div>
+                                    <div class="col-md-3"><label class="form-label small">性別</label><select class="form-select"><option>男</option><option>女</option></select></div>
+                                    <div class="col-md-3"><label class="form-label small">生日</label><input type="date" class="form-control" id="in-dob"></div>
+                                </div></div></div>
                             </div>
-
-                            <!-- 2. 主訴與現病史 -->
-                            <div class="accordion-item border-0 mb-3 shadow-sm rounded overflow-hidden">
-                                <h2 class="accordion-header" id="headingTwo">
-                                    <button class="accordion-button collapsed fw-bold" type="button" data-bs-toggle="collapse" data-bs-target="#collapseTwo">
-                                        II. 主訴與現病史 (Chief Complaint & HPI)
-                                    </button>
-                                </h2>
-                                <div id="collapseTwo" class="accordion-collapse collapse" data-bs-parent="#intakeAccordion">
-                                    <div class="accordion-body bg-white">
-                                        <div class="mb-3">
-                                            <label class="form-label fw-bold">主訴 (Chief Complaint)</label>
-                                            <textarea class="form-control" rows="2" placeholder="求診主要原因及持續時間..."></textarea>
-                                        </div>
-                                        <div class="mb-3">
-                                            <label class="form-label fw-bold">現病史 (HPI)</label>
-                                            <textarea class="form-control" rows="3" placeholder="症狀發展過程、壓力源、加重/緩解因子..."></textarea>
-                                        </div>
-                                        <div class="row g-3">
-                                            <div class="col-md-4">
-                                                <label class="form-label small">睡眠狀況</label>
-                                                <select class="form-select">
-                                                    <option>正常</option>
-                                                    <option>入睡困難</option>
-                                                    <option>早醒</option>
-                                                    <option>多夢/淺眠</option>
-                                                </select>
-                                            </div>
-                                            <div class="col-md-4">
-                                                <label class="form-label small">食慾狀況</label>
-                                                <select class="form-select">
-                                                    <option>正常</option>
-                                                    <option>食慾差</option>
-                                                    <option>暴食</option>
-                                                </select>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
+                            <div class="accordion-item border-0 mb-3 shadow-sm rounded">
+                                <h2 class="accordion-header"><button class="accordion-button collapsed fw-bold" type="button" data-bs-toggle="collapse" data-bs-target="#c2">II. 主訴與現病史 (HPI)</button></h2>
+                                <div id="c2" class="accordion-collapse collapse"><div class="accordion-body bg-white">
+                                    <div class="mb-3"><label class="fw-bold">主訴</label><textarea class="form-control" rows="2" id="in-cc"></textarea></div>
+                                    <div class="mb-3"><label class="fw-bold">現病史</label><textarea class="form-control" rows="3" id="in-hpi"></textarea></div>
+                                </div></div>
                             </div>
-
-                            <!-- 3. 過去病史 -->
-                            <div class="accordion-item border-0 mb-3 shadow-sm rounded overflow-hidden">
-                                <h2 class="accordion-header" id="headingThree">
-                                    <button class="accordion-button collapsed fw-bold" type="button" data-bs-toggle="collapse" data-bs-target="#collapseThree">
-                                        III. 過去病史與習慣 (Past History)
-                                    </button>
-                                </h2>
-                                <div id="collapseThree" class="accordion-collapse collapse" data-bs-parent="#intakeAccordion">
-                                    <div class="accordion-body bg-white">
-                                        <div class="row g-3">
-                                            <div class="col-md-6">
-                                                <label class="form-label fw-bold">精神科病史</label>
-                                                <div class="form-check">
-                                                    <input class="form-check-input" type="radio" name="psyHistory" checked> <label class="form-check-label">無</label>
-                                                </div>
-                                                <div class="form-check">
-                                                    <input class="form-check-input" type="radio" name="psyHistory"> <label class="form-check-label">有 (診斷/醫院)</label>
-                                                    <input type="text" class="form-control form-control-sm mt-1">
-                                                </div>
-                                            </div>
-                                            <div class="col-md-6">
-                                                <label class="form-label fw-bold">物質使用</label>
-                                                <div class="d-flex gap-3">
-                                                    <div>菸：<select class="form-select form-select-sm d-inline w-auto"><option>無</option><option>偶爾</option><option>每天</option></select></div>
-                                                    <div>酒：<select class="form-select form-select-sm d-inline w-auto"><option>無</option><option>社交</option><option>酗酒</option></select></div>
-                                                </div>
-                                            </div>
-                                        </div>
+                            <div class="accordion-item border-0 mb-3 shadow-sm rounded">
+                                <h2 class="accordion-header"><button class="accordion-button collapsed fw-bold" type="button" data-bs-toggle="collapse" data-bs-target="#c4">III. 精神狀態檢查 (MSE)</button></h2>
+                                <div id="c4" class="accordion-collapse collapse"><div class="accordion-body bg-white">
+                                    <div class="row g-3">
+                                        <div class="col-12"><label class="fw-bold text-primary">外觀</label><div class="d-flex gap-3"><input type="checkbox" class="form-check-input" id="mse-1"> 整潔 <input type="checkbox" class="form-check-input" id="mse-2"> 髒亂</div></div>
+                                        <div class="col-12"><label class="fw-bold text-primary">情感</label><div class="d-flex gap-3"><input type="checkbox" class="form-check-input" id="mse-3"> 平穩 <input type="checkbox" class="form-check-input" id="mse-4"> 憂鬱</div></div>
+                                        <div class="col-12"><label class="fw-bold text-danger">自殺風險</label><div class="bg-light p-2 rounded"><select class="form-select w-auto" id="in-risk"><option value="0">低風險</option><option value="1">中風險</option><option value="2">高風險</option></select></div></div>
                                     </div>
-                                </div>
+                                </div></div>
                             </div>
-
-                            <!-- 4. 精神狀態檢查 (MSE) -->
-                            <div class="accordion-item border-0 mb-3 shadow-sm rounded overflow-hidden">
-                                <h2 class="accordion-header" id="headingFour">
-                                    <button class="accordion-button collapsed fw-bold" type="button" data-bs-toggle="collapse" data-bs-target="#collapseFour">
-                                        IV. 精神狀態檢查 (Mental Status Exam)
-                                    </button>
-                                </h2>
-                                <div id="collapseFour" class="accordion-collapse collapse" data-bs-parent="#intakeAccordion">
-                                    <div class="accordion-body bg-white">
-                                        <div class="row g-3">
-                                            <div class="col-12">
-                                                <label class="form-label fw-bold text-primary">外觀與態度 (Appearance & Attitude)</label>
-                                                <div class="d-flex gap-3 flex-wrap">
-                                                    <div class="form-check"><input class="form-check-input" type="checkbox"><label class="form-check-label">整潔</label></div>
-                                                    <div class="form-check"><input class="form-check-input" type="checkbox"><label class="form-check-label">髒亂</label></div>
-                                                    <div class="form-check"><input class="form-check-input" type="checkbox"><label class="form-check-label">合作</label></div>
-                                                    <div class="form-check"><input class="form-check-input" type="checkbox"><label class="form-check-label">防衛</label></div>
-                                                    <div class="form-check"><input class="form-check-input" type="checkbox"><label class="form-check-label">敵意</label></div>
-                                                </div>
-                                            </div>
-                                            <div class="col-12">
-                                                <label class="form-label fw-bold text-primary">情感 (Affect)</label>
-                                                <div class="d-flex gap-3 flex-wrap">
-                                                    <div class="form-check"><input class="form-check-input" type="checkbox"><label class="form-check-label">平穩</label></div>
-                                                    <div class="form-check"><input class="form-check-input" type="checkbox"><label class="form-check-label">憂鬱</label></div>
-                                                    <div class="form-check"><input class="form-check-input" type="checkbox"><label class="form-check-label">焦慮</label></div>
-                                                    <div class="form-check"><input class="form-check-input" type="checkbox"><label class="form-check-label">易怒</label></div>
-                                                </div>
-                                            </div>
-                                            <div class="col-12">
-                                                <label class="form-label fw-bold text-primary">思考與知覺 (Thought & Perception)</label>
-                                                <div class="d-flex gap-3 flex-wrap">
-                                                    <div class="form-check"><input class="form-check-input" type="checkbox"><label class="form-check-label">邏輯正常</label></div>
-                                                    <div class="form-check"><input class="form-check-input" type="checkbox"><label class="form-check-label">妄想</label></div>
-                                                    <div class="form-check"><input class="form-check-input" type="checkbox"><label class="form-check-label">幻聽</label></div>
-                                                    <div class="form-check"><input class="form-check-input" type="checkbox"><label class="form-check-label">幻視</label></div>
-                                                </div>
-                                            </div>
-                                            <div class="col-12">
-                                                <label class="form-label fw-bold text-danger">自殺風險 (Suicide Risk)</label>
-                                                <div class="bg-light p-2 rounded">
-                                                    <div class="form-check form-check-inline"><input class="form-check-input" type="radio" name="risk" checked><label class="form-check-label text-success">低風險</label></div>
-                                                    <div class="form-check form-check-inline"><input class="form-check-input" type="radio" name="risk"><label class="form-check-label text-warning">中風險 (意念)</label></div>
-                                                    <div class="form-check form-check-inline"><input class="form-check-input" type="radio" name="risk"><label class="form-check-label text-danger fw-bold">高風險 (計畫/行動)</label></div>
-                                                </div>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                        <div class="text-end mt-3">
-                            <button type="button" class="btn btn-light me-2">暫存</button>
-                            <button type="button" class="btn btn-primary px-4">建立病歷</button>
                         </div>
                     </form>
                 </div>
             </div>
         </div>
 
-        <!-- C. 數位篩檢流程 -->
+        <!-- C. 數位篩檢 -->
         <div id="view-screening" class="view-section">
             <div class="row g-4">
-                <div class="col-md-4">
-                    <div class="card h-100">
-                        <div class="card-header bg-white"><i class="fas fa-paper-plane text-primary me-2"></i>指派篩檢任務</div>
-                        <div class="card-body">
-                            <div class="mb-3">
-                                <label class="form-label text-muted">選擇個案</label>
-                                <input class="form-control" list="datalistOptions" placeholder="搜尋...">
-                                <datalist id="datalistOptions">
-                                    <option value="A-10293 陳○豪">
-                                    <option value="B-20481 林○婷">
-                                </datalist>
-                            </div>
-                            <div class="mb-4">
-                                <div class="form-check py-2 border-bottom"><input class="form-check-input" type="checkbox" checked><label class="form-check-label">BSRS-5 (心情溫度計)</label></div>
-                                <div class="form-check py-2 border-bottom"><input class="form-check-input" type="checkbox"><label class="form-check-label">PHQ-9 (憂鬱症量表)</label></div>
-                                <div class="form-check py-2 border-bottom"><input class="form-check-input" type="checkbox"><label class="form-check-label">GAD-7 (焦慮症量表)</label></div>
-                            </div>
-                            <button class="btn btn-success w-100 shadow-sm"><i class="fab fa-line me-1"></i> 推送任務</button>
-                        </div>
-                    </div>
-                </div>
-                <div class="col-md-8">
-                    <div class="card h-100">
-                        <div class="card-header">篩檢結果追蹤</div>
-                        <div class="card-body p-0">
-                            <table class="table table-hover align-middle mb-0">
-                                <thead class="bg-light"><tr><th class="ps-4">姓名</th><th>量表</th><th>分數</th><th>建議</th></tr></thead>
-                                <tbody>
-                                    <tr><td class="ps-4">陳○豪</td><td>PHQ-9</td><td><span class="badge badge-risk-high rounded-pill">18 (重度)</span></td><td><i class="fas fa-exclamation-circle text-danger"></i> 回診</td></tr>
-                                    <tr><td class="ps-4">林○婷</td><td>BSRS-5</td><td><span class="badge badge-risk-low rounded-pill">3 (正常)</span></td><td>觀察</td></tr>
-                                </tbody>
-                            </table>
-                        </div>
-                    </div>
+                <div class="col-md-4"><div class="card h-100 p-3"><h5><i class="fas fa-paper-plane me-2 text-primary"></i>指派任務</h5><input class="form-control mb-3" placeholder="搜尋個案..."><div class="form-check py-2 border-bottom"><input type="checkbox" class="form-check-input" checked> BSRS-5</div><div class="form-check py-2 border-bottom"><input type="checkbox" class="form-check-input"> PHQ-9</div><button class="btn btn-success w-100 mt-3" onclick="pushTask()">推送任務</button></div></div>
+                <div class="col-md-8"><div class="card h-100 p-0"><table class="table table-hover mb-0"><thead class="bg-light"><tr><th class="ps-4">姓名</th><th>量表</th><th>結果</th><th>建議</th></tr></thead><tbody><tr><td class="ps-4">陳○豪</td><td>PHQ-9</td><td><span class="badge badge-risk-high">18</span></td><td>回診</td></tr></tbody></table></div></div>
+            </div>
+        </div>
+
+        <!-- D. AI 設定 -->
+        <div id="view-ai-set" class="view-section">
+            <div class="card p-4">
+                <h5><i class="fas fa-robot text-primary me-2"></i>AI 虛擬陪伴設定</h5>
+                <div class="row g-4 mt-3">
+                    <div class="col-md-4"><div class="ai-card p-3 rounded border selected" onclick="selectAI(this, 'avatar1.png', '小樹')"><div class="ai-avatar"><img src="images/avatar1.png"></div><h5>小樹</h5><div class="ai-stats">療癒系 | 65%</div></div></div>
+                    <div class="col-md-4"><div class="ai-card p-3 rounded border" onclick="selectAI(this, 'avatar2.png', '大白')"><div class="ai-avatar"><img src="images/avatar2.png"></div><h5>大白</h5><div class="ai-stats">專業系 | 20%</div></div></div>
+                    <div class="col-md-4"><div class="ai-card p-3 rounded border" onclick="selectAI(this, 'avatar3.png', '暖暖')"><div class="ai-avatar"><img src="images/avatar3.png"></div><h5>暖暖</h5><div class="ai-stats">活潑系 | 15%</div></div></div>
                 </div>
             </div>
         </div>
 
-        <!-- D. AI 虛擬陪伴角色設定 (使用 Avatar 圖片) -->
-        <div id="view-ai-settings" class="view-section">
-            <div class="card">
-                <div class="card-header"><i class="fas fa-robot text-primary me-2"></i>AI 虛擬陪伴設定</div>
-                <div class="card-body">
-                    <div class="row g-4 justify-content-center">
-                        <div class="col-md-3">
-                            <div class="card ai-card selected h-100" onclick="selectAI(this, 'tree')">
-                                <div class="card-body">
-                                    <div class="ai-avatar"><img src="images/avatar1.png" alt="小樹"></div>
-                                    <h5 class="fw-bold">小樹 (預設)</h5>
-                                    <p class="text-muted small">療癒系：溫柔、包容，適合憂鬱個案。</p>
-                                    <div class="form-check d-flex justify-content-center"><input class="form-check-input" type="radio" name="aiRole" checked><label class="ms-2 fw-bold">使用中</label></div>
-                                </div>
-                            </div>
-                        </div>
-                        <div class="col-md-3">
-                            <div class="card ai-card h-100" onclick="selectAI(this, 'bear')">
-                                <div class="card-body">
-                                    <div class="ai-avatar"><img src="images/avatar2.png" alt="大白"></div>
-                                    <h5 class="fw-bold">大白醫師</h5>
-                                    <p class="text-muted small">專業系：冷靜、理智，提供衛教建議。</p>
-                                    <div class="form-check d-flex justify-content-center"><input class="form-check-input" type="radio" name="aiRole"><label class="ms-2 text-muted">選擇</label></div>
-                                </div>
-                            </div>
-                        </div>
-                        <div class="col-md-3">
-                            <div class="card ai-card h-100" onclick="selectAI(this, 'sunny')">
-                                <div class="card-body">
-                                    <div class="ai-avatar"><img src="images/avatar3.png" alt="暖暖"></div>
-                                    <h5 class="fw-bold">暖暖</h5>
-                                    <p class="text-muted small">活潑系：熱情、正能量，主動關懷。</p>
-                                    <div class="form-check d-flex justify-content-center"><input class="form-check-input" type="radio" name="aiRole"><label class="ms-2 text-muted">選擇</label></div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-                <div class="card-footer bg-white text-end py-3"><button class="btn btn-primary px-4">儲存設定</button></div>
-            </div>
-        </div>
-
-        <!-- 其他視圖 (Cases, Trends, Audit, LIFF, Simulator) -->
-        <div id="view-cases" class="view-section">
-            <div class="card">
-                <div class="card-header bg-white"><span>個案清單</span></div>
-                <div class="card-body p-0">
-                    <table class="table table-hover align-middle mb-0">
-                        <thead class="bg-light"><tr><th class="ps-4">狀態</th><th>病歷號</th><th>姓名</th><th>診斷</th><th>操作</th></tr></thead>
-                        <tbody>
-                            <tr><td class="ps-4"><span class="badge bg-danger rounded-pill">高風險</span></td><td>A-10293</td><td>陳○豪</td><td>F31.9 雙相情緒障礙</td><td><button class="btn btn-sm btn-outline-primary rounded-pill">詳情</button></td></tr>
-                            <tr><td class="ps-4"><span class="badge bg-success rounded-pill">穩定</span></td><td>B-20481</td><td>林○婷</td><td>F41.1 廣泛性焦慮症</td><td><button class="btn btn-sm btn-outline-primary rounded-pill">詳情</button></td></tr>
-                        </tbody>
-                    </table>
-                </div>
-            </div>
-        </div>
-
-        <div id="view-trends" class="view-section">
-            <div class="card">
-                <div class="card-header bg-white">生理數據趨勢</div>
-                <div class="card-body">
-                    <canvas id="trendChart" height="100"></canvas>
-                </div>
-            </div>
-        </div>
-
-        <div id="view-audit" class="view-section">
-            <div class="card">
-                <div class="card-header bg-warning bg-opacity-10 text-dark">風險對話紀錄稽核</div>
-                <div class="list-group list-group-flush">
-                    <div class="list-group-item p-4">
-                        <h6 class="text-danger fw-bold">自殺風險警示 (10分鐘前)</h6>
-                        <p>個案 A-10293：「我覺得好累，不想活了...」</p>
-                        <small class="text-muted">AI 處置：已啟動 SOP，通報個管師。</small>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <!-- LINE 介面管理 (修正文字為 AI 虛擬陪伴) -->
-        <div id="view-liff" class="view-section">
-            <div class="card">
-                <div class="card-header bg-success text-white">LINE 官方帳號設定</div>
-                <div class="card-body">
-                    <h5 class="fw-bold mb-3">Rich Menu (圖文選單) 設定</h5>
-                    <div class="row">
-                        <div class="col-md-5">
-                            <div class="border p-4 text-center rounded bg-light">
-                                <small class="text-muted mb-3 d-block">手機端預覽</small>
-                                <div class="btn-group w-100 shadow-sm">
-                                    <button class="btn btn-white border py-3 text-secondary"><i class="fas fa-comment-dots d-block mb-1"></i>聊天室</button>
-                                    <button class="btn btn-white border py-3 text-secondary"><i class="fas fa-heartbeat d-block mb-1"></i>生理數據</button>
-                                    <button class="btn btn-white border py-3 text-secondary"><i class="fas fa-robot d-block mb-1"></i>AI虛擬陪伴</button>
-                                    <button class="btn btn-white border py-3 text-secondary"><i class="fas fa-user d-block mb-1"></i>個人</button>
-                                </div>
-                            </div>
-                        </div>
-                        <div class="col-md-7">
-                            <form>
-                                <div class="mb-3"><label class="form-label">LIFF ID</label><input type="text" class="form-control" value="1657099999-AbCdEfG"></div>
-                                <div class="mb-3"><label class="form-label">AI Agent ID</label><input type="text" class="form-control" value="v2_agt_X6Okp3IY"></div>
-                                <button class="btn btn-success"><i class="fas fa-sync-alt me-1"></i> 同步至 LINE Developers</button>
-                            </form>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-
+        <!-- E. 模擬器 -->
         <div id="view-simulator" class="view-section">
-            <div class="text-center">
-                <h5 class="mb-4 text-secondary">前端畫面實時預覽</h5>
-                <div class="phone-mockup"><iframe src="mobile.html" class="phone-iframe"></iframe></div>
+            <div class="sim-container">
+                <div class="phone-frame">
+                    <div class="sim-status-bar"><span>09:41</span><span>100%</span></div>
+                    <div class="sim-nav-bar">
+                        <i class="fas fa-chevron-left text-secondary" style="cursor:pointer" onclick="simBack()"></i>
+                        <div class="flex-grow-1 text-center small fw-bold" id="sim-title">北投共照雲</div>
+                        <i class="fas fa-ellipsis-v text-muted"></i>
+                    </div>
+                    <div class="sim-content" id="sim-content"></div>
+                    
+                    <!-- AI Call Selection Overlay (Revised: Only 2 options) -->
+                    <div id="sim-avatar-select">
+                        <h5 class="text-white mb-4 text-center">請選擇陪伴夥伴</h5>
+                        <div class="avatar-option" onclick="startCall('avatar1.png', '小樹')">
+                            <img src="images/avatar1.png"> <div><strong class="d-block">小樹</strong><small class="text-muted">溫柔傾聽</small></div>
+                        </div>
+                        <div class="avatar-option" onclick="startCall('avatar2.png', '大白')">
+                            <img src="images/avatar2.png"> <div><strong class="d-block">大白</strong><small class="text-muted">專業建議</small></div>
+                        </div>
+                        <button class="btn btn-outline-light mt-4 rounded-pill px-4" onclick="closeAvatarSelect()">取消</button>
+                    </div>
+
+                    <!-- Call Active Overlay -->
+                    <div id="sim-call-overlay">
+                        <div class="text-white text-center mt-5"><h4 class="fw-bold" id="call-name">小樹 AI</h4><p class="small opacity-75">通話中 00:05</p></div>
+                        <div class="call-avatar"><img src="" id="call-img" style="width:100%;height:100%;object-fit:cover;"></div>
+                        <div class="bg-white rounded p-3 text-center w-100 shadow-sm mt-4" style="max-width:280px">"你今天過得還好嗎？"</div>
+                        <div class="call-controls mt-auto mb-5">
+                            <div class="call-btn btn-mic"><i class="fas fa-microphone-slash"></i></div>
+                            <div class="call-btn btn-hangup" onclick="endCall()"><i class="fas fa-phone-slash"></i></div>
+                        </div>
+                    </div>
+
+                    <div id="sim-footer" class="rich-menu" style="display:none">
+                        <div class="rich-item active" onclick="simGo('chat')"><i class="fas fa-comment-dots"></i>聊天</div>
+                        <div class="rich-item" onclick="simGo('menu')"><i class="fas fa-heartbeat text-danger"></i>健康</div>
+                        <div class="rich-item" onclick="openAvatarSelect()"><i class="fas fa-robot text-primary"></i>陪伴</div>
+                        <div class="rich-item" onclick="simGo('profile')"><i class="fas fa-user"></i>個人</div>
+                    </div>
+                </div>
+                
+                <div style="width:250px;">
+                    <div class="card p-3">
+                        <h6 class="fw-bold">模擬狀態</h6>
+                        <p class="small text-muted mb-1">頁面: <span id="log-lvl" class="fw-bold text-primary">首頁</span></p>
+                        <p class="small text-muted text-truncate" id="log-url">line://app/home</p>
+                        <button class="btn btn-outline-secondary w-100 btn-sm" onclick="simGo('chat')">重置</button>
+                    </div>
+                </div>
             </div>
         </div>
 
+        <!-- Other Views -->
+        <div id="view-cases" class="view-section"><div class="card p-4 text-center text-muted">個案管理列表模組</div></div>
+        <div id="view-trends" class="view-section"><div class="card p-4 text-center text-muted">生理數據趨勢模組</div></div>
+        <div id="view-audit" class="view-section"><div class="card p-4 text-center text-muted">AI 對話稽核模組</div></div>
+        <div id="view-liff" class="view-section"><div class="card p-4 text-center text-muted">LINE 介面管理模組</div></div>
     </div>
 
-    <!-- Scripts -->
+    <!-- Modals -->
+    <div class="modal fade" id="previewModal" tabindex="-1"><div class="modal-dialog"><div class="modal-content"><div class="modal-header"><h5 class="modal-title">預覽</h5><button class="btn-close" data-bs-dismiss="modal"></button></div><div class="modal-body">表單內容...</div></div></div></div>
+
     <script>
-        function switchView(viewId) {
-            document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('active'));
-            event.currentTarget.classList.add('active');
-            document.querySelectorAll('.view-section').forEach(el => el.classList.remove('active'));
-            document.getElementById('view-' + viewId).classList.add('active');
+        // Global State
+        let currentAvatarImg = 'images/avatar1.png';
+        let currentAvatarName = '小樹';
+        let mainChartInstance = null;
+
+        // Nav
+        function nav(id) {
+            document.querySelectorAll('.menu-item').forEach(e => e.classList.remove('active'));
+            const btns = document.querySelectorAll('.menu-item');
+            for (const btn of btns) { if (btn.getAttribute('onclick').includes(`'${id}'`)) { btn.classList.add('active'); break; } }
             
-            const titles = {'dashboard':'總覽儀表板', 'intake':'精神科初診填表', 'screening':'數位篩檢流程', 'cases':'個案管理列表', 'trends':'生理數據趨勢', 'ai-settings':'AI 虛擬陪伴設定', 'audit':'AI 對話稽核', 'liff':'LINE 介面管理', 'simulator':'前端模擬預覽'};
-            document.getElementById('page-title').innerText = titles[viewId];
-            if(viewId === 'trends') renderTrendChart();
+            document.querySelectorAll('.view-section').forEach(e => e.style.display = 'none');
+            const target = document.getElementById('view-'+id);
+            if(target) { target.style.display='block'; target.classList.add('fade-in'); }
+            
+            if(id==='simulator') simGo('chat');
+            if(id==='dashboard') initMainChart();
         }
 
-        function selectAI(cardElement, role) {
-            document.querySelectorAll('.ai-card').forEach(c => {
-                c.classList.remove('selected');
-                c.querySelector('input').checked = false;
-                c.querySelector('.ms-2').innerText = "選擇";
-                c.querySelector('.ms-2').className = "ms-2 text-muted";
-            });
-            cardElement.classList.add('selected');
-            cardElement.querySelector('input').checked = true;
-            const label = cardElement.querySelector('.ms-2');
-            label.innerText = "使用中";
-            label.className = "ms-2 fw-bold";
+        function selectAI(el, img, name) {
+            document.querySelectorAll('.ai-card').forEach(c => c.classList.remove('selected'));
+            el.classList.add('selected');
+            currentAvatarImg = 'images/' + img;
+            currentAvatarName = name;
+            Swal.fire({toast:true, position:'top-end', icon:'success', title:'已切換: '+name, showConfirmButton:false, timer:1500});
         }
 
-        // Charts
-        const ctx = document.getElementById('mainChart').getContext('2d');
-        new Chart(ctx, {
-            type: 'line',
-            data: {
-                labels: ['週一','週二','週三','週四','週五','週六','週日'],
-                datasets: [{label:'服藥依從性%', data:[85,88,86,92,80,78,85], borderColor:'#00897b', tension:0.3}, {label:'情緒指數', data:[6.5,7,6.8,7.5,6,5.5,6.2], borderColor:'#0288d1', yAxisID:'y1'}]
-            },
-            options: { scales: {y:{max:100}, y1:{position:'right', max:10}} }
-        });
-
-        let trendChart = null;
-        function renderTrendChart() {
-            if(trendChart) return;
-            const ctx2 = document.getElementById('trendChart').getContext('2d');
-            trendChart = new Chart(ctx2, {
-                type: 'bar',
-                data: {labels:['1月','2月','3月','4月','5月'], datasets:[{label:'睡眠時數', data:[5,6,6.5,7,6.5], backgroundColor:'#00897b'}]},
-                options: {responsive:true}
-            });
+        // Action Functions
+        function autoFillIntake() {
+            document.getElementById('in-name').value = "陳○豪"; document.getElementById('in-id').value = "A123456789"; document.getElementById('in-dob').value = "1985-05-20";
+            document.getElementById('in-cc').value = "失眠、情緒低落"; document.getElementById('in-hpi').value = "工作壓力大";
+            document.getElementById('mse-4').checked = true; document.getElementById('in-risk').value = "1";
+            document.querySelectorAll('.accordion-collapse').forEach(e => e.classList.add('show'));
+            Swal.fire({toast:true, position:'top-end', icon:'success', title:'資料已填入', showConfirmButton:false, timer:1500});
         }
+        function pushTask() { Swal.fire({toast:true, position:'top-end', icon:'success', title:'任務已推送', showConfirmButton:false, timer:1500}); }
+        function showCaseDetail() { Swal.fire({title:'陳○豪', text:'診斷：雙相情緒障礙', icon:'info'}); }
+        function successToast(msg) { Swal.fire({toast:true, position:'top-end', icon:'success', title:msg, showConfirmButton:false, timer:1500}); }
+
+        // Simulator
+        let simHistory = [];
+        function simGo(page) {
+            const content = document.getElementById('sim-content');
+            const footer = document.getElementById('sim-footer');
+            const urlBar = document.getElementById('sim-url');
+            const logLvl = document.getElementById('log-lvl');
+            const logUrl = document.getElementById('log-url');
+            
+            if(simHistory[simHistory.length-1] !== page) simHistory.push(page);
+            footer.style.display = 'none';
+
+            if(page === 'chat') {
+                urlBar.innerText = 'line://app/home'; footer.style.display = 'grid'; logLvl.innerText = "L1 首頁"; logUrl.innerText="line://app/home";
+                content.innerHTML = `<div class="p-3"><div class="text-center small text-muted mb-3">今天 09:30</div><div class="d-flex mb-3"><div style="width:35px;height:35px;background:url('${currentAvatarImg}') center/cover;border-radius:50%;margin-right:10px;border:1px solid #eee;"></div><div class="chat-msg ai">早安！我是${currentAvatarName} 🌱<br>今天記得量血壓喔。</div></div></div>`;
+            } else if(page === 'menu') {
+                urlBar.innerText = 'liff://health/menu'; logLvl.innerText = "L2 選單"; logUrl.innerText="liff://menu";
+                content.innerHTML = `<div class="p-4 bg-light" style="min-height:100%"><h5 class="fw-bold mb-4">健康存摺</h5><div class="menu-grid"><div class="menu-card" onclick="simGo('sleep_dash')"><i class="fas fa-moon fa-2x text-primary mb-2"></i><br>睡眠</div><div class="menu-card"><i class="fas fa-heartbeat fa-2x text-danger mb-2"></i><br>血壓</div></div></div>`;
+            } else if(page === 'sleep_dash') {
+                urlBar.innerText = 'liff://sleep/dash'; logLvl.innerText = "L3 儀表板"; logUrl.innerText="liff://sleep";
+                content.innerHTML = `<div class="p-4"><div class="card p-4 text-center mb-3"><h6 class="text-muted">平均睡眠</h6><h1 class="text-primary fw-bold">6.2hr</h1><div class="progress my-3" style="height:6px"><div class="progress-bar bg-warning" style="width:60%"></div></div></div><div class="list-group"><a href="#" class="list-group-item list-group-item-action d-flex justify-content-between" onclick="simGo('sleep_list')">詳細紀錄 <i class="fas fa-chevron-right"></i></a></div></div>`;
+            } else if(page === 'sleep_list') {
+                urlBar.innerText = 'liff://sleep/list'; logLvl.innerText = "L4 列表"; logUrl.innerText="liff://history";
+                content.innerHTML = `<div class="p-0"><div class="p-3 bg-light text-muted small fw-bold">歷史紀錄</div><div class="list-group list-group-flush"><div class="list-group-item list-group-item-action p-3" onclick="simGo('sleep_detail')"><div class="d-flex justify-content-between"><span><span class="badge bg-danger me-2">異常</span>1/20</span><span class="text-muted">4.5hr <i class="fas fa-chevron-right"></i></span></div></div></div></div>`;
+            } else if(page === 'sleep_detail') {
+                urlBar.innerText = 'liff://sleep/detail'; logLvl.innerText = "L5 詳情"; logUrl.innerText="liff://detail";
+                content.innerHTML = `<div><div class="bg-primary text-white p-5 text-center"><div style="font-size:32px;font-weight:bold;">45分</div><div>1/20</div></div><div class="p-4"><h6 class="text-danger fw-bold">AI 警示</h6><p class="small bg-light p-3 rounded">偵測到入睡困難。</p></div></div>`;
+            }
+        }
+
+        function simBack() {
+            if(simHistory.length > 1) { simHistory.pop(); simGo(simHistory[simHistory.length-1]); } else { simGo('chat'); }
+        }
+
+        // Avatar Call
+        function openAvatarSelect() { document.getElementById('sim-avatar-select').style.display = 'flex'; }
+        function closeAvatarSelect() { document.getElementById('sim-avatar-select').style.display = 'none'; }
+        function startCall(img, name) {
+            closeAvatarSelect();
+            document.getElementById('call-img').src = 'images/' + img;
+            document.getElementById('call-name').innerText = name + ' AI';
+            document.getElementById('sim-call-overlay').style.display = 'flex';
+        }
+        function endCall() { document.getElementById('sim-call-overlay').style.display = 'none'; }
+
+        // Chart
+        function initMainChart() {
+            const ctx = document.getElementById('mainChart');
+            if(ctx) {
+                if(mainChartInstance) mainChartInstance.destroy();
+                mainChartInstance = new Chart(ctx, {
+                    type: 'line',
+                    data: { labels: ['M','T','W','T','F','S','S'], datasets: [{label:'依從性',data:[85,88,86,92,80,78,85],borderColor:'#00897b',tension:0.4}] },
+                    options: { maintainAspectRatio:false, scales:{y:{max:100}} }
+                });
+            }
+        }
+        
+        // Init
+        document.addEventListener('DOMContentLoaded', () => { nav('dashboard'); });
     </script>
 </body>
 </html>
