@@ -11,7 +11,7 @@
     <style>
         /* --- 核心樣式 --- */
         body { 
-            background-color: #f7f8fa;
+            background-color: #f7f8fa; /* 淺灰背景 */
             height: 100vh; 
             display: flex; 
             flex-direction: column; 
@@ -47,206 +47,146 @@
         .menu-item.active { color: #2c3e50; font-weight: bold; border-top-color: #00897b; }
         .menu-item i { font-size: 24px; margin-bottom: 4px; }
 
-        /* --- Avatar Selection Overlay --- */
+        /* --- Avatar Selection Overlay (Step 1) --- */
         #avatar-select-overlay {
             position: absolute; top: 0; left: 0; width: 100%; height: 100%;
             background: rgba(0,0,0,0.8); backdrop-filter: blur(5px); z-index: 100; 
             display: none; flex-direction: column; align-items: center; justify-content: center;
             animation: fadeIn 0.3s;
         }
-        .avatar-opt { background: white; width: 280px; padding: 15px; margin: 12px; border-radius: 16px; display: flex; align-items: center; cursor: pointer; transition: 0.2s; box-shadow: 0 4px 15px rgba(0,0,0,0.1); }
+        .avatar-opt { background: white; width: 280px; padding: 15px; margin: 10px; border-radius: 16px; display: flex; align-items: center; cursor: pointer; transition: 0.2s; box-shadow: 0 4px 15px rgba(0,0,0,0.1); }
         .avatar-opt:active { transform: scale(0.96); }
         .avatar-opt img { width: 55px; height: 55px; border-radius: 50%; margin-right: 15px; object-fit: cover; border: 2px solid #f0f0f0; }
         .avatar-text strong { display: block; font-size: 16px; color: #333; }
         .avatar-text small { color: #888; font-size: 12px; }
 
-        /* --- Call Overlay (FULL SCREEN VIDEO MODIFIED) --- */
+        /* --- Call Overlay (Step 2 - Video Full Screen) --- */
         #call-overlay {
             position: absolute; top: 0; left: 0; width: 100%; height: 100%;
-            background: #000; /* Video fallback bg */
-            z-index: 200; 
-            display: none; 
-            flex-direction: column; 
-            /* 關鍵修改：內容對齊方式 */
-            justify-content: flex-end; /* 將內容推到底部 */
-            align-items: center;
-            padding: 20px;
-            animation: fadeIn 0.5s ease-out;
-            overflow: hidden;
+            background: #000; z-index: 200; 
+            display: none; flex-direction: column; justify-content: flex-end; align-items: center;
+            padding: 20px; animation: fadeIn 0.5s ease-out; overflow: hidden;
         }
         
-        /* 全螢幕背景影片 */
+        /* Video Background */
         .call-video-bg {
-            position: absolute;
-            top: 0; left: 0;
-            width: 100%; height: 100%;
-            object-fit: cover; /* 確保影片填滿且不變形 */
-            z-index: 0; /* 最底層 */
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            object-fit: cover; z-index: 0;
         }
 
-        /* 頂部資訊 (浮動在上方) */
+        /* Top Info */
         .call-info {
-            position: absolute;
-            top: 40px; left: 0; width: 100%;
-            z-index: 1;
-            text-align: center;
-            color: white;
-            text-shadow: 0 2px 8px rgba(0,0,0,0.8);
+            position: absolute; top: 40px; left: 0; width: 100%; z-index: 1;
+            text-align: center; color: white; text-shadow: 0 2px 8px rgba(0,0,0,0.8);
         }
 
-        /* 對話框 (置於底部，不擋人臉) */
+        /* Dialogue Box (Bottom) */
         .dialogue-box {
-            position: relative;
-            z-index: 1;
-            /* 關鍵修改：背景色改為淺灰 */
-            background: rgba(230, 230, 230, 0.85);
-            backdrop-filter: blur(5px);
-            padding: 20px; 
-            border-radius: 20px;
-            width: 100%; 
-            max-width: 340px;
-            text-align: center;
-            font-size: 16px; 
-            color: #222; 
-            font-weight: 500;
+            position: relative; z-index: 1;
+            background: rgba(230, 230, 230, 0.85); backdrop-filter: blur(5px);
+            padding: 20px; border-radius: 20px; width: 100%; max-width: 340px;
+            text-align: center; font-size: 16px; color: #222; font-weight: 500;
             box-shadow: 0 5px 20px rgba(0,0,0,0.2);
-            /* 關鍵修改：位置控制 */
-            margin-bottom: 20px; 
-            margin-top: auto; /* 確保它被推到底部 */
+            margin-bottom: 20px; margin-top: auto;
         }
-        /* 對話框尖角 (指向下方按鈕區域，或可移除) */
         .dialogue-box::after {
-            content: '';
-            position: absolute;
-            bottom: -10px; left: 50%; transform: translateX(-50%);
-            border-width: 10px 10px 0 10px;
-            border-style: solid;
+            content: ''; position: absolute; bottom: -10px; left: 50%; transform: translateX(-50%);
+            border-width: 10px 10px 0 10px; border-style: solid;
             border-color: rgba(230, 230, 230, 0.85) transparent transparent transparent;
         }
 
-        /* 控制按鈕 (最底部) */
+        /* Controls */
         .call-controls { 
-            position: relative;
-            z-index: 1;
-            display: flex; 
-            gap: 40px; 
-            margin-bottom: 30px;
+            position: relative; z-index: 1; display: flex; gap: 40px; margin-bottom: 30px;
         }
         .call-btn { 
-            width: 65px; height: 65px; 
-            border-radius: 50%; 
-            display: flex; align-items: center; justify-content: center; 
-            color: white; font-size: 26px; cursor: pointer; 
-            transition: transform 0.2s;
-            box-shadow: 0 4px 10px rgba(0,0,0,0.4);
-            border: 2px solid rgba(255,255,255,0.3);
+            width: 65px; height: 65px; border-radius: 50%; display: flex; align-items: center; justify-content: center; 
+            color: white; font-size: 26px; cursor: pointer; transition: transform 0.2s;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.4); border: 2px solid rgba(255,255,255,0.3);
         }
         .call-btn:active { transform: scale(0.9); }
         .btn-mic { background: rgba(0,0,0,0.5); backdrop-filter: blur(5px); }
         .btn-hangup { background: #ff4757; }
 
-        /* Animations */
         @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
     </style>
 </head>
 <body>
 
-    <!-- 1. 狀態列與導航列 -->
-    <div class="status-bar">
-        <span>09:41</span>
-        <span><i class="fas fa-wifi"></i> 100%</span>
-    </div>
+    <!-- 1. Layout -->
+    <div class="status-bar"><span>09:41</span><span><i class="fas fa-wifi"></i> 100%</span></div>
     <div class="nav-bar">
         <i class="fas fa-chevron-left nav-btn" onclick="goHome()"></i>
         <div class="nav-title" id="page-title">北投共照雲</div>
         <i class="fas fa-bars nav-btn"></i>
     </div>
 
-    <!-- 2. 主內容 (聊天室) -->
+    <!-- 2. Chat Content -->
     <div class="content" id="main-content">
         <div class="chat-container">
             <div class="date-divider">今天 09:30</div>
-            <div class="msg ai">
-                早安！我是小樹 🌱<br>
-                今天北投的天氣有點涼，出門記得帶件外套喔。<br>
-                昨晚睡得好嗎？
-            </div>
-            <div class="msg user">
-                早安，還可以。
-            </div>
+            <div class="msg ai">早安！我是小樹 🌱<br>今天北投的天氣有點涼，出門記得帶件外套喔。</div>
+            <div class="msg user">早安，還可以。</div>
         </div>
     </div>
 
-    <!-- 3. Avatar 選擇介面 (Step 1) -->
+    <!-- 3. Avatar Selection (3 Characters) -->
     <div id="avatar-select-overlay">
         <h5 class="text-white mb-4 fw-bold" style="text-shadow:0 2px 4px rgba(0,0,0,0.3)">請選擇您的陪伴夥伴</h5>
         
-        <div class="avatar-opt" onclick="startCall('avatar1.png', '小樹')">
+        <div class="avatar-opt" onclick="startCall('avatar1.png', '小樹', 'avatarMOV.mp4')">
             <img src="images/avatar1.png" alt="小樹"> 
-            <div class="avatar-text">
-                <strong>小樹</strong>
-                <small>溫柔傾聽．療癒系</small>
-            </div>
+            <div class="avatar-text"><strong>小樹</strong><small>溫柔傾聽．療癒系</small></div>
             <i class="fas fa-chevron-right ms-auto text-muted"></i>
         </div>
         
-        <div class="avatar-opt" onclick="startCall('avatar2.png', '大白')">
+        <div class="avatar-opt" onclick="startCall('avatar2.png', '大白', 'avatarMOV2.mp4')">
             <img src="images/avatar2.png" alt="大白"> 
-            <div class="avatar-text">
-                <strong>大白</strong>
-                <small>理性分析．專業系</small>
-            </div>
+            <div class="avatar-text"><strong>大白</strong><small>理性分析．專業系</small></div>
+            <i class="fas fa-chevron-right ms-auto text-muted"></i>
+        </div>
+
+        <div class="avatar-opt" onclick="startCall('avatar3.png', '暖暖', 'avatarMOV3.mp4')">
+            <img src="images/avatar3.png" alt="暖暖"> 
+            <div class="avatar-text"><strong>暖暖</strong><small>開心果．活潑系</small></div>
             <i class="fas fa-chevron-right ms-auto text-muted"></i>
         </div>
         
-        <button class="btn btn-light mt-5 rounded-pill px-5 fw-bold shadow-sm" onclick="closeSelect()">取消</button>
+        <button class="btn btn-light mt-4 rounded-pill px-5 fw-bold shadow-sm" onclick="closeSelect()">取消</button>
     </div>
 
-    <!-- 4. 通話模擬介面 (Step 2 - Full Screen Video Mode) -->
+    <!-- 4. Video Call Interface -->
     <div id="call-overlay">
-        <!-- 背景影片 (最大化，無圓框) -->
+        <!-- Video Background (Dynamic Source) -->
         <video id="call-video" class="call-video-bg" loop muted playsinline>
-            <source src="images/avatarMOV.mp4" type="video/mp4">
+            <source src="" type="video/mp4"> <!-- Source set by JS -->
             您的瀏覽器不支援 Video 標籤。
         </video>
 
-        <!-- 頂部資訊 (名字) -->
         <div class="call-info">
             <h3 class="fw-bold mb-1" id="call-name">小樹 AI</h3>
             <p class="small opacity-75" id="call-status">正在建立連線...</p>
         </div>
         
-        <!-- 對話框 (置於下方，淺灰背景) -->
         <div class="dialogue-box fade-in" id="dialogue-box" style="opacity:0">
             "哈囉！我是小樹，很高興見到你。<br>今天心情如何呢？"
         </div>
         
-        <!-- 底部控制按鈕 -->
         <div class="call-controls">
             <div class="call-btn btn-mic" onclick="toggleMic(this)"><i class="fas fa-microphone-slash"></i></div>
             <div class="call-btn btn-hangup" onclick="endCall()"><i class="fas fa-phone-slash"></i></div>
         </div>
     </div>
 
-    <!-- 5. 底部選單 -->
+    <!-- 5. Footer -->
     <div class="rich-menu">
-        <div class="menu-item active" onclick="goHome()">
-            <i class="fas fa-comment-dots"></i>聊天
-        </div>
-        <div class="menu-item" onclick="alert('進入健康存摺...')">
-            <i class="fas fa-heartbeat text-danger"></i>健康
-        </div>
-        <!-- 點擊觸發選擇介面 -->
-        <div class="menu-item" onclick="openSelect()">
-            <i class="fas fa-robot text-primary"></i>陪伴
-        </div>
-        <div class="menu-item" onclick="alert('進入個人中心...')">
-            <i class="fas fa-user"></i>個人
-        </div>
+        <div class="menu-item active" onclick="goHome()"><i class="fas fa-comment-dots"></i>聊天</div>
+        <div class="menu-item" onclick="alert('進入健康存摺...')"><i class="fas fa-heartbeat text-danger"></i>健康</div>
+        <div class="menu-item" onclick="openSelect()"><i class="fas fa-robot text-primary"></i>陪伴</div>
+        <div class="menu-item" onclick="alert('進入個人中心...')"><i class="fas fa-user"></i>個人</div>
     </div>
 
     <script>
-        // 返回首頁邏輯
         function goHome() {
             document.getElementById('main-content').innerHTML = `
                 <div class="chat-container">
@@ -257,66 +197,58 @@
             document.getElementById('page-title').innerText = "北投共照雲";
         }
 
-        // 開啟選擇介面
-        function openSelect() {
-            document.getElementById('avatar-select-overlay').style.display = 'flex';
-        }
+        function openSelect() { document.getElementById('avatar-select-overlay').style.display = 'flex'; }
+        function closeSelect() { document.getElementById('avatar-select-overlay').style.display = 'none'; }
 
-        // 關閉選擇介面
-        function closeSelect() {
-            document.getElementById('avatar-select-overlay').style.display = 'none';
-        }
-
-        // 開始通話 (進入模擬對話 - Video Mode)
-        function startCall(img, name) {
+        // Start Call Logic (With Video Swap)
+        function startCall(img, name, videoFile) {
             closeSelect();
             
-            // 設定通話介面內容
+            // Set Name & Video Source
             document.getElementById('call-name').innerText = name + ' AI';
             const video = document.getElementById('call-video');
+            video.src = "images/" + videoFile; // Dynamic video path
+            
             const status = document.getElementById('call-status');
             const dialogue = document.getElementById('dialogue-box');
             
-            // 重新載入並播放影片 (確保每次開啟都播放)
+            // Play Video
             if(video) {
                 video.load();
                 video.play().catch(e => console.log('Auto-play blocked:', e));
             }
 
-            // 顯示通話介面
+            // Show UI
             const overlay = document.getElementById('call-overlay');
             overlay.style.display = 'flex';
             
-            // 模擬連線過程
+            // Sim Connection
             status.innerText = "連線中...";
             dialogue.style.opacity = '0';
             
             setTimeout(() => {
                 status.innerText = "通話中 00:01";
-                dialogue.style.opacity = '1'; // 顯示對話氣泡
+                dialogue.style.opacity = '1'; 
                 dialogue.innerHTML = `哈囉！我是${name}，很高興見到你。<br>今天心情如何呢？`;
             }, 1500);
         }
 
-        // 結束通話
         function endCall() {
             document.getElementById('call-overlay').style.display = 'none';
-            // 停止影片播放以節省資源
             const video = document.getElementById('call-video');
             if(video) video.pause();
         }
 
-        // 麥克風切換效果
         function toggleMic(btn) {
             const icon = btn.querySelector('i');
             if(icon.classList.contains('fa-microphone-slash')) {
                 icon.classList.remove('fa-microphone-slash');
                 icon.classList.add('fa-microphone');
-                btn.style.background = "rgba(0, 185, 0, 0.6)"; // Greenish for active
+                btn.style.background = "rgba(0, 185, 0, 0.6)";
             } else {
                 icon.classList.remove('fa-microphone');
                 icon.classList.add('fa-microphone-slash');
-                btn.style.background = "rgba(0,0,0,0.5)"; // Default
+                btn.style.background = "rgba(0,0,0,0.5)";
             }
         }
     </script>
