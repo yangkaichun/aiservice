@@ -4,16 +4,14 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>北投共照雲 - 行動端</title>
-    <link rel="icon" href="images/feticon.ico" type="image/x-icon">
-    <!-- Bootstrap 5 CSS -->
+    <!-- Libraries -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-    <!-- FontAwesome Icons -->
-    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
     
     <style>
-        /* 全域設定 */
+        /* --- 核心樣式 --- */
         body { 
-            background-color: #fff; 
+            background-color: #f7f8fa; /* 淺灰背景 */
             height: 100vh; 
             display: flex; 
             flex-direction: column; 
@@ -21,292 +19,383 @@
             font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif; 
         }
         
-        /* --- 1. 登入遮罩層 --- */
-        #login-overlay {
-            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            background: linear-gradient(160deg, #27ae60 0%, #2c3e50 100%);
-            z-index: 9999; 
-            display: flex; flex-direction: column; justify-content: center; align-items: center;
-            padding: 20px; color: white; 
-            transition: opacity 0.5s ease-out, visibility 0.5s;
+        /* --- 頂部區域 --- */
+        .status-bar { 
+            height: 35px; 
+            background: #2c3e50; 
+            color: white; 
+            display: flex; 
+            justify-content: space-between; 
+            align-items: center; 
+            padding: 0 20px; 
+            font-size: 12px; 
+            font-weight: 500;
         }
-        .login-box { 
-            background: rgba(255,255,255,0.95); padding: 30px; border-radius: 20px; 
-            width: 100%; max-width: 320px; color: #333; box-shadow: 0 10px 30px rgba(0,0,0,0.3); text-align: center;
+        .nav-bar { 
+            height: 55px; 
+            background: #2c3e50; 
+            color: white;
+            display: flex; 
+            align-items: center; 
+            padding: 0 15px; 
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+            z-index: 10;
         }
+        .nav-title { 
+            flex: 1; 
+            text-align: center; 
+            font-weight: bold; 
+            font-size: 16px; 
+        }
+        .nav-btn { cursor: pointer; padding: 5px; }
 
-        /* --- 2. Avatar 虛擬陪伴模擬層 (NEW) --- */
-        #avatar-overlay {
-            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            background: linear-gradient(180deg, #a8c0ff 0%, #3f2b96 100%); /* 柔和漸層背景 */
-            z-index: 5000;
-            display: flex; flex-direction: column; align-items: center; justify-content: space-between;
-            padding: 40px 20px;
-            opacity: 0; visibility: hidden; transition: all 0.5s;
-        }
-        #avatar-overlay.active {
-            opacity: 1; visibility: visible;
+        /* --- 內容區域 --- */
+        .content { 
+            flex: 1; 
+            overflow-y: auto; 
+            position: relative; 
+            background: #fff; 
+            scroll-behavior: smooth;
         }
         
-        .avatar-container {
-            width: 200px; height: 200px;
-            border-radius: 50%;
-            border: 5px solid rgba(255,255,255,0.5);
-            overflow: hidden;
-            background: white;
-            box-shadow: 0 0 30px rgba(255,255,255,0.3);
-            margin-top: 60px;
+        /* 聊天室樣式 */
+        .chat-container { 
+            padding: 20px; 
+            display: flex; 
+            flex-direction: column; 
+            gap: 20px; 
+            background: #7289da1a; /* 淡藍色背景，模擬 LINE */
+            min-height: 100%;
+        }
+        .date-divider {
+            text-align: center;
+            font-size: 11px;
+            color: #888;
+            margin: 10px 0;
+            background: rgba(0,0,0,0.05);
+            padding: 2px 10px;
+            border-radius: 10px;
+            align-self: center;
+        }
+        .msg { 
+            max-width: 80%; 
+            padding: 12px 16px; 
+            border-radius: 20px; 
+            font-size: 14px; 
+            line-height: 1.5; 
+            position: relative; 
+            box-shadow: 0 1px 2px rgba(0,0,0,0.1);
+        }
+        .msg.ai { 
+            align-self: flex-start; 
+            background: #fff; 
+            color: #333; 
+            border-top-left-radius: 4px; 
+            margin-left: 45px; 
+        }
+        .msg.ai::before { 
+            content:''; 
+            position: absolute; 
+            left: -45px; 
+            top: 0; 
+            width: 36px; 
+            height: 36px; 
+            background: url('images/avatar1.png') center/cover; 
+            border-radius: 50%; 
+            border: 2px solid #fff;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.2);
+        }
+        .msg.user { 
+            align-self: flex-end; 
+            background: #00b900; /* LINE Green */
+            color: white; 
+            border-top-right-radius: 4px; 
+        }
+
+        /* --- 底部 Rich Menu (圖文選單) --- */
+        .rich-menu { 
+            height: 70px; 
+            border-top: 1px solid #e0e0e0; 
+            display: grid; 
+            grid-template-columns: repeat(4, 1fr); 
+            background: #fcfcfc; 
+            flex-shrink: 0; 
+            padding-bottom: 5px; /* for iPhone home bar */
+        }
+        .menu-item { 
+            display: flex; 
+            flex-direction: column; 
+            align-items: center; 
+            justify-content: center; 
+            font-size: 10px; 
+            color: #999; 
+            cursor: pointer; 
+            transition: all 0.2s;
+            border-top: 3px solid transparent;
+        }
+        .menu-item:active { background: #f0f0f0; }
+        .menu-item.active { 
+            color: #2c3e50; 
+            font-weight: bold; 
+            border-top-color: #00897b;
+        }
+        .menu-item i { font-size: 24px; margin-bottom: 4px; }
+
+        /* --- Avatar Selection Overlay (Step 1) --- */
+        #avatar-select-overlay {
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.8); 
+            backdrop-filter: blur(5px);
+            z-index: 100; 
+            display: none;
+            flex-direction: column; 
+            align-items: center; 
+            justify-content: center;
+            animation: fadeIn 0.3s;
+        }
+        .avatar-opt {
+            background: white; 
+            width: 280px; 
+            padding: 15px; 
+            margin: 12px; 
+            border-radius: 16px;
+            display: flex; 
+            align-items: center; 
+            cursor: pointer; 
+            transition: 0.2s;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+        }
+        .avatar-opt:active { transform: scale(0.96); }
+        .avatar-opt img { 
+            width: 55px; height: 55px; 
+            border-radius: 50%; 
+            margin-right: 15px; 
+            object-fit: cover; 
+            border: 2px solid #f0f0f0;
+        }
+        .avatar-text strong { display: block; font-size: 16px; color: #333; }
+        .avatar-text small { color: #888; font-size: 12px; }
+
+        /* --- Call Overlay (Step 2) --- */
+        #call-overlay {
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            z-index: 200; 
+            display: none; 
+            flex-direction: column; 
+            align-items: center; 
+            justify-content: space-between; 
+            padding: 60px 20px 40px;
+            animation: slideUp 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+        .call-avatar { 
+            width: 160px; height: 160px; 
+            border-radius: 50%; 
+            border: 5px solid rgba(255,255,255,0.3); 
+            overflow: hidden; 
+            margin-top: 40px; 
+            background: #fff; 
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+            animation: pulse 2s infinite;
+        }
+        .call-avatar img { width: 100%; height: 100%; object-fit: cover; }
+        
+        .dialogue-box {
+            background: rgba(255, 255, 255, 0.95);
+            padding: 20px; 
+            border-radius: 20px;
+            width: 100%; 
+            max-width: 300px;
+            text-align: center;
+            font-size: 16px; 
+            color: #333; 
+            font-weight: 500;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
             position: relative;
         }
-        .avatar-img {
-            width: 100%; height: 100%; object-fit: cover;
-        }
-        
-        /* 說話波紋動畫 */
-        .speaking-waves {
-            position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
-            width: 210px; height: 210px; border-radius: 50%;
-            border: 2px solid rgba(255,255,255,0.6);
-            animation: ripple 2s infinite;
-            z-index: -1;
-            display: none; /* 說話時開啟 */
-        }
-        @keyframes ripple {
-            0% { width: 200px; height: 200px; opacity: 0.8; }
-            100% { width: 300px; height: 300px; opacity: 0; }
+        .dialogue-box::after {
+            content: '';
+            position: absolute;
+            top: -10px; left: 50%; transform: translateX(-50%);
+            border-width: 0 10px 10px 10px;
+            border-style: solid;
+            border-color: transparent transparent rgba(255,255,255,0.95) transparent;
         }
 
-        .dialogue-box {
-            background: rgba(255, 255, 255, 0.9);
-            padding: 20px; border-radius: 20px;
-            width: 100%; max-width: 350px;
-            text-align: center;
-            min-height: 100px;
-            display: flex; align-items: center; justify-content: center;
-            font-size: 16px; color: #333; font-weight: 500;
-            box-shadow: 0 10px 20px rgba(0,0,0,0.2);
-            margin-bottom: 20px;
-        }
-
-        .control-panel {
-            display: flex; gap: 30px; margin-bottom: 20px;
-        }
-        .control-btn {
-            width: 60px; height: 60px; border-radius: 50%;
-            display: flex; align-items: center; justify-content: center;
-            font-size: 24px; color: white; cursor: pointer;
+        .call-controls { display: flex; gap: 40px; }
+        .call-btn { 
+            width: 65px; height: 65px; 
+            border-radius: 50%; 
+            display: flex; align-items: center; justify-content: center; 
+            color: white; font-size: 26px; cursor: pointer; 
             transition: transform 0.2s;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.2);
         }
-        .control-btn:active { transform: scale(0.9); }
-        .btn-mic { background: rgba(255,255,255,0.2); }
-        .btn-end { background: #ff4757; }
+        .call-btn:active { transform: scale(0.9); }
+        .btn-mic { background: rgba(255,255,255,0.2); backdrop-filter: blur(5px); }
+        .btn-hangup { background: #ff4757; }
 
-        /* --- 3. LINE 聊天介面 --- */
-        .chat-header { background: #2c3e50; color: white; padding: 15px; height: 60px; display: flex; align-items: center; justify-content: space-between; flex-shrink: 0; }
-        .chat-body { flex: 1; background: #7289da1a; padding: 15px; overflow-y: auto; display: flex; flex-direction: column; gap: 15px; }
-        .footer-input { background: white; padding: 8px 10px; border-top: 1px solid #ddd; display: flex; align-items: center; gap: 10px; flex-shrink: 0; }
-        .footer-input input { background: #f3f3f3; border: none; border-radius: 20px; padding: 10px 15px; width: 100%; outline: none; }
-
-        .bubble { max-width: 75%; padding: 10px 14px; border-radius: 18px; font-size: 14px; line-height: 1.5; position: relative; word-wrap: break-word; box-shadow: 0 1px 2px rgba(0,0,0,0.1); }
-        .bubble.ai { align-self: flex-start; background: white; margin-left: 40px; border-top-left-radius: 4px; }
-        .bubble.ai::before { content: ''; position: absolute; left: -42px; top: 0; width: 36px; height: 36px; background: #fff url('images/avatar1.png') center/cover; border-radius: 50%; border: 1px solid #eee; }
-        .bubble.user { align-self: flex-end; background: #06c755; color: white; border-top-right-radius: 4px; }
-
-        .rich-menu { background: #fcfcfc; border-top: 1px solid #ccc; display: grid; grid-template-columns: repeat(4, 1fr); height: 60px; flex-shrink: 0; padding-bottom: env(safe-area-inset-bottom); }
-        .menu-item { display: flex; flex-direction: column; align-items: center; justify-content: center; font-size: 10px; color: #888; cursor: pointer; }
-        .menu-item.active { color: #27ae60; font-weight: bold; }
-        .menu-item i { font-size: 22px; margin-bottom: 3px; }
+        /* Animations */
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+        @keyframes slideUp { from { transform: translateY(100%); } to { transform: translateY(0); } }
+        @keyframes pulse { 0% { box-shadow: 0 0 0 0 rgba(255, 255, 255, 0.4); } 70% { box-shadow: 0 0 0 20px rgba(255, 255, 255, 0); } 100% { box-shadow: 0 0 0 0 rgba(255, 255, 255, 0); } }
     </style>
 </head>
 <body>
 
-    <!-- 1. 登入畫面 -->
-    <div id="login-overlay">
-        <img src="images/fetlogo.png" style="max-width: 180px; margin-bottom: 30px; filter: brightness(0) invert(1);" alt="FET Logo" onerror="this.style.display='none'">
-        <div class="login-box">
-            <h5 class="text-center fw-bold mb-4" style="color:#2c3e50;">個案登入</h5>
-            <div class="mb-3">
-                <input type="text" class="form-control rounded-pill" placeholder="病歷號 / 手機號碼" value="A123456789">
-            </div>
-            <div class="mb-4">
-                <input type="password" class="form-control rounded-pill" placeholder="密碼" value="123456">
-            </div>
-            <button class="btn btn-success w-100 rounded-pill fw-bold py-2 shadow-sm" onclick="login()">登入 LINE 共照雲</button>
-        </div>
-        <div class="mt-5 small opacity-75">&copy; 2025 北投智慧遠距精神醫療照護平台</div>
+    <!-- 1. 狀態列與導航列 -->
+    <div class="status-bar">
+        <span>09:41</span>
+        <span><i class="fas fa-wifi"></i> 100%</span>
+    </div>
+    <div class="nav-bar">
+        <i class="fas fa-chevron-left nav-btn" onclick="goHome()"></i>
+        <div class="nav-title" id="page-title">北投共照雲</div>
+        <i class="fas fa-bars nav-btn"></i>
     </div>
 
-    <!-- 2. Avatar 虛擬陪伴模擬層 (NEW) -->
-    <div id="avatar-overlay">
-        <div class="text-white mt-4 fw-bold" style="font-size: 1.2rem; text-shadow: 0 2px 4px rgba(0,0,0,0.2);">AI 虛擬陪伴中...</div>
+    <!-- 2. 主內容 (聊天室) -->
+    <div class="content" id="main-content">
+        <div class="chat-container">
+            <div class="date-divider">今天 09:30</div>
+            <div class="msg ai">
+                早安！我是小樹 🌱<br>
+                今天北投的天氣有點涼，出門記得帶件外套喔。<br>
+                昨晚睡得好嗎？
+            </div>
+            <div class="msg user">
+                早安，還可以。
+            </div>
+        </div>
+    </div>
+
+    <!-- 3. Avatar 選擇介面 (Step 1) -->
+    <div id="avatar-select-overlay">
+        <h5 class="text-white mb-4 fw-bold" style="text-shadow:0 2px 4px rgba(0,0,0,0.3)">請選擇您的陪伴夥伴</h5>
         
-        <div class="avatar-container">
-            <img src="images/avatar1.png" alt="Avatar" class="avatar-img" id="call-avatar-img">
-            <div class="speaking-waves" id="waves"></div>
-        </div>
-
-        <div class="dialogue-box">
-            <span id="avatar-text">正在連線到 AI 陪伴員...</span>
-        </div>
-
-        <div class="control-panel">
-            <div class="control-btn btn-mic" onclick="toggleMic()"><i class="fas fa-microphone"></i></div>
-            <div class="control-btn btn-end" onclick="closeAvatarSession()"><i class="fas fa-phone-slash"></i></div>
-        </div>
-    </div>
-
-    <!-- 3. LINE 主介面 -->
-    <div class="chat-header">
-        <div class="d-flex align-items-center gap-3">
-            <i class="fas fa-chevron-left fa-lg" onclick="alert('返回')"></i>
-            <div>
-                <div class="fw-bold" style="font-size: 16px;">小樹 AI 個管師</div>
-                <div style="font-size: 11px; opacity: 0.8;"><i class="fas fa-circle text-success" style="font-size:8px;"></i> 24h 在線陪伴</div>
+        <div class="avatar-opt" onclick="startCall('avatar1.png', '小樹')">
+            <img src="images/avatar1.png" alt="小樹"> 
+            <div class="avatar-text">
+                <strong>小樹</strong>
+                <small>溫柔傾聽．療癒系</small>
             </div>
+            <i class="fas fa-chevron-right ms-auto text-muted"></i>
         </div>
-        <div>
-            <i class="fas fa-phone-alt me-4 fa-lg"></i>
-            <i class="fas fa-bars fa-lg"></i>
+        
+        <div class="avatar-opt" onclick="startCall('avatar2.png', '大白')">
+            <img src="images/avatar2.png" alt="大白"> 
+            <div class="avatar-text">
+                <strong>大白</strong>
+                <small>理性分析．專業系</small>
+            </div>
+            <i class="fas fa-chevron-right ms-auto text-muted"></i>
+        </div>
+        
+        <button class="btn btn-light mt-5 rounded-pill px-5 fw-bold shadow-sm" onclick="closeSelect()">取消</button>
+    </div>
+
+    <!-- 4. 通話模擬介面 (Step 2) -->
+    <div id="call-overlay">
+        <div class="text-white text-center mt-4">
+            <h3 class="fw-bold mb-1" id="call-name">小樹 AI</h3>
+            <p class="small opacity-75" id="call-status">正在建立連線...</p>
+        </div>
+        
+        <div class="call-avatar">
+            <img src="" id="call-img" alt="Avatar">
+        </div>
+        
+        <div class="dialogue-box mt-4 fade-in" id="dialogue-box" style="opacity:0">
+            "哈囉！我是小樹，很高興見到你。<br>今天心情如何呢？"
+        </div>
+        
+        <div class="call-controls mt-auto mb-4">
+            <div class="call-btn btn-mic" onclick="toggleMic(this)"><i class="fas fa-microphone-slash"></i></div>
+            <div class="call-btn btn-hangup" onclick="endCall()"><i class="fas fa-phone-slash"></i></div>
         </div>
     </div>
 
-    <div class="chat-body" id="chat">
-        <div class="text-center text-muted small my-2">今天 09:30</div>
-        <div class="bubble ai">
-            早安！我是小樹 🌱<br>今天北投的天氣有點涼，出門記得帶件外套喔。<br>昨晚睡得好嗎？
-        </div>
-    </div>
-
-    <div class="footer-input">
-        <i class="fas fa-plus text-secondary fa-lg"></i>
-        <i class="fas fa-camera text-secondary fa-lg"></i>
-        <i class="far fa-image text-secondary fa-lg"></i>
-        <input type="text" id="msgInput" placeholder="輸入訊息..." onkeypress="handleEnter(event)">
-        <button class="btn btn-primary rounded-circle shadow-sm" style="width: 35px; height: 35px; display: flex; align-items: center; justify-content: center;" onclick="send()">
-            <i class="fas fa-paper-plane" style="font-size: 14px; margin-left: -2px;"></i>
-        </button>
-    </div>
-
-    <!-- Bottom Rich Menu -->
+    <!-- 5. 底部選單 -->
     <div class="rich-menu">
-        <div class="menu-item active">
-            <i class="fas fa-comment-dots"></i>
-            聊天室
+        <div class="menu-item active" onclick="goHome()">
+            <i class="fas fa-comment-dots"></i>聊天
         </div>
-        <div class="menu-item" onclick="alert('開啟 LIFF 生理數據表單')">
-            <i class="fas fa-heartbeat"></i>
-            生理數據
+        <div class="menu-item" onclick="alert('進入健康存摺...')">
+            <i class="fas fa-heartbeat text-danger"></i>健康
         </div>
-        <!-- 修改重點：AI 虛擬陪伴 -->
-        <div class="menu-item" onclick="openAvatarSession()">
-            <i class="fas fa-robot"></i> <!-- 使用 Robot Icon -->
-            AI虛擬陪伴
+        <!-- 點擊觸發選擇介面 -->
+        <div class="menu-item" onclick="openSelect()">
+            <i class="fas fa-robot text-primary"></i>陪伴
         </div>
-        <div class="menu-item" onclick="alert('開啟個人健康存摺')">
-            <i class="fas fa-user-circle"></i>
-            個人中心
+        <div class="menu-item" onclick="alert('進入個人中心...')">
+            <i class="fas fa-user"></i>個人
         </div>
     </div>
 
     <script>
-        // 1. 登入動畫
-        function login() {
-            const overlay = document.getElementById('login-overlay');
-            const btn = overlay.querySelector('button');
-            btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> 登入中...';
-            setTimeout(() => {
-                overlay.style.opacity = '0';
-                overlay.style.visibility = 'hidden';
-            }, 800);
+        // 返回首頁邏輯
+        function goHome() {
+            document.getElementById('main-content').innerHTML = `
+                <div class="chat-container">
+                    <div class="date-divider">今天 09:30</div>
+                    <div class="msg ai">早安！我是小樹 🌱<br>今天記得量血壓喔。</div>
+                    <div class="msg user">早安，還可以。</div>
+                </div>`;
+            document.getElementById('page-title').innerText = "北投共照雲";
         }
 
-        // 2. Avatar 模擬對話邏輯 (NEW)
-        const avatarOverlay = document.getElementById('avatar-overlay');
-        const avatarText = document.getElementById('avatar-text');
-        const waves = document.getElementById('waves');
-        let sessionTimer;
+        // 開啟選擇介面
+        function openSelect() {
+            document.getElementById('avatar-select-overlay').style.display = 'flex';
+        }
 
-        function openAvatarSession() {
-            // 顯示遮罩
-            avatarOverlay.classList.add('active');
-            avatarText.innerText = "連線中...";
+        // 關閉選擇介面
+        function closeSelect() {
+            document.getElementById('avatar-select-overlay').style.display = 'none';
+        }
+
+        // 開始通話 (進入模擬對話)
+        function startCall(img, name) {
+            closeSelect();
             
-            // 模擬連線後開始對話
+            // 設定通話介面內容
+            document.getElementById('call-img').src = 'images/' + img;
+            document.getElementById('call-name').innerText = name + ' AI';
+            const status = document.getElementById('call-status');
+            const dialogue = document.getElementById('dialogue-box');
+            
+            // 顯示通話介面
+            const overlay = document.getElementById('call-overlay');
+            overlay.style.display = 'flex';
+            
+            // 模擬連線過程
+            status.innerText = "連線中...";
+            dialogue.style.opacity = '0';
+            
             setTimeout(() => {
-                avatarText.innerText = "你好！我是小樹，很高興見到你。今天想聊聊什麼呢？";
-                waves.style.display = "block"; // 開啟波紋動畫
+                status.innerText = "通話中 00:01";
+                dialogue.style.opacity = '1'; // 顯示對話氣泡
+                dialogue.innerHTML = `哈囉！我是${name}，很高興見到你。<br>今天心情如何呢？`;
             }, 1500);
-
-            // 模擬 AI 自言自語 (Demo效果)
-            sessionTimer = setInterval(() => {
-                const scripts = [
-                    "你看起來氣色不錯喔！",
-                    "最近有按時吃藥嗎？",
-                    "記得深呼吸，放鬆心情...",
-                    "我會一直陪著你的。"
-                ];
-                const randomScript = scripts[Math.floor(Math.random() * scripts.length)];
-                
-                // 模擬說話狀態
-                waves.style.display = "block";
-                avatarText.innerText = randomScript;
-                
-                // 說完話後停止波紋
-                setTimeout(() => {
-                    waves.style.display = "none";
-                }, 2000);
-                
-            }, 5000);
         }
 
-        function closeAvatarSession() {
-            avatarOverlay.classList.remove('active');
-            clearInterval(sessionTimer);
-            waves.style.display = "none";
+        // 結束通話
+        function endCall() {
+            document.getElementById('call-overlay').style.display = 'none';
         }
 
-        function toggleMic() {
-            alert("模擬功能：麥克風已開啟，請說話...");
-            avatarText.innerText = "正在聆聽...";
-            waves.style.display = "none";
-            setTimeout(() => {
-                avatarText.innerText = "我聽到了，你是說心情有點悶嗎？";
-                waves.style.display = "block";
-            }, 2000);
-        }
-
-        // 3. 一般聊天發送邏輯
-        function handleEnter(e) {
-            if (e.key === 'Enter') send();
-        }
-
-        function send() {
-            const input = document.getElementById('msgInput');
-            const val = input.value.trim();
-            if(!val) return;
-            const chat = document.getElementById('chat');
-            
-            // User Msg
-            const uDiv = document.createElement('div');
-            uDiv.className = 'bubble user';
-            uDiv.innerText = val;
-            chat.appendChild(uDiv);
-            input.value = '';
-            chat.scrollTop = chat.scrollHeight;
-
-            // AI Reply
-            setTimeout(() => {
-                const aDiv = document.createElement('div');
-                aDiv.className = 'bubble ai';
-                
-                let text = "我聽到了，謝謝你願意分享。";
-                if(val.includes('藥')) text = "藥物能幫助大腦休息，記得按時服用喔。";
-                if(val.includes('累') || val.includes('睡')) text = "聽起來你很疲憊，試著做個深呼吸放鬆一下？";
-                
-                aDiv.innerText = text;
-                chat.appendChild(aDiv);
-                chat.scrollTop = chat.scrollHeight;
-            }, 1000);
+        // 麥克風切換效果
+        function toggleMic(btn) {
+            const icon = btn.querySelector('i');
+            if(icon.classList.contains('fa-microphone-slash')) {
+                icon.classList.remove('fa-microphone-slash');
+                icon.classList.add('fa-microphone');
+                btn.style.background = "rgba(255,255,255,0.5)";
+            } else {
+                icon.classList.remove('fa-microphone');
+                icon.classList.add('fa-microphone-slash');
+                btn.style.background = "rgba(255,255,255,0.2)";
+            }
         }
     </script>
 </body>
