@@ -178,71 +178,90 @@
         .avatar-text strong { display: block; font-size: 16px; color: #333; }
         .avatar-text small { color: #888; font-size: 12px; }
 
-        /* --- Call Overlay (Step 2 - Video) --- */
+        /* --- Call Overlay (Step 2 - Video Full Screen) --- */
         #call-overlay {
             position: absolute; top: 0; left: 0; width: 100%; height: 100%;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            background: #000; /* Black background for video */
             z-index: 200; 
             display: none; 
             flex-direction: column; 
             align-items: center; 
             justify-content: space-between; 
-            padding: 60px 20px 40px;
-            animation: slideUp 0.4s cubic-bezier(0.16, 1, 0.3, 1);
-        }
-        .call-avatar { 
-            width: 180px; height: 180px; 
-            border-radius: 50%; 
-            border: 5px solid rgba(255,255,255,0.3); 
-            overflow: hidden; 
-            margin-top: 40px; 
-            background: #000; /* Video background */
-            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
-        }
-        /* Video Element Style */
-        .call-avatar video { 
-            width: 100%; height: 100%; 
-            object-fit: cover; 
+            padding: 40px 20px;
+            animation: fadeIn 0.5s ease-out;
+            overflow: hidden; /* Ensure video stays within bounds */
         }
         
+        /* Video Background */
+        .call-video-bg {
+            position: absolute;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
+            object-fit: cover; /* Maximize video */
+            z-index: 0; /* Behind UI */
+            opacity: 0.8; /* Slight dim for UI visibility */
+        }
+
+        /* Top Info (Over Video) */
+        .call-info {
+            position: relative;
+            z-index: 1;
+            text-align: center;
+            color: white;
+            margin-top: 20px;
+            text-shadow: 0 2px 4px rgba(0,0,0,0.5);
+        }
+
+        /* Dialogue Box (Over Video) */
         .dialogue-box {
-            background: rgba(255, 255, 255, 0.95);
+            position: relative;
+            z-index: 1;
+            background: rgba(245, 245, 245, 0.9); /* Light gray, semi-transparent */
             padding: 20px; 
             border-radius: 20px;
             width: 100%; 
-            max-width: 300px;
+            max-width: 320px;
             text-align: center;
             font-size: 16px; 
             color: #333; 
             font-weight: 500;
-            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
-            position: relative;
+            box-shadow: 0 5px 20px rgba(0,0,0,0.3);
+            margin-bottom: auto; /* Push to middle-ish */
+            margin-top: 100px;
         }
         .dialogue-box::after {
+            /* Speech bubble tail pointing down-ish or just styled box */
             content: '';
             position: absolute;
-            top: -10px; left: 50%; transform: translateX(-50%);
-            border-width: 0 10px 10px 10px;
+            bottom: -10px; left: 50%; transform: translateX(-50%);
+            border-width: 10px 10px 0 10px;
             border-style: solid;
-            border-color: transparent transparent rgba(255,255,255,0.95) transparent;
+            border-color: rgba(245, 245, 245, 0.9) transparent transparent transparent;
         }
 
-        .call-controls { display: flex; gap: 40px; }
+        /* Controls (Over Video) */
+        .call-controls { 
+            position: relative;
+            z-index: 1;
+            display: flex; 
+            gap: 40px; 
+            margin-bottom: 40px;
+        }
         .call-btn { 
             width: 65px; height: 65px; 
             border-radius: 50%; 
             display: flex; align-items: center; justify-content: center; 
             color: white; font-size: 26px; cursor: pointer; 
             transition: transform 0.2s;
-            box-shadow: 0 4px 10px rgba(0,0,0,0.2);
+            box-shadow: 0 4px 10px rgba(0,0,0,0.4);
+            border: 2px solid rgba(255,255,255,0.2);
         }
         .call-btn:active { transform: scale(0.9); }
-        .btn-mic { background: rgba(255,255,255,0.2); backdrop-filter: blur(5px); }
+        .btn-mic { background: rgba(0,0,0,0.4); backdrop-filter: blur(5px); }
         .btn-hangup { background: #ff4757; }
 
         /* Animations */
         @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
-        @keyframes slideUp { from { transform: translateY(100%); } to { transform: translateY(0); } }
     </style>
 </head>
 <body>
@@ -277,7 +296,7 @@
     <div id="avatar-select-overlay">
         <h5 class="text-white mb-4 fw-bold" style="text-shadow:0 2px 4px rgba(0,0,0,0.3)">請選擇您的陪伴夥伴</h5>
         
-        <div class="avatar-opt" onclick="startCall('小樹')">
+        <div class="avatar-opt" onclick="startCall('avatar1.png', '小樹')">
             <img src="images/avatar1.png" alt="小樹"> 
             <div class="avatar-text">
                 <strong>小樹</strong>
@@ -286,7 +305,7 @@
             <i class="fas fa-chevron-right ms-auto text-muted"></i>
         </div>
         
-        <div class="avatar-opt" onclick="startCall('大白')">
+        <div class="avatar-opt" onclick="startCall('avatar2.png', '大白')">
             <img src="images/avatar2.png" alt="大白"> 
             <div class="avatar-text">
                 <strong>大白</strong>
@@ -298,26 +317,27 @@
         <button class="btn btn-light mt-5 rounded-pill px-5 fw-bold shadow-sm" onclick="closeSelect()">取消</button>
     </div>
 
-    <!-- 4. 通話模擬介面 (Step 2 - Video Mode) -->
+    <!-- 4. 通話模擬介面 (Step 2 - Full Video Mode) -->
     <div id="call-overlay">
-        <div class="text-white text-center mt-4">
+        <!-- 背景影片 -->
+        <video id="call-video" class="call-video-bg" loop muted playsinline>
+            <source src="images/avatarMOV.mp4" type="video/mp4">
+            您的瀏覽器不支援 Video 標籤。
+        </video>
+
+        <!-- 頂部資訊 -->
+        <div class="call-info">
             <h3 class="fw-bold mb-1" id="call-name">小樹 AI</h3>
             <p class="small opacity-75" id="call-status">正在建立連線...</p>
         </div>
         
-        <!-- 使用 Video 標籤播放模擬影片 -->
-        <div class="call-avatar">
-            <video id="call-video" loop muted playsinline>
-                <source src="images/avatarMOV.mp4" type="video/mp4">
-                您的瀏覽器不支援 Video 標籤。
-            </video>
-        </div>
-        
-        <div class="dialogue-box mt-4 fade-in" id="dialogue-box" style="opacity:0">
+        <!-- 對話框 (浮在影片上) -->
+        <div class="dialogue-box fade-in" id="dialogue-box" style="opacity:0">
             "哈囉！我是小樹，很高興見到你。<br>今天心情如何呢？"
         </div>
         
-        <div class="call-controls mt-auto mb-4">
+        <!-- 底部控制按鈕 -->
+        <div class="call-controls">
             <div class="call-btn btn-mic" onclick="toggleMic(this)"><i class="fas fa-microphone-slash"></i></div>
             <div class="call-btn btn-hangup" onclick="endCall()"><i class="fas fa-phone-slash"></i></div>
         </div>
@@ -363,18 +383,18 @@
         }
 
         // 開始通話 (進入模擬對話 - Video Mode)
-        function startCall(name) {
+        function startCall(img, name) {
             closeSelect();
             
-            // 設定名稱
+            // 設定通話介面內容
             document.getElementById('call-name').innerText = name + ' AI';
+            const video = document.getElementById('call-video');
             const status = document.getElementById('call-status');
             const dialogue = document.getElementById('dialogue-box');
-            const video = document.getElementById('call-video');
             
-            // 嘗試播放影片
+            // 重新載入並播放影片 (確保每次開啟都播放)
             if(video) {
-                video.currentTime = 0; // 重頭開始
+                video.load();
                 video.play().catch(e => console.log('Auto-play blocked:', e));
             }
 
@@ -396,7 +416,7 @@
         // 結束通話
         function endCall() {
             document.getElementById('call-overlay').style.display = 'none';
-            // 停止影片以節省資源
+            // 停止影片播放以節省資源
             const video = document.getElementById('call-video');
             if(video) video.pause();
         }
@@ -407,11 +427,11 @@
             if(icon.classList.contains('fa-microphone-slash')) {
                 icon.classList.remove('fa-microphone-slash');
                 icon.classList.add('fa-microphone');
-                btn.style.background = "rgba(255,255,255,0.5)";
+                btn.style.background = "rgba(0, 185, 0, 0.6)"; // Greenish for active
             } else {
                 icon.classList.remove('fa-microphone');
                 icon.classList.add('fa-microphone-slash');
-                btn.style.background = "rgba(255,255,255,0.2)";
+                btn.style.background = "rgba(0,0,0,0.4)"; // Default
             }
         }
     </script>
