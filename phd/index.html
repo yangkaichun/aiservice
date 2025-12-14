@@ -2,8 +2,15 @@
 <html lang="zh-TW">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>HealthTwin 數據輸入 | Yang Home</title>
+    
+    <link rel="manifest" href="manifest.json">
+    <link rel="icon" type="image/x-icon" href="image/yanghealth.ico">
+    <link rel="apple-touch-icon" href="image/yanghealth.png">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap" rel="stylesheet">
     <script src="https://unpkg.com/lucide@latest"></script>
@@ -13,17 +20,55 @@
         body { font-family: 'Inter', sans-serif; background-color: #F8FAFC; }
         .fade-in { animation: fadeIn 0.5s ease-out; }
         @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+        /* iOS 教學箭頭動畫 */
+        .bounce { animation: bounce 2s infinite; }
+        @keyframes bounce { 0%, 20%, 50%, 80%, 100% {transform: translateY(0);} 40% {transform: translateY(-10px);} 60% {transform: translateY(-5px);} }
     </style>
 </head>
-<body class="min-h-screen flex flex-col items-center justify-center p-4 relative">
+<body class="min-h-screen flex flex-col items-center justify-center p-4 relative pb-20">
 
-    <div class="w-full max-w-md bg-white rounded-2xl shadow-xl overflow-hidden fade-in border border-slate-100">
-        
+    <button onclick="installApp()" id="installBtn" class="fixed top-4 right-4 bg-white p-2.5 rounded-full shadow-lg border border-slate-100 text-indigo-600 hover:bg-indigo-50 transition z-50 hidden">
+        <i data-lucide="download" class="w-5 h-5"></i>
+    </button>
+
+    <div id="iosInstallModal" class="fixed inset-0 bg-black/60 z-50 hidden flex-col justify-end" onclick="closeIosModal()">
+        <div class="bg-white rounded-t-2xl p-6 pb-10 animate-fade-in relative" onclick="event.stopPropagation()">
+            <div class="flex justify-between items-start mb-4">
+                <div class="flex items-center gap-3">
+                    <img src="image/yanghealth.png" onerror="this.src='https://via.placeholder.com/60?text=Icon'" class="w-14 h-14 rounded-xl shadow-md">
+                    <div>
+                        <h3 class="font-bold text-lg text-slate-800">安裝 HealthTwin</h3>
+                        <p class="text-xs text-slate-500">Designed by Yang Home</p>
+                    </div>
+                </div>
+                <button onclick="closeIosModal()" class="p-1 text-slate-400 hover:text-slate-600"><i data-lucide="x" class="w-6 h-6"></i></button>
+            </div>
+            
+            <div class="space-y-4 text-sm text-slate-600">
+                <p>在 iPhone 上，請依照以下步驟加入主畫面：</p>
+                <div class="flex items-center gap-3 p-3 bg-slate-50 rounded-lg">
+                    <span class="flex items-center justify-center w-6 h-6 bg-slate-200 rounded-full text-xs font-bold">1</span>
+                    <span>點擊瀏覽器底部的 <strong class="text-indigo-600">分享按鈕</strong> <i data-lucide="share" class="inline w-4 h-4"></i></span>
+                </div>
+                <div class="flex items-center gap-3 p-3 bg-slate-50 rounded-lg">
+                    <span class="flex items-center justify-center w-6 h-6 bg-slate-200 rounded-full text-xs font-bold">2</span>
+                    <span>往下滑，選擇 <strong class="text-indigo-600">加入主畫面</strong> <i data-lucide="plus-square" class="inline w-4 h-4"></i></span>
+                </div>
+            </div>
+            
+            <div class="absolute bottom-2 left-1/2 transform -translate-x-1/2 text-slate-400 bounce">
+                <i data-lucide="arrow-down" class="w-6 h-6"></i>
+            </div>
+        </div>
+    </div>
+
+    <div class="w-full max-w-md bg-white rounded-2xl shadow-xl overflow-hidden fade-in border border-slate-100 mb-8">
         <div class="bg-indigo-600 p-6 text-center relative overflow-hidden">
-            <div class="absolute top-0 left-0 w-full h-full bg-white opacity-10 transform -skew-y-6 origin-top-left scale-150"></div>
+             <div class="absolute top-0 left-0 w-full h-full bg-white opacity-10 transform -skew-y-6 origin-top-left scale-150"></div>
             <div class="relative z-10">
                 <div class="mx-auto bg-white/20 w-12 h-12 rounded-full flex items-center justify-center mb-3 backdrop-blur-sm">
-                    <i data-lucide="heart-pulse" class="text-white w-6 h-6"></i>
+                    <img src="image/yanghealth.ico" onerror="this.style.display='none'; this.nextElementSibling.style.display='block'" class="w-6 h-6"> 
+                    <i data-lucide="heart-pulse" class="text-white w-6 h-6 hidden"></i>
                 </div>
                 <h2 class="text-2xl font-bold text-white tracking-wide">HealthTwin</h2>
                 <p class="text-indigo-100 text-sm mt-1">智慧生理數據紀錄</p>
@@ -31,18 +76,14 @@
         </div>
 
         <div class="p-8">
-            
             <div id="login-section" class="flex flex-col items-center gap-4 py-8">
-                <p class="text-slate-500 text-sm text-center">請使用 Google 帳號登入<br>以確保數據安全</p>
-                
                 <div id="g_id_onload"
                      data-client_id="622103517974-i004l8tg6r9744h0p9r6g69nobmr82np.apps.googleusercontent.com" 
                      data-callback="handleCredentialResponse"
                      data-auto_select="true">
                 </div>
                 <div class="g_id_signin" data-type="standard" data-size="large" data-theme="outline" data-text="sign_in_with" data-shape="pill" data-logo_alignment="left"></div>
-                
-                <div class="mt-4 pt-4 border-t border-slate-100 w-full text-center">
+                 <div class="mt-4 pt-4 border-t border-slate-100 w-full text-center">
                      <a href="dashboard.html" class="inline-flex items-center gap-2 text-sm text-indigo-600 hover:text-indigo-800 font-medium transition-colors">
                         <i data-lucide="layout-dashboard" class="w-4 h-4"></i>
                         僅查看儀表板 (Dashboard)
@@ -51,11 +92,8 @@
             </div>
 
             <div id="form-section" class="hidden space-y-6">
-                
                 <div class="flex items-center gap-3 bg-indigo-50 p-3 rounded-xl border border-indigo-100">
-                    <div class="w-10 h-10 rounded-full bg-indigo-200 flex items-center justify-center text-indigo-700 font-bold" id="user-avatar">
-                        U
-                    </div>
+                    <div class="w-10 h-10 rounded-full bg-indigo-200 flex items-center justify-center text-indigo-700 font-bold" id="user-avatar">U</div>
                     <div class="flex-1 overflow-hidden">
                         <p class="text-sm font-bold text-indigo-900 truncate" id="user-name">User</p>
                         <p class="text-xs text-indigo-600 truncate" id="user-email">email@example.com</p>
@@ -79,8 +117,7 @@
                             <i data-lucide="clock" class="absolute left-3 top-3.5 w-5 h-5 text-slate-400"></i>
                         </div>
                     </div>
-
-                    <div class="flex gap-4">
+                     <div class="flex gap-4">
                         <div class="flex-1">
                             <label class="block text-xs font-semibold text-rose-500 uppercase tracking-wider mb-1">收縮壓 (SYS)</label>
                             <input type="number" id="sbp" placeholder="120" required min="50" max="250" class="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-rose-500 outline-none text-slate-800 font-bold text-lg text-center">
@@ -90,7 +127,6 @@
                             <input type="number" id="dbp" placeholder="80" required min="30" max="150" class="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none text-slate-800 font-bold text-lg text-center">
                         </div>
                     </div>
-
                     <div class="flex gap-4">
                         <div class="flex-1">
                             <label class="block text-xs font-semibold text-emerald-500 uppercase tracking-wider mb-1">心跳 (BPM)</label>
@@ -104,7 +140,6 @@
                             <input type="number" id="glucose" placeholder="mg/dL" class="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none text-slate-800">
                         </div>
                     </div>
-
                     <div>
                         <label class="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1">備註</label>
                         <textarea id="note" rows="2" placeholder="備註 (例如：頭暈、漏吃藥...)" class="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none text-slate-800"></textarea>
@@ -121,12 +156,10 @@
                         </a>
                     </div>
                 </form>
-                
                 <div id="status" class="text-center text-sm font-bold min-h-[20px]"></div>
             </div>
         </div>
-        
-        <div class="bg-slate-50 p-3 text-center border-t border-slate-100">
+         <div class="bg-slate-50 p-3 text-center border-t border-slate-100">
             <p class="text-[10px] text-slate-400 font-medium tracking-widest uppercase">
                 Designed by Yang Home
             </p>
@@ -134,44 +167,30 @@
     </div>
 
     <script>
-        // 初始化 Icons
+        // ... (保留原本的 Logic) ...
         lucide.createIcons();
-
-        // GAS URL (與您原本一致)
         const GAS_URL = "https://script.google.com/macros/s/AKfycbxw-Qg7AcHj7JCk69EzSEv3XpR7IKp0jHTySfbys83azmld57ctxDDorqlm6x-7s1dwnA/exec";
-
         let userToken = null;
-
-        // Google 登入回調
         function handleCredentialResponse(response) {
             userToken = response.credential;
             const payload = decodeJwtResponse(response.credential);
-            
-            // 更新 UI
             document.getElementById("login-section").classList.add("hidden");
             document.getElementById("form-section").classList.remove("hidden");
             document.getElementById("form-section").classList.add("fade-in");
-            
             document.getElementById("user-name").innerText = payload.name;
             document.getElementById("user-email").innerText = payload.email;
             document.getElementById("user-avatar").innerText = payload.name.charAt(0).toUpperCase();
         }
-
-        // 表單送出
         document.getElementById("healthForm").addEventListener("submit", function(e) {
             e.preventDefault();
             const btn = document.getElementById("submitBtn");
             const status = document.getElementById("status");
             const originalBtnContent = btn.innerHTML;
-            
             if (!userToken) { alert("請重新登入"); return; }
-
-            // Loading 狀態
             btn.disabled = true;
             btn.innerHTML = `<i data-lucide="loader-2" class="w-5 h-5 animate-spin"></i> 資料上傳中...`;
             lucide.createIcons();
             status.innerText = "";
-
             const payload = {
                 token: userToken,
                 context: document.getElementById("context").value,
@@ -181,7 +200,6 @@
                 glucose: document.getElementById("glucose").value,
                 note: document.getElementById("note").value
             };
-
             fetch(GAS_URL, {
                 method: "POST",
                 body: JSON.stringify(payload)
@@ -191,7 +209,6 @@
                 if (data.status === "success") {
                     status.innerHTML = `<span class="text-emerald-600 flex items-center justify-center gap-1"><i data-lucide="check-circle" class="w-4 h-4"></i> 上傳成功！</span>`;
                     document.getElementById("healthForm").reset();
-                    // 保留時機設定，方便連續輸入
                     document.getElementById("context").value = payload.context;
                 } else {
                     throw new Error(data.message);
@@ -206,12 +223,10 @@
                 setTimeout(() => {
                     btn.disabled = false;
                     btn.innerHTML = originalBtnContent;
-                    lucide.createIcons(); // 重新渲染 icon
+                    lucide.createIcons();
                 }, 2000);
             });
         });
-
-        // JWT 解碼
         function decodeJwtResponse(token) {
             var base64Url = token.split('.')[1];
             var base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
@@ -219,6 +234,52 @@
                 return '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2);
             }).join(''));
             return JSON.parse(jsonPayload);
+        }
+
+        // ==========================================
+        //  PWA 安裝與 iOS 教學邏輯
+        // ==========================================
+        let deferredPrompt;
+        const installBtn = document.getElementById('installBtn');
+        const iosModal = document.getElementById('iosInstallModal');
+        const isIos = /iPhone|iPad|iPod/.test(navigator.userAgent);
+        const isInStandaloneMode = ('standalone' in window.navigator) && (window.navigator.standalone);
+
+        // 初始化檢查
+        if (isIos && !isInStandaloneMode) {
+            // 如果是 iPhone 且還沒安裝，顯示按鈕
+            installBtn.classList.remove('hidden');
+        }
+
+        // Android PWA 安裝事件監聽
+        window.addEventListener('beforeinstallprompt', (e) => {
+            e.preventDefault();
+            deferredPrompt = e;
+            installBtn.classList.remove('hidden');
+        });
+
+        function installApp() {
+            if (isIos) {
+                // 顯示 iOS 教學 Modal
+                iosModal.classList.remove('hidden');
+                iosModal.classList.add('flex');
+            } else if (deferredPrompt) {
+                // Android 原生安裝
+                deferredPrompt.prompt();
+                deferredPrompt.userChoice.then((choiceResult) => {
+                    if (choiceResult.outcome === 'accepted') {
+                        installBtn.classList.add('hidden');
+                    }
+                    deferredPrompt = null;
+                });
+            } else {
+                alert("若要安裝，請使用 Chrome 瀏覽器選單中的「安裝應用程式」功能");
+            }
+        }
+
+        function closeIosModal() {
+            iosModal.classList.add('hidden');
+            iosModal.classList.remove('flex');
         }
     </script>
 </body>
