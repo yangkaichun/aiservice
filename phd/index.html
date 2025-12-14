@@ -1,0 +1,171 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>智慧生理數據輸入</title>
+    <script src="https://accounts.google.com/gsi/client" async defer></script>
+    <style>
+        /* 簡單的 CSS 美化 (Mobile First) */
+        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; background: #f0f2f5; padding: 20px; }
+        .container { max-width: 500px; margin: 0 auto; background: white; padding: 20px; border-radius: 12px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+        h2 { text-align: center; color: #333; }
+        .form-group { margin-bottom: 15px; }
+        label { display: block; margin-bottom: 5px; font-weight: bold; color: #555; }
+        input, select, textarea { width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 8px; box-sizing: border-box; font-size: 16px; }
+        .btn { width: 100%; padding: 12px; background-color: #007bff; color: white; border: none; border-radius: 8px; font-size: 16px; cursor: pointer; transition: background 0.3s; }
+        .btn:disabled { background-color: #ccc; }
+        .hidden { display: none; }
+        #user-info { text-align: center; margin-bottom: 20px; padding: 10px; background: #e3f2fd; border-radius: 8px; color: #0d47a1; }
+        .status-msg { text-align: center; margin-top: 10px; font-weight: bold; }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h2>❤️ 生理數據紀錄</h2>
+    
+    <div id="login-section">
+        <p style="text-align:center; color:#666;">請先登入以紀錄數據</p>
+        <div id="g_id_onload"
+             data-client_id="YOUR_GOOGLE_CLIENT_ID_HERE" 
+             data-callback="handleCredentialResponse"
+             data-auto_select="true">
+        </div>
+        <div class="g_id_signin" data-type="standard" data-size="large" data-theme="outline" data-text="sign_in_with" data-shape="rectangular" data-logo_alignment="left"></div>
+    </div>
+
+    <div id="form-section" class="hidden">
+        <div id="user-info"></div>
+        
+        <form id="healthForm">
+            <div class="form-group">
+                <label>測量時機</label>
+                <select id="context" required>
+                    <option value="起床空腹">起床空腹</option>
+                    <option value="早餐後">早餐後</option>
+                    <option value="午餐前">午餐前</option>
+                    <option value="午餐後">午餐後</option>
+                    <option value="晚餐前">晚餐前</option>
+                    <option value="晚餐後">晚餐後</option>
+                    <option value="睡前">睡前</option>
+                    <option value="身體不適">身體不適</option>
+                </select>
+            </div>
+
+            <div style="display:flex; gap:10px;">
+                <div class="form-group" style="flex:1;">
+                    <label>收縮壓 (高)</label>
+                    <input type="number" id="sbp" placeholder="120" required min="50" max="250">
+                </div>
+                <div class="form-group" style="flex:1;">
+                    <label>舒張壓 (低)</label>
+                    <input type="number" id="dbp" placeholder="80" required min="30" max="150">
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label>心跳 (BPM)</label>
+                <input type="number" id="hr" placeholder="72" required>
+            </div>
+
+            <div class="form-group">
+                <label>血糖 (mg/dL) <small style="font-weight:normal; color:#888;">(選填)</small></label>
+                <input type="number" id="glucose" placeholder="100">
+            </div>
+
+            <div class="form-group">
+                <label>備註</label>
+                <textarea id="note" rows="2" placeholder="例如：有吃藥、頭暈..."></textarea>
+            </div>
+
+            <button type="submit" id="submitBtn" class="btn">上傳數據</button>
+            <div id="status" class="status-msg"></div>
+        </form>
+    </div>
+</div>
+
+<script>
+    // ========== 設定區 ==========
+    // 請將下方的 URL 替換為您第一步部署產生的 GAS Web App URL
+    const GAS_URL = "YOUR_GAS_WEB_APP_URL_HERE"; 
+    // ===========================
+
+    let userToken = null;
+
+    // Google 登入回調函式
+    function handleCredentialResponse(response) {
+        console.log("Encoded JWT ID token: " + response.credential);
+        userToken = response.credential; // 儲存 Token
+        
+        // 解析 JWT 取得使用者基本資料 (僅用於前端顯示，不做安全性驗證)
+        const responsePayload = decodeJwtResponse(response.credential);
+        
+        // 切換 UI
+        document.getElementById("login-section").classList.add("hidden");
+        document.getElementById("form-section").classList.remove("hidden");
+        document.getElementById("user-info").innerText = `嗨，${responsePayload.name} (${responsePayload.email})`;
+    }
+
+    // 表單送出處理
+    document.getElementById("healthForm").addEventListener("submit", function(e) {
+        e.preventDefault();
+        const btn = document.getElementById("submitBtn");
+        const status = document.getElementById("status");
+        
+        if (!userToken) { alert("請重新登入"); return; }
+
+        btn.disabled = true;
+        btn.innerText = "資料上傳中...";
+        status.innerText = "";
+
+        // 準備傳送的資料
+        const payload = {
+            token: userToken, // 將 Token 傳給後端驗證
+            context: document.getElementById("context").value,
+            sbp: document.getElementById("sbp").value,
+            dbp: document.getElementById("dbp").value,
+            hr: document.getElementById("hr").value,
+            glucose: document.getElementById("glucose").value,
+            note: document.getElementById("note").value
+        };
+
+        // 使用 fetch POST (注意：這裡使用 text/plain 以避免 GAS 的 CORS 預檢問題，但後端需支援 JSON.parse)
+        fetch(GAS_URL, {
+            method: "POST",
+            body: JSON.stringify(payload)
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.status === "success") {
+                status.innerText = "✅ 上傳成功！";
+                status.style.color = "green";
+                document.getElementById("healthForm").reset(); // 清空表單
+            } else {
+                throw new Error(data.message);
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            status.innerText = "❌ 上傳失敗: " + error.message;
+            status.style.color = "red";
+        })
+        .finally(() => {
+            btn.disabled = false;
+            btn.innerText = "上傳數據";
+        });
+    });
+
+    // 輔助函式：解析 JWT
+    function decodeJwtResponse(token) {
+        var base64Url = token.split('.')[1];
+        var base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
+        var jsonPayload = decodeURIComponent(window.atob(base64).split('').map(function(c) {
+            return '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2);
+        }).join(''));
+        return JSON.parse(jsonPayload);
+    }
+</script>
+
+</body>
+</html>
