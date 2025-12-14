@@ -19,22 +19,19 @@
     <style>
         body { font-family: 'Inter', sans-serif; background-color: #FFFFFF; }
         
-        /* 頁面內容淡入 */
         .fade-in-content { animation: fadeInContent 0.8s ease-out forwards; opacity: 0; }
         @keyframes fadeInContent { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
 
-        /* iOS 教學箭頭動畫 */
         .bounce { animation: bounce 2s infinite; }
         @keyframes bounce { 0%, 20%, 50%, 80%, 100% {transform: translateY(0);} 40% {transform: translateY(-10px);} 60% {transform: translateY(-5px);} }
         
-        /* 輸入框聚焦特效 */
         input:focus, select:focus, textarea:focus {
             transform: translateY(-1px);
             transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
             box-shadow: 0 4px 12px rgba(79, 70, 229, 0.1);
         }
 
-        /* 開場動畫專用樣式 */
+        /* 全螢幕轉場動畫層 */
         #intro-loader {
             position: fixed;
             inset: 0;
@@ -47,7 +44,6 @@
             transition: opacity 0.6s ease-out, visibility 0.6s ease-out;
         }
         
-        /* Logo 呼吸燈效果 */
         .logo-pulse {
             animation: logoPulse 2s infinite ease-in-out;
         }
@@ -57,7 +53,6 @@
             100% { transform: scale(1); filter: drop-shadow(0 0 0 rgba(79, 70, 229, 0)); }
         }
 
-        /* 科技感進度條 */
         .progress-bar-container {
             width: 120px;
             height: 4px;
@@ -70,9 +65,17 @@
             height: 100%;
             background: linear-gradient(90deg, #4F46E5, #818CF8);
             width: 0%;
+            /* 初始動畫 */
             animation: progressFill 2.8s cubic-bezier(0.22, 1, 0.36, 1) forwards;
         }
         @keyframes progressFill { 0% { width: 0%; } 100% { width: 100%; } }
+        
+        /* 完成時的進度條動畫 */
+        .progress-bar.complete {
+            width: 100% !important;
+            background: #10B981; /* Emerald 500 */
+            animation: none;
+        }
     </style>
 </head>
 <body class="min-h-screen flex flex-col items-center justify-center p-4 relative pb-20 text-slate-800">
@@ -82,10 +85,10 @@
             <img src="image/yanghealth.png" alt="HealthTwin Logo" class="w-full h-full object-contain">
         </div>
         <h1 class="mt-6 text-2xl font-bold text-slate-800 tracking-wider">HealthTwin</h1>
-        <p class="text-xs text-indigo-500 font-medium tracking-[0.2em] uppercase mt-2">System Initializing</p>
+        <p id="loader-text" class="text-xs text-indigo-500 font-medium tracking-[0.2em] uppercase mt-2">System Initializing</p>
         
         <div class="progress-bar-container">
-            <div class="progress-bar"></div>
+            <div id="loader-bar" class="progress-bar"></div>
         </div>
     </div>
 
@@ -95,7 +98,7 @@
 
     <div id="iosInstallModal" class="fixed inset-0 bg-black/60 z-50 hidden flex-col justify-end" onclick="closeIosModal()">
         <div class="bg-white rounded-t-2xl p-6 pb-10 animate-fade-in relative" onclick="event.stopPropagation()">
-            <div class="flex justify-between items-start mb-4">
+             <div class="flex justify-between items-start mb-4">
                 <div class="flex items-center gap-3">
                     <img src="image/yanghealth.png" onerror="this.src='https://via.placeholder.com/60?text=Icon'" class="w-14 h-14 rounded-xl shadow-md">
                     <div>
@@ -245,18 +248,17 @@
         // 開場動畫與時間初始化
         // ======================================
         window.addEventListener('load', () => {
-            // 1. 設定時間預設值為當下
+            // 1. 設定時間預設值為當下 (處理時區偏移)
             const now = new Date();
-            // 處理時區問題，轉換為本地 ISO 字串 (YYYY-MM-DDTHH:mm)
             now.setMinutes(now.getMinutes() - now.getTimezoneOffset());
             document.getElementById('recordTime').value = now.toISOString().slice(0, 16);
 
-            // 2. 處理開場動畫 (3秒後消失)
+            // 2. 開場動畫 (3秒後消失)
             setTimeout(() => {
                 const loader = document.getElementById('intro-loader');
                 loader.style.opacity = '0';
                 loader.style.visibility = 'hidden';
-            }, 3000); // 3000ms = 3秒
+            }, 3000); 
         });
 
         function handleCredentialResponse(response) {
@@ -278,7 +280,7 @@
 
             if (!userToken) { alert("請重新登入"); return; }
 
-            // 表單驗證
+            // 簡單驗證
             const sbpVal = document.getElementById("sbp").value;
             const dbpVal = document.getElementById("dbp").value;
             const hrVal = document.getElementById("hr").value;
@@ -297,8 +299,7 @@
 
             const payload = {
                 token: userToken,
-                // 傳送前端選擇的時間 (注意：後端 GAS 需視情況決定是否使用此欄位，目前前端已準備好傳送)
-                recordTime: document.getElementById("recordTime").value, 
+                recordTime: document.getElementById("recordTime").value,
                 context: document.getElementById("context").value,
                 sbp: sbpVal,
                 dbp: dbpVal,
@@ -314,14 +315,27 @@
             .then(response => response.json())
             .then(data => {
                 if (data.status === "success") {
-                    status.innerHTML = `<span class="text-emerald-600 flex items-center justify-center gap-1"><i data-lucide="check-circle" class="w-4 h-4"></i> 上傳成功！</span>`;
+                    // === 成功後的動畫轉場邏輯 ===
                     
-                    // 重設表單但保留時間為最新
-                    document.getElementById("healthForm").reset();
-                    const now = new Date();
-                    now.setMinutes(now.getMinutes() - now.getTimezoneOffset());
-                    document.getElementById('recordTime').value = now.toISOString().slice(0, 16);
-                    document.getElementById("context").value = payload.context; // 保留時機
+                    // 1. 重新顯示白色 Loading 遮罩
+                    const loader = document.getElementById('intro-loader');
+                    const loaderText = document.getElementById('loader-text');
+                    const loaderBar = document.getElementById('loader-bar');
+                    
+                    // 2. 更改文字與顏色
+                    loaderText.innerText = "UPLOAD COMPLETE";
+                    loaderText.className = "text-xs text-emerald-500 font-bold tracking-[0.2em] uppercase mt-2";
+                    loaderBar.classList.add('complete'); // 變綠色並滿格
+                    
+                    // 3. 顯示遮罩
+                    loader.style.visibility = 'visible';
+                    loader.style.opacity = '1';
+
+                    // 4. 等待 3 秒後跳轉
+                    setTimeout(() => {
+                        window.location.href = 'dashboard.html';
+                    }, 3000);
+
                 } else {
                     throw new Error(data.message);
                 }
@@ -329,14 +343,9 @@
             .catch(error => {
                 console.error('Error:', error);
                 status.innerHTML = `<span class="text-rose-600 flex items-center justify-center gap-1"><i data-lucide="alert-circle" class="w-4 h-4"></i> 上傳失敗: ${error.message}</span>`;
-            })
-            .finally(() => {
+                btn.disabled = false;
+                btn.innerHTML = originalBtnContent;
                 lucide.createIcons();
-                setTimeout(() => {
-                    btn.disabled = false;
-                    btn.innerHTML = originalBtnContent;
-                    lucide.createIcons();
-                }, 2000);
             });
         });
 
