@@ -28,6 +28,10 @@
         .sidebar-transition { transition: transform 0.3s ease-in-out; }
         .bounce { animation: bounce 2s infinite; }
         @keyframes bounce { 0%, 20%, 50%, 80%, 100% {transform: translateY(0);} 40% {transform: translateY(-10px);} 60% {transform: translateY(-5px);} }
+        
+        /* 自定義 Date Input 樣式 */
+        input[type="date"]::-webkit-calendar-picker-indicator { cursor: pointer; opacity: 0.6; transition: 0.2s; }
+        input[type="date"]::-webkit-calendar-picker-indicator:hover { opacity: 1; }
     </style>
 </head>
 <body class="text-slate-800 h-screen flex overflow-hidden relative">
@@ -193,20 +197,50 @@
                 </div>
 
                 <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                    <div class="lg:col-span-2 glass-card rounded-2xl p-5 flex flex-col h-[400px]">
-                        <h3 class="font-bold text-slate-700 mb-4 flex items-center gap-2">
-                            <i data-lucide="trending-up" class="w-4 h-4 text-indigo-500"></i> 血壓趨勢圖
-                        </h3>
+                    
+                    <div class="lg:col-span-2 glass-card rounded-2xl p-5 flex flex-col h-[450px]">
+                        <div class="flex flex-wrap justify-between items-center mb-4 gap-2">
+                            <h3 class="font-bold text-slate-700 flex items-center gap-2">
+                                <i data-lucide="trending-up" class="w-4 h-4 text-indigo-500"></i> 血壓趨勢圖
+                            </h3>
+                            
+                            <div class="flex bg-slate-100 p-1 rounded-lg">
+                                <button onclick="setChartRange('30d')" id="btn-30d" class="px-3 py-1 text-xs font-bold rounded-md transition bg-white text-indigo-600 shadow-sm range-btn">近30天</button>
+                                <button onclick="setChartRange('6m')" id="btn-6m" class="px-3 py-1 text-xs font-bold rounded-md transition text-slate-500 hover:bg-white/50 range-btn">近半年</button>
+                                <button onclick="setChartRange('all')" id="btn-all" class="px-3 py-1 text-xs font-bold rounded-md transition text-slate-500 hover:bg-white/50 range-btn">全部</button>
+                            </div>
+                        </div>
+                        
                         <div class="flex-1 relative w-full h-full min-h-0">
                             <canvas id="mainChart"></canvas>
                         </div>
                     </div>
 
-                    <div class="glass-card rounded-2xl p-5 overflow-hidden flex flex-col h-[400px]">
-                        <h3 class="font-bold text-slate-700 mb-4">最近 5 筆紀錄</h3>
+                    <div class="glass-card rounded-2xl p-5 overflow-hidden flex flex-col h-[450px]">
+                        <div class="mb-4">
+                            <h3 class="font-bold text-slate-700 mb-3 flex justify-between items-center">
+                                歷史紀錄
+                            </h3>
+                            <div class="bg-slate-50 p-3 rounded-xl border border-slate-100 space-y-2">
+                                <div class="flex gap-2 text-xs">
+                                    <div class="flex-1">
+                                        <label class="text-slate-400 block mb-1">開始</label>
+                                        <input type="date" id="dl-start" class="w-full bg-white border border-slate-200 rounded px-2 py-1 text-slate-600 outline-none focus:border-indigo-500">
+                                    </div>
+                                    <div class="flex-1">
+                                        <label class="text-slate-400 block mb-1">結束</label>
+                                        <input type="date" id="dl-end" class="w-full bg-white border border-slate-200 rounded px-2 py-1 text-slate-600 outline-none focus:border-indigo-500">
+                                    </div>
+                                </div>
+                                <button onclick="downloadCSV()" class="w-full py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg text-xs font-bold flex items-center justify-center gap-2 transition">
+                                    <i data-lucide="download" class="w-3 h-3"></i> 下載 CSV 報表
+                                </button>
+                            </div>
+                        </div>
+
                         <div class="flex-1 overflow-y-auto pr-1">
                             <table class="w-full text-sm text-left">
-                                <thead class="text-xs text-slate-400 uppercase border-b border-slate-100 sticky top-0 bg-white/95 backdrop-blur">
+                                <thead class="text-xs text-slate-400 uppercase border-b border-slate-100 sticky top-0 bg-white/95 backdrop-blur z-10">
                                     <tr>
                                         <th class="py-2 pl-2">時間</th>
                                         <th class="py-2 text-right">血壓/心跳</th>
@@ -234,21 +268,28 @@
     </main>
 
     <script>
-        // 請確認您的 GAS_URL 是最新的
         const API_URL = 'https://script.google.com/macros/s/AKfycbxIXIFiddPIlqphntnXIZpCgQGR90QBYBRQsvgskIYACIGzi2aT3xCM29ESg8v62N2Q-A/exec'; 
         
         let allData = [];
+        let currentUserData = [];
         let chartInstance = null;
+        let currentChartRange = '30d'; // 預設顯示近30天
 
         document.addEventListener('DOMContentLoaded', () => {
             lucide.createIcons();
+            
+            // 初始化日期選擇器為當月
+            const today = new Date();
+            const firstDay = new Date(today.getFullYear(), today.getMonth(), 1);
+            document.getElementById('dl-end').valueAsDate = today;
+            document.getElementById('dl-start').valueAsDate = firstDay;
+
             fetchData();
         });
 
         function toggleSidebar() {
             const sidebar = document.getElementById('sidebar');
             const overlay = document.getElementById('mobileOverlay');
-            
             if (sidebar.classList.contains('-translate-x-full')) {
                 sidebar.classList.remove('-translate-x-full');
                 overlay.classList.remove('hidden');
@@ -267,12 +308,7 @@
                 if (!response.ok) throw new Error(`伺服器回應錯誤: ${response.status}`);
 
                 const textData = await response.text();
-                let json;
-                try {
-                    json = JSON.parse(textData);
-                } catch (e) {
-                    throw new Error("數據格式錯誤");
-                }
+                let json = JSON.parse(textData);
 
                 console.log("資料:", json);
                 allData = json; 
@@ -280,8 +316,7 @@
 
             } catch (error) {
                 console.error(error);
-                const loadingDiv = document.getElementById('loadingState');
-                loadingDiv.innerHTML = `<div class="text-center text-rose-500"><p>讀取失敗</p><p class="text-xs">${error.message}</p></div>`;
+                document.getElementById('loadingState').innerHTML = `<div class="text-center text-rose-500"><p>讀取失敗</p><p class="text-xs">${error.message}</p></div>`;
             }
         }
 
@@ -326,33 +361,46 @@
             
             document.getElementById('currentUserName').innerText = userName;
 
-            const userData = allData.filter(d => d.name === userName);
-            userData.sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp));
+            // 過濾並排序該用戶資料
+            currentUserData = allData.filter(d => d.name === userName);
+            currentUserData.sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp));
 
-            updateDashboard(userData);
+            updateDashboard();
         }
 
-        function updateDashboard(data) {
-            if (data.length === 0) return;
+        // 切換圖表時間範圍
+        function setChartRange(range) {
+            currentChartRange = range;
+            
+            // 更新按鈕樣式
+            document.querySelectorAll('.range-btn').forEach(btn => {
+                btn.className = "px-3 py-1 text-xs font-bold rounded-md transition text-slate-500 hover:bg-white/50 range-btn";
+            });
+            const activeBtn = document.getElementById(`btn-${range}`);
+            activeBtn.className = "px-3 py-1 text-xs font-bold rounded-md transition bg-white text-indigo-600 shadow-sm range-btn";
 
-            const latest = data[data.length - 1];
+            updateDashboard(); // 重新渲染圖表
+        }
 
+        function updateDashboard() {
+            if (currentUserData.length === 0) return;
+
+            const latest = currentUserData[currentUserData.length - 1];
+
+            // 1. 更新卡片 (永遠顯示最新一筆)
             document.getElementById('val-sbp').innerText = latest.sbp;
             document.getElementById('val-dbp').innerText = latest.dbp;
             document.getElementById('val-pulse').innerText = latest.pulse;
-            // 更新血糖顯示，如果沒有值則顯示 --
             document.getElementById('val-glucose').innerText = latest.glucose || '--';
 
             // 狀態判斷
             const sbpStatus = document.getElementById('status-sbp');
-            if(latest.sbp > 140) { 
-                sbpStatus.innerHTML = `<span class="flex items-center gap-1 text-rose-500 font-bold"><i data-lucide="alert-circle" class="w-3 h-3"></i> 偏高</span>`; 
-            } else { 
-                sbpStatus.innerHTML = `<span class="flex items-center gap-1 text-emerald-500 font-bold"><i data-lucide="check" class="w-3 h-3"></i> 正常</span>`; 
-            }
+            sbpStatus.innerHTML = latest.sbp > 140 
+                ? `<span class="flex items-center gap-1 text-rose-500 font-bold"><i data-lucide="alert-circle" class="w-3 h-3"></i> 偏高</span>`
+                : `<span class="flex items-center gap-1 text-emerald-500 font-bold"><i data-lucide="check" class="w-3 h-3"></i> 正常</span>`;
 
             const gluStatus = document.getElementById('status-glucose');
-            if(latest.glucose && latest.glucose > 100) { // 簡單範例，可依需求調整
+            if(latest.glucose && latest.glucose > 100) {
                  gluStatus.innerText = "注意數值";
             } else if (latest.glucose) {
                  gluStatus.innerText = "數值穩定";
@@ -362,13 +410,11 @@
 
             lucide.createIcons();
 
-            // 更新列表
+            // 2. 更新列表 (顯示最後 50 筆，避免列表過長)
             const historyBody = document.getElementById('historyTable');
-            historyBody.innerHTML = data.slice(-5).reverse().map(d => {
+            historyBody.innerHTML = currentUserData.slice(-50).reverse().map(d => {
                 const dateObj = new Date(d.timestamp);
                 const timeStr = isNaN(dateObj) ? d.timestamp : `${dateObj.getMonth()+1}/${dateObj.getDate()} ${String(dateObj.getHours()).padStart(2,'0')}:${String(dateObj.getMinutes()).padStart(2,'0')}`;
-                
-                // 血糖如果為空，不顯示
                 const glucoseDisplay = d.glucose ? `<span class="text-amber-600 font-bold">${d.glucose}</span>` : '<span class="text-slate-300">-</span>';
 
                 return `
@@ -378,13 +424,26 @@
                         <div class="text-sm"><span class="text-rose-600">${d.sbp}</span>/<span class="text-blue-600">${d.dbp}</span></div>
                         <div class="text-xs text-slate-400">HR: ${d.pulse}</div>
                     </td>
-                    <td class="py-3 pr-2 text-right font-medium">
-                        ${glucoseDisplay}
-                    </td>
+                    <td class="py-3 pr-2 text-right font-medium">${glucoseDisplay}</td>
                 </tr>`;
             }).join('');
 
-            renderChart(data);
+            // 3. 過濾並繪製圖表
+            let chartData = [...currentUserData];
+            const now = new Date();
+            
+            if (currentChartRange === '30d') {
+                const thirtyDaysAgo = new Date();
+                thirtyDaysAgo.setDate(now.getDate() - 30);
+                chartData = chartData.filter(d => new Date(d.timestamp) >= thirtyDaysAgo);
+            } else if (currentChartRange === '6m') {
+                const sixMonthsAgo = new Date();
+                sixMonthsAgo.setMonth(now.getMonth() - 6);
+                chartData = chartData.filter(d => new Date(d.timestamp) >= sixMonthsAgo);
+            }
+            // 'all' 則不與過濾
+
+            renderChart(chartData);
         }
 
         function renderChart(data) {
@@ -417,7 +476,6 @@
                             borderWidth: 2,
                             tension: 0.3,
                             pointRadius: 3,
-                            pointHoverRadius: 6,
                             fill: true
                         },
                         {
@@ -428,7 +486,6 @@
                             borderWidth: 2,
                             tension: 0.3,
                             pointRadius: 3,
-                            pointHoverRadius: 6,
                             fill: true
                         }
                     ]
@@ -438,32 +495,66 @@
                     maintainAspectRatio: false,
                     plugins: {
                         legend: { position: 'top', align: 'end', labels: { usePointStyle: true } },
-                        tooltip: { 
-                            mode: 'index', 
-                            intersect: false,
-                            backgroundColor: 'rgba(255, 255, 255, 0.95)',
-                            titleColor: '#1e293b',
-                            bodyColor: '#475569',
-                            borderColor: '#e2e8f0',
-                            borderWidth: 1,
-                            padding: 10,
-                            bodyFont: { family: 'Inter' }
-                        }
+                        tooltip: { mode: 'index', intersect: false }
                     },
                     scales: {
-                        y: { 
-                            grid: { color: '#f1f5f9' },
-                            suggestedMin: 60,
-                            suggestedMax: 160
-                        },
-                        x: { 
-                            grid: { display: false },
-                            ticks: { maxTicksLimit: 8 }
-                        }
+                        y: { suggestedMin: 60, suggestedMax: 160 },
+                        x: { grid: { display: false }, ticks: { maxTicksLimit: 8 } }
                     },
                     interaction: { mode: 'nearest', axis: 'x', intersect: false }
                 }
             });
+        }
+
+        // CSV 下載功能
+        function downloadCSV() {
+            const startDateVal = document.getElementById('dl-start').value;
+            const endDateVal = document.getElementById('dl-end').value;
+
+            if (!startDateVal || !endDateVal) {
+                alert("請選擇完整的開始與結束日期");
+                return;
+            }
+
+            const startDate = new Date(startDateVal);
+            const endDate = new Date(endDateVal);
+            endDate.setHours(23, 59, 59); // 包含結束當天的所有資料
+
+            // 過濾範圍內的資料
+            const exportData = currentUserData.filter(d => {
+                const dDate = new Date(d.timestamp);
+                return dDate >= startDate && dDate <= endDate;
+            });
+
+            if (exportData.length === 0) {
+                alert("選定的日期範圍內沒有資料");
+                return;
+            }
+
+            // 產生 CSV 內容
+            let csvContent = "\uFEFF"; // 加入 BOM 以解決 Excel 中文亂碼
+            csvContent += "時間,姓名,收縮壓,舒張壓,心率,血糖,情境\n"; // 標題列
+
+            exportData.forEach(row => {
+                const d = new Date(row.timestamp);
+                // 格式化時間 yyyy-mm-dd hh:mm
+                const timeStr = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')} ${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}`;
+                
+                // 處理可能包含逗號的欄位 (這裡假設 context 沒有逗號，若有需加引號)
+                csvContent += `${timeStr},${row.name},${row.sbp},${row.dbp},${row.pulse},${row.glucose || ''},${row.context || ''}\n`;
+            });
+
+            // 觸發下載
+            const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+            const link = document.createElement("a");
+            const url = URL.createObjectURL(blob);
+            const userName = document.getElementById('currentUserName').innerText;
+            
+            link.setAttribute("href", url);
+            link.setAttribute("download", `${userName}_健康數據_${startDateVal}_${endDateVal}.csv`);
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
         }
 
         // PWA & iOS Logic
