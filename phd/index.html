@@ -9,23 +9,85 @@
     <link rel="icon" type="image/x-icon" href="image/yanghealth.ico">
     <link rel="apple-touch-icon" href="image/yanghealth.png">
     <meta name="apple-mobile-web-app-capable" content="yes">
-    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
 
     <script src="https://cdn.tailwindcss.com"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <script src="https://unpkg.com/lucide@latest"></script>
     <script src="https://accounts.google.com/gsi/client" async defer></script>
 
     <style>
-        body { font-family: 'Inter', sans-serif; background-color: #F8FAFC; }
-        .fade-in { animation: fadeIn 0.5s ease-out; }
-        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+        body { font-family: 'Inter', sans-serif; background-color: #FFFFFF; }
+        
+        /* 頁面內容淡入 */
+        .fade-in-content { animation: fadeInContent 0.8s ease-out forwards; opacity: 0; }
+        @keyframes fadeInContent { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+
         /* iOS 教學箭頭動畫 */
         .bounce { animation: bounce 2s infinite; }
         @keyframes bounce { 0%, 20%, 50%, 80%, 100% {transform: translateY(0);} 40% {transform: translateY(-10px);} 60% {transform: translateY(-5px);} }
+        
+        /* 輸入框聚焦特效 */
+        input:focus, select:focus, textarea:focus {
+            transform: translateY(-1px);
+            transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+            box-shadow: 0 4px 12px rgba(79, 70, 229, 0.1);
+        }
+
+        /* 開場動畫專用樣式 */
+        #intro-loader {
+            position: fixed;
+            inset: 0;
+            background-color: #ffffff;
+            z-index: 9999;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            transition: opacity 0.6s ease-out, visibility 0.6s ease-out;
+        }
+        
+        /* Logo 呼吸燈效果 */
+        .logo-pulse {
+            animation: logoPulse 2s infinite ease-in-out;
+        }
+        @keyframes logoPulse {
+            0% { transform: scale(1); filter: drop-shadow(0 0 0 rgba(79, 70, 229, 0)); }
+            50% { transform: scale(1.05); filter: drop-shadow(0 0 15px rgba(79, 70, 229, 0.3)); }
+            100% { transform: scale(1); filter: drop-shadow(0 0 0 rgba(79, 70, 229, 0)); }
+        }
+
+        /* 科技感進度條 */
+        .progress-bar-container {
+            width: 120px;
+            height: 4px;
+            background: #F1F5F9;
+            border-radius: 99px;
+            overflow: hidden;
+            margin-top: 24px;
+        }
+        .progress-bar {
+            height: 100%;
+            background: linear-gradient(90deg, #4F46E5, #818CF8);
+            width: 0%;
+            animation: progressFill 2.8s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+        }
+        @keyframes progressFill { 0% { width: 0%; } 100% { width: 100%; } }
     </style>
 </head>
-<body class="min-h-screen flex flex-col items-center justify-center p-4 relative pb-20">
+<body class="min-h-screen flex flex-col items-center justify-center p-4 relative pb-20 text-slate-800">
+
+    <div id="intro-loader">
+        <div class="relative w-28 h-28 bg-white rounded-3xl shadow-lg border border-slate-50 flex items-center justify-center p-4 logo-pulse">
+            <img src="image/yanghealth.png" alt="HealthTwin Logo" class="w-full h-full object-contain">
+        </div>
+        <h1 class="mt-6 text-2xl font-bold text-slate-800 tracking-wider">HealthTwin</h1>
+        <p class="text-xs text-indigo-500 font-medium tracking-[0.2em] uppercase mt-2">System Initializing</p>
+        
+        <div class="progress-bar-container">
+            <div class="progress-bar"></div>
+        </div>
+    </div>
 
     <button onclick="installApp()" id="installBtn" class="fixed top-4 right-4 bg-white p-2.5 rounded-full shadow-lg border border-slate-100 text-indigo-600 hover:bg-indigo-50 transition z-50 hidden">
         <i data-lucide="download" class="w-5 h-5"></i>
@@ -43,7 +105,6 @@
                 </div>
                 <button onclick="closeIosModal()" class="p-1 text-slate-400 hover:text-slate-600"><i data-lucide="x" class="w-6 h-6"></i></button>
             </div>
-            
             <div class="space-y-4 text-sm text-slate-600">
                 <p>在 iPhone 上，請依照以下步驟加入主畫面：</p>
                 <div class="flex items-center gap-3 p-3 bg-slate-50 rounded-lg">
@@ -55,56 +116,64 @@
                     <span>往下滑，選擇 <strong class="text-indigo-600">加入主畫面</strong> <i data-lucide="plus-square" class="inline w-4 h-4"></i></span>
                 </div>
             </div>
-            
             <div class="absolute bottom-2 left-1/2 transform -translate-x-1/2 text-slate-400 bounce">
                 <i data-lucide="arrow-down" class="w-6 h-6"></i>
             </div>
         </div>
     </div>
 
-    <div class="w-full max-w-md bg-white rounded-2xl shadow-xl overflow-hidden fade-in border border-slate-100 mb-8">
-        <div class="bg-indigo-600 p-6 text-center relative overflow-hidden">
-             <div class="absolute top-0 left-0 w-full h-full bg-white opacity-10 transform -skew-y-6 origin-top-left scale-150"></div>
-            <div class="relative z-10">
-                <div class="mx-auto bg-white/20 w-12 h-12 rounded-full flex items-center justify-center mb-3 backdrop-blur-sm">
-                    <img src="image/yanghealth.ico" onerror="this.style.display='none'; this.nextElementSibling.style.display='block'" class="w-6 h-6"> 
-                    <i data-lucide="heart-pulse" class="text-white w-6 h-6 hidden"></i>
-                </div>
-                <h2 class="text-2xl font-bold text-white tracking-wide">HealthTwin</h2>
-                <p class="text-indigo-100 text-sm mt-1">智慧生理數據紀錄</p>
+    <div class="w-full max-w-md bg-white rounded-[2rem] shadow-2xl overflow-hidden fade-in-content border border-slate-100 mb-8 relative z-10">
+        
+        <div class="bg-white p-8 pb-4 text-center border-b border-slate-50">
+            <div class="mx-auto w-20 h-20 bg-white rounded-2xl shadow-sm border border-slate-100 flex items-center justify-center mb-4 p-2">
+                <img src="image/yanghealth.png" alt="HealthTwin Logo" class="w-full h-full object-contain">
+            </div>
+            <h2 class="text-2xl font-bold text-slate-800 tracking-tight">HealthTwin</h2>
+            <div class="flex items-center justify-center gap-2 mt-1">
+                <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+                <p class="text-slate-400 text-xs font-medium tracking-wide uppercase">System Online</p>
             </div>
         </div>
 
-        <div class="p-8">
-            <div id="login-section" class="flex flex-col items-center gap-4 py-8">
+        <div class="p-8 pt-6">
+            <div id="login-section" class="flex flex-col items-center gap-5 py-6">
                 <div id="g_id_onload"
                      data-client_id="622103517974-i004l8tg6r9744h0p9r6g69nobmr82np.apps.googleusercontent.com" 
                      data-callback="handleCredentialResponse"
                      data-auto_select="true">
                 </div>
                 <div class="g_id_signin" data-type="standard" data-size="large" data-theme="outline" data-text="sign_in_with" data-shape="pill" data-logo_alignment="left"></div>
-                 <div class="mt-4 pt-4 border-t border-slate-100 w-full text-center">
-                     <a href="dashboard.html" class="inline-flex items-center gap-2 text-sm text-indigo-600 hover:text-indigo-800 font-medium transition-colors">
+                 <div class="mt-2 pt-6 border-t border-slate-50 w-full text-center">
+                     <a href="dashboard.html" class="inline-flex items-center gap-2 text-sm text-indigo-600 hover:text-indigo-700 font-medium transition-colors px-4 py-2 rounded-full hover:bg-indigo-50">
                         <i data-lucide="layout-dashboard" class="w-4 h-4"></i>
-                        僅查看儀表板 (Dashboard)
+                        僅查看儀表板
                     </a>
                 </div>
             </div>
 
             <div id="form-section" class="hidden space-y-6">
-                <div class="flex items-center gap-3 bg-indigo-50 p-3 rounded-xl border border-indigo-100">
-                    <div class="w-10 h-10 rounded-full bg-indigo-200 flex items-center justify-center text-indigo-700 font-bold" id="user-avatar">U</div>
+                <div class="flex items-center gap-3 bg-slate-50 p-3 rounded-2xl border border-slate-100">
+                    <div class="w-10 h-10 rounded-full bg-white text-indigo-600 flex items-center justify-center font-bold text-lg shadow-sm border border-slate-100" id="user-avatar">U</div>
                     <div class="flex-1 overflow-hidden">
-                        <p class="text-sm font-bold text-indigo-900 truncate" id="user-name">User</p>
-                        <p class="text-xs text-indigo-600 truncate" id="user-email">email@example.com</p>
+                        <p class="text-sm font-bold text-slate-700 truncate" id="user-name">User</p>
+                        <p class="text-[10px] text-slate-400 truncate tracking-wide uppercase">Logged In</p>
                     </div>
                 </div>
 
-                <form id="healthForm" class="space-y-4">
+                <form id="healthForm" class="space-y-5">
+                    
                     <div>
-                        <label class="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1">測量時機</label>
-                        <div class="relative">
-                            <select id="context" required class="w-full pl-10 pr-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none text-slate-700 appearance-none">
+                        <label class="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-1.5 ml-1">測量時間</label>
+                        <div class="relative group">
+                            <input type="datetime-local" id="recordTime" required class="w-full pl-10 pr-4 py-3.5 bg-white border border-slate-200 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none text-slate-700 shadow-sm font-mono text-sm appearance-none group-hover:border-indigo-300 transition-colors">
+                            <i data-lucide="calendar-clock" class="absolute left-3.5 top-3.5 w-5 h-5 text-indigo-400"></i>
+                        </div>
+                    </div>
+
+                    <div>
+                        <label class="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-1.5 ml-1">測量時機</label>
+                        <div class="relative group">
+                            <select id="context" class="w-full pl-10 pr-4 py-3.5 bg-white border border-slate-200 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none text-slate-700 appearance-none shadow-sm text-base group-hover:border-indigo-300 transition-colors">
                                 <option value="起床空腹">🌅 起床空腹</option>
                                 <option value="早餐後">🥪 早餐後</option>
                                 <option value="午餐前">🕛 午餐前</option>
@@ -114,63 +183,82 @@
                                 <option value="睡前">💤 睡前</option>
                                 <option value="身體不適">⚠️ 身體不適</option>
                             </select>
-                            <i data-lucide="clock" class="absolute left-3 top-3.5 w-5 h-5 text-slate-400"></i>
+                            <i data-lucide="sun-medium" class="absolute left-3.5 top-4 w-5 h-5 text-indigo-400"></i>
                         </div>
-                    </div>
-                     <div class="flex gap-4">
-                        <div class="flex-1">
-                            <label class="block text-xs font-semibold text-rose-500 uppercase tracking-wider mb-1">收縮壓 (SYS)</label>
-                            <input type="number" id="sbp" placeholder="120" required min="50" max="250" class="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-rose-500 outline-none text-slate-800 font-bold text-lg text-center">
-                        </div>
-                        <div class="flex-1">
-                            <label class="block text-xs font-semibold text-blue-500 uppercase tracking-wider mb-1">舒張壓 (DIA)</label>
-                            <input type="number" id="dbp" placeholder="80" required min="30" max="150" class="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none text-slate-800 font-bold text-lg text-center">
-                        </div>
-                    </div>
-                    <div class="flex gap-4">
-                        <div class="flex-1">
-                            <label class="block text-xs font-semibold text-emerald-500 uppercase tracking-wider mb-1">心跳 (BPM)</label>
-                            <div class="relative">
-                                <input type="number" id="hr" placeholder="72" required class="w-full pl-10 pr-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-emerald-500 outline-none text-slate-800">
-                                <i data-lucide="activity" class="absolute left-3 top-3.5 w-5 h-5 text-slate-400"></i>
-                            </div>
-                        </div>
-                        <div class="flex-1">
-                            <label class="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1">血糖 <span class="text-[10px] text-slate-400">(選填)</span></label>
-                            <input type="number" id="glucose" placeholder="mg/dL" class="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none text-slate-800">
-                        </div>
-                    </div>
-                    <div>
-                        <label class="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1">備註</label>
-                        <textarea id="note" rows="2" placeholder="備註 (例如：頭暈、漏吃藥...)" class="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none text-slate-800"></textarea>
                     </div>
 
-                    <div class="space-y-3 pt-2">
-                        <button type="submit" id="submitBtn" class="w-full py-3.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl font-bold text-lg shadow-lg shadow-indigo-200 transition-all active:scale-95 flex items-center justify-center gap-2">
-                            <i data-lucide="send" class="w-5 h-5"></i> 上傳數據
+                    <div class="grid grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-xs font-bold text-rose-500 uppercase tracking-wider mb-1.5 ml-1">收縮壓 (SYS)</label>
+                            <input type="number" id="sbp" placeholder="" min="50" max="250" class="w-full px-4 py-3.5 bg-white border border-slate-200 rounded-xl focus:ring-2 focus:ring-rose-500 outline-none text-slate-800 font-bold text-xl text-center shadow-sm placeholder-slate-200 hover:border-rose-200 transition-colors">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-bold text-blue-500 uppercase tracking-wider mb-1.5 ml-1">舒張壓 (DIA)</label>
+                            <input type="number" id="dbp" placeholder="" min="30" max="150" class="w-full px-4 py-3.5 bg-white border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none text-slate-800 font-bold text-xl text-center shadow-sm placeholder-slate-200 hover:border-blue-200 transition-colors">
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-xs font-bold text-emerald-500 uppercase tracking-wider mb-1.5 ml-1">心跳 (BPM)</label>
+                            <div class="relative">
+                                <input type="number" id="hr" placeholder="" class="w-full pl-10 pr-4 py-3.5 bg-white border border-slate-200 rounded-xl focus:ring-2 focus:ring-emerald-500 outline-none text-slate-800 font-medium shadow-sm placeholder-slate-200 hover:border-emerald-200 transition-colors">
+                                <i data-lucide="activity" class="absolute left-3.5 top-4 w-5 h-5 text-emerald-400"></i>
+                            </div>
+                        </div>
+                        <div>
+                            <label class="block text-xs font-bold text-amber-500 uppercase tracking-wider mb-1.5 ml-1">血糖 <span class="text-[10px] text-slate-400 font-normal">(選填)</span></label>
+                            <input type="number" id="glucose" placeholder="mg/dL" class="w-full px-4 py-3.5 bg-white border border-slate-200 rounded-xl focus:ring-2 focus:ring-amber-500 outline-none text-slate-800 font-medium shadow-sm placeholder-slate-200 text-center hover:border-amber-200 transition-colors">
+                        </div>
+                    </div>
+
+                    <div>
+                        <label class="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-1.5 ml-1">備註</label>
+                        <textarea id="note" rows="2" placeholder="備註..." class="w-full px-4 py-3 bg-white border border-slate-200 rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none text-slate-700 shadow-sm resize-none text-sm hover:border-indigo-300 transition-colors"></textarea>
+                    </div>
+
+                    <div class="space-y-3 pt-4">
+                        <button type="submit" id="submitBtn" class="w-full py-4 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl font-bold text-lg shadow-lg shadow-indigo-200 transition-all active:scale-95 flex items-center justify-center gap-2 group">
+                            <span>上傳數據</span>
+                            <i data-lucide="send" class="w-5 h-5 group-hover:translate-x-1 transition-transform"></i>
                         </button>
-                        
-                        <a href="dashboard.html" class="w-full py-3 bg-white border border-slate-200 text-slate-600 hover:bg-slate-50 rounded-xl font-medium text-center flex items-center justify-center gap-2 transition-colors">
-                            <i data-lucide="layout-dashboard" class="w-5 h-5"></i>
-                            前往儀表板查看歷史紀錄
-                        </a>
                     </div>
                 </form>
-                <div id="status" class="text-center text-sm font-bold min-h-[20px]"></div>
+                
+                <div id="status" class="text-center text-sm font-bold min-h-[24px]"></div>
             </div>
         </div>
-         <div class="bg-slate-50 p-3 text-center border-t border-slate-100">
-            <p class="text-[10px] text-slate-400 font-medium tracking-widest uppercase">
-                Designed by Yang Home
+        
+         <div class="bg-white p-4 text-center border-t border-slate-50">
+            <p class="text-[10px] text-slate-400 font-medium tracking-widest uppercase flex items-center justify-center gap-1">
+                Designed by Yang Home <span class="text-slate-300">|</span> v2.0
             </p>
         </div>
     </div>
 
     <script>
-        // ... (保留原本的 Logic) ...
         lucide.createIcons();
         const GAS_URL = "https://script.google.com/macros/s/AKfycbxIXIFiddPIlqphntnXIZpCgQGR90QBYBRQsvgskIYACIGzi2aT3xCM29ESg8v62N2Q-A/exec";
         let userToken = null;
+
+        // ======================================
+        // 開場動畫與時間初始化
+        // ======================================
+        window.addEventListener('load', () => {
+            // 1. 設定時間預設值為當下
+            const now = new Date();
+            // 處理時區問題，轉換為本地 ISO 字串 (YYYY-MM-DDTHH:mm)
+            now.setMinutes(now.getMinutes() - now.getTimezoneOffset());
+            document.getElementById('recordTime').value = now.toISOString().slice(0, 16);
+
+            // 2. 處理開場動畫 (3秒後消失)
+            setTimeout(() => {
+                const loader = document.getElementById('intro-loader');
+                loader.style.opacity = '0';
+                loader.style.visibility = 'hidden';
+            }, 3000); // 3000ms = 3秒
+        });
+
         function handleCredentialResponse(response) {
             userToken = response.credential;
             const payload = decodeJwtResponse(response.credential);
@@ -181,25 +269,44 @@
             document.getElementById("user-email").innerText = payload.email;
             document.getElementById("user-avatar").innerText = payload.name.charAt(0).toUpperCase();
         }
+
         document.getElementById("healthForm").addEventListener("submit", function(e) {
             e.preventDefault();
             const btn = document.getElementById("submitBtn");
             const status = document.getElementById("status");
             const originalBtnContent = btn.innerHTML;
+
             if (!userToken) { alert("請重新登入"); return; }
+
+            // 表單驗證
+            const sbpVal = document.getElementById("sbp").value;
+            const dbpVal = document.getElementById("dbp").value;
+            const hrVal = document.getElementById("hr").value;
+            const gluVal = document.getElementById("glucose").value;
+
+            if (!sbpVal && !dbpVal && !hrVal && !gluVal) {
+                status.innerHTML = `<span class="text-amber-600 flex items-center justify-center gap-1 animate-pulse"><i data-lucide="alert-triangle" class="w-4 h-4"></i> 請至少輸入一項數值</span>`;
+                lucide.createIcons();
+                return;
+            }
+
             btn.disabled = true;
-            btn.innerHTML = `<i data-lucide="loader-2" class="w-5 h-5 animate-spin"></i> 資料上傳中...`;
+            btn.innerHTML = `<i data-lucide="loader-2" class="w-5 h-5 animate-spin"></i> 資料處理中...`;
             lucide.createIcons();
             status.innerText = "";
+
             const payload = {
                 token: userToken,
+                // 傳送前端選擇的時間 (注意：後端 GAS 需視情況決定是否使用此欄位，目前前端已準備好傳送)
+                recordTime: document.getElementById("recordTime").value, 
                 context: document.getElementById("context").value,
-                sbp: document.getElementById("sbp").value,
-                dbp: document.getElementById("dbp").value,
-                hr: document.getElementById("hr").value,
-                glucose: document.getElementById("glucose").value,
+                sbp: sbpVal,
+                dbp: dbpVal,
+                hr: hrVal,
+                glucose: gluVal,
                 note: document.getElementById("note").value
             };
+
             fetch(GAS_URL, {
                 method: "POST",
                 body: JSON.stringify(payload)
@@ -208,8 +315,13 @@
             .then(data => {
                 if (data.status === "success") {
                     status.innerHTML = `<span class="text-emerald-600 flex items-center justify-center gap-1"><i data-lucide="check-circle" class="w-4 h-4"></i> 上傳成功！</span>`;
+                    
+                    // 重設表單但保留時間為最新
                     document.getElementById("healthForm").reset();
-                    document.getElementById("context").value = payload.context;
+                    const now = new Date();
+                    now.setMinutes(now.getMinutes() - now.getTimezoneOffset());
+                    document.getElementById('recordTime').value = now.toISOString().slice(0, 16);
+                    document.getElementById("context").value = payload.context; // 保留時機
                 } else {
                     throw new Error(data.message);
                 }
@@ -227,6 +339,7 @@
                 }, 2000);
             });
         });
+
         function decodeJwtResponse(token) {
             var base64Url = token.split('.')[1];
             var base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
@@ -236,22 +349,17 @@
             return JSON.parse(jsonPayload);
         }
 
-        // ==========================================
-        //  PWA 安裝與 iOS 教學邏輯
-        // ==========================================
+        // PWA & iOS Logic
         let deferredPrompt;
         const installBtn = document.getElementById('installBtn');
         const iosModal = document.getElementById('iosInstallModal');
         const isIos = /iPhone|iPad|iPod/.test(navigator.userAgent);
         const isInStandaloneMode = ('standalone' in window.navigator) && (window.navigator.standalone);
 
-        // 初始化檢查
         if (isIos && !isInStandaloneMode) {
-            // 如果是 iPhone 且還沒安裝，顯示按鈕
             installBtn.classList.remove('hidden');
         }
 
-        // Android PWA 安裝事件監聽
         window.addEventListener('beforeinstallprompt', (e) => {
             e.preventDefault();
             deferredPrompt = e;
@@ -260,11 +368,9 @@
 
         function installApp() {
             if (isIos) {
-                // 顯示 iOS 教學 Modal
                 iosModal.classList.remove('hidden');
                 iosModal.classList.add('flex');
             } else if (deferredPrompt) {
-                // Android 原生安裝
                 deferredPrompt.prompt();
                 deferredPrompt.userChoice.then((choiceResult) => {
                     if (choiceResult.outcome === 'accepted') {
