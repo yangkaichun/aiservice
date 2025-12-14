@@ -164,17 +164,50 @@
         });
 
         // 1. 從 Google Sheet 抓取資料
-        async function fetchData() {
-            try {
-                const response = await fetch(API_URL);
-                const json = await response.json();
-                allData = json; // 儲存原始資料
-                renderUserList(json);
-            } catch (error) {
-                console.error("Error:", error);
-                alert("讀取資料失敗，請確認 API 網址是否正確。");
-            }
+       // 1. 從 Google Sheet 抓取資料 (改良版)
+async function fetchData() {
+    try {
+        console.log("開始請求資料...");
+        const response = await fetch(API_URL);
+        
+        // 檢查 HTTP 狀態
+        if (!response.ok) {
+            throw new Error(`伺服器回應錯誤: ${response.status}`);
         }
+
+        // 先讀取為文字，以便偵錯 (避免 JSON 解析掛掉看不出原因)
+        const textData = await response.text();
+        console.log("伺服器原始回應:", textData.substring(0, 100) + "..."); // 只印前100字避免洗版
+
+        let json;
+        try {
+            json = JSON.parse(textData);
+        } catch (e) {
+            // 如果解析失敗，通常是因為回傳了 Google 登入頁面的 HTML
+            console.error("JSON 解析失敗！內容可能是 HTML 錯誤頁面");
+            throw new Error("API 回傳了 HTML 而非 JSON，請確認 GAS 部署權限是否設為「任何人」");
+        }
+
+        console.log("資料取得成功:", json);
+        allData = json; 
+        renderUserList(json);
+
+    } catch (error) {
+        console.error("詳細錯誤:", error);
+        
+        // 更新 UI 顯示錯誤，而不只是跳 alert
+        const loadingDiv = document.getElementById('loadingState');
+        loadingDiv.innerHTML = `
+            <div class="flex flex-col items-center text-rose-500">
+                <i data-lucide="alert-circle" class="w-10 h-10 mb-2"></i>
+                <p class="font-bold">讀取失敗</p>
+                <p class="text-xs text-slate-400 mt-2 text-center max-w-xs">${error.message}</p>
+            </div>
+        `;
+        lucide.createIcons(); // 重新渲染錯誤圖標
+        alert(`讀取失敗: ${error.message}`);
+    }
+}
 
         // 2. 渲染左側用戶列表
         function renderUserList(data) {
