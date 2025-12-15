@@ -14,66 +14,54 @@
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap" rel="stylesheet">
     <script src="https://unpkg.com/lucide@latest"></script>
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
 
     <style>
         body { font-family: 'Inter', sans-serif; background-color: #F8FAFC; }
-        .glass-card {
-            background: rgba(255, 255, 255, 0.95);
-            backdrop-filter: blur(10px);
-            border: 1px solid rgba(255, 255, 255, 0.5);
-            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.03);
-        }
+        .glass-card { background: rgba(255, 255, 255, 0.95); backdrop-filter: blur(10px); border: 1px solid rgba(255, 255, 255, 0.5); box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.03); }
         .animate-fade-in { animation: fadeIn 0.5s ease-out; }
         @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
         .sidebar-transition { transition: transform 0.3s ease-in-out; }
         .bounce { animation: bounce 2s infinite; }
         @keyframes bounce { 0%, 20%, 50%, 80%, 100% {transform: translateY(0);} 40% {transform: translateY(-10px);} 60% {transform: translateY(-5px);} }
-        
-        /* 自定義 Date Input 樣式 */
         input[type="date"]::-webkit-calendar-picker-indicator { cursor: pointer; opacity: 0.6; transition: 0.2s; }
-        input[type="date"]::-webkit-calendar-picker-indicator:hover { opacity: 1; }
         
-        /* Gemini 漸層按鈕特效 */
-        .btn-gemini {
-            background: linear-gradient(90deg, #4F46E5, #9333EA);
-            color: white;
-            border: none;
-        }
-        .btn-gemini:hover {
-            background: linear-gradient(90deg, #4338ca, #7e22ce);
-            transform: translateY(-1px);
-            box-shadow: 0 4px 12px rgba(147, 51, 234, 0.3);
-        }
+        .btn-gemini { background: linear-gradient(90deg, #4F46E5, #9333EA); color: white; border: none; }
+        .btn-gemini:hover { background: linear-gradient(90deg, #4338ca, #7e22ce); transform: translateY(-1px); box-shadow: 0 4px 12px rgba(147, 51, 234, 0.3); }
+        
+        /* Markdown 樣式 */
+        .prose h1, .prose h2, .prose h3 { color: #1e293b; font-weight: 700; margin-top: 1em; margin-bottom: 0.5em; }
+        .prose p { margin-bottom: 0.8em; line-height: 1.6; }
+        .prose ul { list-style-type: disc; padding-left: 1.2em; margin-bottom: 0.8em; }
+        .prose li { margin-bottom: 0.3em; }
+        .prose strong { color: #4338ca; font-weight: 600; }
     </style>
 </head>
 <body class="text-slate-800 h-screen flex overflow-hidden relative">
 
+    <div id="aiAnalysisModal" class="fixed inset-0 bg-black/60 z-50 hidden flex-col justify-center items-center p-4 backdrop-blur-sm animate-fade-in" onclick="closeAiModal()">
+        <div class="bg-white w-full max-w-2xl rounded-2xl shadow-2xl flex flex-col max-h-[85vh] overflow-hidden relative" onclick="event.stopPropagation()">
+            <div class="p-5 border-b border-slate-100 flex justify-between items-center bg-gradient-to-r from-indigo-50 to-white">
+                <div class="flex items-center gap-3">
+                    <div class="p-2 bg-white rounded-lg shadow-sm text-indigo-600"><i data-lucide="sparkles" class="w-6 h-6"></i></div>
+                    <div><h3 class="font-bold text-lg text-slate-800">Gemini 健康分析</h3><p class="text-xs text-slate-500">使用 Code.gs 後端分析</p></div>
+                </div>
+                <button onclick="closeAiModal()" class="p-2 hover:bg-slate-100 rounded-full transition text-slate-400 hover:text-slate-600"><i data-lucide="x" class="w-6 h-6"></i></button>
+            </div>
+            <div id="aiModalContent" class="p-6 overflow-y-auto text-slate-600 text-sm leading-relaxed scroll-smooth"></div>
+            <div class="p-4 border-t border-slate-100 bg-slate-50 flex justify-end">
+                <button onclick="closeAiModal()" class="px-5 py-2 bg-white border border-slate-200 text-slate-600 rounded-lg hover:bg-slate-50 font-medium transition shadow-sm">關閉</button>
+            </div>
+        </div>
+    </div>
+
     <div id="iosInstallModal" class="fixed inset-0 bg-black/60 z-50 hidden flex-col justify-end" onclick="closeIosModal()">
         <div class="bg-white rounded-t-2xl p-6 pb-10 animate-fade-in relative" onclick="event.stopPropagation()">
             <div class="flex justify-between items-start mb-4">
-                <div class="flex items-center gap-3">
-                    <img src="image/yanghealth.png" onerror="this.src='https://via.placeholder.com/60?text=Icon'" class="w-14 h-14 rounded-xl shadow-md">
-                    <div>
-                        <h3 class="font-bold text-lg text-slate-800">安裝 HealthTwin</h3>
-                        <p class="text-xs text-slate-500">Designed by Yang Home</p>
-                    </div>
-                </div>
+                <div class="flex items-center gap-3"><img src="image/yanghealth.png" class="w-14 h-14 rounded-xl shadow-md"><div><h3 class="font-bold text-lg text-slate-800">安裝 HealthTwin</h3><p class="text-xs text-slate-500">Designed by Yang Home</p></div></div>
                 <button onclick="closeIosModal()" class="p-1 text-slate-400 hover:text-slate-600"><i data-lucide="x" class="w-6 h-6"></i></button>
             </div>
-            <div class="space-y-4 text-sm text-slate-600">
-                <p>在 iPhone 上，請依照以下步驟加入主畫面：</p>
-                <div class="flex items-center gap-3 p-3 bg-slate-50 rounded-lg">
-                    <span class="flex items-center justify-center w-6 h-6 bg-slate-200 rounded-full text-xs font-bold">1</span>
-                    <span>點擊瀏覽器底部的 <strong class="text-indigo-600">分享按鈕</strong> <i data-lucide="share" class="inline w-4 h-4"></i></span>
-                </div>
-                <div class="flex items-center gap-3 p-3 bg-slate-50 rounded-lg">
-                    <span class="flex items-center justify-center w-6 h-6 bg-slate-200 rounded-full text-xs font-bold">2</span>
-                    <span>往下滑，選擇 <strong class="text-indigo-600">加入主畫面</strong> <i data-lucide="plus-square" class="inline w-4 h-4"></i></span>
-                </div>
-            </div>
-            <div class="absolute bottom-2 left-1/2 transform -translate-x-1/2 text-slate-400 bounce">
-                <i data-lucide="arrow-down" class="w-6 h-6"></i>
-            </div>
+            <div class="space-y-4 text-sm text-slate-600"><p>在 iPhone 上，請依照以下步驟加入主畫面：</p><div class="flex items-center gap-3 p-3 bg-slate-50 rounded-lg"><span class="flex items-center justify-center w-6 h-6 bg-slate-200 rounded-full text-xs font-bold">1</span><span>點擊 <strong class="text-indigo-600">分享按鈕</strong> <i data-lucide="share" class="inline w-4 h-4"></i></span></div><div class="flex items-center gap-3 p-3 bg-slate-50 rounded-lg"><span class="flex items-center justify-center w-6 h-6 bg-slate-200 rounded-full text-xs font-bold">2</span><span>選擇 <strong class="text-indigo-600">加入主畫面</strong> <i data-lucide="plus-square" class="inline w-4 h-4"></i></span></div></div>
         </div>
     </div>
 
@@ -81,236 +69,120 @@
 
     <aside id="sidebar" class="fixed inset-y-0 left-0 w-72 bg-white border-r border-slate-200 flex flex-col z-30 shadow-2xl lg:shadow-none transform -translate-x-full lg:translate-x-0 sidebar-transition lg:relative">
         <div class="p-6 border-b border-slate-100 flex justify-between items-center">
-            <div>
-                <div class="flex items-center gap-2 text-indigo-600 font-bold text-xl">
-                    <i data-lucide="activity" class="w-6 h-6"></i>
-                    HealthTwin
-                </div>
-                <p class="text-xs text-slate-400 mt-1">智慧醫療監測系統</p>
-            </div>
-            <button onclick="toggleSidebar()" class="lg:hidden text-slate-400 hover:text-slate-600">
-                <i data-lucide="x" class="w-6 h-6"></i>
-            </button>
+            <div><div class="flex items-center gap-2 text-indigo-600 font-bold text-xl"><i data-lucide="activity" class="w-6 h-6"></i>HealthTwin</div><p class="text-xs text-slate-400 mt-1">智慧醫療監測系統</p></div>
+            <button onclick="toggleSidebar()" class="lg:hidden text-slate-400 hover:text-slate-600"><i data-lucide="x" class="w-6 h-6"></i></button>
         </div>
-
         <div class="p-4 flex-1 overflow-hidden flex flex-col">
-            <h3 class="text-xs font-bold text-slate-400 uppercase tracking-wider mb-3 px-2 flex justify-between items-center">
-                選擇用戶 (Patients)
-                <span id="userCount" class="bg-slate-100 text-slate-500 py-0.5 px-2 rounded-full text-[10px]">0</span>
-            </h3>
-            <div id="userList" class="space-y-1 overflow-y-auto flex-1 pr-1">
-                <div class="p-4 text-center text-slate-400 text-sm animate-pulse">
-                    <i data-lucide="loader-2" class="w-5 h-5 animate-spin mx-auto mb-2"></i>
-                    正在載入數據...
-                </div>
-            </div>
+            <h3 class="text-xs font-bold text-slate-400 uppercase tracking-wider mb-3 px-2 flex justify-between items-center">選擇用戶 (Patients)<span id="userCount" class="bg-slate-100 text-slate-500 py-0.5 px-2 rounded-full text-[10px]">0</span></h3>
+            <div id="userList" class="space-y-1 overflow-y-auto flex-1 pr-1"><div class="p-4 text-center text-slate-400 text-sm animate-pulse"><i data-lucide="loader-2" class="w-5 h-5 animate-spin mx-auto mb-2"></i>正在載入數據...</div></div>
         </div>
-        
         <div class="mt-auto p-4 border-t border-slate-100 bg-slate-50">
-            
-            <button onclick="openGeminiAnalysis()" class="w-full py-3 px-4 btn-gemini rounded-xl text-sm font-bold transition flex items-center justify-center gap-2 mb-3 shadow-md group">
-                <i data-lucide="sparkles" class="w-4 h-4 group-hover:scale-110 transition-transform"></i> 
-                AI 分析 (Gemini)
-            </button>
-
-            <button onclick="installApp()" id="installBtn" class="w-full py-2.5 px-4 bg-indigo-600 text-white hover:bg-indigo-700 rounded-lg text-sm font-medium transition flex items-center justify-center gap-2 mb-3 shadow-sm hidden">
-                <i data-lucide="download" class="w-4 h-4"></i> 安裝 App
-            </button>
-
-            <a href="setting.html" class="w-full py-2.5 px-4 bg-white border border-slate-200 hover:bg-slate-100 text-slate-500 hover:text-slate-800 rounded-lg text-sm font-medium transition flex items-center justify-center gap-2 mb-2 shadow-sm group">
-                <i data-lucide="settings-2" class="w-4 h-4 group-hover:rotate-90 transition-transform duration-500"></i> 
-                管理者後台
-            </a>
-
-            <button onclick="fetchData()" class="w-full py-2.5 px-4 bg-white border border-slate-200 hover:bg-indigo-50 hover:text-indigo-600 text-slate-600 rounded-lg text-sm font-medium transition flex items-center justify-center gap-2 mb-3 shadow-sm">
-                <i data-lucide="refresh-cw" class="w-4 h-4"></i> 重整數據
-            </button>
-            <p class="text-[10px] text-center text-slate-400 font-medium tracking-widest uppercase">
-                Designed by Yang Home
-            </p>
+            <button onclick="getAIAnalysis()" class="w-full py-3 px-4 btn-gemini rounded-xl text-sm font-bold transition flex items-center justify-center gap-2 mb-3 shadow-md group"><i data-lucide="sparkles" class="w-4 h-4 group-hover:scale-110 transition-transform"></i>AI 分析 (Gemini)</button>
+            <button onclick="installApp()" id="installBtn" class="w-full py-2.5 px-4 bg-indigo-600 text-white hover:bg-indigo-700 rounded-lg text-sm font-medium transition flex items-center justify-center gap-2 mb-3 shadow-sm hidden"><i data-lucide="download" class="w-4 h-4"></i> 安裝 App</button>
+            <a href="setting.html" class="w-full py-2.5 px-4 bg-white border border-slate-200 hover:bg-slate-100 text-slate-500 hover:text-slate-800 rounded-lg text-sm font-medium transition flex items-center justify-center gap-2 mb-2 shadow-sm group"><i data-lucide="settings-2" class="w-4 h-4 group-hover:rotate-90 transition-transform duration-500"></i> 管理者後台</a>
+            <button onclick="fetchData()" class="w-full py-2.5 px-4 bg-white border border-slate-200 hover:bg-indigo-50 hover:text-indigo-600 text-slate-600 rounded-lg text-sm font-medium transition flex items-center justify-center gap-2 mb-3 shadow-sm"><i data-lucide="refresh-cw" class="w-4 h-4"></i> 重整數據</button>
+            <p class="text-[10px] text-center text-slate-400 font-medium tracking-widest uppercase">Designed by Yang Home</p>
         </div>
     </aside>
 
     <main class="flex-1 flex flex-col h-full overflow-hidden relative w-full">
         <header class="h-16 bg-white/80 backdrop-blur-md border-b border-slate-200 flex justify-between items-center px-4 lg:px-8 sticky top-0 z-10 shrink-0">
             <div class="flex items-center gap-3">
-                <button onclick="toggleSidebar()" class="lg:hidden p-2 -ml-2 text-slate-600 hover:bg-slate-100 rounded-lg">
-                    <i data-lucide="menu" class="w-6 h-6"></i>
-                </button>
+                <button onclick="toggleSidebar()" class="lg:hidden p-2 -ml-2 text-slate-600 hover:bg-slate-100 rounded-lg"><i data-lucide="menu" class="w-6 h-6"></i></button>
                 <div class="overflow-hidden">
-                    <h1 id="currentUserName" class="text-lg lg:text-xl font-bold text-slate-800">概況總覽</h1>
+                    <h1 id="currentUserName" class="text-lg lg:text-xl font-bold text-slate-800 truncate">概況總覽</h1>
                     <p id="defaultSubtitle" class="text-xs text-slate-400 mt-0.5 hidden sm:block">即時生理數據分析</p>
                 </div>
             </div>
-
             <div class="flex items-center gap-2 sm:gap-4">
-                <a href="index.html" class="flex items-center gap-1.5 px-3 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg text-sm font-medium transition shadow-sm shadow-indigo-200">
-                    <i data-lucide="plus" class="w-4 h-4"></i>
-                    <span class="hidden sm:inline">新增紀錄</span>
-                    <span class="sm:hidden">紀錄</span>
-                </a>
-                <div class="w-8 h-8 bg-indigo-100 rounded-full flex items-center justify-center text-indigo-600 font-bold text-sm border border-indigo-200">
-                    <i data-lucide="user" class="w-4 h-4"></i>
-                </div>
+                <a href="index.html" class="flex items-center gap-1.5 px-3 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg text-sm font-medium transition shadow-sm shadow-indigo-200"><i data-lucide="plus" class="w-4 h-4"></i><span class="hidden sm:inline">新增紀錄</span><span class="sm:hidden">紀錄</span></a>
+                <div class="w-8 h-8 bg-indigo-100 rounded-full flex items-center justify-center text-indigo-600 font-bold text-sm border border-indigo-200"><i data-lucide="user" class="w-4 h-4"></i></div>
             </div>
         </header>
 
         <div class="flex-1 overflow-y-auto p-4 lg:p-8 scroll-smooth">
             <div id="dashboardContent" class="max-w-7xl mx-auto hidden animate-fade-in pb-10">
-                
                 <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 lg:gap-6 mb-6 lg:mb-8">
                     <div class="glass-card rounded-2xl p-5 relative overflow-hidden group">
                         <div class="absolute right-0 top-0 w-24 h-24 bg-rose-50 rounded-bl-full -mr-4 -mt-4"></div>
                         <div class="relative z-10">
-                            <div class="flex items-center gap-2 text-rose-500 mb-2">
-                                <i data-lucide="heart" class="w-5 h-5"></i>
-                                <span class="font-semibold text-sm">收縮壓</span>
-                            </div>
-                            <div class="flex items-baseline gap-2">
-                                <span id="val-sbp" class="text-3xl font-bold text-slate-800">--</span>
-                                <span class="text-sm text-slate-400">mmHg</span>
-                            </div>
+                            <div class="flex items-center gap-2 text-rose-500 mb-2"><i data-lucide="heart" class="w-5 h-5"></i><span class="font-semibold text-sm">收縮壓</span></div>
+                            <div class="flex items-baseline gap-2"><span id="val-sbp" class="text-3xl font-bold text-slate-800">--</span><span class="text-sm text-slate-400">mmHg</span></div>
                             <div id="status-sbp" class="mt-2 text-xs font-medium text-slate-500">分析中...</div>
                         </div>
                     </div>
-
                     <div class="glass-card rounded-2xl p-5 relative overflow-hidden group">
                         <div class="absolute right-0 top-0 w-24 h-24 bg-blue-50 rounded-bl-full -mr-4 -mt-4"></div>
                         <div class="relative z-10">
-                            <div class="flex items-center gap-2 text-blue-500 mb-2">
-                                <i data-lucide="activity" class="w-5 h-5"></i>
-                                <span class="font-semibold text-sm">舒張壓</span>
-                            </div>
-                            <div class="flex items-baseline gap-2">
-                                <span id="val-dbp" class="text-3xl font-bold text-slate-800">--</span>
-                                <span class="text-sm text-slate-400">mmHg</span>
-                            </div>
-                             <div id="status-dbp" class="mt-2 text-xs font-medium text-slate-500">分析中...</div>
+                            <div class="flex items-center gap-2 text-blue-500 mb-2"><i data-lucide="activity" class="w-5 h-5"></i><span class="font-semibold text-sm">舒張壓</span></div>
+                            <div class="flex items-baseline gap-2"><span id="val-dbp" class="text-3xl font-bold text-slate-800">--</span><span class="text-sm text-slate-400">mmHg</span></div>
+                            <div id="status-dbp" class="mt-2 text-xs font-medium text-slate-500">分析中...</div>
                         </div>
                     </div>
-
                     <div class="glass-card rounded-2xl p-5 relative overflow-hidden group">
                         <div class="absolute right-0 top-0 w-24 h-24 bg-emerald-50 rounded-bl-full -mr-4 -mt-4"></div>
                         <div class="relative z-10">
-                            <div class="flex items-center gap-2 text-emerald-500 mb-2">
-                                <i data-lucide="zap" class="w-5 h-5"></i>
-                                <span class="font-semibold text-sm">心率</span>
-                            </div>
-                            <div class="flex items-baseline gap-2">
-                                <span id="val-pulse" class="text-3xl font-bold text-slate-800">--</span>
-                                <span class="text-sm text-slate-400">BPM</span>
-                            </div>
-                             <div class="mt-2 text-xs font-medium text-slate-500">最新測量</div>
+                            <div class="flex items-center gap-2 text-emerald-500 mb-2"><i data-lucide="zap" class="w-5 h-5"></i><span class="font-semibold text-sm">心率</span></div>
+                            <div class="flex items-baseline gap-2"><span id="val-pulse" class="text-3xl font-bold text-slate-800">--</span><span class="text-sm text-slate-400">BPM</span></div>
+                            <div class="mt-2 text-xs font-medium text-slate-500">最新測量</div>
                         </div>
                     </div>
-
                     <div class="glass-card rounded-2xl p-5 relative overflow-hidden group">
                         <div class="absolute right-0 top-0 w-24 h-24 bg-amber-50 rounded-bl-full -mr-4 -mt-4"></div>
                         <div class="relative z-10">
-                            <div class="flex items-center gap-2 text-amber-500 mb-2">
-                                <i data-lucide="droplet" class="w-5 h-5"></i>
-                                <span class="font-semibold text-sm">血糖 (Glucose)</span>
-                            </div>
-                            <div class="flex items-baseline gap-2">
-                                <span id="val-glucose" class="text-3xl font-bold text-slate-800">--</span>
-                                <span class="text-sm text-slate-400">mg/dL</span>
-                            </div>
-                             <div id="status-glucose" class="mt-2 text-xs font-medium text-slate-500">最新測量</div>
+                            <div class="flex items-center gap-2 text-amber-500 mb-2"><i data-lucide="droplet" class="w-5 h-5"></i><span class="font-semibold text-sm">血糖 (Glucose)</span></div>
+                            <div class="flex items-baseline gap-2"><span id="val-glucose" class="text-3xl font-bold text-slate-800">--</span><span class="text-sm text-slate-400">mg/dL</span></div>
+                            <div id="status-glucose" class="mt-2 text-xs font-medium text-slate-500">最新測量</div>
                         </div>
                     </div>
                 </div>
 
-                <div class="mb-6 hidden">
-                    <div class="glass-card rounded-2xl p-6 border-l-4 border-indigo-500 relative overflow-hidden">
-                        </div>
-                </div>
-
                 <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                    
                     <div class="lg:col-span-2 space-y-6">
-                        
                         <div class="glass-card rounded-2xl p-5 flex flex-col h-[400px]">
                             <div class="flex flex-wrap justify-between items-center mb-4 gap-2">
-                                <h3 class="font-bold text-slate-700 flex items-center gap-2">
-                                    <i data-lucide="trending-up" class="w-4 h-4 text-indigo-500"></i> 血壓趨勢圖
-                                </h3>
+                                <h3 class="font-bold text-slate-700 flex items-center gap-2"><i data-lucide="trending-up" class="w-4 h-4 text-indigo-500"></i> 血壓趨勢圖</h3>
                                 <div class="flex bg-slate-100 p-1 rounded-lg">
                                     <button onclick="setChartRange('30d')" id="btn-30d" class="px-3 py-1 text-xs font-bold rounded-md transition bg-white text-indigo-600 shadow-sm range-btn">近30天</button>
                                     <button onclick="setChartRange('6m')" id="btn-6m" class="px-3 py-1 text-xs font-bold rounded-md transition text-slate-500 hover:bg-white/50 range-btn">近半年</button>
                                     <button onclick="setChartRange('all')" id="btn-all" class="px-3 py-1 text-xs font-bold rounded-md transition text-slate-500 hover:bg-white/50 range-btn">全部</button>
                                 </div>
                             </div>
-                            <div class="flex-1 relative w-full h-full min-h-0">
-                                <canvas id="mainChart"></canvas>
-                            </div>
+                            <div class="flex-1 relative w-full h-full min-h-0"><canvas id="mainChart"></canvas></div>
                         </div>
-
                         <div class="glass-card rounded-2xl p-5 flex flex-col h-[350px]">
-                            <div class="mb-4">
-                                <h3 class="font-bold text-slate-700 flex items-center gap-2">
-                                    <i data-lucide="activity" class="w-4 h-4 text-amber-500"></i> 血糖趨勢圖
-                                </h3>
-                            </div>
-                            <div class="flex-1 relative w-full h-full min-h-0">
-                                <canvas id="glucoseChart"></canvas>
-                            </div>
+                            <div class="mb-4"><h3 class="font-bold text-slate-700 flex items-center gap-2"><i data-lucide="activity" class="w-4 h-4 text-amber-500"></i> 血糖趨勢圖</h3></div>
+                            <div class="flex-1 relative w-full h-full min-h-0"><canvas id="glucoseChart"></canvas></div>
                         </div>
-
                     </div>
-
                     <div class="glass-card rounded-2xl p-5 overflow-hidden flex flex-col h-[775px]">
                         <div class="mb-4">
-                            <h3 class="font-bold text-slate-700 mb-3 flex justify-between items-center">
-                                歷史紀錄
-                            </h3>
+                            <h3 class="font-bold text-slate-700 mb-3 flex justify-between items-center">歷史紀錄</h3>
                             <div class="bg-slate-50 p-3 rounded-xl border border-slate-100 space-y-2">
                                 <div class="flex gap-2 text-xs">
-                                    <div class="flex-1">
-                                        <label class="text-slate-400 block mb-1">開始</label>
-                                        <input type="date" id="dl-start" class="w-full bg-white border border-slate-200 rounded px-2 py-1 text-slate-600 outline-none focus:border-indigo-500">
-                                    </div>
-                                    <div class="flex-1">
-                                        <label class="text-slate-400 block mb-1">結束</label>
-                                        <input type="date" id="dl-end" class="w-full bg-white border border-slate-200 rounded px-2 py-1 text-slate-600 outline-none focus:border-indigo-500">
-                                    </div>
+                                    <div class="flex-1"><label class="text-slate-400 block mb-1">開始</label><input type="date" id="dl-start" class="w-full bg-white border border-slate-200 rounded px-2 py-1 text-slate-600 outline-none focus:border-indigo-500"></div>
+                                    <div class="flex-1"><label class="text-slate-400 block mb-1">結束</label><input type="date" id="dl-end" class="w-full bg-white border border-slate-200 rounded px-2 py-1 text-slate-600 outline-none focus:border-indigo-500"></div>
                                 </div>
-                                <button onclick="downloadCSV()" class="w-full py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg text-xs font-bold flex items-center justify-center gap-2 transition">
-                                    <i data-lucide="download" class="w-3 h-3"></i> 下載 CSV 報表
-                                </button>
+                                <button onclick="downloadCSV()" class="w-full py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg text-xs font-bold flex items-center justify-center gap-2 transition"><i data-lucide="download" class="w-3 h-3"></i> 下載 CSV 報表</button>
                             </div>
                         </div>
-
                         <div class="flex-1 overflow-y-auto pr-1">
                             <table class="w-full text-sm text-left">
-                                <thead class="text-xs text-slate-400 uppercase border-b border-slate-100 sticky top-0 bg-white/95 backdrop-blur z-10">
-                                    <tr>
-                                        <th class="py-2 pl-2">時間</th>
-                                        <th class="py-2 text-right">血壓/心跳</th>
-                                        <th class="py-2 text-right pr-2">血糖</th>
-                                    </tr>
-                                </thead>
-                                <tbody id="historyTable" class="text-slate-600 divide-y divide-slate-50">
-                                    </tbody>
+                                <thead class="text-xs text-slate-400 uppercase border-b border-slate-100 sticky top-0 bg-white/95 backdrop-blur z-10"><tr><th class="py-2 pl-2">時間</th><th class="py-2 text-right">血壓/心跳</th><th class="py-2 text-right pr-2">血糖</th></tr></thead>
+                                <tbody id="historyTable" class="text-slate-600 divide-y divide-slate-50"></tbody>
                             </table>
                         </div>
                     </div>
                 </div>
             </div>
-            
             <div id="loadingState" class="h-full flex flex-col items-center justify-center text-slate-400 min-h-[50vh]">
-                <div class="relative">
-                    <div class="w-12 h-12 border-4 border-indigo-100 border-t-indigo-500 rounded-full animate-spin"></div>
-                    <div class="absolute inset-0 flex items-center justify-center">
-                        <div class="w-2 h-2 bg-indigo-500 rounded-full"></div>
-                    </div>
-                </div>
+                <div class="relative"><div class="w-12 h-12 border-4 border-indigo-100 border-t-indigo-500 rounded-full animate-spin"></div><div class="absolute inset-0 flex items-center justify-center"><div class="w-2 h-2 bg-indigo-500 rounded-full"></div></div></div>
                 <p class="mt-4 text-sm font-medium animate-pulse">正在從雲端資料庫同步數據...</p>
             </div>
         </div>
     </main>
 
     <script>
-        // 您的新 API URL
         const API_URL = 'https://script.google.com/macros/s/AKfycbwO-IzxHaRTMZX4yrHJR7uQCJJFqI917G4RknuwIuCGQTL51S3mjLD_UWeUjHkzbleKYQ/exec'; 
         
         let allData = [];
@@ -331,30 +203,20 @@
         function toggleSidebar() {
             const sidebar = document.getElementById('sidebar');
             const overlay = document.getElementById('mobileOverlay');
-            if (sidebar.classList.contains('-translate-x-full')) {
-                sidebar.classList.remove('-translate-x-full');
-                overlay.classList.remove('hidden');
-            } else {
-                sidebar.classList.add('-translate-x-full');
-                overlay.classList.add('hidden');
-            }
+            if (sidebar.classList.contains('-translate-x-full')) { sidebar.classList.remove('-translate-x-full'); overlay.classList.remove('hidden'); } 
+            else { sidebar.classList.add('-translate-x-full'); overlay.classList.add('hidden'); }
         }
 
         async function fetchData() {
             try {
                 document.getElementById('loadingState').classList.remove('hidden');
                 document.getElementById('dashboardContent').classList.add('hidden');
-
                 const response = await fetch(API_URL);
                 if (!response.ok) throw new Error(`伺服器回應錯誤: ${response.status}`);
-
                 const textData = await response.text();
                 let json = JSON.parse(textData);
-
-                console.log("資料:", json);
                 allData = json; 
                 renderUserList(json);
-
             } catch (error) {
                 console.error(error);
                 document.getElementById('loadingState').innerHTML = `<div class="text-center text-rose-500"><p>讀取失敗</p><p class="text-xs">${error.message}</p></div>`;
@@ -366,95 +228,59 @@
             const listContainer = document.getElementById('userList');
             document.getElementById('userCount').innerText = users.length;
             listContainer.innerHTML = '';
-
-            if (users.length === 0) {
-                listContainer.innerHTML = '<div class="p-4 text-center text-sm text-slate-400">無資料</div>';
-                return;
-            }
-
+            if (users.length === 0) { listContainer.innerHTML = '<div class="p-4 text-center text-sm text-slate-400">無資料</div>'; return; }
             users.forEach((user, index) => {
                 const div = document.createElement('div');
                 const avatarText = user.length > 0 ? user.charAt(0).toUpperCase() : '?';
                 div.className = `p-3 rounded-xl cursor-pointer hover:bg-indigo-50 hover:text-indigo-600 transition flex items-center gap-3 text-slate-600 font-medium group user-item border border-transparent`;
                 div.innerHTML = `<div class="w-8 h-8 rounded-full bg-slate-100 text-slate-500 flex items-center justify-center text-xs font-bold shrink-0">${avatarText}</div><span class="truncate">${user}</span>`;
-                
-                div.onclick = () => {
-                    selectUser(user, div);
-                    if (window.innerWidth < 1024) toggleSidebar();
-                };
-                
+                div.onclick = () => { selectUser(user, div); if (window.innerWidth < 1024) toggleSidebar(); };
                 if (index === 0) selectUser(user, div);
                 listContainer.appendChild(div);
             });
-
             document.getElementById('loadingState').classList.add('hidden');
             document.getElementById('dashboardContent').classList.remove('hidden');
             document.getElementById('dashboardContent').classList.add('animate-fade-in');
         }
 
         function selectUser(userName, element) {
-            document.querySelectorAll('.user-item').forEach(el => {
-                el.classList.remove('bg-indigo-50', 'text-indigo-600', 'shadow-sm', 'border-indigo-100');
-                el.classList.add('border-transparent');
-            });
-            element.classList.add('bg-indigo-50', 'text-indigo-600', 'shadow-sm', 'border-indigo-100');
-            element.classList.remove('border-transparent');
+            document.querySelectorAll('.user-item').forEach(el => { el.classList.remove('bg-indigo-50', 'text-indigo-600', 'shadow-sm', 'border-indigo-100'); el.classList.add('border-transparent'); });
+            element.classList.add('bg-indigo-50', 'text-indigo-600', 'shadow-sm', 'border-indigo-100'); element.classList.remove('border-transparent');
             
-            // [姓名與生日合併顯示邏輯]
             let displayTitle = userName;
             currentUserData = allData.filter(d => d.name === userName);
             currentUserData.sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp));
 
             const firstRecord = currentUserData.length > 0 ? currentUserData[0] : null;
-            
             if (firstRecord && firstRecord.birthday) {
                 const bDate = new Date(firstRecord.birthday);
                 if (!isNaN(bDate.getTime())) {
-                    // 西元轉民國 (年份 - 1911)
                     const rocYear = bDate.getFullYear() - 1911;
-                    const rocDateStr = ` (民國${rocYear}年${bDate.getMonth() + 1}月${bDate.getDate()}日)`;
-                    displayTitle += rocDateStr; // 接在姓名後面
+                    displayTitle += ` (民國${rocYear}年${bDate.getMonth() + 1}月${bDate.getDate()}日)`;
                 }
             }
-            // 更新標題
             document.getElementById('currentUserName').innerText = displayTitle;
-
             updateDashboard();
         }
 
         function setChartRange(range) {
             currentChartRange = range;
-            document.querySelectorAll('.range-btn').forEach(btn => {
-                btn.className = "px-3 py-1 text-xs font-bold rounded-md transition text-slate-500 hover:bg-white/50 range-btn";
-            });
-            const activeBtn = document.getElementById(`btn-${range}`);
-            activeBtn.className = "px-3 py-1 text-xs font-bold rounded-md transition bg-white text-indigo-600 shadow-sm range-btn";
+            document.querySelectorAll('.range-btn').forEach(btn => btn.className = "px-3 py-1 text-xs font-bold rounded-md transition text-slate-500 hover:bg-white/50 range-btn");
+            document.getElementById(`btn-${range}`).className = "px-3 py-1 text-xs font-bold rounded-md transition bg-white text-indigo-600 shadow-sm range-btn";
             updateDashboard(); 
         }
 
         function updateDashboard() {
             if (currentUserData.length === 0) return;
-
             const latest = currentUserData[currentUserData.length - 1];
-
             document.getElementById('val-sbp').innerText = latest.sbp || '--';
             document.getElementById('val-dbp').innerText = latest.dbp || '--';
             document.getElementById('val-pulse').innerText = latest.pulse || '--';
             document.getElementById('val-glucose').innerText = latest.glucose || '--';
-
-            const sbpStatus = document.getElementById('status-sbp');
-            sbpStatus.innerHTML = latest.sbp > 140 
-                ? `<span class="flex items-center gap-1 text-rose-500 font-bold"><i data-lucide="alert-circle" class="w-3 h-3"></i> 偏高</span>`
-                : `<span class="flex items-center gap-1 text-emerald-500 font-bold"><i data-lucide="check" class="w-3 h-3"></i> 正常</span>`;
-
-            const gluStatus = document.getElementById('status-glucose');
-            if(latest.glucose && latest.glucose > 100) {
-                 gluStatus.innerText = "注意數值";
-            } else if (latest.glucose) {
-                 gluStatus.innerText = "數值穩定";
-            } else {
-                 gluStatus.innerText = "無資料";
-            }
+            document.getElementById('status-sbp').innerHTML = latest.sbp > 140 ? `<span class="flex items-center gap-1 text-rose-500 font-bold"><i data-lucide="alert-circle" class="w-3 h-3"></i> 偏高</span>` : `<span class="flex items-center gap-1 text-emerald-500 font-bold"><i data-lucide="check" class="w-3 h-3"></i> 正常</span>`;
+            
+            const statusGlu = document.getElementById('status-glucose');
+            if(latest.glucose && latest.glucose > 100) statusGlu.innerText = "注意數值"; else if (latest.glucose) statusGlu.innerText = "數值穩定"; else statusGlu.innerText = "無資料";
 
             lucide.createIcons();
 
@@ -462,197 +288,101 @@
             historyBody.innerHTML = currentUserData.slice(-50).reverse().map(d => {
                 const dateObj = new Date(d.timestamp);
                 const timeStr = isNaN(dateObj) ? d.timestamp : `${dateObj.getMonth()+1}/${dateObj.getDate()} ${String(dateObj.getHours()).padStart(2,'0')}:${String(dateObj.getMinutes()).padStart(2,'0')}`;
-                const glucoseDisplay = d.glucose ? `<span class="text-amber-600 font-bold">${d.glucose}</span>` : '<span class="text-slate-300">-</span>';
-
-                return `
-                <tr class="hover:bg-slate-50 transition">
-                    <td class="py-3 pl-2 text-slate-500 font-mono text-xs">${timeStr}</td>
-                    <td class="py-3 text-right font-medium">
-                        <div class="text-sm"><span class="text-rose-600">${d.sbp || '-'}</span>/<span class="text-blue-600">${d.dbp || '-'}</span></div>
-                        <div class="text-xs text-slate-400">HR: ${d.pulse || '-'}</div>
-                    </td>
-                    <td class="py-3 pr-2 text-right font-medium">${glucoseDisplay}</td>
-                </tr>`;
+                return `<tr class="hover:bg-slate-50 transition"><td class="py-3 pl-2 text-slate-500 font-mono text-xs">${timeStr}</td><td class="py-3 text-right font-medium"><div class="text-sm"><span class="text-rose-600">${d.sbp || '-'}</span>/<span class="text-blue-600">${d.dbp || '-'}</span></div><div class="text-xs text-slate-400">HR: ${d.pulse || '-'}</div></td><td class="py-3 pr-2 text-right font-medium">${d.glucose ? `<span class="text-amber-600 font-bold">${d.glucose}</span>` : '<span class="text-slate-300">-</span>'}</td></tr>`;
             }).join('');
 
             let chartData = [...currentUserData];
             const now = new Date();
-            
             if (currentChartRange === '30d') {
-                const thirtyDaysAgo = new Date();
-                thirtyDaysAgo.setDate(now.getDate() - 30);
-                chartData = chartData.filter(d => new Date(d.timestamp) >= thirtyDaysAgo);
+                const d = new Date(); d.setDate(now.getDate() - 30); chartData = chartData.filter(x => new Date(x.timestamp) >= d);
             } else if (currentChartRange === '6m') {
-                const sixMonthsAgo = new Date();
-                sixMonthsAgo.setMonth(now.getMonth() - 6);
-                chartData = chartData.filter(d => new Date(d.timestamp) >= sixMonthsAgo);
+                const d = new Date(); d.setMonth(now.getMonth() - 6); chartData = chartData.filter(x => new Date(x.timestamp) >= d);
             }
-
             renderChart(chartData);
         }
 
         function renderChart(data) {
             const labels = data.map(d => {
                 const date = new Date(d.timestamp);
-                if (isNaN(date)) return '';
-                return `${date.getMonth()+1}/${date.getDate()} ${String(date.getHours()).padStart(2,'0')}:${String(date.getMinutes()).padStart(2,'0')}`;
+                return isNaN(date) ? '' : `${date.getMonth()+1}/${date.getDate()} ${String(date.getHours()).padStart(2,'0')}:${String(date.getMinutes()).padStart(2,'0')}`;
             });
-
             const sbpData = data.map(d => (d.sbp && d.sbp > 0) ? d.sbp : null);
             const dbpData = data.map(d => (d.dbp && d.dbp > 0) ? d.dbp : null);
             const glucoseData = data.map(d => (d.glucose && d.glucose > 0) ? d.glucose : null);
 
             const ctxBP = document.getElementById('mainChart').getContext('2d');
-            let gradientSbp = ctxBP.createLinearGradient(0, 0, 0, 400);
-            gradientSbp.addColorStop(0, 'rgba(244, 63, 94, 0.4)'); 
-            gradientSbp.addColorStop(1, 'rgba(244, 63, 94, 0.05)');
-
-            let gradientDbp = ctxBP.createLinearGradient(0, 0, 0, 400);
-            gradientDbp.addColorStop(0, 'rgba(59, 130, 246, 0.4)'); 
-            gradientDbp.addColorStop(1, 'rgba(59, 130, 246, 0.05)');
+            let gradientSbp = ctxBP.createLinearGradient(0, 0, 0, 400); gradientSbp.addColorStop(0, 'rgba(244, 63, 94, 0.4)'); gradientSbp.addColorStop(1, 'rgba(244, 63, 94, 0.05)');
+            let gradientDbp = ctxBP.createLinearGradient(0, 0, 0, 400); gradientDbp.addColorStop(0, 'rgba(59, 130, 246, 0.4)'); gradientDbp.addColorStop(1, 'rgba(59, 130, 246, 0.05)');
 
             if (bpChartInstance) bpChartInstance.destroy();
-
             bpChartInstance = new Chart(ctxBP, {
-                type: 'line',
-                data: {
-                    labels: labels,
-                    datasets: [
-                        { label: '收縮壓', data: sbpData, borderColor: '#F43F5E', backgroundColor: gradientSbp, borderWidth: 2, tension: 0.3, pointRadius: 3, fill: true, spanGaps: false },
-                        { label: '舒張壓', data: dbpData, borderColor: '#3B82F6', backgroundColor: gradientDbp, borderWidth: 2, tension: 0.3, pointRadius: 3, fill: true, spanGaps: false }
-                    ]
-                },
-                options: {
-                    responsive: true, maintainAspectRatio: false,
-                    plugins: { legend: { position: 'top', align: 'end', labels: { usePointStyle: true } }, tooltip: { mode: 'index', intersect: false } },
-                    scales: {
-                        y: { suggestedMin: 60, suggestedMax: 160 },
-                        x: { grid: { display: false }, ticks: { maxTicksLimit: 8 } }
-                    },
-                    interaction: { mode: 'nearest', axis: 'x', intersect: false }
-                }
+                type: 'line', data: { labels: labels, datasets: [{ label: '收縮壓', data: sbpData, borderColor: '#F43F5E', backgroundColor: gradientSbp, borderWidth: 2, tension: 0.3, pointRadius: 3, fill: true, spanGaps: false }, { label: '舒張壓', data: dbpData, borderColor: '#3B82F6', backgroundColor: gradientDbp, borderWidth: 2, tension: 0.3, pointRadius: 3, fill: true, spanGaps: false }] },
+                options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'top', align: 'end' }, tooltip: { mode: 'index', intersect: false } }, scales: { y: { suggestedMin: 60, suggestedMax: 160 }, x: { grid: { display: false }, ticks: { maxTicksLimit: 8 } } }, interaction: { mode: 'nearest', axis: 'x', intersect: false } }
             });
 
             const ctxGlu = document.getElementById('glucoseChart').getContext('2d');
-            let gradientGlu = ctxGlu.createLinearGradient(0, 0, 0, 300);
-            gradientGlu.addColorStop(0, 'rgba(245, 158, 11, 0.4)'); 
-            gradientGlu.addColorStop(1, 'rgba(245, 158, 11, 0.05)');
-
+            let gradientGlu = ctxGlu.createLinearGradient(0, 0, 0, 300); gradientGlu.addColorStop(0, 'rgba(245, 158, 11, 0.4)'); gradientGlu.addColorStop(1, 'rgba(245, 158, 11, 0.05)');
             if (glucoseChartInstance) glucoseChartInstance.destroy();
-
             glucoseChartInstance = new Chart(ctxGlu, {
-                type: 'line',
-                data: {
-                    labels: labels,
-                    datasets: [
-                        { label: '血糖', data: glucoseData, borderColor: '#F59E0B', backgroundColor: gradientGlu, borderWidth: 2, tension: 0.3, pointRadius: 4, pointBackgroundColor: '#fff', pointBorderColor: '#F59E0B', fill: true, spanGaps: false }
-                    ]
-                },
-                options: {
-                    responsive: true, maintainAspectRatio: false,
-                    plugins: { legend: { display: false }, tooltip: { mode: 'index', intersect: false } },
-                    scales: {
-                        y: { suggestedMin: 70, suggestedMax: 180, grid: { color: '#f1f5f9' } },
-                        x: { grid: { display: false }, ticks: { maxTicksLimit: 8 } }
-                    },
-                    interaction: { mode: 'nearest', axis: 'x', intersect: false }
+                type: 'line', data: { labels: labels, datasets: [{ label: '血糖', data: glucoseData, borderColor: '#F59E0B', backgroundColor: gradientGlu, borderWidth: 2, tension: 0.3, pointRadius: 4, fill: true, spanGaps: false }] },
+                options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false }, tooltip: { mode: 'index', intersect: false } }, scales: { y: { suggestedMin: 70, suggestedMax: 180, grid: { color: '#f1f5f9' } }, x: { grid: { display: false }, ticks: { maxTicksLimit: 8 } } }, interaction: { mode: 'nearest', axis: 'x', intersect: false } }
+            });
+        }
+
+        // ==========================================
+        //  AI 分析功能 (呼叫 Code.gs 後端)
+        // ==========================================
+        async function getAIAnalysis() {
+            // 這裡取出純名字，方便傳給後端
+            const userNameText = document.getElementById('currentUserName').innerText;
+            // 如果標題包含生日括號，分割取出名字
+            const userName = userNameText.includes('(') ? userNameText.split(' (')[0] : userNameText;
+
+            if (!userName || userName === "概況總覽") { alert("請先選擇一位用戶"); return; }
+
+            const modal = document.getElementById('aiAnalysisModal');
+            const content = document.getElementById('aiModalContent');
+            modal.classList.remove('hidden');
+            modal.classList.add('flex');
+            
+            content.innerHTML = `<div class="flex flex-col items-center justify-center py-12 space-y-4"><div class="w-10 h-10 border-4 border-indigo-200 border-t-indigo-600 rounded-full animate-spin"></div><p class="text-slate-500 animate-pulse font-medium">Gemini 正在分析您的健康數據...</p></div>`;
+
+            try {
+                // 呼叫後端 API
+                const response = await fetch(`${API_URL}?action=analyze&name=${encodeURIComponent(userName)}`);
+                const data = await response.json();
+                
+                if (data.result) {
+                    const mdText = data.result;
+                    content.innerHTML = `<div class="prose prose-sm max-w-none text-slate-700">${marked.parse(mdText)}</div>`;
+                } else {
+                    throw new Error("AI 未回傳結果");
                 }
-            });
+            } catch (err) {
+                console.error(err);
+                content.innerHTML = `<div class="text-center py-8"><div class="text-rose-500 mb-2 text-lg"><i data-lucide="alert-circle" class="w-8 h-8 mx-auto"></i></div><p class="font-bold text-slate-700">分析失敗</p><p class="text-xs text-slate-400 mt-2">${err.message}</p></div>`;
+                lucide.createIcons();
+            }
         }
 
-        // ===========================================
-        // Gemini AI 分析 & 下載功能
-        // ===========================================
-        function openGeminiAnalysis() {
-            if (currentUserData.length === 0) {
-                alert("目前沒有資料可供分析");
-                return;
-            }
-
-            const now = new Date();
-            const thirtyDaysAgo = new Date();
-            thirtyDaysAgo.setDate(now.getDate() - 30);
-
-            const exportData = currentUserData.filter(d => {
-                const dDate = new Date(d.timestamp);
-                return dDate >= thirtyDaysAgo;
-            });
-
-            if (exportData.length === 0) {
-                alert("近30天內沒有足夠數據");
-                return;
-            }
-
-            let csvContent = "\uFEFF"; 
-            csvContent += "時間,姓名,收縮壓,舒張壓,心率,血糖,情境\n";
-
-            exportData.forEach(row => {
-                const d = new Date(row.timestamp);
-                const timeStr = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')} ${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}`;
-                csvContent += `${timeStr},${row.name},${row.sbp},${row.dbp},${row.pulse},${row.glucose || ''},${row.context || ''}\n`;
-            });
-
-            const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-            const link = document.createElement("a");
-            const url = URL.createObjectURL(blob);
-            // 檔名只取名字，不含生日資訊
-            const userNameOnly = document.getElementById('currentUserName').innerText.split(' ')[0]; 
-            
-            link.setAttribute("href", url);
-            link.setAttribute("download", `${userNameOnly}_近30天數據_Gemini分析用.csv`);
-            document.body.appendChild(link);
-            link.click();
-            document.body.removeChild(link);
-
-            const promptText = `請幫我分析這份「${userNameOnly}」近30天的健康數據 CSV 檔。請重點分析：\n1. 血壓控制狀況 (是否有高血壓風險)\n2. 血糖數值分析\n3. 給出 3 點具體的生活或飲食改善建議。`;
-            
-            navigator.clipboard.writeText(promptText).then(() => {
-                alert("✅ 檔案已下載！\n✅ 提示詞已複製！\n\n即將開啟 Gemini，請將檔案拖入對話框，並按下 Ctrl+V 貼上提示詞即可。");
-                window.open("https://gemini.google.com/app", "_blank");
-            }).catch(err => {
-                console.error("複製失敗", err);
-                alert("檔案已下載，請手動前往 Gemini 上傳分析。");
-                window.open("https://gemini.google.com/app", "_blank");
-            });
+        function closeAiModal() {
+            const modal = document.getElementById('aiAnalysisModal');
+            modal.classList.add('hidden');
+            modal.classList.remove('flex');
         }
 
-        // CSV 下載 (保留原有邏輯)
-        function downloadCSV() {
-            const startDateVal = document.getElementById('dl-start').value;
-            const endDateVal = document.getElementById('dl-end').value;
+        function downloadCSV() { /* ...保留原有功能... */ 
+            const startDateVal = document.getElementById('dl-start').value; const endDateVal = document.getElementById('dl-end').value;
             if (!startDateVal || !endDateVal) { alert("請選擇完整的開始與結束日期"); return; }
-
-            const startDate = new Date(startDateVal);
-            const endDate = new Date(endDateVal);
-            endDate.setHours(23, 59, 59);
-
-            const exportData = currentUserData.filter(d => {
-                const dDate = new Date(d.timestamp);
-                return dDate >= startDate && dDate <= endDate;
-            });
-
+            const startDate = new Date(startDateVal); const endDate = new Date(endDateVal); endDate.setHours(23, 59, 59);
+            const exportData = currentUserData.filter(d => { const dDate = new Date(d.timestamp); return dDate >= startDate && dDate <= endDate; });
             if (exportData.length === 0) { alert("選定的日期範圍內沒有資料"); return; }
-
-            let csvContent = "\uFEFF"; 
-            csvContent += "時間,姓名,收縮壓,舒張壓,心率,血糖,情境\n";
-
-            exportData.forEach(row => {
-                const d = new Date(row.timestamp);
-                const timeStr = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')} ${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}`;
-                csvContent += `${timeStr},${row.name},${row.sbp},${row.dbp},${row.pulse},${row.glucose || ''},${row.context || ''}\n`;
-            });
-
-            const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-            const link = document.createElement("a");
-            const url = URL.createObjectURL(blob);
-            // 檔名只取名字，避免太長
-            const userNameOnly = document.getElementById('currentUserName').innerText.split(' ')[0];
-            
-            link.setAttribute("href", url);
-            link.setAttribute("download", `${userNameOnly}_健康數據_${startDateVal}_${endDateVal}.csv`);
-            document.body.appendChild(link);
-            link.click();
-            document.body.removeChild(link);
+            let csvContent = "\uFEFF時間,姓名,收縮壓,舒張壓,心率,血糖,情境\n";
+            exportData.forEach(row => { const d = new Date(row.timestamp); const timeStr = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')} ${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}`; csvContent += `${timeStr},${row.name},${row.sbp},${row.dbp},${row.pulse},${row.glucose || ''},${row.context || ''}\n`; });
+            const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' }); const link = document.createElement("a"); const url = URL.createObjectURL(blob);
+            const userNameOnly = document.getElementById('currentUserName').innerText.split(' (')[0];
+            link.setAttribute("href", url); link.setAttribute("download", `${userNameOnly}_健康數據.csv`);
+            document.body.appendChild(link); link.click(); document.body.removeChild(link);
         }
 
         let deferredPrompt;
@@ -660,34 +390,10 @@
         const iosModal = document.getElementById('iosInstallModal');
         const isIos = /iPhone|iPad|iPod/.test(navigator.userAgent);
         const isInStandaloneMode = ('standalone' in window.navigator) && (window.navigator.standalone);
-
         if ((isIos && !isInStandaloneMode)) { installBtn.classList.remove('hidden'); }
-
-        window.addEventListener('beforeinstallprompt', (e) => {
-            e.preventDefault();
-            deferredPrompt = e;
-            installBtn.classList.remove('hidden');
-        });
-
-        function installApp() {
-            if (isIos) {
-                iosModal.classList.remove('hidden');
-                iosModal.classList.add('flex');
-            } else if (deferredPrompt) {
-                deferredPrompt.prompt();
-                deferredPrompt.userChoice.then((choiceResult) => {
-                    if (choiceResult.outcome === 'accepted') { installBtn.classList.add('hidden'); }
-                    deferredPrompt = null;
-                });
-            } else {
-                 alert("您可以將此網頁加入書籤，或在瀏覽器選單尋找「安裝」選項");
-            }
-        }
-
-        function closeIosModal() {
-            iosModal.classList.add('hidden');
-            iosModal.classList.remove('flex');
-        }
+        window.addEventListener('beforeinstallprompt', (e) => { e.preventDefault(); deferredPrompt = e; installBtn.classList.remove('hidden'); });
+        function installApp() { if (isIos) { iosModal.classList.remove('hidden'); iosModal.classList.add('flex'); } else if (deferredPrompt) { deferredPrompt.prompt(); deferredPrompt.userChoice.then((choiceResult) => { if (choiceResult.outcome === 'accepted') { installBtn.classList.add('hidden'); } deferredPrompt = null; }); } else { alert("您可以將此網頁加入書籤，或在瀏覽器選單尋找「安裝」選項"); } }
+        function closeIosModal() { iosModal.classList.add('hidden'); iosModal.classList.remove('flex'); }
     </script>
 </body>
 </html>
