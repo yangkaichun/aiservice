@@ -22,8 +22,6 @@
         @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
         .bounce { animation: bounce 2s infinite; }
         @keyframes bounce { 0%, 20%, 50%, 80%, 100% {transform: translateY(0);} 40% {transform: translateY(-10px);} 60% {transform: translateY(-5px);} }
-        
-        /* LINE 按鈕顏色 */
         .btn-line { background-color: #06C755; color: white; }
         .btn-line:hover { background-color: #05b34c; }
     </style>
@@ -38,7 +36,7 @@
         <div class="bg-white rounded-t-2xl p-6 pb-10 animate-fade-in relative" onclick="event.stopPropagation()">
             <div class="flex justify-between items-start mb-4">
                 <div class="flex items-center gap-3">
-                    <img src="image/yanghealth.png" onerror="this.src='https://via.placeholder.com/60?text=Icon'" class="w-14 h-14 rounded-xl shadow-md">
+                    <img src="image/yanghealth.png" class="w-14 h-14 rounded-xl shadow-md">
                     <div>
                         <h3 class="font-bold text-lg text-slate-800">安裝 HealthTwin</h3>
                         <p class="text-xs text-slate-500">Designed by Yang Home</p>
@@ -58,7 +56,6 @@
                     <span>往下滑，選擇 <strong class="text-indigo-600">加入主畫面</strong> <i data-lucide="plus-square" class="inline w-4 h-4"></i></span>
                 </div>
             </div>
-            
             <div class="absolute bottom-2 left-1/2 transform -translate-x-1/2 text-slate-400 bounce">
                 <i data-lucide="arrow-down" class="w-6 h-6"></i>
             </div>
@@ -181,67 +178,72 @@
 
     <script>
         lucide.createIcons();
-        const GAS_URL = "https://script.google.com/macros/s/AKfycbwZe-8spalbIywSCx2AqOosKsa_DwDV1U9-gtv9YeIUJJbjQxlTuSwtq5xJ3VizsLcqag/exec";
+        // ⚠️ 請確認部署後的 GAS URL 是否已更新
+        const GAS_URL = "https://script.google.com/macros/s/AKfycbzXgSXTSCnJbacWnskqBYcyXQYPP4myPI3cFl4IChwuwXJdozLroTFldSa_yRlMvYVAIA/exec";
         
         // LINE 設定
         const LINE_CHANNEL_ID = "2008700923"; 
-        
-        // [修改] 這裡直接寫死您截圖中的網址，確保 100% 吻合 LINE 後台
+        // ⚠️ 注意：這裡的網址必須完全吻合 LINE 後台設定 (包含斜線 / index.html)
         const REDIRECT_URI = "https://yangkaichun.github.io/aiservice/phd/"; 
         
         let userToken = null;
+        let userEmailForSubmit = null; // 用來儲存 LINE 登入後的 Email
 
-        // 初始化：檢查是否有 LINE Login 回傳的 Hash
+        // 初始化
         window.addEventListener('load', () => {
-            const hash = window.location.hash.substring(1);
-            const params = new URLSearchParams(hash);
+            // 檢查是否是 LINE 登入回來的 (網址帶有 ?code=...)
+            const params = new URLSearchParams(window.location.search);
             
-            // 檢查是否包含 id_token (LINE Login 回傳)
-            if (params.has('id_token')) {
-                const idToken = params.get('id_token');
-                handleLineLoginResponse(idToken);
-                // 清除 URL hash
-                history.replaceState(null, null, ' '); 
+            if (params.has('code')) {
+                const code = params.get('code');
+                handleLineLoginCode(code);
+                // 清除 URL 參數，讓網址變乾淨
+                window.history.replaceState({}, document.title, window.location.pathname);
             }
         });
 
         function handleCredentialResponse(response) {
             userToken = response.credential;
             const payload = decodeJwtResponse(response.credential);
+            userEmailForSubmit = payload.email; // Google 登入直接有 Email
             showForm(payload.name, payload.email, payload.picture);
         }
 
-        // LINE 登入跳轉
+        // 1. LINE 登入跳轉 (使用 response_type=code)
         function lineLogin() {
-            // 建構 LINE Login URL
-            const lineUrl = `https://access.line.me/oauth2/v2.1/authorize?response_type=id_token&client_id=${LINE_CHANNEL_ID}&redirect_uri=${encodeURIComponent(REDIRECT_URI)}&state=12345&scope=profile%20openid%20email&nonce=09876`;
+            const lineUrl = `https://access.line.me/oauth2/v2.1/authorize?response_type=code&client_id=${LINE_CHANNEL_ID}&redirect_uri=${encodeURIComponent(REDIRECT_URI)}&state=12345&scope=profile%20openid%20email`;
             window.location.href = lineUrl;
         }
 
-        function handleLineLoginResponse(idToken) {
-            // 暫時顯示 Loading
-            document.getElementById("login-section").innerHTML = `<div class="text-indigo-600 font-bold"><i class="animate-spin" data-lucide="loader"></i> 正在驗證 LINE 登入...</div>`;
+        // 2. 處理 LINE 回傳的 code
+        function handleLineLoginCode(code) {
+            document.getElementById("login-section").innerHTML = `<div class="text-indigo-600 font-bold flex flex-col items-center gap-2"><i class="animate-spin w-8 h-8" data-lucide="loader"></i><p>正在驗證 LINE 登入...</p></div>`;
             lucide.createIcons();
 
-            // 呼叫 GAS 後端驗證
+            // 呼叫 GAS 後端用 code 換 token
             fetch(GAS_URL, {
                 method: "POST",
-                body: JSON.stringify({ action: "lineLogin", idToken: idToken })
+                body: JSON.stringify({ 
+                    action: "lineLogin", 
+                    code: code,
+                    redirectUri: REDIRECT_URI 
+                })
             })
             .then(res => res.json())
             .then(data => {
                 if (data.status === "success") {
-                    userToken = idToken; // 用 LINE id_token 當作 session key
+                    userToken = "LINE_LOGIN_SESSION"; // 標記已登入
+                    userEmailForSubmit = data.email;  // 儲存 Email 供上傳使用
                     showForm(data.name, data.email, data.picture);
                 } else {
                     alert("LINE 登入失敗: " + data.message);
-                    location.href = REDIRECT_URI; // 重整回首頁
+                    window.location.href = REDIRECT_URI; // 重整
                 }
             })
             .catch(err => {
                 console.error(err);
-                alert("連線錯誤");
-                location.href = REDIRECT_URI;
+                alert("連線錯誤，請稍後再試");
+                window.location.href = REDIRECT_URI;
             });
         }
 
@@ -274,8 +276,10 @@
             btn.innerHTML = `<i data-lucide="loader-2" class="w-5 h-5 animate-spin"></i> 資料上傳中...`;
             lucide.createIcons();
             status.innerText = "";
+            
             const payload = {
                 token: userToken,
+                userEmail: userEmailForSubmit, // 明確傳送 Email
                 context: document.getElementById("context").value,
                 sbp: document.getElementById("sbp").value,
                 dbp: document.getElementById("dbp").value,
