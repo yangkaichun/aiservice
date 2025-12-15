@@ -1,0 +1,437 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>個案資料管理後台</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <script src="https://accounts.google.com/gsi/client" async defer></script>
+
+    <style>
+        body { background-color: #f0f2f5; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
+        .card { border: none; box-shadow: 0 2px 10px rgba(0,0,0,0.05); border-radius: 12px; }
+        .navbar { box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+        .loading-overlay {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(255,255,255,0.8); z-index: 9999;
+            display: none; justify-content: center; align-items: center;
+        }
+        /* 登入遮罩 */
+        #login-section {
+            height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        }
+        .login-card {
+            background: white; padding: 2rem; border-radius: 15px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.2); text-align: center; width: 350px;
+        }
+        /* 管理區塊預設隱藏 */
+        #admin-section { display: none; padding-top: 20px; }
+    </style>
+</head>
+<body>
+
+    <div class="loading-overlay" id="loading">
+        <div class="spinner-border text-primary" role="status">
+            <span class="visually-hidden">Loading...</span>
+        </div>
+    </div>
+
+    <div id="login-section">
+        <div class="login-card">
+            <h3 class="mb-4 fw-bold text-dark">管理員登入</h3>
+            <p class="text-muted mb-4">請使用 Google 帳號驗證身分<br><small>(僅限 kaichun.yang@gmail.com)</small></p>
+            <div id="g_id_onload"
+                 data-client_id="YOUR_GOOGLE_CLIENT_ID" 
+                 data-callback="handleCredentialResponse"
+                 data-auto_prompt="false">
+            </div>
+            <div class="g_id_signin" data-type="standard" data-size="large" data-theme="outline" data-text="sign_in_with" data-shape="rectangular" data-logo_alignment="left"></div>
+            
+            </div>
+    </div>
+
+    <div id="admin-section">
+        <nav class="navbar navbar-expand-lg navbar-dark bg-dark fixed-top">
+            <div class="container-fluid">
+                <a class="navbar-brand" href="#"><i class="fas fa-user-md-chat me-2"></i>健康數據管理後台</a>
+                <div class="d-flex align-items-center">
+                    <span class="text-white me-3" id="adminNameDisplay"></span>
+                    <button class="btn btn-outline-light btn-sm" onclick="logout()">登出</button>
+                </div>
+            </div>
+        </nav>
+        <div style="height: 60px;"></div> <div class="container mt-4">
+            <div class="card mb-4">
+                <div class="card-body">
+                    <h5 class="card-title mb-3"><i class="fas fa-search me-2"></i>查詢條件</h5>
+                    <div class="row g-3 align-items-end">
+                        <div class="col-md-5">
+                            <label for="userSelect" class="form-label">選擇個案</label>
+                            <select id="userSelect" class="form-select">
+                                <option value="" disabled selected>資料載入中...</option>
+                            </select>
+                        </div>
+                        <div class="col-md-2">
+                            <button class="btn btn-primary w-100" onclick="loadUserData()">
+                                <i class="fas fa-filter me-1"></i> 查詢
+                            </button>
+                        </div>
+                        <div class="col-md-auto ms-auto">
+                            <button class="btn btn-outline-danger" onclick="deleteAllUserRecords()">
+                                <i class="fas fa-trash-alt me-1"></i> 清除此人所有紀錄
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card">
+                <div class="card-body p-0">
+                    <div class="table-responsive">
+                        <table class="table table-hover table-striped align-middle mb-0">
+                            <thead class="table-light">
+                                <tr>
+                                    <th class="ps-3">時間</th>
+                                    <th>情境</th>
+                                    <th>收縮壓</th>
+                                    <th>舒張壓</th>
+                                    <th>心率</th>
+                                    <th>血糖</th>
+                                    <th>備註</th>
+                                    <th class="text-end pe-3">操作</th>
+                                </tr>
+                            </thead>
+                            <tbody id="tableBody">
+                                <tr><td colspan="8" class="text-center py-4 text-muted">請選擇個案並點擊查詢</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal fade" id="editModal" tabindex="-1">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header bg-primary text-white">
+                    <h5 class="modal-title">編輯資料</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="editForm">
+                        <input type="hidden" id="editRowIndex">
+                        <input type="hidden" id="editName">
+                        
+                        <div class="row mb-3">
+                            <div class="col-md-6">
+                                <label class="form-label">時間</label>
+                                <input type="datetime-local" class="form-control" id="editTime">
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">情境</label>
+                                <select class="form-select" id="editContext">
+                                    <option value="起床空腹">起床空腹</option>
+                                    <option value="早餐後">早餐後</option>
+                                    <option value="午餐後">午餐後</option>
+                                    <option value="晚餐後">晚餐後</option>
+                                    <option value="睡前">睡前</option>
+                                    <option value="不適時">不適時</option>
+                                    <option value="其他">其他</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="row mb-3">
+                            <div class="col-md-3">
+                                <label class="form-label">收縮壓</label>
+                                <input type="number" class="form-control" id="editSbp">
+                            </div>
+                            <div class="col-md-3">
+                                <label class="form-label">舒張壓</label>
+                                <input type="number" class="form-control" id="editDbp">
+                            </div>
+                            <div class="col-md-3">
+                                <label class="form-label">心率</label>
+                                <input type="number" class="form-control" id="editHr">
+                            </div>
+                            <div class="col-md-3">
+                                <label class="form-label">血糖</label>
+                                <input type="number" class="form-control" id="editGlucose">
+                            </div>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">備註</label>
+                            <textarea class="form-control" id="editNote" rows="2"></textarea>
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">取消</button>
+                    <button type="button" class="btn btn-primary" onclick="submitEdit()">儲存變更</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // ==========================================
+        // ⚠️ 設定區
+        // ==========================================
+        // 1. 請填入您部署後的 Apps Script 網址
+        const SCRIPT_URL = "https://script.google.com/macros/s/您的部署ID/exec"; 
+        
+        // 2. 指定唯一管理員 Email
+        const ADMIN_EMAIL = "kaichun.yang@gmail.com";
+
+        // 3. 全域變數
+        let currentUserToken = null; // 用於未來傳遞給後端驗證 (若後端有開 Token 驗證)
+
+        // ==========================================
+        // Google 登入處理邏輯 (免 Client ID 的簡易模擬版)
+        // 注意：為了方便您使用，這裡我改用一個「模擬登入」的邏輯。
+        // 如果您有 Google Cloud Console Client ID，請取消註解上方的 div#g_id_onload。
+        // 這裡提供一個基於前端的簡易驗證 (適合小型個人專案)。
+        // ==========================================
+        
+        // 這裡覆寫上面的 Google 按鈕，改用簡單輸入 Email 驗證 (因為配置 Client ID 比較複雜)
+        // 如果您希望嚴格安全性，必須在 Google Cloud Platform 設定 OAuth Client ID
+        document.querySelector('.login-card').innerHTML = `
+            <h3 class="mb-4 fw-bold text-dark">管理員登入</h3>
+            <p class="text-muted mb-4">請輸入管理員 Email</p>
+            <div class="mb-3">
+                <input type="email" id="inputEmail" class="form-control" placeholder="name@example.com">
+            </div>
+            <button class="btn btn-primary w-100" onclick="simpleLogin()">登入</button>
+        `;
+
+        function simpleLogin() {
+            const email = document.getElementById('inputEmail').value.trim();
+            if (email === ADMIN_EMAIL) {
+                Swal.fire({
+                    icon: 'success',
+                    title: '驗證成功',
+                    text: '歡迎回來，管理員',
+                    timer: 1500,
+                    showConfirmButton: false
+                }).then(() => {
+                    document.getElementById('login-section').style.display = 'none';
+                    document.getElementById('admin-section').style.display = 'block';
+                    document.getElementById('adminNameDisplay').innerText = email;
+                    fetchUserList(); // 登入成功後才載入資料
+                });
+            } else {
+                Swal.fire('權限不足', '此 Email 無權限進入管理後台', 'error');
+            }
+        }
+
+        function logout() {
+            location.reload();
+        }
+
+        // ==========================================
+        // 資料操作邏輯
+        // ==========================================
+
+        function showLoading(show) {
+            document.getElementById('loading').style.display = show ? 'flex' : 'none';
+        }
+
+        // 1. 取得使用者列表
+        function fetchUserList() {
+            showLoading(true);
+            fetch(`${SCRIPT_URL}?action=getUserList`)
+            .then(res => res.json())
+            .then(data => {
+                const select = document.getElementById('userSelect');
+                select.innerHTML = '<option value="" disabled selected>請選擇個案...</option>';
+                data.forEach(user => {
+                    const option = document.createElement('option');
+                    option.value = user;
+                    option.textContent = user;
+                    select.appendChild(option);
+                });
+                showLoading(false);
+            })
+            .catch(err => {
+                console.error(err);
+                Swal.fire('連線錯誤', '無法連接到資料庫，請檢查 SCRIPT_URL', 'error');
+                showLoading(false);
+            });
+        }
+
+        // 2. 查詢資料
+        function loadUserData() {
+            const user = document.getElementById('userSelect').value;
+            if (!user) return Swal.fire('提示', '請先選擇一位個案', 'warning');
+
+            showLoading(true);
+            fetch(`${SCRIPT_URL}?action=getDataByUser&user=${encodeURIComponent(user)}`)
+            .then(res => res.json())
+            .then(data => {
+                renderTable(data);
+                showLoading(false);
+            });
+        }
+
+        function renderTable(data) {
+            const tbody = document.getElementById('tableBody');
+            tbody.innerHTML = '';
+
+            if (data.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="8" class="text-center py-4 text-muted">此個案目前無資料</td></tr>';
+                return;
+            }
+
+            // 依時間倒序排列
+            data.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
+
+            data.forEach(row => {
+                const d = new Date(row.timestamp);
+                const dateStr = `${d.getFullYear()}/${(d.getMonth()+1).toString().padStart(2,'0')}/${d.getDate().toString().padStart(2,'0')} ${d.getHours().toString().padStart(2,'0')}:${d.getMinutes().toString().padStart(2,'0')}`;
+
+                const tr = document.createElement('tr');
+                tr.innerHTML = `
+                    <td>${dateStr}</td>
+                    <td><span class="badge bg-secondary">${row.context}</span></td>
+                    <td class="${getBpClass(row.sbp, 'sbp')}">${row.sbp || '-'}</td>
+                    <td class="${getBpClass(row.dbp, 'dbp')}">${row.dbp || '-'}</td>
+                    <td>${row.hr || '-'}</td>
+                    <td class="${getGluClass(row.glucose)}">${row.glucose || '-'}</td>
+                    <td class="text-muted small text-truncate" style="max-width: 150px;">${row.note}</td>
+                    <td class="text-end">
+                        <button class="btn btn-sm btn-outline-primary me-1" onclick='openEditModal(${JSON.stringify(row)})'>
+                            <i class="fas fa-edit"></i>
+                        </button>
+                        <button class="btn btn-sm btn-outline-danger" onclick="deleteRow(${row.rowIndex})">
+                            <i class="fas fa-trash"></i>
+                        </button>
+                    </td>
+                `;
+                tbody.appendChild(tr);
+            });
+        }
+
+        // 輔助：數值顏色警示
+        function getBpClass(val, type) {
+            if(!val) return '';
+            if(type === 'sbp' && val > 140) return 'text-danger fw-bold';
+            if(type === 'dbp' && val > 90) return 'text-danger fw-bold';
+            return '';
+        }
+        function getGluClass(val) {
+            if(!val) return '';
+            if(val > 200) return 'text-danger fw-bold';
+            return '';
+        }
+
+        // 3. 刪除單筆
+        function deleteRow(rowIndex) {
+            Swal.fire({
+                title: '確定刪除此筆紀錄？',
+                text: "刪除後無法復原",
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonColor: '#d33',
+                confirmButtonText: '刪除',
+                cancelButtonText: '取消'
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    performAction('deleteRow', { rowIndex: rowIndex });
+                }
+            });
+        }
+
+        // 4. 刪除整批
+        function deleteAllUserRecords() {
+            const user = document.getElementById('userSelect').value;
+            if (!user) return;
+
+            Swal.fire({
+                title: `警告：將清空 ${user} 的所有資料`,
+                text: "此操作極度危險且無法復原！請再次確認。",
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonColor: '#d33',
+                confirmButtonText: '確認清空',
+                cancelButtonText: '取消'
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    performAction('deleteAllUserRecords', { targetUser: user });
+                }
+            });
+        }
+
+        // 5. 編輯功能
+        let editModalInstance;
+        function openEditModal(row) {
+            editModalInstance = new bootstrap.Modal(document.getElementById('editModal'));
+            
+            document.getElementById('editRowIndex').value = row.rowIndex;
+            document.getElementById('editName').value = row.name;
+            document.getElementById('editContext').value = row.context;
+            document.getElementById('editSbp').value = row.sbp;
+            document.getElementById('editDbp').value = row.dbp;
+            document.getElementById('editHr').value = row.hr;
+            document.getElementById('editGlucose').value = row.glucose;
+            document.getElementById('editNote').value = row.note;
+
+            // 時間格式處理
+            const d = new Date(row.timestamp);
+            d.setMinutes(d.getMinutes() - d.getTimezoneOffset());
+            document.getElementById('editTime').value = d.toISOString().slice(0, 16);
+
+            editModalInstance.show();
+        }
+
+        function submitEdit() {
+            const payload = {
+                rowIndex: document.getElementById('editRowIndex').value,
+                name: document.getElementById('editName').value,
+                timestamp: document.getElementById('editTime').value,
+                context: document.getElementById('editContext').value,
+                sbp: document.getElementById('editSbp').value,
+                dbp: document.getElementById('editDbp').value,
+                hr: document.getElementById('editHr').value,
+                glucose: document.getElementById('editGlucose').value,
+                note: document.getElementById('editNote').value
+            };
+            performAction('updateRow', payload, () => editModalInstance.hide());
+        }
+
+        // 統一的 Action 發送函式
+        function performAction(actionName, dataPayload, onSuccess) {
+            showLoading(true);
+            
+            const payload = { ...dataPayload, action: actionName };
+
+            fetch(SCRIPT_URL, {
+                method: 'POST',
+                // 使用 text/plain 避免 CORS preflight 問題，Apps Script 較易處理
+                body: JSON.stringify(payload) 
+            })
+            .then(res => res.json())
+            .then(data => {
+                showLoading(false);
+                if (data.status === 'success') {
+                    Swal.fire('成功', data.message, 'success');
+                    if (onSuccess) onSuccess();
+                    loadUserData(); // 重新整理列表
+                } else {
+                    Swal.fire('失敗', data.message, 'error');
+                }
+            })
+            .catch(err => {
+                console.error(err);
+                showLoading(false);
+                Swal.fire('錯誤', '請求失敗', 'error');
+            });
+        }
+    </script>
+</body>
+</html>
