@@ -12,9 +12,10 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 
     <script src="https://cdn.tailwindcss.com"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <script src="https://unpkg.com/lucide@latest"></script>
     <script src="https://accounts.google.com/gsi/client" async defer></script>
+
     <style>
         body { font-family: 'Inter', sans-serif; background-color: #F8FAFC; }
         .fade-in { animation: fadeIn 0.5s ease-out; }
@@ -184,7 +185,9 @@
         
         // LINE 設定
         const LINE_CHANNEL_ID = "2008700923"; 
-        const REDIRECT_URI = window.location.href.split('?')[0].split('#')[0]; // 自動取得當前頁面網址
+        
+        // [修改] 這裡直接寫死您截圖中的網址，確保 100% 吻合 LINE 後台
+        const REDIRECT_URI = "https://yangkaichun.github.io/aiservice/phd/"; 
         
         let userToken = null;
 
@@ -197,32 +200,30 @@
             if (params.has('id_token')) {
                 const idToken = params.get('id_token');
                 handleLineLoginResponse(idToken);
-                // 清除 URL hash 避免重新整理時重複觸發
+                // 清除 URL hash
                 history.replaceState(null, null, ' '); 
             }
         });
 
-        // 1. Google Login Callback
         function handleCredentialResponse(response) {
             userToken = response.credential;
             const payload = decodeJwtResponse(response.credential);
             showForm(payload.name, payload.email, payload.picture);
         }
 
-        // 2. LINE Login Trigger
+        // LINE 登入跳轉
         function lineLogin() {
             // 建構 LINE Login URL
             const lineUrl = `https://access.line.me/oauth2/v2.1/authorize?response_type=id_token&client_id=${LINE_CHANNEL_ID}&redirect_uri=${encodeURIComponent(REDIRECT_URI)}&state=12345&scope=profile%20openid%20email&nonce=09876`;
             window.location.href = lineUrl;
         }
 
-        // 3. 處理 LINE Login 後端驗證
         function handleLineLoginResponse(idToken) {
             // 暫時顯示 Loading
             document.getElementById("login-section").innerHTML = `<div class="text-indigo-600 font-bold"><i class="animate-spin" data-lucide="loader"></i> 正在驗證 LINE 登入...</div>`;
             lucide.createIcons();
 
-            // 呼叫 GAS 後端驗證 Token 並取得用戶資料
+            // 呼叫 GAS 後端驗證
             fetch(GAS_URL, {
                 method: "POST",
                 body: JSON.stringify({ action: "lineLogin", idToken: idToken })
@@ -230,17 +231,17 @@
             .then(res => res.json())
             .then(data => {
                 if (data.status === "success") {
-                    userToken = idToken; // 這裡用 idToken 當作 session key
+                    userToken = idToken; // 用 LINE id_token 當作 session key
                     showForm(data.name, data.email, data.picture);
                 } else {
                     alert("LINE 登入失敗: " + data.message);
-                    location.reload();
+                    location.href = REDIRECT_URI; // 重整回首頁
                 }
             })
             .catch(err => {
                 console.error(err);
                 alert("連線錯誤");
-                location.reload();
+                location.href = REDIRECT_URI;
             });
         }
 
@@ -319,7 +320,6 @@
             return JSON.parse(jsonPayload);
         }
 
-        // PWA & iOS Logic
         let deferredPrompt;
         const installBtn = document.getElementById('installBtn');
         const iosModal = document.getElementById('iosInstallModal');
