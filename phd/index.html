@@ -15,13 +15,13 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap" rel="stylesheet">
     <script src="https://unpkg.com/lucide@latest"></script>
     <script src="https://accounts.google.com/gsi/client" async defer></script>
-
     <style>
         body { font-family: 'Inter', sans-serif; background-color: #F8FAFC; }
         .fade-in { animation: fadeIn 0.5s ease-out; }
         @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
         .bounce { animation: bounce 2s infinite; }
         @keyframes bounce { 0%, 20%, 50%, 80%, 100% {transform: translateY(0);} 40% {transform: translateY(-10px);} 60% {transform: translateY(-5px);} }
+        
         /* LINE 按鈕顏色 */
         .btn-line { background-color: #06C755; color: white; }
         .btn-line:hover { background-color: #05b34c; }
@@ -57,6 +57,7 @@
                     <span>往下滑，選擇 <strong class="text-indigo-600">加入主畫面</strong> <i data-lucide="plus-square" class="inline w-4 h-4"></i></span>
                 </div>
             </div>
+            
             <div class="absolute bottom-2 left-1/2 transform -translate-x-1/2 text-slate-400 bounce">
                 <i data-lucide="arrow-down" class="w-6 h-6"></i>
             </div>
@@ -181,45 +182,47 @@
         lucide.createIcons();
         const GAS_URL = "https://script.google.com/macros/s/AKfycbwZe-8spalbIywSCx2AqOosKsa_DwDV1U9-gtv9YeIUJJbjQxlTuSwtq5xJ3VizsLcqag/exec";
         
-        // 您的 LINE 設定
+        // LINE 設定
         const LINE_CHANNEL_ID = "2008700923"; 
-        // 自動取得當前網址作為 Redirect URI (必須完全匹配 LINE 後台)
-        const REDIRECT_URI = window.location.href.split('?')[0].split('#')[0]; 
+        const REDIRECT_URI = window.location.href.split('?')[0].split('#')[0]; // 自動取得當前頁面網址
         
         let userToken = null;
 
-        // 初始化
+        // 初始化：檢查是否有 LINE Login 回傳的 Hash
         window.addEventListener('load', () => {
             const hash = window.location.hash.substring(1);
             const params = new URLSearchParams(hash);
             
-            // 檢查 LINE 登入回傳
+            // 檢查是否包含 id_token (LINE Login 回傳)
             if (params.has('id_token')) {
                 const idToken = params.get('id_token');
                 handleLineLoginResponse(idToken);
+                // 清除 URL hash 避免重新整理時重複觸發
                 history.replaceState(null, null, ' '); 
             }
         });
 
+        // 1. Google Login Callback
         function handleCredentialResponse(response) {
             userToken = response.credential;
             const payload = decodeJwtResponse(response.credential);
             showForm(payload.name, payload.email, payload.picture);
         }
 
-        // LINE 登入跳轉
+        // 2. LINE Login Trigger
         function lineLogin() {
-            // [Debug] 提示使用者目前的 Redirect URI 以便去後台設定
-            alert("請確保 LINE 後台 Callback URL 已設定為：\n" + REDIRECT_URI);
-            
+            // 建構 LINE Login URL
             const lineUrl = `https://access.line.me/oauth2/v2.1/authorize?response_type=id_token&client_id=${LINE_CHANNEL_ID}&redirect_uri=${encodeURIComponent(REDIRECT_URI)}&state=12345&scope=profile%20openid%20email&nonce=09876`;
             window.location.href = lineUrl;
         }
 
+        // 3. 處理 LINE Login 後端驗證
         function handleLineLoginResponse(idToken) {
+            // 暫時顯示 Loading
             document.getElementById("login-section").innerHTML = `<div class="text-indigo-600 font-bold"><i class="animate-spin" data-lucide="loader"></i> 正在驗證 LINE 登入...</div>`;
             lucide.createIcons();
 
+            // 呼叫 GAS 後端驗證 Token 並取得用戶資料
             fetch(GAS_URL, {
                 method: "POST",
                 body: JSON.stringify({ action: "lineLogin", idToken: idToken })
@@ -227,7 +230,7 @@
             .then(res => res.json())
             .then(data => {
                 if (data.status === "success") {
-                    userToken = idToken; 
+                    userToken = idToken; // 這裡用 idToken 當作 session key
                     showForm(data.name, data.email, data.picture);
                 } else {
                     alert("LINE 登入失敗: " + data.message);
@@ -264,6 +267,7 @@
             e.preventDefault();
             const btn = document.getElementById("submitBtn");
             const status = document.getElementById("status");
+            const originalBtnContent = btn.innerHTML;
             if (!userToken) { alert("請重新登入"); return; }
             btn.disabled = true;
             btn.innerHTML = `<i data-lucide="loader-2" class="w-5 h-5 animate-spin"></i> 資料上傳中...`;
@@ -278,14 +282,19 @@
                 glucose: document.getElementById("glucose").value,
                 note: document.getElementById("note").value
             };
-            fetch(GAS_URL, { method: "POST", body: JSON.stringify(payload) })
+            fetch(GAS_URL, {
+                method: "POST",
+                body: JSON.stringify(payload)
+            })
             .then(response => response.json())
             .then(data => {
                 if (data.status === "success") {
                     status.innerHTML = `<span class="text-emerald-600 flex items-center justify-center gap-1"><i data-lucide="check-circle" class="w-4 h-4"></i> 上傳成功！</span>`;
                     document.getElementById("healthForm").reset();
                     document.getElementById("context").value = payload.context;
-                } else { throw new Error(data.message); }
+                } else {
+                    throw new Error(data.message);
+                }
             })
             .catch(error => {
                 console.error('Error:', error);
@@ -293,7 +302,11 @@
             })
             .finally(() => {
                 lucide.createIcons();
-                setTimeout(() => { btn.disabled = false; btn.innerHTML = originalBtnContent; lucide.createIcons(); }, 2000);
+                setTimeout(() => {
+                    btn.disabled = false;
+                    btn.innerHTML = originalBtnContent;
+                    lucide.createIcons();
+                }, 2000);
             });
         });
 
@@ -306,15 +319,44 @@
             return JSON.parse(jsonPayload);
         }
 
+        // PWA & iOS Logic
         let deferredPrompt;
         const installBtn = document.getElementById('installBtn');
         const iosModal = document.getElementById('iosInstallModal');
         const isIos = /iPhone|iPad|iPod/.test(navigator.userAgent);
         const isInStandaloneMode = ('standalone' in window.navigator) && (window.navigator.standalone);
-        if (isIos && !isInStandaloneMode) { installBtn.classList.remove('hidden'); }
-        window.addEventListener('beforeinstallprompt', (e) => { e.preventDefault(); deferredPrompt = e; installBtn.classList.remove('hidden'); });
-        function installApp() { if (isIos) { iosModal.classList.remove('hidden'); iosModal.classList.add('flex'); } else if (deferredPrompt) { deferredPrompt.prompt(); deferredPrompt.userChoice.then((choiceResult) => { if (choiceResult.outcome === 'accepted') { installBtn.classList.add('hidden'); } deferredPrompt = null; }); } else { alert("您可以將此網頁加入書籤，或在瀏覽器選單尋找「安裝」選項"); } }
-        function closeIosModal() { iosModal.classList.add('hidden'); iosModal.classList.remove('flex'); }
+
+        if (isIos && !isInStandaloneMode) {
+            installBtn.classList.remove('hidden');
+        }
+
+        window.addEventListener('beforeinstallprompt', (e) => {
+            e.preventDefault();
+            deferredPrompt = e;
+            installBtn.classList.remove('hidden');
+        });
+
+        function installApp() {
+            if (isIos) {
+                iosModal.classList.remove('hidden');
+                iosModal.classList.add('flex');
+            } else if (deferredPrompt) {
+                deferredPrompt.prompt();
+                deferredPrompt.userChoice.then((choiceResult) => {
+                    if (choiceResult.outcome === 'accepted') {
+                        installBtn.classList.add('hidden');
+                    }
+                    deferredPrompt = null;
+                });
+            } else {
+                alert("若要安裝，請使用 Chrome 瀏覽器選單中的「安裝應用程式」功能");
+            }
+        }
+
+        function closeIosModal() {
+            iosModal.classList.add('hidden');
+            iosModal.classList.remove('flex');
+        }
     </script>
 </body>
 </html>
