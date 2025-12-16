@@ -1,0 +1,345 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>新樓醫院專業版個案管理平台 (Demo)</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700&display=swap" rel="stylesheet">
+    <style>
+        body { font-family: 'Noto Sans TC', sans-serif; background-color: #f3f4f6; }
+        .sidebar-item { transition: all 0.3s; }
+        .sidebar-item:hover, .sidebar-item.active { background-color: #e5e7eb; color: #1f2937; border-right: 4px solid #10b981; }
+        .card { background: white; border-radius: 0.5rem; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
+    </style>
+</head>
+<body class="flex h-screen overflow-hidden">
+
+    <aside class="w-64 bg-white border-r border-gray-200 flex flex-col justify-between hidden md:flex">
+        <div>
+            <div class="h-16 flex items-center justify-center border-b border-gray-200">
+                <h1 class="text-xl font-bold text-emerald-600">新樓個案管理平台</h1>
+            </div>
+            <nav class="mt-4">
+                <a href="#" class="sidebar-item active flex items-center px-6 py-3 text-gray-600" onclick="switchTab('dashboard')">
+                    <svg class="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z"></path></svg>
+                    總覽儀表板
+                </a>
+                <a href="#" class="sidebar-item flex items-center px-6 py-3 text-gray-600" onclick="switchTab('cases')">
+                    <svg class="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"></path></svg>
+                    個案與衛教 [cite: 50]
+                </a>
+                <a href="#" class="sidebar-item flex items-center px-6 py-3 text-gray-600" onclick="switchTab('iot')">
+                    <svg class="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                    IoT 遠距監測 [cite: 42]
+                </a>
+                <a href="#" class="sidebar-item flex items-center px-6 py-3 text-gray-600" onclick="switchTab('query')">
+                    <svg class="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
+                    雲端結果查詢 [cite: 33]
+                </a>
+                <a href="#" class="sidebar-item flex items-center px-6 py-3 text-gray-600" onclick="switchTab('consult')">
+                    <svg class="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z"></path></svg>
+                    跨專業線上照會 [cite: 72]
+                </a>
+            </nav>
+        </div>
+        <div class="p-4 border-t border-gray-200">
+            <div class="flex items-center">
+                <div class="w-8 h-8 rounded-full bg-emerald-100 flex items-center justify-center text-emerald-600 font-bold">麻</div>
+                <div class="ml-3">
+                    <p class="text-sm font-medium text-gray-900">麻豆新樓醫院</p>
+                    <p class="text-xs text-gray-500">管理員 [cite: 90]</p>
+                </div>
+            </div>
+        </div>
+    </aside>
+
+    <main class="flex-1 flex flex-col h-screen overflow-y-auto">
+        <header class="bg-white shadow-sm h-16 flex items-center justify-between px-6 z-10">
+            <div class="flex items-center text-gray-500">
+                <span id="pageTitle" class="text-lg font-semibold text-gray-800">總覽儀表板</span>
+                <span class="ml-4 text-xs bg-blue-100 text-blue-800 px-2 py-1 rounded-full">FHIR TW Core IG Ready [cite: 85]</span>
+            </div>
+            <div class="flex items-center space-x-4">
+                <button class="relative p-2 text-gray-400 hover:text-gray-500">
+                    <span class="absolute top-1 right-1 w-2 h-2 bg-red-500 rounded-full"></span>
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"></path></svg>
+                </button>
+            </div>
+        </header>
+
+        <div class="p-6">
+            
+            <div id="view-dashboard" class="space-y-6">
+                <div class="grid grid-cols-1 md:grid-cols-4 gap-6">
+                    <div class="card p-5 border-l-4 border-blue-500">
+                        <p class="text-gray-500 text-sm">收案總人數</p>
+                        <p class="text-2xl font-bold text-gray-800">1,248</p>
+                    </div>
+                    <div class="card p-5 border-l-4 border-red-500">
+                        <p class="text-gray-500 text-sm">今日異常警示 </p>
+                        <p class="text-2xl font-bold text-red-600">12</p>
+                        <p class="text-xs text-gray-400 mt-1">IoT 數據超標</p>
+                    </div>
+                    <div class="card p-5 border-l-4 border-emerald-500">
+                        <p class="text-gray-500 text-sm">本月衛教達成率 [cite: 65]</p>
+                        <p class="text-2xl font-bold text-emerald-600">85%</p>
+                    </div>
+                    <div class="card p-5 border-l-4 border-yellow-500">
+                        <p class="text-gray-500 text-sm">待回覆照會 [cite: 72]</p>
+                        <p class="text-2xl font-bold text-yellow-600">5</p>
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                    <div class="card p-6 lg:col-span-2">
+                        <h3 class="text-lg font-bold text-gray-800 mb-4">慢病個案血壓異常趨勢分析 </h3>
+                        <canvas id="bpChart" height="120"></canvas>
+                    </div>
+
+                    <div class="card p-6">
+                        <h3 class="text-lg font-bold text-gray-800 mb-4">最新政策與公告</h3>
+                        <div class="space-y-4">
+                            <div class="flex items-start">
+                                <span class="bg-blue-100 text-blue-800 text-xs px-2 py-1 rounded mt-1">衛福部</span>
+                                <div class="ml-3">
+                                    <p class="text-sm font-medium text-gray-800">公費流感疫苗接種計畫啟動</p>
+                                    <p class="text-xs text-gray-500">2025-10-01</p>
+                                </div>
+                            </div>
+                            <div class="flex items-start">
+                                <span class="bg-green-100 text-green-800 text-xs px-2 py-1 rounded mt-1">教育訓練</span>
+                                <div class="ml-3">
+                                    <p class="text-sm font-medium text-gray-800">糖尿病共照網認證課程通知</p>
+                                    <p class="text-xs text-gray-500">2025-10-05</p>
+                                </div>
+                            </div>
+                            <div class="flex items-start">
+                                <span class="bg-red-100 text-red-800 text-xs px-2 py-1 rounded mt-1">疾管署</span>
+                                <div class="ml-3">
+                                    <p class="text-sm font-medium text-gray-800">登革熱防疫措施更新通報</p>
+                                    <p class="text-xs text-gray-500">2025-10-08</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div id="view-iot" class="hidden space-y-6">
+                <div class="card p-6">
+                    <div class="flex justify-between items-center mb-6">
+                        <h3 class="text-lg font-bold text-gray-800">穿戴裝置數據監控 (即時)</h3>
+                        <button class="bg-emerald-600 text-white px-4 py-2 rounded text-sm hover:bg-emerald-700">重新整理數據</button>
+                    </div>
+                    <div class="overflow-x-auto">
+                        <table class="min-w-full divide-y divide-gray-200">
+                            <thead class="bg-gray-50">
+                                <tr>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">病患姓名</th>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">裝置類型 </th>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">最新數據</th>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">上傳時間</th>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">狀態</th>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">操作</th>
+                                </tr>
+                            </thead>
+                            <tbody class="bg-white divide-y divide-gray-200">
+                                <tr>
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">陳大明</td>
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">藍芽血壓計</td>
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-red-600 font-bold">165/98 mmHg</td>
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">10分鐘前</td>
+                                    <td class="px-6 py-4 whitespace-nowrap"><span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-red-100 text-red-800">異常 </span></td>
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-blue-600 hover:text-blue-900 cursor-pointer">推播提醒</td>
+                                </tr>
+                                <tr>
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">林小美</td>
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">智慧手環 (心律)</td>
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">72 bpm</td>
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">2分鐘前</td>
+                                    <td class="px-6 py-4 whitespace-nowrap"><span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800">正常</span></td>
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-blue-600 hover:text-blue-900 cursor-pointer">查看詳情</td>
+                                </tr>
+                                <tr>
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">王老先生</td>
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">血糖機</td>
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">110 mg/dL (飯後)</td>
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">1小時前</td>
+                                    <td class="px-6 py-4 whitespace-nowrap"><span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800">正常</span></td>
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-blue-600 hover:text-blue-900 cursor-pointer">查看詳情</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <div id="view-cases" class="hidden space-y-6">
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                    <div class="card p-6 col-span-2">
+                        <h3 class="text-lg font-bold text-gray-800 mb-4">個案管理列表</h3>
+                        <div class="space-y-4">
+                            <div class="border rounded p-4 flex justify-between items-center hover:bg-gray-50">
+                                <div>
+                                    <p class="font-bold text-gray-800">陳大明 (M, 65歲)</p>
+                                    <p class="text-sm text-gray-500">主診斷: 第二型糖尿病 | 收案日期: 2024-12-01</p>
+                                </div>
+                                <div class="flex space-x-2">
+                                    <button class="bg-blue-100 text-blue-700 px-3 py-1 rounded text-sm">照護紀錄</button>
+                                    <button class="bg-green-100 text-green-700 px-3 py-1 rounded text-sm">發送衛教</button>
+                                </div>
+                            </div>
+                            <div class="border rounded p-4 flex justify-between items-center hover:bg-gray-50">
+                                <div>
+                                    <p class="font-bold text-gray-800">張美玲 (F, 58歲)</p>
+                                    <p class="text-sm text-gray-500">主診斷: 高血壓 | 收案日期: 2024-11-15</p>
+                                </div>
+                                <div class="flex space-x-2">
+                                    <button class="bg-blue-100 text-blue-700 px-3 py-1 rounded text-sm">照護紀錄</button>
+                                    <button class="bg-green-100 text-green-700 px-3 py-1 rounded text-sm">發送衛教</button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="card p-6">
+                        <h3 class="text-lg font-bold text-gray-800 mb-4">衛教素材庫 [cite: 56, 59]</h3>
+                        <ul class="space-y-2">
+                            <li class="flex items-center text-gray-700 cursor-pointer hover:text-emerald-600">
+                                <span class="mr-2">📄</span> 糖尿病飲食原則 (GI值)
+                            </li>
+                            <li class="flex items-center text-gray-700 cursor-pointer hover:text-emerald-600">
+                                <span class="mr-2">🎥</span> 正確量血壓教學影片
+                            </li>
+                            <li class="flex items-center text-gray-700 cursor-pointer hover:text-emerald-600">
+                                <span class="mr-2">📄</span> 腎臟病飲食指南
+                            </li>
+                            <li class="flex items-center text-gray-700 cursor-pointer hover:text-emerald-600">
+                                <span class="mr-2">💊</span> 用藥副作用說明 (抗凝血劑)
+                            </li>
+                        </ul>
+                        <button class="w-full mt-4 border border-emerald-600 text-emerald-600 px-4 py-2 rounded text-sm hover:bg-emerald-50">新增素材</button>
+                    </div>
+                </div>
+            </div>
+
+             <div id="view-query" class="hidden space-y-6">
+                <div class="card p-6">
+                    <h3 class="text-lg font-bold text-gray-800 mb-4">跨院所雲端結果查詢</h3>
+                    <div class="bg-blue-50 border border-blue-200 p-4 rounded mb-4 text-sm text-blue-800">
+                        說明：此功能透過 FHIR 標準介接新樓醫院核心資料庫，提供合作診所查詢轉診個案資料。 [cite: 30]
+                    </div>
+                    
+                    <div class="flex gap-4 mb-6">
+                        <input type="text" placeholder="輸入病歷號或身分證字號" class="flex-1 border p-2 rounded">
+                        <select class="border p-2 rounded">
+                            <option>最近三個月</option>
+                            <option>最近半年</option>
+                        </select>
+                        <button class="bg-blue-600 text-white px-6 py-2 rounded hover:bg-blue-700">查詢</button>
+                    </div>
+
+                    <div class="border rounded-lg overflow-hidden">
+                        <div class="bg-gray-100 px-4 py-2 border-b font-bold">查詢結果：陳大明 (A123456789)</div>
+                        <div class="p-4 grid grid-cols-2 gap-4">
+                            <div>
+                                <p class="text-xs text-gray-500">檢驗報告 (LIS) [cite: 30]</p>
+                                <p class="font-medium">HbA1c: 8.2% (2025/12/10)</p>
+                                <p class="font-medium">Creatinine: 1.1 mg/dL</p>
+                            </div>
+                            <div>
+                                <p class="text-xs text-gray-500">處置建議 [cite: 34]</p>
+                                <p class="font-medium">建議調整降血糖用藥，並加強足部護理衛教。預計三個月後回診。</p>
+                            </div>
+                            <div class="col-span-2 border-t pt-2 mt-2">
+                                <p class="text-xs text-gray-500">用藥紀錄</p>
+                                <p class="font-medium">Metformin 500mg BID, Glimepiride 2mg QD</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div id="view-consult" class="hidden space-y-6">
+                <div class="card p-6">
+                    <h3 class="text-lg font-bold text-gray-800 mb-4">跨專業線上照會區 (非急性)</h3>
+                    <div class="space-y-4">
+                        <div class="border rounded p-4 bg-gray-50">
+                            <div class="flex justify-between">
+                                <span class="font-bold text-blue-700">提問：王大明醫師 (安康診所)</span>
+                                <span class="text-xs text-gray-500">2025-12-14 10:30</span>
+                            </div>
+                            <p class="mt-2 text-gray-800">個案陳大明近期血壓控制不佳，是否建議調整降壓藥物組合？目前使用 Amlodipine 5mg。</p>
+                            
+                            <div class="mt-4 pl-4 border-l-2 border-emerald-500">
+                                <div class="flex justify-between">
+                                    <span class="font-bold text-emerald-700">回覆：李心臟科醫師 (新樓醫院)</span>
+                                    <span class="text-xs text-gray-500">2025-12-14 14:20</span>
+                                </div>
+                                <p class="mt-2 text-gray-800">建議可先增加劑量至 10mg，或合併使用 ARB 類藥物。請持續追蹤其居家血壓數據。</p>
+                            </div>
+                            
+                            <div class="mt-3">
+                                <input type="text" placeholder="輸入回覆..." class="w-full border p-2 rounded text-sm">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+    </main>
+
+    <script>
+        // 頁面切換邏輯
+        function switchTab(tabId) {
+            // 隱藏所有視圖
+            document.querySelectorAll('[id^="view-"]').forEach(el => el.classList.add('hidden'));
+            // 顯示目標視圖
+            document.getElementById('view-' + tabId).classList.remove('hidden');
+            
+            // 更新標題
+            const titles = {
+                'dashboard': '總覽儀表板',
+                'cases': '個案與衛教',
+                'iot': 'IoT 遠距監測',
+                'query': '雲端結果查詢',
+                'consult': '跨專業線上照會'
+            };
+            document.getElementById('pageTitle').innerText = titles[tabId];
+
+            // 更新選單樣式
+            document.querySelectorAll('.sidebar-item').forEach(el => el.classList.remove('active'));
+            event.currentTarget.classList.add('active');
+        }
+
+        // 初始化圖表 [cite: 77]
+        const ctx = document.getElementById('bpChart').getContext('2d');
+        new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: ['12/01', '12/03', '12/05', '12/07', '12/09', '12/11', '12/13'],
+                datasets: [{
+                    label: '平均收縮壓 (Systolic)',
+                    data: [135, 138, 142, 145, 139, 134, 136],
+                    borderColor: 'rgb(239, 68, 68)',
+                    tension: 0.1
+                }, {
+                    label: '平均舒張壓 (Diastolic)',
+                    data: [85, 88, 92, 90, 86, 82, 84],
+                    borderColor: 'rgb(59, 130, 246)',
+                    tension: 0.1
+                }]
+            },
+            options: {
+                responsive: true,
+                plugins: {
+                    legend: { position: 'top' },
+                }
+            }
+        });
+    </script>
+</body>
+</html>
