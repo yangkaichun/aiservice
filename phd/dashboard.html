@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>YangHome Health | Dashboard</title>
+    <title>YangHome Health | Yang Home</title>
     
     <link rel="manifest" href="manifest.json">
     <link rel="icon" type="image/x-icon" href="image/yanghealth.ico">
@@ -15,16 +15,6 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap" rel="stylesheet">
     <script src="https://unpkg.com/lucide@latest"></script>
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
-
-    <script>
-        // --- 權限檢查 (Authentication Guard) ---
-        // 如果沒有登入紀錄，直接踢回首頁
-        const savedSession = localStorage.getItem('healthTwinSession');
-        if (!savedSession) {
-            alert("🔒 存取被拒\n\n請先進行登入 (LINE/Google) 才能查看儀表板數據。");
-            window.location.href = 'index.html';
-        }
-    </script>
 
     <style>
         body { font-family: 'Inter', sans-serif; background-color: #F8FAFC; }
@@ -65,6 +55,16 @@
         </div>
     </div>
 
+    <div id="iosInstallModal" class="fixed inset-0 bg-black/60 z-50 hidden flex-col justify-end" onclick="closeIosModal()">
+        <div class="bg-white rounded-t-2xl p-6 pb-10 animate-fade-in relative" onclick="event.stopPropagation()">
+            <div class="flex justify-between items-start mb-4">
+                <div class="flex items-center gap-3"><img src="image/yanghealth.png" class="w-14 h-14 rounded-xl shadow-md"><div><h3 class="font-bold text-lg text-slate-800">安裝 HealthTwin</h3><p class="text-xs text-slate-500">Designed by Yang Home</p></div></div>
+                <button onclick="closeIosModal()" class="p-1 text-slate-400 hover:text-slate-600"><i data-lucide="x" class="w-6 h-6"></i></button>
+            </div>
+            <div class="space-y-4 text-sm text-slate-600"><p>在 iPhone 上，請依照以下步驟加入主畫面：</p><div class="flex items-center gap-3 p-3 bg-slate-50 rounded-lg"><span class="flex items-center justify-center w-6 h-6 bg-slate-200 rounded-full text-xs font-bold">1</span><span>點擊 <strong class="text-indigo-600">分享按鈕</strong> <i data-lucide="share" class="inline w-4 h-4"></i></span></div><div class="flex items-center gap-3 p-3 bg-slate-50 rounded-lg"><span class="flex items-center justify-center w-6 h-6 bg-slate-200 rounded-full text-xs font-bold">2</span><span>選擇 <strong class="text-indigo-600">加入主畫面</strong> <i data-lucide="plus-square" class="inline w-4 h-4"></i></span></div></div>
+        </div>
+    </div>
+
     <div id="mobileOverlay" class="fixed inset-0 bg-black/50 z-20 hidden lg:hidden" onclick="toggleSidebar()"></div>
 
     <aside id="sidebar" class="fixed inset-y-0 left-0 w-72 bg-white border-r border-slate-200 flex flex-col z-30 shadow-2xl lg:shadow-none transform -translate-x-full lg:translate-x-0 sidebar-transition lg:relative">
@@ -78,13 +78,9 @@
         </div>
         <div class="mt-auto p-4 border-t border-slate-100 bg-slate-50">
             <button onclick="getAIAnalysis()" class="w-full py-3 px-4 btn-gemini rounded-xl text-sm font-bold transition flex items-center justify-center gap-2 mb-3 shadow-md group"><i data-lucide="sparkles" class="w-4 h-4 group-hover:scale-110 transition-transform"></i>AI 分析 (Gemini)</button>
+            <button onclick="installApp()" id="installBtn" class="w-full py-2.5 px-4 bg-indigo-600 text-white hover:bg-indigo-700 rounded-lg text-sm font-medium transition flex items-center justify-center gap-2 mb-3 shadow-sm hidden"><i data-lucide="download" class="w-4 h-4"></i> 安裝 App</button>
             <a href="setting.html" class="w-full py-2.5 px-4 bg-white border border-slate-200 hover:bg-slate-100 text-slate-500 hover:text-slate-800 rounded-lg text-sm font-medium transition flex items-center justify-center gap-2 mb-2 shadow-sm group"><i data-lucide="settings-2" class="w-4 h-4 group-hover:rotate-90 transition-transform duration-500"></i> 管理者後台</a>
             <button onclick="fetchData()" class="w-full py-2.5 px-4 bg-white border border-slate-200 hover:bg-indigo-50 hover:text-indigo-600 text-slate-600 rounded-lg text-sm font-medium transition flex items-center justify-center gap-2 mb-3 shadow-sm"><i data-lucide="refresh-cw" class="w-4 h-4"></i> 重整數據</button>
-            
-            <button onclick="logout()" class="w-full py-2.5 px-4 bg-rose-50 border border-rose-100 text-rose-600 hover:bg-rose-100 rounded-lg text-sm font-medium transition flex items-center justify-center gap-2 mb-3 shadow-sm">
-                <i data-lucide="log-out" class="w-4 h-4"></i> 登出系統
-            </button>
-
             <p class="text-[10px] text-center text-slate-400 font-medium tracking-widest uppercase">Designed by Yang Home</p>
         </div>
     </aside>
@@ -194,9 +190,6 @@
         let bpChartInstance = null;
         let glucoseChartInstance = null;
         let currentChartRange = '30d'; 
-        
-        // 取得登入資訊
-        const loggedInSession = JSON.parse(localStorage.getItem('healthTwinSession'));
 
         document.addEventListener('DOMContentLoaded', () => {
             lucide.createIcons();
@@ -206,14 +199,6 @@
             document.getElementById('dl-start').valueAsDate = firstDay;
             fetchData();
         });
-
-        // 登出功能
-        function logout() {
-            if(confirm("確定要登出系統嗎？")) {
-                localStorage.removeItem('healthTwinSession');
-                window.location.href = 'index.html';
-            }
-        }
 
         function toggleSidebar() {
             const sidebar = document.getElementById('sidebar');
@@ -232,17 +217,6 @@
                 let json = JSON.parse(textData);
                 allData = json; 
                 renderUserList(json);
-                
-                // [自動選取] 如果登入者的名字在清單中，自動顯示他的資料
-                if (loggedInSession && loggedInSession.name) {
-                    const foundUser = json.find(u => u.name === loggedInSession.name);
-                    if (foundUser) {
-                        // 模擬點擊該使用者 (尋找對應的 div)
-                        // 但因為 renderUserList 是非同步後執行的，這裡直接呼叫 selectUser 最快
-                        selectUser(loggedInSession.name, null); // element 傳 null 沒關係
-                    }
-                }
-
             } catch (error) {
                 console.error(error);
                 document.getElementById('loadingState').innerHTML = `<div class="text-center text-rose-500"><p>讀取失敗</p><p class="text-xs">${error.message}</p></div>`;
@@ -258,14 +232,10 @@
             users.forEach((user, index) => {
                 const div = document.createElement('div');
                 const avatarText = user.length > 0 ? user.charAt(0).toUpperCase() : '?';
-                div.id = `user-item-${user}`; // 給個 ID 方便查找
                 div.className = `p-3 rounded-xl cursor-pointer hover:bg-indigo-50 hover:text-indigo-600 transition flex items-center gap-3 text-slate-600 font-medium group user-item border border-transparent`;
                 div.innerHTML = `<div class="w-8 h-8 rounded-full bg-slate-100 text-slate-500 flex items-center justify-center text-xs font-bold shrink-0">${avatarText}</div><span class="truncate">${user}</span>`;
                 div.onclick = () => { selectUser(user, div); if (window.innerWidth < 1024) toggleSidebar(); };
-                // 如果沒有登入者，預設選第一個
-                if (index === 0 && (!loggedInSession || !data.find(u => u.name === loggedInSession.name))) {
-                    selectUser(user, div);
-                }
+                if (index === 0) selectUser(user, div);
                 listContainer.appendChild(div);
             });
             document.getElementById('loadingState').classList.add('hidden');
@@ -274,16 +244,8 @@
         }
 
         function selectUser(userName, element) {
-            // UI Highlight 處理
             document.querySelectorAll('.user-item').forEach(el => { el.classList.remove('bg-indigo-50', 'text-indigo-600', 'shadow-sm', 'border-indigo-100'); el.classList.add('border-transparent'); });
-            
-            // 如果 element 是 null (自動選取時)，嘗試抓取 DOM
-            if (!element) {
-                element = document.getElementById(`user-item-${userName}`);
-            }
-            if (element) {
-                element.classList.add('bg-indigo-50', 'text-indigo-600', 'shadow-sm', 'border-indigo-100'); element.classList.remove('border-transparent');
-            }
+            element.classList.add('bg-indigo-50', 'text-indigo-600', 'shadow-sm', 'border-indigo-100'); element.classList.remove('border-transparent');
             
             let displayTitle = userName;
             currentUserData = allData.filter(d => d.name === userName);
