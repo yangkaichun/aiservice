@@ -16,15 +16,21 @@
     <script src="https://unpkg.com/lucide@latest"></script>
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
 
+    <script>
+        // --- 權限檢查 (Authentication Guard) ---
+        const savedSession = localStorage.getItem('healthTwinSession');
+        if (!savedSession) {
+            alert("🔒 存取被拒\n\n請先進行登入 (LINE/Google) 才能查看儀表板數據。");
+            window.location.href = 'index.html';
+        }
+    </script>
+
     <style>
         body { font-family: 'Inter', sans-serif; background-color: #F8FAFC; }
         .glass-card { background: rgba(255, 255, 255, 0.95); backdrop-filter: blur(10px); border: 1px solid rgba(255, 255, 255, 0.5); box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.03); }
         .animate-fade-in { animation: fadeIn 0.5s ease-out; }
         @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
         .sidebar-transition { transition: transform 0.3s ease-in-out; }
-        .bounce { animation: bounce 2s infinite; }
-        @keyframes bounce { 0%, 20%, 50%, 80%, 100% {transform: translateY(0);} 40% {transform: translateY(-10px);} 60% {transform: translateY(-5px);} }
-        input[type="date"]::-webkit-calendar-picker-indicator { cursor: pointer; opacity: 0.6; transition: 0.2s; }
         
         .btn-gemini { background: linear-gradient(90deg, #4F46E5, #9333EA); color: white; border: none; }
         .btn-gemini:hover { background: linear-gradient(90deg, #4338ca, #7e22ce); transform: translateY(-1px); box-shadow: 0 4px 12px rgba(147, 51, 234, 0.3); }
@@ -48,20 +54,17 @@
                 </div>
                 <button onclick="closeAiModal()" class="p-2 hover:bg-slate-100 rounded-full transition text-slate-400 hover:text-slate-600"><i data-lucide="x" class="w-6 h-6"></i></button>
             </div>
+            
             <div id="aiModalContent" class="p-6 overflow-y-auto text-slate-600 text-sm leading-relaxed scroll-smooth"></div>
-            <div class="p-4 border-t border-slate-100 bg-slate-50 flex justify-end">
+            
+            <div class="p-4 border-t border-slate-100 bg-slate-50 flex justify-between items-center">
+                <button id="btn-tts" onclick="toggleSpeech()" class="hidden px-4 py-2 text-indigo-600 hover:bg-indigo-50 rounded-lg font-bold text-sm transition flex items-center gap-2">
+                    <i data-lucide="volume-2" class="w-5 h-5"></i>
+                    <span id="btn-tts-text">語音播放</span>
+                </button>
+                
                 <button onclick="closeAiModal()" class="px-5 py-2 bg-white border border-slate-200 text-slate-600 rounded-lg hover:bg-slate-50 font-medium transition shadow-sm">關閉</button>
             </div>
-        </div>
-    </div>
-
-    <div id="iosInstallModal" class="fixed inset-0 bg-black/60 z-50 hidden flex-col justify-end" onclick="closeIosModal()">
-        <div class="bg-white rounded-t-2xl p-6 pb-10 animate-fade-in relative" onclick="event.stopPropagation()">
-            <div class="flex justify-between items-start mb-4">
-                <div class="flex items-center gap-3"><img src="image/yanghealth.png" class="w-14 h-14 rounded-xl shadow-md"><div><h3 class="font-bold text-lg text-slate-800">安裝 HealthTwin</h3><p class="text-xs text-slate-500">Designed by Yang Home</p></div></div>
-                <button onclick="closeIosModal()" class="p-1 text-slate-400 hover:text-slate-600"><i data-lucide="x" class="w-6 h-6"></i></button>
-            </div>
-            <div class="space-y-4 text-sm text-slate-600"><p>在 iPhone 上，請依照以下步驟加入主畫面：</p><div class="flex items-center gap-3 p-3 bg-slate-50 rounded-lg"><span class="flex items-center justify-center w-6 h-6 bg-slate-200 rounded-full text-xs font-bold">1</span><span>點擊 <strong class="text-indigo-600">分享按鈕</strong> <i data-lucide="share" class="inline w-4 h-4"></i></span></div><div class="flex items-center gap-3 p-3 bg-slate-50 rounded-lg"><span class="flex items-center justify-center w-6 h-6 bg-slate-200 rounded-full text-xs font-bold">2</span><span>選擇 <strong class="text-indigo-600">加入主畫面</strong> <i data-lucide="plus-square" class="inline w-4 h-4"></i></span></div></div>
         </div>
     </div>
 
@@ -78,9 +81,9 @@
         </div>
         <div class="mt-auto p-4 border-t border-slate-100 bg-slate-50">
             <button onclick="getAIAnalysis()" class="w-full py-3 px-4 btn-gemini rounded-xl text-sm font-bold transition flex items-center justify-center gap-2 mb-3 shadow-md group"><i data-lucide="sparkles" class="w-4 h-4 group-hover:scale-110 transition-transform"></i>AI 分析 (Gemini)</button>
-            <button onclick="installApp()" id="installBtn" class="w-full py-2.5 px-4 bg-indigo-600 text-white hover:bg-indigo-700 rounded-lg text-sm font-medium transition flex items-center justify-center gap-2 mb-3 shadow-sm hidden"><i data-lucide="download" class="w-4 h-4"></i> 安裝 App</button>
             <a href="setting.html" class="w-full py-2.5 px-4 bg-white border border-slate-200 hover:bg-slate-100 text-slate-500 hover:text-slate-800 rounded-lg text-sm font-medium transition flex items-center justify-center gap-2 mb-2 shadow-sm group"><i data-lucide="settings-2" class="w-4 h-4 group-hover:rotate-90 transition-transform duration-500"></i> 管理者後台</a>
             <button onclick="fetchData()" class="w-full py-2.5 px-4 bg-white border border-slate-200 hover:bg-indigo-50 hover:text-indigo-600 text-slate-600 rounded-lg text-sm font-medium transition flex items-center justify-center gap-2 mb-3 shadow-sm"><i data-lucide="refresh-cw" class="w-4 h-4"></i> 重整數據</button>
+            <button onclick="logout()" class="w-full py-2.5 px-4 bg-rose-50 border border-rose-100 text-rose-600 hover:bg-rose-100 rounded-lg text-sm font-medium transition flex items-center justify-center gap-2 mb-3 shadow-sm"><i data-lucide="log-out" class="w-4 h-4"></i> 登出系統</button>
             <p class="text-[10px] text-center text-slate-400 font-medium tracking-widest uppercase">Designed by Yang Home</p>
         </div>
     </aside>
@@ -183,13 +186,14 @@
     </main>
 
     <script>
-        const API_URL = 'https://script.google.com/macros/s/AKfycbzX0k_hP6poVZAxty89nQ6yJyuhNHw4M713G2IQolRPDQnNLFd_By3xqgfpQRtytOQT4A/exec'; 
+        const API_URL = 'https://script.google.com/macros/s/AKfycbzXgSXTSCnJbacWnskqBYcyXQYPP4myPI3cFl4IChwuwXJdozLroTFldSa_yRlMvYVAIA/exec'; 
         
         let allData = [];
         let currentUserData = [];
         let bpChartInstance = null;
         let glucoseChartInstance = null;
         let currentChartRange = '30d'; 
+        const loggedInSession = JSON.parse(localStorage.getItem('healthTwinSession'));
 
         document.addEventListener('DOMContentLoaded', () => {
             lucide.createIcons();
@@ -199,6 +203,14 @@
             document.getElementById('dl-start').valueAsDate = firstDay;
             fetchData();
         });
+
+        // 登出功能
+        function logout() {
+            if(confirm("確定要登出系統嗎？")) {
+                localStorage.removeItem('healthTwinSession');
+                window.location.href = 'index.html';
+            }
+        }
 
         function toggleSidebar() {
             const sidebar = document.getElementById('sidebar');
@@ -217,6 +229,11 @@
                 let json = JSON.parse(textData);
                 allData = json; 
                 renderUserList(json);
+                
+                if (loggedInSession && loggedInSession.name) {
+                    const foundUser = json.find(u => u.name === loggedInSession.name);
+                    if (foundUser) { selectUser(loggedInSession.name, null); }
+                }
             } catch (error) {
                 console.error(error);
                 document.getElementById('loadingState').innerHTML = `<div class="text-center text-rose-500"><p>讀取失敗</p><p class="text-xs">${error.message}</p></div>`;
@@ -232,10 +249,11 @@
             users.forEach((user, index) => {
                 const div = document.createElement('div');
                 const avatarText = user.length > 0 ? user.charAt(0).toUpperCase() : '?';
+                div.id = `user-item-${user}`; 
                 div.className = `p-3 rounded-xl cursor-pointer hover:bg-indigo-50 hover:text-indigo-600 transition flex items-center gap-3 text-slate-600 font-medium group user-item border border-transparent`;
                 div.innerHTML = `<div class="w-8 h-8 rounded-full bg-slate-100 text-slate-500 flex items-center justify-center text-xs font-bold shrink-0">${avatarText}</div><span class="truncate">${user}</span>`;
                 div.onclick = () => { selectUser(user, div); if (window.innerWidth < 1024) toggleSidebar(); };
-                if (index === 0) selectUser(user, div);
+                if (index === 0 && (!loggedInSession || !data.find(u => u.name === loggedInSession.name))) { selectUser(user, div); }
                 listContainer.appendChild(div);
             });
             document.getElementById('loadingState').classList.add('hidden');
@@ -245,7 +263,8 @@
 
         function selectUser(userName, element) {
             document.querySelectorAll('.user-item').forEach(el => { el.classList.remove('bg-indigo-50', 'text-indigo-600', 'shadow-sm', 'border-indigo-100'); el.classList.add('border-transparent'); });
-            element.classList.add('bg-indigo-50', 'text-indigo-600', 'shadow-sm', 'border-indigo-100'); element.classList.remove('border-transparent');
+            if (!element) { element = document.getElementById(`user-item-${userName}`); }
+            if (element) { element.classList.add('bg-indigo-50', 'text-indigo-600', 'shadow-sm', 'border-indigo-100'); element.classList.remove('border-transparent'); }
             
             let displayTitle = userName;
             currentUserData = allData.filter(d => d.name === userName);
@@ -330,31 +349,37 @@
         }
 
         // ==========================================
-        //  AI 分析功能 (呼叫 Code.gs 後端)
+        //  AI 分析功能
         // ==========================================
         async function getAIAnalysis() {
-            // 這裡取出純名字，方便傳給後端
             const userNameText = document.getElementById('currentUserName').innerText;
-            // 如果標題包含生日括號，分割取出名字
             const userName = userNameText.includes('(') ? userNameText.split(' (')[0] : userNameText;
 
             if (!userName || userName === "概況總覽") { alert("請先選擇一位用戶"); return; }
 
             const modal = document.getElementById('aiAnalysisModal');
             const content = document.getElementById('aiModalContent');
+            const btnTts = document.getElementById('btn-tts');
+            
+            // 重置按鈕狀態
+            btnTts.classList.add('hidden');
+            
             modal.classList.remove('hidden');
             modal.classList.add('flex');
             
             content.innerHTML = `<div class="flex flex-col items-center justify-center py-12 space-y-4"><div class="w-10 h-10 border-4 border-indigo-200 border-t-indigo-600 rounded-full animate-spin"></div><p class="text-slate-500 animate-pulse font-medium">Gemini 正在分析您的健康數據...</p></div>`;
 
             try {
-                // 呼叫後端 API
                 const response = await fetch(`${API_URL}?action=analyze&name=${encodeURIComponent(userName)}`);
                 const data = await response.json();
                 
                 if (data.result) {
                     const mdText = data.result;
                     content.innerHTML = `<div class="prose prose-sm max-w-none text-slate-700">${marked.parse(mdText)}</div>`;
+                    
+                    // 顯示語音按鈕
+                    btnTts.classList.remove('hidden');
+                    document.getElementById('btn-tts-text').innerText = "語音播放";
                 } else {
                     throw new Error("AI 未回傳結果");
                 }
@@ -365,13 +390,50 @@
             }
         }
 
+        // ==========================================
+        //  語音朗讀功能 (Text-to-Speech)
+        // ==========================================
+        function toggleSpeech() {
+            const btnText = document.getElementById('btn-tts-text');
+            const content = document.getElementById('aiModalContent').innerText; // 取得純文字內容
+
+            if (window.speechSynthesis.speaking) {
+                // 如果正在播放，則停止
+                window.speechSynthesis.cancel();
+                btnText.innerText = "語音播放";
+                return;
+            }
+
+            // 建立語音物件
+            const utterance = new SpeechSynthesisUtterance(content);
+            utterance.lang = 'zh-TW'; // 指定台灣中文
+            utterance.rate = 1;       // 語速正常
+
+            // 嘗試選用比較自然的 Google 中文語音 (如果有的話)
+            const voices = window.speechSynthesis.getVoices();
+            const twVoice = voices.find(v => v.lang.includes('zh-TW') || v.lang.includes('zh_TW'));
+            if (twVoice) utterance.voice = twVoice;
+
+            // 播放結束後的事件
+            utterance.onend = function() {
+                btnText.innerText = "語音播放";
+            };
+
+            // 開始播放
+            window.speechSynthesis.speak(utterance);
+            btnText.innerText = "停止播放";
+        }
+
         function closeAiModal() {
             const modal = document.getElementById('aiAnalysisModal');
             modal.classList.add('hidden');
             modal.classList.remove('flex');
+            
+            // 關閉視窗時停止語音
+            window.speechSynthesis.cancel();
         }
 
-        function downloadCSV() { /* ...保留原有功能... */ 
+        function downloadCSV() {
             const startDateVal = document.getElementById('dl-start').value; const endDateVal = document.getElementById('dl-end').value;
             if (!startDateVal || !endDateVal) { alert("請選擇完整的開始與結束日期"); return; }
             const startDate = new Date(startDateVal); const endDate = new Date(endDateVal); endDate.setHours(23, 59, 59);
