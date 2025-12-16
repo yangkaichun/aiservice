@@ -3,22 +3,22 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>新樓醫院 | 專業版個案管理平台 (Pro Case Mgmt Platform)</title>
+    <title>新樓醫院 | 專業版個案管理平台 V2.0</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
     <style>
         :root {
-            --primary-color: #006b5e; /* 醫療綠/藍色系 */
+            --primary-color: #006b5e;
             --secondary-color: #f8f9fa;
-            --alert-color: #dc3545;
-            --sidebar-width: 250px;
+            --sidebar-width: 260px;
         }
 
         body {
             font-family: 'Segoe UI', 'Microsoft JhengHei', sans-serif;
             background-color: #f4f6f9;
+            overflow-x: hidden;
         }
 
         /* 側邊欄設計 */
@@ -32,6 +32,7 @@
             color: white;
             padding-top: 20px;
             z-index: 1000;
+            transition: all 0.3s;
         }
 
         .sidebar-header {
@@ -42,81 +43,78 @@
 
         .nav-link {
             color: rgba(255,255,255,0.8);
-            padding: 15px 20px;
-            font-size: 1.1rem;
+            padding: 15px 25px;
+            font-size: 1rem;
+            cursor: pointer;
+            transition: 0.2s;
         }
 
         .nav-link:hover, .nav-link.active {
             color: white;
-            background-color: rgba(255,255,255,0.1);
-            border-left: 4px solid #00d2b5;
+            background-color: rgba(255,255,255,0.15);
+            border-left: 5px solid #00d2b5;
+        }
+
+        .nav-link i {
+            width: 25px;
+            text-align: center;
         }
 
         /* 主要內容區域 */
         .main-content {
             margin-left: var(--sidebar-width);
-            padding: 20px;
+            padding: 25px;
+            transition: all 0.3s;
         }
 
-        /* 卡片樣式 */
+        /* 頁面切換控制 */
+        .view-section {
+            display: none; /* 預設隱藏所有區塊 */
+            animation: fadeIn 0.4s;
+        }
+        
+        .view-section.active {
+            display: block; /* 顯示當前區塊 */
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        /* 卡片與元件樣式 */
         .stat-card {
             border: none;
-            border-radius: 10px;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+            border-radius: 12px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.05);
             transition: transform 0.2s;
         }
-        
-        .stat-card:hover {
-            transform: translateY(-5px);
-        }
+        .stat-card:hover { transform: translateY(-5px); }
 
-        .icon-box {
-            width: 50px;
-            height: 50px;
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 1.5rem;
+        .status-badge {
+            padding: 5px 10px;
+            border-radius: 20px;
+            font-size: 0.85rem;
+            font-weight: 500;
         }
+        .status-pending { background-color: #fff3cd; color: #856404; }
+        .status-accepted { background-color: #d4edda; color: #155724; }
+        .status-rejected { background-color: #f8d7da; color: #721c24; }
 
-        /* 表格樣式 */
-        .patient-table th {
-            background-color: #e9ecef;
-            color: #495057;
-        }
-
-        /* 狀態標籤 */
-        .badge-risk-high {
-            background-color: #ffebee;
-            color: #c62828;
-            border: 1px solid #ffcdd2;
+        .iot-card-header {
+            border-bottom: 1px solid #eee;
+            padding-bottom: 10px;
+            margin-bottom: 10px;
         }
         
-        .badge-source-iot {
-            background-color: #e3f2fd;
-            color: #1565c0;
-            border: 1px solid #bbdefb;
-        }
-
-        /* 模擬 AI 區塊 (Phase 2) */
-        .ai-suggestion-box {
-            background: linear-gradient(135deg, #f3e5f5 0%, #fff 100%);
-            border-left: 4px solid #9c27b0;
+        /* 視訊門診樣式 */
+        .video-slot {
+            border-left: 4px solid var(--primary-color);
+            background: white;
             padding: 15px;
-            margin-top: 10px;
-            display: none; /* 預設隱藏 */
-        }
-
-        /* 頂部導航 */
-        .top-navbar {
-            background-color: white;
+            margin-bottom: 15px;
+            border-radius: 5px;
             box-shadow: 0 2px 5px rgba(0,0,0,0.05);
-            padding: 10px 20px;
-            margin-bottom: 20px;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
         }
     </style>
 </head>
@@ -124,343 +122,412 @@
 
 <nav class="sidebar">
     <div class="sidebar-header">
-        <h4><i class="fas fa-hospital-alt me-2"></i>新樓醫院</h4>
-        <small>個案管理平台 V1.0</small>
+        <h4><i class="fas fa-hospital-symbol me-2"></i>新樓醫院</h4>
+        <div class="small opacity-75">個案管理平台 (Pro)</div>
     </div>
-    <ul class="nav flex-column mt-3">
+    <ul class="nav flex-column mt-4" id="sidebarMenu">
         <li class="nav-item">
-            <a class="nav-link active" href="#"><i class="fas fa-tachometer-alt me-3"></i>總覽儀表板</a>
+            <a class="nav-link active" onclick="switchView('dashboard')">
+                <i class="fas fa-tachometer-alt me-2"></i>總覽儀表板
+            </a>
         </li>
         <li class="nav-item">
-            <a class="nav-link" href="#"><i class="fas fa-user-injured me-3"></i>病患列表 (FHIR)</a>
+            <a class="nav-link" onclick="switchView('patients')">
+                <i class="fas fa-user-injured me-2"></i>病患列表 (FHIR)
+            </a>
         </li>
         <li class="nav-item">
-            <a class="nav-link" href="#"><i class="fas fa-notes-medical me-3"></i>跨院轉診管理</a>
+            <a class="nav-link" onclick="switchView('referrals')">
+                <i class="fas fa-exchange-alt me-2"></i>跨院轉診管理
+            </a>
         </li>
         <li class="nav-item">
-            <a class="nav-link" href="#"><i class="fas fa-heartbeat me-3"></i>IoT 遠距監控</a>
+            <a class="nav-link" onclick="switchView('iot')">
+                <i class="fas fa-heartbeat me-2"></i>IoT 遠距監控
+            </a>
         </li>
         <li class="nav-item">
-            <a class="nav-link" href="#"><i class="fas fa-book-medical me-3"></i>衛教推播 (CMS)</a>
+            <a class="nav-link" onclick="switchView('video')">
+                <i class="fas fa-video me-2"></i>視訊門診管理 <span class="badge bg-danger ms-2">Live</span>
+            </a>
         </li>
-        <li class="nav-item mt-5">
-            <a class="nav-link text-warning" href="#"><i class="fas fa-robot me-3"></i>AI 輔助判讀 (Phase 2)</a>
+        <li class="nav-item mt-4 border-top border-secondary pt-2">
+            <a class="nav-link text-warning" href="#">
+                <i class="fas fa-robot me-2"></i>AI 輔助決策 (Phase 2)
+            </a>
         </li>
     </ul>
 </nav>
 
 <div class="main-content">
     
-    <div class="top-navbar rounded">
+    <div class="d-flex justify-content-between align-items-center mb-4 bg-white p-3 rounded shadow-sm">
+        <h5 class="m-0 text-dark" id="pageTitle">總覽儀表板</h5>
         <div class="d-flex align-items-center">
-            <h5 class="m-0 text-secondary">今日概況 | 2025-12-16</h5>
-        </div>
-        <div class="d-flex align-items-center">
-            <div class="me-3 position-relative">
-                <i class="fas fa-bell text-secondary fa-lg"></i>
-                <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger">
-                    3
-                    <span class="visually-hidden">unread messages</span>
-                </span>
-            </div>
-            <div class="dropdown">
-                <button class="btn btn-outline-secondary dropdown-toggle border-0" type="button">
-                    <img src="https://via.placeholder.com/30" class="rounded-circle me-2">
-                    個管師：林小美 (N4321)
-                </button>
+            <button class="btn btn-outline-secondary btn-sm me-3 position-relative">
+                <i class="fas fa-bell"></i>
+                <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger">5</span>
+            </button>
+            <div class="d-flex align-items-center">
+                <div class="bg-primary text-white rounded-circle d-flex align-items-center justify-content-center me-2" style="width:35px; height:35px;">L</div>
+                <small class="fw-bold">個管師：林小美 (N4321)</small>
             </div>
         </div>
     </div>
 
-    <div class="row g-4 mb-4">
-        <div class="col-md-3">
-            <div class="card stat-card h-100">
-                <div class="card-body d-flex align-items-center">
-                    <div class="icon-box bg-primary bg-opacity-10 text-primary me-3">
-                        <i class="fas fa-users"></i>
+    <div id="view-dashboard" class="view-section active">
+        <div class="row g-4 mb-4">
+            <div class="col-md-3">
+                <div class="card stat-card h-100 p-3">
+                    <div class="d-flex justify-content-between">
+                        <div>
+                            <h6 class="text-muted">待處理轉診</h6>
+                            <h3>8</h3>
+                        </div>
+                        <div class="text-warning fs-1"><i class="fas fa-ambulance"></i></div>
                     </div>
-                    <div>
-                        <h6 class="text-muted mb-0">管理個案總數</h6>
-                        <h3 class="mb-0">1,248</h3>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="card stat-card h-100 p-3">
+                    <div class="d-flex justify-content-between">
+                        <div>
+                            <h6 class="text-muted">IoT 紅燈告警</h6>
+                            <h3 class="text-danger">12</h3>
+                        </div>
+                        <div class="text-danger fs-1"><i class="fas fa-exclamation-triangle"></i></div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="card stat-card h-100 p-3">
+                    <div class="d-flex justify-content-between">
+                        <div>
+                            <h6 class="text-muted">今日視訊預約</h6>
+                            <h3>5</h3>
+                        </div>
+                        <div class="text-primary fs-1"><i class="fas fa-video"></i></div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="card stat-card h-100 p-3">
+                    <div class="d-flex justify-content-between">
+                        <div>
+                            <h6 class="text-muted">本月收案數</h6>
+                            <h3>1,248</h3>
+                        </div>
+                        <div class="text-success fs-1"><i class="fas fa-users"></i></div>
                     </div>
                 </div>
             </div>
         </div>
-        <div class="col-md-3">
-            <div class="card stat-card h-100 border-danger border-start border-4">
-                <div class="card-body d-flex align-items-center">
-                    <div class="icon-box bg-danger bg-opacity-10 text-danger me-3">
-                        <i class="fas fa-exclamation-triangle"></i>
-                    </div>
-                    <div>
-                        <h6 class="text-muted mb-0">IoT 異常告警</h6>
-                        <h3 class="mb-0 text-danger">12</h3>
-                        <small class="text-muted">Rule Engine 觸發</small>
-                    </div>
+        <div class="card shadow-sm p-3">
+            <h6><i class="fas fa-chart-line me-2"></i>本週收案與轉診趨勢</h6>
+            <canvas id="dashboardChart" height="80"></canvas>
+        </div>
+    </div>
+
+    <div id="view-patients" class="view-section">
+        <div class="card shadow-sm">
+            <div class="card-header bg-white py-3 d-flex justify-content-between">
+                <div class="input-group" style="width: 300px;">
+                    <span class="input-group-text bg-light"><i class="fas fa-search"></i></span>
+                    <input type="text" class="form-control" placeholder="輸入病歷號或姓名搜尋...">
+                </div>
+                <button class="btn btn-primary"><i class="fas fa-plus me-1"></i> 新增個案 (FHIR)</button>
+            </div>
+            <div class="card-body p-0">
+                <table class="table table-hover align-middle mb-0">
+                    <thead class="bg-light">
+                        <tr>
+                            <th>病歷號 (MRN)</th>
+                            <th>姓名</th>
+                            <th>性別/年齡</th>
+                            <th>主要診斷 (ICD-10)</th>
+                            <th>收案計畫</th>
+                            <th>最近回診</th>
+                            <th>管理</th>
+                        </tr>
+                    </thead>
+                    <tbody id="patientListBody">
+                        </tbody>
+                </table>
+            </div>
+            <div class="card-footer bg-white">
+                <nav><ul class="pagination justify-content-end mb-0"><li class="page-item disabled"><a class="page-link">上一頁</a></li><li class="page-item active"><a class="page-link">1</a></li><li class="page-item"><a class="page-link">2</a></li><li class="page-item"><a class="page-link">下一頁</a></li></ul></nav>
+            </div>
+        </div>
+    </div>
+
+    <div id="view-referrals" class="view-section">
+        <div class="row mb-3">
+            <div class="col-12">
+                <div class="btn-group">
+                    <button class="btn btn-outline-primary active">轉入申請 (Inbound)</button>
+                    <button class="btn btn-outline-primary">轉出追蹤 (Outbound)</button>
                 </div>
             </div>
         </div>
-        <div class="col-md-3">
-            <div class="card stat-card h-100">
-                <div class="card-body d-flex align-items-center">
-                    <div class="icon-box bg-success bg-opacity-10 text-success me-3">
-                        <i class="fas fa-exchange-alt"></i>
-                    </div>
-                    <div>
-                        <h6 class="text-muted mb-0">本週診所轉入</h6>
-                        <h3 class="mb-0">45</h3>
-                        <small class="text-muted">雙向轉診機制</small>
-                    </div>
-                </div>
+        <div class="card shadow-sm">
+            <div class="card-body p-0">
+                <table class="table table-hover align-middle">
+                    <thead class="bg-light">
+                        <tr>
+                            <th>狀態</th>
+                            <th>轉出單位 (來源)</th>
+                            <th>病患姓名</th>
+                            <th>轉診單號</th>
+                            <th>轉診原因</th>
+                            <th>申請日期</th>
+                            <th>操作</th>
+                        </tr>
+                    </thead>
+                    <tbody id="referralListBody">
+                        </tbody>
+                </table>
             </div>
         </div>
-        <div class="col-md-3">
-            <div class="card stat-card h-100">
-                <div class="card-body d-flex align-items-center">
-                    <div class="icon-box bg-info bg-opacity-10 text-info me-3">
-                        <i class="fas fa-tasks"></i>
+    </div>
+
+    <div id="view-iot" class="view-section">
+        <div class="d-flex justify-content-between mb-3">
+            <div>
+                <button class="btn btn-danger me-2"><i class="fas fa-filter me-1"></i> 僅顯示異常 (Critical)</button>
+                <button class="btn btn-outline-secondary"><i class="fas fa-sync me-1"></i> Refresh</button>
+            </div>
+            <small class="text-muted align-self-center">資料更新時間: Just now</small>
+        </div>
+        
+        <div class="row g-4" id="iotCardsContainer">
+            </div>
+    </div>
+
+    <div id="view-video" class="view-section">
+        <div class="row">
+            <div class="col-md-8">
+                <div class="card shadow-sm mb-4">
+                    <div class="card-header bg-white py-3">
+                        <h6 class="m-0"><i class="fas fa-calendar-alt me-2"></i>今日診次 (2025-12-16 下午診)</h6>
                     </div>
-                    <div>
-                        <h6 class="text-muted mb-0">衛教達成率</h6>
-                        <h3 class="mb-0">88%</h3>
-                        <small class="text-muted">App 互動回饋</small>
-                    </div>
+                    <div class="card-body" id="videoListContainer">
+                        </div>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="card bg-dark text-white text-center p-4">
+                    <i class="fas fa-video fa-3x mb-3 text-info"></i>
+                    <h5>測試視訊設備</h5>
+                    <p class="text-muted small">在開始門診前，請先測試您的麥克風與鏡頭。</p>
+                    <button class="btn btn-outline-info btn-sm">開始測試</button>
                 </div>
             </div>
         </div>
     </div>
 
-    <div class="row">
-        <div class="col-lg-8">
-            <div class="card shadow-sm">
-                <div class="card-header bg-white py-3 d-flex justify-content-between align-items-center">
-                    <h5 class="mb-0 text-primary"><i class="fas fa-list-ul me-2"></i>即時異常監控列表 (Real-time Alerts)</h5>
-                    <button class="btn btn-sm btn-outline-primary"><i class="fas fa-sync-alt"></i> FHIR Sync</button>
-                </div>
-                <div class="card-body p-0">
-                    <table class="table table-hover align-middle mb-0 patient-table">
-                        <thead>
-                            <tr>
-                                <th>狀態</th>
-                                <th>病歷號 (MRN)</th>
-                                <th>姓名</th>
-                                <th>異常項目 (Observation)</th>
-                                <th>數值</th>
-                                <th>來源</th>
-                                <th>操作</th>
-                            </tr>
-                        </thead>
-                        <tbody id="patientTableBody">
-                            </tbody>
-                    </table>
-                </div>
-            </div>
-        </div>
-
-        <div class="col-lg-4">
-            <div class="card shadow-sm h-100">
-                <div class="card-header bg-white py-3">
-                    <h5 class="mb-0">生理數據趨勢 (IoT Trends)</h5>
-                </div>
-                <div class="card-body">
-                    <div class="text-center mb-3" id="noSelectionMsg">
-                        <p class="text-muted mt-5">請從左側點擊病患以查看詳細數據</p>
-                        <i class="fas fa-chart-line fa-3x text-light"></i>
-                    </div>
-                    
-                    <div id="patientDetail" style="display:none;">
-                        <div class="d-flex justify-content-between align-items-center mb-3">
-                            <h4 id="detailName">陳大明</h4>
-                            <span class="badge bg-secondary">男 / 65歲</span>
-                        </div>
-                        
-                        <canvas id="iotChart" width="400" height="250"></canvas>
-                        
-                        <div class="mt-4">
-                            <h6><i class="fas fa-pills me-2"></i>目前用藥 (MedicationRequest)</h6>
-                            <ul class="list-group list-group-flush small" id="medList">
-                                <li class="list-group-item">Amlodipine 5mg (每日一次)</li>
-                                <li class="list-group-item">Metformin 500mg (每日兩次)</li>
-                            </ul>
-                        </div>
-
-                        <div class="d-grid gap-2 mt-4">
-                            <button class="btn btn-outline-purple w-100" onclick="runAiCheck()" style="border-color: #9c27b0; color: #9c27b0;">
-                                <i class="fas fa-magic me-2"></i>執行 AI 藥物交互作用分析
-                            </button>
-                        </div>
-
-                        <div id="aiResult" class="ai-suggestion-box rounded">
-                            <h6><i class="fas fa-exclamation-circle me-2"></i>AI 分析結果 (Phase 2)</h6>
-                            <p class="mb-0 small text-dark">偵測到潛在交互作用：<strong>Amlodipine</strong> 與 <strong>葡萄柚攝取</strong> 可能增加低血壓風險。建議發送衛教單張 [Diet-05]。</p>
-                            <button class="btn btn-sm btn-dark mt-2">推播衛教至 App</button>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
-</div>
-
-<div class="modal fade" id="educationModal" tabindex="-1">
-  <div class="modal-dialog">
-    <div class="modal-content">
-      <div class="modal-header">
-        <h5 class="modal-title">推播衛教內容</h5>
-        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-      </div>
-      <div class="modal-body">
-        <p>確認推播以下內容給 <strong>陳大明</strong>？</p>
-        <div class="border p-2 rounded bg-light">
-            <i class="far fa-file-pdf text-danger me-2"></i>
-            <strong>高血壓飲食控制指南.pdf</strong>
-        </div>
-      </div>
-      <div class="modal-footer">
-        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">取消</button>
-        <button type="button" class="btn btn-primary">確認發送</button>
-      </div>
-    </div>
-  </div>
 </div>
 
 <script>
-    // 模擬病患數據 (對應 FHIR Bundle 結構概念)
-    const mockPatients = [
-        {
-            id: 'P10245',
-            name: '陳大明',
-            age: 65,
-            alertType: 'High Blood Pressure',
-            value: '168/95 mmHg',
-            source: 'Omron BP (Home)',
-            isCritical: true,
-            bpHistory: [135, 140, 142, 155, 160, 168], // 模擬趨勢數據
-            meds: ['Amlodipine 5mg', 'Metformin 500mg']
-        },
-        {
-            id: 'P10246',
-            name: '李淑芬',
-            age: 72,
-            alertType: 'High Glucose',
-            value: '210 mg/dL',
-            source: 'Fora GD40 (Clinic)',
-            isCritical: true,
-            bpHistory: [120, 122, 118, 125, 130, 128],
-            meds: ['Insulin Glargine', 'Aspirin']
-        },
-        {
-            id: 'P10247',
-            name: '王小虎',
-            age: 45,
-            alertType: 'Arrhythmia',
-            value: 'Irregular',
-            source: 'Apple Watch',
-            isCritical: false,
-            bpHistory: [110, 115, 112, 118, 115, 120],
-            meds: ['Bisoprolol']
-        }
+    // --- 模擬資料庫 (Mock Data) ---
+
+    // 1. 病患列表資料
+    const mockPatientsList = [
+        { id: 'P25001', name: '王大明', gender: '男', age: 65, diag: 'E11.9 (第2型糖尿病)', plan: '糖尿病共照網', lastVisit: '2025-12-10' },
+        { id: 'P25002', name: '林美麗', gender: '女', age: 58, diag: 'I10 (高血壓)', plan: '居家血壓管理', lastVisit: '2025-12-14' },
+        { id: 'P25003', name: '張志豪', gender: '男', age: 42, diag: 'J45 (氣喘)', plan: '一般追蹤', lastVisit: '2025-11-20' },
+        { id: 'P25004', name: '陳小芬', gender: '女', age: 70, diag: 'I50 (心臟衰竭)', plan: '遠距心臟監控', lastVisit: '2025-12-15' },
+        { id: 'P25005', name: '吳進財', gender: '男', age: 62, diag: 'N18.3 (慢性腎臟病)', plan: '腎臟病前期照護', lastVisit: '2025-10-05' },
     ];
 
-    // 初始化表格
-    function renderTable() {
-        const tbody = document.getElementById('patientTableBody');
-        tbody.innerHTML = '';
+    // 2. 轉診管理資料
+    const mockReferrals = [
+        { status: 'pending', source: '陳耳鼻喉科診所', name: '李國強', refId: 'REF-2025-088', reason: '疑似鼻咽腫瘤，需進一步切片', date: '2025-12-16' },
+        { status: 'accepted', source: '安心家醫科', name: '王大明', refId: 'REF-2025-085', reason: '血糖控制不佳，轉介新陳代謝科', date: '2025-12-15' },
+        { status: 'accepted', source: '康寧診所', name: '黃小玉', refId: 'REF-2025-082', reason: '胸痛，懷疑心絞痛', date: '2025-12-14' },
+        { status: 'rejected', source: '美好診所', name: '測試病患A', refId: 'REF-2025-001', reason: '資料缺漏', date: '2025-12-10' },
+    ];
 
-        mockPatients.forEach(p => {
-            const riskBadge = p.isCritical 
-                ? '<span class="badge badge-risk-high"><i class="fas fa-exclamation-circle me-1"></i>高風險</span>' 
-                : '<span class="badge bg-warning text-dark">需注意</span>';
-            
-            const row = `
-                <tr onclick="loadPatient('${p.id}')" style="cursor: pointer;">
-                    <td>${riskBadge}</td>
-                    <td>${p.id}</td>
-                    <td class="fw-bold">${p.name}</td>
-                    <td class="text-danger">${p.alertType}</td>
-                    <td>${p.value}</td>
-                    <td><span class="badge badge-source-iot">${p.source}</span></td>
-                    <td>
-                        <button class="btn btn-sm btn-outline-secondary" title="FHIR Resource"><i class="fas fa-code"></i></button>
-                        <button class="btn btn-sm btn-primary" data-bs-toggle="modal" data-bs-target="#educationModal"><i class="fas fa-paper-plane"></i></button>
-                    </td>
-                </tr>
-            `;
-            tbody.innerHTML += row;
-        });
+    // 3. IoT 監控資料 (包含正常與異常)
+    const mockIoTData = [
+        { name: '王大明', type: '血壓', value: '168/98', unit: 'mmHg', status: 'danger', time: '10分鐘前', device: 'Omron BP' },
+        { name: '陳小芬', type: '心率', value: '110', unit: 'bpm', status: 'danger', time: '5分鐘前', device: 'Apple Watch' },
+        { name: '林美麗', type: '血糖', value: '115', unit: 'mg/dL', status: 'success', time: '1小時前', device: 'Fora GD40' },
+        { name: '張志豪', type: '血氧', value: '98', unit: '%', status: 'success', time: '20分鐘前', device: 'Garmin' },
+        { name: '吳進財', type: '體重', value: '70.5', unit: 'kg', status: 'warning', time: '今早', device: 'Mi Scale' },
+    ];
+
+    // 4. 視訊門診資料
+    const mockVideoAppts = [
+        { time: '14:00 - 14:15', name: '林美麗', purpose: '高血壓用藥調整回診', status: 'ready' },
+        { time: '14:20 - 14:35', name: '張志豪', purpose: '氣喘症狀諮詢', status: 'waiting' },
+        { time: '14:40 - 14:55', name: '未知病患', purpose: '初診諮詢', status: 'future' },
+    ];
+
+
+    // --- 渲染函式 (Rendering Functions) ---
+
+    // 初始化與切換頁面
+    function switchView(viewId) {
+        // 1. 隱藏所有區塊
+        document.querySelectorAll('.view-section').forEach(el => el.classList.remove('active'));
+        // 2. 顯示目標區塊
+        document.getElementById(`view-${viewId}`).classList.add('active');
+        
+        // 3. 更新側邊欄 Active 狀態
+        document.querySelectorAll('.nav-link').forEach(el => el.classList.remove('active'));
+        event.currentTarget.classList.add('active');
+
+        // 4. 更新標題
+        const titles = {
+            'dashboard': '總覽儀表板',
+            'patients': '病患列表 (FHIR Resource List)',
+            'referrals': '跨院轉診管理 (Referral Request)',
+            'iot': 'IoT 遠距監控中心',
+            'video': '視訊門診管理'
+        };
+        document.getElementById('pageTitle').innerText = titles[viewId];
+
+        // 5. 觸發該頁面的資料渲染 (Lazy Render)
+        if(viewId === 'patients') renderPatients();
+        if(viewId === 'referrals') renderReferrals();
+        if(viewId === 'iot') renderIoT();
+        if(viewId === 'video') renderVideo();
     }
 
-    // Chart.js 實例
-    let myChart = null;
+    // Render: 病患列表
+    function renderPatients() {
+        const tbody = document.getElementById('patientListBody');
+        tbody.innerHTML = mockPatientsList.map(p => `
+            <tr>
+                <td><span class="badge bg-light text-dark border">${p.id}</span></td>
+                <td class="fw-bold text-primary">${p.name}</td>
+                <td>${p.gender} / ${p.age}</td>
+                <td>${p.diag}</td>
+                <td><span class="badge bg-info text-dark">${p.plan}</span></td>
+                <td>${p.lastVisit}</td>
+                <td>
+                    <button class="btn btn-sm btn-outline-primary">詳情</button>
+                    <button class="btn btn-sm btn-outline-secondary"><i class="fas fa-edit"></i></button>
+                </td>
+            </tr>
+        `).join('');
+    }
 
-    // 載入病患詳情
-    function loadPatient(pid) {
-        const patient = mockPatients.find(p => p.id === pid);
-        if (!patient) return;
+    // Render: 轉診管理
+    function renderReferrals() {
+        const tbody = document.getElementById('referralListBody');
+        tbody.innerHTML = mockReferrals.map(r => {
+            let badgeClass = r.status === 'pending' ? 'status-pending' : 
+                             r.status === 'accepted' ? 'status-accepted' : 'status-rejected';
+            let statusText = r.status === 'pending' ? '待接收' : 
+                             r.status === 'accepted' ? '已收案' : '退回';
+            
+            return `
+            <tr>
+                <td><span class="status-badge ${badgeClass}">${statusText}</span></td>
+                <td>${r.source}</td>
+                <td class="fw-bold">${r.name}</td>
+                <td class="small text-muted">${r.refId}</td>
+                <td>${r.reason}</td>
+                <td>${r.date}</td>
+                <td>
+                    ${r.status === 'pending' ? 
+                    `<button class="btn btn-sm btn-success me-1"><i class="fas fa-check"></i></button>
+                     <button class="btn btn-sm btn-danger"><i class="fas fa-times"></i></button>` : 
+                    `<button class="btn btn-sm btn-outline-secondary" disabled>已處理</button>`}
+                </td>
+            </tr>
+            `;
+        }).join('');
+    }
 
-        // UI 切換
-        document.getElementById('noSelectionMsg').style.display = 'none';
-        document.getElementById('patientDetail').style.display = 'block';
-        document.getElementById('aiResult').style.display = 'none'; // 重置 AI 區塊
+    // Render: IoT 監控
+    function renderIoT() {
+        const container = document.getElementById('iotCardsContainer');
+        container.innerHTML = mockIoTData.map(d => {
+            let borderClass = d.status === 'danger' ? 'border-danger border-2' : 
+                              d.status === 'warning' ? 'border-warning' : 'border-success';
+            let textClass = d.status === 'danger' ? 'text-danger' : 
+                            d.status === 'warning' ? 'text-warning' : 'text-success';
+            let icon = d.status === 'danger' ? 'fa-exclamation-circle' : 'fa-check-circle';
 
-        // 填入資料
-        document.getElementById('detailName').innerText = patient.name;
-        
-        // 更新藥物列表
-        const medList = document.getElementById('medList');
-        medList.innerHTML = patient.meds.map(m => `<li class="list-group-item"><i class="fas fa-tablets text-secondary me-2"></i>${m}</li>`).join('');
+            return `
+            <div class="col-md-4 col-lg-3">
+                <div class="card shadow-sm h-100 ${borderClass}">
+                    <div class="card-body">
+                        <div class="iot-card-header d-flex justify-content-between align-items-center">
+                            <h5 class="card-title m-0">${d.name}</h5>
+                            <span class="badge bg-light text-dark">${d.device}</span>
+                        </div>
+                        <div class="text-center py-3">
+                            <div class="display-6 fw-bold ${textClass}">${d.value}</div>
+                            <div class="text-muted">${d.type} (${d.unit})</div>
+                        </div>
+                        <div class="d-flex justify-content-between small text-muted mt-2">
+                            <span><i class="far fa-clock"></i> ${d.time}</span>
+                            <span class="${textClass}"><i class="fas ${icon}"></i> ${d.status === 'danger' ? '異常' : '正常'}</span>
+                        </div>
+                    </div>
+                    ${d.status === 'danger' ? '<div class="card-footer bg-danger text-white text-center py-1 small">立即處理</div>' : ''}
+                </div>
+            </div>
+            `;
+        }).join('');
+    }
 
-        // 繪製圖表
-        const ctx = document.getElementById('iotChart').getContext('2d');
-        
-        if (myChart) myChart.destroy(); // 銷毀舊圖表
+    // Render: 視訊門診
+    function renderVideo() {
+        const container = document.getElementById('videoListContainer');
+        container.innerHTML = mockVideoAppts.map(v => {
+            let btnClass = v.status === 'ready' ? 'btn-primary' : 'btn-secondary disabled';
+            let btnText = v.status === 'ready' ? '進入診間' : '等待中';
+            
+            return `
+            <div class="video-slot">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <div class="fw-bold fs-5"><i class="far fa-clock me-2"></i>${v.time}</div>
+                        <div class="text-primary mt-1">${v.name}</div>
+                        <div class="text-muted small">${v.purpose}</div>
+                    </div>
+                    <div>
+                        <button class="btn ${btnClass}">
+                            <i class="fas fa-video me-1"></i> ${btnText}
+                        </button>
+                    </div>
+                </div>
+            </div>
+            `;
+        }).join('');
+    }
 
-        myChart = new Chart(ctx, {
+    // 儀表板圖表 (使用 Chart.js)
+    document.addEventListener("DOMContentLoaded", function() {
+        // 初始化圖表
+        const ctx = document.getElementById('dashboardChart').getContext('2d');
+        new Chart(ctx, {
             type: 'line',
             data: {
-                labels: ['5天前', '4天前', '3天前', '2天前', '昨天', '今天'],
+                labels: ['週一', '週二', '週三', '週四', '週五', '週六', '週日'],
                 datasets: [{
-                    label: '收縮壓 (Systolic)',
-                    data: patient.bpHistory,
-                    borderColor: '#dc3545',
-                    backgroundColor: 'rgba(220, 53, 69, 0.1)',
-                    borderWidth: 2,
-                    fill: true,
-                    tension: 0.4
+                    label: '新增收案',
+                    data: [12, 19, 3, 5, 2, 3, 10],
+                    borderColor: '#006b5e',
+                    tension: 0.3
+                }, {
+                    label: '轉診申請',
+                    data: [5, 10, 2, 8, 1, 5, 2],
+                    borderColor: '#ffc107',
+                    tension: 0.3
                 }]
             },
             options: {
                 responsive: true,
-                plugins: {
-                    legend: { position: 'bottom' }
-                },
-                scales: {
-                    y: { beginAtZero: false, min: 100 }
-                }
+                maintainAspectRatio: false,
+                plugins: { legend: { position: 'bottom' } }
             }
         });
-    }
-
-    // 模擬 AI 運算 (Phase 2)
-    function runAiCheck() {
-        const btn = document.querySelector('.btn-outline-purple');
-        const resultBox = document.getElementById('aiResult');
-        
-        // 模擬 Loading
-        btn.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>分析中 (Connecting to Drug Interaction Service)...';
-        btn.disabled = true;
-
-        setTimeout(() => {
-            btn.innerHTML = '<i class="fas fa-check me-2"></i>分析完成';
-            btn.disabled = false;
-            // 顯示結果動畫
-            resultBox.style.display = 'block';
-            resultBox.classList.add('fade-in');
-        }, 1500);
-    }
-
-    // 啟動
-    document.addEventListener('DOMContentLoaded', renderTable);
+    });
 
 </script>
 
