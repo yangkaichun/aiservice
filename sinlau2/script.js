@@ -147,7 +147,7 @@ function renderVideo() {
     }).join('');
 }
 
-// --- 圖表初始化 (等待 DOM 載入完成) ---
+// --- 圖表初始化 (等待 DOM 載入完成.) ---
 document.addEventListener("DOMContentLoaded", function() {
     const ctx = document.getElementById('dashboardChart');
     if (ctx) {
