@@ -20,9 +20,9 @@
         // --- 權限檢查 (Authentication Guard) ---
         const savedSession = localStorage.getItem('healthTwinSession');
         if (!savedSession) {
-            // 自動建立測試帳號以防無法進入 (測試用)
-            const mockSession = { name: "Testing User", email: "test@example.com", picture: "", token: "mock-token" };
-            localStorage.setItem('healthTwinSession', JSON.stringify(mockSession));
+            // [修改] 若無登入資訊，強制跳轉回 login.html
+            alert("🔒 請先登入");
+            window.location.href = 'login.html';
         }
     </script>
 
@@ -72,7 +72,6 @@
     <div id="mobileOverlay" class="fixed inset-0 bg-black/50 z-20 hidden lg:hidden" onclick="toggleSidebar()"></div>
 
     <aside id="sidebar" class="fixed inset-y-0 left-0 w-72 bg-white border-r border-slate-200 flex flex-col z-30 shadow-2xl lg:shadow-none transform -translate-x-full lg:translate-x-0 sidebar-transition lg:relative">
-        
         <div class="p-6 border-b border-slate-100 flex justify-between items-center">
             <div><div class="flex items-center gap-2 text-indigo-600 font-bold text-xl"><i data-lucide="activity" class="w-6 h-6"></i>YangHome Health AI</div><p class="text-xs text-slate-400 mt-1">智慧醫療監測系統</p></div>
             <button onclick="toggleSidebar()" class="lg:hidden text-slate-400 hover:text-slate-600"><i data-lucide="x" class="w-6 h-6"></i></button>
@@ -260,19 +259,38 @@
                 const textData = await response.text();
                 let json = JSON.parse(textData);
                 allData = json; 
-                renderUserList(json);
                 
-                if (loggedInSession && loggedInSession.name) {
-                    const foundUser = json.find(u => u.name === loggedInSession.name);
-                    if (foundUser) { selectUser(loggedInSession.name, null); }
+                // [修正] 先傳入 null，讓列表渲染，再執行自動選取
+                // 這樣可以避免 renderUserList 內部預設選第一個
+                // 而是在這裡根據登入者決定選誰
+                
+                // 判定要預設選取的使用者
+                let targetUser = null;
+                if (loggedInSession) {
+                    // 1. 優先比對「姓名」
+                    if (json.some(u => u.name === loggedInSession.name)) {
+                        targetUser = loggedInSession.name;
+                    } 
+                    // 2. 其次比對「Email」
+                    else if (json.some(u => u.name === loggedInSession.email)) {
+                        targetUser = loggedInSession.email;
+                    }
                 }
+
+                renderUserList(json, targetUser);
+                
+                // 如果有找到對應的使用者，直接選取
+                if (targetUser) {
+                    selectUser(targetUser, null);
+                }
+
             } catch (error) {
                 console.error(error);
                 document.getElementById('loadingState').innerHTML = `<div class="text-center text-rose-500"><p>讀取失敗</p><p class="text-xs">${error.message}</p></div>`;
             }
         }
 
-        function renderUserList(data) {
+        function renderUserList(data, targetUser) {
             const users = [...new Set(data.map(item => item.name).filter(n => n))].sort();
             const listContainer = document.getElementById('userList');
             document.getElementById('userCount').innerText = users.length;
@@ -285,7 +303,11 @@
                 div.className = `p-3 rounded-xl cursor-pointer hover:bg-indigo-50 hover:text-indigo-600 transition flex items-center gap-3 text-slate-600 font-medium group user-item border border-transparent`;
                 div.innerHTML = `<div class="w-8 h-8 rounded-full bg-slate-100 text-slate-500 flex items-center justify-center text-xs font-bold shrink-0">${avatarText}</div><span class="truncate">${user}</span>`;
                 div.onclick = () => { selectUser(user, div); if (window.innerWidth < 1024) toggleSidebar(); };
-                if (index === 0 && (!loggedInSession || !data.find(u => u.name === loggedInSession.name))) { selectUser(user, div); }
+                
+                // [修正] 只有在「沒有指定目標用戶」時，才預設選第 1 個
+                if (index === 0 && !targetUser) { 
+                    selectUser(user, div); 
+                }
                 listContainer.appendChild(div);
             });
             document.getElementById('loadingState').classList.add('hidden');
