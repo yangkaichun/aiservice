@@ -17,10 +17,9 @@
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
 
     <script>
-        // --- 權限檢查 (Authentication Guard) ---
+        // --- 權限檢查 ---
         const savedSession = localStorage.getItem('healthTwinSession');
         if (!savedSession) {
-            // [修改] 若無登入資訊，強制跳轉回 login.html
             alert("🔒 請先登入");
             window.location.href = 'login.html';
         }
@@ -215,7 +214,7 @@
         document.addEventListener('DOMContentLoaded', () => {
             lucide.createIcons();
             
-            // [新增] 填充側邊欄登入者資訊
+            // SideBar 顯示登入者
             if (loggedInSession) {
                 document.getElementById('sidebar-user-name').innerText = loggedInSession.name;
                 
@@ -260,11 +259,7 @@
                 let json = JSON.parse(textData);
                 allData = json; 
                 
-                // [修正] 先傳入 null，讓列表渲染，再執行自動選取
-                // 這樣可以避免 renderUserList 內部預設選第一個
-                // 而是在這裡根據登入者決定選誰
-                
-                // 判定要預設選取的使用者
+                // [修正] 預設選取邏輯
                 let targetUser = null;
                 if (loggedInSession) {
                     // 1. 優先比對「姓名」
@@ -275,11 +270,15 @@
                     else if (json.some(u => u.name === loggedInSession.email)) {
                         targetUser = loggedInSession.email;
                     }
+                    // 3. 若都不在清單中（新用戶），仍然強制設定為登入者名稱（會顯示空數據）
+                    else {
+                        targetUser = loggedInSession.name;
+                    }
                 }
 
                 renderUserList(json, targetUser);
                 
-                // 如果有找到對應的使用者，直接選取
+                // 直接選取目標（無論是否有資料）
                 if (targetUser) {
                     selectUser(targetUser, null);
                 }
@@ -295,7 +294,12 @@
             const listContainer = document.getElementById('userList');
             document.getElementById('userCount').innerText = users.length;
             listContainer.innerHTML = '';
-            if (users.length === 0) { listContainer.innerHTML = '<div class="p-4 text-center text-sm text-slate-400">無資料</div>'; return; }
+            
+            // 即使沒資料也不要顯示「無資料」，保留空白或僅顯示登入者
+            if (users.length === 0) { 
+                listContainer.innerHTML = '<div class="p-4 text-center text-sm text-slate-400">目前無其他用戶數據</div>'; 
+            }
+
             users.forEach((user, index) => {
                 const div = document.createElement('div');
                 const avatarText = user.length > 0 ? user.charAt(0).toUpperCase() : '?';
@@ -304,7 +308,7 @@
                 div.innerHTML = `<div class="w-8 h-8 rounded-full bg-slate-100 text-slate-500 flex items-center justify-center text-xs font-bold shrink-0">${avatarText}</div><span class="truncate">${user}</span>`;
                 div.onclick = () => { selectUser(user, div); if (window.innerWidth < 1024) toggleSidebar(); };
                 
-                // [修正] 只有在「沒有指定目標用戶」時，才預設選第 1 個
+                // [修正] 絕對不要自動選取第 1 個，除非沒有指定 targetUser
                 if (index === 0 && !targetUser) { 
                     selectUser(user, div); 
                 }
@@ -316,12 +320,21 @@
         }
 
         function selectUser(userName, element) {
+            // UI Highlight
             document.querySelectorAll('.user-item').forEach(el => { el.classList.remove('bg-indigo-50', 'text-indigo-600', 'shadow-sm', 'border-indigo-100'); el.classList.add('border-transparent'); });
+            
+            // 嘗試抓取對應的 DOM (如果該用戶在列表中)
             if (!element) { element = document.getElementById(`user-item-${userName}`); }
             if (element) { element.classList.add('bg-indigo-50', 'text-indigo-600', 'shadow-sm', 'border-indigo-100'); element.classList.remove('border-transparent'); }
             
             let displayTitle = userName;
             currentUserData = allData.filter(d => d.name === userName);
+            
+            // [修正] 如果找不到，嘗試用 Email 再找一次 (容錯)
+            if (currentUserData.length === 0 && loggedInSession && userName === loggedInSession.name) {
+                 currentUserData = allData.filter(d => d.name === loggedInSession.email);
+            }
+
             currentUserData.sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp));
 
             const firstRecord = currentUserData.length > 0 ? currentUserData[0] : null;
@@ -344,7 +357,19 @@
         }
 
         function updateDashboard() {
-            if (currentUserData.length === 0) return;
+            // [修正] 如果沒資料，清空顯示 (Empty State)
+            if (currentUserData.length === 0) {
+                document.getElementById('val-sbp').innerText = '--';
+                document.getElementById('val-dbp').innerText = '--';
+                document.getElementById('val-pulse').innerText = '--';
+                document.getElementById('val-glucose').innerText = '--';
+                document.getElementById('status-sbp').innerText = '尚無資料';
+                document.getElementById('status-glucose').innerText = '尚無資料';
+                document.getElementById('historyTable').innerHTML = '<tr><td colspan="3" class="p-4 text-center text-slate-400 text-sm">目前沒有測量紀錄</td></tr>';
+                renderChart([]); // 清空圖表
+                return;
+            }
+
             const latest = currentUserData[currentUserData.length - 1];
             document.getElementById('val-sbp').innerText = latest.sbp || '--';
             document.getElementById('val-dbp').innerText = latest.dbp || '--';
