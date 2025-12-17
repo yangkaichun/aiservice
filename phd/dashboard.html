@@ -253,34 +253,51 @@
             try {
                 document.getElementById('loadingState').classList.remove('hidden');
                 document.getElementById('dashboardContent').classList.add('hidden');
-                const response = await fetch(API_URL);
-                if (!response.ok) throw new Error(`伺服器回應錯誤: ${response.status}`);
-                const textData = await response.text();
-                let json = JSON.parse(textData);
+                
+                // [核心修正] 同時請求「數據資料」與「使用者對照表 (getSettings)」
+                // 目的是將登入的 Email 對應到後台設定的「中文姓名」
+                const [dataRes, mapRes] = await Promise.all([
+                    fetch(API_URL), // 數據
+                    fetch(`${API_URL}?action=getSettings`) // 對照表 (Users Sheet)
+                ]);
+
+                if (!dataRes.ok || !mapRes.ok) throw new Error("伺服器回應錯誤");
+
+                const json = await dataRes.json(); // 健康數據
+                const usersMap = await mapRes.json(); // 使用者清單
+                
                 allData = json; 
                 
-                // [修正] 預設選取邏輯
+                // [自動對應邏輯]
                 let targetUser = null;
                 if (loggedInSession) {
-                    // 1. 優先比對「姓名」
-                    if (json.some(u => u.name === loggedInSession.name)) {
-                        targetUser = loggedInSession.name;
-                    } 
-                    // 2. 其次比對「Email」
-                    else if (json.some(u => u.name === loggedInSession.email)) {
-                        targetUser = loggedInSession.email;
-                    }
-                    // 3. 若都不在清單中（新用戶），仍然強制設定為登入者名稱（會顯示空數據）
-                    else {
-                        targetUser = loggedInSession.name;
+                    const userEmail = loggedInSession.email;
+                    
+                    // 1. 在對照表中尋找此 Email 的使用者
+                    const matchedUser = usersMap.find(u => u.email === userEmail);
+                    
+                    if (matchedUser) {
+                        // 找到了！使用他的「姓名」來篩選數據 (例如 "楊過")
+                        targetUser = matchedUser.name;
+                    } else {
+                        // 沒找到對照，則嘗試直接用 Email 或 Google 姓名篩選
+                        targetUser = userEmail;
+                        // 如果也沒有 Email 數據，試試看 Google Name
+                        if (!json.some(d => d.name === userEmail) && json.some(d => d.name === loggedInSession.name)) {
+                            targetUser = loggedInSession.name;
+                        }
                     }
                 }
 
+                // 渲染列表，傳入目標使用者以進行預設選取
                 renderUserList(json, targetUser);
                 
-                // 直接選取目標（無論是否有資料）
                 if (targetUser) {
                     selectUser(targetUser, null);
+                } else if(json.length > 0) {
+                    // 如果真的完全沒對應到，且也沒資料，保持空白或顯示歡迎
+                    document.getElementById('currentUserName').innerText = `Hi, ${loggedInSession.name}`;
+                    updateDashboard(); // 顯示空狀態
                 }
 
             } catch (error) {
@@ -295,7 +312,6 @@
             document.getElementById('userCount').innerText = users.length;
             listContainer.innerHTML = '';
             
-            // 即使沒資料也不要顯示「無資料」，保留空白或僅顯示登入者
             if (users.length === 0) { 
                 listContainer.innerHTML = '<div class="p-4 text-center text-sm text-slate-400">目前無其他用戶數據</div>'; 
             }
@@ -308,7 +324,7 @@
                 div.innerHTML = `<div class="w-8 h-8 rounded-full bg-slate-100 text-slate-500 flex items-center justify-center text-xs font-bold shrink-0">${avatarText}</div><span class="truncate">${user}</span>`;
                 div.onclick = () => { selectUser(user, div); if (window.innerWidth < 1024) toggleSidebar(); };
                 
-                // [修正] 絕對不要自動選取第 1 個，除非沒有指定 targetUser
+                // 只有在「沒有目標用戶」時，才預設選第 1 個 (fallback)
                 if (index === 0 && !targetUser) { 
                     selectUser(user, div); 
                 }
@@ -322,19 +338,12 @@
         function selectUser(userName, element) {
             // UI Highlight
             document.querySelectorAll('.user-item').forEach(el => { el.classList.remove('bg-indigo-50', 'text-indigo-600', 'shadow-sm', 'border-indigo-100'); el.classList.add('border-transparent'); });
-            
-            // 嘗試抓取對應的 DOM (如果該用戶在列表中)
             if (!element) { element = document.getElementById(`user-item-${userName}`); }
             if (element) { element.classList.add('bg-indigo-50', 'text-indigo-600', 'shadow-sm', 'border-indigo-100'); element.classList.remove('border-transparent'); }
             
             let displayTitle = userName;
             currentUserData = allData.filter(d => d.name === userName);
             
-            // [修正] 如果找不到，嘗試用 Email 再找一次 (容錯)
-            if (currentUserData.length === 0 && loggedInSession && userName === loggedInSession.name) {
-                 currentUserData = allData.filter(d => d.name === loggedInSession.email);
-            }
-
             currentUserData.sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp));
 
             const firstRecord = currentUserData.length > 0 ? currentUserData[0] : null;
