@@ -360,7 +360,12 @@
                 completeLogin(user) { this.currentUser = user; this.isLoggedIn = true; this.refreshData(); this.loading = false; },
                 logout() { localStorage.removeItem('currentUser'); window.location.href = 'login.html'; },
                 
-                async refreshData() { this.loading = true; await this.fetchData('patients'); await this.fetchData('observations'); this.loading = false; },
+                async refreshData() {
+                    this.loading = true;
+                    await this.fetchData('patients');
+                    await this.fetchData('observations');
+                    this.loading = false;
+                },
                 async fetchData(endpoint) { try { const res = await fetch(`${API_BASE_URL}?endpoint=${endpoint}`); const json = await res.json(); if (json.status === 'success') { if (endpoint === 'patients') this.patients = json.data; if (endpoint === 'observations') this.observations = json.data; } } catch (e) { console.error(e); } },
                 
                 openPatientDetail(patient) {
@@ -404,47 +409,58 @@
                     });
                 },
 
-                // *** 修正後的提交邏輯 (Optimistic UI) ***
+                // *** 關鍵修正：嚴格檢查回應並防止快取 ***
                 async submitAllMeasurements() {
                     this.loading = true;
-                    const now = new Date();
-                    const timestamp = now.getFullYear() + '-' + String(now.getMonth() + 1).padStart(2, '0') + '-' + String(now.getDate()).padStart(2, '0') + ' ' + String(now.getHours()).padStart(2, '0') + ':' + String(now.getMinutes()).padStart(2, '0');
-
+                    
                     const requests = [];
-                    const localNewObs = [];
+                    const localNewObs = []; // 樂觀更新暫存
+                    const timestamp = new Date().toISOString().slice(0, 16).replace('T', ' '); // YYYY-MM-DD HH:mm
 
-                    const addData = (code, value, unit) => {
-                        requests.push(this.sendSingleData(code, value, unit));
-                        localNewObs.push({ id: 'temp_' + Date.now() + Math.random(), patientId: this.selectedPatient.id, code: code, value: Number(value), unit: unit, timestamp: timestamp });
+                    // 輔助函式：建立請求並檢查回應
+                    const addData = async (code, value, unit) => {
+                        // 1. 加入快取防護 _t
+                        const params = new URLSearchParams({ 
+                            action: 'addObservation', 
+                            patientId: this.selectedPatient.id, 
+                            code: code, 
+                            value: value, 
+                            unit: unit,
+                            _t: new Date().getTime() 
+                        });
+                        
+                        const res = await fetch(`${API_BASE_URL}?${params.toString()}`);
+                        const json = await res.json();
+                        
+                        // 2. 嚴格檢查 Google Apps Script 回傳狀態
+                        if (json.status !== 'success') {
+                            throw new Error(json.message || '寫入失敗');
+                        }
+                        
+                        // 3. 準備樂觀更新數據
+                        localNewObs.push({ id: 'temp_'+Date.now(), patientId: this.selectedPatient.id, code: code, value: Number(value), unit: unit, timestamp: timestamp });
                     };
 
-                    if (this.form.sys) addData('systolic_bp', this.form.sys, 'mmHg');
-                    if (this.form.dia) addData('diastolic_bp', this.form.dia, 'mmHg');
-                    if (this.form.hr)  addData('heart_rate', this.form.hr, 'BPM');
-                    if (this.form.glu) { const code = this.form.timing.includes('空腹') ? 'glucose_ac' : 'glucose_pc'; addData(code, this.form.glu, 'mg/dL'); }
-
                     try {
-                        await Promise.all(requests);
-                        alert('數據上傳成功！');
-                        
-                        // 1. 立即更新前端資料 (Optimistic)
+                        // 依序檢查並發送
+                        if (this.form.sys) await addData('systolic_bp', this.form.sys, 'mmHg');
+                        if (this.form.dia) await addData('diastolic_bp', this.form.dia, 'mmHg');
+                        if (this.form.hr)  await addData('heart_rate', this.form.hr, 'BPM');
+                        if (this.form.glu) { const code = this.form.timing.includes('空腹') ? 'glucose_ac' : 'glucose_pc'; await addData(code, this.form.glu, 'mg/dL'); }
+
+                        // 全部成功後執行樂觀更新
                         this.observations.push(...localNewObs);
-                        
-                        // 2. 清空表單
-                        this.form = { timing: '起床空腹', sys: '', dia: '', hr: '', glu: '', note: '' };
-                        
-                        // 3. 立即重繪圖表
                         this.updatePatientData();
+                        
+                        alert('數據上傳成功！');
+                        this.form = { timing: '起床空腹', sys: '', dia: '', hr: '', glu: '', note: '' };
 
-                        // 4. (可選) 背景同步，但不阻擋 UI
-                        // this.fetchData('observations'); 
-
-                    } catch (e) { console.error(e); alert('上傳失敗'); } finally { this.loading = false; }
-                },
-
-                sendSingleData(code, value, unit) {
-                    const params = new URLSearchParams({ action: 'addObservation', patientId: this.selectedPatient.id, code: code, value: value, unit: unit });
-                    return fetch(`${API_BASE_URL}?${params.toString()}`);
+                    } catch (e) { 
+                        console.error(e); 
+                        alert('上傳失敗：' + e.message + '\n請確認後端程式碼已更新至最新版本 (V4)。'); 
+                    } finally { 
+                        this.loading = false; 
+                    }
                 },
                 
                 async submitPatientManual() { const p = new URLSearchParams({ action: 'addPatient', ...this.newPatient }); await fetch(`${API_BASE_URL}?${p}`); this.showAddPatientModal = false; this.refreshData(); },
