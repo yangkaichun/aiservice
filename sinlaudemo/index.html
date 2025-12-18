@@ -4,11 +4,15 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>新樓醫院專業版個案管理平台</title>
+    
     <link rel="icon" href="image/carepathicon.ico">
+
     <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
     <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    
     <script src="config.js"></script>
     
     <script>
@@ -105,7 +109,7 @@
                          <button v-if="currentTab === 'patients'" @click="showAddPatientModal = true" class="btn-gradient px-5 py-2 bg-gradient-to-r from-brand-blue to-indigo-600 text-white text-sm font-bold rounded-lg hover:shadow-lg transition flex items-center">
                              <i class="fa-solid fa-plus mr-2"></i> 新增個案
                          </button>
-                         <button @click="fetchData(currentTab)" class="w-10 h-10 flex items-center justify-center rounded-lg border border-gray-200 text-gray-400 hover:bg-blue-50 transition bg-white">
+                         <button @click="fetchData('patients')" class="w-10 h-10 flex items-center justify-center rounded-lg border border-gray-200 text-gray-400 hover:bg-blue-50 transition bg-white">
                              <i class="fa-solid fa-rotate-right" :class="{'fa-spin': loading}"></i>
                          </button>
                     </div>
@@ -132,13 +136,37 @@
                                     <div class="absolute right-4 bottom-4 w-12 h-12 bg-orange-50 rounded-full flex items-center justify-center text-brand-orange"><i class="fa-regular fa-clipboard text-xl"></i></div>
                                 </div>
                             </div>
+                            
+                            <div class="p-5 rounded-2xl bg-gradient-to-r from-yellow-50 to-white border border-yellow-100 flex items-start shadow-sm">
+                                <div class="p-2 bg-yellow-100 rounded-lg text-yellow-700 mr-4"><i class="fa-solid fa-bullhorn"></i></div>
+                                <div>
+                                    <h4 class="font-bold text-gray-800 text-sm">最新系統公告</h4>
+                                    <p class="text-sm text-gray-600 mt-1 leading-relaxed">FHIR 資料交換平台將於本週五晚間進行例行性維護，屆時跨院查詢功能可能暫停服務。</p>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div v-if="currentTab === 'system_notice'" class="bg-white rounded-2xl border border-gray-100 shadow-sm p-6">
+                            <h3 class="font-bold text-lg mb-4">公告與訊息推播</h3>
+                            <ul class="space-y-4">
+                                <li v-for="n in mockNotices" :key="n.id" class="border-b border-gray-50 pb-4 last:border-0">
+                                    <div class="flex justify-between items-start">
+                                        <div>
+                                            <span class="inline-block px-2 py-1 text-xs rounded bg-gray-100 text-gray-600 mb-1">{{ n.date }}</span>
+                                            <h4 class="font-bold text-gray-800">{{ n.title }}</h4>
+                                            <p class="text-sm text-gray-500 mt-1">{{ n.content }}</p>
+                                        </div>
+                                        <span class="text-xs font-bold px-2 py-1 rounded" :class="n.type === 'alert' ? 'bg-red-50 text-red-600' : 'bg-blue-50 text-blue-600'">{{ n.type === 'alert' ? '緊急' : '一般' }}</span>
+                                    </div>
+                                </li>
+                            </ul>
                         </div>
 
                         <div v-if="currentTab === 'patients'" class="h-full flex flex-col bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
                             <div class="p-4 border-b border-gray-100 flex items-center space-x-4 bg-gray-50/30">
                                 <div class="relative flex-1 max-w-md">
                                     <i class="fa-solid fa-magnifying-glass absolute left-3 top-3 text-gray-400"></i>
-                                    <input type="text" placeholder="搜尋..." class="w-full pl-10 pr-4 py-2.5 bg-white border border-gray-200 rounded-xl text-sm focus:ring-2 focus:ring-blue-100 outline-none">
+                                    <input type="text" placeholder="搜尋姓名、身分證或病歷號..." class="w-full pl-10 pr-4 py-2.5 bg-white border border-gray-200 rounded-xl text-sm focus:ring-2 focus:ring-blue-100 outline-none">
                                 </div>
                             </div>
                             <div class="flex-1 overflow-auto">
@@ -159,9 +187,7 @@
                                             <td class="px-6 py-4 text-sm text-gray-600 font-mono">{{ p.nationalId }}</td>
                                             <td class="px-6 py-4"><span class="px-2 py-1 rounded text-xs bg-gray-100">{{ p.gender === 'male' ? '男' : '女' }}</span></td>
                                             <td class="px-6 py-4">
-                                                <button @click="openPatientDetail(p)" class="text-sm font-bold text-brand-blue bg-blue-50 hover:bg-brand-blue hover:text-white transition px-4 py-1.5 rounded-lg">
-                                                    詳情與登打
-                                                </button>
+                                                <button @click="openPatientDetail(p)" class="text-sm font-bold text-brand-blue bg-blue-50 hover:bg-brand-blue hover:text-white transition px-4 py-1.5 rounded-lg">詳情與登打</button>
                                             </td>
                                         </tr>
                                     </tbody>
@@ -170,13 +196,114 @@
                         </div>
 
                         <div v-if="currentTab === 'observations'" class="space-y-4">
-                             <div v-for="obs in observations" :key="obs.id" class="bg-white p-4 rounded-xl border border-gray-100 flex justify-between items-center">
+                             <div v-for="obs in observations" :key="obs.id" class="bg-white p-4 rounded-xl border border-gray-100 flex justify-between items-center shadow-sm">
                                  <div>
                                      <span class="font-bold text-gray-800">{{ translateCode(obs.code) }}</span>
-                                     <span class="text-xs text-gray-400 ml-2">{{ obs.timestamp }}</span>
+                                     <span class="text-xs text-gray-400 ml-2">{{ obs.timestamp }} (ID: {{obs.patientId}})</span>
                                  </div>
                                  <div class="font-mono font-bold text-brand-blue">{{ obs.value }} <span class="text-xs text-gray-400">{{ obs.unit }}</span></div>
                              </div>
+                        </div>
+
+                        <div v-if="currentTab === 'referrals'" class="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
+                            <div class="flex border-b border-gray-100">
+                                <button class="px-6 py-3 text-sm font-bold border-b-2 border-brand-purple text-brand-purple">待處理轉入 (2)</button>
+                                <button class="px-6 py-3 text-sm font-bold text-gray-400 hover:text-gray-600">已轉出個案 (5)</button>
+                            </div>
+                            <div class="p-6">
+                                <table class="w-full text-left text-sm">
+                                    <thead>
+                                        <tr class="text-gray-400 border-b border-gray-100"><th class="pb-2">轉診單號</th><th class="pb-2">病患姓名</th><th class="pb-2">來源院所</th><th class="pb-2">轉診原因</th><th class="pb-2">狀態</th><th class="pb-2">操作</th></tr>
+                                    </thead>
+                                    <tbody class="divide-y divide-gray-50">
+                                        <tr v-for="r in mockReferrals" :key="r.id" class="group hover:bg-gray-50">
+                                            <td class="py-3 font-mono text-gray-500">{{ r.id }}</td>
+                                            <td class="py-3 font-bold">{{ r.patientName }}</td>
+                                            <td class="py-3">{{ r.from }}</td>
+                                            <td class="py-3">{{ r.reason }}</td>
+                                            <td class="py-3"><span class="bg-yellow-100 text-yellow-700 px-2 py-1 rounded text-xs">待接收</span></td>
+                                            <td class="py-3"><button class="text-brand-purple font-bold hover:underline">接收</button></td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+
+                        <div v-if="currentTab === 'health_edu'" class="space-y-6">
+                            <h3 class="font-bold text-xl text-gray-800">衛教內容庫</h3>
+                            <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                                <div v-for="item in mockHealthEdu" :key="item.id" class="bg-white rounded-2xl border border-gray-100 overflow-hidden shadow-sm hover:shadow-md transition">
+                                    <div class="h-32 bg-gray-200 flex items-center justify-center text-gray-400"><i class="fa-solid fa-image text-3xl"></i></div>
+                                    <div class="p-4">
+                                        <span class="text-xs font-bold text-brand-green bg-green-50 px-2 py-1 rounded">{{ item.category }}</span>
+                                        <h4 class="font-bold mt-2 text-lg">{{ item.title }}</h4>
+                                        <p class="text-sm text-gray-500 mt-1 line-clamp-2">適用對象：{{ item.target }}</p>
+                                        <button class="mt-4 w-full py-2 bg-gray-50 text-gray-600 rounded-lg text-sm font-bold hover:bg-brand-green hover:text-white transition">推送給個案</button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div v-if="currentTab === 'reports'" class="space-y-6">
+                            <h3 class="font-bold text-xl text-gray-800">管理儀表板</h3>
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                <div class="bg-white p-6 rounded-2xl border border-gray-100 shadow-sm">
+                                    <h4 class="font-bold text-gray-600 mb-4">慢病個案收案趨勢</h4>
+                                    <div class="h-64 bg-gray-50 flex items-center justify-center rounded-lg text-gray-400">[ 圖表：每月收案人數統計 ]</div>
+                                </div>
+                                <div class="bg-white p-6 rounded-2xl border border-gray-100 shadow-sm">
+                                    <h4 class="font-bold text-gray-600 mb-4">衛教達成率分析</h4>
+                                    <div class="h-64 bg-gray-50 flex items-center justify-center rounded-lg text-gray-400">[ 圖表：衛教閱讀與回饋率 ]</div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div v-if="currentTab === 'consultation'" class="bg-white rounded-2xl border border-gray-100 shadow-sm flex h-[600px] overflow-hidden">
+                            <div class="w-1/3 border-r border-gray-100 bg-gray-50">
+                                <div class="p-4 border-b border-gray-200"><button class="w-full bg-brand-orange text-white py-2 rounded-lg font-bold shadow">+ 發起新照會</button></div>
+                                <div class="overflow-y-auto h-full">
+                                    <div v-for="c in mockConsultations" :key="c.id" class="p-4 border-b border-gray-200 hover:bg-white cursor-pointer transition">
+                                        <h5 class="font-bold text-gray-800">{{ c.patient }} ({{ c.id }})</h5>
+                                        <p class="text-xs text-gray-500 mt-1">{{ c.date }}</p>
+                                        <p class="text-sm text-gray-600 mt-2 truncate">{{ c.lastMsg }}</p>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="w-2/3 flex flex-col items-center justify-center text-gray-400 bg-white">
+                                <i class="fa-regular fa-comments text-5xl mb-4"></i>
+                                <p>請選擇左側對話以檢視詳情</p>
+                            </div>
+                        </div>
+
+                        <div v-if="currentTab === 'knowledge_base'" class="space-y-4">
+                            <div class="relative"><i class="fa-solid fa-search absolute left-4 top-3.5 text-gray-400"></i><input type="text" placeholder="搜尋 SOP、藥物交互作用、衛教指引..." class="w-full pl-12 py-3 rounded-xl border border-gray-200 shadow-sm focus:ring-2 focus:ring-brand-teal outline-none"></div>
+                            <div class="bg-white rounded-2xl border border-gray-100 shadow-sm p-6">
+                                <h4 class="font-bold text-gray-800 mb-4 border-b pb-2">常用文件</h4>
+                                <ul class="space-y-2">
+                                    <li class="flex items-center text-gray-600 hover:text-brand-teal cursor-pointer"><i class="fa-solid fa-file-pdf mr-3 text-red-500"></i> 糖尿病共照網作業規範 v2.0.pdf</li>
+                                    <li class="flex items-center text-gray-600 hover:text-brand-teal cursor-pointer"><i class="fa-solid fa-file-word mr-3 text-blue-500"></i> 高血壓個案追蹤表單範本.docx</li>
+                                    <li class="flex items-center text-gray-600 hover:text-brand-teal cursor-pointer"><i class="fa-solid fa-link mr-3 text-gray-400"></i> 健保署雲端藥歷查詢操作手冊</li>
+                                </ul>
+                            </div>
+                        </div>
+
+                        <div v-if="currentTab === 'admin_users'" class="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
+                            <div class="p-6 border-b border-gray-100 flex justify-between items-center bg-gray-50/50">
+                                <h3 class="font-bold text-gray-900">使用者權限清單</h3>
+                                <button @click="showAddUserModal = true" class="btn-gradient px-4 py-2 bg-gradient-to-r from-gray-800 to-black text-white text-xs font-bold rounded-lg hover:shadow-lg transition flex items-center"><i class="fa-solid fa-plus mr-2"></i> 新增使用者</button>
+                            </div>
+                            <table class="w-full text-left text-sm text-gray-600">
+                                <thead class="bg-white text-gray-400 font-bold uppercase text-[10px] tracking-wider border-b border-gray-100">
+                                    <tr><th class="px-6 py-4">姓名</th><th class="px-6 py-4">Email</th><th class="px-6 py-4">單位</th><th class="px-6 py-4">角色</th><th class="px-6 py-4"></th></tr>
+                                </thead>
+                                <tbody class="divide-y divide-gray-50">
+                                    <tr v-for="u in users" :key="u.id" class="hover:bg-gray-50/80">
+                                        <td class="px-6 py-4 font-bold text-gray-900">{{ u.name }}</td><td class="px-6 py-4 font-mono text-xs">{{ u.email }}</td><td class="px-6 py-4">{{ u.organization }}</td>
+                                        <td class="px-6 py-4"><span :class="roleBadgeClass(u.role)" class="px-2.5 py-1 rounded text-[10px] font-bold uppercase border">{{ translateRole(u.role) }}</span></td>
+                                        <td class="px-6 py-4 text-right"><button v-if="u.role !== 'admin'" @click="deleteUser(u.id)" class="text-gray-400 hover:text-red-600 transition p-2 hover:bg-red-50 rounded-lg"><i class="fa-regular fa-trash-can"></i></button></td>
+                                    </tr>
+                                </tbody>
+                            </table>
                         </div>
 
                     </div>
@@ -186,13 +313,9 @@
             <div v-if="showDetailModal" class="fixed inset-0 z-50 flex items-center justify-center bg-gray-900/60 backdrop-blur-sm p-4">
                 <div class="bg-white rounded-2xl shadow-2xl w-full max-w-4xl max-h-[90vh] overflow-hidden flex flex-col">
                     <div class="px-8 py-5 border-b border-gray-100 bg-gray-50 flex justify-between items-center">
-                        <div>
-                            <h3 class="font-bold text-xl text-gray-800">{{ selectedPatient.name }} <span class="text-sm text-gray-500 font-normal">({{ selectedPatient.nationalId }})</span></h3>
-                            <p class="text-xs text-gray-400 mt-1">個案詳細資料與生理數據登錄</p>
-                        </div>
+                        <div><h3 class="font-bold text-xl text-gray-800">{{ selectedPatient.name }} <span class="text-sm text-gray-500 font-normal">({{ selectedPatient.nationalId }})</span></h3><p class="text-xs text-gray-400 mt-1">個案詳細資料與生理數據登錄</p></div>
                         <button @click="showDetailModal = false" class="text-gray-400 hover:text-gray-800"><i class="fa-solid fa-xmark text-xl"></i></button>
                     </div>
-                    
                     <div class="flex-1 overflow-y-auto p-8 grid grid-cols-1 md:grid-cols-2 gap-8">
                         <div>
                             <h4 class="text-sm font-bold text-brand-blue uppercase mb-4 border-b pb-2">基本資料</h4>
@@ -201,8 +324,7 @@
                                 <div><label class="text-gray-400 text-xs">性別</label><p>{{ selectedPatient.gender==='male'?'男':'女' }}</p></div>
                                 <div><label class="text-gray-400 text-xs">生日</label><p>{{ selectedPatient.birthDate }}</p></div>
                             </div>
-
-                            <h4 class="text-sm font-bold text-brand-blue uppercase mb-4 border-b pb-2">最近五筆數據</h4>
+                            <h4 class="text-sm font-bold text-brand-blue uppercase mb-4 border-b pb-2">最近數據</h4>
                             <ul class="space-y-3">
                                 <li v-for="obs in patientObservations.slice(0, 5)" :key="obs.id" class="flex justify-between items-center text-sm p-2 bg-gray-50 rounded">
                                     <span class="text-gray-600">{{ translateCode(obs.code) }}</span>
@@ -211,41 +333,13 @@
                                 <li v-if="patientObservations.length === 0" class="text-xs text-gray-400">尚無數據</li>
                             </ul>
                         </div>
-
                         <div class="bg-blue-50/50 p-6 rounded-2xl border border-blue-100">
                             <h4 class="text-sm font-bold text-brand-blue uppercase mb-4 flex items-center"><i class="fa-solid fa-pen-to-square mr-2"></i> 新增生理資訊 / 報告</h4>
-                            
                             <form @submit.prevent="submitObservation" class="space-y-4">
-                                <div>
-                                    <label class="block text-xs font-bold text-gray-500 mb-1">類別</label>
-                                    <select v-model="newObs.code" class="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-brand-blue outline-none bg-white">
-                                        <option value="systolic_bp">收縮壓 (mmHg)</option>
-                                        <option value="diastolic_bp">舒張壓 (mmHg)</option>
-                                        <option value="glucose_ac">飯前血糖 (mg/dL)</option>
-                                        <option value="glucose_pc">飯後血糖 (mg/dL)</option>
-                                        <option value="body_height">身高 (cm)</option>
-                                        <option value="body_weight">體重 (kg)</option>
-                                        <option value="lab_report">檢驗檢查報告 (上傳)</option>
-                                    </select>
-                                </div>
-
-                                <div v-if="newObs.code !== 'lab_report'">
-                                    <label class="block text-xs font-bold text-gray-500 mb-1">數值</label>
-                                    <input v-model="newObs.value" type="number" step="0.1" required class="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-brand-blue outline-none">
-                                </div>
-
-                                <div v-else>
-                                    <label class="block text-xs font-bold text-gray-500 mb-1">報告名稱/結果摘要</label>
-                                    <input v-model="newObs.value" type="text" placeholder="例如: 血液生化報告 - 正常" required class="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-brand-blue outline-none">
-                                    <p class="text-xs text-gray-400 mt-1">* Demo 模式僅支援文字摘要記錄</p>
-                                </div>
-
-                                <div class="pt-4">
-                                    <button type="submit" :disabled="loading" class="w-full btn-gradient bg-gradient-to-r from-brand-blue to-indigo-600 text-white py-2 rounded-lg font-bold shadow-lg">
-                                        <span v-if="loading"><i class="fa-solid fa-spinner fa-spin mr-2"></i> 儲存中...</span>
-                                        <span v-else>儲存數據</span>
-                                    </button>
-                                </div>
+                                <div><label class="block text-xs font-bold text-gray-500 mb-1">類別</label><select v-model="newObs.code" class="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-brand-blue outline-none bg-white"><option value="systolic_bp">收縮壓 (mmHg)</option><option value="diastolic_bp">舒張壓 (mmHg)</option><option value="glucose_ac">飯前血糖 (mg/dL)</option><option value="glucose_pc">飯後血糖 (mg/dL)</option><option value="body_height">身高 (cm)</option><option value="body_weight">體重 (kg)</option><option value="lab_report">檢驗檢查報告 (上傳)</option></select></div>
+                                <div v-if="newObs.code !== 'lab_report'"><label class="block text-xs font-bold text-gray-500 mb-1">數值</label><input v-model="newObs.value" type="number" step="0.1" required class="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-brand-blue outline-none"></div>
+                                <div v-else><label class="block text-xs font-bold text-gray-500 mb-1">報告名稱/結果摘要</label><input v-model="newObs.value" type="text" placeholder="例如: 血液生化報告 - 正常" required class="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-brand-blue outline-none"></div>
+                                <div class="pt-4"><button type="submit" :disabled="loading" class="w-full btn-gradient bg-gradient-to-r from-brand-blue to-indigo-600 text-white py-2 rounded-lg font-bold shadow-lg"><span v-if="loading"><i class="fa-solid fa-spinner fa-spin mr-2"></i> 儲存中...</span><span v-else>儲存數據</span></button></div>
                             </form>
                         </div>
                     </div>
@@ -268,6 +362,22 @@
                  </div>
             </div>
 
+            <div v-if="showAddUserModal" class="fixed inset-0 z-50 flex items-center justify-center bg-gray-900/60 backdrop-blur-sm">
+                <div class="bg-white rounded-2xl shadow-2xl w-full max-w-md p-8 border border-gray-100">
+                    <h3 class="text-xl font-bold text-gray-900 mb-6 tracking-tight flex items-center"><i class="fa-solid fa-user-plus mr-2"></i>建立新帳號</h3>
+                    <form @submit.prevent="submitNewUser" class="space-y-4">
+                        <input v-model="newUser.name" required placeholder="姓名" class="w-full border border-gray-200 rounded-lg px-4 py-3 outline-none bg-gray-50 focus:bg-white transition">
+                        <input v-model="newUser.email" type="email" required placeholder="Email" class="w-full border border-gray-200 rounded-lg px-4 py-3 outline-none bg-gray-50 focus:bg-white transition">
+                        <select v-model="newUser.role" class="w-full border border-gray-200 rounded-lg px-4 py-3 outline-none bg-gray-50 focus:bg-white transition"><option value="hospital_staff">新樓醫院 (院內人員)</option><option value="case_manager">個案管理師</option><option value="physician">合作診所醫師</option><option value="admin">系統管理員</option></select>
+                        <input v-model="newUser.organization" required placeholder="所屬單位" class="w-full border border-gray-200 rounded-lg px-4 py-3 outline-none bg-gray-50 focus:bg-white transition">
+                        <div class="flex justify-end space-x-3 mt-8 pt-4">
+                            <button type="button" @click="showAddUserModal = false" class="px-4 py-2 text-xs font-bold text-gray-400 hover:text-black transition">取消</button>
+                            <button type="submit" class="px-6 py-2 bg-black text-white rounded-lg text-xs font-bold hover:bg-gray-800 shadow-md transition">建立</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
         </div>
     </div>
 
@@ -278,38 +388,74 @@
             data() {
                 return {
                     loading: false,
-                    showSplash: true, // 控制開場動畫
-                    startFadeOut: false, // 控制動畫淡出
+                    showSplash: true,
+                    startFadeOut: false,
                     currentUser: null,
                     currentTab: 'dashboard',
                     users: [],
                     patients: [],
                     observations: [],
                     
-                    // Detail & Observation Modal
                     showDetailModal: false,
                     selectedPatient: {},
-                    patientObservations: [], // 該病患的歷史數據
+                    patientObservations: [],
                     newObs: { code: 'systolic_bp', value: '', unit: '' },
 
-                    // Add Patient
                     showAddPatientModal: false,
-                    newPatient: { name: '', nationalId: '', birthDate: '', gender: 'male' }
+                    showAddUserModal: false,
+                    newPatient: { name: '', nationalId: '', birthDate: '', gender: 'male' },
+                    newUser: { name: '', email: '', role: 'hospital_staff', organization: '新樓醫院' },
+
+                    // Mock Data for Demo Pages
+                    mockNotices: [
+                        { id: 1, date: '2025-12-15', title: 'FHIR 平台維護通知', content: '本週五 22:00 將進行停機維護。', type: 'alert' },
+                        { id: 2, date: '2025-12-10', title: '個案管理系統教育訓練', content: '請各單位派員參加 12/20 的線上課程。', type: 'info' }
+                    ],
+                    mockReferrals: [
+                        { id: 'R001', patientName: '王大明', from: '永康美好診所', reason: '血糖控制不佳', status: 'pending' },
+                        { id: 'R002', patientName: '李小美', from: '安南診所', reason: '血壓異常', status: 'pending' }
+                    ],
+                    mockHealthEdu: [
+                        { id: 1, title: '糖尿病飲食指南', category: '營養', target: '第二型糖尿病' },
+                        { id: 2, title: '高血壓居家照護', category: '護理', target: '高血壓' },
+                        { id: 3, title: '足部護理須知', category: '衛教', target: '糖尿病足' }
+                    ],
+                    mockConsultations: [
+                        { id: 'P001', patient: '王大明', date: '2025-12-18', lastMsg: '醫師您好，病患最近飯後血糖...' },
+                        { id: 'P003', patient: '張志明', date: '2025-12-17', lastMsg: '關於用藥調整的建議...' }
+                    ]
                 }
             },
             computed: {
                 currentMenu() {
-                    const common = [ { id: 'dashboard', label: '主控台', icon: 'fa-solid fa-chart-pie', color: 'from-blue-500 to-cyan-500', textColor: 'text-blue-500' } ];
-                    const caseManagerMenu = [
-                        { id: 'patients', label: '個案管理', icon: 'fa-solid fa-user-injured', color: 'from-brand-blue to-indigo-600', textColor: 'text-brand-blue' },
-                        { id: 'observations', label: '生理量測', icon: 'fa-solid fa-heart-pulse', color: 'from-rose-500 to-pink-600', textColor: 'text-rose-500' }
+                    const common = [ 
+                        { id: 'dashboard', label: '系統主控台', icon: 'fa-solid fa-chart-pie', color: 'from-blue-500 to-cyan-500', textColor: 'text-blue-500' },
+                        { id: 'system_notice', label: '系統公告', icon: 'fa-solid fa-bullhorn', color: 'from-yellow-500 to-orange-500', textColor: 'text-yellow-600' }
                     ];
-                    // 簡化：只回傳個管師選單作為 Demo
-                    return [...common, ...caseManagerMenu];
+                    
+                    const caseManagerMenu = [
+                        { id: 'patients', label: '個案管理清單', icon: 'fa-solid fa-user-injured', color: 'from-brand-blue to-indigo-600', textColor: 'text-brand-blue' },
+                        { id: 'observations', label: '遠距生理監控', icon: 'fa-solid fa-heart-pulse', color: 'from-rose-500 to-pink-600', textColor: 'text-rose-500' },
+                        { id: 'health_edu', label: '衛教資源中心', icon: 'fa-solid fa-book-medical', color: 'from-emerald-500 to-teal-500', textColor: 'text-emerald-600' },
+                        { id: 'reports', label: '數據報表中心', icon: 'fa-solid fa-file-invoice', color: 'from-gray-600 to-gray-800', textColor: 'text-gray-600' },
+                        { id: 'knowledge_base', label: '共照知識庫', icon: 'fa-solid fa-book-open', color: 'from-purple-500 to-violet-600', textColor: 'text-purple-600' }
+                    ];
+
+                    const physicianMenu = [
+                        { id: 'patients', label: '個案病歷查詢', icon: 'fa-solid fa-magnifying-glass', color: 'from-brand-blue to-cyan-600', textColor: 'text-brand-blue' },
+                        { id: 'referrals', label: '雙向轉診管理', icon: 'fa-solid fa-people-arrows', color: 'from-purple-500 to-violet-600', textColor: 'text-purple-600' },
+                        { id: 'consultation', label: '線上照會區', icon: 'fa-solid fa-comments', color: 'from-orange-500 to-red-500', textColor: 'text-orange-500' }
+                    ];
+
+                    if (this.currentUser && ['case_manager', 'hospital_staff', 'admin'].includes(this.currentUser.role)) {
+                        return [...common, ...caseManagerMenu];
+                    } else if (this.currentUser && this.currentUser.role === 'physician') {
+                        return [...common, ...physicianMenu];
+                    }
+                    return common;
                 }
             },
             mounted() {
-                // 1. 檢查權限
                 const userJson = localStorage.getItem('currentUser');
                 if (!userJson) {
                     window.location.href = 'login.html';
@@ -317,15 +463,11 @@
                 }
                 this.currentUser = JSON.parse(userJson);
 
-                // 2. 處理開場動畫 (3.5秒)
                 setTimeout(() => {
-                    this.startFadeOut = true; // 開始淡出
-                    setTimeout(() => {
-                        this.showSplash = false; // 移除 DOM
-                    }, 500); // 等待淡出動畫結束
+                    this.startFadeOut = true;
+                    setTimeout(() => { this.showSplash = false; }, 500);
                 }, 3500);
 
-                // 3. 載入資料
                 this.fetchData('patients');
                 this.fetchData('observations');
             },
@@ -335,7 +477,6 @@
                     window.location.href = 'login.html';
                 },
                 async fetchData(endpoint) {
-                    // ... (保留之前的 fetch 邏輯) ...
                     try {
                         const res = await fetch(`${API_BASE_URL}?endpoint=${endpoint}`);
                         const json = await res.json();
@@ -345,22 +486,16 @@
                         }
                     } catch (e) { console.error(e); }
                 },
-                
-                // --- 個案詳情與數據登打 ---
                 openPatientDetail(patient) {
                     this.selectedPatient = patient;
-                    // 篩選出該病患的數據
                     this.patientObservations = this.observations.filter(o => o.patientId === patient.id);
-                    this.newObs = { code: 'systolic_bp', value: '', unit: '' }; // 重置表單
+                    this.newObs = { code: 'systolic_bp', value: '', unit: '' };
                     this.showDetailModal = true;
                 },
-                
                 async submitObservation() {
                     this.loading = true;
-                    // 自動填入單位
                     const unitMap = { 'systolic_bp': 'mmHg', 'diastolic_bp': 'mmHg', 'glucose_ac': 'mg/dL', 'glucose_pc': 'mg/dL', 'body_height': 'cm', 'body_weight': 'kg', 'lab_report': '檔案' };
                     const unit = unitMap[this.newObs.code] || '';
-
                     const params = new URLSearchParams({
                         action: 'addObservation',
                         patientId: this.selectedPatient.id,
@@ -368,43 +503,37 @@
                         value: this.newObs.value,
                         unit: unit
                     });
-
                     try {
                         await fetch(`${API_BASE_URL}?${params.toString()}`);
                         alert('數據儲存成功！');
-                        // 重新整理數據
                         await this.fetchData('observations');
                         this.patientObservations = this.observations.filter(o => o.patientId === this.selectedPatient.id);
-                        this.newObs.value = ''; // 清空輸入
-                    } catch (e) {
-                        alert('儲存失敗');
-                    } finally {
-                        this.loading = false;
-                    }
+                        this.newObs.value = '';
+                    } catch (e) { alert('儲存失敗'); } finally { this.loading = false; }
                 },
-
-                // --- 新增個案 (簡化版) ---
                 async submitPatientManual() {
                     this.loading = true;
-                    const params = new URLSearchParams({
-                        action: 'addPatient',
-                        name: this.newPatient.name,
-                        nationalId: this.newPatient.nationalId,
-                        birthDate: this.newPatient.birthDate,
-                        gender: this.newPatient.gender
-                    });
-                    try {
-                        await fetch(`${API_BASE_URL}?${params.toString()}`);
-                        alert('個案建立成功');
-                        this.showAddPatientModal = false;
-                        this.fetchData('patients');
-                    } catch(e) { alert('失敗'); } finally { this.loading = false; }
+                    const params = new URLSearchParams({ action: 'addPatient', ...this.newPatient });
+                    try { await fetch(`${API_BASE_URL}?${params.toString()}`); alert('個案建立成功'); this.showAddPatientModal = false; this.fetchData('patients'); } 
+                    catch(e) { alert('失敗'); } finally { this.loading = false; }
                 },
-
-                // 輔助函式
+                async submitNewUser() {
+                    this.loading = true;
+                    const params = new URLSearchParams({ action: 'addUser', ...this.newUser });
+                    try { await fetch(`${API_BASE_URL}?${params.toString()}`); alert('使用者建立成功'); this.showAddUserModal = false; this.fetchData('users'); } 
+                    catch(e) { alert('建立失敗'); } finally { this.loading = false; }
+                },
+                async deleteUser(id) {
+                    if(!confirm('確定刪除?')) return;
+                    try { await fetch(`${API_BASE_URL}?action=deleteUser&id=${id}`); this.fetchData('users'); } catch(e) { alert('刪除失敗'); }
+                },
                 navClass(id, color) { return this.currentTab === id ? `bg-gradient-to-r ${color} text-white shadow-lg` : 'text-gray-500 hover:bg-white'; },
-                getTabTitle(tab) { return tab === 'dashboard' ? '系統主控台' : '個案管理'; },
-                translateRole(role) { return role === 'admin' ? '管理員' : '個管師'; },
+                getTabTitle(tab) {
+                    const map = { 'dashboard': '系統主控台', 'patients': '個案管理清單', 'observations': '遠距生理監控', 'admin_users': '系統權限管理', 'referrals': '雙向轉診管理', 'health_edu': '衛教資源中心', 'reports': '數據報表中心', 'consultation': '線上照會區', 'system_notice': '系統公告', 'knowledge_base': '共照知識庫' };
+                    return map[tab] || tab;
+                },
+                translateRole(role) { return role === 'admin' ? '管理員' : '使用者'; },
+                roleBadgeClass(role) { return 'bg-gray-100 text-gray-700'; },
                 translateCode(code) {
                     const map = { 'systolic_bp': '收縮壓', 'diastolic_bp': '舒張壓', 'glucose_ac': '飯前血糖', 'glucose_pc': '飯後血糖', 'body_height': '身高', 'body_weight': '體重', 'lab_report': '檢驗報告' };
                     return map[code] || code;
