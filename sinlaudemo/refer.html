@@ -18,7 +18,7 @@
             theme: {
                 extend: {
                     fontFamily: { sans: ['Noto Sans TC', 'sans-serif'] },
-                    colors: { brand: { blue: '#0066FF', green: '#2E8B57', red: '#D00000' } }
+                    colors: { brand: { blue: '#0066FF', green: '#2E8B57', red: '#D00000', orange: '#FB8500' } }
                 }
             }
         }
@@ -40,7 +40,7 @@
         .status-badge { @apply px-2.5 py-1 rounded-full text-xs font-bold border inline-block max-w-[120px] truncate align-middle; }
         .status-new { @apply bg-blue-100 text-blue-700 border-blue-200; }
         .status-done { @apply bg-green-100 text-green-700 border-green-200; }
-        .status-fail { @apply bg-red-100 text-red-700 border-red-200; } /* 未能就診樣式 */
+        .status-fail { @apply bg-red-100 text-red-700 border-red-200; }
     </style>
 </head>
 <body class="h-screen flex flex-col text-gray-800">
@@ -59,6 +59,7 @@
             <div class="flex items-center space-x-4">
                 <span class="text-sm font-bold bg-blue-50 text-blue-700 px-3 py-1 rounded-full">{{ currentUser?.organization }}</span>
                 <span class="text-sm font-bold">{{ currentUser?.name }}</span>
+                <span v-if="currentUser?.role === 'admin'" class="text-[10px] bg-gray-800 text-white px-2 py-0.5 rounded">ADMIN</span>
                 <button @click="closeWindow" class="bg-gray-100 hover:bg-gray-200 px-4 py-2 rounded text-sm font-bold transition">關閉</button>
             </div>
         </header>
@@ -123,7 +124,9 @@
                                             <i class="fa-solid fa-xmark mr-1"></i> 未能就診
                                         </button>
                                     </div>
-                                    <span v-else class="text-gray-300 text-xs text-center block">已結案 / 無權限</span>
+                                    <span v-else class="text-gray-300 text-xs text-center block">
+                                        {{ r.status === '未就診' ? '無權限' : '已結案' }}
+                                    </span>
                                 </td>
                             </tr>
                             <tr v-if="referrals.length === 0">
@@ -234,19 +237,24 @@
                 closeWindow() { window.close(); },
                 openView(r) { this.viewReferral = r; this.showViewModal = true; },
                 
-                // 狀態樣式 (新增 fail)
                 getStatusClass(status) {
                     if (status.includes('已就診')) return 'status-done';
-                    if (status.includes('未能就診')) return 'status-fail';
+                    if (status.includes('未能就診')) return 'status-fail'; // 紅色
                     return 'status-new';
                 },
 
-                canReceive(r) { return r.toOrg === this.currentUser.organization && r.status === '未就診'; },
+                // *** 關鍵修改：加入管理者權限判斷 ***
+                canReceive(r) {
+                    const isTargetOrg = r.toOrg === this.currentUser.organization;
+                    const isAdmin = this.currentUser.role === 'admin';
+                    // 只要是 "目標單位" 或 "管理員"，且狀態為 "未就診"，即可操作
+                    return (isTargetOrg || isAdmin) && r.status === '未就診';
+                },
 
                 // *** 未能就診 - 填寫原因 ***
                 async markAsFailed(r) {
                     const reason = prompt("請輸入未能就診的原因 (例如: 電話空號、拒絕就醫、改至他院):");
-                    if (reason === null) return; // 取消
+                    if (reason === null) return;
                     if (!reason.trim()) { alert("請輸入原因"); return; }
                     
                     await this.updateStatus(r, '未能就診', reason);
@@ -254,7 +262,6 @@
 
                 // *** 更新狀態 (核心) ***
                 async updateStatus(r, newStatus, reason = '') {
-                    // 已就診直接確認，未能就診已在 markAsFailed 確認過
                     if (newStatus === '已就診') {
                         if(!confirm(`確認接收病患 ${r.patientName} 並標記為已就診？`)) return;
                     }
@@ -265,7 +272,7 @@
                             action: 'updateReferralStatus', 
                             id: r.id, 
                             newStatus: newStatus,
-                            reason: reason // 傳送原因
+                            reason: reason
                         });
                         
                         await fetch(`${API_BASE_URL}?${params.toString()}`);
@@ -275,7 +282,7 @@
                     this.loading = false;
                 },
 
-                // (其他功能維持不變)
+                // (其餘功能維持不變)
                 async loadICD10() {
                     try {
                         const res = await fetch('ICD10.xls');
