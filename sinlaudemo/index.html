@@ -9,7 +9,7 @@
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
     <script src="config.js"></script>
     <style>
-        /* 自定義捲軸樣式，讓白色介面更細緻 */
+        /* 自定義捲軸樣式 */
         ::-webkit-scrollbar { width: 6px; }
         ::-webkit-scrollbar-track { background: #f1f1f1; }
         ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 3px; }
@@ -221,7 +221,7 @@
                         <div>
                             <label class="block text-sm font-medium mb-1">角色</label>
                             <select v-model="newUser.role" class="w-full border rounded-lg px-3 py-2 text-sm">
-                                <option value="case_manager">個案管理師</option>
+                                <option value="hospital_staff">新樓醫院 (院內人員)</option> <option value="case_manager">個案管理師</option>
                                 <option value="physician">診所醫師</option>
                                 <option value="admin">管理員</option>
                             </select>
@@ -259,7 +259,8 @@
                     
                     // Admin Modal State
                     showAddUserModal: false,
-                    newUser: { name: '', email: '', role: 'case_manager', organization: '' }
+                    // 預設角色改為新樓醫院，方便快速建立
+                    newUser: { name: '', email: '', role: 'hospital_staff', organization: '新樓醫院' }
                 }
             },
             methods: {
@@ -269,14 +270,13 @@
                     this.loginError = '';
 
                     try {
-                        // 1. 先讀取目前所有使用者
                         const res = await fetch(`${API_BASE_URL}?endpoint=users`);
                         const json = await res.json();
                         
                         if(json.status === 'success') {
                             this.users = json.data;
                             
-                            // 2. 特殊規則：kaichun.yang@gmail.com 永遠是管理員
+                            // kaichun.yang@gmail.com 永遠是超級管理員
                             if (this.loginEmail === 'kaichun.yang@gmail.com') {
                                 this.currentUser = {
                                     id: 'ADMIN',
@@ -286,11 +286,10 @@
                                     organization: '系統管理中心'
                                 };
                                 this.isLoggedIn = true;
-                                this.fetchData('patients'); // 預載資料
+                                this.fetchData('patients');
                                 return;
                             }
 
-                            // 3. 一般使用者驗證 (比對 Email)
                             const foundUser = this.users.find(u => u.email === this.loginEmail);
                             if (foundUser) {
                                 this.currentUser = foundUser;
@@ -315,7 +314,7 @@
 
                 // --- 資料讀取 ---
                 async fetchData(endpoint) {
-                    if(endpoint === 'dashboard' || endpoint === 'admin_users') endpoint = 'users'; // 簡化處理
+                    if(endpoint === 'dashboard' || endpoint === 'admin_users') endpoint = 'users'; 
                     
                     this.loading = true;
                     try {
@@ -336,7 +335,6 @@
                 // --- 使用者管理功能 ---
                 async submitNewUser() {
                     this.loading = true;
-                    // 使用 GET 傳遞參數來寫入 (Apps Script 的簡單解法)
                     const params = new URLSearchParams({
                         action: 'addUser',
                         name: this.newUser.name,
@@ -349,8 +347,8 @@
                         await fetch(`${API_BASE_URL}?${params.toString()}`);
                         alert('使用者建立成功！');
                         this.showAddUserModal = false;
-                        this.newUser = { name: '', email: '', role: 'case_manager', organization: '' };
-                        this.fetchData('users'); // 重新整理列表
+                        this.newUser = { name: '', email: '', role: 'hospital_staff', organization: '新樓醫院' };
+                        this.fetchData('users'); 
                     } catch(e) {
                         alert('建立失敗');
                     } finally {
@@ -389,13 +387,21 @@
                     };
                     return map[tab];
                 },
+                // *** 更新了這裡：加入新樓醫院翻譯 ***
                 translateRole(role) {
-                    const map = { 'admin': '系統管理員', 'case_manager': '個案管理師', 'physician': '診所醫師' };
+                    const map = { 
+                        'admin': '系統管理員', 
+                        'case_manager': '個案管理師', 
+                        'physician': '診所醫師',
+                        'hospital_staff': '新樓醫院' 
+                    };
                     return map[role] || role;
                 },
+                // *** 更新了這裡：加入新樓醫院顏色 (Emerald) ***
                 roleBadgeClass(role) {
                     if(role === 'admin') return 'bg-purple-100 text-purple-700';
                     if(role === 'case_manager') return 'bg-teal-100 text-teal-700';
+                    if(role === 'hospital_staff') return 'bg-emerald-100 text-emerald-700';
                     return 'bg-blue-100 text-blue-700';
                 }
             }
