@@ -88,6 +88,11 @@
                             <span v-else>登入系統</span>
                         </button>
                     </div>
+                    <div id="g_id_onload"
+                         :data-client_id="googleClientId"
+                         data-callback="handleGoogleCallback"
+                         data-auto_prompt="false">
+                    </div>
                     <p class="text-center text-xs text-gray-400 mt-4 bg-gray-50 py-2 rounded-lg border border-gray-100">* 管理員需進行 Google 真實驗證 (測試: kaichun.yang@gmail.com)</p>
                 </form>
                 <div v-if="loginError" class="mt-6 p-4 bg-red-50 border border-red-100 text-red-600 text-sm rounded-xl flex items-start animate-pulse"><i class="fa-solid fa-circle-exclamation mt-0.5 mr-2"></i><span>{{ loginError }}</span></div>
@@ -154,93 +159,41 @@
                         </div>
 
                         <div v-if="currentTab === 'observations'" class="space-y-6">
-                            
                             <div class="grid grid-cols-2 gap-6">
                                 <div class="bg-white p-5 rounded-2xl border border-red-100 shadow-sm flex items-center">
-                                    <div class="w-12 h-12 rounded-full bg-red-50 flex items-center justify-center text-brand-red mr-4">
-                                        <i class="fa-solid fa-triangle-exclamation text-xl"></i>
-                                    </div>
-                                    <div>
-                                        <p class="text-xs font-bold text-gray-400 uppercase">異常個案數量</p>
-                                        <h3 class="text-2xl font-extrabold text-gray-800">{{ abnormalCount }} <span class="text-xs text-gray-400 font-normal">人</span></h3>
-                                    </div>
+                                    <div class="w-12 h-12 rounded-full bg-red-50 flex items-center justify-center text-brand-red mr-4"><i class="fa-solid fa-triangle-exclamation text-xl"></i></div>
+                                    <div><p class="text-xs font-bold text-gray-400 uppercase">異常個案數量</p><h3 class="text-2xl font-extrabold text-gray-800">{{ abnormalCount }} <span class="text-xs text-gray-400 font-normal">人</span></h3></div>
                                 </div>
                                 <div class="bg-white p-5 rounded-2xl border border-orange-100 shadow-sm flex items-center">
-                                    <div class="w-12 h-12 rounded-full bg-orange-50 flex items-center justify-center text-brand-orange mr-4">
-                                        <i class="fa-solid fa-star text-xl"></i>
-                                    </div>
-                                    <div>
-                                        <p class="text-xs font-bold text-gray-400 uppercase">已標記追蹤數量</p>
-                                        <h3 class="text-2xl font-extrabold text-gray-800">3 <span class="text-xs text-gray-400 font-normal">人</span></h3>
-                                    </div>
+                                    <div class="w-12 h-12 rounded-full bg-orange-50 flex items-center justify-center text-brand-orange mr-4"><i class="fa-solid fa-star text-xl"></i></div>
+                                    <div><p class="text-xs font-bold text-gray-400 uppercase">已標記追蹤數量</p><h3 class="text-2xl font-extrabold text-gray-800">3 <span class="text-xs text-gray-400 font-normal">人</span></h3></div>
                                 </div>
                             </div>
-
                             <div class="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden flex flex-col h-full">
                                 <div class="p-4 border-b border-gray-100 bg-gray-50/50">
-                                    <div class="relative w-full max-w-lg">
-                                        <i class="fa-solid fa-search absolute left-4 top-3.5 text-gray-400"></i>
-                                        <input v-model="obsSearchKeyword" type="text" placeholder="搜尋姓名、身分證字號或病歷號..." 
-                                            class="w-full pl-12 pr-4 py-3 bg-white border border-gray-200 rounded-xl text-sm focus:ring-2 focus:ring-brand-blue outline-none transition shadow-sm">
-                                    </div>
+                                    <div class="relative w-full max-w-lg"><i class="fa-solid fa-search absolute left-4 top-3.5 text-gray-400"></i><input v-model="obsSearchKeyword" type="text" placeholder="搜尋姓名、身分證字號或病歷號..." class="w-full pl-12 pr-4 py-3 bg-white border border-gray-200 rounded-xl text-sm focus:ring-2 focus:ring-brand-blue outline-none transition shadow-sm"></div>
                                 </div>
-
                                 <div class="overflow-x-auto">
                                     <table class="w-full text-left">
                                         <thead class="bg-white sticky top-0 border-b border-gray-100 text-gray-400 text-xs uppercase font-bold tracking-wider">
-                                            <tr>
-                                                <th class="px-6 py-4">個案資料</th>
-                                                <th class="px-6 py-4">最新血壓 (mmHg)</th>
-                                                <th class="px-6 py-4">最新血糖 (mg/dL)</th>
-                                                <th class="px-6 py-4">狀態</th>
-                                                <th class="px-6 py-4 text-right">操作</th>
-                                            </tr>
+                                            <tr><th class="px-6 py-4">個案資料</th><th class="px-6 py-4">最新血壓 (mmHg)</th><th class="px-6 py-4">最新血糖 (mg/dL)</th><th class="px-6 py-4">狀態</th><th class="px-6 py-4 text-right">操作</th></tr>
                                         </thead>
                                         <tbody class="divide-y divide-gray-50 text-sm">
                                             <tr v-for="item in monitoringList" :key="item.id" class="hover:bg-blue-50/30 transition group">
+                                                <td class="px-6 py-4"><p class="font-bold text-gray-900 text-base">{{ item.name }}</p><p class="text-xs text-gray-500 font-mono mt-0.5">{{ item.id }} | {{ item.nationalId }}</p></td>
                                                 <td class="px-6 py-4">
-                                                    <p class="font-bold text-gray-900 text-base">{{ item.name }}</p>
-                                                    <p class="text-xs text-gray-500 font-mono mt-0.5">{{ item.id }} | {{ item.nationalId }}</p>
-                                                </td>
-                                                <td class="px-6 py-4">
-                                                    <div v-if="item.bp.systolic" class="flex items-baseline">
-                                                        <span :class="{'text-red-600 font-bold': item.bp.isAbnormal, 'text-gray-700': !item.bp.isAbnormal}" class="text-lg">
-                                                            {{ item.bp.systolic }}/{{ item.bp.diastolic }}
-                                                        </span>
-                                                        <span class="text-xs text-gray-400 ml-2">{{ item.bp.time }}</span>
-                                                    </div>
-                                                    <span v-else class="text-gray-300">-</span>
+                                                    <div v-if="item.bp.systolic" class="flex items-baseline"><span :class="{'text-red-600 font-bold': item.bp.isAbnormal, 'text-gray-700': !item.bp.isAbnormal}" class="text-lg">{{ item.bp.systolic }}/{{ item.bp.diastolic }}</span><span class="text-xs text-gray-400 ml-2">{{ item.bp.time }}</span></div><span v-else class="text-gray-300">-</span>
                                                 </td>
                                                 <td class="px-6 py-4">
-                                                    <div v-if="item.glucose.value" class="flex items-baseline">
-                                                        <span :class="{'text-red-600 font-bold': item.glucose.isAbnormal, 'text-gray-700': !item.glucose.isAbnormal}" class="text-lg">
-                                                            {{ item.glucose.value }}
-                                                        </span>
-                                                        <span class="text-xs text-gray-500 ml-1">({{ item.glucose.type }})</span>
-                                                        <span class="text-xs text-gray-400 ml-2">{{ item.glucose.time }}</span>
-                                                    </div>
-                                                    <span v-else class="text-gray-300">-</span>
+                                                    <div v-if="item.glucose.value" class="flex items-baseline"><span :class="{'text-red-600 font-bold': item.glucose.isAbnormal, 'text-gray-700': !item.glucose.isAbnormal}" class="text-lg">{{ item.glucose.value }}</span><span class="text-xs text-gray-500 ml-1">({{ item.glucose.type }})</span><span class="text-xs text-gray-400 ml-2">{{ item.glucose.time }}</span></div><span v-else class="text-gray-300">-</span>
                                                 </td>
                                                 <td class="px-6 py-4">
-                                                    <span v-if="item.hasAbnormal" class="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-bold bg-red-100 text-red-700">
-                                                        <i class="fa-solid fa-circle-exclamation mr-1"></i> 異常
-                                                    </span>
-                                                    <span v-else class="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-bold bg-green-100 text-green-700">
-                                                        <i class="fa-solid fa-check mr-1"></i> 正常
-                                                    </span>
+                                                    <span v-if="item.hasAbnormal" class="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-bold bg-red-100 text-red-700"><i class="fa-solid fa-circle-exclamation mr-1"></i> 異常</span>
+                                                    <span v-else class="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-bold bg-green-100 text-green-700"><i class="fa-solid fa-check mr-1"></i> 正常</span>
                                                 </td>
-                                                <td class="px-6 py-4 text-right">
-                                                    <button @click="openPatientDetail(item.raw)" class="text-sm font-bold text-brand-blue bg-blue-50 hover:bg-brand-blue hover:text-white transition px-4 py-1.5 rounded-lg shadow-sm">
-                                                        詳情
-                                                    </button>
-                                                </td>
+                                                <td class="px-6 py-4 text-right"><button @click="openPatientDetail(item.raw)" class="text-sm font-bold text-brand-blue bg-blue-50 hover:bg-brand-blue hover:text-white transition px-4 py-1.5 rounded-lg shadow-sm">詳情</button></td>
                                             </tr>
-                                            <tr v-if="monitoringList.length === 0">
-                                                <td colspan="5" class="px-6 py-12 text-center text-gray-400">
-                                                    <i class="fa-regular fa-folder-open text-2xl mb-2 block"></i>
-                                                    查無符合條件的個案
-                                                </td>
-                                            </tr>
+                                            <tr v-if="monitoringList.length === 0"><td colspan="5" class="px-6 py-12 text-center text-gray-400"><i class="fa-regular fa-folder-open text-2xl mb-2 block"></i>查無符合條件的個案</td></tr>
                                         </tbody>
                                     </table>
                                 </div>
@@ -296,13 +249,6 @@
         </div>
     </div>
 
-    <div v-if="showGoogleMockModal" class="fixed inset-0 z-[100] flex items-center justify-center bg-black/60 backdrop-blur-sm">
-        <div class="bg-white rounded-lg shadow-2xl w-full max-w-[400px] overflow-hidden">
-            <div class="p-6 pb-2 text-center"><h3 class="text-xl font-medium text-gray-800">Google 驗證 (模擬)</h3><p class="text-sm text-gray-600 mt-1">此步驟僅為 Demo 展示流程</p></div>
-            <div class="mt-4 border-t border-gray-100"><div @click="completeGoogleLogin" class="flex items-center px-6 py-4 hover:bg-gray-50 cursor-pointer border-b border-gray-100"><div class="w-10 h-10 rounded-full bg-purple-600 text-white flex items-center justify-center font-bold text-lg mr-4">K</div><div><p class="font-medium text-gray-800">Kai-Chun Yang</p><p class="text-sm text-gray-500">kaichun.yang@gmail.com</p></div></div></div>
-        </div>
-    </div>
-
     <script>
         const { createApp } = Vue;
 
@@ -310,7 +256,7 @@
             data() {
                 return {
                     googleClientId: typeof GOOGLE_CLIENT_ID !== 'undefined' ? GOOGLE_CLIENT_ID : '',
-                    loading: false, isLoggedIn: false, loginEmail: '', loginError: '', showGoogleMockModal: false, showSplash: true, startFadeOut: false,
+                    loading: false, isLoggedIn: false, loginEmail: '', loginError: '', showSplash: true, startFadeOut: false,
                     currentUser: null, currentTab: 'dashboard', users: [], patients: [], observations: [],
                     showDetailModal: false, showAddPatientModal: false, showAddUserModal: false,
                     selectedPatient: {}, patientObservations: [], newObs: { code: 'systolic_bp', value: '', unit: '' },
@@ -390,19 +336,32 @@
                 initGoogleLogin() { if (typeof google !== 'undefined') google.accounts.id.initialize({ client_id: this.googleClientId, callback: this.handleGoogleCallback, cancel_on_tap_outside: false }); },
                 async handleLogin() {
                     this.loading = true;
+                    // 管理員: 強制 Google 驗證
                     if (this.loginEmail === 'kaichun.yang@gmail.com') {
-                        if (typeof google !== 'undefined' && this.googleClientId) { google.accounts.id.prompt(); this.loading = false; return; }
-                        else { this.showGoogleMockModal = true; this.loading = false; return; }
+                        if (typeof google !== 'undefined' && this.googleClientId) {
+                            google.accounts.id.prompt();
+                            this.loading = false;
+                            return; 
+                        } else {
+                            alert("請確認 config.js 設定");
+                            this.loading = false;
+                            return;
+                        }
                     }
+                    // 一般使用者: 查表
                     try { const res = await fetch(`${API_BASE_URL}?endpoint=users`); const json = await res.json(); if(json.status === 'success') { const u = json.data.find(x => x.email === this.loginEmail); if(u) this.completeLogin(u); else { this.loginError = '找不到帳號'; this.loading = false; } } } catch(e) { this.loginError = '連線錯誤'; this.loading = false; }
                 },
                 handleGoogleCallback(res) {
                     const payload = JSON.parse(decodeURIComponent(window.atob(res.credential.split('.')[1].replace(/-/g, '+').replace(/_/g, '/')).split('').map(c => '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2)).join('')));
-                    if (payload.email === 'kaichun.yang@gmail.com') this.completeLogin({ id: 'ADMIN', name: payload.name, email: payload.email, picture: payload.picture, role: 'admin', organization: '系統管理中心' });
-                    else { alert('非管理員帳號'); this.loading = false; }
+                    // 驗證是否為管理員
+                    if (payload.email === 'kaichun.yang@gmail.com') {
+                        this.completeLogin({ id: 'ADMIN', name: payload.name, email: payload.email, picture: payload.picture, role: 'admin', organization: '系統管理中心' });
+                    } else {
+                        alert('非管理員帳號');
+                        this.loading = false;
+                    }
                 },
                 completeLogin(user) { this.currentUser = user; this.isLoggedIn = true; this.refreshData(); this.loading = false; },
-                completeGoogleLogin() { this.completeLogin({ id: 'ADMIN', name: '楊凱鈞', email: 'kaichun.yang@gmail.com', role: 'admin', organization: '系統管理中心' }); this.showGoogleMockModal = false; },
                 logout() { localStorage.removeItem('currentUser'); window.location.href = 'login.html'; },
                 
                 async refreshData() {
