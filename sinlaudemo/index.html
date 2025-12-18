@@ -3,124 +3,179 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>新樓醫院個案管理平台 (Demo)</title>
+    <title>新樓醫院專業版個案管理平台</title>
     <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
     <script src="https://cdn.tailwindcss.com"></script>
-    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
-    
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
     <script src="config.js"></script>
+    <style>
+        /* 自定義捲軸樣式，讓白色介面更細緻 */
+        ::-webkit-scrollbar { width: 6px; }
+        ::-webkit-scrollbar-track { background: #f1f1f1; }
+        ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 3px; }
+        ::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+        [v-cloak] { display: none; }
+    </style>
 </head>
-<body class="bg-gray-100 font-sans text-gray-800">
-    <div id="app" class="min-h-screen flex flex-col">
-        
-        <nav class="bg-teal-600 text-white shadow-lg">
-            <div class="container mx-auto px-4 py-3 flex justify-between items-center">
-                <div class="flex items-center space-x-2">
-                    <i class="fa-solid fa-hospital-user text-2xl"></i>
-                    <span class="text-xl font-bold">新樓醫院個案管理平台 <span class="text-xs bg-teal-800 px-2 py-1 rounded ml-2">Demo</span></span>
-                </div>
-                <div class="flex items-center space-x-4">
-                    <span class="text-sm opacity-90">當前身分:</span>
-                    <select v-model="currentUser" @change="handleUserChange" class="text-gray-800 text-sm rounded px-2 py-1 border-none focus:ring-2 focus:ring-teal-300">
-                        <option :value="null">-- 請選擇身分 --</option>
-                        <option v-for="user in users" :key="user.id" :value="user">
-                            {{ user.name }} ({{ user.role === 'case_manager' ? '個管師' : '醫師' }})
-                        </option>
-                    </select>
-                </div>
-            </div>
-        </nav>
+<body class="bg-white text-slate-700 font-sans h-screen flex overflow-hidden">
+    <div id="app" class="w-full flex h-full" v-cloak>
 
-        <main class="container mx-auto px-4 py-6 flex-grow">
-            
-            <div v-if="loading" class="text-center py-12">
-                <i class="fa-solid fa-circle-notch fa-spin text-4xl text-teal-600"></i>
-                <p class="mt-4 text-gray-600">資料讀取中，請稍候...</p>
-            </div>
-
-            <div v-else-if="!currentUser" class="flex flex-col items-center justify-center h-64 bg-white rounded-lg shadow p-8 mt-4">
-                <i class="fa-solid fa-user-lock text-5xl text-gray-400 mb-4"></i>
-                <h2 class="text-2xl font-semibold text-gray-700">歡迎使用</h2>
-                <p class="text-gray-500 mt-2">請從右上方選單選擇一個模擬身分以開始操作。</p>
-                <div class="mt-4 text-sm text-gray-400 bg-gray-50 p-2 rounded">
-                    <i class="fa-solid fa-info-circle mr-1"></i>
-                    若選單為空，請確認 config.js 中的網址是否正確。
-                </div>
-                <button @click="fetchUsers" class="mt-6 px-4 py-2 bg-teal-600 text-white rounded hover:bg-teal-700 transition">
-                    <i class="fa-solid fa-sync mr-2"></i> 重新讀取使用者列表
-                </button>
-            </div>
-
-            <div v-else class="grid grid-cols-1 md:grid-cols-4 gap-6">
-                
-                <div class="md:col-span-1 bg-white rounded-lg shadow overflow-hidden">
-                    <div class="p-4 bg-gray-50 border-b">
-                        <h3 class="font-bold text-gray-700">{{ currentUser.organization }}</h3>
-                        <p class="text-sm text-gray-500">{{ currentUser.role === 'case_manager' ? '個案管理視圖' : '跨院協作視圖' }}</p>
+        <div v-if="!isLoggedIn" class="fixed inset-0 z-50 flex items-center justify-center bg-slate-50">
+            <div class="bg-white p-10 rounded-xl shadow-2xl w-full max-w-md border border-slate-100">
+                <div class="text-center mb-8">
+                    <div class="inline-flex items-center justify-center w-16 h-16 rounded-full bg-teal-50 text-teal-600 mb-4">
+                        <i class="fa-solid fa-hospital text-3xl"></i>
                     </div>
-                    <ul class="divide-y">
-                        <li @click="currentTab = 'dashboard'" :class="{'bg-teal-50 text-teal-700 border-l-4 border-teal-600': currentTab === 'dashboard'}" class="p-3 cursor-pointer hover:bg-gray-50 flex items-center">
-                            <i class="fa-solid fa-chart-line w-6 text-center mr-2"></i> 主控台 (Dashboard)
-                        </li>
-                        <li @click="currentTab = 'patients'" :class="{'bg-teal-50 text-teal-700 border-l-4 border-teal-600': currentTab === 'patients'}" class="p-3 cursor-pointer hover:bg-gray-50 flex items-center">
-                            <i class="fa-solid fa-users w-6 text-center mr-2"></i> 個案列表
-                        </li>
-                        <li @click="currentTab = 'observations'" :class="{'bg-teal-50 text-teal-700 border-l-4 border-teal-600': currentTab === 'observations'}" class="p-3 cursor-pointer hover:bg-gray-50 flex items-center">
-                            <i class="fa-solid fa-heart-pulse w-6 text-center mr-2"></i> 遠距監控數據
-                        </li>
-                    </ul>
+                    <h1 class="text-2xl font-bold text-slate-800">新樓醫院個案管理平台</h1>
+                    <p class="text-slate-500 text-sm mt-2">請登入以存取系統</p>
                 </div>
 
-                <div class="md:col-span-3">
+                <form @submit.prevent="handleLogin" class="space-y-6">
+                    <div>
+                        <label class="block text-sm font-medium text-slate-700 mb-1">電子郵件信箱</label>
+                        <div class="relative">
+                            <span class="absolute inset-y-0 left-0 pl-3 flex items-center text-slate-400">
+                                <i class="fa-solid fa-envelope"></i>
+                            </span>
+                            <input v-model="loginEmail" type="email" required placeholder="name@example.com" 
+                                class="w-full pl-10 pr-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-teal-500 outline-none transition">
+                        </div>
+                        <p class="text-xs text-slate-400 mt-1">* 預設管理員: kaichun.yang@gmail.com</p>
+                    </div>
                     
-                    <div v-if="currentTab === 'dashboard'" class="bg-white rounded-lg shadow p-6">
-                        <h2 class="text-2xl font-bold mb-4 border-b pb-2">工作概覽</h2>
-                        <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
-                            <div class="bg-blue-50 p-4 rounded border border-blue-100">
-                                <h4 class="text-blue-800 font-bold">待處理個案</h4>
-                                <p class="text-3xl font-bold text-blue-600 mt-2">{{ patients.length }} <span class="text-sm font-normal text-gray-500">位</span></p>
-                            </div>
-                            <div class="bg-red-50 p-4 rounded border border-red-100">
-                                <h4 class="text-red-800 font-bold">異常警示</h4>
-                                <p class="text-3xl font-bold text-red-600 mt-2">2 <span class="text-sm font-normal text-gray-500">件</span></p>
-                            </div>
-                        </div>
-                        <div class="bg-yellow-50 border-l-4 border-yellow-400 p-4">
-                            <div class="flex">
-                                <div class="flex-shrink-0">
-                                    <i class="fa-solid fa-bullhorn text-yellow-600"></i>
+                    <button type="submit" :disabled="loading" 
+                        class="w-full bg-teal-600 text-white py-2.5 rounded-lg hover:bg-teal-700 font-medium transition shadow-lg shadow-teal-600/20 flex justify-center items-center">
+                        <span v-if="loading"><i class="fa-solid fa-circle-notch fa-spin mr-2"></i> 驗證中...</span>
+                        <span v-else>登入系統</span>
+                    </button>
+                </form>
+
+                <div v-if="loginError" class="mt-4 p-3 bg-red-50 text-red-600 text-sm rounded-lg flex items-center">
+                    <i class="fa-solid fa-circle-exclamation mr-2"></i> {{ loginError }}
+                </div>
+            </div>
+        </div>
+
+        <template v-else>
+            
+            <aside class="w-64 bg-white border-r border-slate-200 flex flex-col shadow-sm z-10">
+                <div class="p-6 flex items-center border-b border-slate-100">
+                    <i class="fa-solid fa-hospital-user text-teal-600 text-2xl mr-3"></i>
+                    <span class="font-bold text-lg text-slate-800 tracking-tight">新樓醫院 <span class="text-xs text-teal-600 block font-normal">個案管理系統</span></span>
+                </div>
+
+                <div class="px-6 py-6 flex items-center">
+                    <div class="w-10 h-10 rounded-full bg-slate-100 flex items-center justify-center text-slate-500 font-bold border border-slate-200">
+                        {{ currentUser.name.charAt(0) }}
+                    </div>
+                    <div class="ml-3 overflow-hidden">
+                        <p class="text-sm font-bold text-slate-800 truncate">{{ currentUser.name }}</p>
+                        <p class="text-xs text-slate-500 truncate">{{ translateRole(currentUser.role) }}</p>
+                    </div>
+                </div>
+
+                <nav class="flex-1 px-4 space-y-1 mt-2">
+                    <a href="#" @click.prevent="currentTab = 'dashboard'" :class="navClass('dashboard')" class="flex items-center px-4 py-3 text-sm font-medium rounded-lg transition-colors group">
+                        <i class="fa-solid fa-chart-pie w-6 text-center mr-3 group-hover:text-teal-600"></i>
+                        主控台 (Dashboard)
+                    </a>
+                    
+                    <a href="#" @click.prevent="currentTab = 'patients'" :class="navClass('patients')" class="flex items-center px-4 py-3 text-sm font-medium rounded-lg transition-colors group">
+                        <i class="fa-solid fa-user-injured w-6 text-center mr-3 group-hover:text-teal-600"></i>
+                        個案列表 (Patients)
+                    </a>
+                    
+                    <a href="#" @click.prevent="currentTab = 'observations'" :class="navClass('observations')" class="flex items-center px-4 py-3 text-sm font-medium rounded-lg transition-colors group">
+                        <i class="fa-solid fa-heart-pulse w-6 text-center mr-3 group-hover:text-teal-600"></i>
+                        監控數據 (Data)
+                    </a>
+
+                    <div v-if="currentUser.role === 'admin'" class="pt-4 mt-4 border-t border-slate-100">
+                        <p class="px-4 text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">系統管理</p>
+                        <a href="#" @click.prevent="currentTab = 'admin_users'" :class="navClass('admin_users')" class="flex items-center px-4 py-3 text-sm font-medium rounded-lg transition-colors group">
+                            <i class="fa-solid fa-users-gear w-6 text-center mr-3 group-hover:text-teal-600"></i>
+                            使用者管理
+                        </a>
+                    </div>
+                </nav>
+
+                <div class="p-4 border-t border-slate-100">
+                    <button @click="logout" class="w-full flex items-center px-4 py-2 text-sm text-slate-500 hover:text-red-600 hover:bg-red-50 rounded-lg transition">
+                        <i class="fa-solid fa-arrow-right-from-bracket w-6 text-center mr-3"></i> 登出
+                    </button>
+                </div>
+            </aside>
+
+            <main class="flex-1 bg-white overflow-y-auto relative">
+                <header class="bg-white/90 backdrop-blur sticky top-0 z-20 px-8 py-5 border-b border-slate-100 flex justify-between items-center">
+                    <h2 class="text-2xl font-bold text-slate-800">{{ getTabTitle(currentTab) }}</h2>
+                    <div class="flex items-center space-x-3">
+                         <span class="px-3 py-1 bg-slate-50 text-slate-500 text-xs rounded-full border border-slate-200">
+                             {{ currentUser.organization }}
+                         </span>
+                         <button @click="fetchData(currentTab)" class="w-8 h-8 flex items-center justify-center rounded-full hover:bg-slate-100 text-slate-400 transition" title="重新整理">
+                             <i class="fa-solid fa-rotate-right" :class="{'fa-spin': loading}"></i>
+                         </button>
+                    </div>
+                </header>
+
+                <div class="p-8">
+                    <div v-if="currentTab === 'dashboard'" class="space-y-6">
+                        <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                            <div class="bg-white p-6 rounded-2xl border border-slate-100 shadow-sm hover:shadow-md transition">
+                                <div class="flex justify-between items-start">
+                                    <div>
+                                        <p class="text-sm font-medium text-slate-400">總個案數</p>
+                                        <h3 class="text-3xl font-bold text-slate-700 mt-1">{{ patients.length }}</h3>
+                                    </div>
+                                    <div class="p-2 bg-blue-50 text-blue-600 rounded-lg"><i class="fa-solid fa-users"></i></div>
                                 </div>
-                                <div class="ml-3">
-                                    <p class="text-sm text-yellow-700">
-                                        <span class="font-bold">系統公告：</span> 請各位同仁注意，下週一將進行 FHIR 資料交換平台維護。
-                                    </p>
+                            </div>
+                            <div class="bg-white p-6 rounded-2xl border border-slate-100 shadow-sm hover:shadow-md transition">
+                                <div class="flex justify-between items-start">
+                                    <div>
+                                        <p class="text-sm font-medium text-slate-400">今日異常警示</p>
+                                        <h3 class="text-3xl font-bold text-red-500 mt-1">2</h3>
+                                    </div>
+                                    <div class="p-2 bg-red-50 text-red-600 rounded-lg"><i class="fa-solid fa-bell"></i></div>
                                 </div>
                             </div>
                         </div>
                     </div>
 
-                    <div v-if="currentTab === 'patients'" class="bg-white rounded-lg shadow p-6">
-                        <div class="flex justify-between items-center mb-4 border-b pb-2">
-                            <h2 class="text-2xl font-bold">我的個案列表</h2>
-                            <button @click="fetchData('patients')" class="text-sm text-teal-600 hover:text-teal-800"><i class="fa-solid fa-rotate"></i> 重新整理</button>
+                    <div v-if="currentTab === 'admin_users'" class="bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden">
+                        <div class="p-6 border-b border-slate-100 flex justify-between items-center">
+                            <h3 class="font-bold text-slate-700">系統使用者列表</h3>
+                            <button @click="showAddUserModal = true" class="px-4 py-2 bg-teal-600 text-white text-sm rounded-lg hover:bg-teal-700 transition flex items-center">
+                                <i class="fa-solid fa-plus mr-2"></i> 新增使用者
+                            </button>
                         </div>
                         <div class="overflow-x-auto">
-                            <table class="min-w-full divide-y divide-gray-200">
-                                <thead class="bg-gray-50">
+                            <table class="w-full text-left text-sm text-slate-600">
+                                <thead class="bg-slate-50 text-slate-500 uppercase font-bold text-xs">
                                     <tr>
-                                        <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">姓名</th>
-                                        <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">身分證號</th>
-                                        <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">性別</th>
-                                        <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">操作</th>
+                                        <th class="px-6 py-3">姓名</th>
+                                        <th class="px-6 py-3">Email</th>
+                                        <th class="px-6 py-3">單位</th>
+                                        <th class="px-6 py-3">權限角色</th>
+                                        <th class="px-6 py-3">操作</th>
                                     </tr>
                                 </thead>
-                                <tbody class="bg-white divide-y divide-gray-200">
-                                    <tr v-for="p in patients" :key="p.id">
-                                        <td class="px-4 py-3 font-medium">{{ p.name }}</td>
-                                        <td class="px-4 py-3 text-gray-500">{{ p.nationalId }}</td>
-                                        <td class="px-4 py-3 text-gray-500">{{ p.gender === 'male' ? '男' : '女' }}</td>
-                                        <td class="px-4 py-3">
-                                            <button @click="viewPatient(p.id)" class="text-teal-600 hover:text-teal-900 text-sm">查看詳情</button>
+                                <tbody class="divide-y divide-slate-100">
+                                    <tr v-for="u in users" :key="u.id" class="hover:bg-slate-50/50">
+                                        <td class="px-6 py-4 font-medium text-slate-800">{{ u.name }}</td>
+                                        <td class="px-6 py-4">{{ u.email || '-' }}</td>
+                                        <td class="px-6 py-4">{{ u.organization }}</td>
+                                        <td class="px-6 py-4">
+                                            <span :class="roleBadgeClass(u.role)" class="px-2 py-1 rounded text-xs font-medium">
+                                                {{ translateRole(u.role) }}
+                                            </span>
+                                        </td>
+                                        <td class="px-6 py-4">
+                                            <button v-if="u.email !== 'kaichun.yang@gmail.com'" @click="deleteUser(u.id)" class="text-red-400 hover:text-red-600 transition">
+                                                <i class="fa-regular fa-trash-can"></i>
+                                            </button>
+                                            <span v-else class="text-xs text-slate-300">系統管理員</span>
                                         </td>
                                     </tr>
                                 </tbody>
@@ -128,105 +183,146 @@
                         </div>
                     </div>
 
-                    <div v-if="currentTab === 'observations'" class="bg-white rounded-lg shadow p-6">
-                        <div class="flex justify-between items-center mb-4 border-b pb-2">
-                            <h2 class="text-2xl font-bold">即時生理監控</h2>
-                            <button @click="fetchData('observations')" class="text-sm text-teal-600 hover:text-teal-800"><i class="fa-solid fa-rotate"></i> 重新整理</button>
-                        </div>
-                        <ul class="space-y-4">
-                            <li v-for="obs in observations" :key="obs.id" class="border rounded p-4 flex justify-between items-center hover:bg-gray-50">
-                                <div>
-                                    <div class="flex items-center">
-                                        <span class="font-bold text-lg mr-2">{{ translateCode(obs.code) }}</span>
-                                        <span :class="isAbnormal(obs) ? 'bg-red-100 text-red-800' : 'bg-green-100 text-green-800'" class="px-2 py-0.5 rounded text-xs font-medium">
-                                            {{ isAbnormal(obs) ? '異常' : '正常' }}
-                                        </span>
-                                    </div>
-                                    <div class="text-sm text-gray-500 mt-1">
-                                        <i class="fa-regular fa-clock mr-1"></i> {{ obs.timestamp }} | 個案 ID: {{ obs.patientId }}
-                                    </div>
-                                </div>
-                                <div class="text-right">
-                                    <div class="text-2xl font-bold text-gray-700">{{ obs.value }} <span class="text-sm font-normal text-gray-500">{{ obs.unit }}</span></div>
-                                </div>
+                    <div v-if="currentTab === 'patients'" class="bg-white rounded-2xl border border-slate-100 shadow-sm p-6">
+                        <table class="w-full text-sm text-left">
+                            <thead class="bg-slate-50 text-slate-500 font-bold">
+                                <tr><th class="p-3">姓名</th><th class="p-3">身分證</th><th class="p-3">性別</th></tr>
+                            </thead>
+                            <tbody>
+                                <tr v-for="p in patients" class="border-b border-slate-50 hover:bg-slate-50">
+                                    <td class="p-3">{{p.name}}</td><td class="p-3 text-slate-500">{{p.nationalId}}</td><td class="p-3">{{p.gender}}</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                     <div v-if="currentTab === 'observations'" class="bg-white rounded-2xl border border-slate-100 shadow-sm p-6">
+                        <ul>
+                            <li v-for="obs in observations" class="p-3 border-b border-slate-50 flex justify-between">
+                                <span>{{obs.code}}</span> <span class="font-bold">{{obs.value}} {{obs.unit}}</span>
                             </li>
                         </ul>
                     </div>
 
                 </div>
+            </main>
+
+            <div v-if="showAddUserModal" class="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/50 backdrop-blur-sm">
+                <div class="bg-white rounded-xl shadow-2xl w-full max-w-md p-6">
+                    <h3 class="text-xl font-bold text-slate-800 mb-4">新增使用者</h3>
+                    <form @submit.prevent="submitNewUser" class="space-y-4">
+                        <div>
+                            <label class="block text-sm font-medium mb-1">姓名</label>
+                            <input v-model="newUser.name" required class="w-full border rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-teal-500 outline-none">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium mb-1">Email</label>
+                            <input v-model="newUser.email" type="email" required class="w-full border rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-teal-500 outline-none">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium mb-1">角色</label>
+                            <select v-model="newUser.role" class="w-full border rounded-lg px-3 py-2 text-sm">
+                                <option value="case_manager">個案管理師</option>
+                                <option value="physician">診所醫師</option>
+                                <option value="admin">管理員</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium mb-1">所屬單位</label>
+                            <input v-model="newUser.organization" required class="w-full border rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-teal-500 outline-none">
+                        </div>
+                        <div class="flex justify-end space-x-3 mt-6">
+                            <button type="button" @click="showAddUserModal = false" class="px-4 py-2 text-slate-500 hover:bg-slate-100 rounded-lg">取消</button>
+                            <button type="submit" class="px-4 py-2 bg-teal-600 text-white rounded-lg hover:bg-teal-700">建立</button>
+                        </div>
+                    </form>
+                </div>
             </div>
-        </main>
-        
-        <footer class="bg-gray-800 text-gray-400 text-center py-4 text-sm">
-            &copy; 2025 新樓醫院專業版個案管理平台 Demo | Powered by Google Apps Script & GitHub Pages
-        </footer>
+
+        </template>
     </div>
 
     <script>
         const { createApp } = Vue;
 
-        // 注意：我們不需要在這裡定義 API_BASE_URL 了，
-        // 因為它現在會從 'config.js' 中自動讀取全域變數 API_BASE_URL。
-
         createApp({
             data() {
                 return {
                     loading: false,
+                    isLoggedIn: false,
+                    loginEmail: '',
+                    loginError: '',
                     currentUser: null,
                     currentTab: 'dashboard',
                     users: [],
                     patients: [],
                     observations: [],
+                    
+                    // Admin Modal State
+                    showAddUserModal: false,
+                    newUser: { name: '', email: '', role: 'case_manager', organization: '' }
                 }
             },
-            mounted() {
-                // 網頁載入時，先抓取使用者列表
-                this.fetchUsers();
-            },
             methods: {
-                // 讀取使用者 (模擬登入清單)
-                async fetchUsers() {
+                // --- 登入邏輯 ---
+                async handleLogin() {
                     this.loading = true;
+                    this.loginError = '';
+
                     try {
-                        // 這裡的 API_BASE_URL 是來自 config.js
-                        if (typeof API_BASE_URL === 'undefined') {
-                            throw new Error('API_BASE_URL 未定義，請檢查 config.js 是否正確載入');
-                        }
-                        
+                        // 1. 先讀取目前所有使用者
                         const res = await fetch(`${API_BASE_URL}?endpoint=users`);
                         const json = await res.json();
-                        if (json.status === 'success') {
+                        
+                        if(json.status === 'success') {
                             this.users = json.data;
-                        } else {
-                            alert('讀取失敗: ' + json.message);
+                            
+                            // 2. 特殊規則：kaichun.yang@gmail.com 永遠是管理員
+                            if (this.loginEmail === 'kaichun.yang@gmail.com') {
+                                this.currentUser = {
+                                    id: 'ADMIN',
+                                    name: '楊凱鈞',
+                                    email: this.loginEmail,
+                                    role: 'admin',
+                                    organization: '系統管理中心'
+                                };
+                                this.isLoggedIn = true;
+                                this.fetchData('patients'); // 預載資料
+                                return;
+                            }
+
+                            // 3. 一般使用者驗證 (比對 Email)
+                            const foundUser = this.users.find(u => u.email === this.loginEmail);
+                            if (foundUser) {
+                                this.currentUser = foundUser;
+                                this.isLoggedIn = true;
+                                this.fetchData('patients');
+                            } else {
+                                this.loginError = '找不到此 Email 帳號，請聯繫管理員。';
+                            }
                         }
                     } catch (e) {
-                        console.error(e);
-                        alert('連線錯誤：' + e.message);
+                        this.loginError = '連線錯誤: ' + e.message;
                     } finally {
                         this.loading = false;
                     }
                 },
-                
-                // 切換使用者時自動讀取相關資料
-                handleUserChange() {
-                    if (this.currentUser) {
-                        this.fetchData('patients');
-                        this.fetchData('observations');
-                        this.currentTab = 'dashboard';
-                    }
+
+                logout() {
+                    this.isLoggedIn = false;
+                    this.currentUser = null;
+                    this.loginEmail = '';
                 },
 
-                // 讀取各類資料 (Patients, Observations)
+                // --- 資料讀取 ---
                 async fetchData(endpoint) {
-                    if (!this.currentUser) return;
+                    if(endpoint === 'dashboard' || endpoint === 'admin_users') endpoint = 'users'; // 簡化處理
                     
                     this.loading = true;
                     try {
                         const res = await fetch(`${API_BASE_URL}?endpoint=${endpoint}`);
                         const json = await res.json();
-                        
                         if (json.status === 'success') {
+                            if (endpoint === 'users') this.users = json.data;
                             if (endpoint === 'patients') this.patients = json.data;
                             if (endpoint === 'observations') this.observations = json.data;
                         }
@@ -237,26 +333,70 @@
                     }
                 },
 
-                // 簡單的代碼翻譯
-                translateCode(code) {
-                    const map = {
-                        'systolic_bp': '收縮壓',
-                        'diastolic_bp': '舒張壓',
-                        'glucose': '血糖',
-                        'heart_rate': '心率'
-                    };
-                    return map[code] || code;
+                // --- 使用者管理功能 ---
+                async submitNewUser() {
+                    this.loading = true;
+                    // 使用 GET 傳遞參數來寫入 (Apps Script 的簡單解法)
+                    const params = new URLSearchParams({
+                        action: 'addUser',
+                        name: this.newUser.name,
+                        email: this.newUser.email,
+                        role: this.newUser.role,
+                        organization: this.newUser.organization
+                    });
+
+                    try {
+                        await fetch(`${API_BASE_URL}?${params.toString()}`);
+                        alert('使用者建立成功！');
+                        this.showAddUserModal = false;
+                        this.newUser = { name: '', email: '', role: 'case_manager', organization: '' };
+                        this.fetchData('users'); // 重新整理列表
+                    } catch(e) {
+                        alert('建立失敗');
+                    } finally {
+                        this.loading = false;
+                    }
                 },
 
-                // 簡單的異常判斷邏輯 (Demo 用)
-                isAbnormal(obs) {
-                    if (obs.code === 'systolic_bp' && obs.value > 140) return true;
-                    if (obs.code === 'glucose' && obs.value > 126) return true;
-                    return false;
+                async deleteUser(id) {
+                    if(!confirm('確定要刪除此使用者嗎？')) return;
+                    
+                    this.loading = true;
+                    try {
+                        await fetch(`${API_BASE_URL}?action=deleteUser&id=${id}`);
+                        this.fetchData('users');
+                    } catch(e) {
+                        alert('刪除失敗');
+                    } finally {
+                        this.loading = false;
+                    }
                 },
-                
-                viewPatient(id) {
-                    alert('查看個案詳情功能 (ID: ' + id + ') 將於下一階段實作。');
+
+                // --- UI 輔助 ---
+                navClass(tab) {
+                    const base = "flex items-center px-4 py-3 text-sm font-medium rounded-lg transition-colors group ";
+                    if (this.currentTab === tab) {
+                        return base + "bg-teal-50 text-teal-700 font-bold";
+                    }
+                    return base + "text-slate-500 hover:bg-slate-50 hover:text-slate-900";
+                },
+                getTabTitle(tab) {
+                    const map = {
+                        'dashboard': '主控台',
+                        'patients': '個案列表',
+                        'observations': '生理監控數據',
+                        'admin_users': '使用者權限管理'
+                    };
+                    return map[tab];
+                },
+                translateRole(role) {
+                    const map = { 'admin': '系統管理員', 'case_manager': '個案管理師', 'physician': '診所醫師' };
+                    return map[role] || role;
+                },
+                roleBadgeClass(role) {
+                    if(role === 'admin') return 'bg-purple-100 text-purple-700';
+                    if(role === 'case_manager') return 'bg-teal-100 text-teal-700';
+                    return 'bg-blue-100 text-blue-700';
                 }
             }
         }).mount('#app');
