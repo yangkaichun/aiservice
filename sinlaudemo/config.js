@@ -1,7 +1,15 @@
-// config.js
-// 這裡是全站共用的設定檔
 
+
+/*
+ * config.js
+ * 全域設定檔 - 集中管理 API 網址與與第三方服務金鑰
+ */
+
+// Google Apps Script 部署網址 (後端 API)
 const API_BASE_URL = 'https://script.google.com/macros/s/AKfycbzSvpFTLmwXogdOZhrnbdIjNsnpBZE0QAJhwH9wleIF3Jg3ESzuJMTedNC185mfN4xO/exec';
 
-// 如果未來有其他共用設定，也可以加在這裡
-// const HOSPITAL_NAME = '新樓醫院';
+// Google OAuth 2.0 用戶端 ID (用於管理員登入驗證)
+const GOOGLE_CLIENT_ID = '1087860144140-upfitccfmtj5ibsg8tk9o0gu2efgt819.apps.googleusercontent.com';
+
+// 其他全域設定
+const HOSPITAL_NAME = '新樓醫院';
