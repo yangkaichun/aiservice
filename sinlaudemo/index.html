@@ -4,122 +4,71 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>新樓醫院專業版個案管理平台</title>
-    
     <link rel="icon" href="image/carepathicon.ico">
-
     <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
     <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700&display=swap" rel="stylesheet">
-    
-    <script src="https://accounts.google.com/gsi/client" async defer></script>
-
     <script src="config.js"></script>
     
     <script>
-        // 設定色彩主題：豐富多彩 (Vibrant)
         tailwind.config = {
             theme: {
                 extend: {
-                    fontFamily: {
-                        sans: ['Noto Sans TC', 'Microsoft JhengHei', 'sans-serif'],
-                    },
+                    fontFamily: { sans: ['Noto Sans TC', 'sans-serif'] },
                     colors: {
-                        brand: {
-                            blue: '#0066FF',
-                            purple: '#7B2CBF',
-                            teal: '#0096C7',
-                            green: '#2E8B57',
-                            orange: '#FB8500',
-                            red: '#D00000'
-                        }
+                        brand: { blue: '#0066FF', purple: '#7B2CBF', teal: '#0096C7', green: '#2E8B57', orange: '#FB8500', red: '#D00000' }
                     }
                 }
             }
         }
     </script>
     <style>
+        [v-cloak] { display: none; }
         ::-webkit-scrollbar { width: 6px; }
         ::-webkit-scrollbar-track { background: transparent; }
         ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 3px; }
-        [v-cloak] { display: none; }
-        body { background-color: #f3f4f6; }
+        .btn-gradient { background-size: 200% auto; transition: 0.5s; }
+        .btn-gradient:hover { background-position: right center; }
         
-        .btn-gradient {
-            background-size: 200% auto;
-            transition: 0.5s;
-        }
-        .btn-gradient:hover {
-            background-position: right center;
-        }
-        .fade-enter-active, .fade-leave-active { transition: opacity 0.3s ease; }
-        .fade-enter-from, .fade-leave-to { opacity: 0; }
+        /* Loading Animation */
+        .loader-bar { width: 0%; height: 4px; background: linear-gradient(90deg, #0066FF, #7B2CBF); animation: loading 3.5s ease-in-out forwards; }
+        @keyframes loading { 0% { width: 0%; } 100% { width: 100%; } }
+        .fade-out { animation: fadeOut 0.5s ease-out forwards; }
+        @keyframes fadeOut { to { opacity: 0; visibility: hidden; } }
     </style>
 </head>
-<body class="h-screen flex overflow-hidden antialiased text-gray-800">
+<body class="h-screen flex overflow-hidden antialiased text-gray-800 bg-gray-50">
     <div id="app" class="w-full flex h-full" v-cloak>
 
-        <div v-if="!isLoggedIn" class="fixed inset-0 z-50 flex items-center justify-center bg-gray-100">
-            <div class="absolute inset-0 overflow-hidden">
-                <div class="absolute -top-[20%] -left-[10%] w-[50%] h-[50%] rounded-full bg-blue-200/30 blur-3xl"></div>
-                <div class="absolute top-[40%] -right-[10%] w-[40%] h-[40%] rounded-full bg-purple-200/30 blur-3xl"></div>
-            </div>
-
-            <div class="w-full max-w-md p-8 bg-white/80 backdrop-blur-xl rounded-2xl shadow-2xl border border-white/50 relative z-10">
-                <div class="text-center mb-10">
-                    <div class="inline-flex items-center justify-center w-20 h-20 rounded-2xl bg-gradient-to-br from-blue-500 to-purple-600 text-white mb-6 shadow-lg transform rotate-3 hover:rotate-0 transition duration-300">
-                        <i class="fa-solid fa-hospital-user text-4xl"></i>
-                    </div>
-                    <h1 class="text-3xl font-bold tracking-tight text-gray-900">新樓醫院</h1>
-                    <p class="text-gray-500 mt-2 text-sm font-medium tracking-wide">專業版個案管理平台</p>
-                </div>
-
-                <form @submit.prevent="handleLogin" class="space-y-6">
-                    <div>
-                        <label class="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-2 ml-1">電子郵件信箱</label>
-                        <div class="relative">
-                            <i class="fa-solid fa-envelope absolute left-4 top-3.5 text-gray-400"></i>
-                            <input v-model="loginEmail" type="email" required placeholder="請輸入公務信箱" 
-                                class="w-full pl-11 pr-4 py-3 bg-white border border-gray-200 rounded-xl text-gray-900 focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 outline-none transition shadow-sm">
-                        </div>
-                    </div>
-                    <div class="pt-2">
-                        <button type="submit" :disabled="loading" 
-                            class="btn-gradient w-full bg-gradient-to-r from-blue-600 to-indigo-600 text-white py-3.5 rounded-xl font-bold tracking-wide shadow-lg shadow-blue-600/30 hover:shadow-blue-600/50 flex justify-center items-center">
-                            <span v-if="loading"><i class="fa-solid fa-circle-notch fa-spin mr-2"></i> 驗證中...</span>
-                            <span v-else>登入系統</span>
-                        </button>
-                    </div>
-                    
-                    <p class="text-center text-xs text-gray-400 mt-4 bg-gray-50 py-2 rounded-lg border border-gray-100">
-                        * 管理員需進行 Google 真實驗證<br>
-                        (測試帳號: kaichun.yang@gmail.com)
-                    </p>
-                </form>
-                
-                <div v-if="loginError" class="mt-6 p-4 bg-red-50 border border-red-100 text-red-600 text-sm rounded-xl flex items-start animate-pulse">
-                    <i class="fa-solid fa-circle-exclamation mt-0.5 mr-2"></i> 
-                    <span>{{ loginError }}</span>
+        <div v-if="showSplash" class="fixed inset-0 z-[999] flex flex-col items-center justify-center bg-white" :class="{'fade-out': startFadeOut}">
+            <div class="mb-8 animate-bounce">
+                <div class="w-24 h-24 rounded-3xl bg-gradient-to-br from-brand-blue to-brand-purple flex items-center justify-center text-white shadow-2xl">
+                    <i class="fa-solid fa-hospital-user text-5xl"></i>
                 </div>
             </div>
+            <h1 class="text-3xl font-bold text-gray-800 mb-2 tracking-widest">新樓醫院</h1>
+            <p class="text-gray-500 text-sm mb-12 uppercase tracking-wide">Professional Case Management</p>
+            <div class="w-64 bg-gray-100 rounded-full h-1 overflow-hidden">
+                <div class="loader-bar"></div>
+            </div>
+            <p class="mt-4 text-xs text-gray-400">系統載入中...</p>
         </div>
 
-        <div v-else class="w-full flex h-full">
+        <div v-if="currentUser" class="w-full flex h-full">
             
             <aside class="w-64 bg-white border-r border-gray-200 flex flex-col z-20 shadow-sm">
                 <div class="h-16 flex items-center px-6 border-b border-gray-100">
                     <div class="w-8 h-8 bg-gradient-to-br from-brand-blue to-brand-purple rounded-lg flex items-center justify-center text-white mr-3 shadow-md">
                         <i class="fa-solid fa-heart-pulse text-sm"></i>
                     </div>
-                    <span class="font-bold text-lg text-gray-800 tracking-tight">新樓醫院 <span class="font-normal text-gray-400 text-sm">管理平台</span></span>
+                    <span class="font-bold text-lg text-gray-800">新樓醫院 <span class="font-normal text-gray-400 text-sm">平台</span></span>
                 </div>
 
                 <div class="px-5 py-6">
                     <div class="flex items-center p-3 rounded-2xl bg-gradient-to-r from-gray-50 to-white border border-gray-100 shadow-sm">
-                        <img v-if="currentUser.picture" :src="currentUser.picture" class="w-10 h-10 rounded-full border border-gray-100 shadow-sm mr-3">
-                        <div v-else class="w-10 h-10 rounded-full bg-white flex items-center justify-center text-brand-blue font-bold border border-gray-100 shadow-sm mr-3">
-                            {{ currentUser.name.charAt(0) }}
-                        </div>
+                        <img v-if="currentUser.picture" :src="currentUser.picture" class="w-10 h-10 rounded-full border border-gray-100 mr-3">
+                        <div v-else class="w-10 h-10 rounded-full bg-brand-blue text-white flex items-center justify-center font-bold mr-3">{{ currentUser.name[0] }}</div>
                         <div class="overflow-hidden">
                             <p class="text-sm font-bold text-gray-800 truncate">{{ currentUser.name }}</p>
                             <p class="text-xs text-gray-500 truncate">{{ translateRole(currentUser.role) }}</p>
@@ -127,35 +76,16 @@
                     </div>
                 </div>
 
-                <nav class="flex-1 px-4 space-y-1.5 overflow-y-auto custom-scrollbar">
+                <nav class="flex-1 px-4 space-y-1.5 overflow-y-auto">
                     <div class="px-2 mb-2 mt-2 text-xs font-bold text-gray-400">主要功能</div>
-                    
                     <a v-for="item in currentMenu" :key="item.id" href="#" @click.prevent="currentTab = item.id" 
                        :class="navClass(item.id, item.color)"
-                       class="flex items-center px-4 py-3 text-sm font-bold rounded-xl transition-all duration-200 group">
-                        <div :class="[
-                            'w-8 h-8 rounded-lg flex items-center justify-center mr-3 transition-colors duration-200',
-                            currentTab === item.id ? 'bg-white/20 text-white' : 'bg-gray-100 ' + item.textColor
-                        ]">
+                       class="flex items-center px-4 py-3 text-sm font-bold rounded-xl transition-all group">
+                        <div :class="['w-8 h-8 rounded-lg flex items-center justify-center mr-3 transition-colors', currentTab === item.id ? 'bg-white/20 text-white' : 'bg-gray-100 ' + item.textColor]">
                             <i :class="item.icon"></i>
                         </div>
                         {{ item.label }}
                     </a>
-
-                    <template v-if="currentUser.role === 'admin'">
-                        <div class="px-2 mb-2 mt-8 text-xs font-bold text-gray-400">系統管理</div>
-                        <a href="#" @click.prevent="currentTab = 'admin_users'" 
-                           :class="currentTab === 'admin_users' ? 'bg-gradient-to-r from-gray-800 to-black text-white shadow-lg shadow-gray-400/50' : 'text-gray-500 hover:bg-gray-50 hover:text-gray-900'"
-                           class="flex items-center px-4 py-3 text-sm font-bold rounded-xl transition-all group">
-                            <div :class="[
-                                'w-8 h-8 rounded-lg flex items-center justify-center mr-3 transition-colors duration-200',
-                                currentTab === 'admin_users' ? 'bg-white/20 text-white' : 'bg-gray-100 text-gray-600'
-                            ]">
-                                <i class="fa-solid fa-shield-halved"></i>
-                            </div>
-                            使用者權限
-                        </a>
-                    </template>
                 </nav>
 
                 <div class="p-4 border-t border-gray-100">
@@ -169,18 +99,13 @@
                 <header class="h-16 bg-white border-b border-gray-100 flex justify-between items-center px-8 sticky top-0 z-10 shadow-sm/50">
                     <div class="flex items-center">
                         <h2 class="text-xl font-bold text-gray-800">{{ getTabTitle(currentTab) }}</h2>
-                        <span class="ml-4 px-3 py-1 rounded-full text-xs font-bold bg-blue-50 text-blue-600 border border-blue-100">
-                            {{ currentUser.organization }}
-                        </span>
+                        <span class="ml-4 px-3 py-1 rounded-full text-xs font-bold bg-blue-50 text-blue-600 border border-blue-100">{{ currentUser.organization }}</span>
                     </div>
                     <div class="flex items-center space-x-3">
-                         <button v-if="currentTab === 'patients' && ['case_manager', 'hospital_staff', 'admin'].includes(currentUser.role)" 
-                            @click="showAddPatientModal = true"
-                            class="btn-gradient px-5 py-2 bg-gradient-to-r from-brand-blue to-indigo-600 text-white text-sm font-bold rounded-lg hover:shadow-lg hover:shadow-blue-500/30 transition flex items-center">
+                         <button v-if="currentTab === 'patients'" @click="showAddPatientModal = true" class="btn-gradient px-5 py-2 bg-gradient-to-r from-brand-blue to-indigo-600 text-white text-sm font-bold rounded-lg hover:shadow-lg transition flex items-center">
                              <i class="fa-solid fa-plus mr-2"></i> 新增個案
                          </button>
-
-                         <button @click="fetchData(currentTab)" class="w-10 h-10 flex items-center justify-center rounded-lg border border-gray-200 text-gray-400 hover:text-brand-blue hover:border-brand-blue hover:bg-blue-50 transition bg-white" title="重新整理">
+                         <button @click="fetchData(currentTab)" class="w-10 h-10 flex items-center justify-center rounded-lg border border-gray-200 text-gray-400 hover:bg-blue-50 transition bg-white">
                              <i class="fa-solid fa-rotate-right" :class="{'fa-spin': loading}"></i>
                          </button>
                     </div>
@@ -191,34 +116,21 @@
                         
                         <div v-if="currentTab === 'dashboard'" class="space-y-6">
                             <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
-                                <div class="p-6 rounded-2xl bg-white border border-gray-100 shadow-sm hover:shadow-lg transition relative overflow-hidden group">
-                                    <div class="absolute right-0 top-0 w-24 h-24 bg-blue-50 rounded-bl-full -mr-4 -mt-4 transition group-hover:bg-blue-100"></div>
-                                    <p class="text-xs font-bold text-gray-400 uppercase tracking-wider relative">管理個案數</p>
-                                    <div class="flex justify-between items-end mt-2 relative">
-                                        <h3 class="text-4xl font-extrabold text-gray-800">{{ patients.length }}</h3>
-                                        <div class="w-10 h-10 rounded-full bg-blue-100 text-blue-600 flex items-center justify-center"><i class="fa-solid fa-users text-lg"></i></div>
-                                    </div>
+                                <div class="p-6 rounded-2xl bg-white border border-gray-100 shadow-sm hover:shadow-lg transition relative overflow-hidden">
+                                    <p class="text-xs font-bold text-gray-400 uppercase">管理個案數</p>
+                                    <h3 class="text-4xl font-extrabold text-gray-800 mt-2">{{ patients.length }}</h3>
+                                    <div class="absolute right-4 bottom-4 w-12 h-12 bg-blue-50 rounded-full flex items-center justify-center text-brand-blue"><i class="fa-solid fa-users text-xl"></i></div>
                                 </div>
-                                <div class="p-6 rounded-2xl bg-white border border-gray-100 shadow-sm hover:shadow-lg transition relative overflow-hidden group">
-                                    <div class="absolute right-0 top-0 w-24 h-24 bg-red-50 rounded-bl-full -mr-4 -mt-4 transition group-hover:bg-red-100"></div>
-                                    <p class="text-xs font-bold text-gray-400 uppercase tracking-wider relative">今日異常警示</p>
-                                    <div class="flex justify-between items-end mt-2 relative">
-                                        <h3 class="text-4xl font-extrabold text-red-600">2</h3>
-                                        <div class="w-10 h-10 rounded-full bg-red-100 text-red-600 flex items-center justify-center animate-pulse"><i class="fa-solid fa-heart-pulse text-lg"></i></div>
-                                    </div>
+                                <div class="p-6 rounded-2xl bg-white border border-gray-100 shadow-sm hover:shadow-lg transition relative overflow-hidden">
+                                    <p class="text-xs font-bold text-gray-400 uppercase">今日異常警示</p>
+                                    <h3 class="text-4xl font-extrabold text-brand-red mt-2">2</h3>
+                                    <div class="absolute right-4 bottom-4 w-12 h-12 bg-red-50 rounded-full flex items-center justify-center text-brand-red animate-pulse"><i class="fa-solid fa-heart-pulse text-xl"></i></div>
                                 </div>
-                                <div class="p-6 rounded-2xl bg-white border border-gray-100 shadow-sm hover:shadow-lg transition relative overflow-hidden group">
-                                    <div class="absolute right-0 top-0 w-24 h-24 bg-orange-50 rounded-bl-full -mr-4 -mt-4 transition group-hover:bg-orange-100"></div>
-                                    <p class="text-xs font-bold text-gray-400 uppercase tracking-wider relative">待辦事項</p>
-                                    <div class="flex justify-between items-end mt-2 relative">
-                                        <h3 class="text-4xl font-extrabold text-gray-800">5</h3>
-                                        <div class="w-10 h-10 rounded-full bg-orange-100 text-orange-600 flex items-center justify-center"><i class="fa-regular fa-clipboard text-lg"></i></div>
-                                    </div>
+                                <div class="p-6 rounded-2xl bg-white border border-gray-100 shadow-sm hover:shadow-lg transition relative overflow-hidden">
+                                    <p class="text-xs font-bold text-gray-400 uppercase">待辦事項</p>
+                                    <h3 class="text-4xl font-extrabold text-gray-800 mt-2">5</h3>
+                                    <div class="absolute right-4 bottom-4 w-12 h-12 bg-orange-50 rounded-full flex items-center justify-center text-brand-orange"><i class="fa-regular fa-clipboard text-xl"></i></div>
                                 </div>
-                            </div>
-                            <div class="p-5 rounded-2xl bg-gradient-to-r from-yellow-50 to-white border border-yellow-100 flex items-start shadow-sm">
-                                <div class="p-2 bg-yellow-100 rounded-lg text-yellow-700 mr-4"><i class="fa-solid fa-bullhorn"></i></div>
-                                <div><h4 class="font-bold text-gray-800 text-sm">系統公告</h4><p class="text-sm text-gray-600 mt-1 leading-relaxed">FHIR 資料交換平台將於本週五晚間進行維護。</p></div>
                             </div>
                         </div>
 
@@ -226,130 +138,138 @@
                             <div class="p-4 border-b border-gray-100 flex items-center space-x-4 bg-gray-50/30">
                                 <div class="relative flex-1 max-w-md">
                                     <i class="fa-solid fa-magnifying-glass absolute left-3 top-3 text-gray-400"></i>
-                                    <input type="text" placeholder="搜尋姓名、身分證或病歷號..." class="w-full pl-10 pr-4 py-2.5 bg-white border border-gray-200 rounded-xl text-sm focus:ring-2 focus:ring-blue-100 focus:border-blue-400 transition placeholder-gray-400 outline-none">
+                                    <input type="text" placeholder="搜尋..." class="w-full pl-10 pr-4 py-2.5 bg-white border border-gray-200 rounded-xl text-sm focus:ring-2 focus:ring-blue-100 outline-none">
                                 </div>
                             </div>
                             <div class="flex-1 overflow-auto">
                                 <table class="w-full text-left border-collapse">
                                     <thead class="bg-white sticky top-0 z-10 border-b border-gray-100">
                                         <tr>
-                                            <th class="px-6 py-4 text-xs font-bold text-gray-400 uppercase tracking-wider">病歷號 / ID</th>
-                                            <th class="px-6 py-4 text-xs font-bold text-gray-400 uppercase tracking-wider">姓名</th>
-                                            <th class="px-6 py-4 text-xs font-bold text-gray-400 uppercase tracking-wider">身分證號</th>
-                                            <th class="px-6 py-4 text-xs font-bold text-gray-400 uppercase tracking-wider">性別</th>
-                                            <th class="px-6 py-4 text-xs font-bold text-gray-400 uppercase tracking-wider">出生日期</th>
-                                            <th class="px-6 py-4 text-right"></th>
+                                            <th class="px-6 py-4 text-xs font-bold text-gray-400 uppercase">病歷號</th>
+                                            <th class="px-6 py-4 text-xs font-bold text-gray-400 uppercase">姓名</th>
+                                            <th class="px-6 py-4 text-xs font-bold text-gray-400 uppercase">身分證號</th>
+                                            <th class="px-6 py-4 text-xs font-bold text-gray-400 uppercase">性別</th>
+                                            <th class="px-6 py-4 text-xs font-bold text-gray-400 uppercase">操作</th>
                                         </tr>
                                     </thead>
                                     <tbody class="divide-y divide-gray-50">
-                                        <tr v-for="p in patients" :key="p.id" class="hover:bg-blue-50/30 transition group">
+                                        <tr v-for="p in patients" :key="p.id" class="hover:bg-blue-50/30 transition">
                                             <td class="px-6 py-4 font-mono text-xs text-gray-500">{{ p.id }}</td>
                                             <td class="px-6 py-4 font-bold text-gray-900">{{ p.name }}</td>
                                             <td class="px-6 py-4 text-sm text-gray-600 font-mono">{{ p.nationalId }}</td>
-                                            <td class="px-6 py-4"><span :class="p.gender==='male' ? 'bg-blue-100 text-blue-700' : 'bg-pink-100 text-pink-700'" class="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-bold"><i :class="p.gender==='male' ? 'fa-solid fa-mars' : 'fa-solid fa-venus'" class="mr-1"></i>{{ p.gender === 'male' ? '男' : '女' }}</span></td>
-                                            <td class="px-6 py-4 text-sm text-gray-500 font-mono">{{ p.birthDate }}</td>
-                                            <td class="px-6 py-4 text-right"><button class="text-sm font-bold text-brand-blue bg-blue-50 hover:bg-brand-blue hover:text-white transition px-4 py-1.5 rounded-lg">詳情</button></td>
+                                            <td class="px-6 py-4"><span class="px-2 py-1 rounded text-xs bg-gray-100">{{ p.gender === 'male' ? '男' : '女' }}</span></td>
+                                            <td class="px-6 py-4">
+                                                <button @click="openPatientDetail(p)" class="text-sm font-bold text-brand-blue bg-blue-50 hover:bg-brand-blue hover:text-white transition px-4 py-1.5 rounded-lg">
+                                                    詳情與登打
+                                                </button>
+                                            </td>
                                         </tr>
                                     </tbody>
                                 </table>
-                                <div v-if="patients.length === 0 && !loading" class="flex flex-col items-center justify-center h-64 text-gray-400"><div class="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mb-4"><i class="fa-regular fa-folder-open text-2xl"></i></div><p class="text-sm font-medium">目前尚無個案資料</p></div>
                             </div>
                         </div>
 
                         <div v-if="currentTab === 'observations'" class="space-y-4">
-                             <div v-for="obs in observations" :key="obs.id" class="group bg-white p-6 rounded-2xl border border-gray-100 shadow-sm flex justify-between items-center hover:border-blue-200 hover:shadow-md transition cursor-default">
-                                <div class="flex items-center">
-                                    <div :class="isAbnormal(obs) ? 'bg-red-100 text-red-600' : 'bg-green-100 text-green-600'" class="w-14 h-14 rounded-2xl flex items-center justify-center mr-5 shadow-sm"><i class="fa-solid fa-heart-pulse text-2xl"></i></div>
-                                    <div><h4 class="font-bold text-gray-900 text-lg">{{ translateCode(obs.code) }}</h4><p class="text-xs text-gray-400 mt-1 font-mono">{{ obs.timestamp }} <span class="mx-1 text-gray-300">|</span> ID: {{ obs.patientId }}</p></div>
-                                </div>
-                                <div class="text-right">
-                                    <div class="text-3xl font-extrabold text-gray-800 tracking-tight">{{ obs.value }} <span class="text-sm font-bold text-gray-400 ml-1">{{ obs.unit }}</span></div>
-                                    <div v-if="isAbnormal(obs)" class="inline-flex items-center mt-2 px-2.5 py-1 bg-red-100 text-red-700 text-xs font-bold rounded-full"><i class="fa-solid fa-triangle-exclamation mr-1.5"></i> 數值異常</div>
-                                </div>
-                            </div>
-                        </div>
-
-                        <div v-if="['referrals', 'health_edu', 'reports', 'consultation', 'system_notice'].includes(currentTab)" class="h-96 flex flex-col items-center justify-center bg-white rounded-2xl border border-gray-200 border-dashed">
-                             <div class="w-20 h-20 bg-gray-50 rounded-full shadow-inner flex items-center justify-center mb-4 text-gray-300"><i class="fa-solid fa-layer-group text-3xl"></i></div>
-                             <h3 class="font-bold text-gray-800 text-lg">功能模組開發中</h3>
-                             <p class="text-sm text-gray-400 mt-2">此頁面預計於第二階段上線。</p>
-                        </div>
-
-                        <div v-if="currentTab === 'admin_users'" class="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
-                            <div class="p-6 border-b border-gray-100 flex justify-between items-center bg-gray-50/50">
-                                <h3 class="font-bold text-gray-900">使用者權限清單</h3>
-                                <button @click="showAddUserModal = true" class="btn-gradient px-4 py-2 bg-gradient-to-r from-gray-800 to-black text-white text-xs font-bold rounded-lg hover:shadow-lg transition flex items-center"><i class="fa-solid fa-plus mr-2"></i> 新增使用者</button>
-                            </div>
-                            <table class="w-full text-left text-sm text-gray-600">
-                                <thead class="bg-white text-gray-400 font-bold uppercase text-[10px] tracking-wider border-b border-gray-100">
-                                    <tr><th class="px-6 py-4">姓名</th><th class="px-6 py-4">Email</th><th class="px-6 py-4">單位</th><th class="px-6 py-4">角色</th><th class="px-6 py-4"></th></tr>
-                                </thead>
-                                <tbody class="divide-y divide-gray-50">
-                                    <tr v-for="u in users" :key="u.id" class="hover:bg-gray-50/80">
-                                        <td class="px-6 py-4 font-bold text-gray-900">{{ u.name }}</td><td class="px-6 py-4 font-mono text-xs">{{ u.email }}</td><td class="px-6 py-4">{{ u.organization }}</td>
-                                        <td class="px-6 py-4"><span :class="roleBadgeClass(u.role)" class="px-2.5 py-1 rounded text-[10px] font-bold uppercase border">{{ translateRole(u.role) }}</span></td>
-                                        <td class="px-6 py-4 text-right"><button v-if="u.role !== 'admin'" @click="deleteUser(u.id)" class="text-gray-400 hover:text-red-600 transition p-2 hover:bg-red-50 rounded-lg"><i class="fa-regular fa-trash-can"></i></button></td>
-                                    </tr>
-                                </tbody>
-                            </table>
+                             <div v-for="obs in observations" :key="obs.id" class="bg-white p-4 rounded-xl border border-gray-100 flex justify-between items-center">
+                                 <div>
+                                     <span class="font-bold text-gray-800">{{ translateCode(obs.code) }}</span>
+                                     <span class="text-xs text-gray-400 ml-2">{{ obs.timestamp }}</span>
+                                 </div>
+                                 <div class="font-mono font-bold text-brand-blue">{{ obs.value }} <span class="text-xs text-gray-400">{{ obs.unit }}</span></div>
+                             </div>
                         </div>
 
                     </div>
                 </div>
             </main>
 
-            <div v-if="showAddPatientModal" class="fixed inset-0 z-50 flex items-center justify-center bg-gray-900/60 backdrop-blur-sm p-4 transition-all">
-                <div class="bg-white rounded-2xl shadow-2xl w-full max-w-2xl overflow-hidden animate-fade-in-up">
-                    <div class="px-8 py-6 border-b border-gray-100 flex justify-between items-center bg-gradient-to-r from-brand-blue to-indigo-600 text-white">
-                        <div><h3 class="font-bold text-xl tracking-wide"><i class="fa-solid fa-file-medical mr-2"></i>新增個案資料</h3></div>
-                        <button @click="showAddPatientModal = false" class="text-white/70 hover:text-white transition bg-white/10 hover:bg-white/20 rounded-full w-8 h-8 flex items-center justify-center"><i class="fa-solid fa-xmark"></i></button>
+            <div v-if="showDetailModal" class="fixed inset-0 z-50 flex items-center justify-center bg-gray-900/60 backdrop-blur-sm p-4">
+                <div class="bg-white rounded-2xl shadow-2xl w-full max-w-4xl max-h-[90vh] overflow-hidden flex flex-col">
+                    <div class="px-8 py-5 border-b border-gray-100 bg-gray-50 flex justify-between items-center">
+                        <div>
+                            <h3 class="font-bold text-xl text-gray-800">{{ selectedPatient.name }} <span class="text-sm text-gray-500 font-normal">({{ selectedPatient.nationalId }})</span></h3>
+                            <p class="text-xs text-gray-400 mt-1">個案詳細資料與生理數據登錄</p>
+                        </div>
+                        <button @click="showDetailModal = false" class="text-gray-400 hover:text-gray-800"><i class="fa-solid fa-xmark text-xl"></i></button>
                     </div>
-                    <div class="p-8">
-                        <div class="flex p-1 bg-gray-100 rounded-xl mb-8">
-                            <button @click="addPatientMode = 'search'" :class="addPatientMode === 'search' ? 'bg-white text-brand-blue shadow-sm' : 'text-gray-500 hover:text-gray-700'" class="flex-1 py-2.5 text-sm font-bold rounded-lg transition-all flex items-center justify-center"><i class="fa-solid fa-bolt mr-2"></i> 快速匯入 (HIS 查詢)</button>
-                            <button @click="addPatientMode = 'manual'" :class="addPatientMode === 'manual' ? 'bg-white text-brand-blue shadow-sm' : 'text-gray-500 hover:text-gray-700'" class="flex-1 py-2.5 text-sm font-bold rounded-lg transition-all flex items-center justify-center"><i class="fa-regular fa-keyboard mr-2"></i> 手動建檔</button>
+                    
+                    <div class="flex-1 overflow-y-auto p-8 grid grid-cols-1 md:grid-cols-2 gap-8">
+                        <div>
+                            <h4 class="text-sm font-bold text-brand-blue uppercase mb-4 border-b pb-2">基本資料</h4>
+                            <div class="grid grid-cols-2 gap-4 text-sm mb-6">
+                                <div><label class="text-gray-400 text-xs">病歷號</label><p class="font-mono font-bold">{{ selectedPatient.id }}</p></div>
+                                <div><label class="text-gray-400 text-xs">性別</label><p>{{ selectedPatient.gender==='male'?'男':'女' }}</p></div>
+                                <div><label class="text-gray-400 text-xs">生日</label><p>{{ selectedPatient.birthDate }}</p></div>
+                            </div>
+
+                            <h4 class="text-sm font-bold text-brand-blue uppercase mb-4 border-b pb-2">最近五筆數據</h4>
+                            <ul class="space-y-3">
+                                <li v-for="obs in patientObservations.slice(0, 5)" :key="obs.id" class="flex justify-between items-center text-sm p-2 bg-gray-50 rounded">
+                                    <span class="text-gray-600">{{ translateCode(obs.code) }}</span>
+                                    <span class="font-mono font-bold">{{ obs.value }} <span class="text-xs text-gray-400">{{ obs.unit }}</span></span>
+                                </li>
+                                <li v-if="patientObservations.length === 0" class="text-xs text-gray-400">尚無數據</li>
+                            </ul>
                         </div>
-                        <div v-if="addPatientMode === 'search'" class="space-y-6">
-                            <div class="flex"><input v-model="searchKeyword" type="text" placeholder="例如: A123456789" class="flex-1 border border-gray-200 rounded-l-xl px-4 py-3 bg-white focus:ring-2 focus:ring-brand-blue outline-none transition"><button @click="searchHIS" :disabled="loading" class="bg-brand-blue text-white px-6 rounded-r-xl font-bold text-sm hover:bg-blue-700 disabled:opacity-50 transition">查詢</button></div>
-                            <div v-if="searchResult" class="mt-4 border border-green-200 rounded-xl p-5 bg-green-50 flex justify-between items-center">
-                                <div><h4 class="font-bold text-green-800 text-sm mb-2"><i class="fa-solid fa-check-circle mr-1"></i> 查詢成功</h4><div class="text-sm text-green-800 ml-5"><p>{{ searchResult.name }} / {{ searchResult.gender }}</p></div></div>
-                                <button @click="confirmAddPatient(searchResult)" class="text-xs bg-white border border-green-200 text-green-700 px-4 py-2 rounded-lg font-bold hover:bg-green-600 hover:text-white transition shadow-sm">匯入</button>
-                            </div>
-                            <div v-if="searchError" class="text-xs text-red-500 font-bold mt-2">{{ searchError }}</div>
+
+                        <div class="bg-blue-50/50 p-6 rounded-2xl border border-blue-100">
+                            <h4 class="text-sm font-bold text-brand-blue uppercase mb-4 flex items-center"><i class="fa-solid fa-pen-to-square mr-2"></i> 新增生理資訊 / 報告</h4>
+                            
+                            <form @submit.prevent="submitObservation" class="space-y-4">
+                                <div>
+                                    <label class="block text-xs font-bold text-gray-500 mb-1">類別</label>
+                                    <select v-model="newObs.code" class="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-brand-blue outline-none bg-white">
+                                        <option value="systolic_bp">收縮壓 (mmHg)</option>
+                                        <option value="diastolic_bp">舒張壓 (mmHg)</option>
+                                        <option value="glucose_ac">飯前血糖 (mg/dL)</option>
+                                        <option value="glucose_pc">飯後血糖 (mg/dL)</option>
+                                        <option value="body_height">身高 (cm)</option>
+                                        <option value="body_weight">體重 (kg)</option>
+                                        <option value="lab_report">檢驗檢查報告 (上傳)</option>
+                                    </select>
+                                </div>
+
+                                <div v-if="newObs.code !== 'lab_report'">
+                                    <label class="block text-xs font-bold text-gray-500 mb-1">數值</label>
+                                    <input v-model="newObs.value" type="number" step="0.1" required class="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-brand-blue outline-none">
+                                </div>
+
+                                <div v-else>
+                                    <label class="block text-xs font-bold text-gray-500 mb-1">報告名稱/結果摘要</label>
+                                    <input v-model="newObs.value" type="text" placeholder="例如: 血液生化報告 - 正常" required class="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-brand-blue outline-none">
+                                    <p class="text-xs text-gray-400 mt-1">* Demo 模式僅支援文字摘要記錄</p>
+                                </div>
+
+                                <div class="pt-4">
+                                    <button type="submit" :disabled="loading" class="w-full btn-gradient bg-gradient-to-r from-brand-blue to-indigo-600 text-white py-2 rounded-lg font-bold shadow-lg">
+                                        <span v-if="loading"><i class="fa-solid fa-spinner fa-spin mr-2"></i> 儲存中...</span>
+                                        <span v-else>儲存數據</span>
+                                    </button>
+                                </div>
+                            </form>
                         </div>
-                        <form v-else @submit.prevent="submitPatientManual" class="space-y-5">
-                            <div class="grid grid-cols-2 gap-6">
-                                <input v-model="newPatient.name" required placeholder="姓名" class="w-full border border-gray-200 rounded-lg px-3 py-2.5 outline-none transition bg-white">
-                                <input v-model="newPatient.nationalId" required placeholder="身分證" class="w-full border border-gray-200 rounded-lg px-3 py-2.5 outline-none transition bg-white">
-                                <input v-model="newPatient.birthDate" type="date" required class="w-full border border-gray-200 rounded-lg px-3 py-2.5 outline-none transition bg-white">
-                                <select v-model="newPatient.gender" class="w-full border border-gray-200 rounded-lg px-3 py-2.5 outline-none transition bg-white"><option value="male">男</option><option value="female">女</option></select>
-                            </div>
-                            <div class="pt-6 flex justify-end space-x-3 border-t border-gray-100 mt-6">
-                                <button type="button" @click="showAddPatientModal = false" class="px-5 py-2.5 text-xs font-bold text-gray-500 hover:bg-gray-100 rounded-lg transition">取消</button>
-                                <button type="submit" class="px-6 py-2.5 bg-brand-blue text-white rounded-lg text-xs font-bold hover:bg-blue-700 shadow-lg transition">儲存</button>
-                            </div>
-                        </form>
                     </div>
                 </div>
             </div>
 
-            <div v-if="showAddUserModal" class="fixed inset-0 z-50 flex items-center justify-center bg-gray-900/60 backdrop-blur-sm">
-                <div class="bg-white rounded-2xl shadow-2xl w-full max-w-md p-8 border border-gray-100">
-                    <h3 class="text-xl font-bold text-gray-900 mb-6 tracking-tight flex items-center"><i class="fa-solid fa-user-plus mr-2"></i>建立新帳號</h3>
-                    <form @submit.prevent="submitNewUser" class="space-y-4">
-                        <input v-model="newUser.name" required placeholder="姓名" class="w-full border border-gray-200 rounded-lg px-4 py-3 outline-none bg-gray-50 focus:bg-white transition">
-                        <input v-model="newUser.email" type="email" required placeholder="Email" class="w-full border border-gray-200 rounded-lg px-4 py-3 outline-none bg-gray-50 focus:bg-white transition">
-                        <select v-model="newUser.role" class="w-full border border-gray-200 rounded-lg px-4 py-3 outline-none bg-gray-50 focus:bg-white transition"><option value="hospital_staff">新樓醫院</option><option value="case_manager">個管師</option><option value="physician">醫師</option><option value="admin">管理員</option></select>
-                        <input v-model="newUser.organization" required placeholder="單位" class="w-full border border-gray-200 rounded-lg px-4 py-3 outline-none bg-gray-50 focus:bg-white transition">
-                        <div class="flex justify-end space-x-3 mt-8 pt-4">
-                            <button type="button" @click="showAddUserModal = false" class="px-4 py-2 text-xs font-bold text-gray-400 hover:text-black transition">取消</button>
-                            <button type="submit" class="px-6 py-2 bg-black text-white rounded-lg text-xs font-bold hover:bg-gray-800 shadow-md transition">建立</button>
+            <div v-if="showAddPatientModal" class="fixed inset-0 z-50 flex items-center justify-center bg-gray-900/60 backdrop-blur-sm p-4">
+                 <div class="bg-white rounded-2xl shadow-2xl w-full max-w-lg p-8">
+                    <h3 class="font-bold text-xl mb-4">新增個案</h3>
+                    <form @submit.prevent="submitPatientManual" class="space-y-4">
+                        <input v-model="newPatient.name" placeholder="姓名" class="w-full border p-2 rounded">
+                        <input v-model="newPatient.nationalId" placeholder="身分證" class="w-full border p-2 rounded">
+                        <input v-model="newPatient.birthDate" type="date" class="w-full border p-2 rounded">
+                        <select v-model="newPatient.gender" class="w-full border p-2 rounded"><option value="male">男</option><option value="female">女</option></select>
+                        <div class="flex justify-end space-x-2">
+                            <button type="button" @click="showAddPatientModal = false" class="px-4 py-2 bg-gray-200 rounded">取消</button>
+                            <button type="submit" class="px-4 py-2 bg-blue-600 text-white rounded">儲存</button>
                         </div>
                     </form>
-                </div>
+                 </div>
             </div>
 
-        </div> </div>
+        </div>
+    </div>
 
     <script>
         const { createApp } = Vue;
@@ -357,202 +277,113 @@
         createApp({
             data() {
                 return {
-                    // *** 讀取全域設定 ***
-                    googleClientId: typeof GOOGLE_CLIENT_ID !== 'undefined' ? GOOGLE_CLIENT_ID : '',
-                    
                     loading: false,
-                    isLoggedIn: false,
-                    loginEmail: '',
-                    loginError: '',
+                    showSplash: true, // 控制開場動畫
+                    startFadeOut: false, // 控制動畫淡出
                     currentUser: null,
                     currentTab: 'dashboard',
                     users: [],
                     patients: [],
                     observations: [],
                     
-                    showAddUserModal: false,
+                    // Detail & Observation Modal
+                    showDetailModal: false,
+                    selectedPatient: {},
+                    patientObservations: [], // 該病患的歷史數據
+                    newObs: { code: 'systolic_bp', value: '', unit: '' },
+
+                    // Add Patient
                     showAddPatientModal: false,
-                    
-                    addPatientMode: 'search',
-                    searchKeyword: '',
-                    searchResult: null,
-                    searchError: '',
-                    newPatient: { name: '', nationalId: '', birthDate: '', gender: 'male' },
-                    newUser: { name: '', email: '', role: 'hospital_staff', organization: '新樓醫院' }
+                    newPatient: { name: '', nationalId: '', birthDate: '', gender: 'male' }
                 }
             },
             computed: {
                 currentMenu() {
-                    if (!this.currentUser) return [];
-                    const common = [
-                         { id: 'dashboard', label: '主控台', icon: 'fa-solid fa-chart-pie', color: 'from-blue-500 to-cyan-500', textColor: 'text-blue-500' },
-                         { id: 'system_notice', label: '系統公告', icon: 'fa-solid fa-bullhorn', color: 'from-yellow-500 to-orange-500', textColor: 'text-yellow-600' }
-                    ];
+                    const common = [ { id: 'dashboard', label: '主控台', icon: 'fa-solid fa-chart-pie', color: 'from-blue-500 to-cyan-500', textColor: 'text-blue-500' } ];
                     const caseManagerMenu = [
                         { id: 'patients', label: '個案管理', icon: 'fa-solid fa-user-injured', color: 'from-brand-blue to-indigo-600', textColor: 'text-brand-blue' },
-                        { id: 'observations', label: '生理量測', icon: 'fa-solid fa-heart-pulse', color: 'from-rose-500 to-pink-600', textColor: 'text-rose-500' },
-                        { id: 'health_edu', label: '衛教中心', icon: 'fa-solid fa-book-medical', color: 'from-emerald-500 to-teal-500', textColor: 'text-emerald-600' },
-                        { id: 'reports', label: '報表中心', icon: 'fa-solid fa-file-invoice', color: 'from-gray-600 to-gray-800', textColor: 'text-gray-600' }
+                        { id: 'observations', label: '生理量測', icon: 'fa-solid fa-heart-pulse', color: 'from-rose-500 to-pink-600', textColor: 'text-rose-500' }
                     ];
-                    const physicianMenu = [
-                        { id: 'patients', label: '病歷查詢', icon: 'fa-solid fa-magnifying-glass', color: 'from-brand-blue to-cyan-600', textColor: 'text-brand-blue' },
-                        { id: 'referrals', label: '轉診管理', icon: 'fa-solid fa-people-arrows', color: 'from-purple-500 to-violet-600', textColor: 'text-purple-600' },
-                        { id: 'consultation', label: '線上照會', icon: 'fa-solid fa-comments', color: 'from-orange-500 to-red-500', textColor: 'text-orange-500' }
-                    ];
-
-                    if (['case_manager', 'hospital_staff', 'admin'].includes(this.currentUser.role)) {
-                        return [...common, ...caseManagerMenu];
-                    } else if (this.currentUser.role === 'physician') {
-                        return [...common, ...physicianMenu];
-                    }
-                    return common;
+                    // 簡化：只回傳個管師選單作為 Demo
+                    return [...common, ...caseManagerMenu];
                 }
             },
             mounted() {
-                // 將 Google 登入 Callback 掛載到 window 物件，讓 Google 函式庫可以呼叫
-                window.handleGoogleCallback = this.handleGoogleCallback;
-                
-                // 初始化 Google 登入 (如果 Client ID 存在)
-                if (this.googleClientId) {
-                    this.initGoogleLogin();
+                // 1. 檢查權限
+                const userJson = localStorage.getItem('currentUser');
+                if (!userJson) {
+                    window.location.href = 'login.html';
+                    return;
                 }
+                this.currentUser = JSON.parse(userJson);
+
+                // 2. 處理開場動畫 (3.5秒)
+                setTimeout(() => {
+                    this.startFadeOut = true; // 開始淡出
+                    setTimeout(() => {
+                        this.showSplash = false; // 移除 DOM
+                    }, 500); // 等待淡出動畫結束
+                }, 3500);
+
+                // 3. 載入資料
+                this.fetchData('patients');
+                this.fetchData('observations');
             },
             methods: {
-                initGoogleLogin() {
-                    if (typeof google !== 'undefined') {
-                        google.accounts.id.initialize({
-                            client_id: this.googleClientId,
-                            callback: this.handleGoogleCallback,
-                            cancel_on_tap_outside: false
-                        });
-                    }
-                },
-                async handleLogin() {
-                    this.loading = true;
-                    this.loginError = '';
-                    
-                    // --- A. 管理員流程 (強制 Google 驗證) ---
-                    if (this.loginEmail === 'kaichun.yang@gmail.com') {
-                        // 嘗試喚起 Google 登入
-                        if (typeof google !== 'undefined' && this.googleClientId) {
-                            google.accounts.id.prompt((notification) => {
-                                if (notification.isNotDisplayed() || notification.isSkippedMoment()) {
-                                    console.log("Google Prompt Failed/Skipped");
-                                    // 可以在這裡處理失敗狀況，例如顯示手動按鈕
-                                    this.loading = false;
-                                }
-                            });
-                            // 暫停 loading，等待使用者操作 Google 視窗
-                            this.loading = false;
-                            return; 
-                        } else {
-                            // 沒有 Client ID 時的備案
-                            alert("請確認 config.js 中的 GOOGLE_CLIENT_ID 設定正確");
-                            this.loading = false;
-                            return;
-                        }
-                    }
-
-                    // --- B. 一般使用者流程 (查表登入) ---
-                    try {
-                        const res = await fetch(`${API_BASE_URL}?endpoint=users`);
-                        const json = await res.json();
-                        if(json.status === 'success') {
-                            this.users = json.data;
-                            const foundUser = this.users.find(u => u.email === this.loginEmail);
-                            if (foundUser) {
-                                this.completeLogin(foundUser);
-                            } else {
-                                this.loginError = '找不到此使用者帳號';
-                                this.loading = false;
-                            }
-                        }
-                    } catch (e) { 
-                        this.loginError = '連線錯誤，請確認 config.js'; 
-                        this.loading = false;
-                    }
-                },
-                
-                // 處理 Google 登入成功的回傳
-                handleGoogleCallback(response) {
-                    // 1. 解碼 JWT
-                    const payload = this.decodeJwt(response.credential);
-                    console.log("Google User:", payload);
-                    
-                    // 2. 驗證身分 (這裡可以加強：比對後端資料庫)
-                    if (payload.email === 'kaichun.yang@gmail.com') {
-                        this.completeLogin({
-                            id: 'ADMIN',
-                            name: payload.name,
-                            email: payload.email,
-                            picture: payload.picture,
-                            role: 'admin',
-                            organization: '系統管理中心'
-                        });
-                    } else {
-                        // 可以在這裡允許其他 Google 帳號登入，只要 Email 在 Users 表中
-                        alert("此 Google 帳號非管理員，請使用正確帳號");
-                        this.loading = false;
-                    }
-                },
-                
-                completeLogin(user) {
-                    this.currentUser = user;
-                    this.isLoggedIn = true;
-                    this.fetchData('patients');
-                    this.loading = false;
-                },
-                
-                // 簡單的 JWT 解碼 (不驗證簽章，僅讀取 Payload)
-                decodeJwt(token) {
-                    var base64Url = token.split('.')[1];
-                    var base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
-                    var jsonPayload = decodeURIComponent(window.atob(base64).split('').map(function(c) {
-                        return '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2);
-                    }).join(''));
-                    return JSON.parse(jsonPayload);
-                },
-
                 logout() {
-                    this.isLoggedIn = false;
-                    this.currentUser = null;
-                    this.loginEmail = '';
-                    if (typeof google !== 'undefined') {
-                        google.accounts.id.disableAutoSelect();
-                    }
+                    localStorage.removeItem('currentUser');
+                    window.location.href = 'login.html';
                 },
-                
-                // --- API 呼叫 ---
                 async fetchData(endpoint) {
-                    if(!['users','patients','observations'].includes(endpoint)) return; 
-                    this.loading = true;
+                    // ... (保留之前的 fetch 邏輯) ...
                     try {
                         const res = await fetch(`${API_BASE_URL}?endpoint=${endpoint}`);
                         const json = await res.json();
                         if (json.status === 'success') {
-                            if (endpoint === 'users') this.users = json.data;
                             if (endpoint === 'patients') this.patients = json.data;
                             if (endpoint === 'observations') this.observations = json.data;
                         }
-                    } catch (e) { console.error(e); } finally { this.loading = false; }
+                    } catch (e) { console.error(e); }
                 },
-                async searchHIS() {
-                    if (!this.searchKeyword) return;
-                    this.loading = true; this.searchError = ''; this.searchResult = null;
+                
+                // --- 個案詳情與數據登打 ---
+                openPatientDetail(patient) {
+                    this.selectedPatient = patient;
+                    // 篩選出該病患的數據
+                    this.patientObservations = this.observations.filter(o => o.patientId === patient.id);
+                    this.newObs = { code: 'systolic_bp', value: '', unit: '' }; // 重置表單
+                    this.showDetailModal = true;
+                },
+                
+                async submitObservation() {
+                    this.loading = true;
+                    // 自動填入單位
+                    const unitMap = { 'systolic_bp': 'mmHg', 'diastolic_bp': 'mmHg', 'glucose_ac': 'mg/dL', 'glucose_pc': 'mg/dL', 'body_height': 'cm', 'body_weight': 'kg', 'lab_report': '檔案' };
+                    const unit = unitMap[this.newObs.code] || '';
+
+                    const params = new URLSearchParams({
+                        action: 'addObservation',
+                        patientId: this.selectedPatient.id,
+                        code: this.newObs.code,
+                        value: this.newObs.value,
+                        unit: unit
+                    });
+
                     try {
-                        const res = await fetch(`${API_BASE_URL}?action=searchHIS&keyword=${this.searchKeyword}`);
-                        const json = await res.json();
-                        if (json.found) {
-                            this.searchResult = json.data;
-                        } else {
-                            this.searchError = '查無資料';
-                        }
-                    } catch(e) { this.searchError = '查詢錯誤'; } finally { this.loading = false; }
+                        await fetch(`${API_BASE_URL}?${params.toString()}`);
+                        alert('數據儲存成功！');
+                        // 重新整理數據
+                        await this.fetchData('observations');
+                        this.patientObservations = this.observations.filter(o => o.patientId === this.selectedPatient.id);
+                        this.newObs.value = ''; // 清空輸入
+                    } catch (e) {
+                        alert('儲存失敗');
+                    } finally {
+                        this.loading = false;
+                    }
                 },
-                confirmAddPatient(data) {
-                    this.newPatient = { ...data };
-                    this.addPatientMode = 'manual'; 
-                },
+
+                // --- 新增個案 (簡化版) ---
                 async submitPatientManual() {
                     this.loading = true;
                     const params = new URLSearchParams({
@@ -566,68 +397,17 @@
                         await fetch(`${API_BASE_URL}?${params.toString()}`);
                         alert('個案建立成功');
                         this.showAddPatientModal = false;
-                        this.addPatientMode = 'search';
-                        this.searchKeyword = ''; this.searchResult = null;
-                        this.newPatient = { name: '', nationalId: '', birthDate: '', gender: 'male' };
                         this.fetchData('patients');
-                    } catch(e) { alert('建立失敗'); } finally { this.loading = false; }
+                    } catch(e) { alert('失敗'); } finally { this.loading = false; }
                 },
-                async submitNewUser() {
-                    this.loading = true;
-                    const params = new URLSearchParams({ action: 'addUser', ...this.newUser });
-                    try {
-                        await fetch(`${API_BASE_URL}?${params.toString()}`);
-                        alert('使用者建立成功');
-                        this.showAddUserModal = false;
-                        this.newUser = { name: '', email: '', role: 'hospital_staff', organization: '新樓醫院' };
-                        this.fetchData('users'); 
-                    } catch(e) { alert('建立失敗'); } finally { this.loading = false; }
-                },
-                async deleteUser(id) {
-                    if(!confirm('確定刪除此使用者?')) return;
-                    this.loading = true;
-                    try { await fetch(`${API_BASE_URL}?action=deleteUser&id=${id}`); this.fetchData('users'); } 
-                    catch(e) { alert('刪除失敗'); } finally { this.loading = false; }
-                },
-                // Styles
-                navClass(id, colorClass) {
-                    const isActive = this.currentTab === id;
-                    if (isActive) {
-                        return `bg-gradient-to-r ${colorClass} text-white shadow-lg shadow-gray-200`;
-                    }
-                    return "text-gray-500 hover:bg-white hover:text-gray-900 hover:shadow-sm";
-                },
-                getTabTitle(tab) {
-                    const map = {
-                        'dashboard': '系統主控台',
-                        'patients': '個案管理清單',
-                        'observations': '遠距生理監控',
-                        'admin_users': '系統權限管理',
-                        'referrals': '雙向轉診管理',
-                        'health_edu': '衛教資源中心',
-                        'reports': '數據報表中心',
-                        'consultation': '線上照會區'
-                    };
-                    return map[tab] || tab;
-                },
-                translateRole(role) {
-                    const map = { 'admin': '系統管理員', 'case_manager': '個案管理師', 'physician': '診所醫師', 'hospital_staff': '院內人員' };
-                    return map[role] || role;
-                },
-                roleBadgeClass(role) {
-                    if(role === 'admin') return 'bg-gray-100 text-gray-700 border-gray-200';
-                    if(role === 'case_manager') return 'bg-blue-50 text-brand-blue border-blue-100';
-                    if(role === 'physician') return 'bg-purple-50 text-purple-600 border-purple-100';
-                    return 'bg-green-50 text-green-600 border-green-100';
-                },
+
+                // 輔助函式
+                navClass(id, color) { return this.currentTab === id ? `bg-gradient-to-r ${color} text-white shadow-lg` : 'text-gray-500 hover:bg-white'; },
+                getTabTitle(tab) { return tab === 'dashboard' ? '系統主控台' : '個案管理'; },
+                translateRole(role) { return role === 'admin' ? '管理員' : '個管師'; },
                 translateCode(code) {
-                    const map = { 'systolic_bp': '收縮壓', 'diastolic_bp': '舒張壓', 'glucose': '血糖', 'heart_rate': '心率' };
+                    const map = { 'systolic_bp': '收縮壓', 'diastolic_bp': '舒張壓', 'glucose_ac': '飯前血糖', 'glucose_pc': '飯後血糖', 'body_height': '身高', 'body_weight': '體重', 'lab_report': '檢驗報告' };
                     return map[code] || code;
-                },
-                isAbnormal(obs) {
-                    if (obs.code === 'systolic_bp' && obs.value > 140) return true;
-                    if (obs.code === 'glucose' && obs.value > 126) return true;
-                    return false;
                 }
             }
         }).mount('#app');
