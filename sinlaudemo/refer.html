@@ -9,6 +9,9 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
     <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700&display=swap" rel="stylesheet">
+    
+    <script src="https://cdn.sheetjs.com/xlsx-0.20.0/package/dist/xlsx.full.min.js"></script>
+    
     <script src="config.js"></script>
     
     <script>
@@ -28,14 +31,13 @@
         ::-webkit-scrollbar-track { background: transparent; }
         ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 3px; }
         
-        /* ICD-10 下拉選單樣式 */
         .autocomplete-results {
             position: absolute;
             z-index: 50;
             background: white;
             border: 1px solid #e5e7eb;
             width: 100%;
-            max-height: 240px;
+            max-height: 300px;
             overflow-y: auto;
             border-radius: 0.5rem;
             box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
@@ -157,14 +159,24 @@
                                 <div class="space-y-5 mt-2">
                                     <div class="relative">
                                         <label class="block text-xs font-bold mb-1 text-gray-500">診斷 (ICD-10-CM)</label>
-                                        <input type="text" v-model="icdQuery" @input="searchICD" placeholder="輸入代碼或關鍵字 (如: 糖尿病, E11.9, 高血壓)" class="w-full border border-gray-300 rounded px-3 py-2 text-sm focus:ring-2 focus:ring-brand-blue outline-none transition font-mono">
+                                        <div class="flex items-center border border-gray-300 rounded px-3 py-2 focus-within:ring-2 focus-within:ring-brand-blue bg-white">
+                                            <i class="fa-solid fa-magnifying-glass text-gray-400 mr-2"></i>
+                                            <input type="text" v-model="icdQuery" @input="searchICD" placeholder="輸入關鍵字或代碼自動搜尋 (如: 糖尿病, 高血壓)" class="w-full outline-none text-sm font-mono">
+                                        </div>
+                                        <p v-if="icdDatabase.length === 0" class="text-xs text-orange-500 mt-1"><i class="fa-solid fa-spinner fa-spin mr-1"></i> 資料庫載入中...</p>
                                         
                                         <div v-if="showIcdList" class="autocomplete-results">
-                                            <div v-for="item in filteredIcdList" :key="item.code" @click="selectICD(item)" class="autocomplete-item">
-                                                <span class="font-bold text-blue-700 mr-2">{{ item.code }}</span>
-                                                <span class="text-gray-700">{{ item.desc }}</span>
+                                            <div v-for="item in filteredIcdList" :key="item.code" @click="selectICD(item)" class="autocomplete-item group">
+                                                <div class="flex justify-between items-center">
+                                                    <span class="font-bold text-brand-blue">{{ item.code }}</span>
+                                                    <span class="text-xs text-gray-400 group-hover:text-blue-200">ICD-10</span>
+                                                </div>
+                                                <div class="text-gray-700 text-sm mt-0.5">{{ item.desc }}</div>
+                                                <div class="text-gray-400 text-xs">{{ item.descEn }}</div>
                                             </div>
-                                            <div v-if="filteredIcdList.length === 0" class="p-4 text-gray-400 text-sm text-center">無符合結果</div>
+                                            <div v-if="filteredIcdList.length === 0" class="p-4 text-gray-400 text-sm text-center">
+                                                查無相關診斷
+                                            </div>
                                         </div>
                                     </div>
                                     <div>
@@ -237,7 +249,7 @@
                     // ICD-10 搜尋
                     icdQuery: '',
                     showIcdList: false,
-                    icdDatabase: [], // 初始化為空，等待讀取 JSON
+                    icdDatabase: [],
                     filteredIcdList: [],
 
                     // 表單資料
@@ -265,43 +277,43 @@
 
                 this.fetchData();
                 this.fetchReferrals();
-                this.loadICD10(); // *** 讀取 JSON 檔案 ***
+                this.loadICD10();
             },
             methods: {
                 closeWindow() { window.close(); },
                 
-                // *** 關鍵新增：讀取本地 ICD10.json ***
+                // *** 讀取 Excel 檔案 (ICD10.xls) ***
                 async loadICD10() {
                     try {
-                        const res = await fetch('ICD10.json');
-                        const data = await res.json();
+                        // 讀取伺服器上的檔案
+                        const res = await fetch('ICD10.xls');
+                        const arrayBuffer = await res.arrayBuffer();
                         
-                        // 解析 FHIR ConceptMap 結構
-                        const list = [];
-                        if (data.group) {
-                            data.group.forEach(group => {
-                                if (group.element) {
-                                    group.element.forEach(el => {
-                                        if (el.target) {
-                                            el.target.forEach(t => {
-                                                list.push({
-                                                    code: t.code,
-                                                    desc: t.display
-                                                });
-                                            });
-                                        }
-                                    });
-                                }
-                            });
-                        }
-                        this.icdDatabase = list;
-                        console.log(`成功載入 ${list.length} 筆 ICD 代碼`);
+                        // 使用 SheetJS 解析
+                        const workbook = XLSX.read(arrayBuffer, { type: 'array' });
+                        
+                        // 假設 ICD-10-CM 在第一個分頁 (根據您的 CSV 內容)
+                        const firstSheetName = workbook.SheetNames[0];
+                        const worksheet = workbook.Sheets[firstSheetName];
+                        
+                        // 轉為 JSON 陣列 (跳過標題列)
+                        const jsonData = XLSX.utils.sheet_to_json(worksheet, { header: 1 });
+                        
+                        // 轉換格式：從 CSV 結構 [Code, Use, Eng, Chi...] 轉為物件
+                        // 假設欄位順序: 0:Code, 2:English, 3:Chinese
+                        this.icdDatabase = jsonData.slice(1).map(row => ({
+                            code: row[0],
+                            descEn: row[2],
+                            desc: row[3]
+                        })).filter(item => item.code); // 濾除空行
+
+                        console.log(`成功載入 ${this.icdDatabase.length} 筆 ICD 代碼`);
                     } catch (e) {
-                        console.error("無法讀取 ICD10.json", e);
-                        // 發生錯誤時的備用小型資料庫，避免完全無法使用
+                        console.error("ICD 資料庫載入失敗", e);
+                        // 發生錯誤時的備用資料
                         this.icdDatabase = [
-                            { code: 'E11.9', desc: '第二型糖尿病' },
-                            { code: 'I10', desc: '原發性高血壓' }
+                            { code: 'E11.9', desc: '第二型糖尿病', descEn: 'Type 2 diabetes mellitus' },
+                            { code: 'I10', desc: '原發性高血壓', descEn: 'Essential hypertension' }
                         ];
                     }
                 },
@@ -329,17 +341,18 @@
                     this.loading = false;
                 },
 
-                // ICD-10 搜尋邏輯
+                // 搜尋邏輯 (支援代碼、中文、英文)
                 searchICD() {
                     if (this.icdQuery.length < 1) {
                         this.showIcdList = false;
                         return;
                     }
                     const k = this.icdQuery.toLowerCase();
-                    // 搜尋代碼或名稱 (最多顯示 20 筆以免卡頓)
+                    // 效能優化：只取前 20 筆
                     this.filteredIcdList = this.icdDatabase.filter(i => 
                         (i.code && i.code.toLowerCase().includes(k)) || 
-                        (i.desc && i.desc.toLowerCase().includes(k))
+                        (i.desc && i.desc.toLowerCase().includes(k)) ||
+                        (i.descEn && i.descEn.toLowerCase().includes(k))
                     ).slice(0, 20);
                     
                     this.showIcdList = true;
