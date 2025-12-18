@@ -18,7 +18,14 @@
             theme: {
                 extend: {
                     fontFamily: { sans: ['Noto Sans TC', 'sans-serif'] },
-                    colors: { brand: { blue: '#0066FF', green: '#2E8B57', red: '#D00000', orange: '#FB8500' } }
+                    colors: { brand: { blue: '#0066FF', green: '#2E8B57', red: '#D00000', orange: '#FB8500' } },
+                    animation: {
+                        'pulse-slow': 'pulse 3s cubic-bezier(0.4, 0, 0.6, 1) infinite',
+                        'fade-out': 'fadeOut 0.8s ease-out forwards'
+                    },
+                    keyframes: {
+                        fadeOut: { '0%': { opacity: '1' }, '100%': { opacity: '0', visibility: 'hidden' } }
+                    }
                 }
             }
         }
@@ -41,10 +48,45 @@
         .status-new { @apply bg-blue-100 text-blue-700 border-blue-200; }
         .status-done { @apply bg-green-100 text-green-700 border-green-200; }
         .status-fail { @apply bg-red-100 text-red-700 border-red-200; }
+
+        /* 開場動畫進度條 */
+        .loader-bar {
+            width: 0%;
+            height: 100%;
+            background: linear-gradient(90deg, #4ade80, #3b82f6);
+            animation: loading 5s linear forwards;
+        }
+        @keyframes loading {
+            0% { width: 0%; }
+            100% { width: 100%; }
+        }
     </style>
 </head>
 <body class="h-screen flex flex-col text-gray-800">
     <div id="app" class="h-full flex flex-col" v-cloak>
+
+        <div v-if="showSplash" class="fixed inset-0 z-[9999] flex flex-col items-center justify-center bg-gray-900 text-white overflow-hidden" :class="{'animate-fade-out': startFadeOut}">
+            <div class="absolute inset-0 opacity-20">
+                <div class="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] rounded-full bg-blue-600 blur-[100px] animate-pulse-slow"></div>
+                <div class="absolute bottom-[-10%] right-[-10%] w-[40%] h-[40%] rounded-full bg-green-500 blur-[100px] animate-pulse-slow"></div>
+            </div>
+
+            <div class="relative z-10 text-center flex flex-col items-center">
+                <div class="w-24 h-24 mb-6 rounded-3xl bg-gradient-to-tr from-blue-500 to-green-400 flex items-center justify-center shadow-[0_0_40px_rgba(59,130,246,0.6)] animate-bounce">
+                    <i class="fa-solid fa-file-medical text-5xl text-white"></i>
+                </div>
+                
+                <h1 class="text-5xl font-black tracking-widest mb-2 bg-clip-text text-transparent bg-gradient-to-r from-blue-300 via-white to-green-300 drop-shadow-lg">
+                    雙向轉診系統
+                </h1>
+                <p class="text-gray-400 text-sm tracking-[0.2em] uppercase mb-12">Electronic Referral System</p>
+
+                <div class="w-64 h-1.5 bg-gray-700 rounded-full overflow-hidden relative">
+                    <div class="loader-bar"></div>
+                </div>
+                <p class="mt-4 text-xs text-gray-500 font-mono">SYSTEM LOADING...</p>
+            </div>
+        </div>
 
         <header class="bg-white border-b h-16 flex items-center justify-between px-6 shadow-sm z-20">
             <div class="flex items-center">
@@ -59,7 +101,6 @@
             <div class="flex items-center space-x-4">
                 <span class="text-sm font-bold bg-blue-50 text-blue-700 px-3 py-1 rounded-full">{{ currentUser?.organization }}</span>
                 <span class="text-sm font-bold">{{ currentUser?.name }}</span>
-                <span v-if="currentUser?.role === 'admin'" class="text-[10px] bg-gray-800 text-white px-2 py-0.5 rounded">ADMIN</span>
                 <button @click="closeWindow" class="bg-gray-100 hover:bg-gray-200 px-4 py-2 rounded text-sm font-bold transition">關閉</button>
             </div>
         </header>
@@ -201,6 +242,7 @@
         createApp({
             data() {
                 return {
+                    showSplash: true, startFadeOut: false, // Splash Control
                     loading: false, currentUser: null, currentTab: 'list', referrals: [], patients: [], users: [], selectedPatientId: '',
                     showViewModal: false, viewReferral: {},
                     icdQuery: '', showIcdList: false, icdDatabase: [], filteredIcdList: [],
@@ -227,6 +269,9 @@
                 }
             },
             mounted() {
+                // Splash Logic
+                setTimeout(() => { this.startFadeOut = true; setTimeout(() => { this.showSplash = false; }, 800); }, 4500);
+
                 const user = localStorage.getItem('currentUser');
                 if (!user) { alert('請先登入系統'); window.location.href = 'login.html'; return; }
                 this.currentUser = JSON.parse(user);
