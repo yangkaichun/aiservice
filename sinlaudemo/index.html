@@ -1,0 +1,254 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>新樓醫院個案管理平台 (Demo)</title>
+    <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+</head>
+<body class="bg-gray-100 font-sans text-gray-800">
+    <div id="app" class="min-h-screen flex flex-col">
+        
+        <nav class="bg-teal-600 text-white shadow-lg">
+            <div class="container mx-auto px-4 py-3 flex justify-between items-center">
+                <div class="flex items-center space-x-2">
+                    <i class="fa-solid fa-hospital-user text-2xl"></i>
+                    <span class="text-xl font-bold">新樓醫院個案管理平台 <span class="text-xs bg-teal-800 px-2 py-1 rounded ml-2">Demo</span></span>
+                </div>
+                <div class="flex items-center space-x-4">
+                    <span class="text-sm opacity-90">當前身分:</span>
+                    <select v-model="currentUser" @change="handleUserChange" class="text-gray-800 text-sm rounded px-2 py-1 border-none focus:ring-2 focus:ring-teal-300">
+                        <option :value="null">-- 請選擇身分 --</option>
+                        <option v-for="user in users" :key="user.id" :value="user">
+                            {{ user.name }} ({{ user.role === 'case_manager' ? '個管師' : '醫師' }})
+                        </option>
+                    </select>
+                </div>
+            </div>
+        </nav>
+
+        <main class="container mx-auto px-4 py-6 flex-grow">
+            
+            <div v-if="loading" class="text-center py-12">
+                <i class="fa-solid fa-circle-notch fa-spin text-4xl text-teal-600"></i>
+                <p class="mt-4 text-gray-600">資料讀取中，請稍候...</p>
+            </div>
+
+            <div v-else-if="!currentUser" class="flex flex-col items-center justify-center h-64 bg-white rounded-lg shadow p-8 mt-4">
+                <i class="fa-solid fa-user-lock text-5xl text-gray-400 mb-4"></i>
+                <h2 class="text-2xl font-semibold text-gray-700">歡迎使用</h2>
+                <p class="text-gray-500 mt-2">請從右上方選單選擇一個模擬身分以開始操作。</p>
+                <button @click="fetchUsers" class="mt-6 px-4 py-2 bg-teal-600 text-white rounded hover:bg-teal-700 transition">
+                    <i class="fa-solid fa-sync mr-2"></i> 重新讀取使用者列表
+                </button>
+            </div>
+
+            <div v-else class="grid grid-cols-1 md:grid-cols-4 gap-6">
+                
+                <div class="md:col-span-1 bg-white rounded-lg shadow overflow-hidden">
+                    <div class="p-4 bg-gray-50 border-b">
+                        <h3 class="font-bold text-gray-700">{{ currentUser.organization }}</h3>
+                        <p class="text-sm text-gray-500">{{ currentUser.role === 'case_manager' ? '個案管理視圖' : '跨院協作視圖' }}</p>
+                    </div>
+                    <ul class="divide-y">
+                        <li @click="currentTab = 'dashboard'" :class="{'bg-teal-50 text-teal-700 border-l-4 border-teal-600': currentTab === 'dashboard'}" class="p-3 cursor-pointer hover:bg-gray-50 flex items-center">
+                            <i class="fa-solid fa-chart-line w-6 text-center mr-2"></i> 主控台 (Dashboard)
+                        </li>
+                        <li @click="currentTab = 'patients'" :class="{'bg-teal-50 text-teal-700 border-l-4 border-teal-600': currentTab === 'patients'}" class="p-3 cursor-pointer hover:bg-gray-50 flex items-center">
+                            <i class="fa-solid fa-users w-6 text-center mr-2"></i> 個案列表
+                        </li>
+                        <li @click="currentTab = 'observations'" :class="{'bg-teal-50 text-teal-700 border-l-4 border-teal-600': currentTab === 'observations'}" class="p-3 cursor-pointer hover:bg-gray-50 flex items-center">
+                            <i class="fa-solid fa-heart-pulse w-6 text-center mr-2"></i> 遠距監控數據
+                        </li>
+                    </ul>
+                </div>
+
+                <div class="md:col-span-3">
+                    
+                    <div v-if="currentTab === 'dashboard'" class="bg-white rounded-lg shadow p-6">
+                        <h2 class="text-2xl font-bold mb-4 border-b pb-2">工作概覽</h2>
+                        <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+                            <div class="bg-blue-50 p-4 rounded border border-blue-100">
+                                <h4 class="text-blue-800 font-bold">待處理個案</h4>
+                                <p class="text-3xl font-bold text-blue-600 mt-2">{{ patients.length }} <span class="text-sm font-normal text-gray-500">位</span></p>
+                            </div>
+                            <div class="bg-red-50 p-4 rounded border border-red-100">
+                                <h4 class="text-red-800 font-bold">異常警示</h4>
+                                <p class="text-3xl font-bold text-red-600 mt-2">2 <span class="text-sm font-normal text-gray-500">件</span></p>
+                            </div>
+                        </div>
+                        <div class="bg-yellow-50 border-l-4 border-yellow-400 p-4">
+                            <div class="flex">
+                                <div class="flex-shrink-0">
+                                    <i class="fa-solid fa-bullhorn text-yellow-600"></i>
+                                </div>
+                                <div class="ml-3">
+                                    <p class="text-sm text-yellow-700">
+                                        <span class="font-bold">系統公告：</span> 請各位同仁注意，下週一將進行 FHIR 資料交換平台維護。
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div v-if="currentTab === 'patients'" class="bg-white rounded-lg shadow p-6">
+                        <div class="flex justify-between items-center mb-4 border-b pb-2">
+                            <h2 class="text-2xl font-bold">我的個案列表</h2>
+                            <button @click="fetchData('patients')" class="text-sm text-teal-600 hover:text-teal-800"><i class="fa-solid fa-rotate"></i> 重新整理</button>
+                        </div>
+                        <div class="overflow-x-auto">
+                            <table class="min-w-full divide-y divide-gray-200">
+                                <thead class="bg-gray-50">
+                                    <tr>
+                                        <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">姓名</th>
+                                        <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">身分證號</th>
+                                        <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">性別</th>
+                                        <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">操作</th>
+                                    </tr>
+                                </thead>
+                                <tbody class="bg-white divide-y divide-gray-200">
+                                    <tr v-for="p in patients" :key="p.id">
+                                        <td class="px-4 py-3 font-medium">{{ p.name }}</td>
+                                        <td class="px-4 py-3 text-gray-500">{{ p.nationalId }}</td>
+                                        <td class="px-4 py-3 text-gray-500">{{ p.gender === 'male' ? '男' : '女' }}</td>
+                                        <td class="px-4 py-3">
+                                            <button @click="viewPatient(p.id)" class="text-teal-600 hover:text-teal-900 text-sm">查看詳情</button>
+                                        </td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                    <div v-if="currentTab === 'observations'" class="bg-white rounded-lg shadow p-6">
+                        <div class="flex justify-between items-center mb-4 border-b pb-2">
+                            <h2 class="text-2xl font-bold">即時生理監控</h2>
+                            <button @click="fetchData('observations')" class="text-sm text-teal-600 hover:text-teal-800"><i class="fa-solid fa-rotate"></i> 重新整理</button>
+                        </div>
+                        <ul class="space-y-4">
+                            <li v-for="obs in observations" :key="obs.id" class="border rounded p-4 flex justify-between items-center hover:bg-gray-50">
+                                <div>
+                                    <div class="flex items-center">
+                                        <span class="font-bold text-lg mr-2">{{ translateCode(obs.code) }}</span>
+                                        <span :class="isAbnormal(obs) ? 'bg-red-100 text-red-800' : 'bg-green-100 text-green-800'" class="px-2 py-0.5 rounded text-xs font-medium">
+                                            {{ isAbnormal(obs) ? '異常' : '正常' }}
+                                        </span>
+                                    </div>
+                                    <div class="text-sm text-gray-500 mt-1">
+                                        <i class="fa-regular fa-clock mr-1"></i> {{ obs.timestamp }} | 個案 ID: {{ obs.patientId }}
+                                    </div>
+                                </div>
+                                <div class="text-right">
+                                    <div class="text-2xl font-bold text-gray-700">{{ obs.value }} <span class="text-sm font-normal text-gray-500">{{ obs.unit }}</span></div>
+                                </div>
+                            </li>
+                        </ul>
+                    </div>
+
+                </div>
+            </div>
+        </main>
+        
+        <footer class="bg-gray-800 text-gray-400 text-center py-4 text-sm">
+            &copy; 2025 新樓醫院專業版個案管理平台 Demo | Powered by Google Apps Script & GitHub Pages
+        </footer>
+    </div>
+
+    <script>
+        const { createApp } = Vue;
+
+        // *** 設定你的 Google Apps Script 網址 ***
+        const API_BASE_URL = 'https://script.google.com/macros/s/AKfycbyY_jDRwTOJLR4OJeDX0Ikissf8-vQcJ_CTzs25EsL1pnazJv_-94LzoVESXL6gqQWW/exec';
+
+        createApp({
+            data() {
+                return {
+                    loading: false,
+                    currentUser: null,
+                    currentTab: 'dashboard',
+                    users: [],
+                    patients: [],
+                    observations: [],
+                }
+            },
+            mounted() {
+                // 網頁載入時，先抓取使用者列表
+                this.fetchUsers();
+            },
+            methods: {
+                // 讀取使用者 (模擬登入清單)
+                async fetchUsers() {
+                    this.loading = true;
+                    try {
+                        const res = await fetch(`${API_BASE_URL}?endpoint=users`);
+                        const json = await res.json();
+                        if (json.status === 'success') {
+                            this.users = json.data;
+                        } else {
+                            alert('讀取失敗: ' + json.message);
+                        }
+                    } catch (e) {
+                        console.error(e);
+                        alert('連線錯誤，請確認 API 網址正確且已設定為公開 (Anyone)。');
+                    } finally {
+                        this.loading = false;
+                    }
+                },
+                
+                // 切換使用者時自動讀取相關資料
+                handleUserChange() {
+                    if (this.currentUser) {
+                        this.fetchData('patients');
+                        this.fetchData('observations');
+                        this.currentTab = 'dashboard';
+                    }
+                },
+
+                // 讀取各類資料 (Patients, Observations)
+                async fetchData(endpoint) {
+                    if (!this.currentUser) return;
+                    
+                    this.loading = true;
+                    try {
+                        const res = await fetch(`${API_BASE_URL}?endpoint=${endpoint}`);
+                        const json = await res.json();
+                        
+                        if (json.status === 'success') {
+                            if (endpoint === 'patients') this.patients = json.data;
+                            if (endpoint === 'observations') this.observations = json.data;
+                        }
+                    } catch (e) {
+                        console.error(e);
+                    } finally {
+                        this.loading = false;
+                    }
+                },
+
+                // 簡單的代碼翻譯
+                translateCode(code) {
+                    const map = {
+                        'systolic_bp': '收縮壓',
+                        'diastolic_bp': '舒張壓',
+                        'glucose': '血糖',
+                        'heart_rate': '心率'
+                    };
+                    return map[code] || code;
+                },
+
+                // 簡單的異常判斷邏輯 (Demo 用)
+                isAbnormal(obs) {
+                    if (obs.code === 'systolic_bp' && obs.value > 140) return true;
+                    if (obs.code === 'glucose' && obs.value > 126) return true;
+                    return false;
+                },
+                
+                viewPatient(id) {
+                    alert('查看個案詳情功能 (ID: ' + id + ') 將於下一階段實作。');
+                }
+            }
+        }).mount('#app');
+    </script>
+</body>
+</html>
