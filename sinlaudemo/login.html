@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>登入 - 新樓醫院個案管理平台</title>
+    <link rel="icon" href="image/carepathicon.ico">
+    <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700&display=swap" rel="stylesheet">
+    <script src="https://accounts.google.com/gsi/client" async defer></script>
+    <script src="config.js"></script>
+    
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: { sans: ['Noto Sans TC', 'sans-serif'] },
+                    colors: { brand: { blue: '#0066FF', purple: '#7B2CBF' } }
+                }
+            }
+        }
+    </script>
+    <style>
+        body { background-color: #f3f4f6; }
+        .fade-in { animation: fadeIn 0.8s ease-out; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+    </style>
+</head>
+<body class="h-screen flex items-center justify-center bg-gray-100 overflow-hidden">
+    <div id="login-app" class="w-full max-w-md p-8 bg-white/90 backdrop-blur-xl rounded-2xl shadow-2xl border border-white/50 relative z-10 fade-in">
+        
+        <div class="text-center mb-10">
+            <div class="inline-flex items-center justify-center w-20 h-20 rounded-2xl bg-gradient-to-br from-brand-blue to-brand-purple text-white mb-6 shadow-lg">
+                <i class="fa-solid fa-hospital-user text-4xl"></i>
+            </div>
+            <h1 class="text-3xl font-bold tracking-tight text-gray-900">新樓醫院</h1>
+            <p class="text-gray-500 mt-2 text-sm font-medium tracking-wide">專業版個案管理平台</p>
+        </div>
+
+        <div class="space-y-6">
+            <div id="g_id_onload"
+                 :data-client_id="googleClientId"
+                 data-callback="handleGoogleCallback"
+                 data-auto_prompt="false">
+            </div>
+            <div class="g_id_signin"
+                 data-type="standard"
+                 data-size="large"
+                 data-theme="filled_blue"
+                 data-text="sign_in_with"
+                 data-shape="rectangular"
+                 data-logo_alignment="left"
+                 data-width="380">
+            </div>
+
+            <div v-if="errorMsg" class="p-3 bg-red-50 text-red-600 text-sm rounded-lg flex items-center">
+                <i class="fa-solid fa-circle-exclamation mr-2"></i> {{ errorMsg }}
+            </div>
+        </div>
+
+        <div class="mt-8 pt-6 border-t border-gray-100 text-center">
+            <p class="text-xs text-gray-400">僅限授權醫護人員使用</p>
+            <p class="text-xs text-gray-300 mt-1">Version 1.2.0 Demo</p>
+        </div>
+    </div>
+
+    <script>
+        const { createApp } = Vue;
+
+        createApp({
+            data() {
+                return {
+                    googleClientId: typeof GOOGLE_CLIENT_ID !== 'undefined' ? GOOGLE_CLIENT_ID : '',
+                    errorMsg: ''
+                }
+            },
+            mounted() {
+                // 檢查是否已登入，若已登入直接跳轉
+                if (localStorage.getItem('currentUser')) {
+                    window.location.href = 'index.html';
+                }
+                
+                // 掛載 Callback
+                window.handleGoogleCallback = this.handleGoogleCallback;
+            },
+            methods: {
+                handleGoogleCallback(response) {
+                    try {
+                        const payload = this.decodeJwt(response.credential);
+                        console.log("Google User:", payload);
+
+                        // 驗證邏輯：這裡可以加上白名單檢查
+                        // Demo 為了方便，kaichun.yang@gmail.com 設為管理員，其他為個管師
+                        let role = 'case_manager';
+                        let org = '新樓醫院';
+                        
+                        if (payload.email === 'kaichun.yang@gmail.com') {
+                            role = 'admin';
+                            org = '系統管理中心';
+                        }
+
+                        const user = {
+                            id: payload.sub,
+                            name: payload.name,
+                            email: payload.email,
+                            picture: payload.picture,
+                            role: role,
+                            organization: org
+                        };
+
+                        // 儲存至 LocalStorage
+                        localStorage.setItem('currentUser', JSON.stringify(user));
+                        
+                        // 跳轉
+                        window.location.href = 'index.html';
+
+                    } catch (e) {
+                        this.errorMsg = '登入驗證失敗，請重試。';
+                        console.error(e);
+                    }
+                },
+                decodeJwt(token) {
+                    var base64Url = token.split('.')[1];
+                    var base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
+                    var jsonPayload = decodeURIComponent(window.atob(base64).split('').map(function(c) {
+                        return '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2);
+                    }).join(''));
+                    return JSON.parse(jsonPayload);
+                }
+            }
+        }).mount('#login-app');
+    </script>
+</body>
+</html>
