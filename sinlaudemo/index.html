@@ -7,6 +7,8 @@
     <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    
+    <script src="config.js"></script>
 </head>
 <body class="bg-gray-100 font-sans text-gray-800">
     <div id="app" class="min-h-screen flex flex-col">
@@ -40,6 +42,10 @@
                 <i class="fa-solid fa-user-lock text-5xl text-gray-400 mb-4"></i>
                 <h2 class="text-2xl font-semibold text-gray-700">歡迎使用</h2>
                 <p class="text-gray-500 mt-2">請從右上方選單選擇一個模擬身分以開始操作。</p>
+                <div class="mt-4 text-sm text-gray-400 bg-gray-50 p-2 rounded">
+                    <i class="fa-solid fa-info-circle mr-1"></i>
+                    若選單為空，請確認 config.js 中的網址是否正確。
+                </div>
                 <button @click="fetchUsers" class="mt-6 px-4 py-2 bg-teal-600 text-white rounded hover:bg-teal-700 transition">
                     <i class="fa-solid fa-sync mr-2"></i> 重新讀取使用者列表
                 </button>
@@ -159,8 +165,8 @@
     <script>
         const { createApp } = Vue;
 
-        // *** 設定你的 Google Apps Script 網址 ***
-        const API_BASE_URL = 'https://script.google.com/macros/s/AKfycbyY_jDRwTOJLR4OJeDX0Ikissf8-vQcJ_CTzs25EsL1pnazJv_-94LzoVESXL6gqQWW/exec';
+        // 注意：我們不需要在這裡定義 API_BASE_URL 了，
+        // 因為它現在會從 'config.js' 中自動讀取全域變數 API_BASE_URL。
 
         createApp({
             data() {
@@ -182,6 +188,11 @@
                 async fetchUsers() {
                     this.loading = true;
                     try {
+                        // 這裡的 API_BASE_URL 是來自 config.js
+                        if (typeof API_BASE_URL === 'undefined') {
+                            throw new Error('API_BASE_URL 未定義，請檢查 config.js 是否正確載入');
+                        }
+                        
                         const res = await fetch(`${API_BASE_URL}?endpoint=users`);
                         const json = await res.json();
                         if (json.status === 'success') {
@@ -191,7 +202,7 @@
                         }
                     } catch (e) {
                         console.error(e);
-                        alert('連線錯誤，請確認 API 網址正確且已設定為公開 (Anyone)。');
+                        alert('連線錯誤：' + e.message);
                     } finally {
                         this.loading = false;
                     }
