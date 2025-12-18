@@ -24,7 +24,6 @@
     <style>
         [v-cloak] { display: none; } 
         body { background-color: #f8fafc; }
-        /* 自定義捲軸 */
         ::-webkit-scrollbar { width: 6px; }
         ::-webkit-scrollbar-track { background: transparent; }
         ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 3px; }
@@ -36,17 +35,19 @@
             background: white;
             border: 1px solid #e5e7eb;
             width: 100%;
-            max-height: 200px;
+            max-height: 240px;
             overflow-y: auto;
             border-radius: 0.5rem;
-            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
         }
         .autocomplete-item {
-            padding: 0.5rem 1rem;
+            padding: 0.75rem 1rem;
             cursor: pointer;
             font-size: 0.875rem;
+            border-bottom: 1px solid #f3f4f6;
         }
-        .autocomplete-item:hover { background-color: #f3f4f6; color: #0066FF; }
+        .autocomplete-item:last-child { border-bottom: none; }
+        .autocomplete-item:hover { background-color: #eff6ff; color: #0066FF; }
     </style>
 </head>
 <body class="h-screen flex flex-col text-gray-800">
@@ -98,7 +99,7 @@
                             </tr>
                         </thead>
                         <tbody class="divide-y">
-                            <tr v-for="r in referrals" :key="r.id" class="hover:bg-blue-50/30">
+                            <tr v-for="r in referrals" :key="r.id" class="hover:bg-blue-50/30 transition">
                                 <td class="px-6 py-4">
                                     <span :class="r.status === '已就診' ? 'bg-green-100 text-green-700' : 'bg-yellow-100 text-yellow-700'" class="px-2 py-1 rounded-full text-xs font-bold">{{ r.status }}</span>
                                 </td>
@@ -156,12 +157,14 @@
                                 <div class="space-y-5 mt-2">
                                     <div class="relative">
                                         <label class="block text-xs font-bold mb-1 text-gray-500">診斷 (ICD-10-CM)</label>
-                                        <input type="text" v-model="icdQuery" @input="searchICD" placeholder="輸入代碼或關鍵字 (如: 糖尿病, E11.9)" class="w-full border border-gray-300 rounded px-3 py-2 text-sm focus:ring-2 focus:ring-brand-blue outline-none transition">
+                                        <input type="text" v-model="icdQuery" @input="searchICD" placeholder="輸入代碼或關鍵字 (如: 糖尿病, E11.9, 高血壓)" class="w-full border border-gray-300 rounded px-3 py-2 text-sm focus:ring-2 focus:ring-brand-blue outline-none transition font-mono">
+                                        
                                         <div v-if="showIcdList" class="autocomplete-results">
                                             <div v-for="item in filteredIcdList" :key="item.code" @click="selectICD(item)" class="autocomplete-item">
-                                                <span class="font-bold text-blue-700">{{ item.code }}</span> - {{ item.desc }}
+                                                <span class="font-bold text-blue-700 mr-2">{{ item.code }}</span>
+                                                <span class="text-gray-700">{{ item.desc }}</span>
                                             </div>
-                                            <div v-if="filteredIcdList.length === 0" class="p-2 text-gray-400 text-sm text-center">無符合結果</div>
+                                            <div v-if="filteredIcdList.length === 0" class="p-4 text-gray-400 text-sm text-center">無符合結果</div>
                                         </div>
                                     </div>
                                     <div>
@@ -228,25 +231,13 @@
                     currentTab: 'list',
                     referrals: [],
                     patients: [],
-                    users: [], // 為了取得單位列表
+                    users: [],
                     selectedPatientId: '',
                     
                     // ICD-10 搜尋
                     icdQuery: '',
                     showIcdList: false,
-                    // 模擬 ICD-10 資料庫 (可擴充)
-                    icdDatabase: [
-                        { code: 'E11.9', desc: '第二型糖尿病，無併發症' },
-                        { code: 'E10.9', desc: '第一型糖尿病，無併發症' },
-                        { code: 'I10', desc: '原發性高血壓' },
-                        { code: 'I11.9', desc: '高血壓性心臟病，無心臟衰竭' },
-                        { code: 'J44.9', desc: '慢性阻塞性肺病，未明示' },
-                        { code: 'N18.9', desc: '慢性腎臟病，未明示期別' },
-                        { code: 'J18.9', desc: '肺炎，未明示致病菌' },
-                        { code: 'E78.5', desc: '高脂血症，未明示' },
-                        { code: 'M17.9', desc: '膝部骨關節炎' },
-                        { code: 'I25.10', desc: '動脈硬化心臟病' }
-                    ],
+                    icdDatabase: [], // 初始化為空，等待讀取 JSON
                     filteredIcdList: [],
 
                     // 表單資料
@@ -255,10 +246,11 @@
             },
             computed: {
                 today() { return new Date().toISOString().split('T')[0]; },
-                // 從 Users 資料表中提取不重複的單位列表
                 uniqueOrgs() {
-                    if (!this.users.length) return ['新樓醫院', '成大醫院', '奇美醫院', '永康衛生所'];
-                    return [...new Set(this.users.map(u => u.organization))].filter(Boolean);
+                    const defaultOrgs = ['新樓醫院', '成大醫院', '奇美醫院', '永康衛生所'];
+                    if (!this.users.length) return defaultOrgs;
+                    const dbOrgs = this.users.map(u => u.organization).filter(Boolean);
+                    return [...new Set([...defaultOrgs, ...dbOrgs])];
                 }
             },
             mounted() {
@@ -269,19 +261,53 @@
                     return;
                 }
                 this.currentUser = JSON.parse(user);
-                
-                // 預設轉出單位
                 this.form.fromOrg = this.currentUser.organization;
 
                 this.fetchData();
                 this.fetchReferrals();
+                this.loadICD10(); // *** 讀取 JSON 檔案 ***
             },
             methods: {
                 closeWindow() { window.close(); },
                 
+                // *** 關鍵新增：讀取本地 ICD10.json ***
+                async loadICD10() {
+                    try {
+                        const res = await fetch('ICD10.json');
+                        const data = await res.json();
+                        
+                        // 解析 FHIR ConceptMap 結構
+                        const list = [];
+                        if (data.group) {
+                            data.group.forEach(group => {
+                                if (group.element) {
+                                    group.element.forEach(el => {
+                                        if (el.target) {
+                                            el.target.forEach(t => {
+                                                list.push({
+                                                    code: t.code,
+                                                    desc: t.display
+                                                });
+                                            });
+                                        }
+                                    });
+                                }
+                            });
+                        }
+                        this.icdDatabase = list;
+                        console.log(`成功載入 ${list.length} 筆 ICD 代碼`);
+                    } catch (e) {
+                        console.error("無法讀取 ICD10.json", e);
+                        // 發生錯誤時的備用小型資料庫，避免完全無法使用
+                        this.icdDatabase = [
+                            { code: 'E11.9', desc: '第二型糖尿病' },
+                            { code: 'I10', desc: '原發性高血壓' }
+                        ];
+                    }
+                },
+
                 async fetchData() {
                     try {
-                        // 同時讀取病患與使用者資料
                         const [pRes, uRes] = await Promise.all([
                             fetch(`${API_BASE_URL}?endpoint=patients&_t=${Date.now()}`),
                             fetch(`${API_BASE_URL}?endpoint=users&_t=${Date.now()}`)
@@ -310,33 +336,35 @@
                         return;
                     }
                     const k = this.icdQuery.toLowerCase();
+                    // 搜尋代碼或名稱 (最多顯示 20 筆以免卡頓)
                     this.filteredIcdList = this.icdDatabase.filter(i => 
-                        i.code.toLowerCase().includes(k) || i.desc.toLowerCase().includes(k)
-                    );
+                        (i.code && i.code.toLowerCase().includes(k)) || 
+                        (i.desc && i.desc.toLowerCase().includes(k))
+                    ).slice(0, 20);
+                    
                     this.showIcdList = true;
                 },
                 selectICD(item) {
                     this.form.diagnosis = `${item.code} - ${item.desc}`;
-                    this.icdQuery = item.code; // 讓輸入框顯示代碼
+                    this.icdQuery = `${item.code} ${item.desc}`;
                     this.showIcdList = false;
                 },
 
-                // 自動填入 + 日期修正
                 autoFill() {
                     const p = this.patients.find(x => x.id === this.selectedPatientId);
                     if (p) {
                         this.form.patientName = p.name;
                         this.form.patientIdNo = p.nationalId;
-                        // 修正：擷取 YYYY-MM-DD
                         this.form.patientDob = this.formatDate(p.birthDate); 
                         this.form.patientId = p.id;
                     }
                 },
                 
-                // 日期格式化工具 (相容 Google Sheet 可能回傳的時間)
                 formatDate(dateStr) {
                     if (!dateStr) return '';
-                    return dateStr.split(' ')[0]; // 取空格前的部分
+                    const d = new Date(dateStr);
+                    if (isNaN(d.getTime())) return dateStr.split(' ')[0];
+                    return d.toISOString().split('T')[0];
                 },
 
                 canReceive(r) {
@@ -357,7 +385,6 @@
 
                 async submitReferral() {
                     this.loading = true;
-                    // 確保轉出單位若為空，則使用當前使用者單位
                     const finalFromOrg = this.form.fromOrg || this.currentUser.organization;
                     
                     const params = new URLSearchParams({
