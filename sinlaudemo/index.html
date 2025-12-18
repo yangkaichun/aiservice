@@ -12,6 +12,8 @@
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
     <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700&display=swap" rel="stylesheet">
     
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
     <script src="https://accounts.google.com/gsi/client" async defer></script>
 
     <script src="config.js"></script>
@@ -88,11 +90,7 @@
                             <span v-else>登入系統</span>
                         </button>
                     </div>
-                    <div id="g_id_onload"
-                         :data-client_id="googleClientId"
-                         data-callback="handleGoogleCallback"
-                         data-auto_prompt="false">
-                    </div>
+                    <div id="g_id_onload" :data-client_id="googleClientId" data-callback="handleGoogleCallback" data-auto_prompt="false"></div>
                     <p class="text-center text-xs text-gray-400 mt-4 bg-gray-50 py-2 rounded-lg border border-gray-100">* 管理員需進行 Google 真實驗證 (測試: kaichun.yang@gmail.com)</p>
                 </form>
                 <div v-if="loginError" class="mt-6 p-4 bg-red-50 border border-red-100 text-red-600 text-sm rounded-xl flex items-start animate-pulse"><i class="fa-solid fa-circle-exclamation mt-0.5 mr-2"></i><span>{{ loginError }}</span></div>
@@ -195,25 +193,133 @@
                 </div>
             </main>
 
-            <div v-if="showDetailModal" class="fixed inset-0 z-50 flex items-center justify-center bg-gray-900/60 backdrop-blur-sm p-4">
-                <div class="bg-white rounded-2xl shadow-2xl w-full max-w-4xl max-h-[90vh] overflow-hidden flex flex-col">
-                    <div class="px-8 py-5 border-b border-gray-100 bg-gray-50 flex justify-between items-center">
-                        <div><h3 class="font-bold text-xl text-gray-800">{{ selectedPatient.name }} <span class="text-sm text-gray-500 font-normal">({{ selectedPatient.nationalId }})</span></h3><p class="text-xs text-gray-400 mt-1">個案詳細資料與生理數據登錄</p></div>
-                        <button @click="showDetailModal = false" class="text-gray-400 hover:text-gray-800"><i class="fa-solid fa-xmark text-xl"></i></button>
-                    </div>
-                    <div class="flex-1 overflow-y-auto p-8 grid grid-cols-1 md:grid-cols-2 gap-8">
+            <div v-if="showDetailModal" class="fixed inset-0 z-50 flex items-center justify-center bg-gray-900/80 backdrop-blur-md p-4 overflow-hidden">
+                <div class="bg-white rounded-3xl shadow-2xl w-full max-w-[90rem] h-[90vh] flex flex-col overflow-hidden">
+                    <div class="px-8 py-5 border-b border-gray-100 bg-white flex justify-between items-center shrink-0">
                         <div>
-                            <h4 class="text-sm font-bold text-brand-blue uppercase mb-4 border-b pb-2">基本資料</h4>
-                            <div class="grid grid-cols-2 gap-4 text-sm mb-6"><div><label class="text-gray-400 text-xs">病歷號</label><p class="font-mono font-bold">{{ selectedPatient.id }}</p></div><div><label class="text-gray-400 text-xs">性別</label><p>{{ selectedPatient.gender==='male'?'男':'女' }}</p></div><div><label class="text-gray-400 text-xs">生日</label><p>{{ selectedPatient.birthDate }}</p></div></div>
-                            <h4 class="text-sm font-bold text-brand-blue uppercase mb-4 border-b pb-2">最近數據</h4>
-                            <ul class="space-y-3"><li v-for="obs in patientObservations.slice(0, 5)" :key="obs.id" class="flex justify-between items-center text-sm p-2 bg-gray-50 rounded"><span class="text-gray-600">{{ translateCode(obs.code) }}</span><span class="font-mono font-bold">{{ obs.value }} <span class="text-xs text-gray-400">{{ obs.unit }}</span></span></li><li v-if="patientObservations.length === 0" class="text-xs text-gray-400">尚無數據</li></ul>
+                            <h3 class="font-bold text-2xl text-gray-900">{{ selectedPatient.name }} <span class="text-lg text-gray-500 font-normal">({{ selectedPatient.birthDate }})</span></h3>
+                            <p class="text-sm text-gray-400 mt-1">即時生理數據分析與登錄</p>
                         </div>
-                        <div class="bg-blue-50/50 p-6 rounded-2xl border border-blue-100">
-                            <h4 class="text-sm font-bold text-brand-blue uppercase mb-4 flex items-center"><i class="fa-solid fa-pen-to-square mr-2"></i> 新增生理資訊</h4>
-                            <form @submit.prevent="submitObservation" class="space-y-4">
-                                <div><label class="block text-xs font-bold text-gray-500 mb-1">類別</label><select v-model="newObs.code" class="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm outline-none"><option value="systolic_bp">收縮壓 (mmHg)</option><option value="diastolic_bp">舒張壓 (mmHg)</option><option value="glucose_ac">飯前血糖 (mg/dL)</option><option value="glucose_pc">飯後血糖 (mg/dL)</option><option value="body_height">身高 (cm)</option><option value="body_weight">體重 (kg)</option></select></div>
-                                <div><label class="block text-xs font-bold text-gray-500 mb-1">數值</label><input v-model="newObs.value" type="number" step="0.1" required class="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm outline-none"></div>
-                                <div class="pt-4"><button type="submit" :disabled="loading" class="w-full btn-gradient bg-gradient-to-r from-brand-blue to-indigo-600 text-white py-2 rounded-lg font-bold shadow-lg"><span v-if="loading"><i class="fa-solid fa-spinner fa-spin mr-2"></i> 儲存中...</span><span v-else>儲存數據</span></button></div>
+                        <div class="flex items-center space-x-4">
+                            <span class="px-3 py-1 bg-green-100 text-green-700 rounded-full text-xs font-bold">ACTIVE</span>
+                            <button @click="showDetailModal = false" class="text-gray-400 hover:text-black transition bg-gray-100 w-10 h-10 rounded-full flex items-center justify-center"><i class="fa-solid fa-xmark text-xl"></i></button>
+                        </div>
+                    </div>
+                    
+                    <div class="flex-1 overflow-hidden flex bg-gray-50">
+                        <div class="flex-1 overflow-y-auto p-8 space-y-6">
+                            <div class="grid grid-cols-4 gap-4">
+                                <div class="bg-white p-5 rounded-2xl shadow-sm border border-red-50 relative overflow-hidden">
+                                    <div class="absolute right-0 top-0 w-20 h-20 bg-red-50 rounded-bl-full -mr-4 -mt-4"></div>
+                                    <p class="text-xs font-bold text-red-500 flex items-center mb-2"><i class="fa-solid fa-heart mr-2"></i> 收縮壓</p>
+                                    <h3 class="text-3xl font-extrabold text-gray-800">{{ latestMetrics.sys || '-' }} <span class="text-sm text-gray-400 font-normal">mmHg</span></h3>
+                                    <p class="text-xs text-gray-400 mt-1" v-if="latestMetrics.sys">最新測量</p>
+                                </div>
+                                <div class="bg-white p-5 rounded-2xl shadow-sm border border-blue-50 relative overflow-hidden">
+                                    <div class="absolute right-0 top-0 w-20 h-20 bg-blue-50 rounded-bl-full -mr-4 -mt-4"></div>
+                                    <p class="text-xs font-bold text-blue-500 flex items-center mb-2"><i class="fa-solid fa-wave-square mr-2"></i> 舒張壓</p>
+                                    <h3 class="text-3xl font-extrabold text-gray-800">{{ latestMetrics.dia || '-' }} <span class="text-sm text-gray-400 font-normal">mmHg</span></h3>
+                                    <p class="text-xs text-gray-400 mt-1" v-if="latestMetrics.dia">最新測量</p>
+                                </div>
+                                <div class="bg-white p-5 rounded-2xl shadow-sm border border-green-50 relative overflow-hidden">
+                                    <div class="absolute right-0 top-0 w-20 h-20 bg-green-50 rounded-bl-full -mr-4 -mt-4"></div>
+                                    <p class="text-xs font-bold text-green-600 flex items-center mb-2"><i class="fa-solid fa-bolt mr-2"></i> 心率</p>
+                                    <h3 class="text-3xl font-extrabold text-gray-800">{{ latestMetrics.hr || '-' }} <span class="text-sm text-gray-400 font-normal">BPM</span></h3>
+                                    <p class="text-xs text-gray-400 mt-1" v-if="latestMetrics.hr">最新測量</p>
+                                </div>
+                                <div class="bg-white p-5 rounded-2xl shadow-sm border border-orange-50 relative overflow-hidden">
+                                    <div class="absolute right-0 top-0 w-20 h-20 bg-orange-50 rounded-bl-full -mr-4 -mt-4"></div>
+                                    <p class="text-xs font-bold text-orange-500 flex items-center mb-2"><i class="fa-solid fa-droplet mr-2"></i> 血糖</p>
+                                    <h3 class="text-3xl font-extrabold text-gray-800">{{ latestMetrics.glu || '-' }} <span class="text-sm text-gray-400 font-normal">mg/dL</span></h3>
+                                    <p class="text-xs text-gray-400 mt-1" v-if="latestMetrics.glu">注意數值</p>
+                                </div>
+                            </div>
+
+                            <div class="bg-white p-6 rounded-2xl shadow-sm border border-gray-100">
+                                <div class="flex justify-between items-center mb-6">
+                                    <h4 class="font-bold text-gray-700 flex items-center"><i class="fa-solid fa-chart-line mr-2 text-brand-blue"></i> 血壓趨勢圖</h4>
+                                    <div class="flex space-x-2 text-xs">
+                                        <span class="flex items-center"><span class="w-3 h-3 bg-red-400 rounded-full mr-1"></span> 收縮壓</span>
+                                        <span class="flex items-center"><span class="w-3 h-3 bg-blue-400 rounded-full mr-1"></span> 舒張壓</span>
+                                    </div>
+                                </div>
+                                <div class="h-64">
+                                    <canvas id="bpChart"></canvas>
+                                </div>
+                            </div>
+
+                            <div class="bg-white p-6 rounded-2xl shadow-sm border border-gray-100">
+                                <h4 class="font-bold text-gray-700 mb-6 flex items-center"><i class="fa-solid fa-chart-area mr-2 text-orange-500"></i> 血糖趨勢圖</h4>
+                                <div class="h-64">
+                                    <canvas id="gluChart"></canvas>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="w-96 bg-white border-l border-gray-100 p-6 flex flex-col shadow-lg overflow-y-auto">
+                            <div class="bg-blue-50 p-4 rounded-xl border border-blue-100 mb-6">
+                                <div class="flex items-center mb-2">
+                                    <img v-if="currentUser.picture" :src="currentUser.picture" class="w-8 h-8 rounded-full mr-2">
+                                    <div v-else class="w-8 h-8 rounded-full bg-brand-blue text-white flex items-center justify-center font-bold mr-2">{{ currentUser.name[0] }}</div>
+                                    <div>
+                                        <p class="text-sm font-bold text-gray-900">{{ currentUser.name }}</p>
+                                        <p class="text-xs text-gray-500">{{ currentUser.email }}</p>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <h4 class="text-sm font-bold text-gray-900 mb-4">新增數值</h4>
+                            
+                            <form @submit.prevent="submitAllMeasurements" class="space-y-5 flex-1">
+                                <div>
+                                    <label class="block text-xs font-bold text-gray-400 mb-1">測量時機</label>
+                                    <div class="relative">
+                                        <i class="fa-regular fa-clock absolute left-3 top-3 text-gray-400"></i>
+                                        <select v-model="form.timing" class="w-full pl-9 border border-gray-200 rounded-xl py-2.5 text-sm focus:ring-2 focus:ring-brand-blue outline-none bg-white">
+                                            <option>起床空腹</option>
+                                            <option>早餐後</option>
+                                            <option>午餐前</option>
+                                            <option>午餐後</option>
+                                            <option>晚餐前</option>
+                                            <option>晚餐後</option>
+                                            <option>睡前</option>
+                                        </select>
+                                    </div>
+                                </div>
+
+                                <div class="grid grid-cols-2 gap-4">
+                                    <div>
+                                        <label class="block text-xs font-bold text-red-500 mb-1">收縮壓 (SYS)</label>
+                                        <input v-model="form.sys" type="number" class="w-full border border-gray-200 rounded-xl px-4 py-3 text-xl font-bold text-center focus:ring-2 focus:ring-red-200 outline-none" placeholder="---">
+                                    </div>
+                                    <div>
+                                        <label class="block text-xs font-bold text-blue-500 mb-1">舒張壓 (DIA)</label>
+                                        <input v-model="form.dia" type="number" class="w-full border border-gray-200 rounded-xl px-4 py-3 text-xl font-bold text-center focus:ring-2 focus:ring-blue-200 outline-none" placeholder="---">
+                                    </div>
+                                </div>
+
+                                <div>
+                                    <label class="block text-xs font-bold text-green-600 mb-1">心跳 (BPM)</label>
+                                    <div class="relative">
+                                        <i class="fa-solid fa-heart-pulse absolute left-4 top-4 text-green-400"></i>
+                                        <input v-model="form.hr" type="number" class="w-full border border-gray-200 rounded-xl pl-10 pr-4 py-3 text-xl font-bold focus:ring-2 focus:ring-green-200 outline-none" placeholder="---">
+                                    </div>
+                                </div>
+
+                                <div>
+                                    <label class="block text-xs font-bold text-orange-500 mb-1">血糖 (mg/dL)</label>
+                                    <input v-model="form.glu" type="number" class="w-full border border-gray-200 rounded-xl px-4 py-3 text-xl font-bold text-center focus:ring-2 focus:ring-orange-200 outline-none" placeholder="mg/dL">
+                                </div>
+
+                                <div>
+                                    <label class="block text-xs font-bold text-gray-400 mb-1">備註</label>
+                                    <textarea v-model="form.note" class="w-full border border-gray-200 rounded-xl px-3 py-2 text-sm focus:ring-2 focus:ring-gray-200 outline-none h-20 resize-none" placeholder="例如：頭暈、漏吃藥..."></textarea>
+                                </div>
+
+                                <button type="submit" :disabled="loading" class="w-full btn-gradient bg-gradient-to-r from-brand-blue to-indigo-600 text-white py-3.5 rounded-xl font-bold shadow-lg hover:shadow-xl transition transform active:scale-95 flex justify-center items-center">
+                                    <span v-if="loading"><i class="fa-solid fa-circle-notch fa-spin mr-2"></i> 上傳中...</span>
+                                    <span v-else><i class="fa-solid fa-paper-plane mr-2"></i> 上傳數據</span>
+                                </button>
                             </form>
                         </div>
                     </div>
@@ -235,8 +341,19 @@
                     googleClientId: typeof GOOGLE_CLIENT_ID !== 'undefined' ? GOOGLE_CLIENT_ID : '',
                     loading: false, isLoggedIn: false, loginEmail: '', loginError: '', showSplash: true, startFadeOut: false,
                     currentUser: null, currentTab: 'dashboard', users: [], patients: [], observations: [],
-                    showDetailModal: false, showAddPatientModal: false, showAddUserModal: false,
-                    selectedPatient: {}, patientObservations: [], newObs: { code: 'systolic_bp', value: '', unit: '' },
+                    
+                    // Detail Modal & Chart Logic
+                    showDetailModal: false,
+                    selectedPatient: {},
+                    patientObservations: [],
+                    latestMetrics: { sys: null, dia: null, hr: null, glu: null },
+                    bpChartInstance: null,
+                    gluChartInstance: null,
+                    
+                    // Form Data (Side Panel)
+                    form: { timing: '起床空腹', sys: '', dia: '', hr: '', glu: '', note: '' },
+
+                    showAddPatientModal: false, showAddUserModal: false,
                     newPatient: { name: '', nationalId: '', birthDate: '', gender: 'male' }, newUser: { name: '', email: '', role: 'hospital_staff', organization: '新樓醫院' },
                     obsSearchKeyword: ''
                 }
@@ -298,22 +415,122 @@
                 completeLogin(user) { this.currentUser = user; this.isLoggedIn = true; this.refreshData(); this.loading = false; },
                 logout() { localStorage.removeItem('currentUser'); window.location.href = 'login.html'; },
                 
-                async refreshData() { this.loading = true; await this.fetchData('patients'); await this.fetchData('observations'); this.loading = false; },
-                async fetchData(endpoint) { try { const res = await fetch(`${API_BASE_URL}?endpoint=${endpoint}`); const json = await res.json(); if (json.status === 'success') { if (endpoint === 'patients') this.patients = json.data; if (endpoint === 'observations') this.observations = json.data; } } catch (e) { console.error(e); } },
-                
-                openPatientDetail(patient) { this.selectedPatient = patient; this.patientObservations = this.observations.filter(o => o.patientId === patient.id).sort((a,b)=> new Date(b.timestamp)-new Date(a.timestamp)); this.newObs = { code: 'systolic_bp', value: '', unit: '' }; this.showDetailModal = true; },
-                
-                async submitObservation() {
+                async refreshData() {
                     this.loading = true;
-                    const unitMap = { 'systolic_bp': 'mmHg', 'diastolic_bp': 'mmHg', 'glucose_ac': 'mg/dL', 'glucose_pc': 'mg/dL', 'body_height': 'cm', 'body_weight': 'kg' };
-                    const params = new URLSearchParams({ action: 'addObservation', patientId: this.selectedPatient.id, code: this.newObs.code, value: this.newObs.value, unit: unitMap[this.newObs.code] });
-                    try { 
-                        // *** 真實寫入 Google Sheet ***
-                        await fetch(`${API_BASE_URL}?${params.toString()}`);
-                        alert('數據儲存成功！'); 
-                        await this.fetchData('observations'); 
-                        this.openPatientDetail(this.selectedPatient); 
-                    } catch(e) { alert('儲存失敗: ' + e.message); } finally { this.loading = false; }
+                    await this.fetchData('patients');
+                    await this.fetchData('observations');
+                    this.loading = false;
+                },
+                async fetchData(endpoint) {
+                    try { const res = await fetch(`${API_BASE_URL}?endpoint=${endpoint}`); const json = await res.json(); if (json.status === 'success') { if (endpoint === 'patients') this.patients = json.data; if (endpoint === 'observations') this.observations = json.data; } } catch (e) { console.error(e); }
+                },
+                
+                // *** 核心功能：開啟詳情與圖表 ***
+                openPatientDetail(patient) {
+                    this.selectedPatient = patient;
+                    this.showDetailModal = true;
+                    this.updatePatientData();
+                },
+                
+                // 更新 Modal 內的數據與圖表
+                updatePatientData() {
+                    // 1. 取得該病患資料並依時間排序 (舊->新) 用於圖表
+                    const allObs = this.observations.filter(o => o.patientId === this.selectedPatient.id)
+                        .sort((a,b) => new Date(a.timestamp) - new Date(b.timestamp));
+                    
+                    // 2. 更新上方卡片 (取最新一筆)
+                    const latest = allObs[allObs.length - 1] || {};
+                    // 需遍歷所有數據找出各類別的最新值
+                    this.latestMetrics = {
+                        sys: allObs.filter(o=>o.code==='systolic_bp').pop()?.value,
+                        dia: allObs.filter(o=>o.code==='diastolic_bp').pop()?.value,
+                        hr:  allObs.filter(o=>o.code==='heart_rate').pop()?.value,
+                        glu: allObs.filter(o=>o.code.startsWith('glucose')).pop()?.value
+                    };
+
+                    // 3. 繪製圖表 (等待 DOM 渲染)
+                    this.$nextTick(() => {
+                        this.renderCharts(allObs);
+                    });
+                },
+
+                renderCharts(data) {
+                    // 銷毀舊圖表
+                    if (this.bpChartInstance) this.bpChartInstance.destroy();
+                    if (this.gluChartInstance) this.gluChartInstance.destroy();
+
+                    // 準備數據
+                    const sysData = data.filter(d => d.code === 'systolic_bp').map(d => ({ x: d.timestamp, y: d.value }));
+                    const diaData = data.filter(d => d.code === 'diastolic_bp').map(d => ({ x: d.timestamp, y: d.value }));
+                    const gluData = data.filter(d => d.code.startsWith('glucose')).map(d => ({ x: d.timestamp, y: d.value }));
+                    
+                    const labels = [...new Set(data.map(d => d.timestamp))].sort(); // 統一X軸標籤
+
+                    // 血壓圖
+                    const ctxBP = document.getElementById('bpChart').getContext('2d');
+                    this.bpChartInstance = new Chart(ctxBP, {
+                        type: 'line',
+                        data: {
+                            labels: labels,
+                            datasets: [
+                                { label: '收縮壓', data: sysData, borderColor: '#f87171', backgroundColor: 'rgba(248, 113, 113, 0.1)', tension: 0.4, fill: true },
+                                { label: '舒張壓', data: diaData, borderColor: '#60a5fa', backgroundColor: 'rgba(96, 165, 250, 0.1)', tension: 0.4, fill: true }
+                            ]
+                        },
+                        options: { responsive: true, maintainAspectRatio: false, interaction: { mode: 'index', intersect: false } }
+                    });
+
+                    // 血糖圖
+                    const ctxGlu = document.getElementById('gluChart').getContext('2d');
+                    this.gluChartInstance = new Chart(ctxGlu, {
+                        type: 'line',
+                        data: {
+                            labels: labels,
+                            datasets: [{ label: '血糖', data: gluData, borderColor: '#fb923c', backgroundColor: 'rgba(251, 146, 60, 0.1)', tension: 0.4, fill: true }]
+                        },
+                        options: { responsive: true, maintainAspectRatio: false }
+                    });
+                },
+
+                // *** 核心功能：提交表單並寫入 Google Sheet ***
+                async submitAllMeasurements() {
+                    this.loading = true;
+                    const timestamp = new Date().toISOString();
+                    
+                    // 建立請求陣列 (拆解表單為多筆資料)
+                    const requests = [];
+                    
+                    if (this.form.sys) requests.push(this.sendSingleData('systolic_bp', this.form.sys, 'mmHg'));
+                    if (this.form.dia) requests.push(this.sendSingleData('diastolic_bp', this.form.dia, 'mmHg'));
+                    if (this.form.hr)  requests.push(this.sendSingleData('heart_rate', this.form.hr, 'BPM'));
+                    if (this.form.glu) requests.push(this.sendSingleData(this.form.timing.includes('空腹')?'glucose_ac':'glucose_pc', this.form.glu, 'mg/dL'));
+                    
+                    try {
+                        await Promise.all(requests);
+                        alert('數據上傳成功！');
+                        // 清空表單
+                        this.form = { timing: '起床空腹', sys: '', dia: '', hr: '', glu: '', note: '' };
+                        // 重新抓取資料並更新圖表
+                        await this.fetchData('observations');
+                        this.updatePatientData();
+                    } catch (e) {
+                        console.error(e);
+                        alert('上傳失敗，請檢查網路連線。');
+                    } finally {
+                        this.loading = false;
+                    }
+                },
+
+                // 輔助：發送單筆資料
+                sendSingleData(code, value, unit) {
+                    const params = new URLSearchParams({
+                        action: 'addObservation',
+                        patientId: this.selectedPatient.id,
+                        code: code,
+                        value: value,
+                        unit: unit
+                    });
+                    return fetch(`${API_BASE_URL}?${params.toString()}`);
                 },
                 
                 async submitPatientManual() { const p = new URLSearchParams({ action: 'addPatient', ...this.newPatient }); await fetch(`${API_BASE_URL}?${p}`); this.showAddPatientModal = false; this.refreshData(); },
@@ -324,7 +541,7 @@
                 getTabTitle(tab) { return { 'dashboard': '系統主控台', 'patients': '個案管理清單', 'observations': '生理監控', 'admin_users': '系統權限管理', 'referrals': '雙向轉診管理', 'health_edu': '衛教資源中心', 'reports': '數據報表中心', 'consultation': '線上照會區' }[tab] || tab; },
                 translateRole(role) { return { 'admin': '管理員', 'case_manager': '個管師', 'physician': '醫師', 'hospital_staff': '院內人員' }[role] || role; },
                 roleBadgeClass(role) { return 'bg-gray-100 text-gray-700 border-gray-200'; },
-                translateCode(code) { return { 'systolic_bp': '收縮壓', 'diastolic_bp': '舒張壓', 'glucose_ac': '飯前血糖', 'glucose_pc': '飯後血糖', 'body_height': '身高', 'body_weight': '體重' }[code] || code; }
+                translateCode(code) { return { 'systolic_bp': '收縮壓', 'diastolic_bp': '舒張壓', 'glucose_ac': '飯前血糖', 'glucose_pc': '飯後血糖', 'heart_rate': '心率', 'body_height': '身高', 'body_weight': '體重' }[code] || code; }
             }
         }).mount('#app');
     </script>
