@@ -103,7 +103,7 @@
                             </tr>
                         </thead>
                         <tbody class="divide-y divide-gray-100">
-                            <tr v-for="r in referrals" :key="r.id" class="hover:bg-blue-50/40 transition">
+                            <tr v-for="r in enrichedReferrals" :key="r.id" class="hover:bg-blue-50/40 transition">
                                 <td class="px-4 py-3">
                                     <span :class="r.status === '已就診' ? 'bg-green-100 text-green-700 border-green-200' : 'bg-yellow-100 text-yellow-700 border-yellow-200'" class="px-2.5 py-1 rounded-full text-xs font-bold border">
                                         {{ r.status }}
@@ -116,8 +116,8 @@
                                     <div class="text-xs text-gray-500">{{ formatDate(r.patientDob) }}</div>
                                 </td>
                                 <td class="px-4 py-3">
-                                    <div class="text-xs font-bold text-gray-800 mb-1">{{ r.diagnosis }}</div>
-                                    <div class="text-xs text-gray-500 line-clamp-2" :title="r.summary">{{ r.summary }}</div>
+                                    <div class="text-xs font-bold text-gray-800 mb-1" v-if="r.diagnosis">{{ r.diagnosis }}</div>
+                                    <div class="text-xs text-gray-500 line-clamp-2" :title="r.summary">{{ r.summary || '(無摘要)' }}</div>
                                 </td>
                                 <td class="px-4 py-3 text-xs text-gray-400 font-mono">{{ r.timestamp }}</td>
                                 <td class="px-4 py-3 text-right">
@@ -272,6 +272,25 @@
                     if (!this.users.length) return defaultOrgs;
                     const dbOrgs = this.users.map(u => u.organization).filter(Boolean);
                     return [...new Set([...defaultOrgs, ...dbOrgs])];
+                },
+                // *** 關鍵修正：資料補全 (Enrich Data) ***
+                // 如果轉診單上缺少姓名/生日 (因為舊 CSV 沒有)，就從 patients 陣列對照補上
+                enrichedReferrals() {
+                    return this.referrals.map(r => {
+                        let name = r.patientName;
+                        let dob = r.patientDob;
+                        
+                        // 如果沒姓名，嘗試用 ID 去找
+                        if (!name && r.patientId) {
+                            const p = this.patients.find(pat => String(pat.id) === String(r.patientId));
+                            if (p) {
+                                name = p.name;
+                                dob = p.birthDate;
+                            }
+                        }
+                        
+                        return { ...r, patientName: name || '未命名', patientDob: dob || '' };
+                    });
                 }
             },
             mounted() {
@@ -367,13 +386,11 @@
                     return d.toISOString().split('T')[0];
                 },
 
-                // *** 核心判斷：接收權限 ***
                 canReceive(r) {
-                    // 1. 我是目標單位 2. 狀態是未就診
+                    // 權限判斷：目前使用者單位 == 轉入單位 且 狀態為未就診
                     return r.toOrg === this.currentUser.organization && r.status === '未就診';
                 },
 
-                // *** 更新狀態 ***
                 async receiveReferral(r) {
                     if(!confirm(`確認接收病患 ${r.patientName} 並標記為已就診？`)) return;
                     this.loading = true;
