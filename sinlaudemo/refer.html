@@ -21,7 +21,33 @@
             }
         }
     </script>
-    <style>[v-cloak] { display: none; } body { background-color: #f8fafc; }</style>
+    <style>
+        [v-cloak] { display: none; } 
+        body { background-color: #f8fafc; }
+        /* 自定義捲軸 */
+        ::-webkit-scrollbar { width: 6px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 3px; }
+        
+        /* ICD-10 下拉選單樣式 */
+        .autocomplete-results {
+            position: absolute;
+            z-index: 50;
+            background: white;
+            border: 1px solid #e5e7eb;
+            width: 100%;
+            max-height: 200px;
+            overflow-y: auto;
+            border-radius: 0.5rem;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+        }
+        .autocomplete-item {
+            padding: 0.5rem 1rem;
+            cursor: pointer;
+            font-size: 0.875rem;
+        }
+        .autocomplete-item:hover { background-color: #f3f4f6; color: #0066FF; }
+    </style>
 </head>
 <body class="h-screen flex flex-col text-gray-800">
     <div id="app" class="h-full flex flex-col" v-cloak>
@@ -39,15 +65,15 @@
             <div class="flex items-center space-x-4">
                 <span class="text-sm font-bold bg-blue-50 text-blue-700 px-3 py-1 rounded-full">{{ currentUser?.organization }}</span>
                 <span class="text-sm font-bold">{{ currentUser?.name }}</span>
-                <button @click="closeWindow" class="bg-gray-100 hover:bg-gray-200 px-4 py-2 rounded text-sm font-bold">關閉</button>
+                <button @click="closeWindow" class="bg-gray-100 hover:bg-gray-200 px-4 py-2 rounded text-sm font-bold transition">關閉</button>
             </div>
         </header>
 
         <main class="flex-1 overflow-hidden flex flex-col p-6 max-w-7xl mx-auto w-full">
             
-            <div class="flex space-x-1 bg-gray-200 p-1 rounded-lg mb-6 w-fit">
-                <button @click="currentTab = 'list'" :class="currentTab === 'list' ? 'bg-white shadow text-gray-800' : 'text-gray-500 hover:text-gray-700'" class="px-6 py-2 rounded-md text-sm font-bold transition">轉診需求清單</button>
-                <button @click="currentTab = 'form'" :class="currentTab === 'form' ? 'bg-white shadow text-gray-800' : 'text-gray-500 hover:text-gray-700'" class="px-6 py-2 rounded-md text-sm font-bold transition">新增轉診單</button>
+            <div class="flex space-x-1 bg-gray-200 p-1 rounded-lg mb-6 w-fit shadow-inner">
+                <button @click="currentTab = 'list'" :class="currentTab === 'list' ? 'bg-white shadow text-gray-900' : 'text-gray-500 hover:text-gray-700'" class="px-6 py-2 rounded-md text-sm font-bold transition duration-200">轉診需求清單</button>
+                <button @click="currentTab = 'form'" :class="currentTab === 'form' ? 'bg-white shadow text-gray-900' : 'text-gray-500 hover:text-gray-700'" class="px-6 py-2 rounded-md text-sm font-bold transition duration-200">新增轉診單</button>
             </div>
 
             <div v-if="currentTab === 'list'" class="flex-1 bg-white rounded-xl border shadow-sm overflow-hidden flex flex-col">
@@ -79,10 +105,10 @@
                                 <td class="px-6 py-4">{{ r.fromOrg }}</td>
                                 <td class="px-6 py-4 font-bold text-brand-blue">{{ r.toOrg }}</td>
                                 <td class="px-6 py-4 font-bold">{{ r.patientName }}</td>
-                                <td class="px-6 py-4 text-gray-500 font-mono">{{ r.patientDob }}</td>
+                                <td class="px-6 py-4 text-gray-500 font-mono">{{ formatDate(r.patientDob) }}</td>
                                 <td class="px-6 py-4 text-gray-400 text-xs">{{ r.timestamp }}</td>
                                 <td class="px-6 py-4">
-                                    <button v-if="canReceive(r)" @click="receiveReferral(r)" class="bg-brand-blue text-white px-3 py-1 rounded text-xs font-bold hover:bg-blue-700 shadow">
+                                    <button v-if="canReceive(r)" @click="receiveReferral(r)" class="bg-brand-blue text-white px-3 py-1 rounded text-xs font-bold hover:bg-blue-700 shadow transition">
                                         已接收 / 就診
                                     </button>
                                     <span v-else class="text-gray-300 text-xs">-</span>
@@ -96,55 +122,61 @@
 
             <div v-if="currentTab === 'form'" class="flex-1 bg-white rounded-xl border shadow-sm overflow-hidden flex flex-col">
                 <div class="flex-1 overflow-y-auto p-8 custom-scrollbar">
-                    <div class="max-w-4xl mx-auto border-2 border-gray-800 p-8 relative">
+                    <div class="max-w-4xl mx-auto border-2 border-gray-800 p-8 relative bg-white">
                         <div class="text-center mb-8 border-b-2 border-gray-800 pb-4">
-                            <h2 class="text-2xl font-bold text-gray-900">全民健康保險院(所)轉診單</h2>
-                            <p class="text-sm mt-1">附表二 (電子化格式)</p>
+                            <h2 class="text-2xl font-bold text-gray-900 tracking-wide">全民健康保險院(所)轉診單</h2>
+                            <p class="text-sm mt-1 text-gray-600">附表二 (電子化格式)</p>
                         </div>
 
-                        <form @submit.prevent="submitReferral" class="space-y-6">
+                        <form @submit.prevent="submitReferral" class="space-y-8">
                             
-                            <div class="bg-blue-50 p-4 rounded-lg border border-blue-100 mb-6 flex items-end space-x-4">
+                            <div class="bg-blue-50 p-4 rounded-lg border border-blue-100 flex items-end space-x-4">
                                 <div class="flex-1">
-                                    <label class="block text-xs font-bold text-blue-700 mb-1">快速帶入個案資料</label>
-                                    <select v-model="selectedPatientId" class="w-full border border-gray-300 rounded px-3 py-2 text-sm">
+                                    <label class="block text-xs font-bold text-blue-700 mb-1"><i class="fa-solid fa-bolt mr-1"></i> 快速帶入個案資料</label>
+                                    <select v-model="selectedPatientId" class="w-full border border-blue-200 rounded px-3 py-2 text-sm focus:ring-2 focus:ring-blue-400 outline-none">
                                         <option value="">-- 請選擇個案 --</option>
                                         <option v-for="p in patients" :key="p.id" :value="p.id">{{ p.name }} ({{ p.nationalId }})</option>
                                     </select>
                                 </div>
-                                <button type="button" @click="autoFill" class="bg-blue-600 text-white px-4 py-2 rounded text-sm font-bold hover:bg-blue-700">帶入資料</button>
+                                <button type="button" @click="autoFill" class="bg-blue-600 text-white px-5 py-2 rounded text-sm font-bold hover:bg-blue-700 shadow transition">帶入資料</button>
                             </div>
 
-                            <div class="border border-gray-400 p-4 relative">
+                            <div class="border border-gray-400 p-5 relative mt-4">
                                 <span class="absolute -top-3 left-4 bg-white px-2 font-bold text-gray-700">保險對象基本資料</span>
-                                <div class="grid grid-cols-2 gap-4 mt-2">
-                                    <div><label class="block text-xs font-bold mb-1">姓名</label><input v-model="form.patientName" required class="w-full border-b border-gray-300 focus:border-black outline-none py-1"></div>
-                                    <div><label class="block text-xs font-bold mb-1">身分證號</label><input v-model="form.patientIdNo" required class="w-full border-b border-gray-300 focus:border-black outline-none py-1"></div>
-                                    <div><label class="block text-xs font-bold mb-1">出生日期</label><input v-model="form.patientDob" type="date" required class="w-full border-b border-gray-300 focus:border-black outline-none py-1"></div>
-                                    <div><label class="block text-xs font-bold mb-1">聯絡電話</label><input v-model="form.phone" class="w-full border-b border-gray-300 focus:border-black outline-none py-1"></div>
+                                <div class="grid grid-cols-2 gap-6 mt-2">
+                                    <div><label class="block text-xs font-bold mb-1 text-gray-500">姓名</label><input v-model="form.patientName" required class="w-full border-b border-gray-300 focus:border-black outline-none py-1 transition font-bold text-gray-800"></div>
+                                    <div><label class="block text-xs font-bold mb-1 text-gray-500">身分證號</label><input v-model="form.patientIdNo" required class="w-full border-b border-gray-300 focus:border-black outline-none py-1 transition font-mono"></div>
+                                    <div><label class="block text-xs font-bold mb-1 text-gray-500">出生日期</label><input v-model="form.patientDob" type="date" required class="w-full border-b border-gray-300 focus:border-black outline-none py-1 transition font-mono"></div>
+                                    <div><label class="block text-xs font-bold mb-1 text-gray-500">聯絡電話</label><input v-model="form.phone" class="w-full border-b border-gray-300 focus:border-black outline-none py-1 transition" placeholder="請輸入聯絡電話"></div>
                                 </div>
                             </div>
 
-                            <div class="border border-gray-400 p-4 relative">
+                            <div class="border border-gray-400 p-5 relative">
                                 <span class="absolute -top-3 left-4 bg-white px-2 font-bold text-gray-700">病歷摘要</span>
-                                <div class="space-y-4 mt-2">
-                                    <div>
-                                        <label class="block text-xs font-bold mb-1">診斷 (ICD-10-CM)</label>
-                                        <input v-model="form.diagnosis" placeholder="請輸入主診斷代碼或名稱" class="w-full border border-gray-300 rounded px-3 py-2 text-sm focus:ring-1 focus:ring-black outline-none">
+                                <div class="space-y-5 mt-2">
+                                    <div class="relative">
+                                        <label class="block text-xs font-bold mb-1 text-gray-500">診斷 (ICD-10-CM)</label>
+                                        <input type="text" v-model="icdQuery" @input="searchICD" placeholder="輸入代碼或關鍵字 (如: 糖尿病, E11.9)" class="w-full border border-gray-300 rounded px-3 py-2 text-sm focus:ring-2 focus:ring-brand-blue outline-none transition">
+                                        <div v-if="showIcdList" class="autocomplete-results">
+                                            <div v-for="item in filteredIcdList" :key="item.code" @click="selectICD(item)" class="autocomplete-item">
+                                                <span class="font-bold text-blue-700">{{ item.code }}</span> - {{ item.desc }}
+                                            </div>
+                                            <div v-if="filteredIcdList.length === 0" class="p-2 text-gray-400 text-sm text-center">無符合結果</div>
+                                        </div>
                                     </div>
                                     <div>
-                                        <label class="block text-xs font-bold mb-1">病情摘要 (主訴/病史/過敏史)</label>
-                                        <textarea v-model="form.summary" rows="3" class="w-full border border-gray-300 rounded px-3 py-2 text-sm focus:ring-1 focus:ring-black outline-none"></textarea>
+                                        <label class="block text-xs font-bold mb-1 text-gray-500">病情摘要 (主訴/病史/過敏史)</label>
+                                        <textarea v-model="form.summary" rows="3" class="w-full border border-gray-300 rounded px-3 py-2 text-sm focus:ring-2 focus:ring-black outline-none transition"></textarea>
                                     </div>
                                 </div>
                             </div>
 
-                            <div class="border border-gray-400 p-4 relative">
+                            <div class="border border-gray-400 p-5 relative">
                                 <span class="absolute -top-3 left-4 bg-white px-2 font-bold text-gray-700">轉診目的與單位</span>
                                 <div class="grid grid-cols-2 gap-6 mt-2">
                                     <div>
-                                        <label class="block text-xs font-bold mb-2">轉診目的</label>
-                                        <select v-model="form.purpose" class="w-full border border-gray-300 rounded px-3 py-2 text-sm">
+                                        <label class="block text-xs font-bold mb-2 text-gray-500">轉診目的</label>
+                                        <select v-model="form.purpose" class="w-full border border-gray-300 rounded px-3 py-2 text-sm bg-white outline-none">
                                             <option>進一步檢查</option>
                                             <option>急診治療</option>
                                             <option>門診治療</option>
@@ -153,26 +185,26 @@
                                         </select>
                                     </div>
                                     <div>
-                                        <label class="block text-xs font-bold mb-2">建議轉至院所 (轉入單位)</label>
-                                        <input v-model="form.toOrg" list="hospitals" placeholder="輸入或選擇院所" class="w-full border border-gray-300 rounded px-3 py-2 text-sm font-bold text-blue-700">
-                                        <datalist id="hospitals">
-                                            <option value="新樓醫院">
-                                            <option value="成大醫院">
-                                            <option value="奇美醫院">
-                                            <option value="阿發診所">
+                                        <label class="block text-xs font-bold mb-2 text-gray-500">建議轉至院所 (轉入單位)</label>
+                                        <input v-model="form.toOrg" list="orgList" placeholder="選擇或輸入單位" class="w-full border border-gray-300 rounded px-3 py-2 text-sm font-bold text-blue-700 focus:ring-2 focus:ring-blue-500 outline-none">
+                                        <datalist id="orgList">
+                                            <option v-for="org in uniqueOrgs" :value="org"></option>
                                         </datalist>
+                                    </div>
+                                    <div>
+                                        <label class="block text-xs font-bold mb-2 text-gray-500">轉出單位 (原診治單位)</label>
+                                        <input v-model="form.fromOrg" list="orgList" class="w-full border border-gray-300 rounded px-3 py-2 text-sm bg-gray-50 focus:bg-white outline-none">
                                     </div>
                                 </div>
                             </div>
 
-                            <div class="flex justify-between items-end text-sm text-gray-500 pt-4">
-                                <div>原診治單位：<span class="font-bold text-black">{{ currentUser.organization }}</span></div>
-                                <div>開立醫師：<span class="font-bold text-black">{{ currentUser.name }}</span></div>
+                            <div class="flex justify-between items-end text-sm text-gray-500 pt-4 bg-gray-50 p-4 rounded-lg">
+                                <div>開立醫師：<span class="font-bold text-black border-b border-black pb-1">{{ currentUser.name }}</span></div>
                                 <div>開立日期：{{ today }}</div>
                             </div>
 
                             <div class="pt-6 text-center">
-                                <button type="submit" :disabled="loading" class="bg-gray-900 text-white px-12 py-3 rounded-lg font-bold shadow-lg hover:bg-black transition disabled:opacity-50">
+                                <button type="submit" :disabled="loading" class="bg-gray-900 text-white px-12 py-3 rounded-lg font-bold shadow-lg hover:bg-black transition disabled:opacity-50 transform hover:-translate-y-1">
                                     <span v-if="loading"><i class="fa-solid fa-spinner fa-spin mr-2"></i> 傳送中...</span>
                                     <span v-else>開立轉診單</span>
                                 </button>
@@ -196,17 +228,40 @@
                     currentTab: 'list',
                     referrals: [],
                     patients: [],
+                    users: [], // 為了取得單位列表
                     selectedPatientId: '',
                     
+                    // ICD-10 搜尋
+                    icdQuery: '',
+                    showIcdList: false,
+                    // 模擬 ICD-10 資料庫 (可擴充)
+                    icdDatabase: [
+                        { code: 'E11.9', desc: '第二型糖尿病，無併發症' },
+                        { code: 'E10.9', desc: '第一型糖尿病，無併發症' },
+                        { code: 'I10', desc: '原發性高血壓' },
+                        { code: 'I11.9', desc: '高血壓性心臟病，無心臟衰竭' },
+                        { code: 'J44.9', desc: '慢性阻塞性肺病，未明示' },
+                        { code: 'N18.9', desc: '慢性腎臟病，未明示期別' },
+                        { code: 'J18.9', desc: '肺炎，未明示致病菌' },
+                        { code: 'E78.5', desc: '高脂血症，未明示' },
+                        { code: 'M17.9', desc: '膝部骨關節炎' },
+                        { code: 'I25.10', desc: '動脈硬化心臟病' }
+                    ],
+                    filteredIcdList: [],
+
                     // 表單資料
-                    form: { patientName: '', patientIdNo: '', patientDob: '', phone: '', diagnosis: '', summary: '', purpose: '門診治療', toOrg: '新樓醫院' }
+                    form: { patientName: '', patientIdNo: '', patientDob: '', phone: '', diagnosis: '', summary: '', purpose: '門診治療', toOrg: '新樓醫院', fromOrg: '' }
                 }
             },
             computed: {
-                today() { return new Date().toISOString().split('T')[0]; }
+                today() { return new Date().toISOString().split('T')[0]; },
+                // 從 Users 資料表中提取不重複的單位列表
+                uniqueOrgs() {
+                    if (!this.users.length) return ['新樓醫院', '成大醫院', '奇美醫院', '永康衛生所'];
+                    return [...new Set(this.users.map(u => u.organization))].filter(Boolean);
+                }
             },
             mounted() {
-                // 1. 驗證登入 (同 index.html)
                 const user = localStorage.getItem('currentUser');
                 if (!user) {
                     alert('請先登入系統');
@@ -215,23 +270,29 @@
                 }
                 this.currentUser = JSON.parse(user);
                 
-                // 2. 載入資料
+                // 預設轉出單位
+                this.form.fromOrg = this.currentUser.organization;
+
                 this.fetchData();
                 this.fetchReferrals();
             },
             methods: {
                 closeWindow() { window.close(); },
                 
-                // 讀取個案 (供自動填入用)
                 async fetchData() {
                     try {
-                        const res = await fetch(`${API_BASE_URL}?endpoint=patients&_t=${Date.now()}`);
-                        const json = await res.json();
-                        if (json.status === 'success') this.patients = json.data;
+                        // 同時讀取病患與使用者資料
+                        const [pRes, uRes] = await Promise.all([
+                            fetch(`${API_BASE_URL}?endpoint=patients&_t=${Date.now()}`),
+                            fetch(`${API_BASE_URL}?endpoint=users&_t=${Date.now()}`)
+                        ]);
+                        const pJson = await pRes.json();
+                        const uJson = await uRes.json();
+                        if (pJson.status === 'success') this.patients = pJson.data;
+                        if (uJson.status === 'success') this.users = uJson.data;
                     } catch (e) { console.error(e); }
                 },
 
-                // 讀取轉診單
                 async fetchReferrals() {
                     this.loading = true;
                     try {
@@ -242,23 +303,46 @@
                     this.loading = false;
                 },
 
-                // 自動填入功能
+                // ICD-10 搜尋邏輯
+                searchICD() {
+                    if (this.icdQuery.length < 1) {
+                        this.showIcdList = false;
+                        return;
+                    }
+                    const k = this.icdQuery.toLowerCase();
+                    this.filteredIcdList = this.icdDatabase.filter(i => 
+                        i.code.toLowerCase().includes(k) || i.desc.toLowerCase().includes(k)
+                    );
+                    this.showIcdList = true;
+                },
+                selectICD(item) {
+                    this.form.diagnosis = `${item.code} - ${item.desc}`;
+                    this.icdQuery = item.code; // 讓輸入框顯示代碼
+                    this.showIcdList = false;
+                },
+
+                // 自動填入 + 日期修正
                 autoFill() {
                     const p = this.patients.find(x => x.id === this.selectedPatientId);
                     if (p) {
                         this.form.patientName = p.name;
                         this.form.patientIdNo = p.nationalId;
-                        this.form.patientDob = p.birthDate;
-                        this.form.patientId = p.id; // 隱藏欄位
+                        // 修正：擷取 YYYY-MM-DD
+                        this.form.patientDob = this.formatDate(p.birthDate); 
+                        this.form.patientId = p.id;
                     }
                 },
+                
+                // 日期格式化工具 (相容 Google Sheet 可能回傳的時間)
+                formatDate(dateStr) {
+                    if (!dateStr) return '';
+                    return dateStr.split(' ')[0]; // 取空格前的部分
+                },
 
-                // 判斷是否可接收 (目前使用者單位 == 轉入單位 且 狀態未就診)
                 canReceive(r) {
                     return r.toOrg === this.currentUser.organization && r.status === '未就診';
                 },
 
-                // 接收轉診 (更新狀態)
                 async receiveReferral(r) {
                     if(!confirm(`確認接收病患 ${r.patientName} 並標記為已就診？`)) return;
                     this.loading = true;
@@ -271,14 +355,16 @@
                     this.loading = false;
                 },
 
-                // 提交轉診單
                 async submitReferral() {
                     this.loading = true;
+                    // 確保轉出單位若為空，則使用當前使用者單位
+                    const finalFromOrg = this.form.fromOrg || this.currentUser.organization;
+                    
                     const params = new URLSearchParams({
                         action: 'addReferral',
-                        fromOrg: this.currentUser.organization,
+                        fromOrg: finalFromOrg,
                         doctor: this.currentUser.name,
-                        patientId: this.selectedPatientId || '', // 若有選個案
+                        patientId: this.selectedPatientId || '',
                         ...this.form
                     });
 
@@ -289,8 +375,7 @@
                             alert('轉診單開立成功！');
                             this.currentTab = 'list';
                             this.fetchReferrals();
-                            // 清空重要欄位
-                            this.form.diagnosis = ''; this.form.summary = '';
+                            this.form.diagnosis = ''; this.form.summary = ''; this.icdQuery = '';
                         } else {
                             throw new Error(json.message);
                         }
