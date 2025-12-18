@@ -207,8 +207,35 @@
                                 <div class="bg-white p-5 rounded-2xl shadow-sm border border-green-50 relative overflow-hidden"><div class="absolute right-0 top-0 w-20 h-20 bg-green-50 rounded-bl-full -mr-4 -mt-4"></div><p class="text-xs font-bold text-green-600 flex items-center mb-2"><i class="fa-solid fa-bolt mr-2"></i> 心率</p><h3 class="text-3xl font-extrabold text-gray-800">{{ latestMetrics.hr || '-' }} <span class="text-sm text-gray-400 font-normal">BPM</span></h3></div>
                                 <div class="bg-white p-5 rounded-2xl shadow-sm border border-orange-50 relative overflow-hidden"><div class="absolute right-0 top-0 w-20 h-20 bg-orange-50 rounded-bl-full -mr-4 -mt-4"></div><p class="text-xs font-bold text-orange-500 flex items-center mb-2"><i class="fa-solid fa-droplet mr-2"></i> 血糖</p><h3 class="text-3xl font-extrabold text-gray-800">{{ latestMetrics.glu || '-' }} <span class="text-sm text-gray-400 font-normal">mg/dL</span></h3></div>
                             </div>
-                            <div class="bg-white p-6 rounded-2xl shadow-sm border border-gray-100"><div class="flex justify-between items-center mb-6"><h4 class="font-bold text-gray-700 flex items-center"><i class="fa-solid fa-chart-line mr-2 text-brand-blue"></i> 血壓趨勢圖</h4><div class="flex space-x-2 text-xs"><span class="flex items-center"><span class="w-3 h-3 bg-red-400 rounded-full mr-1"></span> 收縮壓</span><span class="flex items-center"><span class="w-3 h-3 bg-blue-400 rounded-full mr-1"></span> 舒張壓</span></div></div><div class="h-64"><canvas id="bpChart"></canvas></div></div>
-                            <div class="bg-white p-6 rounded-2xl shadow-sm border border-gray-100"><h4 class="font-bold text-gray-700 mb-6 flex items-center"><i class="fa-solid fa-chart-area mr-2 text-orange-500"></i> 血糖趨勢圖</h4><div class="h-64"><canvas id="gluChart"></canvas></div></div>
+                            
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                <div class="space-y-6">
+                                    <div class="bg-white p-6 rounded-2xl shadow-sm border border-gray-100"><div class="flex justify-between items-center mb-6"><h4 class="font-bold text-gray-700 flex items-center"><i class="fa-solid fa-chart-line mr-2 text-brand-blue"></i> 血壓趨勢圖</h4><div class="flex space-x-2 text-xs"><span class="flex items-center"><span class="w-3 h-3 bg-red-400 rounded-full mr-1"></span> 收縮壓</span><span class="flex items-center"><span class="w-3 h-3 bg-blue-400 rounded-full mr-1"></span> 舒張壓</span></div></div><div class="h-64"><canvas id="bpChart"></canvas></div></div>
+                                    <div class="bg-white p-6 rounded-2xl shadow-sm border border-gray-100"><h4 class="font-bold text-gray-700 mb-6 flex items-center"><i class="fa-solid fa-chart-area mr-2 text-orange-500"></i> 血糖趨勢圖</h4><div class="h-64"><canvas id="gluChart"></canvas></div></div>
+                                </div>
+                                
+                                <div class="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 flex flex-col h-full max-h-[600px]">
+                                    <h4 class="font-bold text-gray-700 mb-4 flex items-center"><i class="fa-solid fa-list-ul mr-2 text-gray-500"></i> 最近數據紀錄</h4>
+                                    <div class="flex-1 overflow-y-auto pr-2 custom-scrollbar">
+                                        <ul class="space-y-3">
+                                            <li v-for="obs in patientObservations" :key="obs.id" class="p-3 rounded-lg bg-gray-50 border border-gray-100 flex justify-between items-center hover:bg-gray-100 transition">
+                                                <div>
+                                                    <p class="font-bold text-gray-800 text-sm">{{ translateCode(obs.code) }}</p>
+                                                    <p class="text-xs text-gray-400 mt-0.5">{{ obs.timestamp }}</p>
+                                                </div>
+                                                <div class="text-right">
+                                                    <span class="text-lg font-mono font-bold text-brand-blue">{{ obs.value }}</span>
+                                                    <span class="text-xs text-gray-500 ml-1">{{ obs.unit }}</span>
+                                                </div>
+                                            </li>
+                                            <li v-if="patientObservations.length === 0" class="text-center py-8 text-gray-400">
+                                                <i class="fa-regular fa-folder-open text-2xl mb-2 block opacity-50"></i>
+                                                尚無數據
+                                            </li>
+                                        </ul>
+                                    </div>
+                                </div>
+                            </div>
                         </div>
                         <div class="w-96 bg-white border-l border-gray-100 p-6 flex flex-col shadow-lg overflow-y-auto">
                             <div class="bg-blue-50 p-4 rounded-xl border border-blue-100 mb-6"><div class="flex items-center mb-2"><img v-if="currentUser.picture" :src="currentUser.picture" class="w-8 h-8 rounded-full mr-2"><div v-else class="w-8 h-8 rounded-full bg-brand-blue text-white flex items-center justify-center font-bold mr-2">{{ currentUser.name[0] }}</div><div><p class="text-sm font-bold text-gray-900">{{ currentUser.name }}</p><p class="text-xs text-gray-500">{{ currentUser.email }}</p></div></div></div>
@@ -302,7 +329,7 @@
                         if (typeof google !== 'undefined' && this.googleClientId) { google.accounts.id.prompt(); this.loading = false; return; }
                         else { alert("請確認 config.js 設定"); this.loading = false; return; }
                     }
-                    try { const res = await fetch(`${API_BASE_URL}?endpoint=users`); const json = await res.json(); if(json.status === 'success') { const u = json.data.find(x => x.email === this.loginEmail); if(u) this.completeLogin(u); else { this.loginError = '找不到帳號'; this.loading = false; } } } catch(e) { this.loginError = '連線錯誤'; this.loading = false; }
+                    try { const res = await fetch(`${API_BASE_URL}?endpoint=users&_t=${new Date().getTime()}`); const json = await res.json(); if(json.status === 'success') { const u = json.data.find(x => x.email === this.loginEmail); if(u) this.completeLogin(u); else { this.loginError = '找不到帳號'; this.loading = false; } } } catch(e) { this.loginError = '連線錯誤'; this.loading = false; }
                 },
                 handleGoogleCallback(res) {
                     const payload = JSON.parse(decodeURIComponent(window.atob(res.credential.split('.')[1].replace(/-/g, '+').replace(/_/g, '/')).split('').map(c => '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2)).join('')));
@@ -314,11 +341,21 @@
                 
                 async refreshData() {
                     this.loading = true;
+                    // *** 關鍵修正：加入時間戳記防止快取 ***
                     await this.fetchData('patients');
                     await this.fetchData('observations');
                     this.loading = false;
                 },
-                async fetchData(endpoint) { try { const res = await fetch(`${API_BASE_URL}?endpoint=${endpoint}`); const json = await res.json(); if (json.status === 'success') { if (endpoint === 'patients') this.patients = json.data; if (endpoint === 'observations') this.observations = json.data; } } catch (e) { console.error(e); } },
+                async fetchData(endpoint) {
+                    try {
+                        const res = await fetch(`${API_BASE_URL}?endpoint=${endpoint}&_t=${new Date().getTime()}`);
+                        const json = await res.json();
+                        if (json.status === 'success') {
+                            if (endpoint === 'patients') this.patients = json.data;
+                            if (endpoint === 'observations') this.observations = json.data;
+                        }
+                    } catch (e) { console.error(e); }
+                },
                 
                 openPatientDetail(patient) {
                     this.selectedPatient = patient;
@@ -327,14 +364,26 @@
                 },
                 
                 updatePatientData() {
-                    const allObs = this.observations.filter(o => o.patientId === this.selectedPatient.id).sort((a,b) => new Date(a.timestamp) - new Date(b.timestamp));
+                    // *** 關鍵修正：確保列表資料來源正確，並依時間倒序 ***
+                    const allObs = this.observations.filter(o => String(o.patientId) === String(this.selectedPatient.id))
+                        .sort((a,b) => new Date(b.timestamp) - new Date(a.timestamp)); // 修正為倒序 (最新的在最前)
+                    
+                    this.patientObservations = allObs; // 更新列表數據源
+
+                    // 更新上方卡片 (取最新一筆)
+                    const latest = allObs[0] || {};
+                    // 這裡的邏輯需要改為找各類別的"最新"
+                    // allObs 已經是倒序，所以找到的第一個該類別就是最新的
                     this.latestMetrics = {
-                        sys: allObs.filter(o=>o.code==='systolic_bp').pop()?.value,
-                        dia: allObs.filter(o=>o.code==='diastolic_bp').pop()?.value,
-                        hr:  allObs.filter(o=>o.code==='heart_rate').pop()?.value,
-                        glu: allObs.filter(o=>o.code.startsWith('glucose')).pop()?.value
+                        sys: allObs.find(o=>o.code==='systolic_bp')?.value,
+                        dia: allObs.find(o=>o.code==='diastolic_bp')?.value,
+                        hr:  allObs.find(o=>o.code==='heart_rate')?.value,
+                        glu: allObs.find(o=>o.code.startsWith('glucose'))?.value
                     };
-                    this.$nextTick(() => { this.renderCharts(allObs); });
+
+                    // 圖表需要時間正序
+                    const chartData = [...allObs].sort((a,b) => new Date(a.timestamp) - new Date(b.timestamp));
+                    this.$nextTick(() => { this.renderCharts(chartData); });
                 },
 
                 renderCharts(data) {
@@ -361,14 +410,15 @@
                     });
                 },
 
-                // *** 診斷模式：嚴格檢查回傳狀態 ***
                 async submitAllMeasurements() {
                     this.loading = true;
                     
+                    const requests = [];
+                    const localNewObs = [];
                     const now = new Date();
+                    // 格式化時間 (與後端一致: yyyy-MM-dd HH:mm)
                     const timestamp = now.getFullYear() + '-' + String(now.getMonth() + 1).padStart(2, '0') + '-' + String(now.getDate()).padStart(2, '0') + ' ' + String(now.getHours()).padStart(2, '0') + ':' + String(now.getMinutes()).padStart(2, '0');
 
-                    // 輔助函式：發送請求並檢查回應 (含錯誤診斷)
                     const addData = async (code, value, unit) => {
                         const params = new URLSearchParams({ 
                             action: 'addObservation', 
@@ -376,59 +426,44 @@
                             code: code, 
                             value: value, 
                             unit: unit,
-                            _t: new Date().getTime() // 避免快取
+                            _t: new Date().getTime()
                         });
                         
                         try {
                             const res = await fetch(`${API_BASE_URL}?${params.toString()}`);
-                            // 嘗試解析 JSON
-                            const text = await res.text();
-                            let json;
-                            try {
-                                json = JSON.parse(text);
-                            } catch (e) {
-                                // 如果解析失敗，通常是因為後端回傳了 Google 錯誤頁面 HTML
-                                throw new Error(`後端回傳非 JSON 格式。原始回應：${text.substring(0, 100)}...`);
-                            }
-
-                            if (json.status !== 'success') {
-                                throw new Error(json.message || '未知錯誤');
-                            }
+                            const json = await res.json();
                             
-                            // 若成功，加入前端快取
-                            this.observations.push({ 
-                                id: 'temp_'+Date.now(), 
+                            if (json.status !== 'success') throw new Error(json.message);
+                            
+                            localNewObs.push({ 
+                                id: 'temp_'+Date.now()+Math.random(), 
                                 patientId: this.selectedPatient.id, 
                                 code: code, 
                                 value: Number(value), 
                                 unit: unit, 
                                 timestamp: timestamp 
                             });
-
-                        } catch (networkError) {
-                            throw new Error(`請求失敗 (${code}): ${networkError.message}`);
+                        } catch (e) {
+                            console.error(e);
+                            throw e; // 拋出錯誤以中斷流程
                         }
                     };
 
                     try {
-                        const promises = [];
-                        if (this.form.sys) promises.push(addData('systolic_bp', this.form.sys, 'mmHg'));
-                        if (this.form.dia) promises.push(addData('diastolic_bp', this.form.dia, 'mmHg'));
-                        if (this.form.hr)  promises.push(addData('heart_rate', this.form.hr, 'BPM'));
-                        if (this.form.glu) { 
-                            const code = this.form.timing.includes('空腹') ? 'glucose_ac' : 'glucose_pc'; 
-                            promises.push(addData(code, this.form.glu, 'mg/dL')); 
-                        }
+                        if (this.form.sys) await addData('systolic_bp', this.form.sys, 'mmHg');
+                        if (this.form.dia) await addData('diastolic_bp', this.form.dia, 'mmHg');
+                        if (this.form.hr)  await addData('heart_rate', this.form.hr, 'BPM');
+                        if (this.form.glu) { const code = this.form.timing.includes('空腹') ? 'glucose_ac' : 'glucose_pc'; await addData(code, this.form.glu, 'mg/dL'); }
 
-                        await Promise.all(promises);
+                        // *** 關鍵修正：確保新數據加入主陣列並觸發更新 ***
+                        this.observations.push(...localNewObs);
+                        this.updatePatientData(); // 這會重新計算列表與圖表
                         
                         alert('數據上傳成功！');
-                        this.updatePatientData(); // 重繪圖表
                         this.form = { timing: '起床空腹', sys: '', dia: '', hr: '', glu: '', note: '' };
 
                     } catch (e) { 
-                        console.error(e); 
-                        alert('上傳失敗！\n診斷訊息：' + e.message + '\n\n請檢查：\n1. Google Apps Script 是否已部署為「新版本」\n2. 權限是否設為「任何人」'); 
+                        alert('上傳失敗：' + e.message); 
                     } finally { 
                         this.loading = false; 
                     }
