@@ -361,17 +361,14 @@
                     });
                 },
 
-                // *** 核心：嚴格寫入檢查 ***
+                // *** 診斷模式：嚴格檢查回傳狀態 ***
                 async submitAllMeasurements() {
                     this.loading = true;
                     
-                    const requests = [];
-                    const localNewObs = [];
                     const now = new Date();
-                    // 格式化時間 (與後端一致)
                     const timestamp = now.getFullYear() + '-' + String(now.getMonth() + 1).padStart(2, '0') + '-' + String(now.getDate()).padStart(2, '0') + ' ' + String(now.getHours()).padStart(2, '0') + ':' + String(now.getMinutes()).padStart(2, '0');
 
-                    // 輔助：建立並檢查請求
+                    // 輔助函式：發送請求並檢查回應 (含錯誤診斷)
                     const addData = async (code, value, unit) => {
                         const params = new URLSearchParams({ 
                             action: 'addObservation', 
@@ -379,37 +376,59 @@
                             code: code, 
                             value: value, 
                             unit: unit,
-                            _t: new Date().getTime() // 防止快取
+                            _t: new Date().getTime() // 避免快取
                         });
                         
-                        console.log(`正在寫入 ${code}: ${value}...`);
-                        const res = await fetch(`${API_BASE_URL}?${params.toString()}`);
-                        const json = await res.json();
-                        
-                        if (json.status !== 'success') {
-                            throw new Error(`寫入失敗 (${code}): ${json.message}`);
+                        try {
+                            const res = await fetch(`${API_BASE_URL}?${params.toString()}`);
+                            // 嘗試解析 JSON
+                            const text = await res.text();
+                            let json;
+                            try {
+                                json = JSON.parse(text);
+                            } catch (e) {
+                                // 如果解析失敗，通常是因為後端回傳了 Google 錯誤頁面 HTML
+                                throw new Error(`後端回傳非 JSON 格式。原始回應：${text.substring(0, 100)}...`);
+                            }
+
+                            if (json.status !== 'success') {
+                                throw new Error(json.message || '未知錯誤');
+                            }
+                            
+                            // 若成功，加入前端快取
+                            this.observations.push({ 
+                                id: 'temp_'+Date.now(), 
+                                patientId: this.selectedPatient.id, 
+                                code: code, 
+                                value: Number(value), 
+                                unit: unit, 
+                                timestamp: timestamp 
+                            });
+
+                        } catch (networkError) {
+                            throw new Error(`請求失敗 (${code}): ${networkError.message}`);
                         }
-                        
-                        // 準備樂觀更新數據
-                        localNewObs.push({ id: 'temp_'+Date.now(), patientId: this.selectedPatient.id, code: code, value: Number(value), unit: unit, timestamp: timestamp });
                     };
 
                     try {
-                        if (this.form.sys) await addData('systolic_bp', this.form.sys, 'mmHg');
-                        if (this.form.dia) await addData('diastolic_bp', this.form.dia, 'mmHg');
-                        if (this.form.hr)  await addData('heart_rate', this.form.hr, 'BPM');
-                        if (this.form.glu) { const code = this.form.timing.includes('空腹') ? 'glucose_ac' : 'glucose_pc'; await addData(code, this.form.glu, 'mg/dL'); }
+                        const promises = [];
+                        if (this.form.sys) promises.push(addData('systolic_bp', this.form.sys, 'mmHg'));
+                        if (this.form.dia) promises.push(addData('diastolic_bp', this.form.dia, 'mmHg'));
+                        if (this.form.hr)  promises.push(addData('heart_rate', this.form.hr, 'BPM'));
+                        if (this.form.glu) { 
+                            const code = this.form.timing.includes('空腹') ? 'glucose_ac' : 'glucose_pc'; 
+                            promises.push(addData(code, this.form.glu, 'mg/dL')); 
+                        }
 
-                        // 寫入成功，更新前端與圖表
-                        this.observations.push(...localNewObs);
-                        this.updatePatientData();
+                        await Promise.all(promises);
                         
                         alert('數據上傳成功！');
+                        this.updatePatientData(); // 重繪圖表
                         this.form = { timing: '起床空腹', sys: '', dia: '', hr: '', glu: '', note: '' };
 
                     } catch (e) { 
                         console.error(e); 
-                        alert('上傳失敗：' + e.message + '\n請確認後端程式碼已更新至最新版本 (V4) 並重新部署。'); 
+                        alert('上傳失敗！\n診斷訊息：' + e.message + '\n\n請檢查：\n1. Google Apps Script 是否已部署為「新版本」\n2. 權限是否設為「任何人」'); 
                     } finally { 
                         this.loading = false; 
                     }
