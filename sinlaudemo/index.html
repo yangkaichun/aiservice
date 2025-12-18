@@ -14,10 +14,10 @@
                 extend: {
                     colors: {
                         sinlau: {
-                            dark: '#0f5132', // 新樓深綠
-                            main: '#198754', // 標準綠
-                            light: '#d1e7dd', // 淺綠背景
-                            accent: '#ffc107' // 警示黃
+                            dark: '#0f5132',
+                            main: '#198754',
+                            light: '#d1e7dd',
+                            accent: '#ffc107'
                         }
                     }
                 }
@@ -98,12 +98,12 @@
                     
                     <a v-for="item in currentMenu" :key="item.id" href="#" @click.prevent="currentTab = item.id" 
                        :class="navClass(item.id)" class="flex items-center px-4 py-3 text-sm font-medium rounded-lg transition-all group duration-200">
-                        <i :class="[item.icon, currentTab === item.id ? 'text-sinlau-main' : 'text-slate-400 group-hover:text-sinlau-main']" class="w-6 text-center mr-3 transition-colors"></i>
+                        <i :class="getNavIconClass(item)" class="w-6 text-center mr-3 transition-colors"></i>
                         {{ item.label }}
                     </a>
 
-                    <div v-if="currentUser.role === 'admin'" class="px-2 mt-6 mb-2 text-xs font-semibold text-slate-400 uppercase tracking-wider">系統設定</div>
-                    <a v-if="currentUser.role === 'admin'" href="#" @click.prevent="currentTab = 'admin_users'" :class="navClass('admin_users')" class="flex items-center px-4 py-3 text-sm font-medium rounded-lg transition-all group">
+                    <div v-if="currentUser && currentUser.role === 'admin'" class="px-2 mt-6 mb-2 text-xs font-semibold text-slate-400 uppercase tracking-wider">系統設定</div>
+                    <a v-if="currentUser && currentUser.role === 'admin'" href="#" @click.prevent="currentTab = 'admin_users'" :class="navClass('admin_users')" class="flex items-center px-4 py-3 text-sm font-medium rounded-lg transition-all group">
                         <i class="fa-solid fa-users-gear w-6 text-center mr-3 text-slate-400 group-hover:text-sinlau-main"></i>
                         使用者權限管理
                     </a>
@@ -247,7 +247,7 @@
                         </div>
                     </div>
 
-                    <div v-if="['referrals', 'health_edu', 'reports'].includes(currentTab)" class="bg-white p-12 rounded-xl border border-gray-200 shadow-sm text-center">
+                    <div v-if="['referrals', 'health_edu', 'reports', 'consultation', 'system_notice'].includes(currentTab)" class="bg-white p-12 rounded-xl border border-gray-200 shadow-sm text-center">
                          <i class="fa-solid fa-person-digging text-6xl text-slate-200 mb-6"></i>
                          <h3 class="text-xl font-bold text-slate-700">功能開發中</h3>
                          <p class="text-slate-500 mt-2">此模組將於下一個階段上線，敬請期待。</p>
@@ -425,13 +425,12 @@
                 }
             },
             computed: {
-                // 根據角色動態產生選單 
                 currentMenu() {
                     if (!this.currentUser) return [];
                     
                     const common = [
                          { id: 'dashboard', label: '主控台', icon: 'fa-solid fa-chart-pie' },
-                         { id: 'system_notice', label: '系統公告', icon: 'fa-solid fa-bullhorn' } // Placeholder
+                         { id: 'system_notice', label: '系統公告', icon: 'fa-solid fa-bullhorn' }
                     ];
 
                     const caseManagerMenu = [
@@ -448,7 +447,6 @@
                     ];
 
                     if (this.currentUser.role === 'case_manager' || this.currentUser.role === 'hospital_staff' || this.currentUser.role === 'admin') {
-                        // Admin 也先看到個管師視圖
                         return [...common, ...caseManagerMenu];
                     } else if (this.currentUser.role === 'physician') {
                         return [...common, ...physicianMenu];
@@ -457,6 +455,14 @@
                 }
             },
             methods: {
+                // 修正：新增此方法來處理 icon 的 class，避免在 HTML 中寫太複雜的邏輯
+                getNavIconClass(item) {
+                    const isActive = this.currentTab === item.id;
+                    return [
+                        item.icon,
+                        isActive ? 'text-sinlau-main' : 'text-slate-400 group-hover:text-sinlau-main'
+                    ];
+                },
                 async handleLogin() {
                     this.loading = true;
                     this.loginError = '';
@@ -498,14 +504,10 @@
                         }
                     } catch (e) { console.error(e); } finally { this.loading = false; }
                 },
-                
-                // --- 個案管理邏輯 ---
-                // 1. 模擬 HIS 查詢 
                 async searchHIS() {
                     if (!this.searchKeyword) return;
                     this.loading = true; this.searchError = ''; this.searchResult = null;
                     try {
-                        // 呼叫後端模擬查詢
                         const res = await fetch(`${API_BASE_URL}?action=searchHIS&keyword=${this.searchKeyword}`);
                         const json = await res.json();
                         if (json.found) {
@@ -515,12 +517,10 @@
                         }
                     } catch(e) { this.searchError = '查詢發生錯誤'; } finally { this.loading = false; }
                 },
-                // 2. 確認匯入 (從查詢結果)
                 confirmAddPatient(data) {
-                    this.newPatient = { ...data }; // 複製資料
-                    this.submitPatientManual(); // 直接呼叫寫入
+                    this.newPatient = { ...data };
+                    this.submitPatientManual();
                 },
-                // 3. 提交個案寫入
                 async submitPatientManual() {
                     this.loading = true;
                     const params = new URLSearchParams({
@@ -540,8 +540,6 @@
                         this.fetchData('patients');
                     } catch(e) { alert('新增失敗'); } finally { this.loading = false; }
                 },
-
-                // --- 使用者管理邏輯 ---
                 async submitNewUser() {
                     this.loading = true;
                     const params = new URLSearchParams({
@@ -561,8 +559,6 @@
                     try { await fetch(`${API_BASE_URL}?action=deleteUser&id=${id}`); this.fetchData('users'); } 
                     catch(e) { alert('刪除失敗'); } finally { this.loading = false; }
                 },
-
-                // --- 輔助函式 ---
                 navClass(id) {
                     if (this.currentTab === id) return "bg-green-50 text-sinlau-main font-bold border-l-4 border-sinlau-main shadow-sm";
                     return "text-slate-500 hover:bg-gray-100 hover:text-sinlau-main";
