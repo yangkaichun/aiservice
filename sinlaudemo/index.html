@@ -299,7 +299,10 @@
                         list = list.filter(p => p.name.includes(k) || p.nationalId.includes(k) || p.id.toLowerCase().includes(k));
                     }
                     return list.map(p => {
-                        const pObs = this.observations.filter(o => o.patientId === p.id);
+                        // 1. 強制轉型比對 ID (修復重點)
+                        const pObs = this.observations.filter(o => String(o.patientId) === String(p.id))
+                            .sort((a,b) => new Date(b.timestamp) - new Date(a.timestamp)); // 確保時間倒序
+                        
                         const sys = pObs.find(o => o.code === 'systolic_bp');
                         const dia = pObs.find(o => o.code === 'diastolic_bp');
                         const gluc = pObs.find(o => o.code.startsWith('glucose'));
@@ -341,14 +344,15 @@
                 
                 async refreshData() {
                     this.loading = true;
-                    // *** 關鍵修正：加入時間戳記防止快取 ***
-                    await this.fetchData('patients');
-                    await this.fetchData('observations');
+                    // 2. 加入時間戳記，防止快取 (修復重點)
+                    const t = new Date().getTime();
+                    await this.fetchData('patients', t);
+                    await this.fetchData('observations', t);
                     this.loading = false;
                 },
-                async fetchData(endpoint) {
+                async fetchData(endpoint, t) {
                     try {
-                        const res = await fetch(`${API_BASE_URL}?endpoint=${endpoint}&_t=${new Date().getTime()}`);
+                        const res = await fetch(`${API_BASE_URL}?endpoint=${endpoint}&_t=${t || new Date().getTime()}`);
                         const json = await res.json();
                         if (json.status === 'success') {
                             if (endpoint === 'patients') this.patients = json.data;
@@ -364,23 +368,20 @@
                 },
                 
                 updatePatientData() {
-                    // *** 關鍵修正：確保列表資料來源正確，並依時間倒序 ***
-                    const allObs = this.observations.filter(o => String(o.patientId) === String(this.selectedPatient.id))
-                        .sort((a,b) => new Date(b.timestamp) - new Date(a.timestamp)); // 修正為倒序 (最新的在最前)
+                    // 3. 確保 Modal 內的資料也是使用字串比對與倒序排列 (修復重點)
+                    const allObs = this.observations
+                        .filter(o => String(o.patientId) === String(this.selectedPatient.id))
+                        .sort((a,b) => new Date(b.timestamp) - new Date(a.timestamp));
                     
-                    this.patientObservations = allObs; // 更新列表數據源
+                    this.patientObservations = allObs;
 
-                    // 更新上方卡片 (取最新一筆)
-                    const latest = allObs[0] || {};
-                    // 這裡的邏輯需要改為找各類別的"最新"
-                    // allObs 已經是倒序，所以找到的第一個該類別就是最新的
                     this.latestMetrics = {
                         sys: allObs.find(o=>o.code==='systolic_bp')?.value,
                         dia: allObs.find(o=>o.code==='diastolic_bp')?.value,
                         hr:  allObs.find(o=>o.code==='heart_rate')?.value,
                         glu: allObs.find(o=>o.code.startsWith('glucose'))?.value
                     };
-
+                    
                     // 圖表需要時間正序
                     const chartData = [...allObs].sort((a,b) => new Date(a.timestamp) - new Date(b.timestamp));
                     this.$nextTick(() => { this.renderCharts(chartData); });
@@ -412,11 +413,9 @@
 
                 async submitAllMeasurements() {
                     this.loading = true;
-                    
                     const requests = [];
                     const localNewObs = [];
                     const now = new Date();
-                    // 格式化時間 (與後端一致: yyyy-MM-dd HH:mm)
                     const timestamp = now.getFullYear() + '-' + String(now.getMonth() + 1).padStart(2, '0') + '-' + String(now.getDate()).padStart(2, '0') + ' ' + String(now.getHours()).padStart(2, '0') + ':' + String(now.getMinutes()).padStart(2, '0');
 
                     const addData = async (code, value, unit) => {
@@ -432,7 +431,6 @@
                         try {
                             const res = await fetch(`${API_BASE_URL}?${params.toString()}`);
                             const json = await res.json();
-                            
                             if (json.status !== 'success') throw new Error(json.message);
                             
                             localNewObs.push({ 
@@ -445,7 +443,7 @@
                             });
                         } catch (e) {
                             console.error(e);
-                            throw e; // 拋出錯誤以中斷流程
+                            throw e;
                         }
                     };
 
@@ -455,9 +453,9 @@
                         if (this.form.hr)  await addData('heart_rate', this.form.hr, 'BPM');
                         if (this.form.glu) { const code = this.form.timing.includes('空腹') ? 'glucose_ac' : 'glucose_pc'; await addData(code, this.form.glu, 'mg/dL'); }
 
-                        // *** 關鍵修正：確保新數據加入主陣列並觸發更新 ***
+                        // 4. 手動更新本地資料庫 (確保不需等待 Fetch 就能看到更新)
                         this.observations.push(...localNewObs);
-                        this.updatePatientData(); // 這會重新計算列表與圖表
+                        this.updatePatientData();
                         
                         alert('數據上傳成功！');
                         this.form = { timing: '起床空腹', sys: '', dia: '', hr: '', glu: '', note: '' };
