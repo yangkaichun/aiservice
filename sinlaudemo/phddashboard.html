@@ -95,28 +95,40 @@
             <div class="flex-1 bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden flex flex-col">
                 <div class="px-6 py-4 border-b border-gray-100 bg-gray-50/50 flex justify-between items-center">
                     <h3 class="font-bold text-gray-800"><i class="fa-solid fa-list-ul mr-2 text-brand-blue"></i> 個案監控列表</h3>
-                    <span class="text-xs text-gray-400">資料最後更新: {{ lastUpdateTime }}</span>
+                    <div class="flex items-center space-x-4">
+                        <span class="text-xs text-gray-400">資料最後更新: {{ lastUpdateTime }}</span>
+                        <span class="text-xs font-bold text-gray-600 bg-gray-200 px-2 py-1 rounded">
+                            第 {{ currentPage }} / {{ totalPages }} 頁 (共 {{ fullMonitoringList.length }} 筆)
+                        </span>
+                    </div>
                 </div>
                 
-                <div class="flex-1 overflow-auto">
+                <div class="flex-1 overflow-auto relative">
+                    <div v-if="loading" class="absolute inset-0 bg-white/80 z-10 flex items-center justify-center">
+                        <div class="flex flex-col items-center">
+                            <i class="fa-solid fa-circle-notch fa-spin text-4xl text-brand-blue mb-2"></i>
+                            <p class="text-sm text-gray-500">資料載入中...</p>
+                        </div>
+                    </div>
+
                     <table class="w-full text-left">
                         <thead class="bg-white sticky top-0 z-10 border-b border-gray-100 shadow-sm">
                             <tr class="text-xs font-bold text-gray-400 uppercase tracking-wider">
-                                <th class="px-6 py-4 bg-gray-50/80">病患資料</th>
-                                <th class="px-6 py-4 bg-gray-50/80">最新血壓 (mmHg)</th>
-                                <th class="px-6 py-4 bg-gray-50/80">最新血糖 (mg/dL)</th>
-                                <th class="px-6 py-4 bg-gray-50/80 text-center">狀態</th>
-                                <th class="px-6 py-4 bg-gray-50/80 text-right">操作</th>
+                                <th class="px-6 py-4 bg-gray-50/90">病患資料</th>
+                                <th class="px-6 py-4 bg-gray-50/90">最新血壓 (mmHg)</th>
+                                <th class="px-6 py-4 bg-gray-50/90">最新血糖 (mg/dL)</th>
+                                <th class="px-6 py-4 bg-gray-50/90 text-center">狀態</th>
+                                <th class="px-6 py-4 bg-gray-50/90 text-right">操作</th>
                             </tr>
                         </thead>
                         <tbody class="divide-y divide-gray-50 text-sm">
-                            <tr v-for="item in filteredList" :key="item.id" class="hover:bg-blue-50/30 transition group">
+                            <tr v-for="item in paginatedList" :key="item.id" class="hover:bg-blue-50/30 transition group">
                                 <td class="px-6 py-4">
                                     <div class="flex items-center">
                                         <div class="w-10 h-10 rounded-full bg-blue-100 text-brand-blue flex items-center justify-center font-bold mr-3 text-sm">{{ item.name ? item.name[0] : '?' }}</div>
                                         <div>
                                             <p class="font-bold text-gray-900 text-base">{{ item.name }}</p>
-                                            <p class="text-xs text-gray-500 font-mono">{{ item.id }} | {{ item.nationalId }}</p>
+                                            <p class="text-xs text-gray-500 font-mono">{{ item.id }}</p>
                                         </div>
                                     </div>
                                 </td>
@@ -156,9 +168,25 @@
                         </tbody>
                     </table>
                     
-                    <div v-if="filteredList.length === 0 && !loading" class="flex flex-col items-center justify-center h-64 text-gray-400">
+                    <div v-if="fullMonitoringList.length === 0 && !loading" class="flex flex-col items-center justify-center h-64 text-gray-400">
                         <i class="fa-regular fa-folder-open text-4xl mb-3 opacity-30"></i>
                         <p>查無符合條件的個案</p>
+                    </div>
+                </div>
+
+                <div class="p-4 border-t border-gray-100 bg-gray-50 flex justify-between items-center" v-if="fullMonitoringList.length > 0">
+                    <div class="text-sm text-gray-500">
+                        顯示 {{ (currentPage - 1) * itemsPerPage + 1 }} 到 {{ Math.min(currentPage * itemsPerPage, fullMonitoringList.length) }} 筆
+                    </div>
+                    <div class="flex space-x-2">
+                        <button @click="changePage(currentPage - 1)" :disabled="currentPage === 1" 
+                            class="px-4 py-2 rounded-lg border border-gray-200 bg-white text-gray-600 hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed transition font-bold text-sm">
+                            <i class="fa-solid fa-chevron-left mr-1"></i> 上一頁
+                        </button>
+                        <button @click="changePage(currentPage + 1)" :disabled="currentPage >= totalPages" 
+                            class="px-4 py-2 rounded-lg border border-gray-200 bg-white text-gray-600 hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed transition font-bold text-sm">
+                            下一頁 <i class="fa-solid fa-chevron-right ml-1"></i>
+                        </button>
                     </div>
                 </div>
             </div>
@@ -254,7 +282,7 @@
                                 <label class="block text-xs font-bold text-gray-500 mb-1.5 uppercase">測量時機</label>
                                 <div class="relative">
                                     <i class="fa-regular fa-clock absolute left-3 top-3.5 text-gray-400"></i>
-                                    <select v-model="form.timing" class="w-full pl-10 border border-gray-200 rounded-xl py-3 text-sm focus:ring-2 focus:ring-brand-blue outline-none">
+                                    <select v-model="form.timing" class="w-full pl-10 border border-gray-200 rounded-xl py-3 text-sm focus:ring-2 focus:ring-brand-blue outline-none bg-gray-50 hover:bg-white transition">
                                         <option>起床空腹</option><option>早餐後</option><option>午餐前</option><option>午餐後</option><option>晚餐前</option><option>晚餐後</option><option>睡前</option>
                                     </select>
                                 </div>
@@ -272,7 +300,7 @@
                             </div>
                             <div>
                                 <label class="block text-xs font-bold text-gray-400 mb-1.5 uppercase">備註說明</label>
-                                <textarea v-model="form.note" class="w-full border border-gray-200 rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-gray-200 outline-none h-24 resize-none" placeholder="輸入備註..."></textarea>
+                                <textarea v-model="form.note" class="w-full border border-gray-200 rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-gray-200 outline-none h-24 resize-none bg-gray-50 focus:bg-white" placeholder="輸入備註..."></textarea>
                             </div>
                             <button type="submit" :disabled="loading" class="w-full btn-gradient bg-gradient-to-r from-brand-blue to-indigo-600 text-white py-4 rounded-xl font-bold shadow-lg hover:shadow-xl transition transform active:scale-[0.98] flex justify-center items-center group">
                                 <span v-if="loading"><i class="fa-solid fa-circle-notch fa-spin mr-2"></i> 資料傳輸中...</span>
@@ -291,42 +319,87 @@
         createApp({
             data() {
                 return {
+                    googleClientId: typeof GOOGLE_CLIENT_ID !== 'undefined' ? GOOGLE_CLIENT_ID : '',
                     loading: false, currentUser: null, patients: [], observations: [], searchKeyword: '', lastUpdateTime: '',
+                    
+                    // 分頁設定
+                    currentPage: 1,
+                    itemsPerPage: 30, // 每頁 30 筆
+
                     showDetailModal: false, selectedPatient: {}, patientObservations: [], latestMetrics: {}, bpChart: null, gluChart: null,
                     form: { timing: '起床空腹', sys: '', dia: '', hr: '', glu: '', note: '' }
                 }
             },
+            watch: {
+                // 當搜尋條件改變時，自動回到第一頁
+                searchKeyword() {
+                    this.currentPage = 1;
+                }
+            },
             computed: {
-                filteredList() {
+                // 1. 計算完整的列表（含篩選、資料整合、排序）
+                fullMonitoringList() {
                     let list = this.patients;
+                    
+                    // 篩選
                     if (this.searchKeyword) {
                         const k = this.searchKeyword.toLowerCase();
                         list = list.filter(p => p.name.includes(k) || p.nationalId.includes(k) || String(p.id).toLowerCase().includes(k));
                     }
                     
-                    return list.map(p => {
-                        // 修正：同時比對 patientId 與 patientID，並確保 ID 轉字串
-                        const pObs = this.observations.filter(o => {
-                            const pid = o.patientId || o.patientID;
-                            return String(pid) === String(p.id);
-                        }).sort((a,b) => new Date(b.timestamp) - new Date(a.timestamp));
+                    // 整合數據
+                    const mappedList = list.map(p => {
+                        // 強制轉型比對
+                        const pObs = this.observations.filter(o => String(o.patientId || o.patientID) === String(p.id));
                         
-                        const sys = pObs.find(o => o.code === 'systolic_bp');
-                        const dia = pObs.find(o => o.code === 'diastolic_bp');
-                        const gluc = pObs.find(o => o.code.startsWith('glucose'));
+                        // 找出最新數據 (用時間戳記排序)
+                        const sortedObs = pObs.sort((a,b) => new Date(b.timestamp) - new Date(a.timestamp));
+                        const lastTime = sortedObs.length > 0 ? sortedObs[0].timestamp : '1970-01-01 00:00';
+
+                        const sys = sortedObs.find(o => o.code === 'systolic_bp');
+                        const dia = sortedObs.find(o => o.code === 'diastolic_bp');
+                        const gluc = sortedObs.find(o => o.code.startsWith('glucose'));
+                        
                         let hasAbnormal = false;
                         if (sys && sys.value > 140) hasAbnormal = true;
                         if (gluc && gluc.value > 126) hasAbnormal = true;
 
                         return {
                             raw: p, id: p.id, name: p.name, nationalId: p.nationalId,
-                            bp: { systolic: sys?.value, diastolic: dia?.value, time: sys?.timestamp.slice(5, 16), isAbnormal: (sys?.value > 140) },
-                            glucose: { value: gluc?.value, type: gluc?.code === 'glucose_ac' ? '飯前' : '飯後', time: gluc?.timestamp.slice(5, 16), isAbnormal: (gluc?.value > 126) },
+                            lastUpdate: lastTime, // 用於排序
+                            bp: { 
+                                systolic: sys?.value, 
+                                diastolic: dia?.value, 
+                                time: sys?.timestamp.slice(5, 16), 
+                                isAbnormal: (sys?.value > 140) 
+                            },
+                            glucose: { 
+                                value: gluc?.value, 
+                                type: gluc?.code === 'glucose_ac' ? '飯前' : '飯後', 
+                                time: gluc?.timestamp.slice(5, 16),
+                                isAbnormal: (gluc?.value > 126)
+                            },
                             hasAbnormal: hasAbnormal
                         };
                     });
+
+                    // 排序：最新的在上
+                    return mappedList.sort((a, b) => new Date(b.lastUpdate) - new Date(a.lastUpdate));
                 },
-                abnormalCount() { return this.filteredList.filter(i => i.hasAbnormal).length; }
+
+                // 2. 根據當前頁碼切片
+                paginatedList() {
+                    const start = (this.currentPage - 1) * this.itemsPerPage;
+                    const end = start + this.itemsPerPage;
+                    return this.fullMonitoringList.slice(start, end);
+                },
+
+                // 3. 總頁數
+                totalPages() {
+                    return Math.ceil(this.fullMonitoringList.length / this.itemsPerPage);
+                },
+
+                abnormalCount() { return this.fullMonitoringList.filter(i => i.hasAbnormal).length; }
             },
             mounted() {
                 const user = localStorage.getItem('currentUser');
@@ -336,9 +409,17 @@
             },
             methods: {
                 closeWindow() { window.close(); },
+                
+                // 分頁切換
+                changePage(page) {
+                    if (page >= 1 && page <= this.totalPages) {
+                        this.currentPage = page;
+                    }
+                },
+
                 async refreshData() {
                     this.loading = true;
-                    const t = new Date().getTime(); // 防止快取
+                    const t = new Date().getTime();
                     try {
                         const [pRes, oRes] = await Promise.all([
                             fetch(`${API_BASE_URL}?endpoint=patients&_t=${t}`),
@@ -349,11 +430,7 @@
                         const oJson = await oRes.json();
                         
                         if(pJson.status === 'success') this.patients = pJson.data;
-                        if(oJson.status === 'success') {
-                            this.observations = oJson.data;
-                            // 除錯訊息：檢查是否抓到資料
-                            console.log('Observations loaded:', this.observations.length, this.observations[0]);
-                        }
+                        if(oJson.status === 'success') this.observations = oJson.data;
                         
                         this.lastUpdateTime = new Date().toLocaleTimeString();
                     } catch(e) { console.error(e); }
@@ -367,7 +444,6 @@
                 },
 
                 updateDetailView() {
-                    // 修正：同時比對 patientId/patientID
                     const allObs = this.observations
                         .filter(o => String(o.patientId || o.patientID) === String(this.selectedPatient.id))
                         .sort((a,b) => new Date(b.timestamp) - new Date(a.timestamp));
