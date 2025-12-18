@@ -1,0 +1,307 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>電子轉診系統 - 新樓醫院</title>
+    <link rel="icon" href="image/carepathicon.ico">
+    <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700&display=swap" rel="stylesheet">
+    <script src="config.js"></script>
+    
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: { sans: ['Noto Sans TC', 'sans-serif'] },
+                    colors: { brand: { blue: '#0066FF', green: '#2E8B57' } }
+                }
+            }
+        }
+    </script>
+    <style>[v-cloak] { display: none; } body { background-color: #f8fafc; }</style>
+</head>
+<body class="h-screen flex flex-col text-gray-800">
+    <div id="app" class="h-full flex flex-col" v-cloak>
+
+        <header class="bg-white border-b h-16 flex items-center justify-between px-6 shadow-sm z-20">
+            <div class="flex items-center">
+                <div class="w-10 h-10 bg-brand-green rounded-xl flex items-center justify-center text-white mr-3">
+                    <i class="fa-solid fa-file-medical text-lg"></i>
+                </div>
+                <div>
+                    <h1 class="text-xl font-bold">電子轉診系統</h1>
+                    <p class="text-xs text-gray-500">Electronic Referral System</p>
+                </div>
+            </div>
+            <div class="flex items-center space-x-4">
+                <span class="text-sm font-bold bg-blue-50 text-blue-700 px-3 py-1 rounded-full">{{ currentUser?.organization }}</span>
+                <span class="text-sm font-bold">{{ currentUser?.name }}</span>
+                <button @click="closeWindow" class="bg-gray-100 hover:bg-gray-200 px-4 py-2 rounded text-sm font-bold">關閉</button>
+            </div>
+        </header>
+
+        <main class="flex-1 overflow-hidden flex flex-col p-6 max-w-7xl mx-auto w-full">
+            
+            <div class="flex space-x-1 bg-gray-200 p-1 rounded-lg mb-6 w-fit">
+                <button @click="currentTab = 'list'" :class="currentTab === 'list' ? 'bg-white shadow text-gray-800' : 'text-gray-500 hover:text-gray-700'" class="px-6 py-2 rounded-md text-sm font-bold transition">轉診需求清單</button>
+                <button @click="currentTab = 'form'" :class="currentTab === 'form' ? 'bg-white shadow text-gray-800' : 'text-gray-500 hover:text-gray-700'" class="px-6 py-2 rounded-md text-sm font-bold transition">新增轉診單</button>
+            </div>
+
+            <div v-if="currentTab === 'list'" class="flex-1 bg-white rounded-xl border shadow-sm overflow-hidden flex flex-col">
+                <div class="p-4 border-b bg-gray-50 flex justify-between items-center">
+                    <div class="flex items-center space-x-2">
+                        <i class="fa-solid fa-list text-gray-400"></i>
+                        <span class="font-bold text-gray-700">轉診紀錄 ({{ referrals.length }})</span>
+                    </div>
+                    <button @click="fetchReferrals" class="w-8 h-8 flex items-center justify-center rounded-full hover:bg-gray-200 transition"><i class="fa-solid fa-rotate-right" :class="{'fa-spin': loading}"></i></button>
+                </div>
+                <div class="flex-1 overflow-auto">
+                    <table class="w-full text-left text-sm">
+                        <thead class="bg-gray-50 text-gray-500 font-bold border-b sticky top-0">
+                            <tr>
+                                <th class="px-6 py-3">狀態</th>
+                                <th class="px-6 py-3">轉出單位</th>
+                                <th class="px-6 py-3">轉入單位</th>
+                                <th class="px-6 py-3">病患姓名</th>
+                                <th class="px-6 py-3">生日</th>
+                                <th class="px-6 py-3">填單時間</th>
+                                <th class="px-6 py-3">操作</th>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y">
+                            <tr v-for="r in referrals" :key="r.id" class="hover:bg-blue-50/30">
+                                <td class="px-6 py-4">
+                                    <span :class="r.status === '已就診' ? 'bg-green-100 text-green-700' : 'bg-yellow-100 text-yellow-700'" class="px-2 py-1 rounded-full text-xs font-bold">{{ r.status }}</span>
+                                </td>
+                                <td class="px-6 py-4">{{ r.fromOrg }}</td>
+                                <td class="px-6 py-4 font-bold text-brand-blue">{{ r.toOrg }}</td>
+                                <td class="px-6 py-4 font-bold">{{ r.patientName }}</td>
+                                <td class="px-6 py-4 text-gray-500 font-mono">{{ r.patientDob }}</td>
+                                <td class="px-6 py-4 text-gray-400 text-xs">{{ r.timestamp }}</td>
+                                <td class="px-6 py-4">
+                                    <button v-if="canReceive(r)" @click="receiveReferral(r)" class="bg-brand-blue text-white px-3 py-1 rounded text-xs font-bold hover:bg-blue-700 shadow">
+                                        已接收 / 就診
+                                    </button>
+                                    <span v-else class="text-gray-300 text-xs">-</span>
+                                </td>
+                            </tr>
+                            <tr v-if="referrals.length === 0"><td colspan="7" class="px-6 py-12 text-center text-gray-400">目前無轉診紀錄</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <div v-if="currentTab === 'form'" class="flex-1 bg-white rounded-xl border shadow-sm overflow-hidden flex flex-col">
+                <div class="flex-1 overflow-y-auto p-8 custom-scrollbar">
+                    <div class="max-w-4xl mx-auto border-2 border-gray-800 p-8 relative">
+                        <div class="text-center mb-8 border-b-2 border-gray-800 pb-4">
+                            <h2 class="text-2xl font-bold text-gray-900">全民健康保險院(所)轉診單</h2>
+                            <p class="text-sm mt-1">附表二 (電子化格式)</p>
+                        </div>
+
+                        <form @submit.prevent="submitReferral" class="space-y-6">
+                            
+                            <div class="bg-blue-50 p-4 rounded-lg border border-blue-100 mb-6 flex items-end space-x-4">
+                                <div class="flex-1">
+                                    <label class="block text-xs font-bold text-blue-700 mb-1">快速帶入個案資料</label>
+                                    <select v-model="selectedPatientId" class="w-full border border-gray-300 rounded px-3 py-2 text-sm">
+                                        <option value="">-- 請選擇個案 --</option>
+                                        <option v-for="p in patients" :key="p.id" :value="p.id">{{ p.name }} ({{ p.nationalId }})</option>
+                                    </select>
+                                </div>
+                                <button type="button" @click="autoFill" class="bg-blue-600 text-white px-4 py-2 rounded text-sm font-bold hover:bg-blue-700">帶入資料</button>
+                            </div>
+
+                            <div class="border border-gray-400 p-4 relative">
+                                <span class="absolute -top-3 left-4 bg-white px-2 font-bold text-gray-700">保險對象基本資料</span>
+                                <div class="grid grid-cols-2 gap-4 mt-2">
+                                    <div><label class="block text-xs font-bold mb-1">姓名</label><input v-model="form.patientName" required class="w-full border-b border-gray-300 focus:border-black outline-none py-1"></div>
+                                    <div><label class="block text-xs font-bold mb-1">身分證號</label><input v-model="form.patientIdNo" required class="w-full border-b border-gray-300 focus:border-black outline-none py-1"></div>
+                                    <div><label class="block text-xs font-bold mb-1">出生日期</label><input v-model="form.patientDob" type="date" required class="w-full border-b border-gray-300 focus:border-black outline-none py-1"></div>
+                                    <div><label class="block text-xs font-bold mb-1">聯絡電話</label><input v-model="form.phone" class="w-full border-b border-gray-300 focus:border-black outline-none py-1"></div>
+                                </div>
+                            </div>
+
+                            <div class="border border-gray-400 p-4 relative">
+                                <span class="absolute -top-3 left-4 bg-white px-2 font-bold text-gray-700">病歷摘要</span>
+                                <div class="space-y-4 mt-2">
+                                    <div>
+                                        <label class="block text-xs font-bold mb-1">診斷 (ICD-10-CM)</label>
+                                        <input v-model="form.diagnosis" placeholder="請輸入主診斷代碼或名稱" class="w-full border border-gray-300 rounded px-3 py-2 text-sm focus:ring-1 focus:ring-black outline-none">
+                                    </div>
+                                    <div>
+                                        <label class="block text-xs font-bold mb-1">病情摘要 (主訴/病史/過敏史)</label>
+                                        <textarea v-model="form.summary" rows="3" class="w-full border border-gray-300 rounded px-3 py-2 text-sm focus:ring-1 focus:ring-black outline-none"></textarea>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="border border-gray-400 p-4 relative">
+                                <span class="absolute -top-3 left-4 bg-white px-2 font-bold text-gray-700">轉診目的與單位</span>
+                                <div class="grid grid-cols-2 gap-6 mt-2">
+                                    <div>
+                                        <label class="block text-xs font-bold mb-2">轉診目的</label>
+                                        <select v-model="form.purpose" class="w-full border border-gray-300 rounded px-3 py-2 text-sm">
+                                            <option>進一步檢查</option>
+                                            <option>急診治療</option>
+                                            <option>門診治療</option>
+                                            <option>住院治療</option>
+                                            <option>轉回追蹤</option>
+                                        </select>
+                                    </div>
+                                    <div>
+                                        <label class="block text-xs font-bold mb-2">建議轉至院所 (轉入單位)</label>
+                                        <input v-model="form.toOrg" list="hospitals" placeholder="輸入或選擇院所" class="w-full border border-gray-300 rounded px-3 py-2 text-sm font-bold text-blue-700">
+                                        <datalist id="hospitals">
+                                            <option value="新樓醫院">
+                                            <option value="成大醫院">
+                                            <option value="奇美醫院">
+                                            <option value="阿發診所">
+                                        </datalist>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="flex justify-between items-end text-sm text-gray-500 pt-4">
+                                <div>原診治單位：<span class="font-bold text-black">{{ currentUser.organization }}</span></div>
+                                <div>開立醫師：<span class="font-bold text-black">{{ currentUser.name }}</span></div>
+                                <div>開立日期：{{ today }}</div>
+                            </div>
+
+                            <div class="pt-6 text-center">
+                                <button type="submit" :disabled="loading" class="bg-gray-900 text-white px-12 py-3 rounded-lg font-bold shadow-lg hover:bg-black transition disabled:opacity-50">
+                                    <span v-if="loading"><i class="fa-solid fa-spinner fa-spin mr-2"></i> 傳送中...</span>
+                                    <span v-else>開立轉診單</span>
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+
+        </main>
+    </div>
+
+    <script>
+        const { createApp } = Vue;
+
+        createApp({
+            data() {
+                return {
+                    loading: false,
+                    currentUser: null,
+                    currentTab: 'list',
+                    referrals: [],
+                    patients: [],
+                    selectedPatientId: '',
+                    
+                    // 表單資料
+                    form: { patientName: '', patientIdNo: '', patientDob: '', phone: '', diagnosis: '', summary: '', purpose: '門診治療', toOrg: '新樓醫院' }
+                }
+            },
+            computed: {
+                today() { return new Date().toISOString().split('T')[0]; }
+            },
+            mounted() {
+                // 1. 驗證登入 (同 index.html)
+                const user = localStorage.getItem('currentUser');
+                if (!user) {
+                    alert('請先登入系統');
+                    window.location.href = 'login.html';
+                    return;
+                }
+                this.currentUser = JSON.parse(user);
+                
+                // 2. 載入資料
+                this.fetchData();
+                this.fetchReferrals();
+            },
+            methods: {
+                closeWindow() { window.close(); },
+                
+                // 讀取個案 (供自動填入用)
+                async fetchData() {
+                    try {
+                        const res = await fetch(`${API_BASE_URL}?endpoint=patients&_t=${Date.now()}`);
+                        const json = await res.json();
+                        if (json.status === 'success') this.patients = json.data;
+                    } catch (e) { console.error(e); }
+                },
+
+                // 讀取轉診單
+                async fetchReferrals() {
+                    this.loading = true;
+                    try {
+                        const res = await fetch(`${API_BASE_URL}?endpoint=referrals&_t=${Date.now()}`);
+                        const json = await res.json();
+                        if (json.status === 'success') this.referrals = json.data;
+                    } catch (e) { console.error(e); }
+                    this.loading = false;
+                },
+
+                // 自動填入功能
+                autoFill() {
+                    const p = this.patients.find(x => x.id === this.selectedPatientId);
+                    if (p) {
+                        this.form.patientName = p.name;
+                        this.form.patientIdNo = p.nationalId;
+                        this.form.patientDob = p.birthDate;
+                        this.form.patientId = p.id; // 隱藏欄位
+                    }
+                },
+
+                // 判斷是否可接收 (目前使用者單位 == 轉入單位 且 狀態未就診)
+                canReceive(r) {
+                    return r.toOrg === this.currentUser.organization && r.status === '未就診';
+                },
+
+                // 接收轉診 (更新狀態)
+                async receiveReferral(r) {
+                    if(!confirm(`確認接收病患 ${r.patientName} 並標記為已就診？`)) return;
+                    this.loading = true;
+                    try {
+                        const params = new URLSearchParams({ action: 'updateReferralStatus', id: r.id });
+                        await fetch(`${API_BASE_URL}?${params.toString()}`);
+                        alert('狀態更新成功！');
+                        this.fetchReferrals();
+                    } catch(e) { alert('更新失敗'); }
+                    this.loading = false;
+                },
+
+                // 提交轉診單
+                async submitReferral() {
+                    this.loading = true;
+                    const params = new URLSearchParams({
+                        action: 'addReferral',
+                        fromOrg: this.currentUser.organization,
+                        doctor: this.currentUser.name,
+                        patientId: this.selectedPatientId || '', // 若有選個案
+                        ...this.form
+                    });
+
+                    try {
+                        const res = await fetch(`${API_BASE_URL}?${params.toString()}`);
+                        const json = await res.json();
+                        if (json.status === 'success') {
+                            alert('轉診單開立成功！');
+                            this.currentTab = 'list';
+                            this.fetchReferrals();
+                            // 清空重要欄位
+                            this.form.diagnosis = ''; this.form.summary = '';
+                        } else {
+                            throw new Error(json.message);
+                        }
+                    } catch (e) {
+                        alert('開立失敗: ' + e.message);
+                    } finally {
+                        this.loading = false;
+                    }
+                }
+            }
+        }).mount('#app');
+    </script>
+</body>
+</html>
