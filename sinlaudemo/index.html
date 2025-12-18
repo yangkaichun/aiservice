@@ -15,24 +15,27 @@
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
     <script src="https://accounts.google.com/gsi/client" async defer></script>
-    
+
     <script src="config.js"></script>
     
     <script>
         tailwind.config = {
             theme: {
                 extend: {
-                    fontFamily: { sans: ['Noto Sans TC', 'sans-serif'] },
-                    colors: { brand: { blue: '#0066FF', purple: '#7B2CBF', teal: '#0096C7', green: '#2E8B57', orange: '#FB8500', red: '#D00000' } }
+                    fontFamily: { sans: ['Noto Sans TC', 'Microsoft JhengHei', 'sans-serif'] },
+                    colors: {
+                        brand: { blue: '#0066FF', purple: '#7B2CBF', teal: '#0096C7', green: '#2E8B57', orange: '#FB8500', red: '#D00000' }
+                    }
                 }
             }
         }
     </script>
     <style>
-        [v-cloak] { display: none; }
         ::-webkit-scrollbar { width: 6px; }
         ::-webkit-scrollbar-track { background: transparent; }
         ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 3px; }
+        [v-cloak] { display: none; }
+        body { background-color: #f3f4f6; }
         .btn-gradient { background-size: 200% auto; transition: 0.5s; }
         .btn-gradient:hover { background-position: right center; }
         .fade-enter-active, .fade-leave-active { transition: opacity 0.3s ease; }
@@ -54,11 +57,17 @@
             </div>
             <h1 class="text-3xl font-bold text-gray-800 mb-2 tracking-widest">新樓醫院</h1>
             <p class="text-gray-500 text-sm mb-12 uppercase tracking-wide">Professional Case Management</p>
-            <div class="w-64 bg-gray-100 rounded-full h-1 overflow-hidden"><div class="loader-bar"></div></div>
+            <div class="w-64 bg-gray-100 rounded-full h-1 overflow-hidden">
+                <div class="loader-bar"></div>
+            </div>
             <p class="mt-4 text-xs text-gray-400">系統載入中...</p>
         </div>
 
         <div v-if="!isLoggedIn" class="fixed inset-0 z-50 flex items-center justify-center bg-gray-100">
+            <div class="absolute inset-0 overflow-hidden pointer-events-none">
+                <div class="absolute -top-[20%] -left-[10%] w-[50%] h-[50%] rounded-full bg-blue-200/30 blur-3xl"></div>
+                <div class="absolute top-[40%] -right-[10%] w-[40%] h-[40%] rounded-full bg-purple-200/30 blur-3xl"></div>
+            </div>
             <div class="w-full max-w-md p-8 bg-white/80 backdrop-blur-xl rounded-2xl shadow-2xl border border-white/50 relative z-10">
                 <div class="text-center mb-10">
                     <div class="inline-flex items-center justify-center w-20 h-20 rounded-2xl bg-gradient-to-br from-brand-blue to-brand-purple text-white mb-6 shadow-lg">
@@ -109,7 +118,7 @@
                     <a v-for="item in currentMenu" :key="item.id" href="#" @click.prevent="navigate(item.id)" :class="navClass(item.id, item.color)" class="flex items-center px-4 py-3 text-sm font-bold rounded-xl transition-all duration-200 group">
                         <div :class="['w-8 h-8 rounded-lg flex items-center justify-center mr-3 transition-colors duration-200', currentTab === item.id ? 'bg-white/20 text-white' : 'bg-gray-100 ' + item.textColor]"><i :class="item.icon"></i></div>
                         {{ item.label }}
-                        <i v-if="item.id === 'observations'" class="fa-solid fa-arrow-up-right-from-square ml-auto text-xs opacity-30"></i>
+                        <i v-if="['observations', 'referrals'].includes(item.id)" class="fa-solid fa-arrow-up-right-from-square ml-auto text-xs opacity-30"></i>
                     </a>
                     
                     <template v-if="currentUser.role === 'admin'">
@@ -214,7 +223,7 @@
                                 </table>
                             </div>
 
-                            <div class="p-4 border-t border-gray-100 bg-gray-50 flex justify-between items-center">
+                            <div class="p-4 border-t border-gray-100 bg-gray-50 flex justify-between items-center" v-if="filteredSortedPatients.length > 0">
                                 <span class="text-sm text-gray-500">顯示 {{ (currentPage - 1) * itemsPerPage + 1 }} - {{ Math.min(currentPage * itemsPerPage, filteredSortedPatients.length) }} 筆，共 {{ filteredSortedPatients.length }} 筆</span>
                                 <div class="flex space-x-2">
                                     <button @click="currentPage--" :disabled="currentPage === 1" class="px-3 py-1.5 rounded border border-gray-200 bg-white text-gray-600 hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed">上一頁</button>
@@ -223,7 +232,7 @@
                             </div>
                         </div>
 
-                        <div v-if="['health_edu', 'reports', 'consultation', 'system_notice', 'knowledge_base', 'referrals'].includes(currentTab)" class="h-96 flex flex-col items-center justify-center bg-white rounded-2xl border border-gray-200 border-dashed">
+                        <div v-if="['health_edu', 'reports', 'consultation', 'system_notice', 'knowledge_base'].includes(currentTab)" class="h-96 flex flex-col items-center justify-center bg-white rounded-2xl border border-gray-200 border-dashed">
                              <div class="w-20 h-20 bg-gray-50 rounded-full shadow-inner flex items-center justify-center mb-4 text-gray-300"><i class="fa-solid fa-layer-group text-3xl"></i></div>
                              <h3 class="font-bold text-gray-800 text-lg">功能模組開發中</h3>
                              <p class="text-sm text-gray-400 mt-2">此頁面預計於第二階段上線。</p>
@@ -347,8 +356,8 @@
                 currentMenu() {
                     if (!this.currentUser) return [];
                     const common = [ { id: 'dashboard', label: '系統主控台', icon: 'fa-solid fa-chart-pie', color: 'from-blue-500 to-cyan-500', textColor: 'text-blue-500' }, { id: 'system_notice', label: '系統公告', icon: 'fa-solid fa-bullhorn', color: 'from-yellow-500 to-orange-500', textColor: 'text-yellow-600' } ];
-                    const caseManagerMenu = [ { id: 'patients', label: '個案管理清單', icon: 'fa-solid fa-user-injured', color: 'from-brand-blue to-indigo-600', textColor: 'text-brand-blue' }, { id: 'observations', label: '生理監控', icon: 'fa-solid fa-heart-pulse', color: 'from-rose-500 to-pink-600', textColor: 'text-rose-500' }, { id: 'health_edu', label: '衛教資源中心', icon: 'fa-solid fa-book-medical', color: 'from-emerald-500 to-teal-500', textColor: 'text-emerald-600' }, { id: 'reports', label: '數據報表中心', icon: 'fa-solid fa-file-invoice', color: 'from-gray-600 to-gray-800', textColor: 'text-gray-600' }, { id: 'consultation', label: '線上照會區', icon: 'fa-solid fa-comments', color: 'from-orange-500 to-red-500', textColor: 'text-orange-500' }, { id: 'knowledge_base', label: '共照知識庫', icon: 'fa-solid fa-book-open', color: 'from-purple-500 to-violet-600', textColor: 'text-purple-600' } ];
-                    const physicianMenu = [ { id: 'patients', label: '個案病歷查詢', icon: 'fa-solid fa-magnifying-glass', color: 'from-brand-blue to-cyan-600', textColor: 'text-brand-blue' }, { id: 'referrals', label: '雙向轉診管理', icon: 'fa-solid fa-people-arrows', color: 'from-purple-500 to-violet-600', textColor: 'text-purple-600' }, { id: 'consultation', label: '線上照會區', icon: 'fa-solid fa-comments', color: 'from-orange-500 to-red-500', textColor: 'text-orange-500' } ];
+                    const caseManagerMenu = [ { id: 'patients', label: '個案管理清單', icon: 'fa-solid fa-user-injured', color: 'from-brand-blue to-indigo-600', textColor: 'text-brand-blue' }, { id: 'observations', label: '生理監控', icon: 'fa-solid fa-heart-pulse', color: 'from-rose-500 to-pink-600', textColor: 'text-rose-500' }, { id: 'health_edu', label: '衛教資源中心', icon: 'fa-solid fa-book-medical', color: 'from-emerald-500 to-teal-500', textColor: 'text-emerald-600' }, { id: 'reports', label: '數據報表中心', icon: 'fa-solid fa-file-invoice', color: 'from-gray-600 to-gray-800', textColor: 'text-gray-600' }, { id: 'consultation', label: '線上照會區', icon: 'fa-solid fa-comments', color: 'from-orange-500 to-red-500', textColor: 'text-orange-500' }, { id: 'knowledge_base', label: '共照知識庫', icon: 'fa-solid fa-book-open', color: 'from-purple-500 to-violet-600', textColor: 'text-purple-600' }, { id: 'referrals', label: '雙向轉診系統', icon: 'fa-solid fa-file-medical', color: 'from-green-500 to-emerald-600', textColor: 'text-green-600' } ];
+                    const physicianMenu = [ { id: 'patients', label: '個案病歷查詢', icon: 'fa-solid fa-magnifying-glass', color: 'from-brand-blue to-cyan-600', textColor: 'text-brand-blue' }, { id: 'referrals', label: '電子轉診系統', icon: 'fa-solid fa-file-medical', color: 'from-purple-500 to-violet-600', textColor: 'text-purple-600' }, { id: 'consultation', label: '線上照會區', icon: 'fa-solid fa-comments', color: 'from-orange-500 to-red-500', textColor: 'text-orange-500' } ];
                     if (['case_manager', 'hospital_staff', 'admin'].includes(this.currentUser.role)) return [...common, ...caseManagerMenu];
                     else if (this.currentUser.role === 'physician') return [...common, ...physicianMenu];
                     return common;
@@ -423,6 +432,8 @@
                 navigate(tabId) {
                     if (tabId === 'observations') {
                         window.open('phddashboard.html', '_blank');
+                    } else if (tabId === 'referrals') {
+                        window.open('refer.html', '_blank'); // *** 新增這一行 ***
                     } else {
                         this.currentTab = tabId;
                     }
@@ -444,7 +455,6 @@
                     this.loading = false;
                 },
                 
-                // 開啟詳情與圖表 (複製自 phddashboard 的邏輯)
                 openPatientDetail(patient) {
                     this.selectedPatient = patient;
                     this.showDetailModal = true;
@@ -539,7 +549,7 @@
                 getTabTitle(tab) { return { 'dashboard': '系統主控台', 'patients': '個案管理清單', 'observations': '生理監控', 'admin_users': '系統權限管理', 'referrals': '雙向轉診管理', 'health_edu': '衛教資源中心', 'reports': '數據報表中心', 'consultation': '線上照會區', 'knowledge_base': '共照知識庫' }[tab] || tab; },
                 translateRole(role) { return { 'admin': '管理員', 'case_manager': '個管師', 'physician': '醫師', 'hospital_staff': '院內人員' }[role] || role; },
                 roleBadgeClass(role) { return 'bg-gray-100 text-gray-700 border-gray-200'; },
-                translateCode(code) { return { 'systolic_bp': '收縮壓', 'diastolic_bp': '舒張壓', 'glucose_ac': '飯前血糖', 'glucose_pc': '飯後血糖', 'heart_rate': '心率' }[code] || code; }
+                translateCode(code) { return { 'systolic_bp': '收縮壓', 'diastolic_bp': '舒張壓', 'glucose_ac': '飯前血糖', 'glucose_pc': '飯後血糖', 'heart_rate': '心率', 'body_height': '身高', 'body_weight': '體重' }[code] || code; }
             }
         }).mount('#app');
     </script>
