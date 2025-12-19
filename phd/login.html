@@ -31,7 +31,7 @@
              <div class="absolute top-0 left-0 w-full h-full bg-white opacity-5 transform -skew-y-12 origin-top-left scale-150 pointer-events-none"></div>
             <div class="relative z-10 flex flex-col items-center">
                 <div class="bg-white p-2 rounded-2xl shadow-lg mb-4">
-                    <img src="image/yanghealth.png" alt="Logo" class="w-16 h-16 object-contain rounded-xl">
+                    <img src="image/yanghealth.png" onerror="this.src='https://via.placeholder.com/64?text=Icon'" alt="Logo" class="w-16 h-16 object-contain rounded-xl">
                 </div>
                 <h2 class="text-2xl font-bold text-white tracking-wide">YangHomeHealth</h2>
                 <p class="text-indigo-200 text-sm mt-1 font-medium tracking-wider uppercase">系統登入</p>
@@ -58,7 +58,7 @@
                 </div>
                 
                 <button onclick="lineLogin()" class="w-full max-w-[320px] btn-base btn-line gap-3">
-                    <img src="image/line.png" alt="LINE" class="w-6 h-6 object-contain">
+                    <img src="image/line.png" onerror="this.style.display='none'" class="w-6 h-6 object-contain">
                     <span>使用 LINE 登入</span>
                 </button>
 
@@ -77,45 +77,53 @@
 
     <script>
         lucide.createIcons();
+        // ⚠️ 請確認這是您最新的 Google Apps Script 網址
         const GAS_URL = "https://script.google.com/macros/s/AKfycbzX0k_hP6poVZAxty89nQ6yJyuhNHw4M713G2IQolRPDQnNLFd_By3xqgfpQRtytOQT4A/exec";
+        
         const LINE_CHANNEL_ID = "2008700923"; 
-        // 自動抓取當前頁面網址作為 Redirect URI
+        
+        // 自動抓取當前頁面網址作為 Redirect URI (必須確保 LINE 後台有設定此網址)
+        // 例如: https://your-site.github.io/phd/login.html
         const REDIRECT_URI = window.location.href.split('?')[0].split('#')[0]; 
 
-        // 初始化檢查：是否有 LINE Login 回傳的 code
+        // 初始化檢查
         window.addEventListener('load', () => {
-            // 如果已經登入過，直接跳轉 dashboard
+            // 1. 如果已經登入過，直接跳轉 dashboard
             if (localStorage.getItem('healthTwinSession')) {
                 window.location.href = 'dashboard.html';
                 return;
             }
 
+            // 2. 檢查是否從 LINE 登入回傳 (網址帶有 ?code=...)
             const params = new URLSearchParams(window.location.search);
             if (params.has('code')) {
                 const code = params.get('code');
                 handleLineLoginCode(code);
-                // 清除 URL
+                // 清除 URL 參數
                 window.history.replaceState({}, document.title, window.location.pathname);
             }
         });
 
-        // 1. Google 登入成功回調
+        // --- Google 登入邏輯 ---
         function handleCredentialResponse(response) {
             const payload = decodeJwtResponse(response.credential);
+            // 登入成功，儲存 Session 並跳轉
             saveSessionAndRedirect(payload.name, payload.email, payload.picture, response.credential);
         }
 
-        // 2. LINE 登入觸發
+        // --- LINE 登入邏輯 ---
         function lineLogin() {
+            // 跳轉到 LINE 授權頁面
             const lineUrl = `https://access.line.me/oauth2/v2.1/authorize?response_type=code&client_id=${LINE_CHANNEL_ID}&redirect_uri=${encodeURIComponent(REDIRECT_URI)}&state=12345&scope=profile%20openid%20email`;
             window.location.href = lineUrl;
         }
 
-        // 3. 處理 LINE Code
         function handleLineLoginCode(code) {
+            // 切換 UI 為載入中
             document.getElementById("login-section").classList.add("hidden");
             document.getElementById("loading-msg").classList.remove("hidden");
             
+            // 呼叫後端用 code 換 token 並取得用戶資料
             fetch(GAS_URL, {
                 method: "POST",
                 body: JSON.stringify({ 
@@ -127,6 +135,7 @@
             .then(res => res.json())
             .then(data => {
                 if (data.status === "success") {
+                    // LINE 登入成功，後端會回傳 name, email, picture
                     saveSessionAndRedirect(data.name, data.email, data.picture, "LINE_SESSION");
                 } else {
                     alert("LINE 登入失敗: " + data.message);
@@ -142,14 +151,16 @@
             });
         }
 
-        // 通用：儲存 Session 並跳轉
+        // --- 通用函式 ---
+        
+        // 儲存 Session 並跳轉到儀表板
         function saveSessionAndRedirect(name, email, picture, token) {
             const session = { name, email, picture, token };
             localStorage.setItem('healthTwinSession', JSON.stringify(session));
-            // 登入成功，跳轉到儀表板
             window.location.href = 'dashboard.html';
         }
 
+        // 解析 Google JWT
         function decodeJwtResponse(token) {
             var base64Url = token.split('.')[1];
             var base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
