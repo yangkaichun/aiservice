@@ -14,6 +14,7 @@
     <style>
         body { font-family: 'Inter', sans-serif; background-color: #F8FAFC; }
         .glass-card { background: rgba(255, 255, 255, 0.95); backdrop-filter: blur(10px); border: 1px solid rgba(255, 255, 255, 0.5); box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.03); }
+        .btn-loading { opacity: 0.7; pointer-events: none; }
     </style>
 </head>
 <body class="text-slate-800 min-h-screen flex flex-col items-center justify-center p-4">
@@ -68,7 +69,8 @@
                         <div id="g_id_onload" 
                              data-client_id="622103517974-i004l8tg6r9744h0p9r6g69nobmr82np.apps.googleusercontent.com" 
                              data-callback="handleGoogleBind" 
-                             data-auto_select="false"></div>
+                             data-auto_select="false"
+                             data-skip_prompt_cookie="user_opt_out"> </div>
                         <div class="g_id_signin" data-type="icon" data-shape="circle" data-theme="outline" data-size="medium"></div>
                     </div>
                 </div>
@@ -99,11 +101,16 @@
         
         // LINE 設定
         const LINE_CHANNEL_ID = "2008700923"; 
-        const REDIRECT_URI = window.location.href.split('?')[0].split('#')[0]; // 自動抓取當前頁面 (phd.html)
+        // 自動抓取當前頁面
+        const REDIRECT_URI = window.location.href.split('?')[0].split('#')[0];
 
         // 檢查登入
         const session = JSON.parse(localStorage.getItem('healthTwinSession'));
         if (!session) { alert("請先登入"); window.location.href = 'login.html'; }
+
+        // 判斷目前登入方式
+        const isLineLogin = (session.token === 'LINE_LOGIN_SESSION' || session.token.startsWith('LINE_'));
+        const isGoogleLogin = !isLineLogin && session.token !== 'mock-token';
 
         document.addEventListener('DOMContentLoaded', () => {
             // 檢查是否從 LINE 綁定回來
@@ -118,11 +125,9 @@
 
         // 1. 讀取資料
         async function fetchProfile() {
-            // 準備 token 參數 (如果是 LINE 用戶，需要帶 userEmail 輔助驗證)
+            // 準備 token 參數
             let payload = { action: 'getProfile', token: session.token };
-            if (session.token === 'LINE_LOGIN_SESSION' || session.token.startsWith('LINE_')) {
-                // 特殊處理：對於無後端 Session 的架構，我們將 Email 附加在 token 中傳給後端
-                // *這是在沒有資料庫 session 下的權宜之計*
+            if (isLineLogin) {
                 payload.token = "LINE_" + session.email; 
             }
 
@@ -130,33 +135,46 @@
                 const res = await fetch(API_URL, { method: 'POST', body: JSON.stringify(payload) });
                 const data = await res.json();
                 
-                if (data.status === 'success') {
-                    // 填入表單
-                    document.getElementById('inputName').value = data.name || session.name || "";
-                    if (data.birthday) {
-                        const d = new Date(data.birthday);
-                        d.setMinutes(d.getMinutes() - d.getTimezoneOffset());
-                        document.getElementById('inputBirthday').value = d.toISOString().split('T')[0];
-                    }
-                    
-                    // 更新綁定狀態 UI
-                    updateBindStatus(data.providers || "");
+                // 填入表單 (若後端無資料，預設使用 Session 內的資料)
+                document.getElementById('inputName').value = data.name || session.name || "";
+                if (data.birthday) {
+                    const d = new Date(data.birthday);
+                    d.setMinutes(d.getMinutes() - d.getTimezoneOffset());
+                    document.getElementById('inputBirthday').value = d.toISOString().split('T')[0];
                 }
-            } catch (e) { console.error(e); }
+                
+                // 更新綁定狀態 UI
+                updateBindStatus(data.providers || "");
+            } catch (e) { 
+                console.error(e); 
+                // 發生錯誤或無網路時，至少顯示當前登入狀態
+                updateBindStatus("");
+            }
         }
 
         function updateBindStatus(providers) {
-            if (providers.includes('Google')) {
-                document.getElementById('status-google').innerText = "已連結";
-                document.getElementById('status-google').className = "text-[10px] text-emerald-500 font-bold";
-                document.getElementById('action-google').innerHTML = '<i data-lucide="check-circle" class="w-5 h-5 text-emerald-500"></i>';
+            // 標記 Google
+            if (providers.includes('Google') || isGoogleLogin) {
+                const text = isGoogleLogin ? "目前登入" : "已連結";
+                setLinkedUI('google', text);
             }
-            if (providers.includes('LINE')) {
-                document.getElementById('status-line').innerText = "已連結";
-                document.getElementById('status-line').className = "text-[10px] text-emerald-500 font-bold";
-                document.getElementById('action-line').innerHTML = '<i data-lucide="check-circle" class="w-5 h-5 text-emerald-500"></i>';
+            
+            // 標記 LINE
+            if (providers.includes('LINE') || isLineLogin) {
+                const text = isLineLogin ? "目前登入" : "已連結";
+                setLinkedUI('line', text);
             }
+            
             lucide.createIcons();
+        }
+
+        function setLinkedUI(type, text) {
+            const statusEl = document.getElementById(`status-${type}`);
+            const actionEl = document.getElementById(`action-${type}`);
+            
+            statusEl.innerText = text;
+            statusEl.className = "text-[10px] text-emerald-500 font-bold";
+            actionEl.innerHTML = '<div class="w-8 h-8 flex items-center justify-center bg-emerald-50 rounded-full"><i data-lucide="check" class="w-5 h-5 text-emerald-500"></i></div>';
         }
 
         // 2. 儲存資料
@@ -165,15 +183,15 @@
             const btn = document.getElementById('btnSave');
             const originalText = btn.innerHTML;
             btn.disabled = true;
-            btn.innerText = "儲存中...";
+            btn.innerHTML = `<i data-lucide="loader-2" class="w-4 h-4 animate-spin"></i> 儲存中...`;
 
             let token = session.token;
-            if (token === 'LINE_LOGIN_SESSION') token = "LINE_" + session.email;
+            if (isLineLogin) token = "LINE_" + session.email;
 
             const payload = {
                 action: 'updateProfile',
                 token: token,
-                userEmail: session.email, // 輔助
+                userEmail: session.email,
                 userName: document.getElementById('inputName').value,
                 userBirthday: document.getElementById('inputBirthday').value
             };
@@ -183,7 +201,6 @@
                 const json = await res.json();
                 if (json.status === 'success') {
                     alert("儲存成功！");
-                    // 更新本地 Session 的名字
                     session.name = payload.userName;
                     localStorage.setItem('healthTwinSession', JSON.stringify(session));
                 } else {
@@ -214,7 +231,7 @@
 
         async function bindAccount(type, payload) {
             let token = session.token;
-            if (token === 'LINE_LOGIN_SESSION') token = "LINE_" + session.email;
+            if (isLineLogin) token = "LINE_" + session.email;
 
             const req = {
                 action: 'bindAccount',
@@ -225,7 +242,6 @@
                 redirectUri: REDIRECT_URI
             };
 
-            // 顯示 Loading
             if(type === 'LINE') alert("正在綁定 LINE...");
 
             try {
@@ -233,7 +249,8 @@
                 const json = await res.json();
                 if (json.status === 'success') {
                     alert("✅ 綁定成功！");
-                    updateBindStatus(json.providers);
+                    // 重新抓取資料以更新 UI
+                    fetchProfile();
                 } else {
                     alert("❌ 綁定失敗: " + json.message);
                 }
