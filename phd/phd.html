@@ -72,12 +72,7 @@
                         </div>
                     </div>
                     <div id="action-google">
-                        <div id="g_id_onload" 
-                             data-client_id="622103517974-i004l8tg6r9744h0p9r6g69nobmr82np.apps.googleusercontent.com" 
-                             data-callback="handleGoogleBind" 
-                             data-auto_select="false"
-                             data-skip_prompt_cookie="user_opt_out">
-                        </div>
+                        <div id="g_id_onload" data-client_id="622103517974-i004l8tg6r9744h0p9r6g69nobmr82np.apps.googleusercontent.com" data-callback="handleGoogleBind" data-auto_select="false" data-skip_prompt_cookie="user_opt_out"></div>
                         <div class="g_id_signin" data-type="icon" data-shape="circle" data-theme="outline" data-size="medium"></div>
                     </div>
                 </div>
@@ -91,9 +86,7 @@
                         </div>
                     </div>
                     <div id="action-line">
-                        <button onclick="startLineBind()" class="px-3 py-1.5 bg-slate-100 text-slate-600 rounded-lg text-xs font-bold hover:bg-slate-200 transition">
-                            連結
-                        </button>
+                        <button onclick="startLineBind()" class="px-3 py-1.5 bg-slate-100 text-slate-600 rounded-lg text-xs font-bold hover:bg-slate-200 transition">連結</button>
                     </div>
                 </div>
 
@@ -108,7 +101,7 @@
         
         // LINE 設定
         const LINE_CHANNEL_ID = "2008700923"; 
-        const REDIRECT_URI = window.location.href.split('?')[0].split('#')[0]; // 自動抓取
+        const REDIRECT_URI = window.location.href.split('?')[0].split('#')[0]; 
 
         // 檢查登入
         const session = JSON.parse(localStorage.getItem('healthTwinSession'));
@@ -119,31 +112,19 @@
         const isGoogleLogin = !isLineLogin && session.token !== 'mock-token';
 
         document.addEventListener('DOMContentLoaded', () => {
-            // 檢查是否從 LINE 綁定回來
             const params = new URLSearchParams(window.location.search);
             if (params.has('code')) {
-                // 顯示 Loading
                 showLoading("正在驗證 LINE 帳號並進行綁定...");
                 handleLineBind(params.get('code'));
-                // 清網址參數
                 window.history.replaceState({}, document.title, window.location.pathname);
             } else {
                 fetchProfile();
             }
         });
 
-        function showLoading(text) {
-            document.getElementById('loading-text').innerText = text;
-            document.getElementById('loading-overlay').classList.remove('hidden');
-            document.getElementById('loading-overlay').classList.add('flex');
-        }
+        function showLoading(text) { document.getElementById('loading-text').innerText = text; document.getElementById('loading-overlay').classList.remove('hidden'); document.getElementById('loading-overlay').classList.add('flex'); }
+        function hideLoading() { document.getElementById('loading-overlay').classList.add('hidden'); document.getElementById('loading-overlay').classList.remove('flex'); }
 
-        function hideLoading() {
-            document.getElementById('loading-overlay').classList.add('hidden');
-            document.getElementById('loading-overlay').classList.remove('flex');
-        }
-
-        // 1. 讀取資料
         async function fetchProfile() {
             let payload = { action: 'getProfile', token: session.token };
             if (isLineLogin) { payload.token = "LINE_" + session.email; }
@@ -161,20 +142,16 @@
                     }
                     updateBindStatus(data.providers || "");
                 }
-            } catch (e) { 
-                console.error(e); 
-                updateBindStatus("");
-            }
+            } catch (e) { console.error(e); updateBindStatus(""); }
         }
 
         function updateBindStatus(providers) {
-            if (providers.includes('Google') || isGoogleLogin) {
-                const text = isGoogleLogin ? "目前登入" : "已連結";
-                setLinkedUI('google', text);
+            // 後端 Provider 字串包含 Google 就顯示已連結
+            if (providers.includes('Google')) {
+                setLinkedUI('google', isGoogleLogin ? "目前登入" : "已連結");
             }
-            if (providers.includes('LINE') || isLineLogin) {
-                const text = isLineLogin ? "目前登入" : "已連結";
-                setLinkedUI('line', text);
+            if (providers.includes('LINE')) {
+                setLinkedUI('line', isLineLogin ? "目前登入" : "已連結");
             }
             lucide.createIcons();
         }
@@ -187,25 +164,12 @@
             actionEl.innerHTML = '<div class="w-8 h-8 flex items-center justify-center bg-emerald-50 rounded-full"><i data-lucide="check" class="w-5 h-5 text-emerald-500"></i></div>';
         }
 
-        // 2. 儲存資料
         document.getElementById('profileForm').addEventListener('submit', async (e) => {
             e.preventDefault();
             const btn = document.getElementById('btnSave');
-            btn.disabled = true;
-            
-            showLoading("儲存中...");
-
-            let token = session.token;
-            if (isLineLogin) token = "LINE_" + session.email;
-
-            const payload = {
-                action: 'updateProfile',
-                token: token,
-                userEmail: session.email,
-                userName: document.getElementById('inputName').value,
-                userBirthday: document.getElementById('inputBirthday').value
-            };
-
+            btn.disabled = true; showLoading("儲存中...");
+            let token = session.token; if (isLineLogin) token = "LINE_" + session.email;
+            const payload = { action: 'updateProfile', token: token, userEmail: session.email, userName: document.getElementById('inputName').value, userBirthday: document.getElementById('inputBirthday').value };
             try {
                 const res = await fetch(API_URL, { method: 'POST', body: JSON.stringify(payload) });
                 const json = await res.json();
@@ -213,62 +177,24 @@
                     session.name = payload.userName;
                     localStorage.setItem('healthTwinSession', JSON.stringify(session));
                     alert("✅ 儲存成功！");
-                } else {
-                    alert("❌ 儲存失敗: " + json.message);
-                }
+                } else { alert("❌ 儲存失敗: " + json.message); }
             } catch (e) { alert("連線錯誤"); }
-            finally { 
-                hideLoading();
-                btn.disabled = false;
-            }
+            finally { hideLoading(); btn.disabled = false; }
         });
 
-        // 3. 綁定 Google
-        function handleGoogleBind(response) {
-            showLoading("正在連結 Google 帳號...");
-            bindAccount('Google', response.credential);
-        }
-
-        // 4. 綁定 LINE
-        function startLineBind() {
-            // 不要在這裡顯示 Loading，因為會直接跳轉
-            const lineUrl = `https://access.line.me/oauth2/v2.1/authorize?response_type=code&client_id=${LINE_CHANNEL_ID}&redirect_uri=${encodeURIComponent(REDIRECT_URI)}&state=bind&scope=profile%20openid%20email`;
-            window.location.href = lineUrl;
-        }
-
-        function handleLineBind(code) {
-            bindAccount('LINE', code);
-        }
+        function handleGoogleBind(response) { showLoading("正在連結 Google 帳號..."); bindAccount('Google', response.credential); }
+        function startLineBind() { const lineUrl = `https://access.line.me/oauth2/v2.1/authorize?response_type=code&client_id=${LINE_CHANNEL_ID}&redirect_uri=${encodeURIComponent(REDIRECT_URI)}&state=bind&scope=profile%20openid%20email`; window.location.href = lineUrl; }
+        function handleLineBind(code) { bindAccount('LINE', code); }
 
         async function bindAccount(type, payload) {
-            let token = session.token;
-            if (isLineLogin) token = "LINE_" + session.email;
-
-            const req = {
-                action: 'bindAccount',
-                token: token,
-                userEmail: session.email,
-                bindType: type,
-                bindPayload: payload,
-                redirectUri: REDIRECT_URI
-            };
-
+            let token = session.token; if (isLineLogin) token = "LINE_" + session.email;
+            const req = { action: 'bindAccount', token: token, userEmail: session.email, bindType: type, bindPayload: payload, redirectUri: REDIRECT_URI };
             try {
                 const res = await fetch(API_URL, { method: 'POST', body: JSON.stringify(req) });
                 const json = await res.json();
-                
-                hideLoading(); // 隱藏 Loading
-
-                if (json.status === 'success') {
-                    alert(`✅ ${type} 帳號連結成功！`);
-                    fetchProfile(); // 重整狀態
-                } else {
-                    alert(`❌ 綁定失敗: ${json.message}\n如果您的登入憑證已過期，請嘗試重新登入系統。`);
-                }
-            } catch (e) { 
                 hideLoading();
-                alert("連線錯誤"); 
-            }
+                if (json.status === 'success') { alert(`✅ ${type} 帳號連結成功！`); fetchProfile(); } else { alert(`❌ 綁定失敗: ${json.message}`); }
+            } catch (e) { hideLoading(); alert("連線錯誤"); }
         }
     </script>
 </body>
