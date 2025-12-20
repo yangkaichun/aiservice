@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>詳細歷史紀錄 | YangHome Health</title>
+    <link rel="icon" type="image/x-icon" href="image/yanghealth.ico">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap" rel="stylesheet">
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <script>
+        const savedSession = localStorage.getItem('healthTwinSession');
+        if (!savedSession) { alert("🔒 請先登入"); window.location.href = 'index.html'; }
+    </script>
+    <style> body { font-family: 'Inter', sans-serif; background-color: #F8FAFC; } </style>
+</head>
+<body class="p-6">
+
+    <div class="max-w-5xl mx-auto bg-white rounded-2xl shadow-lg border border-slate-100 overflow-hidden">
+        <div class="p-6 border-b border-slate-100 flex justify-between items-center bg-slate-50">
+            <div>
+                <h1 class="text-xl font-bold text-slate-800 flex items-center gap-2">
+                    <i data-lucide="history" class="w-6 h-6 text-indigo-600"></i> 
+                    <span id="pageTitle">載入中...</span>
+                </h1>
+                <p id="userSubtitle" class="text-sm text-slate-500 mt-1">正在同步雲端資料庫...</p>
+            </div>
+            <button onclick="window.close()" class="px-4 py-2 bg-white border border-slate-300 rounded-lg text-sm font-bold hover:bg-slate-50 transition">關閉視窗</button>
+        </div>
+
+        <div class="overflow-x-auto">
+            <table class="w-full text-sm text-left">
+                <thead class="text-xs text-slate-500 uppercase bg-slate-50 border-b border-slate-200">
+                    <tr>
+                        <th class="px-6 py-3">時間</th>
+                        <th class="px-6 py-3">情境</th>
+                        <th class="px-6 py-3">收縮壓 (SBP)</th>
+                        <th class="px-6 py-3">舒張壓 (DBP)</th>
+                        <th class="px-6 py-3">心率 (HR)</th>
+                        <th class="px-6 py-3">血糖 (Glucose)</th>
+                        <th class="px-6 py-3">備註</th>
+                    </tr>
+                </thead>
+                <tbody id="historyTableBody" class="divide-y divide-slate-100">
+                    <tr><td colspan="7" class="px-6 py-8 text-center text-slate-400">資料讀取中...</td></tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <script>
+        lucide.createIcons();
+        const API_URL = 'https://script.google.com/macros/s/AKfycbzX0k_hP6poVZAxty89nQ6yJyuhNHw4M713G2IQolRPDQnNLFd_By3xqgfpQRtytOQT4A/exec';
+
+        document.addEventListener('DOMContentLoaded', () => {
+            const params = new URLSearchParams(window.location.search);
+            const uid = params.get('uid');
+            if (!uid) { alert("未指定使用者 UID"); window.close(); return; }
+            fetchData(uid);
+        });
+
+        async function fetchData(targetUid) {
+            try {
+                const ts = new Date().getTime();
+                // 同時抓取 Users 和 Data 以便進行對應
+                const [dataRes, mapRes] = await Promise.all([
+                    fetch(API_URL + `?v=${ts}`),
+                    fetch(`${API_URL}?action=getSettings&v=${ts}`)
+                ]);
+
+                const allData = await dataRes.json();
+                const users = await mapRes.json();
+
+                // 1. 找出使用者資訊
+                const user = users.find(u => String(u.uid).trim() === targetUid);
+                const userName = user ? (user.name || user.email) : "未知用戶";
+                
+                document.getElementById('pageTitle').innerText = `${userName} 的歷史紀錄`;
+                document.getElementById('userSubtitle').innerText = `UID: ${targetUid}`;
+
+                // 2. 建立比對清單 (UID, Email, LineID)
+                const validIds = [];
+                if (user) {
+                    if(user.uid) validIds.push(String(user.uid).toLowerCase().trim());
+                    if(user.email) validIds.push(String(user.email).toLowerCase().trim());
+                    if(user.lineUserId) validIds.push(String(user.lineUserId).toLowerCase().trim());
+                } else {
+                    // 如果找不到 User 設定，至少比對 UID 本身
+                    validIds.push(String(targetUid).toLowerCase().trim());
+                }
+
+                // 3. 篩選資料
+                const historyData = allData.filter(d => {
+                    const rawId = String(d.rawId || "").toLowerCase().trim();
+                    const origId = String(d.originalId || "").toLowerCase().trim();
+                    return validIds.includes(rawId) || validIds.includes(origId);
+                });
+
+                // 4. 排序 (新 -> 舊)
+                historyData.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
+
+                renderTable(historyData);
+
+            } catch (e) {
+                console.error(e);
+                document.getElementById('historyTableBody').innerHTML = `<tr><td colspan="7" class="px-6 py-8 text-center text-rose-500 font-bold">讀取失敗: ${e.message}</td></tr>`;
+            }
+        }
+
+        function renderTable(data) {
+            const tbody = document.getElementById('historyTableBody');
+            if (data.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="7" class="px-6 py-8 text-center text-slate-400">查無資料</td></tr>`;
+                return;
+            }
+
+            tbody.innerHTML = data.map(row => {
+                // 安全的時間格式化
+                let timeStr = row.timestamp;
+                // 處理非標準日期字串 (例如 "2025-12-19 09:30:00")
+                if (timeStr && !timeStr.includes('T') && timeStr.includes(' ')) {
+                    timeStr = timeStr.replace(' ', 'T'); // 讓 Date() 能解析
+                }
+                const dObj = new Date(timeStr);
+                const displayTime = isNaN(dObj.getTime()) ? row.timestamp : 
+                    `${dObj.getFullYear()}/${(dObj.getMonth()+1).toString().padStart(2,'0')}/${dObj.getDate().toString().padStart(2,'0')} ${dObj.getHours().toString().padStart(2,'0')}:${dObj.getMinutes().toString().padStart(2,'0')}`;
+
+                return `
+                    <tr class="hover:bg-indigo-50/30 transition">
+                        <td class="px-6 py-4 font-mono text-slate-600">${displayTime}</td>
+                        <td class="px-6 py-4 font-bold text-slate-700">${row.context || '-'}</td>
+                        <td class="px-6 py-4 text-rose-600 font-bold">${row.sbp || '-'}</td>
+                        <td class="px-6 py-4 text-blue-600 font-bold">${row.dbp || '-'}</td>
+                        <td class="px-6 py-4 text-slate-600">${row.pulse || '-'}</td>
+                        <td class="px-6 py-4 text-amber-600 font-bold">${row.glucose || '-'}</td>
+                        <td class="px-6 py-4 text-slate-400 text-xs">${row.note || ''}</td>
+                    </tr>
+                `;
+            }).join('');
+        }
+    </script>
+</body>
+</html>
