@@ -57,7 +57,8 @@
                 <table class="w-full text-sm text-left">
                     <thead class="bg-slate-50 text-slate-500 font-medium border-b border-slate-200">
                         <tr>
-                            <th class="py-3 px-4 w-16">#</th>
+                            <th class="py-3 px-4 w-12">#</th>
+                            <th class="py-3 px-4 w-32">UID</th>
                             <th class="py-3 px-4">姓名 (Name)</th>
                             <th class="py-3 px-4">電子信箱 (Email)</th>
                             <th class="py-3 px-4">生日 (Birthday)</th>
@@ -67,7 +68,7 @@
                     </thead>
                     <tbody id="userTableBody" class="divide-y divide-slate-100 text-slate-600">
                         <tr>
-                            <td colspan="6" class="p-8 text-center text-slate-400">
+                            <td colspan="7" class="p-8 text-center text-slate-400">
                                 <div class="flex flex-col items-center justify-center gap-2">
                                     <i data-lucide="loader-2" class="w-6 h-6 animate-spin text-indigo-500"></i>
                                     <span>讀取資料中...</span>
@@ -97,7 +98,6 @@
                 <div>
                     <label class="block text-xs font-bold text-slate-500 mb-1 uppercase">姓名 (Name)</label>
                     <input type="text" id="edit-name" required class="w-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 text-slate-700 focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition">
-                    <p class="text-xs text-slate-400 mt-1">這是系統顯示的主要名稱</p>
                 </div>
 
                 <div>
@@ -127,35 +127,33 @@
             const tbody = document.getElementById('userTableBody');
             
             try {
-                // 呼叫 API action=getSettings
                 const response = await fetch(`${API_URL}?action=getSettings`);
                 const data = await response.json();
                 
                 tbody.innerHTML = '';
                 
                 if (data.length === 0) {
-                    tbody.innerHTML = '<tr><td colspan="6" class="p-6 text-center text-slate-400">目前無用戶資料</td></tr>';
+                    tbody.innerHTML = '<tr><td colspan="7" class="p-6 text-center text-slate-400">目前無用戶資料</td></tr>';
                     return;
                 }
 
                 document.getElementById('totalUsers').innerText = `總用戶數: ${data.length}`;
 
-                // 修正重點：確保資料欄位 (td) 與表頭 (th) 順序一致
-                // Order: # -> Name -> Email -> Birthday -> LineID -> Actions
                 data.forEach((user, index) => {
                     const row = document.createElement('tr');
                     row.className = 'hover:bg-indigo-50/50 transition group';
                     
-                    // 判斷顯示名稱 (如果沒有 Name 則顯示 Email 的前綴或未設定)
-                    const displayName = user.name || `<span class="text-slate-400 italic">未設定 (${user.email.split('@')[0]})</span>`;
-                    const displayBirth = user.birthday ? user.birthday : '<span class="text-slate-300">-</span>';
+                    // 顯示處理 (後端 code.gs v14.2 已經正確對應欄位，直接使用屬性即可)
+                    const displayName = user.name || '<span class="text-slate-400 italic">未設定</span>';
+                    const displayBirth = user.birthday || '<span class="text-slate-300">-</span>';
                     const displayLine = user.lineUserId ? `<span class="font-mono text-xs bg-green-50 text-green-600 px-2 py-1 rounded border border-green-100 truncate max-w-[100px] inline-block" title="${user.lineUserId}">已綁定</span>` : '<span class="text-slate-300 text-xs">未綁定</span>';
 
                     row.innerHTML = `
                         <td class="py-3 px-4 text-slate-400 font-mono text-xs">${index + 1}</td>
+                        <td class="py-3 px-4 font-mono text-xs text-slate-500 select-all">${user.uid}</td>
                         <td class="py-3 px-4 font-bold text-slate-700">${displayName}</td>
-                        <td class="py-3 px-4 text-slate-500 text-xs font-mono">${user.email}</td>
-                        <td class="py-3 px-4 text-slate-600">${displayBirth}</td>
+                        <td class="py-3 px-4 text-slate-600 text-sm">${user.email}</td>
+                        <td class="py-3 px-4 text-slate-500 text-sm">${displayBirth}</td>
                         <td class="py-3 px-4">${displayLine}</td>
                         <td class="py-3 px-4 text-center">
                             <button onclick='openEditModal(${JSON.stringify(user)})' class="p-2 text-indigo-600 hover:bg-indigo-100 rounded-lg transition" title="編輯用戶">
@@ -169,21 +167,20 @@
 
             } catch (error) {
                 console.error(error);
-                tbody.innerHTML = `<tr><td colspan="6" class="p-6 text-center text-rose-500">讀取失敗：${error.message}</td></tr>`;
+                tbody.innerHTML = `<tr><td colspan="7" class="p-6 text-center text-rose-500">讀取失敗：${error.message}</td></tr>`;
             }
         }
 
-        // --- 編輯功能 ---
         function openEditModal(user) {
             document.getElementById('edit-email').value = user.email;
             document.getElementById('edit-name').value = user.name || '';
             
-            // 處理日期格式以符合 input type="date"
-            if (user.birthday) {
-                // 假設格式為 YYYY-MM-DD 或 YYYY/MM/DD
+            if (user.birthday && user.birthday !== '-') {
                 let d = new Date(user.birthday);
                 if (!isNaN(d.getTime())) {
                     document.getElementById('edit-birthday').value = d.toISOString().split('T')[0];
+                } else {
+                     document.getElementById('edit-birthday').value = '';
                 }
             } else {
                 document.getElementById('edit-birthday').value = '';
@@ -210,22 +207,20 @@
 
             const payload = {
                 action: 'updateProfile',
-                token: 'mock-token', // Admin 模式下這裡簡化處理，後端主要靠 email 辨識
+                token: 'mock-token',
                 userEmail: document.getElementById('edit-email').value,
                 userName: document.getElementById('edit-name').value,
                 userBirthday: document.getElementById('edit-birthday').value
             };
 
             try {
-                // 使用 fetch POST 更新
                 await fetch(API_URL, {
                     method: 'POST',
-                    mode: 'no-cors', // Google Apps Script Web App 常見設定
+                    mode: 'no-cors',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify(payload)
                 });
 
-                // 因 no-cors 無法讀取回應，假設成功並重整
                 setTimeout(() => {
                     alert("更新請求已送出");
                     closeModal();
