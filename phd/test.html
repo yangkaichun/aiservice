@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <title>API 診斷工具</title>
+    <style>
+        body { font-family: monospace; padding: 20px; background: #f0f0f0; }
+        .card { background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); margin-bottom: 20px; }
+        h2 { margin-top: 0; color: #333; border-bottom: 2px solid #ddd; padding-bottom: 10px; }
+        button { background: #2563eb; color: white; border: none; padding: 10px 20px; border-radius: 5px; cursor: pointer; font-size: 16px; }
+        button:hover { background: #1d4ed8; }
+        #status { font-weight: bold; margin: 10px 0; }
+        .success { color: green; }
+        .error { color: red; }
+        pre { background: #2d2d2d; color: #76e068; padding: 15px; overflow-x: auto; border-radius: 5px; }
+    </style>
+</head>
+<body>
+
+    <div class="card">
+        <h2>🔍 API 資料讀取診斷</h2>
+        <p>測試目標：讀取 <strong>kaichun.yang@gmail.com</strong> 的健康數據</p>
+        <button onclick="runTest()">開始測試</button>
+        <div id="status">準備就緒...</div>
+    </div>
+
+    <div class="card">
+        <h2>📊 測試結果 (解析後)</h2>
+        <div id="parsed-result">尚未執行</div>
+    </div>
+
+    <div class="card">
+        <h2>📝 原始 JSON 回傳</h2>
+        <pre id="raw-json">等待資料...</pre>
+    </div>
+
+    <script>
+        // 這是您之前提供的 Script URL
+        const API_URL = 'https://script.google.com/macros/s/AKfycbzX0k_hP6poVZAxty89nQ6yJyuhNHw4M713G2IQolRPDQnNLFd_By3xqgfpQRtytOQT4A/exec';
+        
+        // 指定測試的 Email
+        const TARGET_USER = "kaichun.yang@gmail.com";
+
+        async function runTest() {
+            const statusDiv = document.getElementById('status');
+            const rawPre = document.getElementById('raw-json');
+            const parsedDiv = document.getElementById('parsed-result');
+
+            statusDiv.innerText = "⏳ 正在請求資料...";
+            statusDiv.className = "";
+            rawPre.innerText = "Loading...";
+            parsedDiv.innerHTML = "";
+
+            try {
+                // 強制加入時間戳記避開快取
+                const url = `${API_URL}?action=getDataByUser&user=${encodeURIComponent(TARGET_USER)}&t=${new Date().getTime()}`;
+                console.log("Fetching:", url);
+
+                const response = await fetch(url);
+                const text = await response.text(); // 先讀成文字，避免 JSON 解析失敗看不到錯誤
+                
+                console.log("Raw Response:", text);
+
+                try {
+                    const json = JSON.parse(text);
+                    rawPre.innerText = JSON.stringify(json, null, 2); // 美化輸出
+
+                    if (Array.isArray(json) && json.length > 0) {
+                        statusDiv.innerText = `✅ 測試成功！讀取到 ${json.length} 筆資料`;
+                        statusDiv.className = "success";
+                        
+                        // 簡單列表顯示
+                        let html = "<ul style='list-style:none; padding:0;'>";
+                        json.forEach((row, i) => {
+                            // 顯示關鍵欄位
+                            html += `<li style="padding:5px; border-bottom:1px solid #eee;">
+                                <strong>#${i+1}</strong> 
+                                時間: ${row.timestamp} | 
+                                姓名: ${row.name} | 
+                                收縮壓: ${row.sbp}
+                            </li>`;
+                        });
+                        html += "</ul>";
+                        parsedDiv.innerHTML = html;
+
+                    } else {
+                        statusDiv.innerText = "⚠️ 請求成功但回傳空資料 (長度為 0)";
+                        statusDiv.className = "error";
+                        parsedDiv.innerHTML = "<p>可能原因：</p><ul><li>後端沒有找到該 Email 對應的 UID</li><li>Data 表中的 UID 與 Users 表不匹配</li><li>權限不足</li></ul>";
+                    }
+
+                } catch (e) {
+                    rawPre.innerText = text; // 顯示原始文字
+                    statusDiv.innerText = "❌ JSON 解析失敗 (可能回傳了 HTML 錯誤頁面)";
+                    statusDiv.className = "error";
+                }
+
+            } catch (error) {
+                console.error(error);
+                statusDiv.innerText = "❌ 連線失敗: " + error.message;
+                statusDiv.className = "error";
+            }
+        }
+    </script>
+</body>
+</html>
