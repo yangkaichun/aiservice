@@ -18,7 +18,7 @@
     <script>
         const savedSession = localStorage.getItem('healthTwinSession');
         if (!savedSession) {
-            alert("🔒 請先登入");
+            // alert("🔒 請先登入");
             window.location.href = 'index.html';
         }
     </script>
@@ -33,9 +33,9 @@
 </head>
 <body class="text-slate-800 h-screen flex overflow-hidden relative">
 
-    <div class="fixed top-0 right-0 z-50 bg-indigo-600 text-white text-[10px] px-2 py-1 font-mono rounded-bl-lg shadow-md opacity-90 pointer-events-none">v6.5 (Final)</div>
+    <div class="fixed top-0 right-0 z-50 bg-indigo-600 text-white text-[10px] px-2 py-1 font-mono rounded-bl-lg shadow-md opacity-90 pointer-events-none">v7.0 (Loose Match)</div>
 
-    <div id="debug-toast" class="fixed top-4 left-1/2 transform -translate-x-1/2 z-50 bg-black/80 text-white text-xs p-3 rounded shadow-lg hidden">
+    <div id="debug-toast" class="fixed top-4 left-1/2 transform -translate-x-1/2 z-50 bg-black/80 text-white text-xs p-3 rounded shadow-lg hidden transition-opacity duration-500">
         讀取中...
     </div>
 
@@ -55,7 +55,7 @@
         </div>
 
         <div class="p-4 flex-1 overflow-hidden flex flex-col">
-            <h3 class="text-xs font-bold text-slate-400 uppercase tracking-wider mb-3 px-2 flex justify-between items-center">選擇用戶<span id="userCount" class="bg-slate-100 text-slate-500 py-0.5 px-2 rounded-full text-[10px]">0</span></h3>
+            <h3 class="text-xs font-bold text-slate-400 uppercase tracking-wider mb-3 px-2 flex justify-between items-center">選擇用戶 (Patients)<span id="userCount" class="bg-slate-100 text-slate-500 py-0.5 px-2 rounded-full text-[10px]">0</span></h3>
             <div id="userList" class="space-y-1 overflow-y-auto flex-1 pr-1"><div class="p-4 text-center text-slate-400 text-sm animate-pulse"><i data-lucide="loader-2" class="w-5 h-5 animate-spin mx-auto mb-2"></i>正在載入數據...</div></div>
         </div>
         <div class="mt-auto p-4 border-t border-slate-100 bg-slate-50">
@@ -91,7 +91,7 @@
                         <div class="glass-card rounded-2xl p-5 flex flex-col h-[350px]"><div class="mb-4"><h3 class="font-bold text-slate-700 flex items-center gap-2"><i data-lucide="activity" class="w-4 h-4 text-amber-500"></i> 血糖趨勢圖</h3></div><div class="flex-1 relative w-full h-full min-h-0"><canvas id="glucoseChart"></canvas></div></div>
                     </div>
                     <div class="glass-card rounded-2xl p-5 overflow-hidden flex flex-col h-[775px]">
-                        <div class="mb-4"><h3 class="font-bold text-slate-700 mb-3 flex justify-between items-center">歷史紀錄</h3><button onclick="downloadCSV()" class="w-full py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg text-xs font-bold flex items-center justify-center gap-2 transition"><i data-lucide="download" class="w-3 h-3"></i> 下載 CSV</button></div>
+                        <div class="mb-4"><h3 class="font-bold text-slate-700 mb-3 flex justify-between items-center">歷史紀錄</h3><button onclick="downloadCSV()" class="w-full py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg text-xs font-bold flex items-center justify-center gap-2 transition"><i data-lucide="download" class="w-3 h-3"></i> 下載 CSV 報表</button></div>
                         <div class="flex-1 overflow-y-auto pr-1"><table class="w-full text-sm text-left"><thead class="text-xs text-slate-400 uppercase border-b border-slate-100 sticky top-0 bg-white/95 backdrop-blur z-10"><tr><th class="py-2 pl-2">時間</th><th class="py-2 text-right">血壓/心跳</th><th class="py-2 text-right pr-2">血糖</th></tr></thead><tbody id="historyTable" class="text-slate-600 divide-y divide-slate-50"></tbody></table></div>
                     </div>
                 </div>
@@ -112,84 +112,113 @@
         let glucoseChartInstance = null;
         let currentChartRange = '30d'; 
         
-        const loggedInSession = JSON.parse(localStorage.getItem('healthTwinSession'));
+        const loggedInSession = JSON.parse(localStorage.getItem('healthTwinSession')) || { name: 'Guest', email: '' };
 
         document.addEventListener('DOMContentLoaded', () => {
             lucide.createIcons();
-            if (loggedInSession) {
+            
+            // 顯示登入者資訊
+            if (loggedInSession && loggedInSession.email) {
                 document.getElementById('sidebar-user-name').innerText = loggedInSession.name;
-                if (loggedInSession.picture) { const img = document.getElementById('sidebar-user-img'); img.src = loggedInSession.picture; img.classList.remove('hidden'); document.getElementById('sidebar-user-text').classList.add('hidden'); } else { document.getElementById('sidebar-user-text').innerText = loggedInSession.name.charAt(0).toUpperCase(); }
+                if (loggedInSession.picture) {
+                    const img = document.getElementById('sidebar-user-img');
+                    img.src = loggedInSession.picture; img.classList.remove('hidden'); 
+                    document.getElementById('sidebar-user-text').classList.add('hidden');
+                } else {
+                    document.getElementById('sidebar-user-text').innerText = loggedInSession.name.charAt(0).toUpperCase();
+                }
             }
             fetchData();
         });
 
-        function logout() { if(confirm("確定要登出系統嗎？")) { localStorage.removeItem('healthTwinSession'); window.location.href = 'index.html'; } }
-        function toggleSidebar() { const sidebar = document.getElementById('sidebar'); const overlay = document.getElementById('mobileOverlay'); if (sidebar.classList.contains('-translate-x-full')) { sidebar.classList.remove('-translate-x-full'); overlay.classList.remove('hidden'); } else { sidebar.classList.add('-translate-x-full'); overlay.classList.add('hidden'); } }
+        function logout() {
+            if(confirm("確定要登出系統嗎？")) {
+                localStorage.removeItem('healthTwinSession');
+                window.location.href = 'index.html';
+            }
+        }
+
+        function toggleSidebar() {
+            const sidebar = document.getElementById('sidebar');
+            const overlay = document.getElementById('mobileOverlay');
+            if (sidebar.classList.contains('-translate-x-full')) { 
+                sidebar.classList.remove('-translate-x-full'); overlay.classList.remove('hidden'); 
+            } else { 
+                sidebar.classList.add('-translate-x-full'); overlay.classList.add('hidden'); 
+            }
+        }
 
         async function fetchData() {
             try {
                 document.getElementById('loadingState').classList.remove('hidden');
                 document.getElementById('dashboardContent').classList.add('hidden');
                 
+                // 加入時間戳記避免快取
                 const ts = new Date().getTime();
+                
+                // 平行讀取兩份資料
                 const [dataRes, mapRes] = await Promise.all([
-                    fetch(API_URL + `?v=${ts}`), 
-                    fetch(`${API_URL}?action=getSettings&v=${ts}`) 
+                    fetch(API_URL + `?v=${ts}`), // 讀取 Data
+                    fetch(`${API_URL}?action=getSettings&v=${ts}`) // 讀取 Users (透過 getSettings 接口)
                 ]);
 
-                if (!dataRes.ok || !mapRes.ok) {
-                    throw new Error("伺服器回應錯誤: " + dataRes.status);
-                }
+                if (!dataRes.ok || !mapRes.ok) throw new Error("伺服器回應錯誤");
 
                 const json = await dataRes.json();
-                if(json.error) throw new Error(json.error);
-
                 globalUsersMap = await mapRes.json();
                 allData = json; 
                 
-                showToast(`Loaded ${json.length} records`);
+                showToast(`Data:${json.length}, Users:${globalUsersMap.length}`);
 
-                let targetUid = null;
-                if (loggedInSession) {
-                    const email = loggedInSession.email.toLowerCase().trim();
-                    const name = loggedInSession.name;
-                    // 1. Email matching
-                    let u = globalUsersMap.find(user => String(user.email).toLowerCase().trim() === email);
-                    // 2. UID matching
-                    if(!u) u = globalUsersMap.find(user => String(user.uid).toLowerCase().trim() === email);
-                    // 3. Name matching
-                    if(!u) u = globalUsersMap.find(user => user.name === name);
-                    
-                    if (u) targetUid = String(u.uid).trim();
+                let targetUserUid = null;
+                const myEmail = loggedInSession.email.trim().toLowerCase();
+                const myName = loggedInSession.name;
+
+                // 1. 嘗試在 User List 中找到自己
+                // 比對邏輯：Email 相同 OR Name 相同
+                let me = globalUsersMap.find(u => 
+                    (u.email && String(u.email).toLowerCase().trim() === myEmail) || 
+                    (u.name && u.name === myName)
+                );
+
+                if (me) {
+                    targetUserUid = String(me.uid).trim();
                 }
 
-                renderUserList(globalUsersMap, targetUid);
+                // 2. 渲染左側列表
+                renderUserList(globalUsersMap, targetUserUid);
                 
-                if (targetUid) {
-                    selectUser(targetUid, null);
-                } else if(json.length > 0) {
-                    // Fallback to email raw matching for unlinked users
-                    const myEmail = loggedInSession.email.toLowerCase().trim();
-                    currentUserData = allData.filter(d => String(d.originalId).toLowerCase().trim() === myEmail);
+                // 3. 決定要顯示誰的資料
+                if (targetUserUid) {
+                    // 找到自己，顯示自己的
+                    selectUser(targetUserUid, null);
+                } else if (myEmail) {
+                    // 沒在 Users 表找到自己，但嘗試用 Email 去 Data 表撈孤兒資料
+                    // 這種情況發生在：剛用 Google 登入，還沒被寫入 Users 表，但 Data 表已經有資料
+                    const orphanData = allData.filter(d => 
+                        String(d.originalId).toLowerCase().trim() === myEmail || 
+                        String(d.rawId).toLowerCase().trim() === myEmail
+                    );
                     
-                    if(currentUserData.length > 0) {
+                    if (orphanData.length > 0) {
                         document.getElementById('currentUserName').innerText = `${loggedInSession.name} (未註冊)`;
+                        currentUserData = orphanData;
+                        currentUserData.sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp));
                         updateDashboard();
+                        
                         document.getElementById('loadingState').classList.add('hidden');
                         document.getElementById('dashboardContent').classList.remove('hidden');
-                    } else if(globalUsersMap.length > 0) {
+                    } else if (globalUsersMap.length > 0) {
+                        // 真的沒資料，預設選列表第一個人
                         selectUser(globalUsersMap[0].uid, null);
                     } else {
-                        document.getElementById('currentUserName').innerText = "無資料";
-                        updateDashboard();
-                        document.getElementById('loadingState').classList.add('hidden');
-                        document.getElementById('dashboardContent').classList.remove('hidden');
+                        // 完全沒資料
+                        showEmptyState();
                     }
+                } else if (globalUsersMap.length > 0) {
+                    selectUser(globalUsersMap[0].uid, null);
                 } else {
-                    document.getElementById('currentUserName').innerText = "無資料";
-                    updateDashboard();
-                    document.getElementById('loadingState').classList.add('hidden');
-                    document.getElementById('dashboardContent').classList.remove('hidden');
+                    showEmptyState();
                 }
 
             } catch (error) {
@@ -198,52 +227,81 @@
             }
         }
 
+        function showEmptyState() {
+            document.getElementById('currentUserName').innerText = "尚無資料";
+            document.getElementById('loadingState').classList.add('hidden');
+            document.getElementById('dashboardContent').classList.remove('hidden');
+            updateDashboard(); // 會顯示 --
+        }
+
         function showToast(msg) {
             const t = document.getElementById('debug-toast');
             t.innerText = msg;
             t.classList.remove('hidden');
-            setTimeout(() => t.classList.add('hidden'), 5000);
+            setTimeout(() => t.classList.add('hidden'), 4000);
         }
 
         function renderUserList(usersMap, targetUid) {
             const listContainer = document.getElementById('userList');
             document.getElementById('userCount').innerText = usersMap.length;
             listContainer.innerHTML = '';
-            if (usersMap.length === 0) { listContainer.innerHTML = '<div class="p-4 text-center text-sm text-slate-400">目前無其他用戶</div>'; return; }
+            
+            if (usersMap.length === 0) { 
+                listContainer.innerHTML = '<div class="p-4 text-center text-sm text-slate-400">目前無其他用戶</div>'; 
+                return;
+            }
 
             usersMap.forEach((u, index) => {
                 const div = document.createElement('div');
-                let displayName = u.name || u.email || "Unknown";
+                let displayName = u.name || u.email || u.uid || "Unknown";
                 const avatarText = displayName.charAt(0).toUpperCase();
-                
                 const safeUid = String(u.uid).trim();
+                
                 div.id = `user-item-${safeUid}`; 
                 div.className = `p-3 rounded-xl cursor-pointer hover:bg-indigo-50 hover:text-indigo-600 transition flex items-center gap-3 text-slate-600 font-medium group user-item border border-transparent`;
                 div.innerHTML = `<div class="w-8 h-8 rounded-full bg-slate-100 text-slate-500 flex items-center justify-center text-xs font-bold shrink-0">${avatarText}</div><span class="truncate">${displayName}</span>`;
-                div.onclick = () => { selectUser(safeUid, div); if (window.innerWidth < 1024) toggleSidebar(); };
+                
+                div.onclick = () => { 
+                    selectUser(safeUid, div); 
+                    if (window.innerWidth < 1024) toggleSidebar(); 
+                };
+                
                 listContainer.appendChild(div);
             });
         }
 
         function selectUser(uid, element) {
             const safeUid = String(uid).trim();
-            document.querySelectorAll('.user-item').forEach(el => { el.classList.remove('bg-indigo-50', 'text-indigo-600', 'shadow-sm', 'border-indigo-100'); el.classList.add('border-transparent'); });
-            if (!element) { element = document.getElementById(`user-item-${safeUid}`); }
-            if (element) { element.classList.add('bg-indigo-50', 'text-indigo-600', 'shadow-sm', 'border-indigo-100'); element.classList.remove('border-transparent'); }
             
+            // UI Highlight
+            document.querySelectorAll('.user-item').forEach(el => { 
+                el.classList.remove('bg-indigo-50', 'text-indigo-600', 'shadow-sm', 'border-indigo-100'); 
+                el.classList.add('border-transparent'); 
+            });
+            if (!element) { element = document.getElementById(`user-item-${safeUid}`); }
+            if (element) { 
+                element.classList.add('bg-indigo-50', 'text-indigo-600', 'shadow-sm', 'border-indigo-100'); 
+                element.classList.remove('border-transparent'); 
+            }
+            
+            // Find User Object
             const userObj = globalUsersMap.find(u => String(u.uid).trim() === safeUid);
             if (!userObj) return;
 
             let displayTitle = userObj.name || userObj.email || "Unknown User";
             
-            // Build valid IDs list
+            // Build Valid IDs (包含 UID, Email, LineID)
+            // 全部轉小寫、去空白
             const validIds = [userObj.uid, userObj.email, userObj.lineUserId]
-                .filter(id => id)
-                .map(id => String(id).toLowerCase().trim());
+                .filter(val => val) // remove null/undefined
+                .map(val => String(val).toLowerCase().trim());
             
+            // Filter Data
             currentUserData = allData.filter(d => {
-                const dId = String(d.rawId || d.originalId).toLowerCase().trim();
-                return validIds.includes(dId);
+                // 比對 Data 表中的 rawId (UID) 或 originalId (可能是 Email)
+                const dRaw = String(d.rawId || "").toLowerCase().trim();
+                const dOrig = String(d.originalId || "").toLowerCase().trim();
+                return validIds.includes(dRaw) || validIds.includes(dOrig);
             });
             
             currentUserData.sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp));
@@ -256,36 +314,150 @@
                 }
             }
             document.getElementById('currentUserName').innerText = displayTitle;
+            
             updateDashboard();
             
-            // Show content
+            // Show Content
             document.getElementById('loadingState').classList.add('hidden');
             document.getElementById('dashboardContent').classList.remove('hidden');
             document.getElementById('dashboardContent').classList.add('animate-fade-in');
         }
 
-        function setChartRange(range) { currentChartRange = range; document.querySelectorAll('.range-btn').forEach(btn => btn.className = "px-3 py-1 text-xs font-bold rounded-md transition text-slate-500 hover:bg-white/50 range-btn"); document.getElementById(`btn-${range}`).className = "px-3 py-1 text-xs font-bold rounded-md bg-white text-indigo-600 shadow-sm range-btn"; updateDashboard(); }
+        function setChartRange(range) { 
+            currentChartRange = range; 
+            document.querySelectorAll('.range-btn').forEach(btn => btn.className = "px-3 py-1 text-xs font-bold rounded-md transition text-slate-500 hover:bg-white/50 range-btn"); 
+            document.getElementById(`btn-${range}`).className = "px-3 py-1 text-xs font-bold rounded-md bg-white text-indigo-600 shadow-sm range-btn"; 
+            updateDashboard(); 
+        }
+
         function updateDashboard() { 
             if (currentUserData.length === 0) { 
-                document.getElementById('val-sbp').innerText = '--'; document.getElementById('val-dbp').innerText = '--'; document.getElementById('val-pulse').innerText = '--'; document.getElementById('val-glucose').innerText = '--'; document.getElementById('status-sbp').innerText = '尚無資料'; document.getElementById('status-glucose').innerText = '尚無資料'; document.getElementById('historyTable').innerHTML = '<tr><td colspan="3" class="p-4 text-center text-slate-400 text-sm">目前沒有測量紀錄</td></tr>'; renderChart([]); return; 
+                // Reset Values
+                ['val-sbp', 'val-dbp', 'val-pulse', 'val-glucose'].forEach(id => document.getElementById(id).innerText = '--');
+                document.getElementById('status-sbp').innerText = '尚無資料'; 
+                document.getElementById('status-glucose').innerText = '尚無資料'; 
+                document.getElementById('historyTable').innerHTML = '<tr><td colspan="3" class="p-4 text-center text-slate-400 text-sm">目前沒有測量紀錄</td></tr>'; 
+                renderChart([]); 
+                return; 
             } 
+            
             const latest = currentUserData[currentUserData.length - 1]; 
-            const sbp = (latest.sbp !== undefined && latest.sbp !== "") ? latest.sbp : '--';
-            const dbp = (latest.dbp !== undefined && latest.dbp !== "") ? latest.dbp : '--';
-            const pulse = (latest.pulse !== undefined && latest.pulse !== "") ? latest.pulse : '--';
-            const glucose = (latest.glucose !== undefined && latest.glucose !== "") ? latest.glucose : '--';
+            
+            // [修正] 確保 0 會顯示
+            const sbp = (latest.sbp !== "" && latest.sbp != null) ? latest.sbp : '--';
+            const dbp = (latest.dbp !== "" && latest.dbp != null) ? latest.dbp : '--';
+            const pulse = (latest.pulse !== "" && latest.pulse != null) ? latest.pulse : '--';
+            const glucose = (latest.glucose !== "" && latest.glucose != null) ? latest.glucose : '--';
 
-            document.getElementById('val-sbp').innerText = sbp; document.getElementById('val-dbp').innerText = dbp; document.getElementById('val-pulse').innerText = pulse; document.getElementById('val-glucose').innerText = glucose; 
-            if (sbp !== '--' && parseInt(sbp) > 140) document.getElementById('status-sbp').innerHTML = `<span class="flex items-center gap-1 text-rose-500 font-bold"><i data-lucide="alert-circle" class="w-3 h-3"></i> 偏高</span>`; else if(sbp !== '--') document.getElementById('status-sbp').innerHTML = `<span class="flex items-center gap-1 text-emerald-500 font-bold"><i data-lucide="check" class="w-3 h-3"></i> 正常</span>`; else document.getElementById('status-sbp').innerText = "無資料";
-            if (glucose !== '--' && parseInt(glucose) > 100) document.getElementById('status-glucose').innerText = "注意數值"; else if(glucose !== '--') document.getElementById('status-glucose').innerText = "數值穩定"; else document.getElementById('status-glucose').innerText = "無資料";
+            document.getElementById('val-sbp').innerText = sbp; 
+            document.getElementById('val-dbp').innerText = dbp; 
+            document.getElementById('val-pulse').innerText = pulse; 
+            document.getElementById('val-glucose').innerText = glucose; 
+
+            // Status Logic
+            if (sbp !== '--' && parseInt(sbp) > 140) {
+                document.getElementById('status-sbp').innerHTML = `<span class="flex items-center gap-1 text-rose-500 font-bold"><i data-lucide="alert-circle" class="w-3 h-3"></i> 偏高</span>`;
+            } else if (sbp !== '--') {
+                document.getElementById('status-sbp').innerHTML = `<span class="flex items-center gap-1 text-emerald-500 font-bold"><i data-lucide="check" class="w-3 h-3"></i> 正常</span>`;
+            } else {
+                document.getElementById('status-sbp').innerText = "無資料";
+            }
+
+            if (glucose !== '--' && parseInt(glucose) > 100) {
+                document.getElementById('status-glucose').innerText = "注意數值"; 
+            } else if (glucose !== '--') {
+                document.getElementById('status-glucose').innerText = "數值穩定"; 
+            } else {
+                document.getElementById('status-glucose').innerText = "無資料";
+            }
             
             lucide.createIcons(); 
-            const historyBody = document.getElementById('historyTable'); historyBody.innerHTML = currentUserData.slice(-50).reverse().map(d => { const dateObj = new Date(d.timestamp); const timeStr = isNaN(dateObj) ? d.timestamp : `${dateObj.getMonth()+1}/${dateObj.getDate()} ${String(dateObj.getHours()).padStart(2,'0')}:${String(dateObj.getMinutes()).padStart(2,'0')}`; return `<tr class="hover:bg-slate-50 transition"><td class="py-3 pl-2 text-slate-500 font-mono text-xs">${timeStr}</td><td class="py-3 text-right font-medium"><div class="text-sm"><span class="text-rose-600">${d.sbp || '-'}</span>/<span class="text-blue-600">${d.dbp || '-'}</span></div><div class="text-xs text-slate-400">HR: ${d.pulse || '-'}</div></td><td class="py-3 pr-2 text-right font-medium">${d.glucose ? `<span class="text-amber-600 font-bold">${d.glucose}</span>` : '<span class="text-slate-300">-</span>'}</td></tr>`; }).join(''); 
-            let chartData = [...currentUserData]; const now = new Date(); if (currentChartRange === '30d') { const d = new Date(); d.setDate(now.getDate() - 30); chartData = chartData.filter(x => new Date(x.timestamp) >= d); } else if (currentChartRange === '6m') { const d = new Date(); d.setMonth(now.getMonth() - 6); chartData = chartData.filter(x => new Date(x.timestamp) >= d); } renderChart(chartData); 
+
+            // Table
+            const historyBody = document.getElementById('historyTable'); 
+            historyBody.innerHTML = currentUserData.slice(-50).reverse().map(d => { 
+                // 時間格式化 (若後端已給格式化字串則直接用)
+                let timeStr = d.timestamp;
+                if (new Date(d.timestamp).toString() !== 'Invalid Date') {
+                    const dateObj = new Date(d.timestamp);
+                    timeStr = `${dateObj.getMonth()+1}/${dateObj.getDate()} ${String(dateObj.getHours()).padStart(2,'0')}:${String(dateObj.getMinutes()).padStart(2,'0')}`;
+                }
+                
+                return `<tr class="hover:bg-slate-50 transition">
+                    <td class="py-3 pl-2 text-slate-500 font-mono text-xs">${timeStr}</td>
+                    <td class="py-3 text-right font-medium">
+                        <div class="text-sm"><span class="text-rose-600">${d.sbp || '-'}</span>/<span class="text-blue-600">${d.dbp || '-'}</span></div>
+                        <div class="text-xs text-slate-400">HR: ${d.pulse || '-'}</div>
+                    </td>
+                    <td class="py-3 pr-2 text-right font-medium">${d.glucose ? `<span class="text-amber-600 font-bold">${d.glucose}</span>` : '<span class="text-slate-300">-</span>'}</td>
+                </tr>`; 
+            }).join(''); 
+            
+            // Chart Data Filtering
+            let chartData = [...currentUserData]; 
+            const now = new Date(); 
+            if (currentChartRange === '30d') { 
+                const d = new Date(); d.setDate(now.getDate() - 30); 
+                chartData = chartData.filter(x => new Date(x.timestamp) >= d); 
+            } else if (currentChartRange === '6m') { 
+                const d = new Date(); d.setMonth(now.getMonth() - 6); 
+                chartData = chartData.filter(x => new Date(x.timestamp) >= d); 
+            } 
+            renderChart(chartData); 
         }
-        function renderChart(data) { const labels = data.map(d => { const date = new Date(d.timestamp); return isNaN(date) ? '' : `${date.getMonth()+1}/${date.getDate()} ${String(date.getHours()).padStart(2,'0')}:${String(date.getMinutes()).padStart(2,'0')}`; }); const sbpData = data.map(d => (d.sbp && d.sbp > 0) ? d.sbp : null); const dbpData = data.map(d => (d.dbp && d.dbp > 0) ? d.dbp : null); const glucoseData = data.map(d => (d.glucose && d.glucose > 0) ? d.glucose : null); const ctxBP = document.getElementById('mainChart').getContext('2d'); let gradientSbp = ctxBP.createLinearGradient(0, 0, 0, 400); gradientSbp.addColorStop(0, 'rgba(244, 63, 94, 0.4)'); gradientSbp.addColorStop(1, 'rgba(244, 63, 94, 0.05)'); let gradientDbp = ctxBP.createLinearGradient(0, 0, 0, 400); gradientDbp.addColorStop(0, 'rgba(59, 130, 246, 0.4)'); gradientDbp.addColorStop(1, 'rgba(59, 130, 246, 0.05)'); if (bpChartInstance) bpChartInstance.destroy(); bpChartInstance = new Chart(ctxBP, { type: 'line', data: { labels: labels, datasets: [{ label: '收縮壓', data: sbpData, borderColor: '#F43F5E', backgroundColor: gradientSbp, borderWidth: 2, tension: 0.3, pointRadius: 3, fill: true, spanGaps: false }, { label: '舒張壓', data: dbpData, borderColor: '#3B82F6', backgroundColor: gradientDbp, borderWidth: 2, tension: 0.3, pointRadius: 3, fill: true, spanGaps: false }] }, options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'top', align: 'end' }, tooltip: { mode: 'index', intersect: false } }, scales: { y: { suggestedMin: 60, suggestedMax: 160 }, x: { grid: { display: false }, ticks: { maxTicksLimit: 8 } } }, interaction: { mode: 'nearest', axis: 'x', intersect: false } } }); const ctxGlu = document.getElementById('glucoseChart').getContext('2d'); let gradientGlu = ctxGlu.createLinearGradient(0, 0, 0, 300); gradientGlu.addColorStop(0, 'rgba(245, 158, 11, 0.4)'); gradientGlu.addColorStop(1, 'rgba(245, 158, 11, 0.05)'); if (glucoseChartInstance) glucoseChartInstance.destroy(); glucoseChartInstance = new Chart(ctxGlu, { type: 'line', data: { labels: labels, datasets: [{ label: '血糖', data: glucoseData, borderColor: '#F59E0B', backgroundColor: gradientGlu, borderWidth: 2, tension: 0.3, pointRadius: 4, fill: true, spanGaps: false }] }, options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false }, tooltip: { mode: 'index', intersect: false } }, scales: { y: { suggestedMin: 70, suggestedMax: 180, grid: { color: '#f1f5f9' } }, x: { grid: { display: false }, ticks: { maxTicksLimit: 8 } } }, interaction: { mode: 'nearest', axis: 'x', intersect: false } } }); }
-        function downloadCSV() { const startDateVal = document.getElementById('dl-start').value; const endDateVal = document.getElementById('dl-end').value; if (!startDateVal || !endDateVal) { alert("請選擇完整的開始與結束日期"); return; } const startDate = new Date(startDateVal); const endDate = new Date(endDateVal); endDate.setHours(23, 59, 59); const exportData = currentUserData.filter(d => { const dDate = new Date(d.timestamp); return dDate >= startDate && dDate <= endDate; }); if (exportData.length === 0) { alert("選定的日期範圍內沒有資料"); return; } let csvContent = "\uFEFF時間,姓名,收縮壓,舒張壓,心率,血糖,情境\n"; exportData.forEach(row => { const d = new Date(row.timestamp); const timeStr = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')} ${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}`; csvContent += `${timeStr},${row.name},${row.sbp},${row.dbp},${row.pulse},${row.glucose || ''},${row.context || ''}\n`; }); const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' }); const link = document.createElement("a"); const url = URL.createObjectURL(blob); const userNameOnly = document.getElementById('currentUserName').innerText.split(' (')[0]; link.setAttribute("href", url); link.setAttribute("download", `${userNameOnly}_健康數據.csv`); document.body.appendChild(link); link.click(); document.body.removeChild(link); }
+
+        function renderChart(data) { 
+            const labels = data.map(d => { 
+                const date = new Date(d.timestamp); 
+                return isNaN(date) ? d.timestamp : `${date.getMonth()+1}/${date.getDate()} ${String(date.getHours()).padStart(2,'0')}:${String(date.getMinutes()).padStart(2,'0')}`; 
+            }); 
+            
+            const sbpData = data.map(d => (d.sbp && d.sbp > 0) ? d.sbp : null); 
+            const dbpData = data.map(d => (d.dbp && d.dbp > 0) ? d.dbp : null); 
+            const glucoseData = data.map(d => (d.glucose && d.glucose > 0) ? d.glucose : null); 
+            
+            const ctxBP = document.getElementById('mainChart').getContext('2d'); 
+            let gradientSbp = ctxBP.createLinearGradient(0, 0, 0, 400); 
+            gradientSbp.addColorStop(0, 'rgba(244, 63, 94, 0.4)'); gradientSbp.addColorStop(1, 'rgba(244, 63, 94, 0.05)'); 
+            let gradientDbp = ctxBP.createLinearGradient(0, 0, 0, 400); 
+            gradientDbp.addColorStop(0, 'rgba(59, 130, 246, 0.4)'); gradientDbp.addColorStop(1, 'rgba(59, 130, 246, 0.05)'); 
+            
+            if (bpChartInstance) bpChartInstance.destroy(); 
+            bpChartInstance = new Chart(ctxBP, { 
+                type: 'line', 
+                data: { labels: labels, datasets: [{ label: '收縮壓', data: sbpData, borderColor: '#F43F5E', backgroundColor: gradientSbp, borderWidth: 2, tension: 0.3, pointRadius: 3, fill: true, spanGaps: false }, { label: '舒張壓', data: dbpData, borderColor: '#3B82F6', backgroundColor: gradientDbp, borderWidth: 2, tension: 0.3, pointRadius: 3, fill: true, spanGaps: false }] }, 
+                options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'top', align: 'end' }, tooltip: { mode: 'index', intersect: false } }, scales: { y: { suggestedMin: 60, suggestedMax: 160 }, x: { grid: { display: false }, ticks: { maxTicksLimit: 8 } } }, interaction: { mode: 'nearest', axis: 'x', intersect: false } } 
+            }); 
+            
+            const ctxGlu = document.getElementById('glucoseChart').getContext('2d'); 
+            let gradientGlu = ctxGlu.createLinearGradient(0, 0, 0, 300); 
+            gradientGlu.addColorStop(0, 'rgba(245, 158, 11, 0.4)'); gradientGlu.addColorStop(1, 'rgba(245, 158, 11, 0.05)'); 
+            
+            if (glucoseChartInstance) glucoseChartInstance.destroy(); 
+            glucoseChartInstance = new Chart(ctxGlu, { 
+                type: 'line', 
+                data: { labels: labels, datasets: [{ label: '血糖', data: glucoseData, borderColor: '#F59E0B', backgroundColor: gradientGlu, borderWidth: 2, tension: 0.3, pointRadius: 4, fill: true, spanGaps: false }] }, 
+                options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false }, tooltip: { mode: 'index', intersect: false } }, scales: { y: { suggestedMin: 70, suggestedMax: 180, grid: { color: '#f1f5f9' } }, x: { grid: { display: false }, ticks: { maxTicksLimit: 8 } } }, interaction: { mode: 'nearest', axis: 'x', intersect: false } } 
+            }); 
+        }
+
+        function downloadCSV() { 
+            const startDateVal = document.getElementById('dl-start').value; 
+            const endDateVal = document.getElementById('dl-end').value; 
+            if (!startDateVal || !endDateVal) { alert("請選擇完整的開始與結束日期"); return; } 
+            const startDate = new Date(startDateVal); const endDate = new Date(endDateVal); endDate.setHours(23, 59, 59); 
+            const exportData = currentUserData.filter(d => { const dDate = new Date(d.timestamp); return dDate >= startDate && dDate <= endDate; }); 
+            if (exportData.length === 0) { alert("選定的日期範圍內沒有資料"); return; } 
+            let csvContent = "\uFEFF時間,姓名,收縮壓,舒張壓,心率,血糖,情境\n"; 
+            exportData.forEach(row => { const d = new Date(row.timestamp); const timeStr = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')} ${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}`; csvContent += `${timeStr},${row.name},${row.sbp},${row.dbp},${row.pulse},${row.glucose || ''},${row.context || ''}\n`; }); 
+            const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' }); const link = document.createElement("a"); const url = URL.createObjectURL(blob); 
+            const userNameOnly = document.getElementById('currentUserName').innerText.split(' (')[0]; 
+            link.setAttribute("href", url); link.setAttribute("download", `${userNameOnly}_健康數據.csv`); 
+            document.body.appendChild(link); link.click(); document.body.removeChild(link); 
+        }
+
         function closeAiModal() { document.getElementById('aiAnalysisModal').classList.add('hidden'); document.getElementById('aiAnalysisModal').classList.remove('flex'); window.speechSynthesis.cancel(); }
+        
         async function getAIAnalysis() { const userNameText = document.getElementById('currentUserName').innerText; const userName = userNameText.includes('(') ? userNameText.split(' (')[0] : userNameText.replace('Hi, ', ''); if (!userName || userName === "概況總覽" || userName === "載入中...") { alert("請先選擇一位用戶"); return; } const modal = document.getElementById('aiAnalysisModal'); const content = document.getElementById('aiModalContent'); const btnTts = document.getElementById('btn-tts'); btnTts.classList.add('hidden'); modal.classList.remove('hidden'); modal.classList.add('flex'); content.innerHTML = `<div class="flex flex-col items-center justify-center py-12 space-y-4"><div class="w-10 h-10 border-4 border-indigo-200 border-t-indigo-600 rounded-full animate-spin"></div><p class="text-slate-500 animate-pulse font-medium">Gemini 正在分析您的健康數據...</p></div>`; try { const response = await fetch(`${API_URL}?action=analyze&name=${encodeURIComponent(userName)}`); const data = await response.json(); if (data.result) { const mdText = data.result; content.innerHTML = `<div class="prose prose-sm max-w-none text-slate-700">${marked.parse(mdText)}</div>`; btnTts.classList.remove('hidden'); document.getElementById('btn-tts-text').innerText = "語音播放"; } else { throw new Error("AI 未回傳結果"); } } catch (err) { console.error(err); content.innerHTML = `<div class="text-center py-8"><div class="text-rose-500 mb-2 text-lg"><i data-lucide="alert-circle" class="w-8 h-8 mx-auto"></i></div><p class="font-bold text-slate-700">分析失敗</p><p class="text-xs text-slate-400 mt-2">${err.message}</p></div>`; lucide.createIcons(); } }
         function toggleSpeech() { const btnText = document.getElementById('btn-tts-text'); const content = document.getElementById('aiModalContent').innerText; if (window.speechSynthesis.speaking) { window.speechSynthesis.cancel(); btnText.innerText = "語音播放"; return; } const utterance = new SpeechSynthesisUtterance(content); utterance.lang = 'zh-TW'; utterance.rate = 1; const voices = window.speechSynthesis.getVoices(); const twVoice = voices.find(v => v.lang.includes('zh-TW') || v.lang.includes('zh_TW')); if (twVoice) utterance.voice = twVoice; utterance.onend = function() { btnText.innerText = "語音播放"; }; window.speechSynthesis.speak(utterance); btnText.innerText = "停止播放"; }
     </script>
