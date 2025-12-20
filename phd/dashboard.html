@@ -47,7 +47,7 @@
             <div class="p-5 border-b border-slate-100 flex justify-between items-center bg-gradient-to-r from-indigo-50 to-white">
                 <div class="flex items-center gap-3">
                     <div class="p-2 bg-white rounded-lg shadow-sm text-indigo-600"><i data-lucide="sparkles" class="w-6 h-6"></i></div>
-                    <div><h3 class="font-bold text-lg text-slate-800">Gemini 健康分析</h3><p class="text-xs text-slate-500">Google Cloud TTS 語音播放</p></div>
+                    <div><h3 class="font-bold text-lg text-slate-800">Gemini 健康分析</h3><p class="text-xs text-slate-500">Google Cloud TTS 語音播放 (Taiwan)</p></div>
                 </div>
                 <button onclick="closeAiModal()" class="p-2 hover:bg-slate-100 rounded-full transition text-slate-400 hover:text-slate-600"><i data-lucide="x" class="w-6 h-6"></i></button>
             </div>
@@ -140,7 +140,7 @@
         const API_URL = 'https://script.google.com/macros/s/AKfycbzX0k_hP6poVZAxty89nQ6yJyuhNHw4M713G2IQolRPDQnNLFd_By3xqgfpQRtytOQT4A/exec'; 
         let allData = []; let currentUserData = []; let bpChartInstance = null; let glucoseChartInstance = null; let currentChartRange = '30d'; 
         const loggedInSession = JSON.parse(localStorage.getItem('healthTwinSession'));
-        let audioPlayer = null; // 全域變數存放音訊物件
+        let audioPlayer = null; 
 
         document.addEventListener('DOMContentLoaded', () => {
             lucide.createIcons();
@@ -179,13 +179,11 @@
         }
 
         function renderUserList(data, targetUser) { 
-            // 修改：確保優先抓取 name 欄位，並過濾掉空值
-            // data 裡的每一個 item 已經由後端處理過，包含 item.name, item.rawId 等
+            // 修正：優先抓取 name 欄位，過濾重複
             const uniqueUsers = [];
             const seen = new Set();
             
             data.forEach(item => {
-                // 若有名字顯示名字，否則顯示 rawId
                 const displayName = item.name ? item.name : item.rawId;
                 if (displayName && !seen.has(displayName)) {
                     seen.add(displayName);
@@ -222,7 +220,7 @@
             if (element) { element.classList.add('bg-indigo-50', 'text-indigo-600', 'shadow-sm', 'border-indigo-100'); element.classList.remove('border-transparent'); } 
             
             let displayTitle = userName; 
-            // 過濾數據：這裡要同時比對 name 與 rawId，確保資料完整性
+            // 修正篩選邏輯：同時檢查 name 或 rawId
             currentUserData = allData.filter(d => d.name === userName || d.rawId === userName || d.originalId === userName); 
             currentUserData.sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp)); 
             
@@ -251,7 +249,6 @@
             const content = document.getElementById('aiModalContent'); 
             const btnTts = document.getElementById('btn-tts'); 
             
-            // 停止舊的播放
             if(audioPlayer) { audioPlayer.pause(); audioPlayer = null; }
             btnTts.classList.add('hidden'); 
             modal.classList.remove('hidden'); modal.classList.add('flex'); 
@@ -273,10 +270,9 @@
             } 
         }
 
+        // 語音播放功能 (使用 Google Cloud TTS)
         async function toggleSpeech() { 
             const btnText = document.getElementById('btn-tts-text'); 
-            
-            // 如果正在播放，則停止
             if (audioPlayer && !audioPlayer.paused) {
                 audioPlayer.pause();
                 audioPlayer = null;
@@ -285,13 +281,12 @@
             }
 
             const rawContent = document.getElementById('raw-text').innerText;
-            // 移除 Markdown 符號以便語音朗讀更順暢
-            const textToSpeak = rawContent.replace(/[#*`]/g, '');
+            const textToSpeak = rawContent.replace(/[#*`]/g, ''); // 移除 MD 符號
 
             btnText.innerText = "載入語音...";
             
             try {
-                // 呼叫後端 Google TTS API
+                // 呼叫後端 API
                 const response = await fetch(API_URL + "?action=tts", {
                     method: 'POST',
                     body: new URLSearchParams({ 'text': textToSpeak })
