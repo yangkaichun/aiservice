@@ -33,7 +33,7 @@
 </head>
 <body class="text-slate-800 h-screen flex overflow-hidden relative">
 
-    <div class="fixed top-0 right-0 z-50 bg-indigo-600 text-white text-[10px] px-2 py-1 font-mono rounded-bl-lg shadow-md opacity-90 pointer-events-none">v7.0 (Loose Match)</div>
+    <div class="fixed top-0 right-0 z-50 bg-indigo-600 text-white text-[10px] px-2 py-1 font-mono rounded-bl-lg shadow-md opacity-90 pointer-events-none">v8.0 (History Fix)</div>
 
     <div id="debug-toast" class="fixed top-4 left-1/2 transform -translate-x-1/2 z-50 bg-black/80 text-white text-xs p-3 rounded shadow-lg hidden transition-opacity duration-500">
         讀取中...
@@ -116,8 +116,6 @@
 
         document.addEventListener('DOMContentLoaded', () => {
             lucide.createIcons();
-            
-            // 顯示登入者資訊
             if (loggedInSession && loggedInSession.email) {
                 document.getElementById('sidebar-user-name').innerText = loggedInSession.name;
                 if (loggedInSession.picture) {
@@ -153,13 +151,12 @@
                 document.getElementById('loadingState').classList.remove('hidden');
                 document.getElementById('dashboardContent').classList.add('hidden');
                 
-                // 加入時間戳記避免快取
                 const ts = new Date().getTime();
                 
                 // 平行讀取兩份資料
                 const [dataRes, mapRes] = await Promise.all([
-                    fetch(API_URL + `?v=${ts}`), // 讀取 Data
-                    fetch(`${API_URL}?action=getSettings&v=${ts}`) // 讀取 Users (透過 getSettings 接口)
+                    fetch(API_URL + `?v=${ts}`), 
+                    fetch(`${API_URL}?action=getSettings&v=${ts}`)
                 ]);
 
                 if (!dataRes.ok || !mapRes.ok) throw new Error("伺服器回應錯誤");
@@ -175,7 +172,6 @@
                 const myName = loggedInSession.name;
 
                 // 1. 嘗試在 User List 中找到自己
-                // 比對邏輯：Email 相同 OR Name 相同
                 let me = globalUsersMap.find(u => 
                     (u.email && String(u.email).toLowerCase().trim() === myEmail) || 
                     (u.name && u.name === myName)
@@ -190,11 +186,9 @@
                 
                 // 3. 決定要顯示誰的資料
                 if (targetUserUid) {
-                    // 找到自己，顯示自己的
                     selectUser(targetUserUid, null);
-                } else if (myEmail) {
+                } else if (myEmail && allData.length > 0) {
                     // 沒在 Users 表找到自己，但嘗試用 Email 去 Data 表撈孤兒資料
-                    // 這種情況發生在：剛用 Google 登入，還沒被寫入 Users 表，但 Data 表已經有資料
                     const orphanData = allData.filter(d => 
                         String(d.originalId).toLowerCase().trim() === myEmail || 
                         String(d.rawId).toLowerCase().trim() === myEmail
@@ -208,11 +202,10 @@
                         
                         document.getElementById('loadingState').classList.add('hidden');
                         document.getElementById('dashboardContent').classList.remove('hidden');
+                        document.getElementById('dashboardContent').classList.add('animate-fade-in');
                     } else if (globalUsersMap.length > 0) {
-                        // 真的沒資料，預設選列表第一個人
                         selectUser(globalUsersMap[0].uid, null);
                     } else {
-                        // 完全沒資料
                         showEmptyState();
                     }
                 } else if (globalUsersMap.length > 0) {
@@ -231,7 +224,8 @@
             document.getElementById('currentUserName').innerText = "尚無資料";
             document.getElementById('loadingState').classList.add('hidden');
             document.getElementById('dashboardContent').classList.remove('hidden');
-            updateDashboard(); // 會顯示 --
+            currentUserData = []; // 清空
+            updateDashboard(); 
         }
 
         function showToast(msg) {
@@ -273,7 +267,6 @@
         function selectUser(uid, element) {
             const safeUid = String(uid).trim();
             
-            // UI Highlight
             document.querySelectorAll('.user-item').forEach(el => { 
                 el.classList.remove('bg-indigo-50', 'text-indigo-600', 'shadow-sm', 'border-indigo-100'); 
                 el.classList.add('border-transparent'); 
@@ -284,21 +277,17 @@
                 element.classList.remove('border-transparent'); 
             }
             
-            // Find User Object
             const userObj = globalUsersMap.find(u => String(u.uid).trim() === safeUid);
             if (!userObj) return;
 
             let displayTitle = userObj.name || userObj.email || "Unknown User";
             
-            // Build Valid IDs (包含 UID, Email, LineID)
-            // 全部轉小寫、去空白
+            // 建立 Valid IDs (包含 UID, Email, LineID)
             const validIds = [userObj.uid, userObj.email, userObj.lineUserId]
-                .filter(val => val) // remove null/undefined
+                .filter(val => val) 
                 .map(val => String(val).toLowerCase().trim());
             
-            // Filter Data
             currentUserData = allData.filter(d => {
-                // 比對 Data 表中的 rawId (UID) 或 originalId (可能是 Email)
                 const dRaw = String(d.rawId || "").toLowerCase().trim();
                 const dOrig = String(d.originalId || "").toLowerCase().trim();
                 return validIds.includes(dRaw) || validIds.includes(dOrig);
@@ -317,7 +306,6 @@
             
             updateDashboard();
             
-            // Show Content
             document.getElementById('loadingState').classList.add('hidden');
             document.getElementById('dashboardContent').classList.remove('hidden');
             document.getElementById('dashboardContent').classList.add('animate-fade-in');
@@ -330,9 +318,9 @@
             updateDashboard(); 
         }
 
+        // --- 核心渲染邏輯 (修復歷史表格) ---
         function updateDashboard() { 
             if (currentUserData.length === 0) { 
-                // Reset Values
                 ['val-sbp', 'val-dbp', 'val-pulse', 'val-glucose'].forEach(id => document.getElementById(id).innerText = '--');
                 document.getElementById('status-sbp').innerText = '尚無資料'; 
                 document.getElementById('status-glucose').innerText = '尚無資料'; 
@@ -343,7 +331,7 @@
             
             const latest = currentUserData[currentUserData.length - 1]; 
             
-            // [修正] 確保 0 會顯示
+            // 修正數值顯示 (避免 0 變 --)
             const sbp = (latest.sbp !== "" && latest.sbp != null) ? latest.sbp : '--';
             const dbp = (latest.dbp !== "" && latest.dbp != null) ? latest.dbp : '--';
             const pulse = (latest.pulse !== "" && latest.pulse != null) ? latest.pulse : '--';
@@ -354,7 +342,6 @@
             document.getElementById('val-pulse').innerText = pulse; 
             document.getElementById('val-glucose').innerText = glucose; 
 
-            // Status Logic
             if (sbp !== '--' && parseInt(sbp) > 140) {
                 document.getElementById('status-sbp').innerHTML = `<span class="flex items-center gap-1 text-rose-500 font-bold"><i data-lucide="alert-circle" class="w-3 h-3"></i> 偏高</span>`;
             } else if (sbp !== '--') {
@@ -373,27 +360,31 @@
             
             lucide.createIcons(); 
 
-            // Table
+            // History Table (修復邏輯)
             const historyBody = document.getElementById('historyTable'); 
             historyBody.innerHTML = currentUserData.slice(-50).reverse().map(d => { 
-                // 時間格式化 (若後端已給格式化字串則直接用)
                 let timeStr = d.timestamp;
-                if (new Date(d.timestamp).toString() !== 'Invalid Date') {
-                    const dateObj = new Date(d.timestamp);
-                    timeStr = `${dateObj.getMonth()+1}/${dateObj.getDate()} ${String(dateObj.getHours()).padStart(2,'0')}:${String(dateObj.getMinutes()).padStart(2,'0')}`;
+                // 嘗試 parse 時間
+                const dObj = new Date(d.timestamp);
+                if (!isNaN(dObj.getTime())) {
+                    timeStr = `${dObj.getMonth()+1}/${dObj.getDate()} ${String(dObj.getHours()).padStart(2,'0')}:${String(dObj.getMinutes()).padStart(2,'0')}`;
                 }
                 
+                const rSbp = (d.sbp || '-');
+                const rDbp = (d.dbp || '-');
+                const rPulse = (d.pulse || '-');
+                const rGlu = (d.glucose ? `<span class="text-amber-600 font-bold">${d.glucose}</span>` : '<span class="text-slate-300">-</span>');
+
                 return `<tr class="hover:bg-slate-50 transition">
                     <td class="py-3 pl-2 text-slate-500 font-mono text-xs">${timeStr}</td>
                     <td class="py-3 text-right font-medium">
-                        <div class="text-sm"><span class="text-rose-600">${d.sbp || '-'}</span>/<span class="text-blue-600">${d.dbp || '-'}</span></div>
-                        <div class="text-xs text-slate-400">HR: ${d.pulse || '-'}</div>
+                        <div class="text-sm"><span class="text-rose-600">${rSbp}</span>/<span class="text-blue-600">${rDbp}</span></div>
+                        <div class="text-xs text-slate-400">HR: ${rPulse}</div>
                     </td>
-                    <td class="py-3 pr-2 text-right font-medium">${d.glucose ? `<span class="text-amber-600 font-bold">${d.glucose}</span>` : '<span class="text-slate-300">-</span>'}</td>
+                    <td class="py-3 pr-2 text-right font-medium">${rGlu}</td>
                 </tr>`; 
             }).join(''); 
             
-            // Chart Data Filtering
             let chartData = [...currentUserData]; 
             const now = new Date(); 
             if (currentChartRange === '30d') { 
