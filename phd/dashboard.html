@@ -29,11 +29,13 @@
         .animate-fade-in { animation: fadeIn 0.5s ease-out; }
         @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
         .sidebar-transition { transition: transform 0.3s ease-in-out; }
+        /* 針對小螢幕優化表格 */
+        .table-compact td, .table-compact th { padding: 0.5rem 0.25rem; }
     </style>
 </head>
 <body class="text-slate-800 h-screen flex overflow-hidden relative">
 
-    <div class="fixed top-0 right-0 z-50 bg-indigo-600 text-white text-[10px] px-2 py-1 font-mono rounded-bl-lg shadow-md opacity-90 pointer-events-none">v8.0 (History Fix)</div>
+    <div class="fixed top-0 right-0 z-50 bg-indigo-600 text-white text-[10px] px-2 py-1 font-mono rounded-bl-lg shadow-md opacity-90 pointer-events-none">v9.0 (History Fixed)</div>
 
     <div id="debug-toast" class="fixed top-4 left-1/2 transform -translate-x-1/2 z-50 bg-black/80 text-white text-xs p-3 rounded shadow-lg hidden transition-opacity duration-500">
         讀取中...
@@ -80,19 +82,79 @@
         <div class="flex-1 overflow-y-auto p-4 lg:p-8 scroll-smooth">
             <div id="dashboardContent" class="max-w-7xl mx-auto hidden animate-fade-in pb-10">
                 <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 lg:gap-6 mb-6 lg:mb-8">
-                    <div class="glass-card rounded-2xl p-5 relative overflow-hidden group"><div class="absolute right-0 top-0 w-24 h-24 bg-rose-50 rounded-bl-full -mr-4 -mt-4"></div><div class="relative z-10"><div class="flex items-center gap-2 text-rose-500 mb-2"><i data-lucide="heart" class="w-5 h-5"></i><span class="font-semibold text-sm">收縮壓</span></div><div class="flex items-baseline gap-2"><span id="val-sbp" class="text-3xl font-bold text-slate-800">--</span><span class="text-sm text-slate-400">mmHg</span></div><div id="status-sbp" class="mt-2 text-xs font-medium text-slate-500">...</div></div></div>
-                    <div class="glass-card rounded-2xl p-5 relative overflow-hidden group"><div class="absolute right-0 top-0 w-24 h-24 bg-blue-50 rounded-bl-full -mr-4 -mt-4"></div><div class="relative z-10"><div class="flex items-center gap-2 text-blue-500 mb-2"><i data-lucide="activity" class="w-5 h-5"></i><span class="font-semibold text-sm">舒張壓</span></div><div class="flex items-baseline gap-2"><span id="val-dbp" class="text-3xl font-bold text-slate-800">--</span><span class="text-sm text-slate-400">mmHg</span></div><div id="status-dbp" class="mt-2 text-xs font-medium text-slate-500">...</div></div></div>
-                    <div class="glass-card rounded-2xl p-5 relative overflow-hidden group"><div class="absolute right-0 top-0 w-24 h-24 bg-emerald-50 rounded-bl-full -mr-4 -mt-4"></div><div class="relative z-10"><div class="flex items-center gap-2 text-emerald-500 mb-2"><i data-lucide="zap" class="w-5 h-5"></i><span class="font-semibold text-sm">心率</span></div><div class="flex items-baseline gap-2"><span id="val-pulse" class="text-3xl font-bold text-slate-800">--</span><span class="text-sm text-slate-400">BPM</span></div><div class="mt-2 text-xs font-medium text-slate-500">...</div></div></div>
-                    <div class="glass-card rounded-2xl p-5 relative overflow-hidden group"><div class="absolute right-0 top-0 w-24 h-24 bg-amber-50 rounded-bl-full -mr-4 -mt-4"></div><div class="relative z-10"><div class="flex items-center gap-2 text-amber-500 mb-2"><i data-lucide="droplet" class="w-5 h-5"></i><span class="font-semibold text-sm">血糖 (Glucose)</span></div><div class="flex items-baseline gap-2"><span id="val-glucose" class="text-3xl font-bold text-slate-800">--</span><span class="text-sm text-slate-400">mg/dL</span></div><div id="status-glucose" class="mt-2 text-xs font-medium text-slate-500">...</div></div></div>
+                    <div class="glass-card rounded-2xl p-5 relative overflow-hidden group">
+                        <div class="absolute right-0 top-0 w-24 h-24 bg-rose-50 rounded-bl-full -mr-4 -mt-4"></div>
+                        <div class="relative z-10">
+                            <div class="flex items-center gap-2 text-rose-500 mb-2"><i data-lucide="heart" class="w-5 h-5"></i><span class="font-semibold text-sm">收縮壓</span></div>
+                            <div class="flex items-baseline gap-2"><span id="val-sbp" class="text-3xl font-bold text-slate-800">--</span><span class="text-sm text-slate-400">mmHg</span></div>
+                            <div id="status-sbp" class="mt-2 text-xs font-medium text-slate-500">...</div>
+                        </div>
+                    </div>
+                    <div class="glass-card rounded-2xl p-5 relative overflow-hidden group">
+                        <div class="absolute right-0 top-0 w-24 h-24 bg-blue-50 rounded-bl-full -mr-4 -mt-4"></div>
+                        <div class="relative z-10">
+                            <div class="flex items-center gap-2 text-blue-500 mb-2"><i data-lucide="activity" class="w-5 h-5"></i><span class="font-semibold text-sm">舒張壓</span></div>
+                            <div class="flex items-baseline gap-2"><span id="val-dbp" class="text-3xl font-bold text-slate-800">--</span><span class="text-sm text-slate-400">mmHg</span></div>
+                            <div id="status-dbp" class="mt-2 text-xs font-medium text-slate-500">...</div>
+                        </div>
+                    </div>
+                    <div class="glass-card rounded-2xl p-5 relative overflow-hidden group">
+                        <div class="absolute right-0 top-0 w-24 h-24 bg-emerald-50 rounded-bl-full -mr-4 -mt-4"></div>
+                        <div class="relative z-10">
+                            <div class="flex items-center gap-2 text-emerald-500 mb-2"><i data-lucide="zap" class="w-5 h-5"></i><span class="font-semibold text-sm">心率</span></div>
+                            <div class="flex items-baseline gap-2"><span id="val-pulse" class="text-3xl font-bold text-slate-800">--</span><span class="text-sm text-slate-400">BPM</span></div>
+                            <div class="mt-2 text-xs font-medium text-slate-500">...</div>
+                        </div>
+                    </div>
+                    <div class="glass-card rounded-2xl p-5 relative overflow-hidden group">
+                        <div class="absolute right-0 top-0 w-24 h-24 bg-amber-50 rounded-bl-full -mr-4 -mt-4"></div>
+                        <div class="relative z-10">
+                            <div class="flex items-center gap-2 text-amber-500 mb-2"><i data-lucide="droplet" class="w-5 h-5"></i><span class="font-semibold text-sm">血糖 (Glucose)</span></div>
+                            <div class="flex items-baseline gap-2"><span id="val-glucose" class="text-3xl font-bold text-slate-800">--</span><span class="text-sm text-slate-400">mg/dL</span></div>
+                            <div id="status-glucose" class="mt-2 text-xs font-medium text-slate-500">...</div>
+                        </div>
+                    </div>
                 </div>
+
                 <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
                     <div class="lg:col-span-2 space-y-6">
-                        <div class="glass-card rounded-2xl p-5 flex flex-col h-[400px]"><div class="flex flex-wrap justify-between items-center mb-4 gap-2"><h3 class="font-bold text-slate-700 flex items-center gap-2"><i data-lucide="trending-up" class="w-4 h-4 text-indigo-500"></i> 血壓趨勢圖</h3><div class="flex bg-slate-100 p-1 rounded-lg"><button onclick="setChartRange('30d')" id="btn-30d" class="px-3 py-1 text-xs font-bold rounded-md transition bg-white text-indigo-600 shadow-sm range-btn">近30天</button><button onclick="setChartRange('6m')" id="btn-6m" class="px-3 py-1 text-xs font-bold rounded-md transition text-slate-500 hover:bg-white/50 range-btn">近半年</button><button onclick="setChartRange('all')" id="btn-all" class="px-3 py-1 text-xs font-bold rounded-md transition text-slate-500 hover:bg-white/50 range-btn">全部</button></div></div><div class="flex-1 relative w-full h-full min-h-0"><canvas id="mainChart"></canvas></div></div>
-                        <div class="glass-card rounded-2xl p-5 flex flex-col h-[350px]"><div class="mb-4"><h3 class="font-bold text-slate-700 flex items-center gap-2"><i data-lucide="activity" class="w-4 h-4 text-amber-500"></i> 血糖趨勢圖</h3></div><div class="flex-1 relative w-full h-full min-h-0"><canvas id="glucoseChart"></canvas></div></div>
+                        <div class="glass-card rounded-2xl p-5 flex flex-col h-[400px]">
+                            <div class="flex flex-wrap justify-between items-center mb-4 gap-2">
+                                <h3 class="font-bold text-slate-700 flex items-center gap-2"><i data-lucide="trending-up" class="w-4 h-4 text-indigo-500"></i> 血壓趨勢圖</h3>
+                                <div class="flex bg-slate-100 p-1 rounded-lg">
+                                    <button onclick="setChartRange('30d')" id="btn-30d" class="px-3 py-1 text-xs font-bold rounded-md transition bg-white text-indigo-600 shadow-sm range-btn">近30天</button>
+                                    <button onclick="setChartRange('6m')" id="btn-6m" class="px-3 py-1 text-xs font-bold rounded-md transition text-slate-500 hover:bg-white/50 range-btn">近半年</button>
+                                    <button onclick="setChartRange('all')" id="btn-all" class="px-3 py-1 text-xs font-bold rounded-md transition text-slate-500 hover:bg-white/50 range-btn">全部</button>
+                                </div>
+                            </div>
+                            <div class="flex-1 relative w-full h-full min-h-0"><canvas id="mainChart"></canvas></div>
+                        </div>
+                        <div class="glass-card rounded-2xl p-5 flex flex-col h-[350px]">
+                            <div class="mb-4"><h3 class="font-bold text-slate-700 flex items-center gap-2"><i data-lucide="activity" class="w-4 h-4 text-amber-500"></i> 血糖趨勢圖</h3></div>
+                            <div class="flex-1 relative w-full h-full min-h-0"><canvas id="glucoseChart"></canvas></div>
+                        </div>
                     </div>
+
                     <div class="glass-card rounded-2xl p-5 overflow-hidden flex flex-col h-[775px]">
-                        <div class="mb-4"><h3 class="font-bold text-slate-700 mb-3 flex justify-between items-center">歷史紀錄</h3><button onclick="downloadCSV()" class="w-full py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg text-xs font-bold flex items-center justify-center gap-2 transition"><i data-lucide="download" class="w-3 h-3"></i> 下載 CSV 報表</button></div>
-                        <div class="flex-1 overflow-y-auto pr-1"><table class="w-full text-sm text-left"><thead class="text-xs text-slate-400 uppercase border-b border-slate-100 sticky top-0 bg-white/95 backdrop-blur z-10"><tr><th class="py-2 pl-2">時間</th><th class="py-2 text-right">血壓/心跳</th><th class="py-2 text-right pr-2">血糖</th></tr></thead><tbody id="historyTable" class="text-slate-600 divide-y divide-slate-50"></tbody></table></div>
+                        <div class="mb-4">
+                            <h3 class="font-bold text-slate-700 mb-3 flex justify-between items-center">歷史紀錄</h3>
+                            <button onclick="downloadCSV()" class="w-full py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg text-xs font-bold flex items-center justify-center gap-2 transition">
+                                <i data-lucide="download" class="w-3 h-3"></i> 下載 CSV 報表
+                            </button>
+                        </div>
+                        <div class="flex-1 overflow-y-auto pr-1">
+                            <table class="w-full text-sm text-left table-compact">
+                                <thead class="text-xs text-slate-400 uppercase border-b border-slate-100 sticky top-0 bg-white/95 backdrop-blur z-10">
+                                    <tr>
+                                        <th class="py-2 pl-2">時間</th>
+                                        <th class="py-2 text-right">血壓/心跳</th>
+                                        <th class="py-2 text-right pr-2">血糖</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="historyTable" class="text-slate-600 divide-y divide-slate-50">
+                                    </tbody>
+                            </table>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -153,10 +215,9 @@
                 
                 const ts = new Date().getTime();
                 
-                // 平行讀取兩份資料
                 const [dataRes, mapRes] = await Promise.all([
                     fetch(API_URL + `?v=${ts}`), 
-                    fetch(`${API_URL}?action=getSettings&v=${ts}`)
+                    fetch(`${API_URL}?action=getSettings&v=${ts}`) 
                 ]);
 
                 if (!dataRes.ok || !mapRes.ok) throw new Error("伺服器回應錯誤");
@@ -181,14 +242,12 @@
                     targetUserUid = String(me.uid).trim();
                 }
 
-                // 2. 渲染左側列表
                 renderUserList(globalUsersMap, targetUserUid);
                 
-                // 3. 決定要顯示誰的資料
                 if (targetUserUid) {
                     selectUser(targetUserUid, null);
                 } else if (myEmail && allData.length > 0) {
-                    // 沒在 Users 表找到自己，但嘗試用 Email 去 Data 表撈孤兒資料
+                    // 孤兒資料搜尋
                     const orphanData = allData.filter(d => 
                         String(d.originalId).toLowerCase().trim() === myEmail || 
                         String(d.rawId).toLowerCase().trim() === myEmail
@@ -224,8 +283,8 @@
             document.getElementById('currentUserName').innerText = "尚無資料";
             document.getElementById('loadingState').classList.add('hidden');
             document.getElementById('dashboardContent').classList.remove('hidden');
-            currentUserData = []; // 清空
-            updateDashboard(); 
+            currentUserData = [];
+            updateDashboard();
         }
 
         function showToast(msg) {
@@ -282,7 +341,7 @@
 
             let displayTitle = userObj.name || userObj.email || "Unknown User";
             
-            // 建立 Valid IDs (包含 UID, Email, LineID)
+            // 強制寬鬆比對: UID, Email, LineID 只要有一個對上就算
             const validIds = [userObj.uid, userObj.email, userObj.lineUserId]
                 .filter(val => val) 
                 .map(val => String(val).toLowerCase().trim());
@@ -331,7 +390,6 @@
             
             const latest = currentUserData[currentUserData.length - 1]; 
             
-            // 修正數值顯示 (避免 0 變 --)
             const sbp = (latest.sbp !== "" && latest.sbp != null) ? latest.sbp : '--';
             const dbp = (latest.dbp !== "" && latest.dbp != null) ? latest.dbp : '--';
             const pulse = (latest.pulse !== "" && latest.pulse != null) ? latest.pulse : '--';
@@ -360,14 +418,26 @@
             
             lucide.createIcons(); 
 
-            // History Table (修復邏輯)
+            // History Table Render Logic (Simplified)
             const historyBody = document.getElementById('historyTable'); 
-            historyBody.innerHTML = currentUserData.slice(-50).reverse().map(d => { 
+            historyBody.innerHTML = ''; // Clear first
+
+            // Reverse for display, limit to 50
+            const displayData = currentUserData.slice(-50).reverse();
+
+            const rowsHtml = displayData.map(d => { 
+                // Display time string directly (Backend v11 sends safe string)
                 let timeStr = d.timestamp;
-                // 嘗試 parse 時間
-                const dObj = new Date(d.timestamp);
-                if (!isNaN(dObj.getTime())) {
-                    timeStr = `${dObj.getMonth()+1}/${dObj.getDate()} ${String(dObj.getHours()).padStart(2,'0')}:${String(dObj.getMinutes()).padStart(2,'0')}`;
+                
+                // If it looks like ISO string, format it nicely
+                if (timeStr && timeStr.includes('T')) {
+                    const dObj = new Date(timeStr);
+                    if (!isNaN(dObj.getTime())) {
+                        timeStr = `${dObj.getMonth()+1}/${dObj.getDate()} ${String(dObj.getHours()).padStart(2,'0')}:${String(dObj.getMinutes()).padStart(2,'0')}`;
+                    }
+                } else if (timeStr && timeStr.length > 16) {
+                     // e.g. "2025-12-19 09:30:00" -> "12/19 09:30"
+                     timeStr = timeStr.substring(5, 16).replace('-', '/');
                 }
                 
                 const rSbp = (d.sbp || '-');
@@ -375,15 +445,17 @@
                 const rPulse = (d.pulse || '-');
                 const rGlu = (d.glucose ? `<span class="text-amber-600 font-bold">${d.glucose}</span>` : '<span class="text-slate-300">-</span>');
 
-                return `<tr class="hover:bg-slate-50 transition">
-                    <td class="py-3 pl-2 text-slate-500 font-mono text-xs">${timeStr}</td>
+                return `<tr class="hover:bg-slate-50 transition border-b border-slate-50 last:border-0">
+                    <td class="py-3 pl-2 text-slate-500 font-mono text-xs whitespace-nowrap">${timeStr}</td>
                     <td class="py-3 text-right font-medium">
                         <div class="text-sm"><span class="text-rose-600">${rSbp}</span>/<span class="text-blue-600">${rDbp}</span></div>
                         <div class="text-xs text-slate-400">HR: ${rPulse}</div>
                     </td>
                     <td class="py-3 pr-2 text-right font-medium">${rGlu}</td>
                 </tr>`; 
-            }).join(''); 
+            }).join('');
+            
+            historyBody.innerHTML = rowsHtml;
             
             let chartData = [...currentUserData]; 
             const now = new Date(); 
@@ -400,7 +472,7 @@
         function renderChart(data) { 
             const labels = data.map(d => { 
                 const date = new Date(d.timestamp); 
-                return isNaN(date) ? d.timestamp : `${date.getMonth()+1}/${date.getDate()} ${String(date.getHours()).padStart(2,'0')}:${String(date.getMinutes()).padStart(2,'0')}`; 
+                return isNaN(date) ? d.timestamp.substring(5,16) : `${date.getMonth()+1}/${date.getDate()} ${String(date.getHours()).padStart(2,'0')}:${String(date.getMinutes()).padStart(2,'0')}`; 
             }); 
             
             const sbpData = data.map(d => (d.sbp && d.sbp > 0) ? d.sbp : null); 
