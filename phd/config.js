@@ -1,2 +1,2 @@
 // Google Apps Script 部署網址 (Web App URL)
-const API_URL = "https://script.google.com/macros/s/AKfycbyMbbMxePE-9L6KL-6B2fswkLgw2HztaBgjk7SvdiCkIO5yHXf0jGaeYVJ2Hy0FsjBzCw/exec";
+const API_URL = "https://script.google.com/macros/s/AKfycbz-9388oSjXxvkqVUB9P7IhAaDUiNBITXcMxyuYqWY5NAqjIF3G5OPYwwrHnyvDsb2a2Q/exec";
