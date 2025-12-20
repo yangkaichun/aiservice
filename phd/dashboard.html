@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html lang="zh-TW">
 <head>
@@ -83,8 +82,11 @@
 
         <div class="p-4 flex-1 overflow-hidden flex flex-col">
             <h3 class="text-xs font-bold text-slate-400 uppercase tracking-wider mb-3 px-2 flex justify-between items-center">選擇用戶<span id="userCount" class="bg-slate-100 text-slate-500 py-0.5 px-2 rounded-full text-[10px]">0</span></h3>
-            <div id="userList" class="space-y-1 overflow-y-auto flex-1 pr-1"><div class="p-4 text-center text-slate-400 text-sm animate-pulse"><i data-lucide="loader-2" class="w-5 h-5 animate-spin mx-auto mb-2"></i>正在載入數據...</div></div>
+            <div id="userList" class="space-y-1 overflow-y-auto flex-1 pr-1">
+                <div class="p-4 text-center text-slate-400 text-sm animate-pulse"><i data-lucide="loader-2" class="w-5 h-5 animate-spin mx-auto mb-2"></i>正在載入數據...</div>
+            </div>
         </div>
+
         <div class="mt-auto p-4 border-t border-slate-100 bg-slate-50">
             <button onclick="getAIAnalysis()" class="w-full py-3 px-4 btn-gemini rounded-xl text-sm font-bold transition flex items-center justify-center gap-2 mb-3 shadow-md group"><i data-lucide="sparkles" class="w-4 h-4 group-hover:scale-110 transition-transform"></i>AI 分析 (Gemini)</button>
             <a href="setting.html" class="w-full py-2.5 px-4 bg-white border border-slate-200 hover:bg-slate-100 text-slate-500 hover:text-slate-800 rounded-lg text-sm font-medium transition flex items-center justify-center gap-2 mb-2 shadow-sm group"><i data-lucide="settings-2" class="w-4 h-4 group-hover:rotate-90 transition-transform duration-500"></i> 管理者後台</a>
@@ -175,7 +177,31 @@
             } catch (error) { console.error(error); document.getElementById('loadingState').innerHTML = `<div class="text-center text-rose-500"><p>讀取失敗</p><p class="text-xs">${error.message}</p></div>`; }
         }
 
-        function renderUserList(data, targetUser) { const users = [...new Set(data.map(item => item.name).filter(n => n))].sort(); const listContainer = document.getElementById('userList'); document.getElementById('userCount').innerText = users.length; listContainer.innerHTML = ''; if (users.length === 0) { listContainer.innerHTML = '<div class="p-4 text-center text-sm text-slate-400">目前無其他用戶數據</div>'; } users.forEach((user, index) => { const div = document.createElement('div'); const avatarText = user.length > 0 ? user.charAt(0).toUpperCase() : '?'; div.id = `user-item-${user}`; div.className = `p-3 rounded-xl cursor-pointer hover:bg-indigo-50 hover:text-indigo-600 transition flex items-center gap-3 text-slate-600 font-medium group user-item border border-transparent`; div.innerHTML = `<div class="w-8 h-8 rounded-full bg-slate-100 text-slate-500 flex items-center justify-center text-xs font-bold shrink-0">${avatarText}</div><span class="truncate">${user}</span>`; div.onclick = () => { selectUser(user, div); if (window.innerWidth < 1024) toggleSidebar(); }; if (index === 0 && !targetUser) { selectUser(user, div); } listContainer.appendChild(div); }); document.getElementById('loadingState').classList.add('hidden'); document.getElementById('dashboardContent').classList.remove('hidden'); document.getElementById('dashboardContent').classList.add('animate-fade-in'); }
+        function renderUserList(data, targetUser) { 
+            // 這裡確保左側欄位顯示的是 user name (item.name)
+            const users = [...new Set(data.map(item => item.name).filter(n => n))].sort(); 
+            const listContainer = document.getElementById('userList'); 
+            document.getElementById('userCount').innerText = users.length; 
+            listContainer.innerHTML = ''; 
+            if (users.length === 0) { listContainer.innerHTML = '<div class="p-4 text-center text-sm text-slate-400">目前無其他用戶數據</div>'; } 
+            
+            users.forEach((user, index) => { 
+                const div = document.createElement('div'); 
+                const avatarText = user.length > 0 ? user.charAt(0).toUpperCase() : '?'; 
+                div.id = `user-item-${user}`; 
+                div.className = `p-3 rounded-xl cursor-pointer hover:bg-indigo-50 hover:text-indigo-600 transition flex items-center gap-3 text-slate-600 font-medium group user-item border border-transparent`; 
+                // 顯示使用者姓名 (user)
+                div.innerHTML = `<div class="w-8 h-8 rounded-full bg-slate-100 text-slate-500 flex items-center justify-center text-xs font-bold shrink-0">${avatarText}</div><span class="truncate">${user}</span>`; 
+                div.onclick = () => { selectUser(user, div); if (window.innerWidth < 1024) toggleSidebar(); }; 
+                if (index === 0 && !targetUser) { selectUser(user, div); } 
+                listContainer.appendChild(div); 
+            }); 
+            
+            document.getElementById('loadingState').classList.add('hidden'); 
+            document.getElementById('dashboardContent').classList.remove('hidden'); 
+            document.getElementById('dashboardContent').classList.add('animate-fade-in'); 
+        }
+
         function selectUser(userName, element) { document.querySelectorAll('.user-item').forEach(el => { el.classList.remove('bg-indigo-50', 'text-indigo-600', 'shadow-sm', 'border-indigo-100'); el.classList.add('border-transparent'); }); if (!element) { element = document.getElementById(`user-item-${userName}`); } if (element) { element.classList.add('bg-indigo-50', 'text-indigo-600', 'shadow-sm', 'border-indigo-100'); element.classList.remove('border-transparent'); } let displayTitle = userName; currentUserData = allData.filter(d => d.name === userName); currentUserData.sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp)); const firstRecord = currentUserData.length > 0 ? currentUserData[0] : null; if (firstRecord && firstRecord.birthday) { const bDate = new Date(firstRecord.birthday); if (!isNaN(bDate.getTime())) { const rocYear = bDate.getFullYear() - 1911; displayTitle += ` (民國${rocYear}年${bDate.getMonth() + 1}月${bDate.getDate()}日)`; } } document.getElementById('currentUserName').innerText = displayTitle; updateDashboard(); }
         function setChartRange(range) { currentChartRange = range; document.querySelectorAll('.range-btn').forEach(btn => btn.className = "px-3 py-1 text-xs font-bold rounded-md transition text-slate-500 hover:bg-white/50 range-btn"); document.getElementById(`btn-${range}`).className = "px-3 py-1 text-xs font-bold rounded-md transition bg-white text-indigo-600 shadow-sm range-btn"; updateDashboard(); }
         function updateDashboard() { if (currentUserData.length === 0) { document.getElementById('val-sbp').innerText = '--'; document.getElementById('val-dbp').innerText = '--'; document.getElementById('val-pulse').innerText = '--'; document.getElementById('val-glucose').innerText = '--'; document.getElementById('status-sbp').innerText = '尚無資料'; document.getElementById('status-glucose').innerText = '尚無資料'; document.getElementById('historyTable').innerHTML = '<tr><td colspan="3" class="p-4 text-center text-slate-400 text-sm">目前沒有測量紀錄</td></tr>'; renderChart([]); return; } const latest = currentUserData[currentUserData.length - 1]; document.getElementById('val-sbp').innerText = latest.sbp || '--'; document.getElementById('val-dbp').innerText = latest.dbp || '--'; document.getElementById('val-pulse').innerText = latest.pulse || '--'; document.getElementById('val-glucose').innerText = latest.glucose || '--'; document.getElementById('status-sbp').innerHTML = latest.sbp > 140 ? `<span class="flex items-center gap-1 text-rose-500 font-bold"><i data-lucide="alert-circle" class="w-3 h-3"></i> 偏高</span>` : `<span class="flex items-center gap-1 text-emerald-500 font-bold"><i data-lucide="check" class="w-3 h-3"></i> 正常</span>`; const statusGlu = document.getElementById('status-glucose'); if(latest.glucose && latest.glucose > 100) statusGlu.innerText = "注意數值"; else if (latest.glucose) statusGlu.innerText = "數值穩定"; else statusGlu.innerText = "無資料"; lucide.createIcons(); const historyBody = document.getElementById('historyTable'); historyBody.innerHTML = currentUserData.slice(-50).reverse().map(d => { const dateObj = new Date(d.timestamp); const timeStr = isNaN(dateObj) ? d.timestamp : `${dateObj.getMonth()+1}/${dateObj.getDate()} ${String(dateObj.getHours()).padStart(2,'0')}:${String(dateObj.getMinutes()).padStart(2,'0')}`; return `<tr class="hover:bg-slate-50 transition"><td class="py-3 pl-2 text-slate-500 font-mono text-xs">${timeStr}</td><td class="py-3 text-right font-medium"><div class="text-sm"><span class="text-rose-600">${d.sbp || '-'}</span>/<span class="text-blue-600">${d.dbp || '-'}</span></div><div class="text-xs text-slate-400">HR: ${d.pulse || '-'}</div></td><td class="py-3 pr-2 text-right font-medium">${d.glucose ? `<span class="text-amber-600 font-bold">${d.glucose}</span>` : '<span class="text-slate-300">-</span>'}</td></tr>`; }).join(''); let chartData = [...currentUserData]; const now = new Date(); if (currentChartRange === '30d') { const d = new Date(); d.setDate(now.getDate() - 30); chartData = chartData.filter(x => new Date(x.timestamp) >= d); } else if (currentChartRange === '6m') { const d = new Date(); d.setMonth(now.getMonth() - 6); chartData = chartData.filter(x => new Date(x.timestamp) >= d); } renderChart(chartData); }
