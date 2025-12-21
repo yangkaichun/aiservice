@@ -132,7 +132,7 @@
     </main>
 
     <script>
-        const API_URL = 'https://script.google.com/macros/s/AKfycbw4-F5ARyj72bPehh4GLqCqZCfd5NY_xf1ZiU3mY4NO7m7IuXIeACRYeAeHzlAB7bqV3g/exec'; 
+        const API_URL = 'https://script.google.com/macros/s/AKfycbzX0k_hP6poVZAxty89nQ6yJyuhNHw4M713G2IQolRPDQnNLFd_By3xqgfpQRtytOQT4A/exec'; 
         let allData = []; let currentUserData = []; let bpChartInstance = null; let glucoseChartInstance = null; let currentChartRange = '30d'; 
         const loggedInSession = JSON.parse(localStorage.getItem('healthTwinSession'));
         let audioPlayer = null; 
@@ -265,11 +265,9 @@
             } 
         }
 
-       // 語音播放功能 (使用 Google Cloud TTS)
+        // 語音播放功能 (使用 Google Cloud TTS)
         async function toggleSpeech() { 
             const btnText = document.getElementById('btn-tts-text'); 
-            
-            // 狀態 1: 正在播放中 -> 停止
             if (audioPlayer && !audioPlayer.paused) {
                 audioPlayer.pause();
                 audioPlayer = null;
@@ -277,30 +275,18 @@
                 return;
             }
 
-            // 狀態 2: 準備播放
             const rawContent = document.getElementById('raw-text').innerText;
-            // 移除 Markdown 符號以獲得乾淨的朗讀文本
+            // 移除 Markdown 符號
             const textToSpeak = rawContent.replace(/[#*`]/g, '');
-
-            if (!textToSpeak) {
-                alert("沒有可播放的文字內容");
-                return;
-            }
 
             btnText.innerText = "載入語音...";
             
             try {
-                // 修改重點：使用 POST 並傳送 JSON Body
-                const response = await fetch(API_URL, {
+                // 呼叫後端 API
+                const response = await fetch(API_URL + "?action=tts", {
                     method: 'POST',
-                    // Google Apps Script 的 doPost 需要 text/plain 或 application/json，但最重要的是 body 內容是 JSON 字串
-                    headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-                    body: JSON.stringify({
-                        action: 'tts',
-                        text: textToSpeak
-                    })
+                    body: new URLSearchParams({ 'text': textToSpeak })
                 });
-                
                 const data = await response.json();
 
                 if (data.audioContent) {
@@ -314,8 +300,7 @@
                         audioPlayer = null;
                     };
                 } else {
-                    console.error("TTS API Error:", data);
-                    alert("語音合成失敗: " + (data.error || "API Key 可能無效或未開啟 TTS 權限"));
+                    alert("語音合成失敗: " + (data.error || "未知錯誤"));
                     btnText.innerText = "語音播放";
                 }
             } catch (e) {
