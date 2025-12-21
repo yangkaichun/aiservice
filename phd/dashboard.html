@@ -8,6 +8,9 @@
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap" rel="stylesheet">
     <script src="https://unpkg.com/lucide@latest"></script>
+    
+    <script src="config.js"></script>
+    
     <style>body { font-family: 'Inter', sans-serif; background-color: #F8FAFC; }</style>
 </head>
 <body class="flex h-screen overflow-hidden">
@@ -95,15 +98,15 @@
 
     <script>
         lucide.createIcons();
-        const API_URL = "https://script.google.com/macros/s/AKfycbzQpB9tT-M0Fh.../exec"; // Replace with your URL
+        // API_URL from config.js
         
         let allData = [];
         let allUsers = [];
         let bpChart = null;
 
         async function init() {
-            await fetchUsers(); // 先抓使用者設定
-            fetchData();        // 再抓數據
+            await fetchUsers(); 
+            fetchData();
         }
 
         async function fetchUsers() {
@@ -119,10 +122,15 @@
 
         async function fetchData() {
             try {
-                const res = await fetch(API_URL); // Action default gets data
+                // 修改 action，確保對應到後端 handleGetAllData
+                const res = await fetch(API_URL + "?action=getAllData"); 
                 allData = await res.json();
-                // Default pick first user from list or data
-                if (allUsers.length > 0) selectUser(allUsers[0].name || allUsers[0].email);
+                
+                if (allUsers.length > 0) {
+                     // 優先使用名字顯示
+                     const defaultName = allUsers[0].name || allUsers[0].email;
+                     selectUser(defaultName);
+                }
             } catch (e) { console.error("Fetch data error", e); }
         }
 
@@ -131,7 +139,6 @@
             container.innerHTML = '';
             
             users.forEach(user => {
-                // 邏輯: 顯示 Name (C欄)，若 Name 為空才顯示 Email (B欄)
                 const displayName = user.name ? user.name : user.email;
                 
                 const div = document.createElement('div');
@@ -148,7 +155,6 @@
         }
 
         function selectUser(identifier) {
-            // Filter data by Name (which we stored in the data feed)
             const userData = allData.filter(d => d.name === identifier);
             
             document.getElementById('current-user-name').innerText = identifier;
@@ -172,7 +178,6 @@
         function renderTable(data) {
             const tbody = document.getElementById('data-table-body');
             tbody.innerHTML = '';
-            // Show last 10 records reverse
             const recent = data.slice(-20).reverse();
             recent.forEach(row => {
                 const tr = document.createElement('tr');
@@ -190,8 +195,6 @@
         function renderChart(data) {
             const ctx = document.getElementById('bpChart').getContext('2d');
             if (bpChart) bpChart.destroy();
-            
-            // Limit to last 15 points
             const chartData = data.slice(-15);
 
             bpChart = new Chart(ctx, {
