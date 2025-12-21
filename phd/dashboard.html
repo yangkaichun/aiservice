@@ -131,8 +131,9 @@
         </div>
     </main>
 
+    <script src="config.js"></script>
+
     <script>
-        const API_URL = 'https://script.google.com/macros/s/AKfycbzX0k_hP6poVZAxty89nQ6yJyuhNHw4M713G2IQolRPDQnNLFd_By3xqgfpQRtytOQT4A/exec'; 
         let allData = []; let currentUserData = []; let bpChartInstance = null; let glucoseChartInstance = null; let currentChartRange = '30d'; 
         const loggedInSession = JSON.parse(localStorage.getItem('healthTwinSession'));
         let audioPlayer = null; 
@@ -155,6 +156,7 @@
         async function fetchData() {
             try {
                 document.getElementById('loadingState').classList.remove('hidden'); document.getElementById('dashboardContent').classList.add('hidden');
+                // 使用 API_URL 變數 (來自 config.js)
                 const [dataRes, mapRes] = await Promise.all([ fetch(API_URL), fetch(`${API_URL}?action=getSettings`) ]);
                 if (!dataRes.ok || !mapRes.ok) throw new Error("伺服器回應錯誤");
                 const json = await dataRes.json(); const usersMap = await mapRes.json();
@@ -174,10 +176,8 @@
         }
 
         function renderUserList(data, targetUser) { 
-            // 修改：確保優先抓取 name 欄位，並過濾掉空值
             const uniqueUsers = [];
             const seen = new Set();
-            
             data.forEach(item => {
                 const displayName = item.name ? item.name : item.rawId;
                 if (displayName && !seen.has(displayName)) {
@@ -186,7 +186,6 @@
                 }
             });
             uniqueUsers.sort();
-
             const listContainer = document.getElementById('userList'); 
             document.getElementById('userCount').innerText = uniqueUsers.length; 
             listContainer.innerHTML = ''; 
@@ -203,7 +202,6 @@
                 else if (targetUser && (user === targetUser)) { selectUser(user, div); }
                 listContainer.appendChild(div); 
             }); 
-            
             document.getElementById('loadingState').classList.add('hidden'); 
             document.getElementById('dashboardContent').classList.remove('hidden'); 
             document.getElementById('dashboardContent').classList.add('animate-fade-in'); 
@@ -215,7 +213,6 @@
             if (element) { element.classList.add('bg-indigo-50', 'text-indigo-600', 'shadow-sm', 'border-indigo-100'); element.classList.remove('border-transparent'); } 
             
             let displayTitle = userName; 
-            // 修正篩選邏輯：同時檢查 name, rawId, originalId 以確保數據完整
             currentUserData = allData.filter(d => d.name === userName || d.rawId === userName || d.originalId === userName); 
             currentUserData.sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp)); 
             
@@ -265,7 +262,7 @@
             } 
         }
 
-        // 語音播放功能 (使用 Google Cloud TTS)
+        // 語音播放功能 (修正：改用 JSON 格式 POST，匹配 Google Apps Script doPost 要求)
         async function toggleSpeech() { 
             const btnText = document.getElementById('btn-tts-text'); 
             if (audioPlayer && !audioPlayer.paused) {
@@ -276,16 +273,20 @@
             }
 
             const rawContent = document.getElementById('raw-text').innerText;
-            // 移除 Markdown 符號
             const textToSpeak = rawContent.replace(/[#*`]/g, '');
 
             btnText.innerText = "載入語音...";
             
             try {
-                // 呼叫後端 API
-                const response = await fetch(API_URL + "?action=tts", {
+                // 修改處：傳送 JSON 字串，而非 URLSearchParams
+                const response = await fetch(API_URL, {
                     method: 'POST',
-                    body: new URLSearchParams({ 'text': textToSpeak })
+                    // text/plain 可避免某些 GAS 跨域預檢問題，但內容必須是 JSON 字串
+                    headers: { "Content-Type": "text/plain;charset=utf-8" }, 
+                    body: JSON.stringify({ 
+                        'action': 'tts',
+                        'text': textToSpeak 
+                    })
                 });
                 const data = await response.json();
 
