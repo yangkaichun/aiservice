@@ -9,90 +9,210 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap" rel="stylesheet">
     <script src="https://unpkg.com/lucide@latest"></script>
-    
-    <script src="config.js"></script>
 
     <style>
         body { font-family: 'Inter', sans-serif; background-color: #F8FAFC; }
+        .glass-card { background: rgba(255, 255, 255, 0.95); backdrop-filter: blur(10px); border: 1px solid rgba(255, 255, 255, 0.5); box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05); }
+        .animate-fade-in { animation: fadeIn 0.5s ease-out; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
     </style>
-</head>
-<body class="p-6 md:p-10">
 
-    <div class="max-w-6xl mx-auto">
-        <div class="flex justify-between items-center mb-8">
-            <h1 class="text-2xl font-bold text-slate-800 flex items-center gap-2">
-                <i data-lucide="settings" class="text-blue-600"></i>
-                系統設定 (User Management)
-            </h1>
-            <a href="index.html" class="text-slate-500 hover:text-blue-600 text-sm">返回首頁</a>
+    <script>
+        const savedSession = localStorage.getItem('healthTwinSession');
+        if (!savedSession) {
+            window.location.href = 'index.html';
+        }
+    </script>
+</head>
+<body class="text-slate-800 min-h-screen flex flex-col">
+
+    <header class="h-16 bg-white/80 backdrop-blur-md border-b border-slate-200 flex justify-between items-center px-4 lg:px-8 sticky top-0 z-20">
+        <div class="flex items-center gap-2">
+            <a href="dashboard.html" class="p-2 -ml-2 text-slate-500 hover:bg-slate-100 rounded-lg transition">
+                <i data-lucide="arrow-left" class="w-5 h-5"></i>
+            </a>
+            <h1 class="font-bold text-lg text-slate-800">管理者後台</h1>
+        </div>
+        <div class="flex items-center gap-3">
+            <span class="text-xs text-slate-400 hidden sm:inline">YangHome Health System</span>
+            <div class="w-8 h-8 bg-indigo-100 text-indigo-600 rounded-full flex items-center justify-center font-bold text-sm">A</div>
+        </div>
+    </header>
+
+    <main class="flex-1 p-4 lg:p-8 max-w-7xl mx-auto w-full">
+        <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
+            <div>
+                <h2 class="text-2xl font-bold text-slate-800">用戶名單管理</h2>
+                <p class="text-slate-500 text-sm mt-1">管理系統內的所有註冊用戶資料</p>
+            </div>
+            <button onclick="fetchSettings()" class="px-4 py-2 bg-white border border-slate-200 hover:bg-slate-50 text-slate-600 rounded-lg text-sm font-medium transition shadow-sm flex items-center gap-2">
+                <i data-lucide="refresh-cw" class="w-4 h-4"></i> 重整列表
+            </button>
         </div>
 
-        <div class="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
-            <div class="px-6 py-4 border-b border-slate-100 bg-slate-50/50 flex justify-between items-center">
-                <h3 class="font-bold text-slate-700">使用者列表</h3>
-                <button onclick="fetchSettings()" class="text-xs text-blue-600 hover:underline">重新整理</button>
-            </div>
+        <div class="glass-card rounded-2xl overflow-hidden flex flex-col shadow-lg">
             <div class="overflow-x-auto">
-                <table class="w-full text-left text-sm">
-                    <thead class="bg-slate-50 text-slate-500 border-b border-slate-200">
+                <table class="w-full text-sm text-left">
+                    <thead class="bg-slate-50 text-slate-500 font-medium border-b border-slate-200">
                         <tr>
-                            <th class="px-6 py-3 font-medium">UID (Col A)</th>
-                            <th class="px-6 py-3 font-medium">姓名 (Col C)</th>
-                            <th class="px-6 py-3 font-medium">電子信箱 (Col B)</th>
-                            <th class="px-6 py-3 font-medium">Line User ID (Col G)</th>
+                            <th class="py-3 px-4 w-12">#</th>
+                            <th class="py-3 px-4 w-32">UID</th>
+                            <th class="py-3 px-4">姓名 (Name)</th>
+                            <th class="py-3 px-4">電子信箱 (Email)</th>
+                            <th class="py-3 px-4">生日 (Birthday)</th>
+                            <th class="py-3 px-4">Line User ID</th>
+                            <th class="py-3 px-4 w-24 text-center">操作</th>
                         </tr>
                     </thead>
-                    <tbody id="user-table-body" class="divide-y divide-slate-100 text-slate-700">
+                    <tbody id="userTableBody" class="divide-y divide-slate-100 text-slate-600">
                         <tr>
-                            <td colspan="4" class="px-6 py-8 text-center text-slate-400">載入中...</td>
+                            <td colspan="7" class="p-8 text-center text-slate-400">
+                                <div class="flex flex-col items-center justify-center gap-2">
+                                    <i data-lucide="loader-2" class="w-6 h-6 animate-spin text-indigo-500"></i>
+                                    <span>讀取資料中...</span>
+                                </div>
+                            </td>
                         </tr>
                     </tbody>
                 </table>
             </div>
+            <div class="p-4 border-t border-slate-100 bg-slate-50 text-xs text-slate-400 flex justify-between items-center">
+                <span id="totalUsers">總用戶數: 0</span>
+                <span>Data Source: Google Sheets (Users)</span>
+            </div>
+        </div>
+    </main>
+
+    <div id="editModal" class="fixed inset-0 bg-black/50 z-50 hidden justify-center items-center p-4 backdrop-blur-sm animate-fade-in">
+        <div class="bg-white w-full max-w-md rounded-2xl shadow-2xl p-6 relative">
+            <h3 class="text-lg font-bold text-slate-800 mb-4 flex items-center gap-2">
+                <i data-lucide="user-cog" class="w-5 h-5 text-indigo-500"></i> 編輯用戶資料
+            </h3>
+            <form id="editForm" onsubmit="handleSave(event)" class="space-y-4">
+                <input type="hidden" id="edit-email">
+                <div>
+                    <label class="block text-xs font-bold text-slate-500 mb-1 uppercase">姓名 (Name)</label>
+                    <input type="text" id="edit-name" required class="w-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 text-slate-700 focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition">
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-slate-500 mb-1 uppercase">生日 (Birthday)</label>
+                    <input type="date" id="edit-birthday" class="w-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 text-slate-700 focus:outline-none focus:border-indigo-500 transition">
+                </div>
+                <div class="pt-2 flex justify-end gap-3">
+                    <button type="button" onclick="closeModal()" class="px-4 py-2 text-slate-500 hover:bg-slate-100 rounded-lg text-sm font-medium transition">取消</button>
+                    <button type="submit" id="btn-save" class="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg text-sm font-medium shadow-md transition flex items-center gap-2">
+                        <span>儲存變更</span>
+                    </button>
+                </div>
+            </form>
         </div>
     </div>
 
     <script>
-        lucide.createIcons();
-        
-        // ★★★ 防呆機制 ★★★
-        if (typeof API_URL === 'undefined') {
-            var API_URL = "https://script.google.com/macros/s/AKfycbz9xHPD8n9xVTifQSc1_e46nu9BzQUKHN3SMz2r-zjtbFL7aGaLeb9E7BuBby6QGy6AXw/exec";
-        }
+        const API_URL = 'https://script.google.com/macros/s/AKfycbzX0k_hP6poVZAxty89nQ6yJyuhNHw4M713G2IQolRPDQnNLFd_By3xqgfpQRtytOQT4A/exec';
+
+        document.addEventListener('DOMContentLoaded', () => {
+            lucide.createIcons();
+            fetchSettings();
+        });
 
         async function fetchSettings() {
+            const tbody = document.getElementById('userTableBody');
             try {
-                const res = await fetch(API_URL + "?action=getSettings");
-                const json = await res.json();
-                if (json.status === 'success') {
-                    renderTable(json.users);
-                } else {
-                    alert("無法載入資料");
+                const response = await fetch(`${API_URL}?action=getSettings`);
+                const data = await response.json();
+                tbody.innerHTML = '';
+                
+                if (data.length === 0) {
+                    tbody.innerHTML = '<tr><td colspan="7" class="p-6 text-center text-slate-400">目前無用戶資料</td></tr>';
+                    return;
                 }
-            } catch (e) {
-                console.error(e);
-                document.getElementById('user-table-body').innerHTML = `<tr><td colspan="4" class="text-center py-4 text-red-500">載入失敗</td></tr>`;
+                document.getElementById('totalUsers').innerText = `總用戶數: ${data.length}`;
+
+                data.forEach((user, index) => {
+                    const row = document.createElement('tr');
+                    row.className = 'hover:bg-indigo-50/50 transition group';
+                    
+                    const displayName = user.name || '<span class="text-slate-400 italic">未設定</span>';
+                    const displayBirth = user.birthday || '<span class="text-slate-300">-</span>';
+                    const displayLine = user.lineUserId ? `<span class="font-mono text-xs bg-green-50 text-green-600 px-2 py-1 rounded border border-green-100 truncate max-w-[100px] inline-block" title="${user.lineUserId}">已綁定</span>` : '<span class="text-slate-300 text-xs">未綁定</span>';
+
+                    row.innerHTML = `
+                        <td class="py-3 px-4 text-slate-400 font-mono text-xs">${index + 1}</td>
+                        <td class="py-3 px-4 font-mono text-xs text-slate-500 select-all">${user.uid}</td>
+                        <td class="py-3 px-4 font-bold text-slate-700">${displayName}</td>
+                        <td class="py-3 px-4 text-slate-600 text-sm">${user.email}</td>
+                        <td class="py-3 px-4 text-slate-500 text-sm">${displayBirth}</td>
+                        <td class="py-3 px-4">${displayLine}</td>
+                        <td class="py-3 px-4 text-center">
+                            <button onclick='openEditModal(${JSON.stringify(user)})' class="p-2 text-indigo-600 hover:bg-indigo-100 rounded-lg transition" title="編輯用戶">
+                                <i data-lucide="edit-2" class="w-4 h-4"></i>
+                            </button>
+                        </td>
+                    `;
+                    tbody.appendChild(row);
+                });
+                lucide.createIcons();
+            } catch (error) {
+                console.error(error);
+                tbody.innerHTML = `<tr><td colspan="7" class="p-6 text-center text-rose-500">讀取失敗：${error.message}</td></tr>`;
             }
         }
 
-        function renderTable(users) {
-            const tbody = document.getElementById('user-table-body');
-            tbody.innerHTML = '';
+        function openEditModal(user) {
+            document.getElementById('edit-email').value = user.email;
+            document.getElementById('edit-name').value = user.name || '';
+            if (user.birthday && user.birthday !== '-') {
+                let d = new Date(user.birthday);
+                if (!isNaN(d.getTime())) document.getElementById('edit-birthday').value = d.toISOString().split('T')[0];
+                else document.getElementById('edit-birthday').value = '';
+            } else document.getElementById('edit-birthday').value = '';
             
-            users.forEach(u => {
-                const tr = document.createElement('tr');
-                tr.className = "hover:bg-slate-50 transition-colors";
-                tr.innerHTML = `
-                    <td class="px-6 py-4 font-mono text-xs text-slate-500">${u.uid || '-'}</td>
-                    <td class="px-6 py-4 font-medium text-slate-800">${u.name || '-'}</td>
-                    <td class="px-6 py-4 text-slate-600">${u.email || '-'}</td>
-                    <td class="px-6 py-4 font-mono text-xs text-slate-400 break-all">${u.lineUserId || '<span class="text-slate-300">未綁定</span>'}</td>
-                `;
-                tbody.appendChild(tr);
-            });
+            const modal = document.getElementById('editModal');
+            modal.classList.remove('hidden');
+            modal.classList.add('flex');
         }
 
-        fetchSettings();
+        function closeModal() {
+            document.getElementById('editModal').classList.add('hidden');
+            document.getElementById('editModal').classList.remove('flex');
+        }
+
+        async function handleSave(e) {
+            e.preventDefault();
+            const btn = document.getElementById('btn-save');
+            const originalText = btn.innerHTML;
+            btn.disabled = true;
+            btn.innerHTML = `<i data-lucide="loader-2" class="w-4 h-4 animate-spin"></i> 儲存中...`;
+            lucide.createIcons();
+
+            const payload = {
+                action: 'updateProfile',
+                token: 'mock-token',
+                userEmail: document.getElementById('edit-email').value,
+                userName: document.getElementById('edit-name').value,
+                userBirthday: document.getElementById('edit-birthday').value
+            };
+            try {
+                await fetch(API_URL, {
+                    method: 'POST',
+                    mode: 'no-cors',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+                setTimeout(() => {
+                    alert("更新請求已送出");
+                    closeModal();
+                    fetchSettings();
+                    btn.disabled = false;
+                    btn.innerHTML = originalText;
+                }, 1000);
+            } catch (error) {
+                alert("更新失敗: " + error.message);
+                btn.disabled = false;
+                btn.innerHTML = originalText;
+            }
+        }
     </script>
 </body>
 </html>
