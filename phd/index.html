@@ -11,6 +11,8 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <script src="https://unpkg.com/lucide@latest"></script>
     <script src="https://accounts.google.com/gsi/client" async defer></script>
+    
+    <script src="config.js"></script>
 
     <style>
         body { font-family: 'Inter', sans-serif; background-color: #F8FAFC; }
@@ -117,23 +119,18 @@
 
     <script>
         lucide.createIcons();
-        const API_URL = "https://script.google.com/macros/s/AKfycbzQpB9tT-M0Fh.../exec"; // ★請替換您的 URL★
+        // API_URL 已在 config.js 定義，此處直接使用
         
         let currentUser = null;
-
-        // 從 URL 檢查是否有 LINE 回傳的 code
         const urlParams = new URLSearchParams(window.location.search);
         const lineCode = urlParams.get('code');
 
         window.onload = function() {
             const savedUser = localStorage.getItem('healthUser');
-            
             if (savedUser) {
-                // 已登入
                 currentUser = JSON.parse(savedUser);
                 showInputView();
             } else if (lineCode) {
-                // LINE 登入回調
                 handleLineLoginCallback(lineCode);
             }
         };
@@ -152,14 +149,11 @@
         }
 
         function lineLogin() {
-            // LINE 登入參數
             const channelId = '2008700923'; 
-            // 必須是 Web App 的 URL
+            // 動態抓取當前網址作為 Redirect URI
             const redirectUri = encodeURIComponent(window.location.href.split('?')[0]); 
             const state = 'login_' + Date.now();
-            
             const lineAuthUrl = `https://access.line.me/oauth2/v2.1/authorize?response_type=code&client_id=${channelId}&redirect_uri=${redirectUri}&state=${state}&scope=profile%20openid%20email`;
-            
             window.location.href = lineAuthUrl;
         }
 
@@ -176,26 +170,20 @@
 
         async function performLogin(payload) {
             try {
-                // 注意：no-cors 模式下無法讀取回應，但會執行後端邏輯
-                // 為求最佳體驗，若後端回應 JSON，需將 Apps Script 權限設為 "Anyone"
-                // 這裡採用簡易做法：Google 登入直接以前端資料為主，LINE 則提示成功
-                
                 if(payload.provider === 'google') {
                     currentUser = { email: payload.email, name: payload.name };
                     localStorage.setItem('healthUser', JSON.stringify(currentUser));
                     
-                    // 背景送出登入紀錄給後端 (註冊用)
+                    // 背景送出資料給後端
                     fetch(API_URL, {
                         method: 'POST',
                         mode: 'no-cors',
                         headers: {'Content-Type': 'application/json'},
                         body: JSON.stringify(payload)
                     });
-                    
                     showInputView();
                 } else {
-                    // LINE 需要等待後端驗證，建議使用 cors 模式
-                    // 這裡先送出請求
+                    // LINE Login
                     await fetch(API_URL, {
                         method: 'POST',
                         mode: 'no-cors',
@@ -203,12 +191,8 @@
                         body: JSON.stringify(payload)
                     });
                     
-                    // 假設成功 (因為無法讀取 no-cors 回應)
-                    // 實際上應該在後端回傳 HTML Set-Cookie 或 JSONP
-                    // 這裡做一個簡單提示
                     alert("LINE 登入請求已發送，請檢查是否已自動登入。若失敗請重新整理。");
-                    // 為了流程順暢，暫時模擬成功 (實務上應使用 Google 登入較穩定)
-                    window.location.href = window.location.pathname; // 清除 code 參數
+                    window.location.href = window.location.pathname; 
                 }
             } catch (e) {
                 console.error(e);
@@ -233,7 +217,7 @@
 
         function logout() {
             localStorage.removeItem('healthUser');
-            window.location.href = window.location.pathname; // Reload without query params
+            window.location.href = window.location.pathname; 
         }
 
         document.getElementById('healthForm').addEventListener('submit', async (e) => {
