@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <title>資料讀取診斷工具</title>
+    <style>
+        body { font-family: monospace; padding: 20px; background: #222; color: #eee; }
+        .box { border: 1px solid #444; padding: 20px; margin-bottom: 20px; background: #333; border-radius: 8px; }
+        h2 { margin-top: 0; color: #60a5fa; }
+        button { padding: 10px 20px; font-size: 16px; cursor: pointer; background: #2563eb; color: white; border: none; border-radius: 4px; }
+        button:hover { background: #1d4ed8; }
+        .log-item { margin: 5px 0; border-bottom: 1px dashed #555; padding-bottom: 2px; }
+        .success { color: #4ade80; font-weight: bold; }
+        .fail { color: #f87171; font-weight: bold; }
+    </style>
+</head>
+<body>
+
+    <div class="box">
+        <h2>🔍 資料連結診斷</h2>
+        <p>測試帳號: <strong style="color:#fbbf24">kaichun.yang@gmail.com</strong></p>
+        <button onclick="runTest()">開始診斷</button>
+    </div>
+
+    <div class="box">
+        <h2>📝 診斷日誌 (Server Log)</h2>
+        <div id="logs">等待開始...</div>
+    </div>
+
+    <div class="box">
+        <h2>📊 抓取到的資料預覽</h2>
+        <pre id="data-preview">---</pre>
+    </div>
+
+    <script>
+        const API_URL = 'https://script.google.com/macros/s/AKfycbzX0k_hP6poVZAxty89nQ6yJyuhNHw4M713G2IQolRPDQnNLFd_By3xqgfpQRtytOQT4A/exec';
+        const EMAIL = "kaichun.yang@gmail.com";
+
+        async function runTest() {
+            const logDiv = document.getElementById('logs');
+            const preview = document.getElementById('data-preview');
+            
+            logDiv.innerHTML = "連線中...";
+            preview.innerText = "";
+
+            try {
+                // 呼叫後端專用的測試接口
+                const res = await fetch(`${API_URL}?action=test_user&email=${EMAIL}&t=${Date.now()}`);
+                const json = await res.json();
+
+                // 顯示日誌
+                if (json.log) {
+                    logDiv.innerHTML = json.log.map(l => `<div class="log-item">${l}</div>`).join('');
+                }
+
+                // 顯示結果
+                if (json.status === 'success') {
+                    if (json.data_count > 0) {
+                        logDiv.innerHTML += `<div class="log-item success">🎉 成功！後端確認有 ${json.data_count} 筆資料匹配。</div>`;
+                        preview.innerText = JSON.stringify(json.sample_data, null, 2);
+                    } else {
+                        logDiv.innerHTML += `<div class="log-item fail">⚠️ 警告：找到了使用者 UID，但在 Data 表中沒有對應的資料。請檢查 Data 表的 B 欄是否填寫正確的 UID。</div>`;
+                    }
+                } else {
+                    logDiv.innerHTML += `<div class="log-item fail">❌ 失敗：${JSON.stringify(json)}</div>`;
+                }
+
+            } catch (e) {
+                logDiv.innerHTML = `<div class="fail">連線錯誤: ${e.message}</div>`;
+            }
+        }
+    </script>
+</body>
+</html>

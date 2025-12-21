@@ -1,0 +1,174 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>登入 | YangHomeHealth</title>
+    
+    <link rel="icon" type="image/x-icon" href="image/yanghealth.ico">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <script src="https://accounts.google.com/gsi/client" async defer></script>
+
+    <style>
+        body { font-family: 'Inter', sans-serif; background-color: #F8FAFC; }
+        .fade-in { animation: fadeIn 0.5s ease-out; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+        .btn-base { height: 48px; display: flex; align-items: center; justify-content: center; border-radius: 9999px; font-weight: 600; transition: all 0.2s; box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05); }
+        .btn-base:active { transform: scale(0.98); }
+        .btn-line { background-color: #06C755; color: white; border: 1px solid #06C755; }
+        .btn-line:hover { background-color: #05b34c; }
+    </style>
+</head>
+<body class="min-h-screen flex flex-col items-center justify-center p-4">
+
+    <div class="w-full max-w-md bg-white rounded-3xl shadow-xl overflow-hidden fade-in border border-slate-100">
+        
+        <div class="bg-gradient-to-b from-indigo-600 to-indigo-700 p-8 text-center relative overflow-hidden">
+             <div class="absolute top-0 left-0 w-full h-full bg-white opacity-5 transform -skew-y-12 origin-top-left scale-150 pointer-events-none"></div>
+            <div class="relative z-10 flex flex-col items-center">
+                <div class="bg-white p-2 rounded-2xl shadow-lg mb-4">
+                    <img src="image/yanghealth.png" onerror="this.src='https://via.placeholder.com/64?text=Icon'" alt="Logo" class="w-16 h-16 object-contain rounded-xl">
+                </div>
+                <h2 class="text-2xl font-bold text-white tracking-wide">YangHomeHealth</h2>
+                <p class="text-indigo-200 text-sm mt-1 font-medium tracking-wider uppercase">系統登入</p>
+            </div>
+        </div>
+
+        <div class="p-8 py-10">
+            <div id="login-section" class="flex flex-col items-center gap-5 w-full">
+                
+                <div class="w-full flex justify-center">
+                    <div id="g_id_onload"
+                         data-client_id="622103517974-i004l8tg6r9744h0p9r6g69nobmr82np.apps.googleusercontent.com" 
+                         data-callback="handleCredentialResponse"
+                         data-auto_select="false">
+                    </div>
+                    <div class="g_id_signin" 
+                         data-type="standard" 
+                         data-size="large" 
+                         data-theme="outline" 
+                         data-text="sign_in_with" 
+                         data-shape="pill" 
+                         data-logo_alignment="left"
+                         data-width="320"></div>
+                </div>
+                
+                <button onclick="lineLogin()" class="w-full max-w-[320px] btn-base btn-line gap-3">
+                    <img src="image/line.png" onerror="this.style.display='none'" class="w-6 h-6 object-contain">
+                    <span>使用 LINE 登入</span>
+                </button>
+
+            </div>
+            
+            <div id="loading-msg" class="hidden text-center mt-6 text-indigo-600 font-bold flex flex-col items-center gap-2">
+                <div class="w-8 h-8 border-4 border-indigo-200 border-t-indigo-600 rounded-full animate-spin"></div>
+                <p>正在驗證身分...</p>
+            </div>
+        </div>
+        
+         <div class="bg-slate-50 p-4 text-center border-t border-slate-100">
+            <p class="text-[10px] text-slate-400 font-bold tracking-[0.2em] uppercase">Designed by Yang Home</p>
+        </div>
+    </div>
+
+    <script>
+        lucide.createIcons();
+        // ⚠️ 請確認這是您最新的 Google Apps Script 網址
+        const GAS_URL = "https://script.google.com/macros/s/AKfycbzX0k_hP6poVZAxty89nQ6yJyuhNHw4M713G2IQolRPDQnNLFd_By3xqgfpQRtytOQT4A/exec";
+        
+        const LINE_CHANNEL_ID = "2008700923"; 
+        
+        // 自動抓取當前頁面網址作為 Redirect URI (必須確保 LINE 後台有設定此網址)
+        // 例如: https://your-site.github.io/phd/login.html
+        const REDIRECT_URI = window.location.href.split('?')[0].split('#')[0]; 
+
+        // 初始化檢查
+        window.addEventListener('load', () => {
+            // 1. 如果已經登入過，直接跳轉 dashboard
+            if (localStorage.getItem('healthTwinSession')) {
+                window.location.href = 'dashboard.html';
+                return;
+            }
+
+            // 2. 檢查是否從 LINE 登入回傳 (網址帶有 ?code=...)
+            const params = new URLSearchParams(window.location.search);
+            if (params.has('code')) {
+                const code = params.get('code');
+                handleLineLoginCode(code);
+                // 清除 URL 參數
+                window.history.replaceState({}, document.title, window.location.pathname);
+            }
+        });
+
+        // --- Google 登入邏輯 ---
+        function handleCredentialResponse(response) {
+            const payload = decodeJwtResponse(response.credential);
+            // 登入成功，儲存 Session 並跳轉
+            saveSessionAndRedirect(payload.name, payload.email, payload.picture, response.credential);
+        }
+
+        // --- LINE 登入邏輯 ---
+        function lineLogin() {
+            // 跳轉到 LINE 授權頁面
+            const lineUrl = `https://access.line.me/oauth2/v2.1/authorize?response_type=code&client_id=${LINE_CHANNEL_ID}&redirect_uri=${encodeURIComponent(REDIRECT_URI)}&state=12345&scope=profile%20openid%20email`;
+            window.location.href = lineUrl;
+        }
+
+        function handleLineLoginCode(code) {
+            // 切換 UI 為載入中
+            document.getElementById("login-section").classList.add("hidden");
+            document.getElementById("loading-msg").classList.remove("hidden");
+            
+            // 呼叫後端用 code 換 token 並取得用戶資料
+            fetch(GAS_URL, {
+                method: "POST",
+                body: JSON.stringify({ 
+                    action: "lineLogin", 
+                    code: code,
+                    redirectUri: REDIRECT_URI 
+                })
+            })
+            .then(res => res.json())
+            .then(data => {
+                if (data.status === "success") {
+                    // LINE 登入成功，後端會回傳 name, email, picture
+                    saveSessionAndRedirect(data.name, data.email, data.picture, "LINE_SESSION");
+                } else {
+                    alert("LINE 登入失敗: " + data.message);
+                    document.getElementById("login-section").classList.remove("hidden");
+                    document.getElementById("loading-msg").classList.add("hidden");
+                }
+            })
+            .catch(err => {
+                console.error(err);
+                alert("連線錯誤，請稍後再試");
+                document.getElementById("login-section").classList.remove("hidden");
+                document.getElementById("loading-msg").classList.add("hidden");
+            });
+        }
+
+        // --- 通用函式 ---
+        
+        // 儲存 Session 並跳轉到儀表板
+        function saveSessionAndRedirect(name, email, picture, token) {
+            const session = { name, email, picture, token };
+            localStorage.setItem('healthTwinSession', JSON.stringify(session));
+            window.location.href = 'dashboard.html';
+        }
+
+        // 解析 Google JWT
+        function decodeJwtResponse(token) {
+            var base64Url = token.split('.')[1];
+            var base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
+            var jsonPayload = decodeURIComponent(window.atob(base64).split('').map(function(c) {
+                return '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2);
+            }).join(''));
+            return JSON.parse(jsonPayload);
+        }
+    </script>
+</body>
+</html>
