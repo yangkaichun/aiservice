@@ -11,7 +11,7 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <script src="https://unpkg.com/lucide@latest"></script>
     <script src="https://accounts.google.com/gsi/client" async defer></script>
-    
+
     <script src="config.js"></script>
 
     <style>
@@ -119,8 +119,16 @@
 
     <script>
         lucide.createIcons();
-        // API_URL 已在 config.js 定義，此處直接使用
-        
+
+        // ★★★ 核心修正：自動判斷 URL ★★★
+        // 如果 config.js 沒載入 (API_URL 未定義)，則使用這裡的預設值
+        if (typeof API_URL === 'undefined') {
+            console.warn("config.js 未載入，使用備用 URL");
+            var API_URL = "https://script.google.com/macros/s/AKfycbz9xHPD8n9xVTifQSc1_e46nu9BzQUKHN3SMz2r-zjtbFL7aGaLeb9E7BuBby6QGy6AXw/exec";
+        } else {
+            console.log("使用 config.js 的 URL:", API_URL);
+        }
+
         let currentUser = null;
         const urlParams = new URLSearchParams(window.location.search);
         const lineCode = urlParams.get('code');
@@ -150,7 +158,6 @@
 
         function lineLogin() {
             const channelId = '2008700923'; 
-            // 動態抓取當前網址作為 Redirect URI
             const redirectUri = encodeURIComponent(window.location.href.split('?')[0]); 
             const state = 'login_' + Date.now();
             const lineAuthUrl = `https://access.line.me/oauth2/v2.1/authorize?response_type=code&client_id=${channelId}&redirect_uri=${redirectUri}&state=${state}&scope=profile%20openid%20email`;
@@ -174,7 +181,6 @@
                     currentUser = { email: payload.email, name: payload.name };
                     localStorage.setItem('healthUser', JSON.stringify(currentUser));
                     
-                    // 背景送出資料給後端
                     fetch(API_URL, {
                         method: 'POST',
                         mode: 'no-cors',
@@ -183,14 +189,12 @@
                     });
                     showInputView();
                 } else {
-                    // LINE Login
                     await fetch(API_URL, {
                         method: 'POST',
                         mode: 'no-cors',
                         headers: {'Content-Type': 'application/json'},
                         body: JSON.stringify(payload)
                     });
-                    
                     alert("LINE 登入請求已發送，請檢查是否已自動登入。若失敗請重新整理。");
                     window.location.href = window.location.pathname; 
                 }
