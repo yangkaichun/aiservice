@@ -46,7 +46,7 @@
             </button>
         </div>
         
-        <div id="login-msg" class="mt-4 text-sm text-slate-400"></div>
+        <div id="login-msg" class="mt-4 text-sm text-slate-400 min-h-[20px]"></div>
     </div>
 
     <div id="input-view" class="hidden w-full max-w-md glass-card transition-all duration-500">
@@ -63,7 +63,7 @@
         <form id="healthForm" class="space-y-4">
             <div>
                 <label class="block text-sm font-medium text-slate-700 mb-1">測量情境</label>
-                <select id="context" class="w-full rounded-lg border-slate-200 focus:border-blue-500 p-2.5 bg-slate-50">
+                <select id="context" class="w-full rounded-lg border-slate-200 focus:border-blue-500 p-2.5 bg-slate-50 text-sm">
                     <option value="起床空腹">🌅 起床空腹</option>
                     <option value="早餐後">🍳 早餐後</option>
                     <option value="午餐後">🍱 午餐後</option>
@@ -94,21 +94,21 @@
             </div>
             <div>
                  <label class="block text-sm font-medium text-slate-700 mb-1">備註 (選填)</label>
-                 <textarea id="note" rows="2" class="w-full rounded-lg border-slate-200 p-2.5 bg-slate-50" placeholder="例如：剛運動完..."></textarea>
+                 <textarea id="note" rows="2" class="w-full rounded-lg border-slate-200 p-2.5 bg-slate-50 text-sm" placeholder="例如：剛運動完..."></textarea>
             </div>
 
-            <button type="submit" id="btn-submit" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-medium py-2.5 rounded-lg shadow-sm flex items-center justify-center gap-2 mt-2">
+            <button type="submit" id="btn-submit" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-medium py-2.5 rounded-lg shadow-sm flex items-center justify-center gap-2 mt-2 transition-colors">
                 <i data-lucide="send" class="w-4 h-4"></i> 提交紀錄
             </button>
             <div id="status-msg" class="text-center text-sm min-h-[20px]"></div>
         </form>
 
         <div class="mt-6 flex justify-center gap-4 border-t pt-4">
-             <a href="dashboard.html" class="flex flex-col items-center gap-1 text-slate-400 hover:text-blue-600">
+             <a href="dashboard.html" class="flex flex-col items-center gap-1 text-slate-400 hover:text-blue-600 transition-colors">
                  <div class="p-2 bg-slate-50 rounded-lg"><i data-lucide="bar-chart-2" class="w-5 h-5"></i></div>
                  <span class="text-xs">儀表板</span>
              </a>
-             <a href="phd.html" class="flex flex-col items-center gap-1 text-slate-400 hover:text-blue-600">
+             <a href="phd.html" class="flex flex-col items-center gap-1 text-slate-400 hover:text-blue-600 transition-colors">
                  <div class="p-2 bg-slate-50 rounded-lg"><i data-lucide="user-cog" class="w-5 h-5"></i></div>
                  <span class="text-xs">設定</span>
              </a>
@@ -117,31 +117,27 @@
 
     <script>
         lucide.createIcons();
-        const API_URL = "https://script.google.com/macros/s/AKfycbzQpB9tT-M0Fh.../exec"; // ★請替換為你的 Web App URL★
+        const API_URL = "https://script.google.com/macros/s/AKfycbzQpB9tT-M0Fh.../exec"; // ★請替換您的 URL★
         
-        // 來自 Code.gs 模板的變數 (如果頁面是透過 Apps Script 渲染)
-        // 透過 URL 判斷是否有 code (LINE Return)
+        let currentUser = null;
+
+        // 從 URL 檢查是否有 LINE 回傳的 code
         const urlParams = new URLSearchParams(window.location.search);
         const lineCode = urlParams.get('code');
 
-        let currentUser = null;
-
-        // 1. 初始化檢查
         window.onload = function() {
             const savedUser = localStorage.getItem('healthUser');
             
-            // A. 如果已登入過，直接顯示輸入頁面
             if (savedUser) {
+                // 已登入
                 currentUser = JSON.parse(savedUser);
                 showInputView();
-            } 
-            // B. 如果是 LINE 登入跳轉回來 (網址有 code)
-            else if (lineCode) {
+            } else if (lineCode) {
+                // LINE 登入回調
                 handleLineLoginCallback(lineCode);
             }
         };
 
-        // 2. Google 登入處理
         function handleCredentialResponse(response) {
             const data = decodeJwtResponse(response.credential);
             const userPayload = {
@@ -155,11 +151,10 @@
             performLogin(userPayload);
         }
 
-        // 3. LINE 登入跳轉
         function lineLogin() {
-            const channelId = '2008700923'; // 你的 LINE Channel ID
-            // 重要：這裡的 Redirect URI 必須與你在 LINE Developer Console 設定的一模一樣
-            // 通常是 Apps Script 的 exec 網址
+            // LINE 登入參數
+            const channelId = '2008700923'; 
+            // 必須是 Web App 的 URL
             const redirectUri = encodeURIComponent(window.location.href.split('?')[0]); 
             const state = 'login_' + Date.now();
             
@@ -168,51 +163,56 @@
             window.location.href = lineAuthUrl;
         }
 
-        // 4. LINE Callback 處理 (後端驗證)
         async function handleLineLoginCallback(code) {
             document.getElementById('login-msg').innerText = "正在驗證 LINE 登入...";
-            
             const payload = {
                 action: 'login',
                 provider: 'line',
                 code: code,
-                redirectUri: window.location.href.split('?')[0] // 必須傳回後端做比對
+                redirectUri: window.location.href.split('?')[0]
             };
-            
-            performLogin(payload);
+            await performLogin(payload);
         }
 
-        // 共用登入執行
         async function performLogin(payload) {
             try {
-                const res = await fetch(API_URL, {
-                    method: 'POST',
-                    mode: 'no-cors', // Apps Script 特性
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(payload)
-                });
+                // 注意：no-cors 模式下無法讀取回應，但會執行後端邏輯
+                // 為求最佳體驗，若後端回應 JSON，需將 Apps Script 權限設為 "Anyone"
+                // 這裡採用簡易做法：Google 登入直接以前端資料為主，LINE 則提示成功
                 
-                // 由於 no-cors 無法讀取回應，我們這裡做一個假設成功的處理 (在 Web App 實際環境建議用 callback 或 redirect)
-                // 但為了使用者體驗，若是 Google 登入，我們已經有 Email 了。
-                // 若是 LINE，因為 no-cors 拿不到 profile，這裡需要特別處理：
-                // 建議：將 Apps Script 部署為 Web App 時，將 "Who has access" 設為 "Anyone"，這樣可以用 cors 模式 fetch
-                
-                // 如果是 Google，直接用前端資料進入
                 if(payload.provider === 'google') {
                     currentUser = { email: payload.email, name: payload.name };
                     localStorage.setItem('healthUser', JSON.stringify(currentUser));
+                    
+                    // 背景送出登入紀錄給後端 (註冊用)
+                    fetch(API_URL, {
+                        method: 'POST',
+                        mode: 'no-cors',
+                        headers: {'Content-Type': 'application/json'},
+                        body: JSON.stringify(payload)
+                    });
+                    
                     showInputView();
                 } else {
-                    // LINE 需要後端回應 User Info，但在 no-cors 下無法讀取。
-                    // 暫時解法：假設後端驗證成功，並提示使用者手動輸入 (或建議改用 Google 登入)
-                    // 完美的解法需要 Apps Script 使用 JSONP 或允許 CORS
-                    alert("LINE 登入請求已發送。若頁面未跳轉，請重新整理或使用 Google 登入。");
-                    // 實際上，如果要完整支援 LINE 流程且拿回 User Info，建議後端 doGet 處理完直接回傳含 User Data 的 HTML
+                    // LINE 需要等待後端驗證，建議使用 cors 模式
+                    // 這裡先送出請求
+                    await fetch(API_URL, {
+                        method: 'POST',
+                        mode: 'no-cors',
+                        headers: {'Content-Type': 'application/json'},
+                        body: JSON.stringify(payload)
+                    });
+                    
+                    // 假設成功 (因為無法讀取 no-cors 回應)
+                    // 實際上應該在後端回傳 HTML Set-Cookie 或 JSONP
+                    // 這裡做一個簡單提示
+                    alert("LINE 登入請求已發送，請檢查是否已自動登入。若失敗請重新整理。");
+                    // 為了流程順暢，暫時模擬成功 (實務上應使用 Google 登入較穩定)
+                    window.location.href = window.location.pathname; // 清除 code 參數
                 }
-
             } catch (e) {
                 console.error(e);
-                document.getElementById('login-msg').innerText = "登入連線錯誤";
+                document.getElementById('login-msg').innerText = "登入發生錯誤";
             }
         }
 
@@ -220,8 +220,6 @@
             document.getElementById('login-view').classList.add('hidden');
             document.getElementById('input-view').classList.remove('hidden');
             document.getElementById('user-greeting').innerText = `Hi, ${currentUser.name || 'User'}`;
-            // 清除網址參數
-            window.history.replaceState({}, document.title, window.location.pathname);
         }
 
         function decodeJwtResponse(token) {
@@ -235,20 +233,22 @@
 
         function logout() {
             localStorage.removeItem('healthUser');
-            location.reload();
+            window.location.href = window.location.pathname; // Reload without query params
         }
 
-        // 提交表單 (不變)
         document.getElementById('healthForm').addEventListener('submit', async (e) => {
             e.preventDefault();
             const btn = document.getElementById('btn-submit');
             const status = document.getElementById('status-msg');
-            btn.innerHTML = '處理中...';
+            const originalText = btn.innerHTML;
+            
+            btn.innerHTML = `<i data-lucide="loader-2" class="w-4 h-4 animate-spin"></i> 處理中...`;
             btn.disabled = true;
+            lucide.createIcons();
 
             const payload = {
                 action: 'input',
-                userEmail: currentUser.email, // 傳送 Email
+                userEmail: currentUser.email,
                 context: document.getElementById('context').value,
                 sbp: document.getElementById('sbp').value,
                 dbp: document.getElementById('dbp').value,
@@ -257,16 +257,25 @@
                 note: document.getElementById('note').value
             };
 
-            await fetch(API_URL, {
-                method: 'POST',
-                mode: 'no-cors',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(payload)
-            });
-            
-            status.innerHTML = '<span class="text-green-600">紀錄成功 (已送至後端處理 UID)</span>';
-            document.getElementById('healthForm').reset();
-            setTimeout(() => { btn.disabled = false; btn.innerHTML = '<i data-lucide="send" class="w-4 h-4"></i> 提交紀錄'; lucide.createIcons(); status.innerHTML=''; }, 2000);
+            try {
+                await fetch(API_URL, {
+                    method: 'POST',
+                    mode: 'no-cors',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+                status.innerHTML = `<span class="text-emerald-600 flex items-center justify-center gap-1"><i data-lucide="check-circle" class="w-4 h-4"></i> 紀錄成功！</span>`;
+                document.getElementById('healthForm').reset();
+            } catch (error) {
+                status.innerHTML = `<span class="text-rose-600">提交失敗，請檢查網路</span>`;
+            } finally {
+                setTimeout(() => { 
+                    btn.disabled = false; 
+                    btn.innerHTML = originalText; 
+                    status.innerHTML=''; 
+                    lucide.createIcons(); 
+                }, 2000);
+            }
         });
     </script>
 </body>
