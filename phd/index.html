@@ -16,76 +16,15 @@
     
     <script src="https://accounts.google.com/gsi/client" async defer></script>
     
+    <script src="loading.js"></script>
+    
     <script src="config.js"></script>
 
     <style>
-        body { font-family: 'Inter', sans-serif; background-color: #F8FAFC; overflow: hidden; /* 防止動畫時捲動 */ }
+        body { font-family: 'Inter', sans-serif; background-color: #F8FAFC; }
         .glass-card { background: rgba(255, 255, 255, 0.95); backdrop-filter: blur(10px); border: 1px solid rgba(255, 255, 255, 0.5); box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1); }
         .animate-fade-in { animation: fadeIn 0.6s cubic-bezier(0.16, 1, 0.3, 1); }
         
-        /* === 4.5秒 酷炫開場動畫 (RWD Optimized) === */
-        #intro-overlay {
-            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            background: linear-gradient(135deg, #0f172a 0%, #1e1b4b 40%, #312e81 100%);
-            z-index: 9999; display: flex; align-items: center; justify-content: center; flex-direction: column;
-            transition: opacity 1s ease-out, visibility 1s;
-        }
-        .intro-hidden { opacity: 0; visibility: hidden; pointer-events: none; }
-
-        /* Logo 動畫 */
-        .intro-logo {
-            width: 120px; height: 120px; /* 手機版預設 */
-            filter: drop-shadow(0 0 15px rgba(99, 102, 241, 0.6));
-            animation: introHeartbeat 4.5s ease-in-out forwards;
-        }
-        @media (min-width: 768px) {
-            .intro-logo { width: 160px; height: 160px; /* 桌面版加大 */ }
-        }
-
-        @keyframes introHeartbeat {
-            0% { opacity: 0; transform: scale(0.5); }
-            15% { opacity: 1; transform: scale(1.1); }
-            30% { transform: scale(1); }
-            45% { transform: scale(1.15); filter: drop-shadow(0 0 25px rgba(244, 63, 94, 0.9)); }
-            60% { transform: scale(1); }
-            100% { opacity: 0; transform: scale(1.5); } /* 最後淡出並放大 */
-        }
-
-        /* 文字動畫 */
-        .intro-text-container {
-            margin-top: 2rem; text-align: center;
-            overflow: hidden;
-        }
-        .intro-title {
-            font-size: 1.8rem; font-weight: 800; letter-spacing: 0.1em;
-            background: linear-gradient(90deg, #a5b4fc, #ffffff, #a5b4fc);
-            -webkit-background-clip: text; -webkit-text-fill-color: transparent;
-            background-size: 200% auto;
-            opacity: 0;
-            animation: textReveal 4.5s ease-in-out forwards;
-        }
-        @media (min-width: 768px) {
-            .intro-title { font-size: 3rem; letter-spacing: 0.2em; }
-        }
-
-        @keyframes textReveal {
-            0% { opacity: 0; transform: translateY(20px); }
-            20% { opacity: 1; transform: translateY(0); background-position: 0% center; }
-            80% { opacity: 1; background-position: 200% center; }
-            100% { opacity: 0; transform: translateY(-20px); }
-        }
-
-        .intro-sub {
-            color: #6366f1; font-size: 0.8rem; letter-spacing: 0.2em; margin-top: 0.5rem;
-            opacity: 0; animation: subFade 4.5s ease-in-out forwards;
-        }
-        @keyframes subFade {
-            0%, 25% { opacity: 0; }
-            30% { opacity: 0.8; }
-            80% { opacity: 0.8; }
-            100% { opacity: 0; }
-        }
-
         /* === 酷炫資料同步 Loading (Tech Pulse) === */
         #full-loader { background: rgba(255, 255, 255, 0.9); backdrop-filter: blur(8px); }
         .tech-loader { position: relative; width: 80px; height: 80px; display: flex; align-items: center; justify-content: center; }
@@ -111,17 +50,6 @@
     </style>
 </head>
 <body class="text-slate-800 min-h-screen flex flex-col items-center justify-center p-4 relative">
-
-    <div id="intro-overlay">
-        <div class="relative">
-            <div class="absolute inset-0 bg-indigo-500 blur-[80px] opacity-30 rounded-full animate-pulse"></div>
-            <img src="image/yanghealth.png" class="intro-logo relative z-10" alt="Logo">
-        </div>
-        <div class="intro-text-container">
-            <h1 class="intro-title">YANGHOME</h1>
-            <p class="intro-sub">INTELLIGENT HEALTH SYSTEM</p>
-        </div>
-    </div>
 
     <div id="ios-install-modal" class="fixed inset-0 bg-black/70 z-50 hidden flex-col items-center justify-end pb-10 backdrop-blur-md animate-fade-in" onclick="closeIosModal()">
         <div class="bg-white w-[90%] max-w-md rounded-3xl p-6 relative shadow-2xl" onclick="event.stopPropagation()">
@@ -314,14 +242,20 @@
         lucide.createIcons();
         let userSession = null;
 
-        // --- 4.5秒 開場動畫邏輯 ---
+        // --- 導入動畫與載入邏輯 ---
         window.addEventListener('load', () => {
-            // 允許滾動 (回復正常)
+            // [關鍵] 呼叫 loading.js 提供的全域函式關閉動畫
+            // 設定 4.5 秒延遲，確保動畫完整播放
             setTimeout(() => {
-                const overlay = document.getElementById('intro-overlay');
-                if(overlay) overlay.classList.add('intro-hidden');
-                document.body.style.overflow = 'auto';
-            }, 4500); // 4.5秒
+                if (typeof window.hideLoading === 'function') {
+                    window.hideLoading();
+                } else {
+                    // Fallback: 如果 loading.js 尚未加載完成
+                    const overlay = document.getElementById('global-loader-overlay');
+                    if(overlay) overlay.style.display = 'none';
+                    document.body.style.overflow = 'auto';
+                }
+            }, 4500); 
 
             checkLoginStatus();
         });
@@ -333,7 +267,7 @@
         window.addEventListener('beforeinstallprompt', (e) => {
             e.preventDefault();
             deferredPrompt = e;
-            // 按鈕已預設顯示，此處可做額外處理
+            // 按鈕已預設顯示
         });
 
         const isIos = /iPhone|iPad|iPod/.test(navigator.userAgent) && !window.MSStream;
