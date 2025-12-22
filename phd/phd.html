@@ -2,235 +2,173 @@
 <html lang="zh-TW">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>帳號設置 | YangHome Health</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>新增紀錄 | YangHome Health</title>
     
     <link rel="icon" type="image/x-icon" href="image/yanghealth.ico">
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap" rel="stylesheet">
     <script src="https://unpkg.com/lucide@latest"></script>
-    <script src="https://accounts.google.com/gsi/client" async defer></script>
+    
+    <script src="config.js"></script>
 
     <style>
         body { font-family: 'Inter', sans-serif; background-color: #F8FAFC; }
-        .glass-card { background: rgba(255, 255, 255, 0.95); backdrop-filter: blur(10px); border: 1px solid rgba(255, 255, 255, 0.5); box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.05); }
-        .animate-fade-in { animation: fadeIn 0.5s ease-out; }
-        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+        .glass-card { background: rgba(255, 255, 255, 0.95); backdrop-filter: blur(10px); border: 1px solid rgba(255, 255, 255, 0.5); box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05); }
     </style>
 
     <script>
-        // 檢查登入狀態
         const savedSession = localStorage.getItem('healthTwinSession');
-        let session = null;
         if (!savedSession) {
-            window.location.href = 'index.html'; // 若無登入則導回首頁
-        } else {
-            session = JSON.parse(savedSession);
+            window.location.href = 'index.html';
         }
+        const userSession = JSON.parse(savedSession);
     </script>
 </head>
-<body class="text-slate-800 min-h-screen flex flex-col items-center justify-center p-4">
+<body class="text-slate-800 min-h-screen flex items-center justify-center p-4">
 
-    <div class="w-full max-w-lg glass-card rounded-2xl p-8 shadow-xl animate-fade-in relative">
-        <div id="loadingOverlay" class="absolute inset-0 bg-white/80 backdrop-blur-sm z-50 hidden flex-col items-center justify-center rounded-2xl">
-            <i data-lucide="loader-2" class="w-10 h-10 animate-spin text-indigo-600 mb-2"></i>
-            <span id="loadingText" class="text-sm text-slate-500 font-medium">處理中...</span>
-        </div>
-
-        <div class="flex items-center justify-between mb-8">
-            <h1 class="text-2xl font-bold text-slate-800 flex items-center gap-2">
-                <i data-lucide="user-circle" class="w-8 h-8 text-indigo-600"></i>
-                帳號設置
-            </h1>
-            <a href="dashboard.html" class="text-sm text-slate-400 hover:text-slate-600 transition flex items-center gap-1">
-                回儀表板 <i data-lucide="arrow-right" class="w-4 h-4"></i>
+    <div class="glass-card w-full max-w-md p-6 rounded-3xl shadow-xl">
+        <div class="flex items-center gap-3 mb-6">
+            <a href="dashboard.html" class="p-2 -ml-2 text-slate-500 hover:bg-slate-100 rounded-lg transition">
+                <i data-lucide="arrow-left" class="w-5 h-5"></i>
             </a>
+            <h1 class="text-xl font-bold text-slate-800">新增健康數據</h1>
         </div>
 
-        <div class="space-y-6">
-            <div class="bg-slate-50 p-4 rounded-xl border border-slate-100">
-                <h3 class="text-xs font-bold text-slate-400 uppercase mb-3">基本資料</h3>
-                <div class="grid grid-cols-1 gap-4">
-                    <div>
-                        <label class="block text-xs text-slate-500 mb-1">姓名</label>
-                        <div id="display-name" class="font-medium text-slate-700 text-lg">-</div>
+        <form id="dataForm" onsubmit="handleSubmit(event)" class="space-y-4">
+            
+            <div class="grid grid-cols-2 gap-3 mb-2">
+                <label class="cursor-pointer">
+                    <input type="radio" name="dataType" value="BloodPressure" class="peer hidden" checked onchange="toggleFields()">
+                    <div class="p-3 rounded-xl border border-slate-200 bg-slate-50 peer-checked:bg-blue-50 peer-checked:border-blue-200 peer-checked:text-blue-600 text-center transition">
+                        <span class="text-sm font-bold">血壓</span>
                     </div>
-                    <div>
-                        <label class="block text-xs text-slate-500 mb-1">電子信箱</label>
-                        <div id="display-email" class="font-medium text-slate-700 break-all">-</div>
+                </label>
+                <label class="cursor-pointer">
+                    <input type="radio" name="dataType" value="BloodSugar" class="peer hidden" onchange="toggleFields()">
+                    <div class="p-3 rounded-xl border border-slate-200 bg-slate-50 peer-checked:bg-pink-50 peer-checked:border-pink-200 peer-checked:text-pink-600 text-center transition">
+                        <span class="text-sm font-bold">血糖</span>
                     </div>
-                    <div>
-                        <label class="block text-xs text-slate-500 mb-1">生日</label>
-                        <div id="display-birthday" class="font-medium text-slate-700">-</div>
-                    </div>
+                </label>
+            </div>
+
+            <div id="field-bp" class="space-y-4">
+                <div>
+                    <label class="block text-xs font-bold text-slate-500 mb-1">收縮壓 (mmHg)</label>
+                    <input type="number" id="sbp" class="w-full px-4 py-3 bg-white border border-slate-200 rounded-xl focus:border-indigo-500 outline-none transition" placeholder="例如: 120">
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-slate-500 mb-1">舒張壓 (mmHg)</label>
+                    <input type="number" id="dbp" class="w-full px-4 py-3 bg-white border border-slate-200 rounded-xl focus:border-indigo-500 outline-none transition" placeholder="例如: 80">
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-slate-500 mb-1">心率 (bpm)</label>
+                    <input type="number" id="hr" class="w-full px-4 py-3 bg-white border border-slate-200 rounded-xl focus:border-indigo-500 outline-none transition" placeholder="例如: 72">
+                </div>
+            </div>
+
+            <div id="field-bs" class="hidden">
+                <div>
+                    <label class="block text-xs font-bold text-slate-500 mb-1">血糖值 (mg/dL)</label>
+                    <input type="number" id="bs" class="w-full px-4 py-3 bg-white border border-slate-200 rounded-xl focus:border-indigo-500 outline-none transition" placeholder="例如: 100">
+                </div>
+                <div class="mt-3">
+                    <label class="block text-xs font-bold text-slate-500 mb-1">測量時機</label>
+                    <select id="bs-time" class="w-full px-4 py-3 bg-white border border-slate-200 rounded-xl focus:border-indigo-500 outline-none">
+                        <option value="fasting">空腹 (飯前)</option>
+                        <option value="postprandial">飯後 2 小時</option>
+                    </select>
                 </div>
             </div>
 
             <div>
-                <h3 class="text-xs font-bold text-slate-400 uppercase mb-3">社群帳號連結</h3>
-                <div class="space-y-3">
-                    <div class="flex items-center justify-between p-4 bg-white border border-slate-200 rounded-xl shadow-sm">
-                        <div class="flex items-center gap-3">
-                            <div class="w-10 h-10 bg-white rounded-full flex items-center justify-center border border-slate-100 shadow-sm">
-                                <img src="https://www.google.com/favicon.ico" class="w-5 h-5" alt="Google">
-                            </div>
-                            <div>
-                                <div class="font-semibold text-slate-700">Google</div>
-                                <div class="text-xs text-slate-400">用於快速登入</div>
-                            </div>
-                        </div>
-                        <span class="px-3 py-1 bg-green-50 text-green-600 text-xs font-medium rounded-full border border-green-100 flex items-center gap-1">
-                            <i data-lucide="check-circle" class="w-3 h-3"></i> 已連結
-                        </span>
-                    </div>
-
-                    <div class="flex items-center justify-between p-4 bg-white border border-slate-200 rounded-xl shadow-sm">
-                        <div class="flex items-center gap-3">
-                            <div class="w-10 h-10 bg-[#06C755] rounded-full flex items-center justify-center shadow-sm text-white">
-                                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="currentColor" viewBox="0 0 16 16">
-                                    <path d="M8 0c4.411 0 8 2.912 8 6.492 0 1.433-.637 2.768-1.743 3.863.155 1.077.567 2.392.593 2.455a.287.287 0 0 1-.365.365c-.067-.024-1.422-.44-2.527-1.705-1.12.595-2.433.916-3.834.916C3.589 12.386 0 9.474 0 5.894 0 2.314 3.589 0 8 0z"/>
-                                </svg>
-                            </div>
-                            <div>
-                                <div class="font-semibold text-slate-700">LINE</div>
-                                <div class="text-xs text-slate-400">接收通知與登入</div>
-                            </div>
-                        </div>
-                        <div id="line-status-container">
-                            <button onclick="startLineBind()" class="px-4 py-2 bg-[#06C755] hover:bg-[#05b34c] text-white text-xs font-medium rounded-lg transition shadow-md flex items-center gap-2">
-                                連結帳號
-                            </button>
-                        </div>
-                    </div>
-                </div>
+                <label class="block text-xs font-bold text-slate-500 mb-1">備註 (可選)</label>
+                <textarea id="note" rows="2" class="w-full px-4 py-3 bg-white border border-slate-200 rounded-xl focus:border-indigo-500 outline-none transition text-sm" placeholder="身體狀況描述..."></textarea>
             </div>
-        </div>
+
+            <button type="submit" id="btn-submit" class="w-full py-3.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl font-bold shadow-lg shadow-indigo-200 transition-all flex items-center justify-center gap-2 mt-2">
+                <span>儲存紀錄</span>
+                <i data-lucide="save" class="w-4 h-4"></i>
+            </button>
+        </form>
     </div>
 
     <script>
-        // 設定常數 (與 code.gs 及 setting.html 保持一致)
-        const API_URL = 'https://script.google.com/macros/s/AKfycbzX0k_hP6poVZAxty89nQ6yJyuhNHw4M713G2IQolRPDQnNLFd_By3xqgfpQRtytOQT4A/exec';
-        const LINE_CHANNEL_ID = "2008700923"; // 從 code.gs 取得
-        // 自動抓取當前頁面 URL (移除 query string) 作為 Redirect URI
-        const REDIRECT_URI = window.location.href.split('?')[0];
+        const API_URL = config.API_URL;
+        lucide.createIcons();
 
-        // 顯示載入中遮罩
-        function showLoading(text = "處理中...") {
-            document.getElementById('loadingText').innerText = text;
-            document.getElementById('loadingOverlay').classList.remove('hidden');
-            document.getElementById('loadingOverlay').classList.add('flex');
+        function toggleFields() {
+            const type = document.querySelector('input[name="dataType"]:checked').value;
+            if (type === 'BloodPressure') {
+                document.getElementById('field-bp').classList.remove('hidden');
+                document.getElementById('field-bs').classList.add('hidden');
+            } else {
+                document.getElementById('field-bp').classList.add('hidden');
+                document.getElementById('field-bs').classList.remove('hidden');
+            }
         }
 
-        function hideLoading() {
-            document.getElementById('loadingOverlay').classList.add('hidden');
-            document.getElementById('loadingOverlay').classList.remove('flex');
-        }
-
-        document.addEventListener('DOMContentLoaded', () => {
+        async function handleSubmit(e) {
+            e.preventDefault();
+            const btn = document.getElementById('btn-submit');
+            const originalText = btn.innerHTML;
+            
+            btn.disabled = true;
+            btn.innerHTML = `<i data-lucide="loader-2" class="w-5 h-5 animate-spin"></i> 處理中...`;
             lucide.createIcons();
-            
-            // 1. 初始化資料
-            if(session) {
-                document.getElementById('display-email').innerText = session.email;
-                fetchProfile();
-            }
 
-            // 2. 檢查是否為 LINE Login 回調 (URL 帶有 code 參數)
-            const urlParams = new URLSearchParams(window.location.search);
-            const code = urlParams.get('code');
-            if (code) {
-                // 清除 URL 參數讓網址好看一點 (Optional)
-                window.history.replaceState({}, document.title, REDIRECT_URI);
-                handleLineBind(code);
-            }
-        });
-
-        // 取得使用者資料 (透過 getSettings 再過濾)
-        async function fetchProfile() {
-            try {
-                const res = await fetch(`${API_URL}?action=getSettings`);
-                const data = await res.json();
-                
-                // 在所有用戶中找到目前登入的使用者
-                const currentUser = data.find(u => u.email === session.email);
-                
-                if (currentUser) {
-                    document.getElementById('display-name').innerText = currentUser.name || '(未設定)';
-                    document.getElementById('display-birthday').innerText = currentUser.birthday || '-';
-                    
-                    // 更新 LINE 按鈕狀態
-                    const lineContainer = document.getElementById('line-status-container');
-                    if (currentUser.lineUserId) {
-                        lineContainer.innerHTML = `
-                            <span class="px-3 py-1 bg-green-50 text-green-600 text-xs font-medium rounded-full border border-green-100 flex items-center gap-1" title="${currentUser.lineUserId}">
-                                <i data-lucide="check-circle" class="w-3 h-3"></i> 已連結
-                            </span>
-                        `;
-                        lucide.createIcons();
-                    }
-                }
-            } catch (error) {
-                console.error("Fetch Profile Error:", error);
-            }
-        }
-
-        // 開始 LINE 綁定流程 (跳轉)
-        function startLineBind() { 
-            // 產生隨機 state 以防 CSRF (此處簡化使用 'bind')
-            const state = 'bind'; 
-            const scope = 'profile openid email'; // 確保包含 openid 才能取得 userId
-            
-            const lineUrl = `https://access.line.me/oauth2/v2.1/authorize?response_type=code&client_id=${LINE_CHANNEL_ID}&redirect_uri=${encodeURIComponent(REDIRECT_URI)}&state=${state}&scope=${encodeURIComponent(scope)}`;
-            
-            window.location.href = lineUrl; 
-        }
-
-        // 處理 LINE 回調 (後端驗證)
-        async function handleLineBind(code) { 
-            showLoading("正在連結 LINE 帳號..."); 
-            // 若為 LINE 登入模式，token 前綴處理 (視需求而定，此處保留原邏輯)
-            // 這裡假設後端 bindAccount 需要 session token 來驗證是誰在綁定
-            bindAccount('LINE', code); 
-        }
-
-        // 核心綁定 API 呼叫
-        async function bindAccount(type, payload) {
-            let token = session.token; 
-            // 若 session 本身就是用 LINE 登入的 (雖然不太合理，因為若用 LINE 登入應該已經有 ID，但保留原邏輯)
-            if (session.provider === 'line') token = "LINE_" + session.email;
-
-            const req = { 
-                action: 'bindAccount', 
-                token: token, // 驗證當前使用者
-                userEmail: session.email, 
-                bindType: type, // 'LINE'
-                bindPayload: payload, // Authorization Code
-                redirectUri: REDIRECT_URI // 後端換 Token 需要驗證此 URI
+            const type = document.querySelector('input[name="dataType"]:checked').value;
+            let payload = {
+                action: 'addData',
+                uid: userSession.uid,
+                type: type,
+                note: document.getElementById('note').value,
+                timestamp: new Date().toISOString()
             };
 
-            try {
-                // 使用 no-cors 模式呼叫 (若 API 沒設 CORS header)，或正常呼叫
-                // 注意：若用 no-cors，無法讀取 res.json()，這裡假設後端有開 CORS
-                const res = await fetch(API_URL, { 
-                    method: 'POST', 
-                    // mode: 'no-cors', // 若後端支援 CORS 建議移除此行以讀取回應
-                    headers: { 'Content-Type': 'text/plain' }, // GAS doPost 常用 text/plain 避免 preflight
-                    body: JSON.stringify(req) 
-                });
-                
-                const json = await res.json();
-                hideLoading();
-
-                if (json.status === 'success') { 
-                    alert(`✅ ${type} 帳號連結成功！`); 
-                    fetchProfile(); // 重新整理狀態
-                } else { 
-                    alert(`❌ 綁定失敗: ${json.message || '未知錯誤'}`); 
+            if (type === 'BloodPressure') {
+                payload.sbp = document.getElementById('sbp').value;
+                payload.dbp = document.getElementById('dbp').value;
+                payload.hr = document.getElementById('hr').value;
+                if(!payload.sbp || !payload.dbp) {
+                    alert("請輸入完整的血壓數值");
+                    resetBtn();
+                    return;
                 }
+            } else {
+                payload.bs = document.getElementById('bs').value;
+                payload.time = document.getElementById('bs-time').value;
+                if(!payload.bs) {
+                    alert("請輸入血糖數值");
+                    resetBtn();
+                    return;
+                }
+            }
+
+            try {
+                // 使用 no-cors 發送 POST (GAS 標準做法)
+                await fetch(API_URL, {
+                    method: 'POST',
+                    mode: 'no-cors',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+
+                setTimeout(() => {
+                    alert("新增成功！");
+                    window.location.href = 'dashboard.html';
+                }, 1000);
+
             } catch (error) {
-                hideLoading();
-                alert(`❌ 請求失敗: ${error.message}`);
                 console.error(error);
+                alert("發生錯誤: " + error.message);
+                resetBtn();
+            }
+
+            function resetBtn() {
+                btn.disabled = false;
+                btn.innerHTML = originalText;
+                lucide.createIcons();
             }
         }
     </script>
