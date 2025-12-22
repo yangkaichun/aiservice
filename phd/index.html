@@ -66,7 +66,7 @@
             <div class="flex justify-between items-center mb-6 bg-indigo-50/50 p-4 rounded-xl border border-indigo-100">
                 <div>
                     <p class="text-xs text-slate-400">Welcome back,</p>
-                    <h2 class="text-lg font-bold text-indigo-900" id="display-name">User</h2>
+                    <h2 class="text-lg font-bold text-indigo-900 animate-pulse" id="display-name">Loading...</h2>
                 </div>
                 <div class="flex gap-2">
                     <button onclick="logout()" class="p-2 text-rose-400 hover:bg-rose-50 rounded-lg transition" title="登出">
@@ -168,7 +168,6 @@
         lucide.createIcons();
         let userSession = null;
 
-        // 1. 初始化檢查
         window.onload = function() {
             checkLoginStatus();
         };
@@ -182,35 +181,14 @@
             if (savedSession) {
                 userSession = JSON.parse(savedSession);
                 
-                // [修改] 顯示名稱邏輯：姓名 > Google > Line
-                let displayName = '';
-                
-                // 1. 檢查是否有已設定的姓名 (且不是預設的 Guest)
-                if (userSession.name && userSession.name !== 'Guest' && userSession.name !== 'Google 用戶' && userSession.name !== 'Line 用戶') {
-                    displayName = userSession.name;
-                }
-                
-                // 2. 若沒有姓名，檢查 Google 帳號 (通常是 Email)
-                if (!displayName && userSession.email) {
-                    displayName = userSession.email;
-                }
-                
-                // 3. 若沒有 Google，顯示 Line 帳號 (UID)
-                if (!displayName && userSession.uid) {
-                    displayName = userSession.uid;
-                }
-                
-                // 4. 若以上皆無 (Fallback)
-                if (!displayName) {
-                    displayName = 'User';
-                }
-
-                document.getElementById('display-name').innerText = displayName;
-                
+                // 初步顯示 (等待後端驗證)
                 loginSection.classList.add('hidden');
                 userSection.classList.remove('hidden');
                 mainCard.classList.remove('max-w-md'); 
                 mainCard.classList.add('max-w-lg');
+                
+                // 驗證使用者是否存在於資料庫 (註冊邏輯)
+                validateUserExist();
             } else {
                 loginSection.classList.remove('hidden');
                 userSection.classList.add('hidden');
@@ -220,7 +198,44 @@
             lucide.createIcons();
         }
 
-        // 2. 模擬登入
+        async function validateUserExist() {
+            try {
+                // 呼叫後端取得所有用戶清單 (或特定檢查 API)
+                const response = await fetch(`${API_URL}?action=getSettings`);
+                const users = await response.json();
+                
+                // 比對 Email
+                const dbUser = users.find(u => 
+                    String(u.email).trim().toLowerCase() === String(userSession.email).trim().toLowerCase()
+                );
+
+                const displayNameEl = document.getElementById('display-name');
+                displayNameEl.classList.remove('animate-pulse');
+
+                if (dbUser) {
+                    // [重點] 找到人了，顯示順序: 姓名 > Google Email > Line UID
+                    let showName = dbUser.name;
+                    if (!showName || showName === 'Guest' || showName === 'Google 用戶') {
+                        showName = dbUser.email || dbUser.uid;
+                    }
+                    displayNameEl.innerText = showName;
+                    
+                    // 更新本地 Session 的 Name
+                    userSession.name = showName;
+                    localStorage.setItem('healthTwinSession', JSON.stringify(userSession));
+                } else {
+                    // 沒找到人 -> 跳轉註冊頁
+                    console.warn("User not found in DB, redirecting to signup.");
+                    window.location.href = 'signup.html';
+                }
+
+            } catch (error) {
+                console.error("Validation error:", error);
+                // 離線或錯誤時，暫時顯示 Session 資訊，不強制跳轉
+                document.getElementById('display-name').innerText = userSession.name || userSession.email;
+            }
+        }
+
         function mockSocialLogin(provider) {
             const btn = event.currentTarget;
             btn.innerHTML = `<i data-lucide="loader-2" class="w-5 h-5 animate-spin"></i> 登入中...`;
@@ -237,7 +252,8 @@
                 };
                 
                 localStorage.setItem('healthTwinSession', JSON.stringify(mockUser));
-                checkLoginStatus();
+                // 重新載入以觸發 checkLoginStatus -> validateUserExist
+                window.location.reload();
             }, 1000);
         }
 
@@ -248,7 +264,6 @@
             }
         }
 
-        // 3. 切換欄位
         function toggleFields() {
             const type = document.querySelector('input[name="dataType"]:checked').value;
             if (type === 'BloodPressure') {
@@ -260,7 +275,6 @@
             }
         }
 
-        // 4. 提交資料並跳轉
         async function handleQuickSubmit(e) {
             e.preventDefault();
             const btn = document.getElementById('btn-submit');
@@ -306,7 +320,6 @@
                     body: JSON.stringify(payload)
                 });
 
-                // 修改：成功後跳轉至 dashboard.html
                 setTimeout(() => {
                     alert("紀錄已成功儲存！");
                     window.location.href = 'dashboard.html';
