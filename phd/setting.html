@@ -114,7 +114,7 @@
     </div>
 
     <script>
-        // 2. 修改 API_URL 來源，改為讀取 config 物件
+        // 讀取 config.js 中的全域變數
         const API_URL = config.API_URL;
 
         document.addEventListener('DOMContentLoaded', () => {
@@ -125,6 +125,7 @@
         async function fetchSettings() {
             const tbody = document.getElementById('userTableBody');
             try {
+                // 對接新版 GAS 的 getSettings action
                 const response = await fetch(`${API_URL}?action=getSettings`);
                 const data = await response.json();
                 tbody.innerHTML = '';
@@ -139,25 +140,22 @@
                     const row = document.createElement('tr');
                     row.className = 'hover:bg-indigo-50/50 transition group';
                     
-                    const uid = user.UID || user.uid || '';
-                    const name = user.Name || user.name || '';
-                    const email = user.Email || user.email || '';
-                    const rawBirth = user.Birthday || user.birthday;
-                    const role = user.Role || user.role || 'user';
-                    const provider = user.Provider || user.provider || 'local';
+                    // 確保欄位名稱為小寫 (對應 GAS 回傳的 JSON)
+                    const uid = user.uid || '';
+                    const name = user.name || '';
+                    const email = user.email || '';
+                    const birth = user.birthday || '-';
+                    const role = user.role || 'user';
+                    const provider = user.provider || 'local';
 
                     const displayName = name ? name : '<span class="text-slate-400 italic">未設定</span>';
                     
-                    let displayBirth = '<span class="text-slate-300">-</span>';
-                    if (rawBirth) {
-                         displayBirth = rawBirth.toString().substring(0, 10); 
-                    }
-
+                    // 建立表格行
                     row.innerHTML = `
                         <td class="py-3 px-4 font-mono text-xs text-slate-500 select-all">${uid}</td>
                         <td class="py-3 px-4 font-bold text-slate-700">${displayName}</td>
                         <td class="py-3 px-4 text-slate-600 text-sm">${email}</td>
-                        <td class="py-3 px-4 text-slate-500 text-sm">${displayBirth}</td>
+                        <td class="py-3 px-4 text-slate-500 text-sm">${birth}</td>
                         <td class="py-3 px-4 text-xs">
                             <span class="px-2 py-1 rounded bg-slate-100 text-slate-600 border border-slate-200">${role}</span>
                         </td>
@@ -178,21 +176,13 @@
         }
 
         function openEditModal(user) {
-            const email = user.Email || user.email || '';
-            const name = user.Name || user.name || '';
-            const rawBirth = user.Birthday || user.birthday;
-
-            document.getElementById('edit-email').value = email;
-            document.getElementById('edit-name').value = name;
+            document.getElementById('edit-email').value = user.email || '';
+            document.getElementById('edit-name').value = user.name || '';
             
+            // 處理日期格式 (YYYY-MM-DD)
             const dateInput = document.getElementById('edit-birthday');
-            if (rawBirth && rawBirth !== '-') {
-                let d = new Date(rawBirth);
-                if (!isNaN(d.getTime())) {
-                    dateInput.value = d.toISOString().split('T')[0];
-                } else {
-                    dateInput.value = '';
-                }
+            if (user.birthday && user.birthday !== '-') {
+                dateInput.value = user.birthday;
             } else {
                 dateInput.value = '';
             }
@@ -223,6 +213,7 @@
             };
             
             try {
+                // 發送請求
                 await fetch(API_URL, {
                     method: 'POST',
                     mode: 'no-cors',
@@ -233,7 +224,7 @@
                 setTimeout(() => {
                     alert("更新請求已送出");
                     closeModal();
-                    fetchSettings();
+                    fetchSettings(); // 重新整理列表
                     btn.disabled = false;
                     btn.innerHTML = originalText;
                 }, 1500);
