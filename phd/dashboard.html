@@ -35,6 +35,10 @@
         .prose ul { list-style-type: disc; padding-left: 1.2em; margin-bottom: 0.8em; }
         .prose li { margin-bottom: 0.3em; }
         .prose strong { color: #4338ca; font-weight: 600; }
+        
+        /* 篩選器按鈕樣式 */
+        .filter-btn { @apply px-3 py-1.5 text-xs font-medium rounded-lg border border-slate-200 text-slate-600 hover:bg-slate-50 transition; }
+        .filter-btn.active { @apply bg-indigo-600 text-white border-indigo-600; }
     </style>
 </head>
 <body class="text-slate-800 h-screen flex overflow-hidden relative">
@@ -88,6 +92,9 @@
         </div>
         <div class="mt-auto p-4 border-t border-slate-100 bg-slate-50">
             <button onclick="getAIAnalysis()" class="w-full py-3 px-4 btn-gemini rounded-xl text-sm font-bold transition flex items-center justify-center gap-2 mb-3 shadow-md group"><i data-lucide="sparkles" class="w-4 h-4 group-hover:scale-110 transition-transform"></i>AI 分析 (Gemini)</button>
+            
+            <a href="accountsetting.html" class="w-full py-2.5 px-4 bg-white border border-slate-200 hover:bg-slate-100 text-slate-500 hover:text-slate-800 rounded-lg text-sm font-medium transition flex items-center justify-center gap-2 mb-2 shadow-sm"><i data-lucide="link" class="w-4 h-4"></i> 帳號綁定</a>
+            
             <a href="setting.html" class="w-full py-2.5 px-4 bg-white border border-slate-200 hover:bg-slate-100 text-slate-500 hover:text-slate-800 rounded-lg text-sm font-medium transition flex items-center justify-center gap-2 mb-2 shadow-sm group"><i data-lucide="settings-2" class="w-4 h-4 group-hover:rotate-90 transition-transform duration-500"></i> 管理者後台</a>
             <a href="phd.html" class="w-full py-2.5 px-4 bg-white border border-slate-200 hover:bg-slate-50 text-slate-600 rounded-lg text-sm font-medium transition flex items-center justify-center gap-2 mb-2 shadow-sm"><i data-lucide="plus-circle" class="w-4 h-4"></i> 新增數據</a>
             <button onclick="logout()" class="w-full py-2.5 px-4 bg-rose-50 border border-rose-100 text-rose-600 hover:bg-rose-100 rounded-lg text-sm font-medium transition flex items-center justify-center gap-2 mb-3 shadow-sm"><i data-lucide="log-out" class="w-4 h-4"></i> 登出系統</button>
@@ -103,7 +110,16 @@
                     <p id="defaultSubtitle" class="text-xs text-slate-400 mt-0.5 hidden sm:block">即時生理數據分析</p>
                 </div>
             </div>
-            <div class="flex items-center gap-2 sm:gap-4">
+            <div class="flex items-center gap-3">
+                <div class="flex items-center gap-1.5 mr-2">
+                    <div class="group relative flex items-center" title="Google 帳號狀態">
+                        <i data-lucide="globe" id="icon-google" class="w-5 h-5 text-slate-300"></i>
+                    </div>
+                    <div class="group relative flex items-center" title="LINE 帳號狀態">
+                        <i data-lucide="message-circle" id="icon-line" class="w-5 h-5 text-slate-300"></i>
+                    </div>
+                </div>
+
                 <button onclick="refreshCurrentUserData()" class="p-2 text-slate-500 hover:bg-slate-100 rounded-lg transition" title="刷新"><i data-lucide="refresh-cw" class="w-5 h-5"></i></button>
             </div>
         </header>
@@ -146,6 +162,18 @@
                     </div>
                 </div>
 
+                <div class="flex flex-wrap items-center gap-2 mb-4 bg-white p-2 rounded-xl shadow-sm border border-slate-100">
+                    <button onclick="setFilter('30days')" id="btn-30days" class="filter-btn active">近 30 天</button>
+                    <button onclick="setFilter('6months')" id="btn-6months" class="filter-btn">近半年</button>
+                    <button onclick="setFilter('1year')" id="btn-1year" class="filter-btn">近一年</button>
+                    <div class="flex items-center gap-2 border-l border-slate-200 pl-3 ml-1">
+                        <input type="date" id="filter-start" class="text-xs border border-slate-200 rounded px-2 py-1 focus:ring-1 focus:ring-indigo-500 outline-none">
+                        <span class="text-slate-400 text-xs">-</span>
+                        <input type="date" id="filter-end" class="text-xs border border-slate-200 rounded px-2 py-1 focus:ring-1 focus:ring-indigo-500 outline-none">
+                        <button onclick="setFilter('custom')" id="btn-custom" class="p-1.5 bg-indigo-50 text-indigo-600 rounded-lg hover:bg-indigo-100 transition"><i data-lucide="search" class="w-3 h-3"></i></button>
+                    </div>
+                </div>
+
                 <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
                     <div class="lg:col-span-2 space-y-6">
                         <div class="glass-card rounded-2xl p-5 flex flex-col h-[400px]">
@@ -163,7 +191,12 @@
                     </div>
 
                     <div class="glass-card rounded-2xl p-5 overflow-hidden flex flex-col h-[775px]">
-                        <div class="mb-4"><h3 class="font-bold text-slate-700 mb-3 flex justify-between items-center">歷史紀錄</h3></div>
+                        <div class="mb-4 flex justify-between items-center">
+                            <h3 class="font-bold text-slate-700 flex items-center gap-2">歷史紀錄</h3>
+                            <button onclick="downloadCSV()" class="p-1.5 text-xs text-slate-500 hover:text-indigo-600 hover:bg-indigo-50 rounded transition flex items-center gap-1" title="匯出 CSV">
+                                <i data-lucide="download" class="w-4 h-4"></i> 下載
+                            </button>
+                        </div>
                         <div class="flex-1 overflow-y-auto pr-1">
                             <table class="w-full text-sm text-left">
                                 <thead class="text-xs text-slate-400 uppercase border-b border-slate-100 sticky top-0 bg-white/95 backdrop-blur z-10">
@@ -186,12 +219,14 @@
     <script>
         const API_URL = config.API_URL;
         
-        let currentUserData = []; 
+        let allUserData = []; // 儲存所有資料
+        let filteredData = []; // 儲存篩選後的資料
+        let currentFilter = '30days';
         let bpChartInstance = null; 
         let glucoseChartInstance = null; 
         let currentSelectedUid = null;
+        let currentUserInfo = null; // 儲存當前選中用戶的完整資訊
         
-        // 語音相關
         const synth = window.speechSynthesis;
         let speechUtterance = null;
         let isSpeaking = false;
@@ -201,11 +236,17 @@
         document.addEventListener('DOMContentLoaded', () => {
             lucide.createIcons();
             if (loggedInSession) {
-                document.getElementById('sidebar-user-name').innerText = loggedInSession.name;
-                document.getElementById('sidebar-user-text').innerText = loggedInSession.name.charAt(0).toUpperCase();
+                updateSidebarDisplayName(loggedInSession.name);
             }
             initDashboard();
         });
+
+        // 邏輯修正：Name > Google > Line ID
+        function updateSidebarDisplayName(name) {
+            // 這個函數會被 initDashboard 裡的邏輯覆蓋，確保顯示正確
+            document.getElementById('sidebar-user-name').innerText = name || "Guest";
+            document.getElementById('sidebar-user-text').innerText = (name || "G").charAt(0).toUpperCase();
+        }
 
         function logout() { if(confirm("確定要登出系統嗎？")) { localStorage.removeItem('healthTwinSession'); window.location.href = 'index.html'; } }
         function toggleSidebar() { const sidebar = document.getElementById('sidebar'); const overlay = document.getElementById('mobileOverlay'); if (sidebar.classList.contains('-translate-x-full')) { sidebar.classList.remove('-translate-x-full'); overlay.classList.remove('hidden'); } else { sidebar.classList.add('-translate-x-full'); overlay.classList.add('hidden'); } }
@@ -217,9 +258,20 @@
                 renderUserList(users);
                 
                 if (loggedInSession) {
-                    const me = users.find(u => u.uid === loggedInSession.uid || u.name === loggedInSession.name);
+                    // 根據 UID 找人
+                    const me = users.find(u => u.uid === loggedInSession.uid);
+                    
                     if (me) {
-                        selectUser(me.uid, me.name);
+                        // 修正：依照順序決定顯示名稱
+                        let displayName = me.name; 
+                        if (!displayName) { // 若無 Name，找 Google Email/Name
+                            if (me.provider && me.provider.includes('google')) displayName = me.email; // 假設 email 是 Google 帳號
+                        }
+                        if (!displayName) { // 若無 Google，顯示 Line ID (UID)
+                             displayName = me.uid;
+                        }
+                        updateSidebarDisplayName(displayName);
+                        selectUser(me.uid, displayName);
                     } else if (users.length > 0) {
                         selectUser(users[0].uid, users[0].name);
                     }
@@ -242,20 +294,48 @@
                 const avatarText = user.name ? user.name.charAt(0).toUpperCase() : '?'; 
                 div.id = `user-item-${user.uid}`; 
                 div.className = `p-3 rounded-xl cursor-pointer hover:bg-indigo-50 hover:text-indigo-600 transition flex items-center gap-3 text-slate-600 font-medium group user-item border border-transparent`; 
-                div.innerHTML = `<div class="w-8 h-8 rounded-full bg-slate-100 text-slate-500 flex items-center justify-center text-xs font-bold shrink-0">${avatarText}</div><span class="truncate">${user.name}</span>`; 
-                div.onclick = () => { selectUser(user.uid, user.name); if (window.innerWidth < 1024) toggleSidebar(); }; 
+                div.innerHTML = `<div class="w-8 h-8 rounded-full bg-slate-100 text-slate-500 flex items-center justify-center text-xs font-bold shrink-0">${avatarText}</div><span class="truncate">${user.name || user.email || user.uid}</span>`; 
+                
+                // 傳遞完整 user 物件以便後續綁定狀態判斷
+                div.onclick = () => { selectUser(user.uid, user.name || user.email, user); if (window.innerWidth < 1024) toggleSidebar(); }; 
                 listContainer.appendChild(div); 
             }); 
         }
 
-        async function selectUser(uid, name) {
+        async function selectUser(uid, name, userObj = null) {
             currentSelectedUid = uid;
+            
+            // 處理右上角綁定狀態 (若 userObj 為空，需重新從列表找，這裡簡化處理)
+            updateBindingIcons(userObj);
+
             document.querySelectorAll('.user-item').forEach(el => { el.classList.remove('bg-indigo-50', 'text-indigo-600', 'shadow-sm', 'border-indigo-100'); el.classList.add('border-transparent'); }); 
             const element = document.getElementById(`user-item-${uid}`); 
             if (element) { element.classList.add('bg-indigo-50', 'text-indigo-600', 'shadow-sm', 'border-indigo-100'); element.classList.remove('border-transparent'); } 
             
             document.getElementById('currentUserName').innerText = name;
             await fetchUserData(uid);
+        }
+
+        // 更新右上角綁定圖示
+        function updateBindingIcons(user) {
+            const googleIcon = document.getElementById('icon-google');
+            const lineIcon = document.getElementById('icon-line');
+            
+            // 預設灰色
+            googleIcon.classList.remove('text-indigo-600'); googleIcon.classList.add('text-slate-300');
+            lineIcon.classList.remove('text-[#06C755]'); lineIcon.classList.add('text-slate-300');
+
+            if (user && user.provider) {
+                const providers = user.provider.toLowerCase();
+                if (providers.includes('google')) {
+                    googleIcon.classList.remove('text-slate-300');
+                    googleIcon.classList.add('text-indigo-600');
+                }
+                if (providers.includes('line')) {
+                    lineIcon.classList.remove('text-slate-300');
+                    lineIcon.classList.add('text-[#06C755]');
+                }
+            }
         }
 
         async function fetchUserData(uid) {
@@ -266,7 +346,7 @@
                 const response = await fetch(`${API_URL}?action=getData&uid=${encodeURIComponent(uid)}`);
                 const rawData = await response.json();
                 
-                currentUserData = rawData.map(item => {
+                allUserData = rawData.map(item => {
                     const sbp = item.sbp ? parseInt(item.sbp) : null;
                     const dbp = item.dbp ? parseInt(item.dbp) : null;
                     const pulse = item.hr ? parseInt(item.hr) : null;
@@ -283,8 +363,8 @@
                     };
                 });
 
-                currentUserData.sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp));
-                updateDashboardUI();
+                // 預設篩選：30天
+                setFilter('30days');
                 
                 document.getElementById('loadingState').classList.add('hidden'); 
                 document.getElementById('dashboardContent').classList.remove('hidden'); 
@@ -296,54 +376,84 @@
                 document.getElementById('loadingState').classList.add('hidden'); 
             }
         }
+
+        // [新增] 數據篩選邏輯
+        function setFilter(type) {
+            currentFilter = type;
+            
+            // UI 按鈕狀態更新
+            document.querySelectorAll('.filter-btn').forEach(btn => btn.classList.remove('active'));
+            if (type !== 'custom') document.getElementById(`btn-${type}`).classList.add('active');
+            if (type === 'custom') document.getElementById('btn-custom').classList.add('bg-indigo-100'); // 簡單高亮
+
+            const now = new Date();
+            let startDate = new Date();
+
+            if (type === '30days') {
+                startDate.setDate(now.getDate() - 30);
+            } else if (type === '6months') {
+                startDate.setMonth(now.getMonth() - 6);
+            } else if (type === '1year') {
+                startDate.setFullYear(now.getFullYear() - 1);
+            } else if (type === 'custom') {
+                const s = document.getElementById('filter-start').value;
+                const e = document.getElementById('filter-end').value;
+                if (!s || !e) { alert("請選擇開始與結束日期"); return; }
+                startDate = new Date(s);
+                now.setTime(new Date(e).getTime() + 86399000); // 包含結束當天
+            }
+
+            // 執行篩選
+            filteredData = allUserData.filter(d => {
+                const dDate = new Date(d.timestamp);
+                return dDate >= startDate && dDate <= now;
+            });
+
+            // 排序：舊到新 (為了圖表)
+            filteredData.sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp));
+
+            updateDashboardUI(filteredData);
+        }
         
         function refreshCurrentUserData() {
             if (currentSelectedUid) fetchUserData(currentSelectedUid);
         }
 
-        function updateDashboardUI() { 
-            if (currentUserData.length === 0) { 
+        function updateDashboardUI(data) { 
+            if (!data || data.length === 0) { 
                 document.getElementById('val-sbp').innerText = '--'; 
                 document.getElementById('val-dbp').innerText = '--'; 
                 document.getElementById('val-glucose').innerText = '--'; 
                 renderCharts([]); 
-                document.getElementById('historyTable').innerHTML = '<tr><td colspan="3" class="p-4 text-center text-slate-400">無資料</td></tr>';
+                document.getElementById('historyTable').innerHTML = '<tr><td colspan="3" class="p-4 text-center text-slate-400">該時段無資料</td></tr>';
                 return; 
             } 
 
-            const latestBP = [...currentUserData].reverse().find(d => d.sbp != null);
-            const latestGlu = [...currentUserData].reverse().find(d => d.glucose != null);
+            const latestBP = [...data].reverse().find(d => d.sbp != null);
+            const latestGlu = [...data].reverse().find(d => d.glucose != null);
 
             if (latestBP) {
                 document.getElementById('val-sbp').innerText = latestBP.sbp;
                 document.getElementById('val-dbp').innerText = latestBP.dbp;
                 document.getElementById('val-pulse').innerText = latestBP.pulse || '--';
-                
-                const statusEl = document.getElementById('status-sbp');
-                statusEl.innerHTML = latestBP.sbp > 140 
-                    ? `<span class="text-rose-500 font-bold">偏高</span>` 
-                    : `<span class="text-emerald-500 font-bold">正常</span>`;
             } else {
                 document.getElementById('val-sbp').innerText = '--';
                 document.getElementById('val-dbp').innerText = '--';
-                document.getElementById('val-pulse').innerText = '--';
             }
 
             if (latestGlu) {
                 document.getElementById('val-glucose').innerText = latestGlu.glucose;
-                const gStatus = document.getElementById('status-glucose');
-                if (latestGlu.glucose > 200) gStatus.innerHTML = `<span class="text-rose-500 font-bold">偏高</span>`;
-                else gStatus.innerHTML = `<span class="text-emerald-500 font-bold">正常</span>`;
             } else {
                 document.getElementById('val-glucose').innerText = '--';
             }
 
+            // 列表更新 (顯示倒序)
             const historyBody = document.getElementById('historyTable'); 
-            const displayList = [...currentUserData].reverse().slice(0, 50);
+            const displayList = [...data].reverse(); // 顯示全部符合篩選的資料
             
             historyBody.innerHTML = displayList.map(d => { 
                 const dateObj = new Date(d.timestamp); 
-                const timeStr = `${dateObj.getMonth()+1}/${dateObj.getDate()} ${String(dateObj.getHours()).padStart(2,'0')}:${String(dateObj.getMinutes()).padStart(2,'0')}`; 
+                const timeStr = `${dateObj.getFullYear()}/${(dateObj.getMonth()+1).toString().padStart(2,'0')}/${dateObj.getDate().toString().padStart(2,'0')} ${String(dateObj.getHours()).padStart(2,'0')}:${String(dateObj.getMinutes()).padStart(2,'0')}`; 
                 
                 let bpDisplay = (d.sbp) ? `<span class="text-rose-600">${d.sbp}</span>/<span class="text-blue-600">${d.dbp}</span> <span class="text-xs text-slate-400">(${d.pulse})</span>` : '-';
                 let gluDisplay = (d.glucose) ? `<span class="text-amber-600 font-bold">${d.glucose}</span>` : '-';
@@ -356,7 +466,7 @@
                     </tr>`; 
             }).join(''); 
 
-            renderCharts(currentUserData); 
+            renderCharts(data); 
         }
 
         function renderCharts(data) { 
@@ -402,6 +512,36 @@
                 } 
             }); 
         }
+
+        // [新增] 下載 CSV 功能
+        function downloadCSV() {
+            if (!filteredData || filteredData.length === 0) {
+                alert("目前篩選範圍內沒有資料可下載");
+                return;
+            }
+
+            // CSV 標頭
+            let csvContent = "\uFEFF時間,收縮壓,舒張壓,心率,血糖,情境,備註\n";
+
+            // 內容 (倒序：最新的在上面，與表格一致)
+            [...filteredData].reverse().forEach(row => {
+                const d = new Date(row.timestamp);
+                const timeStr = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')} ${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}`;
+                
+                csvContent += `${timeStr},${row.sbp||''},${row.dbp||''},${row.pulse||''},${row.glucose||''},${row.context||''},${row.note||''}\n`;
+            });
+
+            const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+            const link = document.createElement("a");
+            const url = URL.createObjectURL(blob);
+            const userName = document.getElementById('currentUserName').innerText;
+            
+            link.setAttribute("href", url);
+            link.setAttribute("download", `${userName}_健康紀錄_${currentFilter}.csv`);
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+        }
         
         async function getAIAnalysis() { 
             if (!currentSelectedUid) { alert("請先選擇一位用戶"); return; } 
@@ -419,8 +559,6 @@
                 if (data.result) { 
                     content.innerHTML = `<div class="prose prose-sm text-slate-700">${marked.parse(data.result)}</div>`; 
                     btnTTS.classList.remove('hidden'); 
-                    
-                    // 預先載入語音包
                     window.speechSynthesis.getVoices();
                 } else { throw new Error("AI 無回應"); } 
             } catch (err) { 
@@ -436,31 +574,15 @@
             } else {
                 const contentEl = document.getElementById('aiModalContent');
                 const contentText = contentEl.innerText || contentEl.textContent;
-                
                 if (!contentText) return;
-
                 synth.cancel(); 
-
                 speechUtterance = new SpeechSynthesisUtterance(contentText);
                 speechUtterance.lang = 'zh-TW'; 
                 speechUtterance.rate = 1.0;     
-                
                 const voices = synth.getVoices();
-                const targetVoice = voices.find(v => v.name === "Google 國語（臺灣）") 
-                                || voices.find(v => v.name.includes("Google") && v.lang.includes("zh-TW"))
-                                || voices.find(v => v.name.includes("Taiwan"))
-                                || voices.find(v => v.lang === "zh-TW");
-                                
-                if (targetVoice) {
-                    speechUtterance.voice = targetVoice;
-                    console.log("Using voice:", targetVoice.name);
-                }
-
-                speechUtterance.onend = () => {
-                    isSpeaking = false;
-                    updateTTSButton(false);
-                };
-
+                const targetVoice = voices.find(v => v.name === "Google 國語（臺灣）") || voices.find(v => v.name.includes("Google") && v.lang.includes("zh-TW")) || voices.find(v => v.name.includes("Taiwan")) || voices.find(v => v.lang === "zh-TW");
+                if (targetVoice) speechUtterance.voice = targetVoice;
+                speechUtterance.onend = () => { isSpeaking = false; updateTTSButton(false); };
                 synth.speak(speechUtterance);
                 isSpeaking = true;
                 updateTTSButton(true);
@@ -470,7 +592,6 @@
         function updateTTSButton(playing) {
             const btnText = document.getElementById('btn-tts-text');
             const icon = document.querySelector('#btn-tts i');
-            
             if (playing) {
                 btnText.innerText = "停止朗讀";
                 icon.setAttribute('data-lucide', 'square'); 
@@ -486,11 +607,7 @@
         }
 
         function closeAiModal() { 
-            if (synth.speaking) {
-                synth.cancel();
-                isSpeaking = false;
-                updateTTSButton(false);
-            }
+            if (synth.speaking) { synth.cancel(); isSpeaking = false; updateTTSButton(false); }
             document.getElementById('aiAnalysisModal').classList.add('hidden'); 
             document.getElementById('aiAnalysisModal').classList.remove('flex'); 
         }
