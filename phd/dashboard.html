@@ -225,7 +225,7 @@
         let bpChartInstance = null; 
         let glucoseChartInstance = null; 
         let currentSelectedUid = null;
-        let currentUserInfo = null; // 儲存當前選中用戶的完整資訊
+        let currentUserInfo = null; 
         
         const synth = window.speechSynthesis;
         let speechUtterance = null;
@@ -235,15 +235,11 @@
 
         document.addEventListener('DOMContentLoaded', () => {
             lucide.createIcons();
-            if (loggedInSession) {
-                updateSidebarDisplayName(loggedInSession.name);
-            }
+            // 這裡不再直接設 sidebar 名字，交由 initDashboard 統一處理
             initDashboard();
         });
 
-        // 邏輯修正：Name > Google > Line ID
         function updateSidebarDisplayName(name) {
-            // 這個函數會被 initDashboard 裡的邏輯覆蓋，確保顯示正確
             document.getElementById('sidebar-user-name').innerText = name || "Guest";
             document.getElementById('sidebar-user-text').innerText = (name || "G").charAt(0).toUpperCase();
         }
@@ -251,6 +247,7 @@
         function logout() { if(confirm("確定要登出系統嗎？")) { localStorage.removeItem('healthTwinSession'); window.location.href = 'index.html'; } }
         function toggleSidebar() { const sidebar = document.getElementById('sidebar'); const overlay = document.getElementById('mobileOverlay'); if (sidebar.classList.contains('-translate-x-full')) { sidebar.classList.remove('-translate-x-full'); overlay.classList.remove('hidden'); } else { sidebar.classList.add('-translate-x-full'); overlay.classList.add('hidden'); } }
 
+        // [重點修正] 初始化邏輯：處理「模擬使用者」不在清單中的狀況
         async function initDashboard() {
             try {
                 const response = await fetch(`${API_URL}?action=getSettings`);
@@ -262,19 +259,51 @@
                     const me = users.find(u => u.uid === loggedInSession.uid);
                     
                     if (me) {
-                        // 修正：依照順序決定顯示名稱
+                        // 情況 1: 使用者在清單中 (已註冊/已綁定)
                         let displayName = me.name; 
-                        if (!displayName) { // 若無 Name，找 Google Email/Name
-                            if (me.provider && me.provider.includes('google')) displayName = me.email; // 假設 email 是 Google 帳號
-                        }
-                        if (!displayName) { // 若無 Google，顯示 Line ID (UID)
-                             displayName = me.uid;
-                        }
+                        if (!displayName && me.provider && me.provider.includes('google')) displayName = me.email;
+                        if (!displayName) displayName = me.uid;
+                        
                         updateSidebarDisplayName(displayName);
-                        selectUser(me.uid, displayName);
-                    } else if (users.length > 0) {
-                        selectUser(users[0].uid, users[0].name);
+                        selectUser(me.uid, displayName, me);
+                    } else {
+                        // 情況 2: 使用者不在清單中 (例如 Mock User) [修正點]
+                        // 我們強制選取當前的 Mock User，並在列表中臨時加入他
+                        console.log("User not in sheet, using session info:", loggedInSession);
+                        
+                        const guestName = loggedInSession.name || loggedInSession.email || "Guest User";
+                        
+                        // 1. 更新 Sidebar 顯示
+                        updateSidebarDisplayName(guestName);
+                        
+                        // 2. 臨時加入列表最上方，讓使用者可見
+                        const listContainer = document.getElementById('userList');
+                        const div = document.createElement('div');
+                        const avatarText = guestName.charAt(0).toUpperCase();
+                        
+                        // 建立臨時使用者物件
+                        const tempUser = {
+                            uid: loggedInSession.uid,
+                            name: guestName,
+                            email: loggedInSession.email,
+                            role: 'user',
+                            provider: loggedInSession.provider
+                        };
+
+                        div.id = `user-item-${tempUser.uid}`;
+                        div.className = `p-3 rounded-xl cursor-pointer hover:bg-indigo-50 hover:text-indigo-600 transition flex items-center gap-3 text-slate-600 font-medium group user-item border border-transparent`;
+                        div.innerHTML = `<div class="w-8 h-8 rounded-full bg-indigo-100 text-indigo-600 flex items-center justify-center text-xs font-bold shrink-0">${avatarText}</div><span class="truncate">${guestName} (目前)</span>`;
+                        div.onclick = () => { selectUser(tempUser.uid, guestName, tempUser); if (window.innerWidth < 1024) toggleSidebar(); };
+                        
+                        if(listContainer.firstChild) listContainer.insertBefore(div, listContainer.firstChild);
+                        else listContainer.appendChild(div);
+
+                        // 3. 直接選取
+                        selectUser(tempUser.uid, guestName, tempUser);
                     }
+                } else if (users.length > 0) {
+                    // 沒登入的情況下，顯示列表第一位
+                    selectUser(users[0].uid, users[0].name);
                 }
             } catch (error) {
                 console.error("Init Error:", error);
@@ -296,7 +325,6 @@
                 div.className = `p-3 rounded-xl cursor-pointer hover:bg-indigo-50 hover:text-indigo-600 transition flex items-center gap-3 text-slate-600 font-medium group user-item border border-transparent`; 
                 div.innerHTML = `<div class="w-8 h-8 rounded-full bg-slate-100 text-slate-500 flex items-center justify-center text-xs font-bold shrink-0">${avatarText}</div><span class="truncate">${user.name || user.email || user.uid}</span>`; 
                 
-                // 傳遞完整 user 物件以便後續綁定狀態判斷
                 div.onclick = () => { selectUser(user.uid, user.name || user.email, user); if (window.innerWidth < 1024) toggleSidebar(); }; 
                 listContainer.appendChild(div); 
             }); 
@@ -304,8 +332,8 @@
 
         async function selectUser(uid, name, userObj = null) {
             currentSelectedUid = uid;
+            currentUserInfo = userObj;
             
-            // 處理右上角綁定狀態 (若 userObj 為空，需重新從列表找，這裡簡化處理)
             updateBindingIcons(userObj);
 
             document.querySelectorAll('.user-item').forEach(el => { el.classList.remove('bg-indigo-50', 'text-indigo-600', 'shadow-sm', 'border-indigo-100'); el.classList.add('border-transparent'); }); 
@@ -316,24 +344,20 @@
             await fetchUserData(uid);
         }
 
-        // 更新右上角綁定圖示
         function updateBindingIcons(user) {
             const googleIcon = document.getElementById('icon-google');
             const lineIcon = document.getElementById('icon-line');
             
-            // 預設灰色
             googleIcon.classList.remove('text-indigo-600'); googleIcon.classList.add('text-slate-300');
             lineIcon.classList.remove('text-[#06C755]'); lineIcon.classList.add('text-slate-300');
 
             if (user && user.provider) {
                 const providers = user.provider.toLowerCase();
                 if (providers.includes('google')) {
-                    googleIcon.classList.remove('text-slate-300');
-                    googleIcon.classList.add('text-indigo-600');
+                    googleIcon.classList.remove('text-slate-300'); googleIcon.classList.add('text-indigo-600');
                 }
                 if (providers.includes('line')) {
-                    lineIcon.classList.remove('text-slate-300');
-                    lineIcon.classList.add('text-[#06C755]');
+                    lineIcon.classList.remove('text-slate-300'); lineIcon.classList.add('text-[#06C755]');
                 }
             }
         }
@@ -363,7 +387,6 @@
                     };
                 });
 
-                // 預設篩選：30天
                 setFilter('30days');
                 
                 document.getElementById('loadingState').classList.add('hidden'); 
@@ -377,14 +400,12 @@
             }
         }
 
-        // [新增] 數據篩選邏輯
         function setFilter(type) {
             currentFilter = type;
             
-            // UI 按鈕狀態更新
             document.querySelectorAll('.filter-btn').forEach(btn => btn.classList.remove('active'));
             if (type !== 'custom') document.getElementById(`btn-${type}`).classList.add('active');
-            if (type === 'custom') document.getElementById('btn-custom').classList.add('bg-indigo-100'); // 簡單高亮
+            if (type === 'custom') document.getElementById('btn-custom').classList.add('bg-indigo-100');
 
             const now = new Date();
             let startDate = new Date();
@@ -400,18 +421,15 @@
                 const e = document.getElementById('filter-end').value;
                 if (!s || !e) { alert("請選擇開始與結束日期"); return; }
                 startDate = new Date(s);
-                now.setTime(new Date(e).getTime() + 86399000); // 包含結束當天
+                now.setTime(new Date(e).getTime() + 86399000);
             }
 
-            // 執行篩選
             filteredData = allUserData.filter(d => {
                 const dDate = new Date(d.timestamp);
                 return dDate >= startDate && dDate <= now;
             });
 
-            // 排序：舊到新 (為了圖表)
             filteredData.sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp));
-
             updateDashboardUI(filteredData);
         }
         
@@ -447,9 +465,8 @@
                 document.getElementById('val-glucose').innerText = '--';
             }
 
-            // 列表更新 (顯示倒序)
             const historyBody = document.getElementById('historyTable'); 
-            const displayList = [...data].reverse(); // 顯示全部符合篩選的資料
+            const displayList = [...data].reverse(); 
             
             historyBody.innerHTML = displayList.map(d => { 
                 const dateObj = new Date(d.timestamp); 
@@ -513,17 +530,14 @@
             }); 
         }
 
-        // [新增] 下載 CSV 功能
         function downloadCSV() {
             if (!filteredData || filteredData.length === 0) {
                 alert("目前篩選範圍內沒有資料可下載");
                 return;
             }
 
-            // CSV 標頭
             let csvContent = "\uFEFF時間,收縮壓,舒張壓,心率,血糖,情境,備註\n";
 
-            // 內容 (倒序：最新的在上面，與表格一致)
             [...filteredData].reverse().forEach(row => {
                 const d = new Date(row.timestamp);
                 const timeStr = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')} ${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}`;
