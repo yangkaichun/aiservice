@@ -100,12 +100,23 @@
             }
         });
 
+        // [新增] 安全的日期格式化工具，確保符合 input type="date" 的 YYYY-MM-DD 格式
+        function formatDateForInput(dateString) {
+            if (!dateString || dateString === '-') return '';
+            const d = new Date(dateString);
+            if (isNaN(d.getTime())) return ''; // 無效日期回傳空
+            // 使用 ISOString 並取前10碼，確保是 YYYY-MM-DD
+            // 注意：若有時區問題，可改用 getFullYear 等方法手動組字串
+            // 但通常 Apps Script 回傳的已是格式化字串，這裡做標準化
+            return d.toISOString().split('T')[0];
+        }
+
         async function fetchRemoteSettings() {
             try {
                 const response = await fetch(`${API_URL}?action=getSettings`);
                 const users = await response.json();
                 
-                // [修正] 使用更嚴謹的比對邏輯 (trim + toLowerCase)，確保能找到使用者
+                // 使用嚴謹的比對邏輯
                 const me = users.find(u => 
                     String(u.email).trim().toLowerCase() === String(session.email).trim().toLowerCase()
                 );
@@ -116,13 +127,11 @@
                         document.getElementById('edit-name').value = me.name;
                     }
 
-                    // [修正] 更新生日欄位，增加空值檢查邏輯，邏輯與 accountsetting 一致
-                    if(me.birthday && me.birthday !== '-') {
-                        try {
-                            const dateVal = String(me.birthday).substring(0, 10);
-                            document.getElementById('edit-birthday').value = dateVal;
-                        } catch(e) {
-                            console.error("Date parsing error", e);
+                    // [修正重點] 使用更穩健的日期處理
+                    if(me.birthday) {
+                        const formattedDate = formatDateForInput(me.birthday);
+                        if (formattedDate) {
+                            document.getElementById('edit-birthday').value = formattedDate;
                         }
                     }
                 }
