@@ -13,7 +13,7 @@
     <script src="config.js"></script>
 
     <script>
-        // 登入檢查
+        // 登入檢查：只在完全沒有 Session 時才踢人
         const savedSession = localStorage.getItem('healthTwinSession');
         if (!savedSession) {
             window.location.href = 'index.html';
@@ -114,8 +114,9 @@
     </main>
 
     <script>
-        const API_URL = config.API_URL;
-        // 安全讀取 Session
+        // 確保 config 正確載入，若無則使用預設提示
+        const API_URL = (typeof config !== 'undefined' && config.API_URL) ? config.API_URL : '';
+        
         let session;
         try {
             session = JSON.parse(localStorage.getItem('healthTwinSession'));
@@ -130,31 +131,56 @@
             if(session) {
                 document.getElementById('header-user-id').innerText = `ID: ${session.uid}`;
                 fetchUserProfile();
+            } else {
+                window.location.href = 'index.html';
             }
         });
 
         async function fetchUserProfile() {
             try {
-                // 取得後端所有設定資料以比對目前使用者
+                if (!API_URL) throw new Error("API URL 未設定");
+
                 const response = await fetch(`${API_URL}?action=getSettings`);
                 const users = await response.json();
                 
-                // 根據 Session UID 找到當前使用者
-                // 注意：這裡假設後端回傳的 uid 欄位名稱為 "uid" (小寫)
-                currentUserData = users.find(u => String(u.uid) === String(session.uid));
+                // 1. 嘗試從後端資料庫找人
+                const dbUser = users.find(u => String(u.uid) === String(session.uid));
 
-                if (currentUserData) {
-                    renderProfile(currentUserData);
-                    renderBindingStatus(currentUserData);
-                    document.getElementById('loading-overlay').classList.add('hidden');
+                if (dbUser) {
+                    // 找到資料庫中的真實使用者
+                    currentUserData = dbUser;
                 } else {
-                    alert("無法在資料庫中找到您的資料，請重新登入");
-                    localStorage.removeItem('healthTwinSession');
-                    window.location.href = 'index.html';
+                    // [修正] 找不到 (例如測試帳號)，使用 Session 作為備份，不登出
+                    console.warn("資料庫未找到此 UID，使用 Session 快取資料");
+                    currentUserData = {
+                        uid: session.uid,
+                        name: session.name || 'Guest',
+                        email: session.email || '',
+                        birthday: '', // Session 通常沒存生日
+                        provider: session.provider || ''
+                    };
                 }
+
+                // 2. 渲染畫面
+                renderProfile(currentUserData);
+                renderBindingStatus(currentUserData);
+                document.getElementById('loading-overlay').classList.add('hidden');
+
             } catch (error) {
-                console.error(error);
-                alert("連線錯誤: " + error.message);
+                console.error("Fetch Error:", error);
+                
+                // [修正] 連線錯誤時，也使用 Session 資料作為備份，不登出
+                // alert("無法連結伺服器，將顯示離線資料");
+                currentUserData = {
+                    uid: session.uid,
+                    name: session.name || 'Guest',
+                    email: session.email || '',
+                    birthday: '',
+                    provider: session.provider || ''
+                };
+                
+                renderProfile(currentUserData);
+                renderBindingStatus(currentUserData);
                 document.getElementById('loading-overlay').classList.add('hidden');
             }
         }
@@ -163,10 +189,14 @@
             document.getElementById('edit-name').value = user.name || '';
             
             // 處理生日格式 YYYY-MM-DD
-            if (user.birthday && user.birthday !== '-') {
-                // 如果後端回傳的是完整時間字串，截取前10位
-                const dateVal = user.birthday.substring(0, 10);
-                document.getElementById('edit-birthday').value = dateVal;
+            if (user.birthday && user.birthday !== '-' && user.birthday !== '') {
+                try {
+                    // 如果後端回傳的是完整時間字串，截取前10位
+                    const dateVal = String(user.birthday).substring(0, 10);
+                    document.getElementById('edit-birthday').value = dateVal;
+                } catch(e) {
+                    console.log("Date parse error", e);
+                }
             }
         }
 
@@ -231,7 +261,7 @@
             
             const payload = {
                 action: 'updateProfile',
-                userEmail: currentUserData.email, // 依賴 Email 作為更新 Key
+                userEmail: currentUserData.email || session.email, // 優先用 data 的 email，若無則用 session
                 userName: newName,
                 userBirthday: document.getElementById('edit-birthday').value
             };
@@ -265,36 +295,40 @@
         }
 
         function bindAccount(type) {
+            // 前端模擬綁定流程
             const confirmMsg = type === 'google' 
-                ? "即將進行 Google 帳號綁定模擬..." 
-                : "即將進行 LINE 帳號綁定模擬...";
+                ? "即將進行 Google 帳號綁定 (模擬)..." 
+                : "即將進行 LINE 帳號綁定 (模擬)...";
             
             if(confirm(confirmMsg)) {
-                // 模擬等待
                 const btn = document.getElementById(`btn-bind-${type}`);
-                const originalText = btn.innerText;
                 btn.disabled = true;
                 btn.innerText = "驗證中...";
 
                 setTimeout(() => {
                     alert(`✅ ${type === 'google' ? 'Google' : 'LINE'} 帳號連結成功！`);
                     
-                    // 1. 更新 UI 狀態
+                    // 1. 更新 UI
                     updateCardStatus(type, true);
                     
-                    // 2. 更新本地 currentUserData，避免重新整理後消失 (實際應寫入後端)
-                    // 這裡僅做前端狀態模擬，實際綁定通常涉及後端 OAuth callback
-                    if(currentUserData.provider) {
-                        currentUserData.provider += `,${type}`;
+                    // 2. 更新本地 Session 資料 (讓 Dashboard 右上角圖示能亮起)
+                    if(session.provider) {
+                        if (!session.provider.includes(type)) {
+                            session.provider += `,${type}`;
+                        }
                     } else {
-                        currentUserData.provider = type;
+                        session.provider = type;
                     }
                     
-                    // 3. 更新 Session 以便 Dashboard 使用
-                    session.provider = currentUserData.provider;
+                    // 3. 寫回 LocalStorage
                     localStorage.setItem('healthTwinSession', JSON.stringify(session));
 
-                }, 1500);
+                    // 4. (選用) 更新 currentUserData 以便頁面不刷新也能保持狀態
+                    if(currentUserData) {
+                        currentUserData.provider = session.provider;
+                    }
+
+                }, 1000);
             }
         }
     </script>
