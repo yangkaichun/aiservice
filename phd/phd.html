@@ -15,83 +15,95 @@
     <style>
         body { font-family: 'Inter', sans-serif; background-color: #F8FAFC; }
         .glass-card { background: rgba(255, 255, 255, 0.95); backdrop-filter: blur(10px); border: 1px solid rgba(255, 255, 255, 0.5); box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05); }
+        .animate-fade-in { animation: fadeIn 0.5s ease-out; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
     </style>
 
     <script>
+        // 登入檢查
         const savedSession = localStorage.getItem('healthTwinSession');
+        let session = null;
         if (!savedSession) {
+            alert("🔒 請先登入");
             window.location.href = 'index.html';
+        } else {
+            session = JSON.parse(savedSession);
         }
-        const userSession = JSON.parse(savedSession);
     </script>
 </head>
-<body class="text-slate-800 min-h-screen flex items-center justify-center p-4">
+<body class="text-slate-800 min-h-screen flex flex-col">
 
-    <div class="glass-card w-full max-w-md p-6 rounded-3xl shadow-xl">
-        <div class="flex items-center gap-3 mb-6">
-            <a href="dashboard.html" class="p-2 -ml-2 text-slate-500 hover:bg-slate-100 rounded-lg transition">
-                <i data-lucide="arrow-left" class="w-5 h-5"></i>
-            </a>
-            <h1 class="text-xl font-bold text-slate-800">新增健康數據</h1>
+    <header class="h-16 bg-white/80 backdrop-blur-md border-b border-slate-200 flex items-center px-4 sticky top-0 z-20">
+        <a href="dashboard.html" class="p-2 -ml-2 text-slate-500 hover:bg-slate-100 rounded-lg transition">
+            <i data-lucide="arrow-left" class="w-5 h-5"></i>
+        </a>
+        <h1 class="ml-2 font-bold text-lg text-slate-800">新增生理數據</h1>
+    </header>
+
+    <main class="flex-1 p-4 lg:p-8 max-w-lg mx-auto w-full animate-fade-in">
+        
+        <div class="glass-card rounded-2xl p-6">
+            <form id="addDataForm" onsubmit="handleSubmit(event)" class="space-y-6">
+                
+                <div class="grid grid-cols-2 gap-2 p-1 bg-slate-100 rounded-xl">
+                    <label class="cursor-pointer text-center">
+                        <input type="radio" name="dataType" value="BloodPressure" class="peer hidden" checked onchange="toggleFields()">
+                        <div class="py-2 rounded-lg text-sm font-medium text-slate-500 peer-checked:bg-white peer-checked:text-blue-600 peer-checked:shadow-sm transition-all">
+                            <i data-lucide="heart" class="w-4 h-4 inline mr-1"></i> 血壓
+                        </div>
+                    </label>
+                    <label class="cursor-pointer text-center">
+                        <input type="radio" name="dataType" value="BloodSugar" class="peer hidden" onchange="toggleFields()">
+                        <div class="py-2 rounded-lg text-sm font-medium text-slate-500 peer-checked:bg-white peer-checked:text-pink-600 peer-checked:shadow-sm transition-all">
+                            <i data-lucide="droplet" class="w-4 h-4 inline mr-1"></i> 血糖
+                        </div>
+                    </label>
+                </div>
+
+                <div id="field-bp" class="space-y-4">
+                    <div class="grid grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-xs font-bold text-slate-400 mb-1">收縮壓 (High)</label>
+                            <input type="number" id="sbp" class="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none transition text-center text-lg font-mono">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-bold text-slate-400 mb-1">舒張壓 (Low)</label>
+                            <input type="number" id="dbp" class="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none transition text-center text-lg font-mono">
+                        </div>
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold text-slate-400 mb-1">心率 (Heart Rate)</label>
+                        <input type="number" id="hr" class="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none transition text-center text-lg font-mono">
+                    </div>
+                </div>
+
+                <div id="field-bs" class="hidden space-y-4">
+                    <div>
+                        <label class="block text-xs font-bold text-slate-400 mb-1">血糖數值 (mg/dL)</label>
+                        <input type="number" id="bs" class="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:border-pink-500 focus:ring-1 focus:ring-pink-500 outline-none transition text-center text-lg font-mono">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold text-slate-400 mb-1">測量時機</label>
+                        <select id="bs-time" class="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:border-pink-500 outline-none">
+                            <option value="fasting">飯前 (空腹)</option>
+                            <option value="postprandial">飯後 2小時</option>
+                            <option value="wakeup">起床</option>
+                            <option value="bedtime">睡前</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div>
+                    <label class="block text-xs font-bold text-slate-400 mb-1">備註 (Note)</label>
+                    <textarea id="note" rows="2" class="w-full px-4 py-2 bg-slate-50 border border-slate-200 rounded-xl focus:border-indigo-500 outline-none transition resize-none"></textarea>
+                </div>
+
+                <button type="submit" id="btn-submit" class="w-full py-3.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl font-bold shadow-lg shadow-indigo-200 transition active:scale-95 flex items-center justify-center gap-2">
+                    <i data-lucide="save" class="w-5 h-5"></i> 儲存紀錄
+                </button>
+            </form>
         </div>
-
-        <form id="dataForm" onsubmit="handleSubmit(event)" class="space-y-4">
-            
-            <div class="grid grid-cols-2 gap-3 mb-2">
-                <label class="cursor-pointer">
-                    <input type="radio" name="dataType" value="BloodPressure" class="peer hidden" checked onchange="toggleFields()">
-                    <div class="p-3 rounded-xl border border-slate-200 bg-slate-50 peer-checked:bg-blue-50 peer-checked:border-blue-200 peer-checked:text-blue-600 text-center transition">
-                        <span class="text-sm font-bold">血壓</span>
-                    </div>
-                </label>
-                <label class="cursor-pointer">
-                    <input type="radio" name="dataType" value="BloodSugar" class="peer hidden" onchange="toggleFields()">
-                    <div class="p-3 rounded-xl border border-slate-200 bg-slate-50 peer-checked:bg-pink-50 peer-checked:border-pink-200 peer-checked:text-pink-600 text-center transition">
-                        <span class="text-sm font-bold">血糖</span>
-                    </div>
-                </label>
-            </div>
-
-            <div id="field-bp" class="space-y-4">
-                <div>
-                    <label class="block text-xs font-bold text-slate-500 mb-1">收縮壓 (mmHg)</label>
-                    <input type="number" id="sbp" class="w-full px-4 py-3 bg-white border border-slate-200 rounded-xl focus:border-indigo-500 outline-none transition" placeholder="例如: 120">
-                </div>
-                <div>
-                    <label class="block text-xs font-bold text-slate-500 mb-1">舒張壓 (mmHg)</label>
-                    <input type="number" id="dbp" class="w-full px-4 py-3 bg-white border border-slate-200 rounded-xl focus:border-indigo-500 outline-none transition" placeholder="例如: 80">
-                </div>
-                <div>
-                    <label class="block text-xs font-bold text-slate-500 mb-1">心率 (bpm)</label>
-                    <input type="number" id="hr" class="w-full px-4 py-3 bg-white border border-slate-200 rounded-xl focus:border-indigo-500 outline-none transition" placeholder="例如: 72">
-                </div>
-            </div>
-
-            <div id="field-bs" class="hidden">
-                <div>
-                    <label class="block text-xs font-bold text-slate-500 mb-1">血糖值 (mg/dL)</label>
-                    <input type="number" id="bs" class="w-full px-4 py-3 bg-white border border-slate-200 rounded-xl focus:border-indigo-500 outline-none transition" placeholder="例如: 100">
-                </div>
-                <div class="mt-3">
-                    <label class="block text-xs font-bold text-slate-500 mb-1">測量時機</label>
-                    <select id="bs-time" class="w-full px-4 py-3 bg-white border border-slate-200 rounded-xl focus:border-indigo-500 outline-none">
-                        <option value="fasting">空腹 (飯前)</option>
-                        <option value="postprandial">飯後 2 小時</option>
-                    </select>
-                </div>
-            </div>
-
-            <div>
-                <label class="block text-xs font-bold text-slate-500 mb-1">備註 (可選)</label>
-                <textarea id="note" rows="2" class="w-full px-4 py-3 bg-white border border-slate-200 rounded-xl focus:border-indigo-500 outline-none transition text-sm" placeholder="身體狀況描述..."></textarea>
-            </div>
-
-            <button type="submit" id="btn-submit" class="w-full py-3.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl font-bold shadow-lg shadow-indigo-200 transition-all flex items-center justify-center gap-2 mt-2">
-                <span>儲存紀錄</span>
-                <i data-lucide="save" class="w-4 h-4"></i>
-            </button>
-        </form>
-    </div>
+    </main>
 
     <script>
         const API_URL = config.API_URL;
@@ -112,15 +124,16 @@
             e.preventDefault();
             const btn = document.getElementById('btn-submit');
             const originalText = btn.innerHTML;
-            
             btn.disabled = true;
             btn.innerHTML = `<i data-lucide="loader-2" class="w-5 h-5 animate-spin"></i> 處理中...`;
             lucide.createIcons();
 
             const type = document.querySelector('input[name="dataType"]:checked').value;
+            
+            // [關鍵修正] 使用 session.uid
             let payload = {
                 action: 'addData',
-                uid: userSession.uid,
+                uid: session.uid, 
                 type: type,
                 note: document.getElementById('note').value,
                 timestamp: new Date().toISOString()
@@ -146,7 +159,6 @@
             }
 
             try {
-                // 使用 no-cors 發送 POST (GAS 標準做法)
                 await fetch(API_URL, {
                     method: 'POST',
                     mode: 'no-cors',
