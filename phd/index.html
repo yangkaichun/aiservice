@@ -19,70 +19,130 @@
     <script src="config.js"></script>
 
     <style>
-        body { font-family: 'Inter', sans-serif; background-color: #F8FAFC; }
-        .glass-card { background: rgba(255, 255, 255, 0.95); backdrop-filter: blur(10px); border: 1px solid rgba(255, 255, 255, 0.5); box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05); }
-        .animate-fade-in { animation: fadeIn 0.5s ease-out; }
-        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
-        .no-scrollbar::-webkit-scrollbar { display: none; }
-
-        /* --- 酷炫開場動畫 CSS --- */
+        body { font-family: 'Inter', sans-serif; background-color: #F8FAFC; overflow: hidden; /* 防止動畫時捲動 */ }
+        .glass-card { background: rgba(255, 255, 255, 0.95); backdrop-filter: blur(10px); border: 1px solid rgba(255, 255, 255, 0.5); box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1); }
+        .animate-fade-in { animation: fadeIn 0.6s cubic-bezier(0.16, 1, 0.3, 1); }
+        
+        /* === 4.5秒 酷炫開場動畫 (RWD Optimized) === */
         #intro-overlay {
             position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            background: linear-gradient(135deg, #1e1b4b 0%, #312e81 50%, #4338ca 100%);
-            z-index: 9999; display: flex; align-items: center; justify-content: center; flex-col: column;
-            transition: opacity 0.8s ease-out, visibility 0.8s;
+            background: linear-gradient(135deg, #0f172a 0%, #1e1b4b 40%, #312e81 100%);
+            z-index: 9999; display: flex; align-items: center; justify-content: center; flex-direction: column;
+            transition: opacity 1s ease-out, visibility 1s;
         }
         .intro-hidden { opacity: 0; visibility: hidden; pointer-events: none; }
-        
-        .heart-beat { animation: heartBeat 1.5s infinite ease-in-out; }
-        @keyframes heartBeat {
-            0% { transform: scale(1); filter: drop-shadow(0 0 5px rgba(244, 63, 94, 0.5)); }
-            15% { transform: scale(1.15); filter: drop-shadow(0 0 15px rgba(244, 63, 94, 0.8)); }
-            30% { transform: scale(1); filter: drop-shadow(0 0 5px rgba(244, 63, 94, 0.5)); }
-            45% { transform: scale(1.15); filter: drop-shadow(0 0 15px rgba(244, 63, 94, 0.8)); }
-            60% { transform: scale(1); filter: drop-shadow(0 0 5px rgba(244, 63, 94, 0.5)); }
-            100% { transform: scale(1); filter: drop-shadow(0 0 5px rgba(244, 63, 94, 0.5)); }
+
+        /* Logo 動畫 */
+        .intro-logo {
+            width: 120px; height: 120px; /* 手機版預設 */
+            filter: drop-shadow(0 0 15px rgba(99, 102, 241, 0.6));
+            animation: introHeartbeat 4.5s ease-in-out forwards;
         }
-        
-        .shine-text {
-            background: linear-gradient(to right, #818cf8 0%, #e0e7ff 50%, #818cf8 100%);
+        @media (min-width: 768px) {
+            .intro-logo { width: 160px; height: 160px; /* 桌面版加大 */ }
+        }
+
+        @keyframes introHeartbeat {
+            0% { opacity: 0; transform: scale(0.5); }
+            15% { opacity: 1; transform: scale(1.1); }
+            30% { transform: scale(1); }
+            45% { transform: scale(1.15); filter: drop-shadow(0 0 25px rgba(244, 63, 94, 0.9)); }
+            60% { transform: scale(1); }
+            100% { opacity: 0; transform: scale(1.5); } /* 最後淡出並放大 */
+        }
+
+        /* 文字動畫 */
+        .intro-text-container {
+            margin-top: 2rem; text-align: center;
+            overflow: hidden;
+        }
+        .intro-title {
+            font-size: 1.8rem; font-weight: 800; letter-spacing: 0.1em;
+            background: linear-gradient(90deg, #a5b4fc, #ffffff, #a5b4fc);
             -webkit-background-clip: text; -webkit-text-fill-color: transparent;
-            background-size: 200% auto; animation: shine 2s linear infinite;
+            background-size: 200% auto;
+            opacity: 0;
+            animation: textReveal 4.5s ease-in-out forwards;
         }
-        @keyframes shine { to { background-position: 200% center; } }
+        @media (min-width: 768px) {
+            .intro-title { font-size: 3rem; letter-spacing: 0.2em; }
+        }
+
+        @keyframes textReveal {
+            0% { opacity: 0; transform: translateY(20px); }
+            20% { opacity: 1; transform: translateY(0); background-position: 0% center; }
+            80% { opacity: 1; background-position: 200% center; }
+            100% { opacity: 0; transform: translateY(-20px); }
+        }
+
+        .intro-sub {
+            color: #6366f1; font-size: 0.8rem; letter-spacing: 0.2em; margin-top: 0.5rem;
+            opacity: 0; animation: subFade 4.5s ease-in-out forwards;
+        }
+        @keyframes subFade {
+            0%, 25% { opacity: 0; }
+            30% { opacity: 0.8; }
+            80% { opacity: 0.8; }
+            100% { opacity: 0; }
+        }
+
+        /* === 酷炫資料同步 Loading (Tech Pulse) === */
+        #full-loader { background: rgba(255, 255, 255, 0.9); backdrop-filter: blur(8px); }
+        .tech-loader { position: relative; width: 80px; height: 80px; display: flex; align-items: center; justify-content: center; }
+        .tech-ring {
+            position: absolute; border-radius: 50%; border: 2px solid transparent;
+            border-top-color: #4f46e5; border-bottom-color: #ec4899;
+            width: 100%; height: 100%; animation: spin 1.5s linear infinite;
+        }
+        .tech-ring:nth-child(2) {
+            width: 70%; height: 70%; border: 2px solid transparent;
+            border-left-color: #06b6d4; border-right-color: #8b5cf6;
+            animation: spin-reverse 1s linear infinite;
+        }
+        .tech-heart { animation: pulse-fast 1s ease-in-out infinite; color: #4338ca; }
+
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+        @keyframes spin-reverse { 0% { transform: rotate(0deg); } 100% { transform: rotate(-360deg); } }
+        @keyframes pulse-fast { 0%, 100% { transform: scale(1); opacity: 1; } 50% { transform: scale(0.85); opacity: 0.7; } }
+
+        /* Install Button Pulse */
+        .btn-pulse { animation: softPulse 2s infinite; }
+        @keyframes softPulse { 0% { box-shadow: 0 0 0 0 rgba(79, 70, 229, 0.4); } 70% { box-shadow: 0 0 0 10px rgba(79, 70, 229, 0); } 100% { box-shadow: 0 0 0 0 rgba(79, 70, 229, 0); } }
     </style>
 </head>
-<body class="text-slate-800 min-h-screen flex flex-col items-center justify-center p-4 relative overflow-y-auto">
+<body class="text-slate-800 min-h-screen flex flex-col items-center justify-center p-4 relative">
 
     <div id="intro-overlay">
         <div class="relative">
-            <div class="absolute inset-0 bg-rose-500 blur-3xl opacity-20 rounded-full animate-pulse"></div>
-            <img src="image/yanghealth.png" class="w-24 h-24 object-contain relative z-10 heart-beat" alt="Logo">
+            <div class="absolute inset-0 bg-indigo-500 blur-[80px] opacity-30 rounded-full animate-pulse"></div>
+            <img src="image/yanghealth.png" class="intro-logo relative z-10" alt="Logo">
         </div>
-        <h1 class="mt-6 text-3xl font-bold shine-text tracking-wider">YangHome Health</h1>
-        <p class="text-indigo-200 text-sm mt-2 tracking-widest opacity-80">Loading System...</p>
+        <div class="intro-text-container">
+            <h1 class="intro-title">YANGHOME</h1>
+            <p class="intro-sub">INTELLIGENT HEALTH SYSTEM</p>
+        </div>
     </div>
 
-    <div id="ios-install-modal" class="fixed inset-0 bg-black/60 z-50 hidden flex-col items-center justify-end pb-8 backdrop-blur-sm animate-fade-in" onclick="closeIosModal()">
-        <div class="bg-white w-[90%] max-w-md rounded-2xl p-6 relative" onclick="event.stopPropagation()">
+    <div id="ios-install-modal" class="fixed inset-0 bg-black/70 z-50 hidden flex-col items-center justify-end pb-10 backdrop-blur-md animate-fade-in" onclick="closeIosModal()">
+        <div class="bg-white w-[90%] max-w-md rounded-3xl p-6 relative shadow-2xl" onclick="event.stopPropagation()">
             <button onclick="closeIosModal()" class="absolute top-4 right-4 text-slate-400 hover:text-slate-600"><i data-lucide="x" class="w-6 h-6"></i></button>
             <div class="text-center">
-                <div class="w-12 h-12 bg-indigo-100 text-indigo-600 rounded-xl flex items-center justify-center mx-auto mb-4">
-                    <i data-lucide="share" class="w-6 h-6"></i>
+                <div class="w-14 h-14 bg-indigo-50 text-indigo-600 rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-inner">
+                    <i data-lucide="share" class="w-7 h-7"></i>
                 </div>
-                <h3 class="text-lg font-bold text-slate-800 mb-2">加入主畫面</h3>
-                <p class="text-sm text-slate-500 mb-6">在 iOS 上，請依照以下步驟將此網頁變為 APP：</p>
-                <div class="space-y-4 text-left text-sm text-slate-600 bg-slate-50 p-4 rounded-xl border border-slate-100">
+                <h3 class="text-xl font-bold text-slate-800 mb-2">安裝應用程式</h3>
+                <p class="text-sm text-slate-500 mb-6">為獲得最佳體驗，請將此網頁加入主畫面：</p>
+                <div class="space-y-3 text-left text-sm text-slate-600 bg-slate-50 p-5 rounded-2xl border border-slate-100">
                     <div class="flex items-center gap-3">
-                        <span class="w-6 h-6 rounded-full bg-white border border-slate-200 flex items-center justify-center font-bold text-xs">1</span>
-                        <span>點擊瀏覽器下方的 <strong>分享</strong> 按鈕 <i data-lucide="share" class="w-4 h-4 inline"></i></span>
+                        <span class="w-6 h-6 rounded-full bg-white border border-slate-200 flex items-center justify-center font-bold text-xs text-indigo-600 shadow-sm">1</span>
+                        <span>點擊下方工具列的 <strong>分享</strong> <i data-lucide="share" class="w-4 h-4 inline align-text-bottom"></i></span>
                     </div>
                     <div class="flex items-center gap-3">
-                        <span class="w-6 h-6 rounded-full bg-white border border-slate-200 flex items-center justify-center font-bold text-xs">2</span>
-                        <span>往下滑動，選擇 <strong>加入主畫面</strong> <i data-lucide="plus-square" class="w-4 h-4 inline"></i></span>
+                        <span class="w-6 h-6 rounded-full bg-white border border-slate-200 flex items-center justify-center font-bold text-xs text-indigo-600 shadow-sm">2</span>
+                        <span>往下滑，選擇 <strong>加入主畫面</strong> <i data-lucide="plus-square" class="w-4 h-4 inline align-text-bottom"></i></span>
                     </div>
                     <div class="flex items-center gap-3">
-                        <span class="w-6 h-6 rounded-full bg-white border border-slate-200 flex items-center justify-center font-bold text-xs">3</span>
+                        <span class="w-6 h-6 rounded-full bg-white border border-slate-200 flex items-center justify-center font-bold text-xs text-indigo-600 shadow-sm">3</span>
                         <span>點擊右上角的 <strong>加入</strong> 即可</span>
                     </div>
                 </div>
@@ -91,25 +151,25 @@
     </div>
 
     <div class="fixed top-0 left-0 w-full h-full overflow-hidden -z-10 pointer-events-none">
-        <div class="absolute -top-[20%] -left-[10%] w-[50%] h-[50%] bg-blue-100 rounded-full blur-3xl opacity-60 animate-pulse"></div>
-        <div class="absolute top-[30%] -right-[10%] w-[40%] h-[40%] bg-indigo-100 rounded-full blur-3xl opacity-60 animate-pulse" style="animation-delay: 2s;"></div>
+        <div class="absolute -top-[20%] -left-[10%] w-[60%] h-[60%] bg-blue-100 rounded-full blur-[100px] opacity-50 animate-pulse"></div>
+        <div class="absolute top-[30%] -right-[10%] w-[50%] h-[50%] bg-indigo-100 rounded-full blur-[100px] opacity-50 animate-pulse" style="animation-delay: 2s;"></div>
     </div>
 
-    <div class="glass-card w-full max-w-md p-6 rounded-3xl shadow-xl animate-fade-in transition-all duration-300 my-8" id="main-card">
+    <div class="glass-card w-full max-w-md p-8 rounded-[2rem] shadow-2xl animate-fade-in transition-all duration-300 my-8 border border-white/50" id="main-card">
         
-        <div class="text-center mb-6">
-            <div class="flex justify-center mb-4">
-                <div class="w-20 h-20 bg-indigo-50 rounded-2xl flex items-center justify-center shadow-inner overflow-hidden p-2">
+        <div class="text-center mb-8">
+            <div class="flex justify-center mb-5">
+                <div class="w-24 h-24 bg-gradient-to-br from-indigo-50 to-white rounded-3xl flex items-center justify-center shadow-[0_8px_30px_rgb(0,0,0,0.04)] overflow-hidden p-3 border border-white">
                     <img src="image/yanghealth.png" alt="YangHealth Logo" class="w-full h-full object-contain">
                 </div>
             </div>
-            <h1 class="text-2xl font-bold text-slate-800 tracking-tight">YangHome Health</h1>
-            <p class="text-slate-500 text-sm font-light">您的個人智慧健康管家</p>
+            <h1 class="text-3xl font-bold text-slate-800 tracking-tight">YangHome Health</h1>
+            <p class="text-slate-500 text-sm font-medium mt-1">智慧醫療．守護健康</p>
         </div>
 
-        <div id="login-section" class="space-y-4">
+        <div id="login-section" class="space-y-5">
             
-            <div class="flex justify-center">
+            <div class="flex justify-center transform hover:scale-[1.02] transition-transform">
                 <div id="g_id_onload"
                      data-client_id="142808541856-1sfda1hcfk12p1r0a5fbmldugb1f99vn.apps.googleusercontent.com" 
                      data-callback="handleCredentialResponse"
@@ -125,110 +185,108 @@
                 </div>
             </div>
 
-            <div class="relative py-2">
+            <div class="relative py-3">
                 <div class="absolute inset-0 flex items-center"><span class="w-full border-t border-slate-200"></span></div>
-                <div class="relative flex justify-center text-xs uppercase"><span class="bg-white px-2 text-slate-400">其他方式</span></div>
+                <div class="relative flex justify-center text-xs uppercase"><span class="bg-white px-3 text-slate-400 font-medium">其他選項</span></div>
             </div>
 
-            <a href="login.html" class="block w-full py-3 text-center text-indigo-600 hover:text-indigo-700 font-medium text-sm transition">
+            <a href="login.html" class="block w-full py-3.5 text-center text-slate-600 bg-slate-50 hover:bg-slate-100 rounded-xl font-bold text-sm transition border border-slate-100">
                 使用 Email / UID 登入
             </a>
 
-            <button onclick="installPWA()" id="btn-install-app" class="w-full py-3 bg-slate-800 hover:bg-slate-900 text-white rounded-xl font-medium transition-all flex items-center justify-center gap-2 shadow-lg hidden">
-                <i data-lucide="smartphone" class="w-4 h-4"></i>
-                <span>加入主畫面 (App)</span>
+            <button onclick="installPWA()" id="btn-install-app" class="w-full py-3.5 bg-slate-800 hover:bg-slate-900 text-white rounded-xl font-bold transition-all flex items-center justify-center gap-2 shadow-xl btn-pulse mt-4">
+                <i data-lucide="download" class="w-5 h-5"></i>
+                <span>安裝應用程式 (App)</span>
             </button>
         </div>
 
         <div id="user-section" class="hidden">
-            <div class="flex justify-between items-center mb-6 bg-indigo-50/50 p-4 rounded-xl border border-indigo-100">
+            <div class="flex justify-between items-center mb-6 bg-indigo-50/60 p-4 rounded-2xl border border-indigo-100/50 backdrop-blur-sm">
                 <div>
-                    <p class="text-xs text-slate-400">Welcome back,</p>
+                    <p class="text-[10px] uppercase tracking-wider text-indigo-400 font-bold mb-0.5">Current User</p>
                     <h2 class="text-lg font-bold text-indigo-900" id="display-name">User</h2>
-                    <p class="text-[10px] text-slate-500" id="display-email">...</p>
+                    <p class="text-xs text-slate-500 truncate max-w-[150px]" id="display-email">...</p>
                 </div>
-                <div class="flex gap-2">
-                    <button onclick="logout()" class="p-2 text-rose-400 hover:bg-rose-50 rounded-lg transition" title="登出">
-                        <i data-lucide="log-out" class="w-5 h-5"></i>
-                    </button>
-                </div>
+                <button onclick="logout()" class="p-2.5 bg-white text-rose-500 hover:bg-rose-50 rounded-xl transition shadow-sm border border-rose-100" title="登出">
+                    <i data-lucide="log-out" class="w-5 h-5"></i>
+                </button>
             </div>
 
-            <form id="quickAddForm" onsubmit="handleQuickSubmit(event)" class="space-y-4">
+            <form id="quickAddForm" onsubmit="handleQuickSubmit(event)" class="space-y-5">
                 
-                <div class="grid grid-cols-2 gap-2 p-1 bg-slate-100 rounded-xl">
-                    <label class="cursor-pointer text-center">
+                <div class="grid grid-cols-2 gap-3 p-1.5 bg-slate-100 rounded-2xl">
+                    <label class="cursor-pointer text-center relative">
                         <input type="radio" name="dataType" value="BloodPressure" class="peer hidden" checked onchange="toggleFields()">
-                        <div class="py-2 rounded-lg text-sm font-medium text-slate-500 peer-checked:bg-white peer-checked:text-blue-600 peer-checked:shadow-sm transition-all">
+                        <div class="py-2.5 rounded-xl text-sm font-bold text-slate-500 peer-checked:bg-white peer-checked:text-indigo-600 peer-checked:shadow-sm transition-all z-10 relative">
                             血壓記錄
                         </div>
                     </label>
-                    <label class="cursor-pointer text-center">
+                    <label class="cursor-pointer text-center relative">
                         <input type="radio" name="dataType" value="BloodSugar" class="peer hidden" onchange="toggleFields()">
-                        <div class="py-2 rounded-lg text-sm font-medium text-slate-500 peer-checked:bg-white peer-checked:text-pink-600 peer-checked:shadow-sm transition-all">
+                        <div class="py-2.5 rounded-xl text-sm font-bold text-slate-500 peer-checked:bg-white peer-checked:text-pink-600 peer-checked:shadow-sm transition-all z-10 relative">
                             血糖記錄
                         </div>
                     </label>
                 </div>
 
-                <div id="field-bp" class="grid grid-cols-2 gap-3 animate-fade-in">
+                <div id="field-bp" class="grid grid-cols-2 gap-4 animate-fade-in">
                     <div class="col-span-1">
-                        <label class="block text-xs font-bold text-slate-400 mb-1 ml-1">收縮壓 (High)</label>
-                        <input type="number" id="sbp" class="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none transition text-center font-mono text-lg" placeholder="120">
+                        <label class="block text-xs font-bold text-slate-400 mb-1.5 ml-1">收縮壓 (SYS)</label>
+                        <input type="number" id="sbp" class="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100 outline-none transition text-center font-mono text-xl font-bold text-slate-700" placeholder="120">
                     </div>
                     <div class="col-span-1">
-                        <label class="block text-xs font-bold text-slate-400 mb-1 ml-1">舒張壓 (Low)</label>
-                        <input type="number" id="dbp" class="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none transition text-center font-mono text-lg" placeholder="80">
+                        <label class="block text-xs font-bold text-slate-400 mb-1.5 ml-1">舒張壓 (DIA)</label>
+                        <input type="number" id="dbp" class="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100 outline-none transition text-center font-mono text-xl font-bold text-slate-700" placeholder="80">
                     </div>
                     <div class="col-span-2">
-                        <label class="block text-xs font-bold text-slate-400 mb-1 ml-1">心率 (Heart Rate)</label>
-                        <input type="number" id="hr" class="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none transition text-center font-mono text-lg" placeholder="72">
+                        <label class="block text-xs font-bold text-slate-400 mb-1.5 ml-1">心率 (BPM)</label>
+                        <input type="number" id="hr" class="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100 outline-none transition text-center font-mono text-xl font-bold text-slate-700" placeholder="72">
                     </div>
                 </div>
 
-                <div id="field-bs" class="hidden space-y-3 animate-fade-in">
+                <div id="field-bs" class="hidden space-y-4 animate-fade-in">
                     <div>
-                        <label class="block text-xs font-bold text-slate-400 mb-1 ml-1">血糖數值 (mg/dL)</label>
+                        <label class="block text-xs font-bold text-slate-400 mb-1.5 ml-1">血糖數值 (mg/dL)</label>
                         <div class="relative">
-                            <input type="number" id="bs" class="w-full pl-4 pr-10 py-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:border-pink-500 focus:ring-1 focus:ring-pink-500 outline-none transition font-mono text-lg" placeholder="100">
-                            <div class="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 text-xs">mg/dL</div>
+                            <input type="number" id="bs" class="w-full pl-6 pr-12 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:border-pink-500 focus:ring-2 focus:ring-pink-100 outline-none transition font-mono text-xl font-bold text-slate-700" placeholder="100">
+                            <div class="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 text-xs font-bold">mg/dL</div>
                         </div>
                     </div>
                     <div>
-                        <label class="block text-xs font-bold text-slate-400 mb-1 ml-1">測量時機</label>
+                        <label class="block text-xs font-bold text-slate-400 mb-1.5 ml-1">測量時機</label>
                         <div class="grid grid-cols-2 gap-2">
                             <label class="cursor-pointer">
                                 <input type="radio" name="bsTime" value="fasting" class="peer hidden" checked>
-                                <div class="py-2 text-center text-xs border border-slate-200 rounded-lg peer-checked:bg-pink-50 peer-checked:border-pink-200 peer-checked:text-pink-600 transition">飯前 (空腹)</div>
+                                <div class="py-2.5 text-center text-xs font-medium border border-slate-200 rounded-xl peer-checked:bg-pink-50 peer-checked:border-pink-200 peer-checked:text-pink-600 transition hover:bg-slate-50">飯前</div>
                             </label>
                             <label class="cursor-pointer">
                                 <input type="radio" name="bsTime" value="postprandial" class="peer hidden">
-                                <div class="py-2 text-center text-xs border border-slate-200 rounded-lg peer-checked:bg-pink-50 peer-checked:border-pink-200 peer-checked:text-pink-600 transition">飯後 2h</div>
+                                <div class="py-2.5 text-center text-xs font-medium border border-slate-200 rounded-xl peer-checked:bg-pink-50 peer-checked:border-pink-200 peer-checked:text-pink-600 transition hover:bg-slate-50">飯後</div>
                             </label>
                             <label class="cursor-pointer">
                                 <input type="radio" name="bsTime" value="wakeup" class="peer hidden">
-                                <div class="py-2 text-center text-xs border border-slate-200 rounded-lg peer-checked:bg-pink-50 peer-checked:border-pink-200 peer-checked:text-pink-600 transition">起床</div>
+                                <div class="py-2.5 text-center text-xs font-medium border border-slate-200 rounded-xl peer-checked:bg-pink-50 peer-checked:border-pink-200 peer-checked:text-pink-600 transition hover:bg-slate-50">起床</div>
                             </label>
                             <label class="cursor-pointer">
                                 <input type="radio" name="bsTime" value="bedtime" class="peer hidden">
-                                <div class="py-2 text-center text-xs border border-slate-200 rounded-lg peer-checked:bg-pink-50 peer-checked:border-pink-200 peer-checked:text-pink-600 transition">睡前</div>
+                                <div class="py-2.5 text-center text-xs font-medium border border-slate-200 rounded-xl peer-checked:bg-pink-50 peer-checked:border-pink-200 peer-checked:text-pink-600 transition hover:bg-slate-50">睡前</div>
                             </label>
                         </div>
                     </div>
                 </div>
 
                 <div>
-                    <label class="block text-xs font-bold text-slate-400 mb-1 ml-1">備註 (Note)</label>
-                    <input type="text" id="note" class="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 outline-none transition text-sm text-slate-600" placeholder="例: 剛運動完, 昨晚沒睡好...">
+                    <label class="block text-xs font-bold text-slate-400 mb-1.5 ml-1">備註 (Note)</label>
+                    <input type="text" id="note" class="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100 outline-none transition text-sm text-slate-600" placeholder="例: 剛運動完...">
                 </div>
 
                 <div class="space-y-3 pt-2">
-                    <button type="submit" id="btn-submit" class="w-full py-3 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl font-bold shadow-lg shadow-indigo-200 transition-all active:scale-95 flex items-center justify-center gap-2">
+                    <button type="submit" id="btn-submit" class="w-full py-4 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl font-bold shadow-lg shadow-indigo-200 transition-all active:scale-95 flex items-center justify-center gap-2">
                         <span>快速記錄</span>
                         <i data-lucide="send" class="w-4 h-4"></i>
                     </button>
                     
-                    <a href="dashboard.html" class="w-full py-3 bg-white border border-slate-200 hover:bg-slate-50 text-slate-600 rounded-xl font-medium transition-all flex items-center justify-center gap-2 active:scale-95 shadow-sm">
+                    <a href="dashboard.html" class="w-full py-3.5 bg-white border border-slate-200 hover:bg-slate-50 text-slate-600 rounded-xl font-bold text-sm transition-all flex items-center justify-center gap-2 active:scale-95 shadow-sm">
                         <i data-lucide="bar-chart-2" class="w-4 h-4 text-indigo-500"></i>
                         <span>查看生理量測資訊</span>
                     </a>
@@ -237,14 +295,18 @@
             </form>
         </div>
 
-        <div class="mt-8 pt-6 border-t border-slate-100 text-xs text-center text-slate-400">
-            <p>&copy; 2024 YangHome Health System.</p>
+        <div class="mt-8 pt-6 border-t border-slate-100 text-[10px] uppercase tracking-widest text-center text-slate-300">
+            <p>&copy; 2024 YangHome Health System</p>
         </div>
     </div>
     
-    <div id="full-loader" class="fixed inset-0 bg-white/80 z-50 hidden flex-col items-center justify-center backdrop-blur-sm">
-        <i data-lucide="loader-2" class="w-10 h-10 animate-spin text-indigo-600"></i>
-        <p class="mt-3 text-slate-600 font-bold">正在同步資料...</p>
+    <div id="full-loader" class="fixed inset-0 z-50 hidden flex-col items-center justify-center">
+        <div class="tech-loader">
+            <div class="tech-ring"></div>
+            <div class="tech-ring"></div>
+            <i data-lucide="activity" class="tech-heart w-8 h-8"></i>
+        </div>
+        <p class="mt-4 text-indigo-600 font-bold tracking-widest text-sm animate-pulse">SYNCING DATA...</p>
     </div>
 
     <script>
@@ -252,51 +314,48 @@
         lucide.createIcons();
         let userSession = null;
 
-        // --- 4. 開場動畫邏輯 ---
+        // --- 4.5秒 開場動畫邏輯 ---
         window.addEventListener('load', () => {
+            // 允許滾動 (回復正常)
             setTimeout(() => {
                 const overlay = document.getElementById('intro-overlay');
-                overlay.classList.add('intro-hidden');
-            }, 2000); // 2秒後消失
+                if(overlay) overlay.classList.add('intro-hidden');
+                document.body.style.overflow = 'auto';
+            }, 4500); // 4.5秒
+
             checkLoginStatus();
         });
 
-        // --- 5. PWA 安裝邏輯 ---
+        // --- PWA 安裝邏輯 (按鈕控制) ---
         let deferredPrompt;
         const btnInstall = document.getElementById('btn-install-app');
         
-        // 偵測 Android/Chrome 的安裝事件
         window.addEventListener('beforeinstallprompt', (e) => {
             e.preventDefault();
             deferredPrompt = e;
-            btnInstall.classList.remove('hidden'); // 顯示安裝按鈕
+            // 按鈕已預設顯示，此處可做額外處理
         });
 
-        // 偵測是否為 iOS (顯示按鈕，但行為不同)
         const isIos = /iPhone|iPad|iPod/.test(navigator.userAgent) && !window.MSStream;
-        // 檢查是否已經在 Standalone 模式 (已安裝)
         const isStandalone = window.navigator.standalone || window.matchMedia('(display-mode: standalone)').matches;
 
-        if (isIos && !isStandalone) {
-            btnInstall.classList.remove('hidden');
+        // 若已安裝 (Standalone 模式)，隱藏安裝按鈕
+        if (isStandalone) {
+            btnInstall.classList.add('hidden');
         }
 
         function installPWA() {
             if (isIos) {
-                // 顯示 iOS 教學 Modal
                 document.getElementById('ios-install-modal').classList.remove('hidden');
                 document.getElementById('ios-install-modal').classList.add('flex');
             } else if (deferredPrompt) {
-                // 觸發 Android 原生安裝
                 deferredPrompt.prompt();
                 deferredPrompt.userChoice.then((choiceResult) => {
-                    if (choiceResult.outcome === 'accepted') {
-                        console.log('User accepted the A2HS prompt');
-                    }
                     deferredPrompt = null;
                 });
             } else {
-                alert("您的瀏覽器暫時不支援自動安裝，請使用瀏覽器選單中的「加入主畫面」功能。");
+                // 桌機或不支援自動觸發的環境
+                alert("請使用瀏覽器選單中的「安裝應用程式」或「加入主畫面」功能。\n(iOS 用戶請使用 Safari 分享按鈕)");
             }
         }
 
@@ -304,7 +363,8 @@
             document.getElementById('ios-install-modal').classList.add('hidden');
             document.getElementById('ios-install-modal').classList.remove('flex');
         }
-        // -------------------------
+
+        // --- 登入與資料邏輯 ---
 
         function checkLoginStatus() {
             const savedSession = localStorage.getItem('healthTwinSession');
