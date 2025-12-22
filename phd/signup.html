@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>會員註冊 | YangHome Health</title>
+    <title>完善個人資料 | YangHome Health</title>
     
     <link rel="icon" type="image/x-icon" href="image/yanghealth.ico">
     <script src="https://cdn.tailwindcss.com"></script>
@@ -13,46 +13,47 @@
     <script src="config.js"></script>
 
     <script>
-        // 檢查是否有臨時登入資訊 (從 login.html 傳過來的 session)
         const savedSession = localStorage.getItem('healthTwinSession');
         if (!savedSession) {
-            window.location.href = 'index.html'; // 沒登入就踢回首頁
+            window.location.href = 'index.html';
         }
     </script>
 
     <style>
         body { font-family: 'Inter', sans-serif; background-color: #F8FAFC; }
         .glass-card { background: rgba(255, 255, 255, 0.95); backdrop-filter: blur(10px); border: 1px solid rgba(255, 255, 255, 0.5); box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05); }
-        .animate-fade-in { animation: fadeIn 0.5s ease-out; }
-        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
     </style>
 </head>
-<body class="text-slate-800 min-h-screen flex flex-col items-center justify-center p-4">
+<body class="flex items-center justify-center min-h-screen p-4">
 
-    <div class="glass-card w-full max-w-md p-8 rounded-3xl shadow-xl animate-fade-in">
+    <div class="glass-card w-full max-w-md p-8 rounded-3xl shadow-xl">
         <div class="text-center mb-6">
-            <div class="w-16 h-16 bg-indigo-100 rounded-full flex items-center justify-center mx-auto mb-4 text-indigo-600">
-                <i data-lucide="user-plus" class="w-8 h-8"></i>
-            </div>
-            <h1 class="text-2xl font-bold text-slate-800">完善個人資料</h1>
-            <p class="text-slate-500 text-sm mt-2">初次登入，請填寫您的基本資訊以建立檔案。</p>
+            <h1 class="text-2xl font-bold text-slate-800">歡迎加入！</h1>
+            <p class="text-slate-500 text-sm mt-2">請完善您的個人資料以利健康分析</p>
         </div>
 
-        <form id="signupForm" onsubmit="handleSignup(event)" class="space-y-5">
-            <div>
-                <label class="block text-xs font-bold text-slate-500 mb-1 uppercase">您的姓名 (Name)</label>
-                <input type="text" id="reg-name" required placeholder="請輸入真實姓名" 
-                    class="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:border-indigo-500 transition">
+        <form onsubmit="handleCompleteProfile(event)" class="space-y-4">
+            
+            <div class="p-3 bg-indigo-50 rounded-xl flex items-center gap-3">
+                <div class="w-10 h-10 rounded-full bg-white flex items-center justify-center text-indigo-600 font-bold border border-indigo-100" id="avatar-preview">U</div>
+                <div class="overflow-hidden">
+                    <p class="text-xs text-indigo-400 font-bold uppercase">Account</p>
+                    <p class="text-sm font-bold text-indigo-900 truncate" id="label-email">loading...</p>
+                </div>
             </div>
 
             <div>
-                <label class="block text-xs font-bold text-slate-500 mb-1 uppercase">生日 (Birthday)</label>
-                <input type="date" id="reg-birthday" required 
-                    class="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:border-indigo-500 transition">
+                <label class="block text-xs font-bold text-slate-400 mb-1 ml-1">顯示名稱</label>
+                <input type="text" id="reg-name" required class="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:border-indigo-500 outline-none transition">
             </div>
 
-            <button type="submit" id="btn-signup" class="w-full py-3 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl font-bold shadow-lg shadow-indigo-200 transition flex items-center justify-center gap-2 mt-4">
-                <span>完成註冊並進入</span>
+            <div>
+                <label class="block text-xs font-bold text-slate-400 mb-1 ml-1">生日 (用於年齡分析)</label>
+                <input type="date" id="reg-birthday" required class="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:border-indigo-500 outline-none transition">
+            </div>
+
+            <button type="submit" id="btn-submit" class="w-full py-3 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl font-bold shadow-lg shadow-indigo-200 transition active:scale-95 flex items-center justify-center gap-2">
+                <span>完成設定</span>
                 <i data-lucide="arrow-right" class="w-4 h-4"></i>
             </button>
         </form>
@@ -63,26 +64,30 @@
         lucide.createIcons();
         const session = JSON.parse(savedSession);
 
-        async function handleSignup(e) {
+        // 初始化
+        document.getElementById('label-email').innerText = session.email;
+        document.getElementById('reg-name').value = session.name || '';
+        if(session.picture) {
+            document.getElementById('avatar-preview').innerHTML = `<img src="${session.picture}" class="w-full h-full object-cover rounded-full">`;
+        }
+
+        async function handleCompleteProfile(e) {
             e.preventDefault();
-            const btn = document.getElementById('btn-signup');
+            const btn = document.getElementById('btn-submit');
             const originalText = btn.innerHTML;
-            
             btn.disabled = true;
             btn.innerHTML = `<i data-lucide="loader-2" class="w-5 h-5 animate-spin"></i> 處理中...`;
             lucide.createIcons();
 
+            // [關鍵修正] 使用 updateProfile 而非 registerUser
             const payload = {
-                action: 'registerUser',
-                uid: session.uid,
-                email: session.email,
-                provider: session.provider,
-                name: document.getElementById('reg-name').value,
-                birthday: document.getElementById('reg-birthday').value
+                action: 'updateProfile',
+                userEmail: session.email, // 依賴 Email
+                userName: document.getElementById('reg-name').value,
+                userBirthday: document.getElementById('reg-birthday').value
             };
 
             try {
-                // 呼叫後端註冊
                 await fetch(API_URL, {
                     method: 'POST',
                     mode: 'no-cors',
@@ -90,21 +95,18 @@
                     body: JSON.stringify(payload)
                 });
 
-                // 模擬成功並更新 Session
                 setTimeout(() => {
-                    alert("註冊成功！歡迎加入 YangHome Health。");
-                    
-                    // 更新本地 Session 的 Name
-                    session.name = payload.name;
+                    // 更新本地 Session
+                    session.name = payload.userName;
                     localStorage.setItem('healthTwinSession', JSON.stringify(session));
                     
-                    // 跳轉回首頁
-                    window.location.href = 'index.html';
+                    alert("設定完成！");
+                    window.location.href = 'dashboard.html';
                 }, 1500);
 
             } catch (error) {
                 console.error(error);
-                alert("註冊失敗，請稍後再試");
+                alert("設定失敗，請稍後再試");
                 btn.disabled = false;
                 btn.innerHTML = originalText;
                 lucide.createIcons();
