@@ -1,130 +1,307 @@
 // ==========================================
-// Code.gs v14.1 (SmartHealthDB 2 Compatible)
+// YangHome Health Backend API (v2.0 Fixed)
 // ==========================================
-const ADMIN_EMAIL = "kaichun.yang@gmail.com"; 
-const GEMINI_API_KEY = "AIzaSyDnRyQUyW-0EgB0hSzyPFZu6mT_0L12xSg";
-// ⚠️ 注意：這裡應填入 Google Cloud "API Key" (通常以 AIza 開頭)。
-// 如果您原本的 GOCSPX... 是 OAuth Client Secret，請改用類似 GEMINI_API_KEY 的 API Key，並在 GCP Console 開啟 Text-to-Speech API 權限。
-const TTS_API = "AIzaSyDnRyQUyW-0EgB0hSzyPFZu6mT_0L12xSg";
-// LINE 設定
-const LINE_CHANNEL_ID = "2008700923"; 
-const LINE_CHANNEL_SECRET = "37ae02487f993a1fc1d0702d9b704c84";
 
+// 設定試算表 (自動取得當前綁定的試算表)
+const SPREADSHEET_ID = SpreadsheetApp.getActiveSpreadsheet().getId();
+const SHEET_USERS = "Users";
+const SHEET_DATA = "Data";
+
+// 請在「專案設定」->「指令碼屬性」中設定 GEMINI_API_KEY，或在此處填入
+const GEMINI_API_KEY = PropertiesService.getScriptProperties().getProperty("AIzaSyDnRyQUyW-0EgB0hSzyPFZu6mT_0L12xSg") || "在此填入您的GeminiAPIKey";
+
+/**
+ * 處理 GET 請求 (讀取資料)
+ */
 function doGet(e) {
-  var action = e ? e.parameter.action : ""; 
-  var ss = SpreadsheetApp.getActiveSpreadsheet();
-  if (action === "getSettings") { return handleGetSettings(ss); }
-  if (action === "analyze") { return handleAnalyzeRequest(e); }
+  const action = e.parameter.action;
+  
+  if (action === "login") {
+    return handleLogin(e);
+  } else if (action === "getData") {
+    return handleGetData(e);
+  } else if (action === "getSettings") {
+    return handleGetSettings(e);
+  } else if (action === "askAI") {
+    return handleAskAI(e);
+  }
 
-  // [Dashboard] 讀取數據
-  return handleGetAllData(ss);
+  return responseJSON({ error: "Unknown action" });
 }
 
-// ... (handleGetAllData, loadUsersMap, handleGetSettings 保持不變) ...
-// 為了版面簡潔，此處省略中間未修改的讀取函式，請保留原有的程式碼
-// ...
-
-// ==========================================
-// 2. doPost (寫入對應)
-// ==========================================
+/**
+ * 處理 POST 請求 (寫入/更新資料)
+ */
 function doPost(e) {
-  var lock = LockService.getScriptLock();
-  if (!lock.tryLock(10000)) return outputJSON({ status: "error" });
-
   try {
-    // 必須使用 JSON.parse 解析前端傳來的 JSON 字串
-    var data = JSON.parse(e.postData.contents);
-    var ss = SpreadsheetApp.getActiveSpreadsheet();
-    
-    if (data.action === "lineLogin") return handleLineLoginCode(data.code, data.redirectUri);
-    if (data.action === "getProfile") return handleGetProfile(data.token);
-    if (data.action === "updateProfile") return handleUpdateProfile(data);
-    if (data.action === "bindAccount") return handleBindAccount(data);
-    
-    // [新增] TTS 處理路由
-    if (data.action === "tts") return handleTTS(data);
+    // 處理 CORS 預檢請求或空內容
+    if (!e.postData || !e.postData.contents) {
+      return responseJSON({ status: "success", message: "CORS preflight" });
+    }
 
-    // Data 寫入
-    if (!data.action) {
-        var sheet = ss.getSheetByName("Data");
-        if (!sheet) sheet = ss.insertSheet("Data");
-        
-        var userIdentifier = "Unknown";
-        var idToken = data.token;
-        var userMap = loadUsersMap(ss);
-        var foundUser = null;
+    const data = JSON.parse(e.postData.contents);
+    const action = data.action;
 
-        if (idToken) {
-            if (String(idToken).startsWith("LINE_")) {
-                var key = idToken.replace("LINE_", "").toLowerCase().trim();
-                foundUser = userMap[key];
-            } else {
-                try { 
-                    var identity = verifyGoogleToken(idToken);
-                    var emailKey = identity.email.toLowerCase().trim();
-                    foundUser = userMap[emailKey];
-                    if(!foundUser) userIdentifier = identity.email;
-                } catch(e) { if(data.userEmail) userIdentifier = data.userEmail; }
-            }
-        } else if (data.name) { userIdentifier = data.name; }
-
-        if (foundUser) userIdentifier = foundUser.uid;
-        var timestamp = Utilities.formatDate(new Date(), "Asia/Taipei", "yyyy-MM-dd HH:mm:ss");
-        // 對應 Data Sheet 結構
-        sheet.appendRow([timestamp, userIdentifier, data.context||"", data.sbp, data.dbp, data.hr, data.glucose||"", data.note||""]);
-        return outputJSON({ status: "success", message: "Saved", uid: userIdentifier });
+    if (action === "addData") {
+      return handleAddData(data);
+    } else if (action === "updateProfile") {
+      return handleUpdateProfile(data);
     }
     
-    // Admin 略...
-    if (data.action === "deleteRow") { var r = parseInt(data.rowIndex); var sh = ss.getSheetByName("Data"); if(r>1){ sh.deleteRow(r); return outputJSON({status:"success"}); } }
-    if (data.action === "saveUser") return handleSaveUser(data);
-    if (data.action === "deleteUserAccount") return handleDeleteUserAccount(data.targetEmail);
-
-  } catch (error) { return outputJSON({ status: "error", message: error.toString() });
-  } finally { lock.releaseLock(); }
-}
-
-// ... (getUserEmailFromToken, handleGetProfile 等保持不變) ...
-// ...
-
-// [新增] 處理 TTS 請求的函式
-function handleTTS(data) {
-  var text = data.text;
-  if (!text) return outputJSON({ error: "No text provided" });
-
-  // Google Cloud TTS API Endpoint
-  // 注意：這裡使用 POST 方法
-  var url = "https://texttospeech.googleapis.com/v1/text:synthesize?key=" + TTS_API;
-  
-  var payload = {
-    "input": { "text": text },
-    "voice": { "languageCode": "zh-TW", "name": "zh-TW-Standard-A" }, // 設定為繁體中文
-    "audioConfig": { "audioEncoding": "MP3" }
-  };
-  
-  try {
-    var options = {
-      "method": "post",
-      "contentType": "application/json",
-      "payload": JSON.stringify(payload),
-      "muteHttpExceptions": true
-    };
-    
-    var response = UrlFetchApp.fetch(url, options);
-    var json = JSON.parse(response.getContentText());
-    
-    if (json.error) {
-      return outputJSON({ error: json.error.message });
-    }
-    
-    // 回傳 API 產生的 Base64 音訊
-    return outputJSON({ audioContent: json.audioContent });
-    
-  } catch (e) {
-    return outputJSON({ error: e.toString() });
+    return responseJSON({ error: "Unknown action" });
+  } catch (err) {
+    return responseJSON({ error: "Invalid JSON data", details: err.message });
   }
 }
 
-// ... (其他原有 Helper Functions 保持不變) ...
-// ... 
-function outputJSON(data) { return ContentService.createTextOutput(JSON.stringify(data)).setMimeType(ContentService.MimeType.JSON); }
+// ----------------------------------------------------------------
+// 核心邏輯函式
+// ----------------------------------------------------------------
+
+// 1. 登入驗證
+function handleLogin(e) {
+  const email = e.parameter.email;
+  const uid = e.parameter.uid; 
+  
+  const sheet = SpreadsheetApp.openById(SPREADSHEET_ID).getSheetByName(SHEET_USERS);
+  const rows = sheet.getDataRange().getValues();
+  
+  // Users Sheet 結構: [UID, Email, Name, Birthday, Role, Provider, LineUserId]
+  for (let i = 1; i < rows.length; i++) {
+    const row = rows[i];
+    // 比對 Email (忽略大小寫) 和 UID
+    if (String(row[1]).toLowerCase() === String(email).toLowerCase() && 
+        String(row[0]) === String(uid)) {
+      
+      return responseJSON({
+        success: true,
+        user: {
+          uid: row[0],
+          email: row[1],
+          name: row[2],
+          role: row[4] || 'user'
+        }
+      });
+    }
+  }
+  
+  return responseJSON({ success: false, message: "帳號或 UID 錯誤" });
+}
+
+// 2. 取得使用者列表 (給 Dashboard 左側選單 & Admin 用)
+function handleGetSettings(e) {
+  const sheet = SpreadsheetApp.openById(SPREADSHEET_ID).getSheetByName(SHEET_USERS);
+  const rows = sheet.getDataRange().getValues();
+  
+  // 跳過標題列
+  const users = rows.slice(1).map(row => {
+    return {
+      uid: row[0],
+      email: row[1],
+      name: row[2],
+      birthday: formatDate(row[3]),
+      role: row[4],
+      provider: row[5]
+    };
+  });
+  
+  return responseJSON(users);
+}
+
+// 3. [修正] 取得歷史數據
+// 對應 Data.csv 結構: Timestamp(A), UID(B), Context(C), SBP(D), DBP(E), HR(F), Glucose(G), Note(H)
+function handleGetData(e) {
+  const uid = e.parameter.uid;
+  const sheet = SpreadsheetApp.openById(SPREADSHEET_ID).getSheetByName(SHEET_DATA);
+  const data = sheet.getDataRange().getValues();
+  
+  const result = [];
+  
+  // 從最後一筆開始讀取 (倒序)，讓最新的資料排在前面
+  for (let i = data.length - 1; i >= 1; i--) {
+    const row = data[i];
+    // 比對 UID (B欄 / Index 1)
+    if (String(row[1]) === String(uid)) {
+      result.push({
+        date: row[0],       // A欄: Timestamp
+        // uid: row[1],     // B欄 (前端已有，可不傳)
+        context: row[2],    // C欄: Context (情境)
+        sbp: row[3],        // D欄: 收縮壓
+        dbp: row[4],        // E欄: 舒張壓
+        hr: row[5],         // F欄: 心率
+        glucose: row[6],    // G欄: 血糖
+        note: row[7],       // H欄: 備註
+        
+        // 為了相容舊版前端邏輯，我們可以補上 type 與 value (可選)
+        // type: row[6] ? 'BloodSugar' : 'BloodPressure',
+        // value: row[6] ? row[6] : (row[3] ? `${row[3]}/${row[4]}` : '')
+      });
+    }
+  }
+  
+  return responseJSON(result);
+}
+
+// 4. [修正] 新增健康數據
+function handleAddData(data) {
+  const sheet = SpreadsheetApp.openById(SPREADSHEET_ID).getSheetByName(SHEET_DATA);
+  const timestamp = new Date(); // 當前時間
+  
+  // Data Sheet 欄位: [Timestamp, UID, Context, SBP, DBP, HR, Glucose, Note]
+  // 預設為空字串
+  let context = '';
+  let sbp = '';
+  let dbp = '';
+  let hr = '';
+  let glucose = '';
+  let note = data.note || '';
+
+  if (data.type === 'BloodPressure') {
+    // 血壓模式
+    sbp = data.sbp;
+    dbp = data.dbp;
+    hr = data.hr;
+    context = "一般量測"; // 預設情境
+  } else if (data.type === 'BloodSugar') {
+    // 血糖模式
+    glucose = data.bs;
+    // 將前端的 code 轉換為中文 Context
+    const timeMap = {
+      'fasting': '空腹',
+      'postprandial': '飯後',
+      'wakeup': '起床',
+      'bedtime': '睡前'
+    };
+    context = timeMap[data.time] || data.time || '其他';
+  }
+  
+  // 寫入 Sheet
+  sheet.appendRow([
+    timestamp,
+    data.uid,
+    context,
+    sbp,
+    dbp,
+    hr,
+    glucose,
+    note
+  ]);
+  
+  return responseJSON({ success: true, message: "Data added" });
+}
+
+// 5. 更新使用者資料
+function handleUpdateProfile(data) {
+  const sheet = SpreadsheetApp.openById(SPREADSHEET_ID).getSheetByName(SHEET_USERS);
+  const rows = sheet.getDataRange().getValues();
+  const email = data.userEmail;
+  
+  for (let i = 1; i < rows.length; i++) {
+    // 比對 Email (B欄)
+    if (rows[i][1] === email) { 
+      // 更新 C欄(Name) 和 D欄(Birthday)
+      sheet.getRange(i + 1, 3).setValue(data.userName);
+      sheet.getRange(i + 1, 4).setValue("'" + data.userBirthday); // 強制字串避免格式跑掉
+      
+      return responseJSON({ success: true, message: "Profile updated" });
+    }
+  }
+  return responseJSON({ success: false, message: "User not found" });
+}
+
+// 6. Gemini AI 分析
+function handleAskAI(e) {
+  if (!GEMINI_API_KEY || GEMINI_API_KEY.includes("填入")) {
+    return responseJSON({ result: "系統錯誤：未設定 Gemini API Key。" });
+  }
+
+  const uid = e.parameter.uid;
+  // 取得該用戶最近 10 筆數據作為 Context
+  const sheet = SpreadsheetApp.openById(SPREADSHEET_ID).getSheetByName(SHEET_DATA);
+  const data = sheet.getDataRange().getValues();
+  let historyText = "";
+  let count = 0;
+  
+  // 倒序找資料
+  for (let i = data.length - 1; i >= 1; i--) {
+    if (String(data[i][1]) === String(uid)) {
+      const row = data[i];
+      const date = formatDate(row[0]);
+      // 簡單格式化數據
+      let record = `[${date}] 情境:${row[2]}`;
+      if(row[3]) record += `, 血壓:${row[3]}/${row[4]}, 心率:${row[5]}`;
+      if(row[6]) record += `, 血糖:${row[6]}`;
+      if(row[7]) record += `, 備註:${row[7]}`;
+      
+      historyText += record + "\n";
+      count++;
+      if (count >= 10) break;
+    }
+  }
+
+  if (!historyText) {
+    return responseJSON({ result: "目前沒有足夠的數據可供 AI 分析。" });
+  }
+
+  const prompt = `你是一位專業的健康管理顧問。請根據這位使用者的最近生理數據給予簡短的健康評估與建議(繁體中文)。
+  
+數據如下：
+${historyText}
+
+請分析血壓和血糖的趨勢，並給出飲食或生活作息的建議。語氣要親切、專業。`;
+
+  const response = callGemini(prompt);
+  return responseJSON({ result: response });
+}
+
+// ----------------------------------------------------------------
+// 工具函式
+// ----------------------------------------------------------------
+
+function responseJSON(data) {
+  return ContentService.createTextOutput(JSON.stringify(data))
+    .setMimeType(ContentService.MimeType.JSON);
+}
+
+function formatDate(dateInput) {
+  if (!dateInput) return '';
+  try {
+    const d = new Date(dateInput);
+    if (isNaN(d.getTime())) return String(dateInput);
+    return Utilities.formatDate(d, SpreadsheetApp.getActive().getSpreadsheetTimeZone(), "yyyy-MM-dd");
+  } catch (e) {
+    return '';
+  }
+}
+
+function callGemini(prompt) {
+  const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${GEMINI_API_KEY}`;
+  
+  const payload = {
+    contents: [{
+      parts: [{ text: prompt }]
+    }]
+  };
+  
+  const options = {
+    method: 'post',
+    contentType: 'application/json',
+    payload: JSON.stringify(payload),
+    muteHttpExceptions: true
+  };
+  
+  try {
+    const response = UrlFetchApp.fetch(url, options);
+    const json = JSON.parse(response.getContentText());
+    
+    if (json.candidates && json.candidates.length > 0) {
+      return json.candidates[0].content.parts[0].text;
+    } else if (json.error) {
+      return "AI 錯誤: " + json.error.message;
+    } else {
+      return "AI 無法產生回應。";
+    }
+  } catch (e) {
+    return "連線錯誤: " + e.toString();
+  }
+}
