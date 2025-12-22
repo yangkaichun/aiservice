@@ -104,15 +104,26 @@
             try {
                 const response = await fetch(`${API_URL}?action=getSettings`);
                 const users = await response.json();
-                const me = users.find(u => u.email.toLowerCase() === session.email.toLowerCase());
+                
+                // [修正] 使用更嚴謹的比對邏輯 (trim + toLowerCase)，確保能找到使用者
+                const me = users.find(u => 
+                    String(u.email).trim().toLowerCase() === String(session.email).trim().toLowerCase()
+                );
                 
                 if (me) {
-                    document.getElementById('edit-name').value = me.name;
-                    if(me.birthday) {
+                    // 更新名稱
+                    if (me.name && me.name !== 'undefined') {
+                        document.getElementById('edit-name').value = me.name;
+                    }
+
+                    // [修正] 更新生日欄位，增加空值檢查邏輯
+                    if(me.birthday && me.birthday !== '-') {
                         try {
                             const dateVal = String(me.birthday).substring(0, 10);
                             document.getElementById('edit-birthday').value = dateVal;
-                        } catch(e){}
+                        } catch(e) {
+                            console.error("Date parsing error", e);
+                        }
                     }
                 }
             } catch (error) {
@@ -128,7 +139,6 @@
             btn.innerHTML = `<i data-lucide="loader-2" class="w-4 h-4 animate-spin"></i> 儲存中...`;
             lucide.createIcons();
 
-            // [關鍵修正] 發送 userEmail 對應後端 updateProfile
             const payload = {
                 action: 'updateProfile',
                 userEmail: session.email,
