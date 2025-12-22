@@ -19,9 +19,7 @@
         .glass-card { background: rgba(255, 255, 255, 0.95); backdrop-filter: blur(10px); border: 1px solid rgba(255, 255, 255, 0.5); box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05); }
         .animate-fade-in { animation: fadeIn 0.5s ease-out; }
         @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
-        
         .no-scrollbar::-webkit-scrollbar { display: none; }
-        .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
     </style>
 </head>
 <body class="text-slate-800 min-h-screen flex flex-col items-center justify-center p-4 relative overflow-y-auto">
@@ -47,7 +45,7 @@
             
             <div class="flex justify-center">
                 <div id="g_id_onload"
-                     data-client_id="YOUR_GOOGLE_CLIENT_ID" 
+                     data-client_id="142808541856-1sfda1hcfk12p1r0a5fbmldugb1f99vn.apps.googleusercontent.com" 
                      data-callback="handleCredentialResponse"
                      data-auto_prompt="false">
                 </div>
@@ -60,15 +58,15 @@
                      data-logo_alignment="left">
                 </div>
             </div>
-            
-            <div class="text-center text-xs text-slate-400 my-2">
-                <p>注意：若無設定 Client ID，按鈕將無法顯示。</p>
+
+            <div class="relative py-2">
+                <div class="absolute inset-0 flex items-center"><span class="w-full border-t border-slate-200"></span></div>
+                <div class="relative flex justify-center text-xs uppercase"><span class="bg-white px-2 text-slate-400">其他方式</span></div>
             </div>
 
-            <button onclick="alert('請使用 Google 登入以體驗完整資料寫入功能')" class="w-full py-3 bg-[#06C755] hover:bg-[#05b34c] text-white border border-transparent rounded-xl font-medium transition-all flex items-center justify-center gap-3 shadow-md shadow-green-100">
-                <img src="https://upload.wikimedia.org/wikipedia/commons/4/41/LINE_logo.svg" class="w-5 h-5 filter brightness-0 invert" alt="LINE">
-                使用 LINE 帳號登入 (Coming Soon)
-            </button>
+            <a href="login.html" class="block w-full py-3 text-center text-indigo-600 hover:text-indigo-700 font-medium text-sm transition">
+                使用 Email / UID 登入
+            </a>
         </div>
 
         <div id="user-section" class="hidden">
@@ -211,66 +209,38 @@
             lucide.createIcons();
         }
 
-        // [重要] 處理 Google 登入後的回傳
         async function handleCredentialResponse(response) {
-            // 1. 解析 JWT (JSON Web Token)
+            // 解析 JWT 僅供前端顯示 (選用)，重點是後端驗證
             const responsePayload = decodeJwtResponse(response.credential);
             
-            console.log("ID: " + responsePayload.sub);
-            console.log('Full Name: ' + responsePayload.name);
-            console.log('Given Name: ' + responsePayload.given_name);
-            console.log('Family Name: ' + responsePayload.family_name);
-            console.log("Image URL: " + responsePayload.picture);
-            console.log("Email: " + responsePayload.email);
-
-            // 2. 顯示讀取畫面
             const loader = document.getElementById('full-loader');
             loader.classList.remove('hidden');
             loader.classList.add('flex');
 
-            // 3. 將真實資料傳給後端進行比對或註冊
             try {
-                const apiResponse = await fetch(API_URL, {
+                // [關鍵] 將 Token 傳給後端進行驗證與登入
+                await fetch(API_URL, {
                     method: 'POST',
                     mode: 'no-cors', 
-                    // 注意：no-cors 模式下無法直接讀取回傳值，
-                    // 若要精確控制，需後端支援 CORS Header。
-                    // 這裡改用簡單策略：送出後假設成功，用 Email 當 Key。
-                    // 若要嚴謹，後端需部署為 "Anyone" 且前端使用 redirect 或完整 CORS 設定。
-                    // 為了能在這裡取得 UID，我們建議使用標準 CORS POST (需後端配合)。
-                    // ** 但在 GAS Web App 最簡單的互動是：POST 回傳 redirect 或 TextOutput **
-                    // 為了確保能拿到 UID，我們這裡改用一個特殊的技巧：
-                    // 使用 fetch 呼叫，並期望後端正確處理。
-                    // 由於 GAS 的 CORS 限制，這裡我們將流程分為兩步：
-                    // A. 前端解析 Email
-                    // B. 前端用 GET 請求去查詢/建立使用者 (因為 GET 比較容易處理回應)
-                    // 但為了安全性，POST 較好。我們這裡嘗試用 POST。
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
                         action: 'socialLogin',
-                        email: responsePayload.email,
-                        name: responsePayload.name,
+                        token: response.credential, // 傳送 Token
                         provider: 'google'
                     })
                 });
                 
-                // *Hack*: GAS POST 在 no-cors 下無法讀取 body。
-                // 為了獲取 UID，我們這裡必須發送一個 GET 請求來"確認"使用者
-                // 或者，我們暫時信任前端的 Email，並在稍後的流程 (如 Dashboard) 透過 Email 獲取 UID。
+                // 等待寫入
+                await new Promise(r => setTimeout(r, 1500)); 
                 
-                // 修正策略：
-                // 為了讓流程最順暢，我們假設後端已經建立資料。
-                // 我們再次呼叫 `getSettings` (這是一個 GET 請求) 來找出這個 Email 的 UID。
-                
-                await new Promise(r => setTimeout(r, 1500)); // 等待後端寫入
-                
+                // 再次讀取確認 UID
                 const settingsResp = await fetch(`${API_URL}?action=getSettings`);
                 const users = await settingsResp.json();
                 const myUser = users.find(u => u.email.toLowerCase() === responsePayload.email.toLowerCase());
                 
                 if (myUser) {
                     const sessionData = {
-                        uid: myUser.uid, // 從 Sheet 拿到的真實 UID
+                        uid: myUser.uid,
                         email: myUser.email,
                         name: myUser.name,
                         role: myUser.role,
@@ -293,7 +263,6 @@
             }
         }
 
-        // JWT 解析工具
         function decodeJwtResponse(token) {
             var base64Url = token.split('.')[1];
             var base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
@@ -306,8 +275,7 @@
         function logout() {
             if(confirm("確定要登出嗎？")) {
                 localStorage.removeItem('healthTwinSession');
-                // Google 登出 (視覺上)
-                google.accounts.id.disableAutoSelect();
+                try { google.accounts.id.disableAutoSelect(); } catch(e){}
                 window.location.reload();
             }
         }
@@ -342,7 +310,7 @@
             const type = document.querySelector('input[name="dataType"]:checked').value;
             let payload = {
                 action: 'addData',
-                uid: userSession.uid, // [關鍵] 使用真實 UID
+                uid: userSession.uid, // 使用真實 UID
                 type: type,
                 note: document.getElementById('note').value,
                 timestamp: new Date().toISOString()
