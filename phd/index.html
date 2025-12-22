@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="zh-TW">
 <head>
@@ -66,7 +67,7 @@
             <div class="flex justify-between items-center mb-6 bg-indigo-50/50 p-4 rounded-xl border border-indigo-100">
                 <div>
                     <p class="text-xs text-slate-400">Welcome back,</p>
-                    <h2 class="text-lg font-bold text-indigo-900" id="display-name">讀取中...</h2>
+                    <h2 class="text-lg font-bold text-indigo-900" id="display-name">User</h2>
                 </div>
                 <div class="flex gap-2">
                     <button onclick="logout()" class="p-2 text-rose-400 hover:bg-rose-50 rounded-lg transition" title="登出">
@@ -168,7 +169,7 @@
         lucide.createIcons();
         let userSession = null;
 
-        // 初始化
+        // 1. 初始化檢查
         window.onload = function() {
             checkLoginStatus();
         };
@@ -181,22 +182,12 @@
 
             if (savedSession) {
                 userSession = JSON.parse(savedSession);
+                document.getElementById('display-name').innerText = userSession.name || 'User';
                 
-                // 1. 先切換到已登入畫面 (避免畫面閃爍)
                 loginSection.classList.add('hidden');
                 userSection.classList.remove('hidden');
                 mainCard.classList.remove('max-w-md'); 
                 mainCard.classList.add('max-w-lg');
-
-                // 2. 先顯示 Session 中的名字 (若有的話)，作為 Placeholder
-                if (userSession.name && userSession.name !== 'Guest') {
-                    document.getElementById('display-name').innerText = userSession.name;
-                } else {
-                    document.getElementById('display-name').innerText = "載入中...";
-                }
-                
-                // 3. 呼叫後端驗證使用者並取得最新姓名
-                validateUserExist();
             } else {
                 loginSection.classList.remove('hidden');
                 userSection.classList.add('hidden');
@@ -206,51 +197,7 @@
             lucide.createIcons();
         }
 
-        async function validateUserExist() {
-            try {
-                // 呼叫後端取得所有用戶資料
-                const response = await fetch(`${API_URL}?action=getSettings`);
-                const users = await response.json();
-                
-                // 比對 Email (忽略大小寫)
-                // userSession.email 來自登入時的資訊，u.email 來自資料庫
-                const dbUser = users.find(u => 
-                    String(u.email).trim().toLowerCase() === String(userSession.email).trim().toLowerCase()
-                );
-
-                if (dbUser) {
-                    // [關鍵修正] 找到使用者，優先顯示資料庫中的 Name
-                    let showName = dbUser.name;
-                    
-                    // 如果資料庫名字是空的，或還是預設值，才用 Email/UID
-                    if (!showName || showName === 'undefined') {
-                        showName = dbUser.email || dbUser.uid;
-                    }
-
-                    document.getElementById('display-name').innerText = showName;
-                    document.getElementById('display-name').classList.remove('animate-pulse'); // 停止閃爍
-                    
-                    // 同步更新本地 Session，這樣下次進來就不用等 API 了
-                    userSession.name = showName;
-                    // 也同步 UID，以防之前是舊的
-                    userSession.uid = dbUser.uid; 
-                    localStorage.setItem('healthTwinSession', JSON.stringify(userSession));
-
-                } else {
-                    // 若資料庫沒這個人 -> 跳轉註冊頁
-                    console.warn("User not found in DB, redirecting to signup.");
-                    window.location.href = 'signup.html';
-                }
-
-            } catch (error) {
-                console.error("Validation error:", error);
-                // API 錯誤時，至少顯示 Session 裡的 Email 或名字
-                const fallbackName = userSession.name || userSession.email || "Offline User";
-                document.getElementById('display-name').innerText = fallbackName;
-                document.getElementById('display-name').classList.remove('animate-pulse');
-            }
-        }
-
+        // 2. 模擬登入
         function mockSocialLogin(provider) {
             const btn = event.currentTarget;
             btn.innerHTML = `<i data-lucide="loader-2" class="w-5 h-5 animate-spin"></i> 登入中...`;
@@ -260,14 +207,14 @@
                 const mockUser = {
                     uid: provider === 'google' ? "GOOGLE_USER_01" : "LINE_USER_01",
                     email: provider === 'google' ? "user@gmail.com" : "user@line.me",
-                    name: provider === 'google' ? "Google 用戶" : "Line 用戶", // 預設名稱
+                    name: provider === 'google' ? "Google 用戶" : "Line 用戶",
                     role: "user",
                     provider: provider,
                     timestamp: new Date().getTime()
                 };
                 
                 localStorage.setItem('healthTwinSession', JSON.stringify(mockUser));
-                window.location.reload();
+                checkLoginStatus();
             }, 1000);
         }
 
@@ -278,6 +225,7 @@
             }
         }
 
+        // 3. 切換欄位
         function toggleFields() {
             const type = document.querySelector('input[name="dataType"]:checked').value;
             if (type === 'BloodPressure') {
@@ -289,6 +237,7 @@
             }
         }
 
+        // 4. 提交資料並跳轉
         async function handleQuickSubmit(e) {
             e.preventDefault();
             const btn = document.getElementById('btn-submit');
@@ -301,7 +250,7 @@
             const type = document.querySelector('input[name="dataType"]:checked').value;
             let payload = {
                 action: 'addData',
-                uid: userSession.uid, // 使用已同步的 UID
+                uid: userSession.uid,
                 type: type,
                 note: document.getElementById('note').value,
                 timestamp: new Date().toISOString()
@@ -334,6 +283,7 @@
                     body: JSON.stringify(payload)
                 });
 
+                // 修改：成功後跳轉至 dashboard.html
                 setTimeout(() => {
                     alert("紀錄已成功儲存！");
                     window.location.href = 'dashboard.html';
