@@ -111,6 +111,6 @@
             console.warn("Loading timeout, forcing hide.");
             window.hideLoading();
         }
-    }, 10000);
+    }, 5000);
 
 })();
