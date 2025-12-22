@@ -179,7 +179,6 @@
     </main>
 
     <script>
-        // 使用全域 Config
         const API_URL = config.API_URL;
         
         let currentUserData = []; 
@@ -202,16 +201,12 @@
         function logout() { if(confirm("確定要登出系統嗎？")) { localStorage.removeItem('healthTwinSession'); window.location.href = 'index.html'; } }
         function toggleSidebar() { const sidebar = document.getElementById('sidebar'); const overlay = document.getElementById('mobileOverlay'); if (sidebar.classList.contains('-translate-x-full')) { sidebar.classList.remove('-translate-x-full'); overlay.classList.remove('hidden'); } else { sidebar.classList.add('-translate-x-full'); overlay.classList.add('hidden'); } }
 
-        // 初始化：獲取使用者列表
         async function initDashboard() {
             try {
-                // 1. 取得使用者列表
                 const response = await fetch(`${API_URL}?action=getSettings`);
                 const users = await response.json();
-                
                 renderUserList(users);
                 
-                // 2. 預設選取當前登入者
                 if (loggedInSession) {
                     const me = users.find(u => u.uid === loggedInSession.uid || u.name === loggedInSession.name);
                     if (me) {
@@ -244,18 +239,13 @@
             }); 
         }
 
-        // 選擇使用者並獲取數據
         async function selectUser(uid, name) {
             currentSelectedUid = uid;
-            
-            // UI 更新
             document.querySelectorAll('.user-item').forEach(el => { el.classList.remove('bg-indigo-50', 'text-indigo-600', 'shadow-sm', 'border-indigo-100'); el.classList.add('border-transparent'); }); 
             const element = document.getElementById(`user-item-${uid}`); 
             if (element) { element.classList.add('bg-indigo-50', 'text-indigo-600', 'shadow-sm', 'border-indigo-100'); element.classList.remove('border-transparent'); } 
             
             document.getElementById('currentUserName').innerText = name;
-            
-            // 開始讀取該用戶資料
             await fetchUserData(uid);
         }
 
@@ -267,33 +257,26 @@
                 const response = await fetch(`${API_URL}?action=getData&uid=${encodeURIComponent(uid)}`);
                 const rawData = await response.json();
                 
-                // 資料轉換：將 GAS 回傳格式 (value="120/80") 轉為 Dashboard 格式 (sbp=120, dbp=80)
+                // [修正重點] 直接映射後端回傳的 JSON key (sbp, dbp, glucose, hr)
                 currentUserData = rawData.map(item => {
-                    let sbp = null, dbp = null, pulse = null, glucose = null;
-                    
-                    if (item.type === 'BloodPressure') {
-                        // value 格式 "120/80"
-                        if (item.value && item.value.includes('/')) {
-                            const parts = item.value.split('/');
-                            sbp = parseInt(parts[0]);
-                            dbp = parseInt(parts[1]);
-                        }
-                        // 嘗試從 note 或其他地方找 pulse (如果沒有則為 null)
-                        // 若 GAS handleGetData 沒回傳 pulse 欄位，這裡暫時只能空著或從 value 解析
-                    } else if (item.type === 'BloodSugar') {
-                        glucose = parseInt(item.value);
-                    }
-                    
+                    // 確保數值是數字，避免字串運算錯誤
+                    const sbp = item.sbp ? parseInt(item.sbp) : null;
+                    const dbp = item.dbp ? parseInt(item.dbp) : null;
+                    const pulse = item.hr ? parseInt(item.hr) : null;
+                    const glucose = item.glucose ? parseInt(item.glucose) : null;
+
                     return {
                         timestamp: item.date,
-                        sbp, dbp, pulse, glucose,
+                        sbp: sbp,
+                        dbp: dbp,
+                        pulse: pulse,
+                        glucose: glucose,
+                        context: item.context,
                         note: item.note
                     };
                 });
 
-                // 排序 (舊到新 for Charts)
                 currentUserData.sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp));
-                
                 updateDashboardUI();
                 
                 document.getElementById('loadingState').classList.add('hidden'); 
@@ -321,31 +304,36 @@
                 return; 
             } 
 
-            // 1. 更新卡片 (取最後一筆有該數值的資料)
-            const lastBP = [...currentUserData].reverse().find(d => d.sbp != null);
-            const lastGlu = [...currentUserData].reverse().find(d => d.glucose != null);
+            // 卡片更新 (找最新一筆有資料的)
+            const latestBP = [...currentUserData].reverse().find(d => d.sbp != null);
+            const latestGlu = [...currentUserData].reverse().find(d => d.glucose != null);
 
-            if (lastBP) {
-                document.getElementById('val-sbp').innerText = lastBP.sbp;
-                document.getElementById('val-dbp').innerText = lastBP.dbp;
-                // document.getElementById('val-pulse').innerText = lastBP.pulse || '--'; // 若有心率
+            if (latestBP) {
+                document.getElementById('val-sbp').innerText = latestBP.sbp;
+                document.getElementById('val-dbp').innerText = latestBP.dbp;
+                document.getElementById('val-pulse').innerText = latestBP.pulse || '--';
                 
                 const statusEl = document.getElementById('status-sbp');
-                statusEl.innerHTML = lastBP.sbp > 140 
+                statusEl.innerHTML = latestBP.sbp > 140 
                     ? `<span class="text-rose-500 font-bold">偏高</span>` 
                     : `<span class="text-emerald-500 font-bold">正常</span>`;
             } else {
                 document.getElementById('val-sbp').innerText = '--';
                 document.getElementById('val-dbp').innerText = '--';
+                document.getElementById('val-pulse').innerText = '--';
             }
 
-            if (lastGlu) {
-                document.getElementById('val-glucose').innerText = lastGlu.glucose;
+            if (latestGlu) {
+                document.getElementById('val-glucose').innerText = latestGlu.glucose;
+                // 可以加簡單的判斷
+                const gStatus = document.getElementById('status-glucose');
+                if (latestGlu.glucose > 200) gStatus.innerHTML = `<span class="text-rose-500 font-bold">偏高</span>`;
+                else gStatus.innerHTML = `<span class="text-emerald-500 font-bold">正常</span>`;
             } else {
                 document.getElementById('val-glucose').innerText = '--';
             }
 
-            // 2. 更新列表 (顯示最新 50 筆, 倒序)
+            // 列表更新
             const historyBody = document.getElementById('historyTable'); 
             const displayList = [...currentUserData].reverse().slice(0, 50);
             
@@ -353,8 +341,7 @@
                 const dateObj = new Date(d.timestamp); 
                 const timeStr = `${dateObj.getMonth()+1}/${dateObj.getDate()} ${String(dateObj.getHours()).padStart(2,'0')}:${String(dateObj.getMinutes()).padStart(2,'0')}`; 
                 
-                // 顯示邏輯
-                let bpDisplay = (d.sbp) ? `<span class="text-rose-600">${d.sbp}</span>/<span class="text-blue-600">${d.dbp}</span>` : '-';
+                let bpDisplay = (d.sbp) ? `<span class="text-rose-600">${d.sbp}</span>/<span class="text-blue-600">${d.dbp}</span> <span class="text-xs text-slate-400">(${d.pulse})</span>` : '-';
                 let gluDisplay = (d.glucose) ? `<span class="text-amber-600 font-bold">${d.glucose}</span>` : '-';
 
                 return `
@@ -365,7 +352,6 @@
                     </tr>`; 
             }).join(''); 
 
-            // 3. 更新圖表
             renderCharts(currentUserData); 
         }
 
@@ -375,34 +361,31 @@
                 return `${date.getMonth()+1}/${date.getDate()}`; 
             }); 
             
-            // 處理數據：Null 過濾由 Chart.js 自動處理 (spanGaps)
             const sbpData = data.map(d => d.sbp); 
             const dbpData = data.map(d => d.dbp); 
             const glucoseData = data.map(d => d.glucose); 
 
-            // --- 血壓圖表 ---
+            // 血壓圖
             const ctxBP = document.getElementById('mainChart').getContext('2d'); 
-            
             if (bpChartInstance) bpChartInstance.destroy(); 
             bpChartInstance = new Chart(ctxBP, { 
                 type: 'line', 
                 data: { 
                     labels: labels, 
                     datasets: [
-                        { label: '收縮壓', data: sbpData, borderColor: '#F43F5E', backgroundColor: 'rgba(244, 63, 94, 0.1)', borderWidth: 2, tension: 0.3, fill: true }, 
-                        { label: '舒張壓', data: dbpData, borderColor: '#3B82F6', backgroundColor: 'rgba(59, 130, 246, 0.1)', borderWidth: 2, tension: 0.3, fill: true }
+                        { label: '收縮壓', data: sbpData, borderColor: '#F43F5E', backgroundColor: 'rgba(244, 63, 94, 0.1)', borderWidth: 2, tension: 0.3, fill: true, spanGaps: true }, 
+                        { label: '舒張壓', data: dbpData, borderColor: '#3B82F6', backgroundColor: 'rgba(59, 130, 246, 0.1)', borderWidth: 2, tension: 0.3, fill: true, spanGaps: true }
                     ] 
                 }, 
                 options: { 
                     responsive: true, maintainAspectRatio: false, 
                     plugins: { legend: { position: 'top', align: 'end' } }, 
-                    scales: { y: { suggestedMin: 60, suggestedMax: 160 }, x: { ticks: { maxTicksLimit: 10 } } } 
+                    scales: { y: { suggestedMin: 60, suggestedMax: 160 } } 
                 } 
             }); 
 
-            // --- 血糖圖表 ---
+            // 血糖圖
             const ctxGlu = document.getElementById('glucoseChart').getContext('2d'); 
-            
             if (glucoseChartInstance) glucoseChartInstance.destroy(); 
             glucoseChartInstance = new Chart(ctxGlu, { 
                 type: 'line', 
@@ -413,32 +396,23 @@
                 options: { 
                     responsive: true, maintainAspectRatio: false, 
                     plugins: { legend: { display: false } }, 
-                    scales: { y: { suggestedMin: 70, suggestedMax: 180 }, x: { ticks: { maxTicksLimit: 10 } } } 
+                    scales: { y: { suggestedMin: 70, suggestedMax: 180 } } 
                 } 
             }); 
         }
         
-        // AI 分析功能
         async function getAIAnalysis() { 
             if (!currentSelectedUid) { alert("請先選擇一位用戶"); return; } 
-            
             const modal = document.getElementById('aiAnalysisModal'); 
             const content = document.getElementById('aiModalContent'); 
-            
             modal.classList.remove('hidden'); modal.classList.add('flex'); 
             content.innerHTML = `<div class="flex flex-col items-center justify-center py-12"><div class="w-10 h-10 border-4 border-indigo-200 border-t-indigo-600 rounded-full animate-spin"></div><p class="text-slate-500 mt-4">Gemini 正在分析數據...</p></div>`; 
-            
             try { 
-                // 呼叫 GAS (注意: 這裡需要 GAS 端支援 analyze action)
-                // 由於無法修改 GAS，這裡僅作模擬呼叫或需確認 GAS 是否已有此功能
                 const response = await fetch(`${API_URL}?action=askAI&uid=${currentSelectedUid}`); 
                 const data = await response.json(); 
-                
                 if (data.result) { 
                     content.innerHTML = `<div class="prose prose-sm text-slate-700">${marked.parse(data.result)}</div>`; 
-                } else { 
-                    throw new Error("AI 無回應"); 
-                } 
+                } else { throw new Error("AI 無回應"); } 
             } catch (err) { 
                 content.innerHTML = `<div class="text-center py-8 text-rose-500">分析失敗: ${err.message}</div>`; 
             } 
