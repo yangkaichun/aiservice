@@ -146,6 +146,7 @@
 
         async function fetchUserProfile() {
             try {
+                // 使用 getSettings 取得所有用戶資料，再於前端過濾 (簡單實作)
                 const response = await fetch(`${API_URL}?action=getSettings`);
                 const users = await response.json();
                 
@@ -158,8 +159,8 @@
                     renderProfile(currentUserData);
                     renderBindingStatus(currentUserData);
                 } else {
-                    console.warn("Database mismatch.");
-                    // Fallback
+                    console.warn("Database mismatch. User not found in sheet.");
+                    // Fallback: 使用 session 中的基本資料顯示
                     currentUserData = {
                         name: session.name || 'Guest',
                         email: session.email,
@@ -184,8 +185,8 @@
         }
 
         function renderProfile(user) {
-            // [修正] 顯示已有的資料
             const nameInput = document.getElementById('edit-name');
+            // 若 Sheet 有資料則顯示 Sheet 的，否則顯示 Session 的
             if (user.name && user.name !== 'undefined' && user.name !== 'Guest') {
                 nameInput.value = user.name;
             } else if (session.name) {
@@ -196,6 +197,7 @@
             
             if (user.birthday && user.birthday !== '-') {
                 try {
+                    // 格式化日期字串以填入 input type="date"
                     const dateVal = String(user.birthday).substring(0, 10);
                     document.getElementById('edit-birthday').value = dateVal;
                 } catch(e) {}
@@ -251,9 +253,11 @@
             lucide.createIcons();
 
             const newName = document.getElementById('edit-name').value;
+            
+            // [修正重點] 這裡的參數名稱修正為 userEmail 以匹配後端
             const payload = {
                 action: 'updateProfile',
-                token: session.email,
+                userEmail: session.email,  
                 userName: newName,
                 userBirthday: document.getElementById('edit-birthday').value
             };
@@ -266,10 +270,14 @@
                     body: JSON.stringify(payload)
                 });
 
+                // 因為 no-cors 模式無法讀取回傳值，這裡做樂觀 UI 更新
                 setTimeout(() => {
                     alert("個人資料更新請求已送出！");
+                    
+                    // 更新本地 Session 的名稱顯示
                     session.name = newName;
                     localStorage.setItem('healthTwinSession', JSON.stringify(session));
+                    
                     btn.disabled = false;
                     btn.innerHTML = originalText;
                     lucide.createIcons();
@@ -281,7 +289,6 @@
             }
         }
 
-        // [關鍵] 綁定帳號邏輯 - 呼叫後端 API
         async function bindAccount(type) {
             const confirmMsg = type === 'google' 
                 ? "即將進行 Google 帳號綁定..." 
@@ -312,7 +319,7 @@
                         
                         updateCardStatus(type, true);
                         
-                        // 更新 LocalStorage
+                        // 更新 LocalStorage 中的 provider 資訊
                         if(session.provider) {
                             if (!session.provider.includes(type)) {
                                 session.provider += `,${type}`;
@@ -322,7 +329,7 @@
                         }
                         localStorage.setItem('healthTwinSession', JSON.stringify(session));
 
-                        // 更新暫存變數
+                        // 同步更新當前頁面的資料物件
                         if(currentUserData) {
                             currentUserData.provider = session.provider;
                         }
