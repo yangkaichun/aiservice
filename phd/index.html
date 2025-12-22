@@ -15,8 +15,12 @@
     <style>
         body { font-family: 'Inter', sans-serif; background-color: #F8FAFC; }
         .glass-card { background: rgba(255, 255, 255, 0.95); backdrop-filter: blur(10px); border: 1px solid rgba(255, 255, 255, 0.5); box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05); }
-        .animate-fade-in { animation: fadeIn 0.8s ease-out; }
-        @keyframes fadeIn { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+        .animate-fade-in { animation: fadeIn 0.5s ease-out; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+        
+        /* 隱藏滾動條但保留功能 */
+        .no-scrollbar::-webkit-scrollbar { display: none; }
+        .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
     </style>
 </head>
 <body class="text-slate-800 min-h-screen flex flex-col items-center justify-center p-4 relative overflow-hidden">
@@ -26,63 +30,290 @@
         <div class="absolute top-[30%] -right-[10%] w-[40%] h-[40%] bg-indigo-100 rounded-full blur-3xl opacity-60 animate-pulse" style="animation-delay: 2s;"></div>
     </div>
 
-    <div class="glass-card w-full max-w-md p-8 rounded-3xl text-center shadow-xl animate-fade-in">
-        <div class="mb-6 flex justify-center">
-            <div class="w-20 h-20 bg-indigo-50 rounded-2xl flex items-center justify-center shadow-inner">
-                 <i data-lucide="activity" class="w-10 h-10 text-indigo-600"></i>
+    <div class="glass-card w-full max-w-md p-6 rounded-3xl shadow-xl animate-fade-in transition-all duration-300" id="main-card">
+        
+        <div class="text-center mb-6">
+            <div class="flex justify-center mb-4">
+                <div class="w-16 h-16 bg-indigo-50 rounded-2xl flex items-center justify-center shadow-inner">
+                    <i data-lucide="activity" class="w-8 h-8 text-indigo-600"></i>
+                </div>
             </div>
+            <h1 class="text-2xl font-bold text-slate-800 tracking-tight">YangHome Health</h1>
+            <p class="text-slate-500 text-sm font-light">您的個人智慧健康管家</p>
         </div>
 
-        <h1 class="text-3xl font-bold text-slate-800 mb-2 tracking-tight">YangHome Health</h1>
-        <p class="text-slate-500 mb-8 font-light">您的個人智慧健康管家</p>
-
-        <div class="space-y-4">
-            <a href="login.html" class="block w-full py-3.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl font-semibold shadow-lg shadow-indigo-200 transition-all transform hover:scale-[1.02] active:scale-95 flex items-center justify-center gap-2">
-                <i data-lucide="log-in" class="w-5 h-5"></i>
-                會員登入
-            </a>
-            
-            <button onclick="handleQuickLogin()" id="btn-quick" class="w-full py-3.5 bg-white border border-slate-200 hover:bg-slate-50 text-slate-600 rounded-xl font-medium transition-all flex items-center justify-center gap-2 relative group">
-                <i data-lucide="zap" class="w-5 h-5 text-amber-500 group-hover:scale-110 transition-transform"></i>
-                訪客快速體驗
-                <span class="absolute right-4 w-2 h-2 bg-amber-500 rounded-full animate-ping"></span>
+        <div id="login-section" class="space-y-4">
+            <button onclick="mockSocialLogin('google')" class="w-full py-3 bg-white border border-slate-200 hover:bg-slate-50 text-slate-700 rounded-xl font-medium transition-all flex items-center justify-center gap-3 shadow-sm relative overflow-hidden group">
+                <img src="https://www.svgrepo.com/show/475656/google-color.svg" class="w-5 h-5" alt="Google">
+                使用 Google 帳號登入
             </button>
+
+            <button onclick="mockSocialLogin('line')" class="w-full py-3 bg-[#06C755] hover:bg-[#05b34c] text-white border border-transparent rounded-xl font-medium transition-all flex items-center justify-center gap-3 shadow-md shadow-green-100">
+                <img src="https://upload.wikimedia.org/wikipedia/commons/4/41/LINE_logo.svg" class="w-5 h-5 filter brightness-0 invert" alt="LINE">
+                使用 LINE 帳號登入
+            </button>
+
+            <div class="relative py-2">
+                <div class="absolute inset-0 flex items-center"><span class="w-full border-t border-slate-200"></span></div>
+                <div class="relative flex justify-center text-xs uppercase"><span class="bg-white px-2 text-slate-400">或是</span></div>
+            </div>
+
+            <a href="login.html" class="block w-full py-3 text-center text-indigo-600 hover:text-indigo-700 font-medium text-sm transition">
+                使用 Email / UID 登入
+            </a>
         </div>
 
-        <div class="mt-8 pt-6 border-t border-slate-100 text-xs text-slate-400">
+        <div id="user-section" class="hidden">
+            <div class="flex justify-between items-center mb-6 bg-indigo-50/50 p-4 rounded-xl border border-indigo-100">
+                <div>
+                    <p class="text-xs text-slate-400">Welcome back,</p>
+                    <h2 class="text-lg font-bold text-indigo-900" id="display-name">User</h2>
+                </div>
+                <div class="flex gap-2">
+                    <a href="dashboard.html" class="p-2 bg-white text-indigo-600 rounded-lg shadow-sm border border-indigo-100 hover:bg-indigo-50 transition" title="前往儀表板">
+                        <i data-lucide="layout-dashboard" class="w-5 h-5"></i>
+                    </a>
+                    <button onclick="logout()" class="p-2 text-rose-400 hover:bg-rose-50 rounded-lg transition" title="登出">
+                        <i data-lucide="log-out" class="w-5 h-5"></i>
+                    </button>
+                </div>
+            </div>
+
+            <form id="quickAddForm" onsubmit="handleQuickSubmit(event)" class="space-y-4">
+                
+                <div class="grid grid-cols-2 gap-2 p-1 bg-slate-100 rounded-xl">
+                    <label class="cursor-pointer text-center">
+                        <input type="radio" name="dataType" value="BloodPressure" class="peer hidden" checked onchange="toggleFields()">
+                        <div class="py-2 rounded-lg text-sm font-medium text-slate-500 peer-checked:bg-white peer-checked:text-blue-600 peer-checked:shadow-sm transition-all">
+                            血壓記錄
+                        </div>
+                    </label>
+                    <label class="cursor-pointer text-center">
+                        <input type="radio" name="dataType" value="BloodSugar" class="peer hidden" onchange="toggleFields()">
+                        <div class="py-2 rounded-lg text-sm font-medium text-slate-500 peer-checked:bg-white peer-checked:text-pink-600 peer-checked:shadow-sm transition-all">
+                            血糖記錄
+                        </div>
+                    </label>
+                </div>
+
+                <div id="field-bp" class="grid grid-cols-2 gap-3 animate-fade-in">
+                    <div class="col-span-1">
+                        <label class="block text-xs font-bold text-slate-400 mb-1 ml-1">收縮壓 (High)</label>
+                        <input type="number" id="sbp" class="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none transition text-center font-mono text-lg" placeholder="120">
+                    </div>
+                    <div class="col-span-1">
+                        <label class="block text-xs font-bold text-slate-400 mb-1 ml-1">舒張壓 (Low)</label>
+                        <input type="number" id="dbp" class="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none transition text-center font-mono text-lg" placeholder="80">
+                    </div>
+                    <div class="col-span-2">
+                        <label class="block text-xs font-bold text-slate-400 mb-1 ml-1">心率 (Heart Rate)</label>
+                        <input type="number" id="hr" class="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none transition text-center font-mono text-lg" placeholder="72">
+                    </div>
+                </div>
+
+                <div id="field-bs" class="hidden space-y-3 animate-fade-in">
+                    <div>
+                        <label class="block text-xs font-bold text-slate-400 mb-1 ml-1">血糖數值 (mg/dL)</label>
+                        <div class="relative">
+                            <input type="number" id="bs" class="w-full pl-4 pr-10 py-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:border-pink-500 focus:ring-1 focus:ring-pink-500 outline-none transition font-mono text-lg" placeholder="100">
+                            <div class="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 text-xs">mg/dL</div>
+                        </div>
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold text-slate-400 mb-1 ml-1">測量時機</label>
+                        <div class="grid grid-cols-2 gap-2">
+                            <label class="cursor-pointer">
+                                <input type="radio" name="bsTime" value="fasting" class="peer hidden" checked>
+                                <div class="py-2 text-center text-xs border border-slate-200 rounded-lg peer-checked:bg-pink-50 peer-checked:border-pink-200 peer-checked:text-pink-600 transition">飯前 (空腹)</div>
+                            </label>
+                            <label class="cursor-pointer">
+                                <input type="radio" name="bsTime" value="postprandial" class="peer hidden">
+                                <div class="py-2 text-center text-xs border border-slate-200 rounded-lg peer-checked:bg-pink-50 peer-checked:border-pink-200 peer-checked:text-pink-600 transition">飯後 2h</div>
+                            </label>
+                            <label class="cursor-pointer">
+                                <input type="radio" name="bsTime" value="wakeup" class="peer hidden">
+                                <div class="py-2 text-center text-xs border border-slate-200 rounded-lg peer-checked:bg-pink-50 peer-checked:border-pink-200 peer-checked:text-pink-600 transition">起床</div>
+                            </label>
+                            <label class="cursor-pointer">
+                                <input type="radio" name="bsTime" value="bedtime" class="peer hidden">
+                                <div class="py-2 text-center text-xs border border-slate-200 rounded-lg peer-checked:bg-pink-50 peer-checked:border-pink-200 peer-checked:text-pink-600 transition">睡前</div>
+                            </label>
+                        </div>
+                    </div>
+                </div>
+
+                <div>
+                    <label class="block text-xs font-bold text-slate-400 mb-1 ml-1">備註 (Note)</label>
+                    <input type="text" id="note" class="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 outline-none transition text-sm text-slate-600" placeholder="例: 剛運動完, 昨晚沒睡好...">
+                </div>
+
+                <button type="submit" id="btn-submit" class="w-full py-3 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl font-bold shadow-lg shadow-indigo-200 transition-all active:scale-95 flex items-center justify-center gap-2 mt-2">
+                    <span>快速記錄</span>
+                    <i data-lucide="send" class="w-4 h-4"></i>
+                </button>
+            </form>
+        </div>
+
+        <div class="mt-8 pt-6 border-t border-slate-100 text-xs text-center text-slate-400">
             <p>&copy; 2024 YangHome Health System.</p>
         </div>
     </div>
 
     <script>
+        const API_URL = config.API_URL;
         lucide.createIcons();
+        let userSession = null;
 
-        // 自動檢查登入狀態
+        // 1. 初始化檢查：是否有登入
         window.onload = function() {
-            const savedSession = localStorage.getItem('healthTwinSession');
-            if (savedSession) {
-                // window.location.href = 'dashboard.html'; // 可依需求開啟自動跳轉
-            }
+            checkLoginStatus();
         };
 
-        function handleQuickLogin() {
-            const btn = document.getElementById('btn-quick');
-            btn.disabled = true;
-            btn.innerHTML = `<i data-lucide="loader-2" class="w-5 h-5 animate-spin text-slate-400"></i> 準備中...`;
+        function checkLoginStatus() {
+            const savedSession = localStorage.getItem('healthTwinSession');
+            const loginSection = document.getElementById('login-section');
+            const userSection = document.getElementById('user-section');
+            const mainCard = document.getElementById('main-card');
+
+            if (savedSession) {
+                // 已登入
+                userSession = JSON.parse(savedSession);
+                document.getElementById('display-name').innerText = userSession.name || 'User';
+                
+                loginSection.classList.add('hidden');
+                userSection.classList.remove('hidden');
+                // 登入後卡片可以稍微寬一點
+                mainCard.classList.remove('max-w-md'); 
+                mainCard.classList.add('max-w-lg');
+            } else {
+                // 未登入
+                loginSection.classList.remove('hidden');
+                userSection.classList.add('hidden');
+                mainCard.classList.add('max-w-md');
+                mainCard.classList.remove('max-w-lg');
+            }
+            lucide.createIcons();
+        }
+
+        // 2. 模擬 Google/LINE 登入
+        // 注意：真實的 OAuth 需要後端支援，這裡先用模擬資料讓前端流程跑通
+        function mockSocialLogin(provider) {
+            const btn = event.currentTarget;
+            const originalContent = btn.innerHTML;
+            btn.innerHTML = `<i data-lucide="loader-2" class="w-5 h-5 animate-spin"></i> 登入中...`;
             lucide.createIcons();
 
-            const guestUser = {
-                uid: "GUEST_001",
-                email: "guest@yanghome.health",
-                name: "訪客體驗",
-                role: "guest",
-                timestamp: new Date().getTime()
+            setTimeout(() => {
+                const mockUser = {
+                    uid: provider === 'google' ? "GOOGLE_USER_01" : "LINE_USER_01",
+                    email: provider === 'google' ? "user@gmail.com" : "user@line.me",
+                    name: provider === 'google' ? "Google 用戶" : "Line 用戶",
+                    role: "user",
+                    provider: provider,
+                    timestamp: new Date().getTime()
+                };
+                
+                localStorage.setItem('healthTwinSession', JSON.stringify(mockUser));
+                checkLoginStatus(); // 刷新介面
+            }, 1000);
+        }
+
+        function logout() {
+            if(confirm("確定要登出嗎？")) {
+                localStorage.removeItem('healthTwinSession');
+                window.location.reload();
+            }
+        }
+
+        // 3. 切換輸入欄位
+        function toggleFields() {
+            const type = document.querySelector('input[name="dataType"]:checked').value;
+            if (type === 'BloodPressure') {
+                document.getElementById('field-bp').classList.remove('hidden');
+                document.getElementById('field-bs').classList.add('hidden');
+            } else {
+                document.getElementById('field-bp').classList.add('hidden');
+                document.getElementById('field-bs').classList.remove('hidden');
+            }
+        }
+
+        // 4. 提交資料
+        async function handleQuickSubmit(e) {
+            e.preventDefault();
+            const btn = document.getElementById('btn-submit');
+            const originalText = btn.innerHTML;
+            
+            btn.disabled = true;
+            btn.innerHTML = `<i data-lucide="loader-2" class="w-5 h-5 animate-spin"></i> 傳送中...`;
+            lucide.createIcons();
+
+            const type = document.querySelector('input[name="dataType"]:checked').value;
+            
+            // 建構傳送資料
+            let payload = {
+                action: 'addData',
+                uid: userSession.uid,
+                type: type,
+                note: document.getElementById('note').value,
+                timestamp: new Date().toISOString()
             };
 
-            setTimeout(() => {
-                localStorage.setItem('healthTwinSession', JSON.stringify(guestUser));
-                window.location.href = 'dashboard.html';
-            }, 800);
+            // 根據類型抓取不同欄位
+            if (type === 'BloodPressure') {
+                payload.sbp = document.getElementById('sbp').value;
+                payload.dbp = document.getElementById('dbp').value;
+                payload.hr = document.getElementById('hr').value;
+
+                if (!payload.sbp || !payload.dbp) {
+                    alert("請輸入完整的血壓數值");
+                    resetBtn();
+                    return;
+                }
+            } else {
+                payload.bs = document.getElementById('bs').value;
+                // 抓取選中的 Radio 值
+                payload.time = document.querySelector('input[name="bsTime"]:checked').value;
+
+                if (!payload.bs) {
+                    alert("請輸入血糖數值");
+                    resetBtn();
+                    return;
+                }
+            }
+
+            try {
+                // 發送到 Google Apps Script
+                await fetch(API_URL, {
+                    method: 'POST',
+                    mode: 'no-cors',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+
+                // 成功後處理
+                setTimeout(() => {
+                    alert("紀錄已成功儲存！");
+                    // 清空表單數值但保留選項
+                    document.getElementById('sbp').value = '';
+                    document.getElementById('dbp').value = '';
+                    document.getElementById('hr').value = '';
+                    document.getElementById('bs').value = '';
+                    document.getElementById('note').value = '';
+                    
+                    resetBtn();
+                }, 800);
+
+            } catch (error) {
+                console.error(error);
+                alert("發生錯誤，請稍後再試。");
+                resetBtn();
+            }
+
+            function resetBtn() {
+                btn.disabled = false;
+                btn.innerHTML = originalText;
+                lucide.createIcons();
+            }
         }
     </script>
 </body>
