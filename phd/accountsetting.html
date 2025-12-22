@@ -13,6 +13,7 @@
     <script src="config.js"></script>
 
     <script>
+        // 登入檢查
         const savedSession = localStorage.getItem('healthTwinSession');
         if (!savedSession) {
             window.location.href = 'index.html';
@@ -35,10 +36,18 @@
             </a>
             <h1 class="font-bold text-lg text-slate-800">帳號綁定與設定</h1>
         </div>
+        <div class="text-xs text-slate-400" id="header-user-id">User ID</div>
     </header>
 
     <main class="flex-1 p-4 lg:p-8 max-w-3xl mx-auto w-full animate-fade-in">
         
+        <div id="loading-overlay" class="fixed inset-0 bg-white/80 z-50 flex items-center justify-center">
+            <div class="flex flex-col items-center gap-2 text-slate-500">
+                <i data-lucide="loader-2" class="w-8 h-8 animate-spin text-indigo-600"></i>
+                <span class="text-sm font-medium">讀取用戶資料...</span>
+            </div>
+        </div>
+
         <div class="glass-card rounded-2xl p-6 mb-6">
             <h2 class="text-lg font-bold text-slate-800 mb-4 flex items-center gap-2">
                 <i data-lucide="user-cog" class="w-5 h-5 text-indigo-600"></i> 基本資料
@@ -65,11 +74,11 @@
         <h2 class="text-lg font-bold text-slate-800 mb-4 px-1">社群帳號連結</h2>
         <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
             
-            <div class="glass-card p-5 rounded-2xl border-l-4 border-l-slate-200 transition" id="card-google">
+            <div class="glass-card p-5 rounded-2xl border-l-4 border-l-slate-200 transition bg-white" id="card-google">
                 <div class="flex justify-between items-start mb-4">
                     <div class="flex items-center gap-3">
-                        <div class="w-10 h-10 bg-white rounded-full flex items-center justify-center shadow-sm border border-slate-100">
-                            <img src="https://www.svgrepo.com/show/475656/google-color.svg" class="w-5 h-5" alt="Google">
+                        <div class="w-10 h-10 bg-white rounded-full flex items-center justify-center shadow-sm border border-slate-100 p-2">
+                            <img src="https://www.svgrepo.com/show/475656/google-color.svg" class="w-full h-full" alt="Google">
                         </div>
                         <div>
                             <h3 class="font-bold text-slate-700">Google 帳號</h3>
@@ -83,11 +92,11 @@
                 </button>
             </div>
 
-            <div class="glass-card p-5 rounded-2xl border-l-4 border-l-slate-200 transition" id="card-line">
+            <div class="glass-card p-5 rounded-2xl border-l-4 border-l-slate-200 transition bg-white" id="card-line">
                 <div class="flex justify-between items-start mb-4">
                     <div class="flex items-center gap-3">
-                        <div class="w-10 h-10 bg-[#06C755] rounded-full flex items-center justify-center shadow-sm shadow-green-100">
-                            <img src="https://upload.wikimedia.org/wikipedia/commons/4/41/LINE_logo.svg" class="w-5 h-5 filter brightness-0 invert" alt="LINE">
+                        <div class="w-10 h-10 bg-[#06C755] rounded-full flex items-center justify-center shadow-sm shadow-green-100 p-2">
+                            <img src="https://upload.wikimedia.org/wikipedia/commons/4/41/LINE_logo.svg" class="w-full h-full filter brightness-0 invert" alt="LINE">
                         </div>
                         <div>
                             <h3 class="font-bold text-slate-700">LINE 帳號</h3>
@@ -106,41 +115,58 @@
 
     <script>
         const API_URL = config.API_URL;
-        const session = JSON.parse(localStorage.getItem('healthTwinSession'));
+        // 安全讀取 Session
+        let session;
+        try {
+            session = JSON.parse(localStorage.getItem('healthTwinSession'));
+        } catch(e) {
+            window.location.href = 'index.html';
+        }
+
         let currentUserData = null;
 
         document.addEventListener('DOMContentLoaded', () => {
             lucide.createIcons();
-            fetchUserProfile();
+            if(session) {
+                document.getElementById('header-user-id').innerText = `ID: ${session.uid}`;
+                fetchUserProfile();
+            }
         });
 
         async function fetchUserProfile() {
             try {
-                // 取得所有設定以找到自己
+                // 取得後端所有設定資料以比對目前使用者
                 const response = await fetch(`${API_URL}?action=getSettings`);
                 const users = await response.json();
                 
                 // 根據 Session UID 找到當前使用者
-                currentUserData = users.find(u => u.uid === session.uid);
+                // 注意：這裡假設後端回傳的 uid 欄位名稱為 "uid" (小寫)
+                currentUserData = users.find(u => String(u.uid) === String(session.uid));
 
                 if (currentUserData) {
                     renderProfile(currentUserData);
                     renderBindingStatus(currentUserData);
+                    document.getElementById('loading-overlay').classList.add('hidden');
                 } else {
-                    alert("無法讀取使用者資料，請重新登入");
+                    alert("無法在資料庫中找到您的資料，請重新登入");
+                    localStorage.removeItem('healthTwinSession');
                     window.location.href = 'index.html';
                 }
             } catch (error) {
                 console.error(error);
-                alert("連線錯誤");
+                alert("連線錯誤: " + error.message);
+                document.getElementById('loading-overlay').classList.add('hidden');
             }
         }
 
         function renderProfile(user) {
             document.getElementById('edit-name').value = user.name || '';
-            // 處理生日格式
+            
+            // 處理生日格式 YYYY-MM-DD
             if (user.birthday && user.birthday !== '-') {
-                document.getElementById('edit-birthday').value = user.birthday;
+                // 如果後端回傳的是完整時間字串，截取前10位
+                const dateVal = user.birthday.substring(0, 10);
+                document.getElementById('edit-birthday').value = dateVal;
             }
         }
 
@@ -164,21 +190,36 @@
 
             if (isBound) {
                 statusText.innerText = "已連結";
-                statusText.classList.add('text-emerald-600');
+                statusText.classList.remove('text-slate-400');
+                statusText.classList.add('text-emerald-600', 'font-medium');
                 checkIcon.classList.remove('hidden');
-                btn.innerText = "解除連結 (暫不支援)";
+                
+                btn.innerText = "已連結";
                 btn.disabled = true;
-                btn.classList.add('opacity-50', 'cursor-not-allowed');
+                btn.className = "w-full py-2 bg-slate-50 border border-slate-100 text-slate-400 rounded-lg text-sm font-medium cursor-default";
+                
                 card.classList.remove('border-l-slate-200');
                 card.classList.add(type === 'google' ? 'border-l-indigo-500' : 'border-l-emerald-500');
             } else {
                 statusText.innerText = "未連結";
+                statusText.classList.add('text-slate-400');
+                statusText.classList.remove('text-emerald-600', 'font-medium');
+                checkIcon.classList.add('hidden');
+                
+                btn.innerText = "連結帳號";
                 btn.disabled = false;
+                btn.className = "w-full py-2 bg-white border border-slate-200 text-slate-600 rounded-lg text-sm font-medium hover:bg-slate-50 transition shadow-sm";
+                
+                card.classList.remove('border-l-indigo-500', 'border-l-emerald-500');
+                card.classList.add('border-l-slate-200');
             }
+            lucide.createIcons();
         }
 
         async function handleSaveProfile(e) {
             e.preventDefault();
+            if (!currentUserData) return;
+
             const btn = document.getElementById('btn-save');
             const originalText = btn.innerHTML;
             
@@ -186,15 +227,17 @@
             btn.innerHTML = `<i data-lucide="loader-2" class="w-4 h-4 animate-spin"></i> 處理中...`;
             lucide.createIcons();
 
+            const newName = document.getElementById('edit-name').value;
+            
             const payload = {
                 action: 'updateProfile',
-                userEmail: currentUserData.email, // 使用後端資料庫中的 email 為索引
-                userName: document.getElementById('edit-name').value,
+                userEmail: currentUserData.email, // 依賴 Email 作為更新 Key
+                userName: newName,
                 userBirthday: document.getElementById('edit-birthday').value
             };
 
             try {
-                // 使用 no-cors 模式 (因為 GAS 限制)
+                // 呼叫 GAS 更新
                 await fetch(API_URL, {
                     method: 'POST',
                     mode: 'no-cors',
@@ -204,12 +247,14 @@
 
                 setTimeout(() => {
                     alert("個人資料更新請求已送出！");
+                    
+                    // 更新本地 Session 的名稱，讓回到 Dashboard 時能立即看到變化
+                    session.name = newName;
+                    localStorage.setItem('healthTwinSession', JSON.stringify(session));
+                    
                     btn.disabled = false;
                     btn.innerHTML = originalText;
                     lucide.createIcons();
-                    // 更新 Session 本地快取 (可選)
-                    session.name = payload.userName;
-                    localStorage.setItem('healthTwinSession', JSON.stringify(session));
                 }, 1000);
 
             } catch (error) {
@@ -220,17 +265,36 @@
         }
 
         function bindAccount(type) {
-            // 注意：真實的 OAuth 綁定需要後端 Redirect 支援
-            // 這裡模擬發送綁定請求
             const confirmMsg = type === 'google' 
-                ? "即將前往 Google 登入頁面進行綁定..." 
-                : "即將前往 LINE 登入頁面進行綁定...";
+                ? "即將進行 Google 帳號綁定模擬..." 
+                : "即將進行 LINE 帳號綁定模擬...";
             
             if(confirm(confirmMsg)) {
-                // 模擬成功
-                alert(`模擬綁定 ${type} 成功！\n(請注意：實際功能需後端 OAuth 支援)`);
-                // 這裡僅前端 UI 變化示意
-                updateCardStatus(type, true);
+                // 模擬等待
+                const btn = document.getElementById(`btn-bind-${type}`);
+                const originalText = btn.innerText;
+                btn.disabled = true;
+                btn.innerText = "驗證中...";
+
+                setTimeout(() => {
+                    alert(`✅ ${type === 'google' ? 'Google' : 'LINE'} 帳號連結成功！`);
+                    
+                    // 1. 更新 UI 狀態
+                    updateCardStatus(type, true);
+                    
+                    // 2. 更新本地 currentUserData，避免重新整理後消失 (實際應寫入後端)
+                    // 這裡僅做前端狀態模擬，實際綁定通常涉及後端 OAuth callback
+                    if(currentUserData.provider) {
+                        currentUserData.provider += `,${type}`;
+                    } else {
+                        currentUserData.provider = type;
+                    }
+                    
+                    // 3. 更新 Session 以便 Dashboard 使用
+                    session.provider = currentUserData.provider;
+                    localStorage.setItem('healthTwinSession', JSON.stringify(session));
+
+                }, 1500);
             }
         }
     </script>
