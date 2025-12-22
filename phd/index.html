@@ -181,7 +181,31 @@
 
             if (savedSession) {
                 userSession = JSON.parse(savedSession);
-                document.getElementById('display-name').innerText = userSession.name || 'User';
+                
+                // [修改] 顯示名稱邏輯：姓名 > Google > Line
+                let displayName = '';
+                
+                // 1. 檢查是否有已設定的姓名 (且不是預設的 Guest)
+                if (userSession.name && userSession.name !== 'Guest' && userSession.name !== 'Google 用戶' && userSession.name !== 'Line 用戶') {
+                    displayName = userSession.name;
+                }
+                
+                // 2. 若沒有姓名，檢查 Google 帳號 (通常是 Email)
+                if (!displayName && userSession.email) {
+                    displayName = userSession.email;
+                }
+                
+                // 3. 若沒有 Google，顯示 Line 帳號 (UID)
+                if (!displayName && userSession.uid) {
+                    displayName = userSession.uid;
+                }
+                
+                // 4. 若以上皆無 (Fallback)
+                if (!displayName) {
+                    displayName = 'User';
+                }
+
+                document.getElementById('display-name').innerText = displayName;
                 
                 loginSection.classList.add('hidden');
                 userSection.classList.remove('hidden');
