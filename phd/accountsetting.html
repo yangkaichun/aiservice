@@ -20,7 +20,6 @@
         if (savedSession) {
             try {
                 session = JSON.parse(savedSession);
-                // 檢查是否有 email，因為這是我們比對使用者的關鍵
                 if (!session.email) throw new Error("Session missing email");
             } catch (e) {
                 console.error("Session parse error", e);
@@ -95,7 +94,7 @@
                 <div class="flex justify-between items-start mb-4">
                     <div class="flex items-center gap-3">
                         <div class="w-10 h-10 bg-white rounded-full flex items-center justify-center shadow-sm border border-slate-100 p-2">
-                            <svg class="w-5 h-5" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"/><path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/><path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.84z" fill="#FBBC05"/><path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"/></svg>
+                            <img src="https://www.svgrepo.com/show/475656/google-color.svg" class="w-full h-full" alt="Google">
                         </div>
                         <div>
                             <h3 class="font-bold text-slate-700">Google 帳號</h3>
@@ -113,7 +112,7 @@
                 <div class="flex justify-between items-start mb-4">
                     <div class="flex items-center gap-3">
                         <div class="w-10 h-10 bg-[#06C755] rounded-full flex items-center justify-center shadow-sm shadow-green-100 p-2">
-                            <svg class="w-full h-full text-white fill-current" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M20.3,6.3c-0.6-1.1-1.5-2-2.6-2.7c-1.1-0.7-2.4-1.1-3.7-1.1c-1.3,0-2.6,0.4-3.7,1.1C9.1,4.3,8.2,5.2,7.6,6.3C7,7.4,6.7,8.7,6.7,10c0,1.3,0.3,2.6,0.9,3.7c0.6,1.1,1.5,2,2.6,2.7c1.1,0.7,2.4,1.1,3.7,1.1c0.4,0,0.8-0.1,1.2-0.2c0.2,0.9,0.7,3.1,0.8,3.7c0,0.1,0,0.2,0,0.2c0,0.2,0.1,0.3,0.3,0.3c0.1,0,0.2,0,0.3-0.1c0.1,0,0.1-0.1,0.1-0.1c0.6-1.5,1.7-3.2,2.3-4.1c0.9-0.5,1.7-1.2,2.2-2.1c0.6-1.1,0.9-2.4,0.9-3.7C21.2,8.7,20.9,7.4,20.3,6.3z M14,12.5h-4c-0.3,0-0.5-0.2-0.5-0.5V8c0-0.3,0.2-0.5,0.5-0.5s0.5,0.2,0.5,0.5v3.5h3.5c0.3,0,0.5,0.2,0.5,0.5S14.3,12.5,14,12.5z"/></svg>
+                            <img src="https://upload.wikimedia.org/wikipedia/commons/4/41/LINE_logo.svg" class="w-full h-full filter brightness-0 invert" alt="LINE">
                         </div>
                         <div>
                             <h3 class="font-bold text-slate-700">LINE 帳號</h3>
@@ -136,37 +135,31 @@
 
         document.addEventListener('DOMContentLoaded', () => {
             lucide.createIcons();
-            
-            // 顯示 Session 資訊在 Header
             if(session) {
                 document.getElementById('header-user-email').innerText = session.email;
                 if(session.name) {
                     document.getElementById('header-avatar').innerText = session.name.charAt(0).toUpperCase();
                 }
             }
-            
             fetchUserProfile();
         });
 
         async function fetchUserProfile() {
             try {
-                // 取得所有使用者設定
                 const response = await fetch(`${API_URL}?action=getSettings`);
                 const users = await response.json();
                 
-                // [關鍵修正] 使用 session.email 來比對使用者 (忽略大小寫)
-                // 這樣就算 session 中沒有 UID，只要 Email 對就能找到資料
+                // 根據 Email 找使用者
                 currentUserData = users.find(u => 
                     String(u.email).trim().toLowerCase() === String(session.email).trim().toLowerCase()
                 );
 
                 if (currentUserData) {
-                    // 找到資料庫資料 -> 渲染
                     renderProfile(currentUserData);
                     renderBindingStatus(currentUserData);
                 } else {
-                    // 沒找到資料 -> 使用 Session 暫存資料顯示 (容錯模式，不登出)
-                    console.warn("Database mismatch, using session fallback.");
+                    console.warn("Database mismatch.");
+                    // Fallback
                     currentUserData = {
                         name: session.name || 'Guest',
                         email: session.email,
@@ -178,49 +171,41 @@
                 }
             } catch (error) {
                 console.error("Fetch Error:", error);
-                // 發生錯誤也使用 Session 資料作為備援
                 currentUserData = {
-                    name: session.name || 'Offline User',
+                    name: session.name || 'User',
                     email: session.email,
                     birthday: '',
                     provider: ''
                 };
                 renderProfile(currentUserData);
             } finally {
-                // 無論成功失敗，都關閉 Loading 遮罩
                 document.getElementById('loading-overlay').classList.add('hidden');
             }
         }
 
-        // [重點修改] 渲染資料邏輯
         function renderProfile(user) {
+            // [修正] 顯示已有的資料
             const nameInput = document.getElementById('edit-name');
-            const emailHidden = document.getElementById('user-email-hidden');
+            if (user.name && user.name !== 'undefined' && user.name !== 'Guest') {
+                nameInput.value = user.name;
+            } else if (session.name) {
+                nameInput.value = session.name;
+            }
+
+            document.getElementById('user-email-hidden').value = user.email || session.email;
             
-            // 姓名：如果有資料庫的 name 就用，沒有就用 session 的
-            nameInput.value = (user.name && user.name !== 'undefined') ? user.name : (session.name || '');
-            
-            emailHidden.value = user.email || session.email;
-            
-            // 生日：格式化
-            if (user.birthday && user.birthday !== '-' && user.birthday !== 'undefined') {
+            if (user.birthday && user.birthday !== '-') {
                 try {
                     const dateVal = String(user.birthday).substring(0, 10);
                     document.getElementById('edit-birthday').value = dateVal;
-                } catch(e) { console.log("Date format error"); }
+                } catch(e) {}
             }
         }
 
         function renderBindingStatus(user) {
             const providers = (user.provider || '').toLowerCase();
-            
-            // Google Status
-            const isGoogleBound = providers.includes('google');
-            updateCardStatus('google', isGoogleBound);
-
-            // LINE Status
-            const isLineBound = providers.includes('line');
-            updateCardStatus('line', isLineBound);
+            updateCardStatus('google', providers.includes('google'));
+            updateCardStatus('line', providers.includes('line'));
         }
 
         function updateCardStatus(type, isBound) {
@@ -261,27 +246,19 @@
             e.preventDefault();
             const btn = document.getElementById('btn-save');
             const originalText = btn.innerHTML;
-            
             btn.disabled = true;
             btn.innerHTML = `<i data-lucide="loader-2" class="w-4 h-4 animate-spin"></i> 處理中...`;
             lucide.createIcons();
 
             const newName = document.getElementById('edit-name').value;
-            const newBirth = document.getElementById('edit-birthday').value;
-            const userEmail = session.email; // 確保使用 session 中的 email
-
-            // [關鍵修正] 根據 code.gs 的 handleUpdateProfile 邏輯
-            // 它使用 getUserEmailFromToken(data.token) 來找人
-            // 如果我們傳入 token: email，後端函式會回傳 email，進而找到正確的列
             const payload = {
                 action: 'updateProfile',
-                token: userEmail, // 將 Email 當作 Token 傳給後端
+                token: session.email,
                 userName: newName,
-                userBirthday: newBirth
+                userBirthday: document.getElementById('edit-birthday').value
             };
 
             try {
-                // 使用 no-cors 發送 (Apps Script 特性)
                 await fetch(API_URL, {
                     method: 'POST',
                     mode: 'no-cors',
@@ -291,16 +268,12 @@
 
                 setTimeout(() => {
                     alert("個人資料更新請求已送出！");
-                    
-                    // 更新本地 Session 的名稱，讓回到 Dashboard 時能立即看到變化
                     session.name = newName;
                     localStorage.setItem('healthTwinSession', JSON.stringify(session));
-                    
                     btn.disabled = false;
                     btn.innerHTML = originalText;
                     lucide.createIcons();
                 }, 1000);
-
             } catch (error) {
                 alert("更新失敗: " + error.message);
                 btn.disabled = false;
@@ -308,31 +281,60 @@
             }
         }
 
-        function bindAccount(type) {
+        // [關鍵] 綁定帳號邏輯 - 呼叫後端 API
+        async function bindAccount(type) {
             const confirmMsg = type === 'google' 
-                ? "即將進行 Google 帳號綁定 (模擬)..." 
-                : "即將進行 LINE 帳號綁定 (模擬)...";
+                ? "即將進行 Google 帳號綁定..." 
+                : "即將進行 LINE 帳號綁定...";
             
             if(confirm(confirmMsg)) {
                 const btn = document.getElementById(`btn-bind-${type}`);
                 btn.disabled = true;
-                btn.innerText = "驗證中...";
+                btn.innerText = "處理中...";
 
-                setTimeout(() => {
-                    alert(`✅ ${type === 'google' ? 'Google' : 'LINE'} 帳號連結成功！`);
-                    updateCardStatus(type, true);
-                    
-                    // 更新 Session 中的 provider 狀態
-                    if(session.provider) {
-                        if (!session.provider.includes(type)) {
-                            session.provider += `,${type}`;
+                const payload = {
+                    action: 'bindAccount',
+                    userEmail: session.email,
+                    newProvider: type
+                };
+
+                try {
+                    // 呼叫後端寫入 Provider
+                    await fetch(API_URL, {
+                        method: 'POST',
+                        mode: 'no-cors',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(payload)
+                    });
+
+                    setTimeout(() => {
+                        alert(`✅ ${type === 'google' ? 'Google' : 'LINE'} 帳號連結成功！`);
+                        
+                        updateCardStatus(type, true);
+                        
+                        // 更新 LocalStorage
+                        if(session.provider) {
+                            if (!session.provider.includes(type)) {
+                                session.provider += `,${type}`;
+                            }
+                        } else {
+                            session.provider = type;
                         }
-                    } else {
-                        session.provider = type;
-                    }
-                    localStorage.setItem('healthTwinSession', JSON.stringify(session));
+                        localStorage.setItem('healthTwinSession', JSON.stringify(session));
 
-                }, 1500);
+                        // 更新暫存變數
+                        if(currentUserData) {
+                            currentUserData.provider = session.provider;
+                        }
+
+                    }, 1500);
+
+                } catch (error) {
+                    console.error(error);
+                    alert("綁定請求失敗，請稍後再試");
+                    btn.disabled = false;
+                    btn.innerText = "連結帳號";
+                }
             }
         }
     </script>
