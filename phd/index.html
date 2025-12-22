@@ -66,7 +66,7 @@
             <div class="flex justify-between items-center mb-6 bg-indigo-50/50 p-4 rounded-xl border border-indigo-100">
                 <div>
                     <p class="text-xs text-slate-400">Welcome back,</p>
-                    <h2 class="text-lg font-bold text-indigo-900 animate-pulse" id="display-name">Loading...</h2>
+                    <h2 class="text-lg font-bold text-indigo-900" id="display-name">讀取中...</h2>
                 </div>
                 <div class="flex gap-2">
                     <button onclick="logout()" class="p-2 text-rose-400 hover:bg-rose-50 rounded-lg transition" title="登出">
@@ -168,6 +168,7 @@
         lucide.createIcons();
         let userSession = null;
 
+        // 初始化
         window.onload = function() {
             checkLoginStatus();
         };
@@ -181,13 +182,20 @@
             if (savedSession) {
                 userSession = JSON.parse(savedSession);
                 
-                // 初步顯示 (等待後端驗證)
+                // 1. 先切換到已登入畫面 (避免畫面閃爍)
                 loginSection.classList.add('hidden');
                 userSection.classList.remove('hidden');
                 mainCard.classList.remove('max-w-md'); 
                 mainCard.classList.add('max-w-lg');
+
+                // 2. 先顯示 Session 中的名字 (若有的話)，作為 Placeholder
+                if (userSession.name && userSession.name !== 'Guest') {
+                    document.getElementById('display-name').innerText = userSession.name;
+                } else {
+                    document.getElementById('display-name').innerText = "載入中...";
+                }
                 
-                // 驗證使用者是否存在於資料庫 (註冊邏輯)
+                // 3. 呼叫後端驗證使用者並取得最新姓名
                 validateUserExist();
             } else {
                 loginSection.classList.remove('hidden');
@@ -200,39 +208,46 @@
 
         async function validateUserExist() {
             try {
-                // 呼叫後端取得所有用戶清單 (或特定檢查 API)
+                // 呼叫後端取得所有用戶資料
                 const response = await fetch(`${API_URL}?action=getSettings`);
                 const users = await response.json();
                 
-                // 比對 Email
+                // 比對 Email (忽略大小寫)
+                // userSession.email 來自登入時的資訊，u.email 來自資料庫
                 const dbUser = users.find(u => 
                     String(u.email).trim().toLowerCase() === String(userSession.email).trim().toLowerCase()
                 );
 
-                const displayNameEl = document.getElementById('display-name');
-                displayNameEl.classList.remove('animate-pulse');
-
                 if (dbUser) {
-                    // [重點] 找到人了，顯示順序: 姓名 > Google Email > Line UID
+                    // [關鍵修正] 找到使用者，優先顯示資料庫中的 Name
                     let showName = dbUser.name;
-                    if (!showName || showName === 'Guest' || showName === 'Google 用戶') {
+                    
+                    // 如果資料庫名字是空的，或還是預設值，才用 Email/UID
+                    if (!showName || showName === 'undefined') {
                         showName = dbUser.email || dbUser.uid;
                     }
-                    displayNameEl.innerText = showName;
+
+                    document.getElementById('display-name').innerText = showName;
+                    document.getElementById('display-name').classList.remove('animate-pulse'); // 停止閃爍
                     
-                    // 更新本地 Session 的 Name
+                    // 同步更新本地 Session，這樣下次進來就不用等 API 了
                     userSession.name = showName;
+                    // 也同步 UID，以防之前是舊的
+                    userSession.uid = dbUser.uid; 
                     localStorage.setItem('healthTwinSession', JSON.stringify(userSession));
+
                 } else {
-                    // 沒找到人 -> 跳轉註冊頁
+                    // 若資料庫沒這個人 -> 跳轉註冊頁
                     console.warn("User not found in DB, redirecting to signup.");
                     window.location.href = 'signup.html';
                 }
 
             } catch (error) {
                 console.error("Validation error:", error);
-                // 離線或錯誤時，暫時顯示 Session 資訊，不強制跳轉
-                document.getElementById('display-name').innerText = userSession.name || userSession.email;
+                // API 錯誤時，至少顯示 Session 裡的 Email 或名字
+                const fallbackName = userSession.name || userSession.email || "Offline User";
+                document.getElementById('display-name').innerText = fallbackName;
+                document.getElementById('display-name').classList.remove('animate-pulse');
             }
         }
 
@@ -245,14 +260,13 @@
                 const mockUser = {
                     uid: provider === 'google' ? "GOOGLE_USER_01" : "LINE_USER_01",
                     email: provider === 'google' ? "user@gmail.com" : "user@line.me",
-                    name: provider === 'google' ? "Google 用戶" : "Line 用戶",
+                    name: provider === 'google' ? "Google 用戶" : "Line 用戶", // 預設名稱
                     role: "user",
                     provider: provider,
                     timestamp: new Date().getTime()
                 };
                 
                 localStorage.setItem('healthTwinSession', JSON.stringify(mockUser));
-                // 重新載入以觸發 checkLoginStatus -> validateUserExist
                 window.location.reload();
             }, 1000);
         }
@@ -287,7 +301,7 @@
             const type = document.querySelector('input[name="dataType"]:checked').value;
             let payload = {
                 action: 'addData',
-                uid: userSession.uid,
+                uid: userSession.uid, // 使用已同步的 UID
                 type: type,
                 note: document.getElementById('note').value,
                 timestamp: new Date().toISOString()
