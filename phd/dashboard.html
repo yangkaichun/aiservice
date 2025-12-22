@@ -44,14 +44,20 @@
             <div class="p-5 border-b border-slate-100 flex justify-between items-center bg-gradient-to-r from-indigo-50 to-white">
                 <div class="flex items-center gap-3">
                     <div class="p-2 bg-white rounded-lg shadow-sm text-indigo-600"><i data-lucide="sparkles" class="w-6 h-6"></i></div>
-                    <div><h3 class="font-bold text-lg text-slate-800">Gemini 健康分析</h3><p class="text-xs text-slate-500">Google Cloud TTS 語音播放 (Taiwan)</p></div>
+                    <div><h3 class="font-bold text-lg text-slate-800">Gemini 健康分析</h3><p class="text-xs text-slate-500">AI 智慧評估</p></div>
                 </div>
                 <button onclick="closeAiModal()" class="p-2 hover:bg-slate-100 rounded-full transition text-slate-400 hover:text-slate-600"><i data-lucide="x" class="w-6 h-6"></i></button>
             </div>
-            <div id="aiModalContent" class="p-6 overflow-y-auto text-slate-600 text-sm leading-relaxed scroll-smooth"></div>
+            
+            <div id="aiModalContent" class="p-6 overflow-y-auto text-slate-600 text-sm leading-relaxed scroll-smooth">
+                </div>
+            
             <div class="p-4 border-t border-slate-100 bg-slate-50 flex justify-between items-center">
-                <button id="btn-tts" onclick="toggleSpeech()" class="hidden px-4 py-2 text-indigo-600 hover:bg-indigo-50 rounded-lg font-bold text-sm transition flex items-center gap-2 border border-indigo-100"><i data-lucide="volume-2" class="w-5 h-5"></i><span id="btn-tts-text">語音播放</span></button>
-                <button onclick="closeAiModal()" class="px-5 py-2 bg-white border border-slate-200 text-slate-600 rounded-lg hover:bg-slate-50 font-medium transition shadow-sm">關閉</button>
+                <button id="btn-tts" onclick="toggleSpeech()" class="hidden px-4 py-2 text-indigo-600 hover:bg-indigo-50 rounded-lg font-bold text-sm transition flex items-center gap-2 border border-indigo-100 group">
+                    <i data-lucide="volume-2" class="w-5 h-5 group-hover:scale-110 transition-transform"></i>
+                    <span id="btn-tts-text">語音播放</span>
+                </button>
+                <button onclick="closeAiModal()" class="px-5 py-2 bg-white border border-slate-200 text-slate-600 rounded-lg hover:bg-slate-50 font-medium transition shadow-sm ml-auto">關閉</button>
             </div>
         </div>
     </div>
@@ -148,7 +154,6 @@
                             </div>
                             <div class="flex-1 relative w-full h-full min-h-0"><canvas id="mainChart"></canvas></div>
                         </div>
-                        
                         <div class="glass-card rounded-2xl p-5 flex flex-col h-[350px]">
                             <div class="mb-4">
                                 <h3 class="font-bold text-slate-700 flex items-center gap-2"><i data-lucide="activity" class="w-4 h-4 text-amber-500"></i> 血糖趨勢圖</h3>
@@ -185,7 +190,11 @@
         let bpChartInstance = null; 
         let glucoseChartInstance = null; 
         let currentSelectedUid = null;
-        let audioPlayer = null; 
+        
+        // 語音相關
+        const synth = window.speechSynthesis;
+        let speechUtterance = null;
+        let isSpeaking = false;
 
         const loggedInSession = JSON.parse(localStorage.getItem('healthTwinSession'));
 
@@ -257,9 +266,7 @@
                 const response = await fetch(`${API_URL}?action=getData&uid=${encodeURIComponent(uid)}`);
                 const rawData = await response.json();
                 
-                // [修正重點] 直接映射後端回傳的 JSON key (sbp, dbp, glucose, hr)
                 currentUserData = rawData.map(item => {
-                    // 確保數值是數字，避免字串運算錯誤
                     const sbp = item.sbp ? parseInt(item.sbp) : null;
                     const dbp = item.dbp ? parseInt(item.dbp) : null;
                     const pulse = item.hr ? parseInt(item.hr) : null;
@@ -304,7 +311,6 @@
                 return; 
             } 
 
-            // 卡片更新 (找最新一筆有資料的)
             const latestBP = [...currentUserData].reverse().find(d => d.sbp != null);
             const latestGlu = [...currentUserData].reverse().find(d => d.glucose != null);
 
@@ -325,7 +331,6 @@
 
             if (latestGlu) {
                 document.getElementById('val-glucose').innerText = latestGlu.glucose;
-                // 可以加簡單的判斷
                 const gStatus = document.getElementById('status-glucose');
                 if (latestGlu.glucose > 200) gStatus.innerHTML = `<span class="text-rose-500 font-bold">偏高</span>`;
                 else gStatus.innerHTML = `<span class="text-emerald-500 font-bold">正常</span>`;
@@ -333,7 +338,6 @@
                 document.getElementById('val-glucose').innerText = '--';
             }
 
-            // 列表更新
             const historyBody = document.getElementById('historyTable'); 
             const displayList = [...currentUserData].reverse().slice(0, 50);
             
@@ -365,7 +369,6 @@
             const dbpData = data.map(d => d.dbp); 
             const glucoseData = data.map(d => d.glucose); 
 
-            // 血壓圖
             const ctxBP = document.getElementById('mainChart').getContext('2d'); 
             if (bpChartInstance) bpChartInstance.destroy(); 
             bpChartInstance = new Chart(ctxBP, { 
@@ -384,7 +387,6 @@
                 } 
             }); 
 
-            // 血糖圖
             const ctxGlu = document.getElementById('glucoseChart').getContext('2d'); 
             if (glucoseChartInstance) glucoseChartInstance.destroy(); 
             glucoseChartInstance = new Chart(ctxGlu, { 
@@ -405,20 +407,96 @@
             if (!currentSelectedUid) { alert("請先選擇一位用戶"); return; } 
             const modal = document.getElementById('aiAnalysisModal'); 
             const content = document.getElementById('aiModalContent'); 
+            const btnTTS = document.getElementById('btn-tts');
+            
             modal.classList.remove('hidden'); modal.classList.add('flex'); 
             content.innerHTML = `<div class="flex flex-col items-center justify-center py-12"><div class="w-10 h-10 border-4 border-indigo-200 border-t-indigo-600 rounded-full animate-spin"></div><p class="text-slate-500 mt-4">Gemini 正在分析數據...</p></div>`; 
+            btnTTS.classList.add('hidden'); 
+
             try { 
                 const response = await fetch(`${API_URL}?action=askAI&uid=${currentSelectedUid}`); 
                 const data = await response.json(); 
                 if (data.result) { 
                     content.innerHTML = `<div class="prose prose-sm text-slate-700">${marked.parse(data.result)}</div>`; 
+                    btnTTS.classList.remove('hidden'); 
+                    
+                    // 預先載入語音包 (解決 Chrome 第一次可能抓不到的問題)
+                    window.speechSynthesis.getVoices();
                 } else { throw new Error("AI 無回應"); } 
             } catch (err) { 
                 content.innerHTML = `<div class="text-center py-8 text-rose-500">分析失敗: ${err.message}</div>`; 
             } 
         }
 
-        function closeAiModal() { document.getElementById('aiAnalysisModal').classList.add('hidden'); document.getElementById('aiAnalysisModal').classList.remove('flex'); }
+        // [優化] 語音朗讀功能
+        function toggleSpeech() {
+            if (synth.speaking && !synth.paused) {
+                synth.cancel();
+                isSpeaking = false;
+                updateTTSButton(false);
+            } else {
+                // 從 HTML 提取純文字 (textContent 會自動忽略 HTML 標籤)
+                const contentEl = document.getElementById('aiModalContent');
+                const contentText = contentEl.innerText || contentEl.textContent;
+                
+                if (!contentText) return;
+
+                // 停止之前的
+                synth.cancel();
+
+                speechUtterance = new SpeechSynthesisUtterance(contentText);
+                speechUtterance.lang = 'zh-TW'; 
+                speechUtterance.rate = 1.0;     
+                
+                // 優先選擇 Google 國語 或 台灣相關語音
+                const voices = synth.getVoices();
+                const targetVoice = voices.find(v => v.name.includes("Google") && v.lang.includes("zh-TW")) 
+                                || voices.find(v => v.lang === "zh-TW")
+                                || voices.find(v => v.name.includes("Taiwan"));
+                                
+                if (targetVoice) {
+                    speechUtterance.voice = targetVoice;
+                    console.log("Using voice:", targetVoice.name);
+                }
+
+                speechUtterance.onend = () => {
+                    isSpeaking = false;
+                    updateTTSButton(false);
+                };
+
+                synth.speak(speechUtterance);
+                isSpeaking = true;
+                updateTTSButton(true);
+            }
+        }
+
+        function updateTTSButton(playing) {
+            const btnText = document.getElementById('btn-tts-text');
+            const icon = document.querySelector('#btn-tts i');
+            
+            if (playing) {
+                btnText.innerText = "停止朗讀";
+                icon.setAttribute('data-lucide', 'square'); 
+                document.getElementById('btn-tts').classList.add('bg-rose-50', 'text-rose-600', 'border-rose-100');
+                document.getElementById('btn-tts').classList.remove('hover:bg-indigo-50', 'text-indigo-600', 'border-indigo-100');
+            } else {
+                btnText.innerText = "語音播放";
+                icon.setAttribute('data-lucide', 'volume-2'); 
+                document.getElementById('btn-tts').classList.remove('bg-rose-50', 'text-rose-600', 'border-rose-100');
+                document.getElementById('btn-tts').classList.add('hover:bg-indigo-50', 'text-indigo-600', 'border-indigo-100');
+            }
+            lucide.createIcons();
+        }
+
+        function closeAiModal() { 
+            if (synth.speaking) {
+                synth.cancel();
+                isSpeaking = false;
+                updateTTSButton(false);
+            }
+            document.getElementById('aiAnalysisModal').classList.add('hidden'); 
+            document.getElementById('aiAnalysisModal').classList.remove('flex'); 
+        }
     </script>
 </body>
 </html>
