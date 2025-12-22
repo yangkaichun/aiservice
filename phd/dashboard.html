@@ -15,10 +15,14 @@
     <script src="config.js"></script>
 
     <script>
+        // 1. 立即檢查登入狀態
         const savedSession = localStorage.getItem('healthTwinSession');
+        let loggedInSession = null;
         if (!savedSession) {
             alert("🔒 請先登入");
             window.location.href = 'index.html';
+        } else {
+            loggedInSession = JSON.parse(savedSession);
         }
     </script>
 
@@ -32,11 +36,6 @@
         .btn-gemini:hover { background: linear-gradient(90deg, #4338ca, #7e22ce); transform: translateY(-1px); box-shadow: 0 4px 12px rgba(147, 51, 234, 0.3); }
         .prose h1, .prose h2, .prose h3 { color: #1e293b; font-weight: 700; margin-top: 1em; margin-bottom: 0.5em; }
         .prose p { margin-bottom: 0.8em; line-height: 1.6; }
-        .prose ul { list-style-type: disc; padding-left: 1.2em; margin-bottom: 0.8em; }
-        .prose li { margin-bottom: 0.3em; }
-        .prose strong { color: #4338ca; font-weight: 600; }
-        
-        /* 篩選器按鈕樣式 */
         .filter-btn { @apply px-3 py-1.5 text-xs font-medium rounded-lg border border-slate-200 text-slate-600 hover:bg-slate-50 transition; }
         .filter-btn.active { @apply bg-indigo-600 text-white border-indigo-600; }
     </style>
@@ -52,14 +51,10 @@
                 </div>
                 <button onclick="closeAiModal()" class="p-2 hover:bg-slate-100 rounded-full transition text-slate-400 hover:text-slate-600"><i data-lucide="x" class="w-6 h-6"></i></button>
             </div>
-            
-            <div id="aiModalContent" class="p-6 overflow-y-auto text-slate-600 text-sm leading-relaxed scroll-smooth">
-                </div>
-            
+            <div id="aiModalContent" class="p-6 overflow-y-auto text-slate-600 text-sm leading-relaxed scroll-smooth"></div>
             <div class="p-4 border-t border-slate-100 bg-slate-50 flex justify-between items-center">
                 <button id="btn-tts" onclick="toggleSpeech()" class="hidden px-4 py-2 text-indigo-600 hover:bg-indigo-50 rounded-lg font-bold text-sm transition flex items-center gap-2 border border-indigo-100 group">
-                    <i data-lucide="volume-2" class="w-5 h-5 group-hover:scale-110 transition-transform"></i>
-                    <span id="btn-tts-text">語音播放</span>
+                    <i data-lucide="volume-2" class="w-5 h-5 group-hover:scale-110 transition-transform"></i><span id="btn-tts-text">語音播放</span>
                 </button>
                 <button onclick="closeAiModal()" class="px-5 py-2 bg-white border border-slate-200 text-slate-600 rounded-lg hover:bg-slate-50 font-medium transition shadow-sm ml-auto">關閉</button>
             </div>
@@ -73,9 +68,10 @@
             <div><div class="flex items-center gap-2 text-indigo-600 font-bold text-xl"><i data-lucide="activity" class="w-6 h-6"></i>YangHome Health</div><p class="text-xs text-slate-400 mt-1">智慧醫療監測系統</p></div>
             <button onclick="toggleSidebar()" class="lg:hidden text-slate-400 hover:text-slate-600"><i data-lucide="x" class="w-6 h-6"></i></button>
         </div>
+        
         <div class="p-4 pb-2">
             <div class="flex items-center gap-3 p-3 bg-slate-50 rounded-xl border border-slate-100 shadow-sm">
-                <div class="w-10 h-10 rounded-full bg-white border border-slate-200 flex items-center justify-center overflow-hidden shrink-0">
+                <div id="avatar-container" class="w-10 h-10 rounded-full bg-white border border-slate-200 flex items-center justify-center overflow-hidden shrink-0">
                     <span id="sidebar-user-text" class="text-indigo-600 font-bold">U</span>
                 </div>
                 <div class="flex-1 overflow-hidden">
@@ -84,17 +80,17 @@
                 </div>
             </div>
         </div>
+
         <div class="p-4 flex-1 overflow-hidden flex flex-col">
             <h3 class="text-xs font-bold text-slate-400 uppercase tracking-wider mb-3 px-2 flex justify-between items-center">選擇用戶<span id="userCount" class="bg-slate-100 text-slate-500 py-0.5 px-2 rounded-full text-[10px]">0</span></h3>
             <div id="userList" class="space-y-1 overflow-y-auto flex-1 pr-1">
                 <div class="p-4 text-center text-slate-400 text-sm animate-pulse"><i data-lucide="loader-2" class="w-5 h-5 animate-spin mx-auto mb-2"></i>正在載入使用者...</div>
             </div>
         </div>
+
         <div class="mt-auto p-4 border-t border-slate-100 bg-slate-50">
             <button onclick="getAIAnalysis()" class="w-full py-3 px-4 btn-gemini rounded-xl text-sm font-bold transition flex items-center justify-center gap-2 mb-3 shadow-md group"><i data-lucide="sparkles" class="w-4 h-4 group-hover:scale-110 transition-transform"></i>AI 分析 (Gemini)</button>
-            
             <a href="accountsetting.html" class="w-full py-2.5 px-4 bg-white border border-slate-200 hover:bg-slate-100 text-slate-500 hover:text-slate-800 rounded-lg text-sm font-medium transition flex items-center justify-center gap-2 mb-2 shadow-sm"><i data-lucide="link" class="w-4 h-4"></i> 帳號綁定</a>
-            
             <a href="setting.html" class="w-full py-2.5 px-4 bg-white border border-slate-200 hover:bg-slate-100 text-slate-500 hover:text-slate-800 rounded-lg text-sm font-medium transition flex items-center justify-center gap-2 mb-2 shadow-sm group"><i data-lucide="settings-2" class="w-4 h-4 group-hover:rotate-90 transition-transform duration-500"></i> 管理者後台</a>
             <a href="phd.html" class="w-full py-2.5 px-4 bg-white border border-slate-200 hover:bg-slate-50 text-slate-600 rounded-lg text-sm font-medium transition flex items-center justify-center gap-2 mb-2 shadow-sm"><i data-lucide="plus-circle" class="w-4 h-4"></i> 新增數據</a>
             <button onclick="logout()" class="w-full py-2.5 px-4 bg-rose-50 border border-rose-100 text-rose-600 hover:bg-rose-100 rounded-lg text-sm font-medium transition flex items-center justify-center gap-2 mb-3 shadow-sm"><i data-lucide="log-out" class="w-4 h-4"></i> 登出系統</button>
@@ -119,14 +115,12 @@
                         <i data-lucide="message-circle" id="icon-line" class="w-5 h-5 text-slate-300"></i>
                     </div>
                 </div>
-
                 <button onclick="refreshCurrentUserData()" class="p-2 text-slate-500 hover:bg-slate-100 rounded-lg transition" title="刷新"><i data-lucide="refresh-cw" class="w-5 h-5"></i></button>
             </div>
         </header>
 
         <div class="flex-1 overflow-y-auto p-4 lg:p-8 scroll-smooth">
             <div id="dashboardContent" class="max-w-7xl mx-auto hidden animate-fade-in pb-10">
-                
                 <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 lg:gap-6 mb-6 lg:mb-8">
                     <div class="glass-card rounded-2xl p-5 relative overflow-hidden group">
                         <div class="absolute right-0 top-0 w-24 h-24 bg-rose-50 rounded-bl-full -mr-4 -mt-4"></div>
@@ -219,8 +213,8 @@
     <script>
         const API_URL = config.API_URL;
         
-        let allUserData = []; // 儲存所有資料
-        let filteredData = []; // 儲存篩選後的資料
+        let allUserData = []; 
+        let filteredData = []; 
         let currentFilter = '30days';
         let bpChartInstance = null; 
         let glucoseChartInstance = null; 
@@ -231,23 +225,44 @@
         let speechUtterance = null;
         let isSpeaking = false;
 
-        const loggedInSession = JSON.parse(localStorage.getItem('healthTwinSession'));
-
         document.addEventListener('DOMContentLoaded', () => {
             lucide.createIcons();
-            // 這裡不再直接設 sidebar 名字，交由 initDashboard 統一處理
             initDashboard();
         });
 
-        function updateSidebarDisplayName(name) {
+        function updateSidebarDisplayName(name, pictureUrl) {
             document.getElementById('sidebar-user-name').innerText = name || "Guest";
-            document.getElementById('sidebar-user-text').innerText = (name || "G").charAt(0).toUpperCase();
+            const avatarContainer = document.getElementById('avatar-container');
+            const textEl = document.getElementById('sidebar-user-text');
+            
+            // [新增] 支援顯示 Google 頭像
+            if (pictureUrl) {
+                avatarContainer.innerHTML = `<img src="${pictureUrl}" class="w-full h-full object-cover" alt="Avatar">`;
+            } else {
+                avatarContainer.innerHTML = `<span id="sidebar-user-text" class="text-indigo-600 font-bold">${(name || "G").charAt(0).toUpperCase()}</span>`;
+            }
         }
 
-        function logout() { if(confirm("確定要登出系統嗎？")) { localStorage.removeItem('healthTwinSession'); window.location.href = 'index.html'; } }
-        function toggleSidebar() { const sidebar = document.getElementById('sidebar'); const overlay = document.getElementById('mobileOverlay'); if (sidebar.classList.contains('-translate-x-full')) { sidebar.classList.remove('-translate-x-full'); overlay.classList.remove('hidden'); } else { sidebar.classList.add('-translate-x-full'); overlay.classList.add('hidden'); } }
+        function logout() { 
+            if(confirm("確定要登出系統嗎？")) { 
+                localStorage.removeItem('healthTwinSession'); 
+                window.location.href = 'index.html'; 
+            } 
+        }
 
-        // [重點修正] 初始化邏輯：處理「模擬使用者」不在清單中的狀況
+        function toggleSidebar() { 
+            const sidebar = document.getElementById('sidebar'); 
+            const overlay = document.getElementById('mobileOverlay'); 
+            if (sidebar.classList.contains('-translate-x-full')) { 
+                sidebar.classList.remove('-translate-x-full'); 
+                overlay.classList.remove('hidden'); 
+            } else { 
+                sidebar.classList.add('-translate-x-full'); 
+                overlay.classList.add('hidden'); 
+            } 
+        }
+
+        // [重點修正] 真實登入初始化邏輯
         async function initDashboard() {
             try {
                 const response = await fetch(`${API_URL}?action=getSettings`);
@@ -255,54 +270,54 @@
                 renderUserList(users);
                 
                 if (loggedInSession) {
-                    // 根據 UID 找人
+                    // 1. 嘗試在使用者列表中找到自己 (使用 UID)
                     const me = users.find(u => u.uid === loggedInSession.uid);
                     
                     if (me) {
-                        // 情況 1: 使用者在清單中 (已註冊/已綁定)
-                        let displayName = me.name; 
-                        if (!displayName && me.provider && me.provider.includes('google')) displayName = me.email;
-                        if (!displayName) displayName = me.uid;
-                        
-                        updateSidebarDisplayName(displayName);
-                        selectUser(me.uid, displayName, me);
+                        // 情況 1: 使用者已同步在清單中
+                        updateSidebarDisplayName(me.name, loggedInSession.picture);
+                        selectUser(me.uid, me.name, me);
                     } else {
-                        // 情況 2: 使用者不在清單中 (例如 Mock User) [修正點]
-                        // 我們強制選取當前的 Mock User，並在列表中臨時加入他
-                        console.log("User not in sheet, using session info:", loggedInSession);
+                        // 情況 2: 真實登入但 Sheet 尚未同步 (或延遲)
+                        // 強制使用 Session 中的資訊顯示，確保不會變成 Guest
+                        console.log("User synced delay, using session info:", loggedInSession);
                         
-                        const guestName = loggedInSession.name || loggedInSession.email || "Guest User";
+                        const sessionName = loggedInSession.name || loggedInSession.email;
+                        updateSidebarDisplayName(sessionName, loggedInSession.picture);
                         
-                        // 1. 更新 Sidebar 顯示
-                        updateSidebarDisplayName(guestName);
-                        
-                        // 2. 臨時加入列表最上方，讓使用者可見
+                        // 臨時加入列表最上方
                         const listContainer = document.getElementById('userList');
                         const div = document.createElement('div');
-                        const avatarText = guestName.charAt(0).toUpperCase();
-                        
-                        // 建立臨時使用者物件
+                        const avatarContent = loggedInSession.picture 
+                            ? `<img src="${loggedInSession.picture}" class="w-full h-full object-cover">` 
+                            : loggedInSession.name.charAt(0).toUpperCase();
+
                         const tempUser = {
                             uid: loggedInSession.uid,
-                            name: guestName,
+                            name: sessionName,
                             email: loggedInSession.email,
-                            role: 'user',
+                            role: loggedInSession.role || 'user',
                             provider: loggedInSession.provider
                         };
 
                         div.id = `user-item-${tempUser.uid}`;
                         div.className = `p-3 rounded-xl cursor-pointer hover:bg-indigo-50 hover:text-indigo-600 transition flex items-center gap-3 text-slate-600 font-medium group user-item border border-transparent`;
-                        div.innerHTML = `<div class="w-8 h-8 rounded-full bg-indigo-100 text-indigo-600 flex items-center justify-center text-xs font-bold shrink-0">${avatarText}</div><span class="truncate">${guestName} (目前)</span>`;
-                        div.onclick = () => { selectUser(tempUser.uid, guestName, tempUser); if (window.innerWidth < 1024) toggleSidebar(); };
+                        
+                        const iconHtml = loggedInSession.picture
+                            ? `<div class="w-8 h-8 rounded-full bg-indigo-100 overflow-hidden shrink-0 border border-slate-200">${avatarContent}</div>`
+                            : `<div class="w-8 h-8 rounded-full bg-indigo-100 text-indigo-600 flex items-center justify-center text-xs font-bold shrink-0">${avatarContent}</div>`;
+
+                        div.innerHTML = `${iconHtml}<span class="truncate">${sessionName} (您)</span>`;
+                        div.onclick = () => { selectUser(tempUser.uid, sessionName, tempUser); if (window.innerWidth < 1024) toggleSidebar(); };
                         
                         if(listContainer.firstChild) listContainer.insertBefore(div, listContainer.firstChild);
                         else listContainer.appendChild(div);
 
-                        // 3. 直接選取
-                        selectUser(tempUser.uid, guestName, tempUser);
+                        // 直接選取
+                        selectUser(tempUser.uid, sessionName, tempUser);
                     }
                 } else if (users.length > 0) {
-                    // 沒登入的情況下，顯示列表第一位
+                    // Fallback (理論上不會發生，因為前面有 check)
                     selectUser(users[0].uid, users[0].name);
                 }
             } catch (error) {
