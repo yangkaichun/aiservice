@@ -9,7 +9,7 @@
     <link href="https://cdn.jsdelivr.net/npm/themify-icons@0.1.2/css/themify-icons.css" rel="stylesheet">
 
     <style>
-        /* --- 1. 基礎設定 --- */
+        /* --- 基礎設定 --- */
         body, html {
             margin: 0;
             padding: 0;
@@ -17,10 +17,10 @@
             height: 100%;
             overflow: hidden; 
             font-family: Arial, sans-serif;
-            background-color: #333; /* 深色背景更能凸顯電子書 */
+            background-color: #2b2b2b; /* 深灰背景，適合閱讀 */
         }
 
-        /* --- 2. Loading 動畫區塊 --- */
+        /* --- Loading 動畫區塊 --- */
         #loader-wrapper {
             position: fixed;
             top: 0;
@@ -28,31 +28,31 @@
             width: 100%;
             height: 100%;
             background-color: #ffffff;
-            z-index: 9999;
+            z-index: 9999; /* 確保在最上層 */
             display: flex;
             justify-content: center;
             align-items: center;
             flex-direction: column;
-            transition: opacity 0.5s ease-out;
+            transition: opacity 0.5s ease-out; /* 淡出動畫 */
         }
 
+        /* 旋轉圈圈 */
         .loader {
-            width: 60px;
-            height: 60px;
-            border: 6px solid #f3f3f3;
-            border-top: 6px solid #e67e22; /* 活力橘色 */
+            width: 50px;
+            height: 50px;
+            border: 5px solid #f3f3f3;
+            border-top: 5px solid #e67e22; /* 亮橘色 */
             border-radius: 50%;
             animation: spin 1s linear infinite;
-            box-shadow: 0 0 15px rgba(0,0,0,0.1);
         }
 
+        /* 文字動畫 */
         .loading-text {
-            margin-top: 25px;
-            color: #444;
+            margin-top: 20px;
+            color: #333;
             font-size: 1.2rem;
-            letter-spacing: 3px;
+            letter-spacing: 2px;
             font-weight: bold;
-            text-transform: uppercase;
             animation: pulse 1.5s infinite ease-in-out;
         }
 
@@ -62,69 +62,84 @@
         }
 
         @keyframes pulse {
-            0%, 100% { opacity: 0.5; }
+            0%, 100% { opacity: 0.6; }
             50% { opacity: 1; }
         }
 
-        /* --- 3. 電子書容器 --- */
+        /* --- 電子書容器 --- */
         #flipbook-container {
             width: 100%;
             height: 100vh;
-            position: relative;
-            opacity: 0; /* 初始透明，等待 Loading 結束 */
-            transition: opacity 1s ease-in;
+            opacity: 0; /* 一開始透明 */
+            transition: opacity 1s ease-in; /* 優雅浮現 */
+        }
+        
+        /* 確保書本填滿容器 */
+        ._df_book {
+            height: 100%;
+            width: 100%;
         }
 
-        /* 自定義 dFlip 的一些細節 (可選) */
-        .df-ui-btn { 
-            background-color: rgba(0,0,0,0.5) !important; 
-        }
     </style>
 </head>
 <body>
 
     <div id="loader-wrapper">
         <div class="loader"></div>
-        <div class="loading-text">Loading Experience...</div>
+        <div class="loading-text">LOADING RESUME...</div>
     </div>
 
     <div id="flipbook-container">
-        <div class="_df_book" 
-             height="100%" 
-             webgl="true" 
-             background-color="#333"
-             source="PDF/CV.pdf"
-             id="df_book_custom">
-        </div>
+        <div id="my_book"></div>
     </div>
 
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.6.0/jquery.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/dflip/dist/js/dflip.min.js"></script>
 
     <script>
-        // 設定 dFlip 資源路徑 (確保它能找到 worker 檔案)
-        // 使用 CDN 時通常會自動處理，但為了保險起見可以指定
+        // 設定 dFlip 資源路徑
         var dFlipLocation = "https://cdn.jsdelivr.net/npm/dflip/dist/";
 
         window.addEventListener('load', function() {
-            // 4秒 Loading 計時器
+            
+            // ============================================
+            // ⚠️ 關鍵設定：使用絕對路徑 (完整網址)
+            // 根據你的截圖，你的檔案結構應該是 aiservice/CV/PDF/CV.pdf
+            // ============================================
+            var pdfUrl = "https://yangkaichun.github.io/aiservice/CV/PDF/CV.pdf";
+
+            // 設定電子書參數
+            var option_my_book = {
+                source: pdfUrl,
+                webgl: true, // 開啟 3D 翻頁
+                backgroundColor: "#2b2b2b",
+                height: "100%"
+            };
+            
+            // 啟動翻頁書
+            // 如果你在 Console 看到 404，請檢查上面的 pdfUrl 是否正確
+            $("#my_book").flipBook(pdfUrl, option_my_book);
+
+            // ============================================
+            // Loading 動畫計時器 (4秒)
+            // ============================================
             setTimeout(function() {
                 const loader = document.getElementById('loader-wrapper');
                 const bookContainer = document.getElementById('flipbook-container');
 
-                // 1. Loading 淡出
+                // 1. Loading 變透明
                 loader.style.opacity = '0';
 
                 // 2. 顯示電子書
                 bookContainer.style.opacity = '1';
 
-                // 3. 移除 Loading 元素
+                // 3. 移除 Loading 元素 (動畫結束後)
                 setTimeout(function() {
                     loader.style.display = 'none';
-                    document.body.style.overflow = 'auto'; // 雖然全螢幕書通常不需要 body scroll
+                    document.body.style.overflow = 'auto'; 
                 }, 500);
 
-            }, 4000); 
+            }, 4000); // 4000 毫秒 = 4 秒
         });
     </script>
 
