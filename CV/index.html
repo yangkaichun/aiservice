@@ -3,7 +3,11 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>線上履歷預覽</title>
+    <title>華麗線上履歷</title>
+    
+    <link href="https://cdn.jsdelivr.net/npm/dflip/dist/css/dflip.min.css" rel="stylesheet" type="text/css">
+    <link href="https://cdn.jsdelivr.net/npm/themify-icons@0.1.2/css/themify-icons.css" rel="stylesheet">
+
     <style>
         /* --- 1. 基礎設定 --- */
         body, html {
@@ -11,9 +15,9 @@
             padding: 0;
             width: 100%;
             height: 100%;
-            overflow: hidden; /* 在 Loading 時禁止捲動 */
+            overflow: hidden; 
             font-family: Arial, sans-serif;
-            background-color: #525659; /* PDF 檢視器常見的深灰色背景 */
+            background-color: #333; /* 深色背景更能凸顯電子書 */
         }
 
         /* --- 2. Loading 動畫區塊 --- */
@@ -32,22 +36,23 @@
             transition: opacity 0.5s ease-out;
         }
 
-        /* 旋轉圈圈樣式 */
         .loader {
-            width: 50px;
-            height: 50px;
-            border: 5px solid #f3f3f3;
-            border-top: 5px solid #e74c3c; /* 改成紅色系，搭配 PDF 的感覺 */
+            width: 60px;
+            height: 60px;
+            border: 6px solid #f3f3f3;
+            border-top: 6px solid #e67e22; /* 活力橘色 */
             border-radius: 50%;
             animation: spin 1s linear infinite;
+            box-shadow: 0 0 15px rgba(0,0,0,0.1);
         }
 
         .loading-text {
-            margin-top: 20px;
-            color: #555;
+            margin-top: 25px;
+            color: #444;
             font-size: 1.2rem;
-            letter-spacing: 2px;
+            letter-spacing: 3px;
             font-weight: bold;
+            text-transform: uppercase;
             animation: pulse 1.5s infinite ease-in-out;
         }
 
@@ -57,22 +62,22 @@
         }
 
         @keyframes pulse {
-            0%, 100% { opacity: 0.6; }
+            0%, 100% { opacity: 0.5; }
             50% { opacity: 1; }
         }
 
-        /* --- 3. 主要內容區塊 (PDF) --- */
-        #main-content {
+        /* --- 3. 電子書容器 --- */
+        #flipbook-container {
             width: 100%;
-            height: 100vh; /* 佔滿視窗高度 */
-            display: none; /* 初始隱藏 */
+            height: 100vh;
+            position: relative;
+            opacity: 0; /* 初始透明，等待 Loading 結束 */
+            transition: opacity 1s ease-in;
         }
 
-        iframe {
-            width: 100%;
-            height: 100%;
-            border: none;
-            display: block;
+        /* 自定義 dFlip 的一些細節 (可選) */
+        .df-ui-btn { 
+            background-color: rgba(0,0,0,0.5) !important; 
         }
     </style>
 </head>
@@ -80,33 +85,43 @@
 
     <div id="loader-wrapper">
         <div class="loader"></div>
-        <div class="loading-text">LOADING CV...</div>
+        <div class="loading-text">Loading Experience...</div>
     </div>
 
-    <div id="main-content">
-        <iframe 
-            src="PDF/CV.pdf" 
-            type="application/pdf"
-            width="100%" 
-            height="100%">
-        </iframe>
+    <div id="flipbook-container">
+        <div class="_df_book" 
+             height="100%" 
+             webgl="true" 
+             background-color="#333"
+             source="PDF/CV.pdf"
+             id="df_book_custom">
+        </div>
     </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.6.0/jquery.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/dflip/dist/js/dflip.min.js"></script>
 
     <script>
+        // 設定 dFlip 資源路徑 (確保它能找到 worker 檔案)
+        // 使用 CDN 時通常會自動處理，但為了保險起見可以指定
+        var dFlipLocation = "https://cdn.jsdelivr.net/npm/dflip/dist/";
+
         window.addEventListener('load', function() {
-            // 設定 4000 毫秒 (4秒)
+            // 4秒 Loading 計時器
             setTimeout(function() {
                 const loader = document.getElementById('loader-wrapper');
-                const content = document.getElementById('main-content');
+                const bookContainer = document.getElementById('flipbook-container');
 
                 // 1. Loading 淡出
                 loader.style.opacity = '0';
 
-                // 2. 等待淡出動畫結束後執行切換
+                // 2. 顯示電子書
+                bookContainer.style.opacity = '1';
+
+                // 3. 移除 Loading 元素
                 setTimeout(function() {
                     loader.style.display = 'none';
-                    content.style.display = 'block'; 
-                    document.body.style.overflow = 'auto'; 
+                    document.body.style.overflow = 'auto'; // 雖然全螢幕書通常不需要 body scroll
                 }, 500);
 
             }, 4000); 
