@@ -1,292 +1,114 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="zh-TW">
 <head>
-    <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-
-    <title>AI-Tech Global Commercial Strategy</title>
-
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/reveal.js@4.5.0/dist/reset.css">
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/reveal.js@4.5.0/dist/reveal.css">
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/reveal.js@4.5.0/dist/theme/black.css" id="theme">
-
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>線上履歷預覽</title>
     <style>
-        /* 全局字體設定 */
-        .reveal h1, .reveal h2, .reveal h3, .reveal h4, .reveal h5, .reveal h6 {
-            font-family: 'Montserrat', sans-serif;
-            text-transform: none;
-        }
-        .reveal {
-            font-family: 'Open Sans', sans-serif;
-        }
-
-        /* 第一頁個人資料樣式 */
-        .profile-container {
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 50px;
-            margin-top: 40px;
-        }
-        .profile-text {
-            text-align: left;
-        }
-        .profile-image-wrapper {
-            position: relative;
-            width: 300px;
-            height: 300px;
-            border-radius: 50%;
-            overflow: hidden;
-            border: 5px solid #00ddd3; /* 科技藍邊框 */
-            box-shadow: 0 0 20px rgba(0, 221, 211, 0.5);
-        }
-        .profile-image {
+        /* --- 1. 基礎設定 --- */
+        body, html {
+            margin: 0;
+            padding: 0;
             width: 100%;
             height: 100%;
-            object-fit: cover;
+            overflow: hidden; /* 在 Loading 時禁止捲動 */
+            font-family: Arial, sans-serif;
         }
 
-        /* 強調文字顏色 */
-        .highlight {
-            color: #00ddd3;
-            font-weight: bold;
-        }
-
-        /* 市場分析頁面的兩欄佈局 */
-        .two-col-container {
+        /* --- 2. Loading 動畫區塊 (遮罩) --- */
+        #loader-wrapper {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: #ffffff; /* 背景顏色 */
+            z-index: 9999; /* 確保在最上層 */
             display: flex;
-            justify-content: space-around;
-            margin-top: 30px;
-        }
-        .col-box {
-            flex: 0 0 45%;
-            background: rgba(255,255,255,0.05);
-            padding: 20px;
-            border-radius: 15px;
-            border: 1px solid #444;
-        }
-        .big-number {
-            font-size: 3em;
-            color: #f9c74f; /* 金黃色強調數字 */
-            display: block;
-            margin-bottom: 10px;
+            justify-content: center;
+            align-items: center;
+            flex-direction: column;
+            transition: opacity 0.5s ease-out; /* 淡出效果 */
         }
 
-        /* 最後一頁全螢幕背景圖樣式 */
-        .thank-you-slide section {
-            /* 讓內容覆蓋在背景圖之上 */
-            background: rgba(0,0,0,0.4); 
-            padding: 30px;
-            border-radius: 20px;
-            backdrop-filter: blur(5px);
+        /* 精美的旋轉動畫 */
+        .loader {
+            width: 50px;
+            height: 50px;
+            border: 5px solid #f3f3f3; /* 淺灰底色 */
+            border-top: 5px solid #3498db; /* 藍色轉動條 */
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
         }
 
-        /* 調整圖表容器大小 */
-        .chart-container {
-            position: relative;
-            margin: auto;
-            height: 60vh;
-            width: 80vw;
+        .loading-text {
+            margin-top: 20px;
+            color: #555;
+            font-size: 1.2rem;
+            letter-spacing: 2px;
+            animation: pulse 1.5s infinite ease-in-out;
+        }
+
+        /* 動畫關鍵影格 */
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 0.6; }
+            50% { opacity: 1; }
+        }
+
+        /* --- 3. 主要內容區塊 (PPTX) --- */
+        #main-content {
+            width: 100%;
+            height: 100vh;
+            display: none; /* 一開始隱藏 */
+        }
+
+        iframe {
+            width: 100%;
+            height: 100%;
+            border: none;
         }
     </style>
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@700&family=Open+Sans:wght@400;600&display=swap" rel="stylesheet">
 </head>
 <body>
-    <div class="reveal">
-        <div class="slides">
 
-            <section data-transition="zoom">
-                <h1 class="r-fit-text">AI-Tech Global Commercial Strategy</h1>
-                <h3 style="color: #aaa;">Driving Innovation & Market Expansion</h3>
-                
-                <div class="profile-container">
-                    <div class="profile-text animate__animated animate__fadeInLeft">
-                        <h4 style="margin-bottom: 10px;">Presented By:</h4>
-                        <h2>Your Name</h2> 
-                        <p class="highlight">Chief Commercial Officer</p>
-                    </div>
-                    <div class="profile-image-wrapper fragment fade-in-then-semi-out" data-fragment-index="1">
-                        <img src="unnamed.jpg" alt="Presenter Profile Picture" class="profile-image">
-                    </div>
-                </div>
-            </section>
-
-            <section data-transition="slide">
-                <h2>Executive Summary</h2>
-                <ul style="text-align: left; font-size: 0.9em; margin-top: 40px;">
-                    <li class="fragment fade-up"><strong>Objective:</strong> Establish AI-Tech as the premier global provider of enterprise AI solutions.</li>
-                    <li class="fragment fade-up" style="margin-top: 20px;"><strong>Strategy:</strong> Leverage core competencies in <span class="highlight">NLP and Computer Vision</span> to penetrate high-growth sectors (Finance, Healthcare, Retail).</li>
-                    <li class="fragment fade-up" style="margin-top: 20px;"><strong>Targets:</strong> Achieve <span class="highlight">$500M ARR</span> within 3 years; secure partnerships with 20 Fortune 500 companies.</li>
-                </ul>
-            </section>
-
-            <section data-transition="convex">
-                <h2>Market Analysis & Opportunity</h2>
-                <div class="two-col-container">
-                    <div class="col-box fragment fade-left">
-                        <h4>Total Addressable Market (TAM)</h4>
-                        <span class="big-number">$15 Trillion</span>
-                        <p style="font-size: 0.7em;">Global AI contribution to economy by 2030</p>
-                    </div>
-                    <div class="col-box fragment fade-right">
-                        <h4>Serviceable Available Market (SAM)</h4>
-                        <span class="big-number">$300 Billion</span>
-                        <p style="font-size: 0.7em;">Enterprise AI Software Market by 2025</p>
-                    </div>
-                </div>
-                <div class="fragment fade-up" style="margin-top: 40px; font-size: 0.8em; background: rgba(0,221,211,0.1); padding: 15px; border-radius: 10px;">
-                    <strong>Key Drivers:</strong> Digital transformation acceleration, demand for automation, data availability.
-                </div>
-            </section>
-
-            <section data-transition="concave">
-                <h2>Competitive Advantage (The "Moat")</h2>
-                <div style="display: flex; justify-content: space-around; margin-top: 50px; text-align: center;">
-                    <div class="fragment fade-down" style="flex: 1;">
-                        <div style="font-size: 4em; color:#00ddd3;">⚙️</div>
-                        <h4>Proprietary Algorithms</h4>
-                        <p style="font-size: 0.7em;">State-of-the-art accuracy in specific domains.</p>
-                    </div>
-                    <div class="fragment fade-down" style="flex: 1;">
-                        <div style="font-size: 4em; color:#00ddd3;">☁️</div>
-                        <h4>Scalable Infrastructure</h4>
-                        <p style="font-size: 0.7em;">Cloud-agnostic deployment enabling seamless integration.</p>
-                    </div>
-                    <div class="fragment fade-down" style="flex: 1;">
-                        <div style="font-size: 4em; color:#00ddd3;">🧠</div>
-                        <h4>Domain Expertise</h4>
-                        <p style="font-size: 0.7em;">Deep vertical knowledge bridging tech & business needs.</p>
-                    </div>
-                </div>
-            </section>
-
-            <section data-transition="slide">
-                <h2>Go-to-Market Strategy</h2>
-                <ol style="text-align: left; font-size: 0.8em; margin-top: 30px;">
-                    <li class="fragment fade-left" style="margin-bottom: 25px;">
-                        <strong>Phase 1: Penetration (Year 1)</strong><br>
-                        Focus on North America & Europe. Direct sales force targeting early adopters in Finance & Healthcare.
-                    </li>
-                    <li class="fragment fade-left" style="margin-bottom: 25px;">
-                        <strong>Phase 2: Expansion (Year 2)</strong><br>
-                        Channel partnerships for broader reach. Expansion into APAC market. Launch mid-market offering.
-                    </li>
-                    <li class="fragment fade-left">
-                        <strong>Phase 3: Domination (Year 3+)</strong><br>
-                        Ecosystem development (developer platform, marketplace). Vertical-specific pre-packaged solutions.
-                    </li>
-                </ol>
-            </section>
-
-            <section data-transition="zoom">
-                <h2>Financial Projections (ARR)</h2>
-                <p>Path to $500M</p>
-                <div class="chart-container">
-                    <canvas id="arrChart"></canvas>
-                </div>
-            </section>
-
-            <section data-background-image="SL_G0687-1.jpg" data-background-opacity="0.8" class="thank-you-slide" data-transition="fade">
-                <h1 class="fragment fade-in" style="font-size: 3.5em; text-shadow: 2px 2px 4px rgba(0,0,0,0.8);">Thank You</h1>
-                <h3 class="fragment fade-up" style="text-shadow: 1px 1px 2px rgba(0,0,0,0.8);">Q & A</h3>
-                <p class="fragment fade-up" style="margin-top: 50px; font-size: 0.8em;">Let's shape the future of AI together.</p>
-            </section>
-
-        </div>
+    <div id="loader-wrapper">
+        <div class="loader"></div>
+        <div class="loading-text">LOADING...</div>
     </div>
 
-    <script src="https://cdn.jsdelivr.net/npm/reveal.js@4.5.0/dist/reveal.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <div id="main-content">
+        <iframe 
+            src='https://view.officeapps.live.com/op/embed.aspx?src=https://[你的網址]/PDF/CV.pptx' 
+            frameborder='0'>
+        </iframe>
+    </div>
 
     <script>
-        // 初始化 Reveal.js
-        Reveal.initialize({
-            hash: true, // 在 URL 中顯示當前頁碼
-            controls: true, // 顯示右下角的控制箭頭
-            progress: true, // 顯示底部進度條
-            center: true, // 內容垂直居中
-            transition: 'slide', // 預設轉場效果：slide, fade, convex, concave, zoom
-            // 更多配置參考：https://revealjs.com/config/
-        });
+        // 設定網頁載入後的行為
+        window.addEventListener('load', function() {
+            // 設定 4秒 (4000毫秒) 的計時器
+            setTimeout(function() {
+                const loader = document.getElementById('loader-wrapper');
+                const content = document.getElementById('main-content');
 
-        // 當簡報切換到圖表頁面時，才開始繪製圖表以觸發動畫
-        Reveal.on('slidechanged', event => {
-            if (event.currentSlide.querySelector('#arrChart')) {
-                const ctx = document.getElementById('arrChart').getContext('2d');
-                
-                // 如果圖表已經存在，先銷毀它以便重新播放動畫
-                if (window.arrChartInstance) {
-                    window.arrChartInstance.destroy();
-                }
+                // 1. 讓 Loading 畫面變透明
+                loader.style.opacity = '0';
 
-                window.arrChartInstance = new Chart(ctx, {
-                    type: 'bar',
-                    data: {
-                        labels: ['Year 1', 'Year 2', 'Year 3'],
-                        datasets: [{
-                            label: 'Annual Recurring Revenue (ARR in Millions $)',
-                            data: [50, 200, 500], // PDF 中的數據
-                            backgroundColor: [
-                                'rgba(0, 221, 211, 0.7)', // Year 1 顏色
-                                'rgba(54, 162, 235, 0.7)', // Year 2 顏色
-                                'rgba(153, 102, 255, 0.7)' // Year 3 顏色
-                            ],
-                            borderColor: [
-                                'rgba(0, 221, 211, 1)',
-                                'rgba(54, 162, 235, 1)',
-                                'rgba(153, 102, 255, 1)'
-                            ],
-                            borderWidth: 2,
-                            borderRadius: 5,
-                            borderSkipped: false,
-                        }]
-                    },
-                    options: {
-                        responsive: true,
-                        maintainAspectRatio: false,
-                        animation: {
-                            duration: 2000, // 動畫持續時間 2 秒
-                            easing: 'easeOutQuart' // 動畫曲線
-                        },
-                        scales: {
-                            y: {
-                                beginAtZero: true,
-                                grid: {
-                                    color: 'rgba(255, 255, 255, 0.1)' // 網格線顏色
-                                },
-                                ticks: {
-                                    color: '#fff', // Y軸文字顏色
-                                    callback: function(value) { return '$' + value + 'M'; }
-                                }
-                            },
-                            x: {
-                                grid: {
-                                    display: false // 隱藏X軸網格
-                                },
-                                ticks: {
-                                    color: '#fff', // X軸文字顏色
-                                    font: {
-                                        size: 16
-                                    }
-                                }
-                            }
-                        },
-                        plugins: {
-                            legend: {
-                                labels: {
-                                    color: '#fff', // 圖例文字顏色
-                                    font: {
-                                        size: 14
-                                    }
-                                }
-                            }
-                        }
-                    }
-                });
-            }
+                // 2. 等待淡出動畫結束後 (0.5秒)，移除 Loading 並顯示內容
+                setTimeout(function() {
+                    loader.style.display = 'none'; // 移除 Loading
+                    content.style.display = 'block'; // 顯示 PPTX 區塊
+                    document.body.style.overflow = 'auto'; // 恢復捲動
+                }, 500);
+
+            }, 4000); // 這裡設定 4000 代表 4 秒
         });
     </script>
+
 </body>
 </html>
