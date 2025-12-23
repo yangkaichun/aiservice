@@ -6,462 +6,653 @@
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="theme-color" content="#4F46E5">
-    
-    <title>YangHome Health | 智慧健康監控</title>
+
+    <title>YangHome Health | Dashboard</title>
     
     <link rel="icon" type="image/x-icon" href="image/yanghealth.ico">
     <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap" rel="stylesheet">
     <script src="https://unpkg.com/lucide@latest"></script>
-    
-    <script src="https://accounts.google.com/gsi/client" async defer></script>
-    
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+
     <script src="loading.js"></script>
-    
+
     <script src="config.js"></script>
+
+    <script>
+        const savedSession = localStorage.getItem('healthTwinSession');
+        let loggedInSession = null;
+        if (!savedSession) {
+            window.location.href = 'index.html';
+        } else {
+            loggedInSession = JSON.parse(savedSession);
+        }
+    </script>
 
     <style>
         body { font-family: 'Inter', sans-serif; background-color: #F8FAFC; }
-        .glass-card { background: rgba(255, 255, 255, 0.95); backdrop-filter: blur(10px); border: 1px solid rgba(255, 255, 255, 0.5); box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1); }
-        .animate-fade-in { animation: fadeIn 0.6s cubic-bezier(0.16, 1, 0.3, 1); }
+        .glass-card { background: rgba(255, 255, 255, 0.95); backdrop-filter: blur(10px); border: 1px solid rgba(255, 255, 255, 0.5); box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.03); }
+        .animate-fade-in { animation: fadeIn 0.5s ease-out; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+        .sidebar-transition { transition: transform 0.3s ease-in-out; }
+        .btn-gemini { background: linear-gradient(90deg, #4F46E5, #9333EA); color: white; border: none; }
+        .btn-gemini:hover { background: linear-gradient(90deg, #4338ca, #7e22ce); transform: translateY(-1px); box-shadow: 0 4px 12px rgba(147, 51, 234, 0.3); }
+        .prose h1, .prose h2, .prose h3 { color: #1e293b; font-weight: 700; margin-top: 1em; margin-bottom: 0.5em; }
+        .prose p { margin-bottom: 0.8em; line-height: 1.6; }
+        .filter-btn { @apply px-3 py-1.5 text-xs font-medium rounded-lg border border-slate-200 text-slate-600 hover:bg-slate-50 transition; }
+        .filter-btn.active { @apply bg-indigo-600 text-white border-indigo-600; }
         
-        /* === 酷炫資料同步 Loading (Tech Pulse) === */
-        #full-loader { background: rgba(255, 255, 255, 0.9); backdrop-filter: blur(8px); }
-        .tech-loader { position: relative; width: 80px; height: 80px; display: flex; align-items: center; justify-content: center; }
-        .tech-ring {
-            position: absolute; border-radius: 50%; border: 2px solid transparent;
-            border-top-color: #4f46e5; border-bottom-color: #ec4899;
-            width: 100%; height: 100%; animation: spin 1.5s linear infinite;
-        }
-        .tech-ring:nth-child(2) {
-            width: 70%; height: 70%; border: 2px solid transparent;
-            border-left-color: #06b6d4; border-right-color: #8b5cf6;
-            animation: spin-reverse 1s linear infinite;
-        }
-        .tech-heart { animation: pulse-fast 1s ease-in-out infinite; color: #4338ca; }
-
-        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
-        @keyframes spin-reverse { 0% { transform: rotate(0deg); } 100% { transform: rotate(-360deg); } }
-        @keyframes pulse-fast { 0%, 100% { transform: scale(1); opacity: 1; } 50% { transform: scale(0.85); opacity: 0.7; } }
-
-        /* Install Button Pulse */
-        .btn-pulse { animation: softPulse 2s infinite; }
-        @keyframes softPulse { 0% { box-shadow: 0 0 0 0 rgba(79, 70, 229, 0.4); } 70% { box-shadow: 0 0 0 10px rgba(79, 70, 229, 0); } 100% { box-shadow: 0 0 0 0 rgba(79, 70, 229, 0); } }
+        /* 載入區塊置中 */
+        #loadingState { display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 60vh; }
     </style>
 </head>
-<body class="text-slate-800 min-h-screen flex flex-col items-center justify-center p-4 relative">
+<body class="text-slate-800 h-screen flex overflow-hidden relative">
 
-    <div id="ios-install-modal" class="fixed inset-0 bg-black/70 z-50 hidden flex-col items-center justify-end pb-10 backdrop-blur-md animate-fade-in" onclick="closeIosModal()">
-        <div class="bg-white w-[90%] max-w-md rounded-3xl p-6 relative shadow-2xl" onclick="event.stopPropagation()">
-            <button onclick="closeIosModal()" class="absolute top-4 right-4 text-slate-400 hover:text-slate-600"><i data-lucide="x" class="w-6 h-6"></i></button>
-            <div class="text-center">
-                <div class="w-14 h-14 bg-indigo-50 text-indigo-600 rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-inner">
-                    <i data-lucide="share" class="w-7 h-7"></i>
+    <div id="aiAnalysisModal" class="fixed inset-0 bg-black/60 z-50 hidden flex-col justify-center items-center p-4 backdrop-blur-sm animate-fade-in" onclick="closeAiModal()">
+        <div class="bg-white w-full max-w-2xl rounded-2xl shadow-2xl flex flex-col max-h-[85vh] overflow-hidden relative" onclick="event.stopPropagation()">
+            <div class="p-5 border-b border-slate-100 flex justify-between items-center bg-gradient-to-r from-indigo-50 to-white">
+                <div class="flex items-center gap-3">
+                    <div class="p-2 bg-white rounded-lg shadow-sm text-indigo-600"><i data-lucide="sparkles" class="w-6 h-6"></i></div>
+                    <div><h3 class="font-bold text-lg text-slate-800">Gemini 2.0 Flash 分析</h3><p class="text-xs text-slate-500">AI 智慧評估 (Experimental)</p></div>
                 </div>
-                <h3 class="text-xl font-bold text-slate-800 mb-2">安裝應用程式</h3>
-                <p class="text-sm text-slate-500 mb-6">為獲得最佳體驗，請將此網頁加入主畫面：</p>
-                <div class="space-y-3 text-left text-sm text-slate-600 bg-slate-50 p-5 rounded-2xl border border-slate-100">
-                    <div class="flex items-center gap-3">
-                        <span class="w-6 h-6 rounded-full bg-white border border-slate-200 flex items-center justify-center font-bold text-xs text-indigo-600 shadow-sm">1</span>
-                        <span>點擊下方工具列的 <strong>分享</strong> <i data-lucide="share" class="w-4 h-4 inline align-text-bottom"></i></span>
-                    </div>
-                    <div class="flex items-center gap-3">
-                        <span class="w-6 h-6 rounded-full bg-white border border-slate-200 flex items-center justify-center font-bold text-xs text-indigo-600 shadow-sm">2</span>
-                        <span>往下滑，選擇 <strong>加入主畫面</strong> <i data-lucide="plus-square" class="w-4 h-4 inline align-text-bottom"></i></span>
-                    </div>
-                    <div class="flex items-center gap-3">
-                        <span class="w-6 h-6 rounded-full bg-white border border-slate-200 flex items-center justify-center font-bold text-xs text-indigo-600 shadow-sm">3</span>
-                        <span>點擊右上角的 <strong>加入</strong> 即可</span>
-                    </div>
-                </div>
+                <button onclick="closeAiModal()" class="p-2 hover:bg-slate-100 rounded-full transition text-slate-400 hover:text-slate-600"><i data-lucide="x" class="w-6 h-6"></i></button>
             </div>
-        </div>
-    </div>
-
-    <div class="fixed top-0 left-0 w-full h-full overflow-hidden -z-10 pointer-events-none">
-        <div class="absolute -top-[20%] -left-[10%] w-[60%] h-[60%] bg-blue-100 rounded-full blur-[100px] opacity-50 animate-pulse"></div>
-        <div class="absolute top-[30%] -right-[10%] w-[50%] h-[50%] bg-indigo-100 rounded-full blur-[100px] opacity-50 animate-pulse" style="animation-delay: 2s;"></div>
-    </div>
-
-    <div class="glass-card w-full max-w-md p-8 rounded-[2rem] shadow-2xl animate-fade-in transition-all duration-300 my-8 border border-white/50" id="main-card">
-        
-        <div class="text-center mb-8">
-            <div class="flex justify-center mb-5">
-                <div class="w-24 h-24 bg-gradient-to-br from-indigo-50 to-white rounded-3xl flex items-center justify-center shadow-[0_8px_30px_rgb(0,0,0,0.04)] overflow-hidden p-3 border border-white">
-                    <img src="image/yanghealth.png" alt="YangHealth Logo" class="w-full h-full object-contain">
-                </div>
-            </div>
-            <h1 class="text-3xl font-bold text-slate-800 tracking-tight">YangHome Health</h1>
-            <p class="text-slate-500 text-sm font-medium mt-1">智慧醫療．守護健康</p>
-        </div>
-
-        <div id="login-section" class="space-y-5">
-            
-            <div class="flex justify-center transform hover:scale-[1.02] transition-transform">
-                <div id="g_id_onload"
-                     data-client_id="142808541856-1sfda1hcfk12p1r0a5fbmldugb1f99vn.apps.googleusercontent.com" 
-                     data-callback="handleCredentialResponse"
-                     data-auto_prompt="false">
-                </div>
-                <div class="g_id_signin"
-                     data-type="standard"
-                     data-size="large"
-                     data-theme="outline"
-                     data-text="sign_in_with"
-                     data-shape="pill"
-                     data-logo_alignment="left">
-                </div>
-            </div>
-
-            <div class="relative py-3">
-                <div class="absolute inset-0 flex items-center"><span class="w-full border-t border-slate-200"></span></div>
-                <div class="relative flex justify-center text-xs uppercase"><span class="bg-white px-3 text-slate-400 font-medium">其他選項</span></div>
-            </div>
-
-            <a href="login.html" class="block w-full py-3.5 text-center text-slate-600 bg-slate-50 hover:bg-slate-100 rounded-xl font-bold text-sm transition border border-slate-100">
-                使用 Email / UID 登入
-            </a>
-
-            <button onclick="installPWA()" id="btn-install-app" class="w-full py-3.5 bg-slate-800 hover:bg-slate-900 text-white rounded-xl font-bold transition-all flex items-center justify-center gap-2 shadow-xl btn-pulse mt-4">
-                <i data-lucide="download" class="w-5 h-5"></i>
-                <span>安裝應用程式 (App)</span>
-            </button>
-        </div>
-
-        <div id="user-section" class="hidden">
-            <div class="flex justify-between items-center mb-6 bg-indigo-50/60 p-4 rounded-2xl border border-indigo-100/50 backdrop-blur-sm">
-                <div>
-                    <p class="text-[10px] uppercase tracking-wider text-indigo-400 font-bold mb-0.5">Current User</p>
-                    <h2 class="text-lg font-bold text-indigo-900" id="display-name">User</h2>
-                    <p class="text-xs text-slate-500 truncate max-w-[150px]" id="display-email">...</p>
-                </div>
-                <button onclick="logout()" class="p-2.5 bg-white text-rose-500 hover:bg-rose-50 rounded-xl transition shadow-sm border border-rose-100" title="登出">
-                    <i data-lucide="log-out" class="w-5 h-5"></i>
+            <div id="aiModalContent" class="p-6 overflow-y-auto text-slate-600 text-sm leading-relaxed scroll-smooth"></div>
+            <div class="p-4 border-t border-slate-100 bg-slate-50 flex justify-between items-center">
+                <button id="btn-tts" onclick="toggleSpeech()" class="hidden px-4 py-2 text-indigo-600 hover:bg-indigo-50 rounded-lg font-bold text-sm transition flex items-center gap-2 border border-indigo-100 group">
+                    <i data-lucide="volume-2" class="w-5 h-5 group-hover:scale-110 transition-transform"></i><span id="btn-tts-text">語音播放</span>
                 </button>
+                <button onclick="closeAiModal()" class="px-5 py-2 bg-white border border-slate-200 text-slate-600 rounded-lg hover:bg-slate-50 font-medium transition shadow-sm ml-auto">關閉</button>
             </div>
-
-            <form id="quickAddForm" onsubmit="handleQuickSubmit(event)" class="space-y-5">
-                
-                <div class="grid grid-cols-2 gap-3 p-1.5 bg-slate-100 rounded-2xl">
-                    <label class="cursor-pointer text-center relative">
-                        <input type="radio" name="dataType" value="BloodPressure" class="peer hidden" checked onchange="toggleFields()">
-                        <div class="py-2.5 rounded-xl text-sm font-bold text-slate-500 peer-checked:bg-white peer-checked:text-indigo-600 peer-checked:shadow-sm transition-all z-10 relative">
-                            血壓記錄
-                        </div>
-                    </label>
-                    <label class="cursor-pointer text-center relative">
-                        <input type="radio" name="dataType" value="BloodSugar" class="peer hidden" onchange="toggleFields()">
-                        <div class="py-2.5 rounded-xl text-sm font-bold text-slate-500 peer-checked:bg-white peer-checked:text-pink-600 peer-checked:shadow-sm transition-all z-10 relative">
-                            血糖記錄
-                        </div>
-                    </label>
-                </div>
-
-                <div id="field-bp" class="grid grid-cols-2 gap-4 animate-fade-in">
-                    <div class="col-span-1">
-                        <label class="block text-xs font-bold text-slate-400 mb-1.5 ml-1">收縮壓 (SYS)</label>
-                        <input type="number" id="sbp" class="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100 outline-none transition text-center font-mono text-xl font-bold text-slate-700" placeholder="120">
-                    </div>
-                    <div class="col-span-1">
-                        <label class="block text-xs font-bold text-slate-400 mb-1.5 ml-1">舒張壓 (DIA)</label>
-                        <input type="number" id="dbp" class="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100 outline-none transition text-center font-mono text-xl font-bold text-slate-700" placeholder="80">
-                    </div>
-                    <div class="col-span-2">
-                        <label class="block text-xs font-bold text-slate-400 mb-1.5 ml-1">心率 (BPM)</label>
-                        <input type="number" id="hr" class="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100 outline-none transition text-center font-mono text-xl font-bold text-slate-700" placeholder="72">
-                    </div>
-                </div>
-
-                <div id="field-bs" class="hidden space-y-4 animate-fade-in">
-                    <div>
-                        <label class="block text-xs font-bold text-slate-400 mb-1.5 ml-1">血糖數值 (mg/dL)</label>
-                        <div class="relative">
-                            <input type="number" id="bs" class="w-full pl-6 pr-12 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:border-pink-500 focus:ring-2 focus:ring-pink-100 outline-none transition font-mono text-xl font-bold text-slate-700" placeholder="100">
-                            <div class="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 text-xs font-bold">mg/dL</div>
-                        </div>
-                    </div>
-                    <div>
-                        <label class="block text-xs font-bold text-slate-400 mb-1.5 ml-1">測量時機</label>
-                        <div class="grid grid-cols-2 gap-2">
-                            <label class="cursor-pointer">
-                                <input type="radio" name="bsTime" value="fasting" class="peer hidden" checked>
-                                <div class="py-2.5 text-center text-xs font-medium border border-slate-200 rounded-xl peer-checked:bg-pink-50 peer-checked:border-pink-200 peer-checked:text-pink-600 transition hover:bg-slate-50">飯前</div>
-                            </label>
-                            <label class="cursor-pointer">
-                                <input type="radio" name="bsTime" value="postprandial" class="peer hidden">
-                                <div class="py-2.5 text-center text-xs font-medium border border-slate-200 rounded-xl peer-checked:bg-pink-50 peer-checked:border-pink-200 peer-checked:text-pink-600 transition hover:bg-slate-50">飯後</div>
-                            </label>
-                            <label class="cursor-pointer">
-                                <input type="radio" name="bsTime" value="wakeup" class="peer hidden">
-                                <div class="py-2.5 text-center text-xs font-medium border border-slate-200 rounded-xl peer-checked:bg-pink-50 peer-checked:border-pink-200 peer-checked:text-pink-600 transition hover:bg-slate-50">起床</div>
-                            </label>
-                            <label class="cursor-pointer">
-                                <input type="radio" name="bsTime" value="bedtime" class="peer hidden">
-                                <div class="py-2.5 text-center text-xs font-medium border border-slate-200 rounded-xl peer-checked:bg-pink-50 peer-checked:border-pink-200 peer-checked:text-pink-600 transition hover:bg-slate-50">睡前</div>
-                            </label>
-                        </div>
-                    </div>
-                </div>
-
-                <div>
-                    <label class="block text-xs font-bold text-slate-400 mb-1.5 ml-1">備註 (Note)</label>
-                    <input type="text" id="note" class="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100 outline-none transition text-sm text-slate-600" placeholder="例: 剛運動完...">
-                </div>
-
-                <div class="space-y-3 pt-2">
-                    <button type="submit" id="btn-submit" class="w-full py-4 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl font-bold shadow-lg shadow-indigo-200 transition-all active:scale-95 flex items-center justify-center gap-2">
-                        <span>快速記錄</span>
-                        <i data-lucide="send" class="w-4 h-4"></i>
-                    </button>
-                    
-                    <a href="dashboard.html" class="w-full py-3.5 bg-white border border-slate-200 hover:bg-slate-50 text-slate-600 rounded-xl font-bold text-sm transition-all flex items-center justify-center gap-2 active:scale-95 shadow-sm">
-                        <i data-lucide="bar-chart-2" class="w-4 h-4 text-indigo-500"></i>
-                        <span>查看生理量測資訊</span>
-                    </a>
-                </div>
-
-            </form>
-        </div>
-
-        <div class="mt-8 pt-6 border-t border-slate-100 text-[10px] uppercase tracking-widest text-center text-slate-300">
-            <p>&copy; 2024 YangHome Health System</p>
         </div>
     </div>
-    
-    <div id="full-loader" class="fixed inset-0 z-50 hidden flex-col items-center justify-center">
-        <div class="tech-loader">
-            <div class="tech-ring"></div>
-            <div class="tech-ring"></div>
-            <i data-lucide="activity" class="tech-heart w-8 h-8"></i>
+
+    <div id="mobileOverlay" class="fixed inset-0 bg-black/50 z-20 hidden lg:hidden" onclick="toggleSidebar()"></div>
+
+    <aside id="sidebar" class="fixed inset-y-0 left-0 w-72 bg-white border-r border-slate-200 flex flex-col z-30 shadow-2xl lg:shadow-none transform -translate-x-full lg:translate-x-0 sidebar-transition lg:relative">
+        <div class="p-6 border-b border-slate-100 flex justify-between items-center">
+            <div><div class="flex items-center gap-2 text-indigo-600 font-bold text-xl"><i data-lucide="activity" class="w-6 h-6"></i>YangHome Health</div><p class="text-xs text-slate-400 mt-1">智慧醫療監測系統</p></div>
+            <button onclick="toggleSidebar()" class="lg:hidden text-slate-400 hover:text-slate-600"><i data-lucide="x" class="w-6 h-6"></i></button>
         </div>
-        <p class="mt-4 text-indigo-600 font-bold tracking-widest text-sm animate-pulse">SYNCING DATA...</p>
-    </div>
+        
+        <div class="p-4 pb-2">
+            <div class="flex items-center gap-3 p-3 bg-slate-50 rounded-xl border border-slate-100 shadow-sm">
+                <div id="avatar-container" class="w-10 h-10 rounded-full bg-white border border-slate-200 flex items-center justify-center overflow-hidden shrink-0">
+                    <span id="sidebar-user-text" class="text-indigo-600 font-bold">U</span>
+                </div>
+                <div class="flex-1 overflow-hidden">
+                    <p class="text-[10px] text-slate-400 uppercase tracking-wider font-bold">Currently Logged In</p>
+                    <p id="sidebar-user-name" class="text-sm font-bold text-slate-700 truncate">Guest</p>
+                </div>
+            </div>
+        </div>
+
+        <div class="p-4 flex-1 overflow-hidden flex flex-col">
+            <h3 class="text-xs font-bold text-slate-400 uppercase tracking-wider mb-3 px-2 flex justify-between items-center">選擇用戶<span id="userCount" class="bg-slate-100 text-slate-500 py-0.5 px-2 rounded-full text-[10px]">0</span></h3>
+            <div id="userList" class="space-y-1 overflow-y-auto flex-1 pr-1">
+                <div class="p-4 text-center text-slate-400 text-sm animate-pulse"><i data-lucide="loader-2" class="w-5 h-5 animate-spin mx-auto mb-2"></i>正在載入使用者...</div>
+            </div>
+        </div>
+
+        <div class="mt-auto p-4 border-t border-slate-100 bg-slate-50">
+            <button onclick="getAIAnalysis()" class="w-full py-3 px-4 btn-gemini rounded-xl text-sm font-bold transition flex items-center justify-center gap-2 mb-3 shadow-md group"><i data-lucide="sparkles" class="w-4 h-4 group-hover:scale-110 transition-transform"></i>AI 分析 (Gemini)</button>
+            <a href="accountsetting.html" class="w-full py-2.5 px-4 bg-white border border-slate-200 hover:bg-slate-100 text-slate-500 hover:text-slate-800 rounded-lg text-sm font-medium transition flex items-center justify-center gap-2 mb-2 shadow-sm"><i data-lucide="link" class="w-4 h-4"></i> 帳號綁定</a>
+            <a href="setting.html" class="w-full py-2.5 px-4 bg-white border border-slate-200 hover:bg-slate-100 text-slate-500 hover:text-slate-800 rounded-lg text-sm font-medium transition flex items-center justify-center gap-2 mb-2 shadow-sm group"><i data-lucide="settings-2" class="w-4 h-4 group-hover:rotate-90 transition-transform duration-500"></i> 管理者後台</a>
+            <a href="phd.html" class="w-full py-2.5 px-4 bg-white border border-slate-200 hover:bg-slate-50 text-slate-600 rounded-lg text-sm font-medium transition flex items-center justify-center gap-2 mb-2 shadow-sm"><i data-lucide="plus-circle" class="w-4 h-4"></i> 新增數據</a>
+            <button onclick="logout()" class="w-full py-2.5 px-4 bg-rose-50 border border-rose-100 text-rose-600 hover:bg-rose-100 rounded-lg text-sm font-medium transition flex items-center justify-center gap-2 mb-3 shadow-sm"><i data-lucide="log-out" class="w-4 h-4"></i> 登出系統</button>
+        </div>
+    </aside>
+
+    <main class="flex-1 flex flex-col h-full overflow-hidden relative w-full">
+        <header class="h-16 bg-white/80 backdrop-blur-md border-b border-slate-200 flex justify-between items-center px-4 lg:px-8 sticky top-0 z-10 shrink-0">
+            <div class="flex items-center gap-3">
+                <button onclick="toggleSidebar()" class="lg:hidden p-2 -ml-2 text-slate-600 hover:bg-slate-100 rounded-lg"><i data-lucide="menu" class="w-6 h-6"></i></button>
+                <div class="overflow-hidden">
+                    <h1 id="currentUserName" class="text-lg lg:text-xl font-bold text-slate-800 truncate">概況總覽</h1>
+                    <p id="defaultSubtitle" class="text-xs text-slate-400 mt-0.5 hidden sm:block">即時生理數據分析</p>
+                </div>
+            </div>
+            <div class="flex items-center gap-3">
+                <div class="flex items-center gap-1.5 mr-2">
+                    <div class="group relative flex items-center" title="Google 帳號狀態">
+                        <i data-lucide="globe" id="icon-google" class="w-5 h-5 text-slate-300"></i>
+                    </div>
+                    <div class="group relative flex items-center" title="LINE 帳號狀態">
+                        <i data-lucide="message-circle" id="icon-line" class="w-5 h-5 text-slate-300"></i>
+                    </div>
+                </div>
+                <button onclick="refreshCurrentUserData()" class="p-2 text-slate-500 hover:bg-slate-100 rounded-lg transition" title="刷新"><i data-lucide="refresh-cw" class="w-5 h-5"></i></button>
+            </div>
+        </header>
+
+        <div class="flex-1 overflow-y-auto p-4 lg:p-8 scroll-smooth">
+            <div id="dashboardContent" class="max-w-7xl mx-auto hidden animate-fade-in pb-10">
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 lg:gap-6 mb-6 lg:mb-8">
+                    <div class="glass-card rounded-2xl p-5 relative overflow-hidden group">
+                        <div class="absolute right-0 top-0 w-24 h-24 bg-rose-50 rounded-bl-full -mr-4 -mt-4"></div>
+                        <div class="relative z-10">
+                            <div class="flex items-center gap-2 text-rose-500 mb-2"><i data-lucide="heart" class="w-5 h-5"></i><span class="font-semibold text-sm">收縮壓</span></div>
+                            <div class="flex items-baseline gap-2"><span id="val-sbp" class="text-3xl font-bold text-slate-800">--</span><span class="text-sm text-slate-400">mmHg</span></div>
+                            <div id="status-sbp" class="mt-2 text-xs font-medium text-slate-500">分析中...</div>
+                        </div>
+                    </div>
+                    <div class="glass-card rounded-2xl p-5 relative overflow-hidden group">
+                        <div class="absolute right-0 top-0 w-24 h-24 bg-blue-50 rounded-bl-full -mr-4 -mt-4"></div>
+                        <div class="relative z-10">
+                            <div class="flex items-center gap-2 text-blue-500 mb-2"><i data-lucide="activity" class="w-5 h-5"></i><span class="font-semibold text-sm">舒張壓</span></div>
+                            <div class="flex items-baseline gap-2"><span id="val-dbp" class="text-3xl font-bold text-slate-800">--</span><span class="text-sm text-slate-400">mmHg</span></div>
+                            <div id="status-dbp" class="mt-2 text-xs font-medium text-slate-500">分析中...</div>
+                        </div>
+                    </div>
+                    <div class="glass-card rounded-2xl p-5 relative overflow-hidden group">
+                        <div class="absolute right-0 top-0 w-24 h-24 bg-emerald-50 rounded-bl-full -mr-4 -mt-4"></div>
+                        <div class="relative z-10">
+                            <div class="flex items-center gap-2 text-emerald-500 mb-2"><i data-lucide="zap" class="w-5 h-5"></i><span class="font-semibold text-sm">心率</span></div>
+                            <div class="flex items-baseline gap-2"><span id="val-pulse" class="text-3xl font-bold text-slate-800">--</span><span class="text-sm text-slate-400">BPM</span></div>
+                            <div class="mt-2 text-xs font-medium text-slate-500">最新測量</div>
+                        </div>
+                    </div>
+                    <div class="glass-card rounded-2xl p-5 relative overflow-hidden group">
+                        <div class="absolute right-0 top-0 w-24 h-24 bg-amber-50 rounded-bl-full -mr-4 -mt-4"></div>
+                        <div class="relative z-10">
+                            <div class="flex items-center gap-2 text-amber-500 mb-2"><i data-lucide="droplet" class="w-5 h-5"></i><span class="font-semibold text-sm">血糖 (Glucose)</span></div>
+                            <div class="flex items-baseline gap-2"><span id="val-glucose" class="text-3xl font-bold text-slate-800">--</span><span class="text-sm text-slate-400">mg/dL</span></div>
+                            <div id="status-glucose" class="mt-2 text-xs font-medium text-slate-500">最新測量</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="flex flex-wrap items-center gap-2 mb-4 bg-white p-2 rounded-xl shadow-sm border border-slate-100">
+                    <button onclick="setFilter('30days')" id="btn-30days" class="filter-btn active">近 30 天</button>
+                    <button onclick="setFilter('6months')" id="btn-6months" class="filter-btn">近半年</button>
+                    <button onclick="setFilter('1year')" id="btn-1year" class="filter-btn">近一年</button>
+                    <div class="flex items-center gap-2 border-l border-slate-200 pl-3 ml-1">
+                        <input type="date" id="filter-start" class="text-xs border border-slate-200 rounded px-2 py-1 focus:ring-1 focus:ring-indigo-500 outline-none">
+                        <span class="text-slate-400 text-xs">-</span>
+                        <input type="date" id="filter-end" class="text-xs border border-slate-200 rounded px-2 py-1 focus:ring-1 focus:ring-indigo-500 outline-none">
+                        <button onclick="setFilter('custom')" id="btn-custom" class="p-1.5 bg-indigo-50 text-indigo-600 rounded-lg hover:bg-indigo-100 transition"><i data-lucide="search" class="w-3 h-3"></i></button>
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                    <div class="lg:col-span-2 space-y-6">
+                        <div class="glass-card rounded-2xl p-5 flex flex-col h-[400px]">
+                            <div class="flex flex-wrap justify-between items-center mb-4 gap-2">
+                                <h3 class="font-bold text-slate-700 flex items-center gap-2"><i data-lucide="trending-up" class="w-4 h-4 text-indigo-500"></i> 血壓趨勢圖</h3>
+                            </div>
+                            <div class="flex-1 relative w-full h-full min-h-0"><canvas id="mainChart"></canvas></div>
+                        </div>
+                        <div class="glass-card rounded-2xl p-5 flex flex-col h-[350px]">
+                            <div class="mb-4">
+                                <h3 class="font-bold text-slate-700 flex items-center gap-2"><i data-lucide="activity" class="w-4 h-4 text-amber-500"></i> 血糖趨勢圖</h3>
+                            </div>
+                            <div class="flex-1 relative w-full h-full min-h-0"><canvas id="glucoseChart"></canvas></div>
+                        </div>
+                    </div>
+
+                    <div class="glass-card rounded-2xl p-5 overflow-hidden flex flex-col h-[775px]">
+                        <div class="mb-4 flex justify-between items-center">
+                            <h3 class="font-bold text-slate-700 flex items-center gap-2">歷史紀錄</h3>
+                            <button onclick="downloadCSV()" class="p-1.5 text-xs text-slate-500 hover:text-indigo-600 hover:bg-indigo-50 rounded transition flex items-center gap-1" title="匯出 CSV">
+                                <i data-lucide="download" class="w-4 h-4"></i> 下載
+                            </button>
+                        </div>
+                        <div class="flex-1 overflow-y-auto pr-1">
+                            <table class="w-full text-sm text-left">
+                                <thead class="text-xs text-slate-400 uppercase border-b border-slate-100 sticky top-0 bg-white/95 backdrop-blur z-10">
+                                    <tr><th class="py-2 pl-2">時間</th><th class="py-2 text-right">血壓/心跳</th><th class="py-2 text-right pr-2">血糖</th></tr>
+                                </thead>
+                                <tbody id="historyTable" class="text-slate-600 divide-y divide-slate-50"></tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div id="loadingState">
+                </div>
+        </div>
+    </main>
 
     <script>
         const API_URL = config.API_URL;
-        lucide.createIcons();
-        let userSession = null;
+        
+        let allUserData = []; 
+        let filteredData = []; 
+        let currentFilter = '30days';
+        let bpChartInstance = null; 
+        let glucoseChartInstance = null; 
+        let currentSelectedUid = null;
+        let currentUserInfo = null; 
+        
+        const synth = window.speechSynthesis;
+        let speechUtterance = null;
+        let isSpeaking = false;
 
-        // --- 導入動畫與載入邏輯 ---
-        window.addEventListener('load', () => {
-            // [關鍵] 呼叫 loading.js 提供的全域函式關閉動畫
-            // 設定 1.5 秒延遲，確保動畫完整播放
-            setTimeout(() => {
+        document.addEventListener('DOMContentLoaded', () => {
+            lucide.createIcons();
+            
+            // 注入資料載入動畫
+            const loadingState = document.getElementById('loadingState');
+            if(loadingState && window.getLoaderHTML) {
+                loadingState.innerHTML = window.getLoaderHTML();
+            }
+
+            initDashboard();
+        });
+
+        function updateSidebarDisplayName(name, pictureUrl) {
+            document.getElementById('sidebar-user-name').innerText = name || "Guest";
+            const avatarContainer = document.getElementById('avatar-container');
+            const textEl = document.getElementById('sidebar-user-text');
+            
+            if (pictureUrl) {
+                avatarContainer.innerHTML = `<img src="${pictureUrl}" class="w-full h-full object-cover" alt="Avatar">`;
+            } else {
+                avatarContainer.innerHTML = `<span id="sidebar-user-text" class="text-indigo-600 font-bold">${(name || "G").charAt(0).toUpperCase()}</span>`;
+            }
+        }
+
+        function logout() { 
+            if(confirm("確定要登出系統嗎？")) { 
+                localStorage.removeItem('healthTwinSession'); 
+                window.location.href = 'index.html'; 
+            } 
+        }
+
+        function toggleSidebar() { 
+            const sidebar = document.getElementById('sidebar'); 
+            const overlay = document.getElementById('mobileOverlay'); 
+            if (sidebar.classList.contains('-translate-x-full')) { 
+                sidebar.classList.remove('-translate-x-full'); 
+                overlay.classList.remove('hidden'); 
+            } else { 
+                sidebar.classList.add('-translate-x-full'); 
+                overlay.classList.add('hidden'); 
+            } 
+        }
+
+        async function initDashboard() {
+            try {
+                const response = await fetch(`${API_URL}?action=getSettings`);
+                const users = await response.json();
+                renderUserList(users);
+                
+                if (loggedInSession) {
+                    const me = users.find(u => u.uid === loggedInSession.uid);
+                    
+                    if (me) {
+                        updateSidebarDisplayName(me.name, loggedInSession.picture);
+                        selectUser(me.uid, me.name, me);
+                    } else {
+                        console.log("User synced delay, using session info:", loggedInSession);
+                        
+                        const sessionName = loggedInSession.name || loggedInSession.email;
+                        updateSidebarDisplayName(sessionName, loggedInSession.picture);
+                        
+                        const listContainer = document.getElementById('userList');
+                        const div = document.createElement('div');
+                        const avatarContent = loggedInSession.picture 
+                            ? `<img src="${loggedInSession.picture}" class="w-full h-full object-cover">` 
+                            : loggedInSession.name.charAt(0).toUpperCase();
+
+                        const tempUser = {
+                            uid: loggedInSession.uid,
+                            name: sessionName,
+                            email: loggedInSession.email,
+                            role: loggedInSession.role || 'user',
+                            provider: loggedInSession.provider
+                        };
+
+                        div.id = `user-item-${tempUser.uid}`;
+                        div.className = `p-3 rounded-xl cursor-pointer hover:bg-indigo-50 hover:text-indigo-600 transition flex items-center gap-3 text-slate-600 font-medium group user-item border border-transparent`;
+                        
+                        const iconHtml = loggedInSession.picture
+                            ? `<div class="w-8 h-8 rounded-full bg-indigo-100 overflow-hidden shrink-0 border border-slate-200">${avatarContent}</div>`
+                            : `<div class="w-8 h-8 rounded-full bg-indigo-100 text-indigo-600 flex items-center justify-center text-xs font-bold shrink-0">${avatarContent}</div>`;
+
+                        div.innerHTML = `${iconHtml}<span class="truncate">${sessionName} (您)</span>`;
+                        div.onclick = () => { selectUser(tempUser.uid, sessionName, tempUser); if (window.innerWidth < 1024) toggleSidebar(); };
+                        
+                        if(listContainer.firstChild) listContainer.insertBefore(div, listContainer.firstChild);
+                        else listContainer.appendChild(div);
+
+                        selectUser(tempUser.uid, sessionName, tempUser);
+                    }
+                } else if (users.length > 0) {
+                    selectUser(users[0].uid, users[0].name);
+                }
+
+                // [關鍵] 資料載入完成，關閉開場動畫
                 if (typeof window.hideLoading === 'function') {
                     window.hideLoading();
-                } else {
-                    // Fallback: 如果 loading.js 尚未加載完成
-                    const overlay = document.getElementById('global-loader-overlay');
-                    if(overlay) overlay.style.display = 'none';
-                    document.body.style.overflow = 'auto';
                 }
-            }, 1500); 
 
-            checkLoginStatus();
-        });
-
-        // --- PWA 安裝邏輯 (按鈕控制) ---
-        let deferredPrompt;
-        const btnInstall = document.getElementById('btn-install-app');
-        
-        window.addEventListener('beforeinstallprompt', (e) => {
-            e.preventDefault();
-            deferredPrompt = e;
-            // 按鈕已預設顯示
-        });
-
-        const isIos = /iPhone|iPad|iPod/.test(navigator.userAgent) && !window.MSStream;
-        const isStandalone = window.navigator.standalone || window.matchMedia('(display-mode: standalone)').matches;
-
-        // 若已安裝 (Standalone 模式)，隱藏安裝按鈕
-        if (isStandalone) {
-            btnInstall.classList.add('hidden');
-        }
-
-        function installPWA() {
-            if (isIos) {
-                document.getElementById('ios-install-modal').classList.remove('hidden');
-                document.getElementById('ios-install-modal').classList.add('flex');
-            } else if (deferredPrompt) {
-                deferredPrompt.prompt();
-                deferredPrompt.userChoice.then((choiceResult) => {
-                    deferredPrompt = null;
-                });
-            } else {
-                // 桌機或不支援自動觸發的環境
-                alert("請使用瀏覽器選單中的「安裝應用程式」或「加入主畫面」功能。\n(iOS 用戶請使用 Safari 分享按鈕)");
-            }
-        }
-
-        function closeIosModal() {
-            document.getElementById('ios-install-modal').classList.add('hidden');
-            document.getElementById('ios-install-modal').classList.remove('flex');
-        }
-
-        // --- 登入與資料邏輯 ---
-
-        function checkLoginStatus() {
-            const savedSession = localStorage.getItem('healthTwinSession');
-            const loginSection = document.getElementById('login-section');
-            const userSection = document.getElementById('user-section');
-            const mainCard = document.getElementById('main-card');
-
-            if (savedSession) {
-                userSession = JSON.parse(savedSession);
-                document.getElementById('display-name').innerText = userSession.name || 'User';
-                document.getElementById('display-email').innerText = userSession.email || '';
+            } catch (error) {
+                console.error("Init Error:", error);
+                document.getElementById('userList').innerHTML = '<div class="p-4 text-center text-rose-500 text-sm">載入使用者失敗</div>';
                 
-                loginSection.classList.add('hidden');
-                userSection.classList.remove('hidden');
-                mainCard.classList.remove('max-w-md'); 
-                mainCard.classList.add('max-w-lg');
-            } else {
-                loginSection.classList.remove('hidden');
-                userSection.classList.add('hidden');
-                mainCard.classList.add('max-w-md');
-                mainCard.classList.remove('max-w-lg');
+                // 發生錯誤也要關閉動畫
+                if (typeof window.hideLoading === 'function') {
+                    window.hideLoading();
+                }
             }
-            lucide.createIcons();
         }
 
-        async function handleCredentialResponse(response) {
-            const responsePayload = decodeJwtResponse(response.credential);
+        function renderUserList(users) {
+            const listContainer = document.getElementById('userList'); 
+            document.getElementById('userCount').innerText = users.length; 
+            listContainer.innerHTML = ''; 
             
-            const loader = document.getElementById('full-loader');
-            loader.classList.remove('hidden');
-            loader.classList.add('flex');
+            if (users.length === 0) { listContainer.innerHTML = '<div class="p-4 text-center text-sm text-slate-400">無使用者</div>'; return; } 
 
+            users.forEach(user => { 
+                const div = document.createElement('div'); 
+                const avatarText = user.name ? user.name.charAt(0).toUpperCase() : '?'; 
+                div.id = `user-item-${user.uid}`; 
+                div.className = `p-3 rounded-xl cursor-pointer hover:bg-indigo-50 hover:text-indigo-600 transition flex items-center gap-3 text-slate-600 font-medium group user-item border border-transparent`; 
+                div.innerHTML = `<div class="w-8 h-8 rounded-full bg-slate-100 text-slate-500 flex items-center justify-center text-xs font-bold shrink-0">${avatarText}</div><span class="truncate">${user.name || user.email || user.uid}</span>`; 
+                
+                div.onclick = () => { selectUser(user.uid, user.name || user.email, user); if (window.innerWidth < 1024) toggleSidebar(); }; 
+                listContainer.appendChild(div); 
+            }); 
+        }
+
+        async function selectUser(uid, name, userObj = null) {
+            currentSelectedUid = uid;
+            currentUserInfo = userObj;
+            
+            updateBindingIcons(userObj);
+
+            document.querySelectorAll('.user-item').forEach(el => { el.classList.remove('bg-indigo-50', 'text-indigo-600', 'shadow-sm', 'border-indigo-100'); el.classList.add('border-transparent'); }); 
+            const element = document.getElementById(`user-item-${uid}`); 
+            if (element) { element.classList.add('bg-indigo-50', 'text-indigo-600', 'shadow-sm', 'border-indigo-100'); element.classList.remove('border-transparent'); } 
+            
+            document.getElementById('currentUserName').innerText = name;
+            await fetchUserData(uid);
+        }
+
+        function updateBindingIcons(user) {
+            const googleIcon = document.getElementById('icon-google');
+            const lineIcon = document.getElementById('icon-line');
+            
+            googleIcon.classList.remove('text-indigo-600'); googleIcon.classList.add('text-slate-300');
+            lineIcon.classList.remove('text-[#06C755]'); lineIcon.classList.add('text-slate-300');
+
+            if (user && user.provider) {
+                const providers = user.provider.toLowerCase();
+                if (providers.includes('google')) {
+                    googleIcon.classList.remove('text-slate-300'); googleIcon.classList.add('text-indigo-600');
+                }
+                if (providers.includes('line')) {
+                    lineIcon.classList.remove('text-slate-300'); lineIcon.classList.add('text-[#06C755]');
+                }
+            }
+        }
+
+        async function fetchUserData(uid) {
+            document.getElementById('loadingState').classList.remove('hidden'); 
+            document.getElementById('dashboardContent').classList.add('hidden');
+            
             try {
-                await fetch(API_URL, {
-                    method: 'POST',
-                    mode: 'no-cors', 
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        action: 'socialLogin',
-                        token: response.credential, 
-                        provider: 'google'
-                    })
-                });
+                const response = await fetch(`${API_URL}?action=getData&uid=${encodeURIComponent(uid)}`);
+                const rawData = await response.json();
                 
-                await new Promise(r => setTimeout(r, 1500)); 
-                
-                const settingsResp = await fetch(`${API_URL}?action=getSettings`);
-                const users = await settingsResp.json();
-                const myUser = users.find(u => u.email.toLowerCase() === responsePayload.email.toLowerCase());
-                
-                if (myUser) {
-                    const sessionData = {
-                        uid: myUser.uid,
-                        email: myUser.email,
-                        name: myUser.name,
-                        role: myUser.role,
-                        provider: 'google',
-                        picture: responsePayload.picture,
-                        timestamp: new Date().getTime()
+                allUserData = rawData.map(item => {
+                    const sbp = item.sbp ? parseInt(item.sbp) : null;
+                    const dbp = item.dbp ? parseInt(item.dbp) : null;
+                    const pulse = item.hr ? parseInt(item.hr) : null;
+                    const glucose = item.glucose ? parseInt(item.glucose) : null;
+
+                    return {
+                        timestamp: item.date,
+                        sbp: sbp,
+                        dbp: dbp,
+                        pulse: pulse,
+                        glucose: glucose,
+                        context: item.context,
+                        note: item.note
                     };
-                    localStorage.setItem('healthTwinSession', JSON.stringify(sessionData));
-                    checkLoginStatus();
-                } else {
-                    alert("系統同步延遲，請重新登入或稍後再試。");
-                }
+                });
 
-            } catch (e) {
-                console.error(e);
-                alert("登入連線錯誤");
-            } finally {
-                loader.classList.add('hidden');
-                loader.classList.remove('flex');
+                setFilter('30days');
+                
+                document.getElementById('loadingState').classList.add('hidden'); 
+                document.getElementById('dashboardContent').classList.remove('hidden'); 
+                document.getElementById('dashboardContent').classList.add('animate-fade-in'); 
+                
+            } catch (error) {
+                console.error(error);
+                alert("讀取資料失敗");
+                document.getElementById('loadingState').classList.add('hidden'); 
             }
         }
 
-        function decodeJwtResponse(token) {
-            var base64Url = token.split('.')[1];
-            var base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
-            var jsonPayload = decodeURIComponent(window.atob(base64).split('').map(function(c) {
-                return '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2);
-            }).join(''));
-            return JSON.parse(jsonPayload);
-        }
-
-        function logout() {
-            if(confirm("確定要登出嗎？")) {
-                localStorage.removeItem('healthTwinSession');
-                try { google.accounts.id.disableAutoSelect(); } catch(e){}
-                window.location.reload();
-            }
-        }
-
-        function toggleFields() {
-            const type = document.querySelector('input[name="dataType"]:checked').value;
-            if (type === 'BloodPressure') {
-                document.getElementById('field-bp').classList.remove('hidden');
-                document.getElementById('field-bs').classList.add('hidden');
-            } else {
-                document.getElementById('field-bp').classList.add('hidden');
-                document.getElementById('field-bs').classList.remove('hidden');
-            }
-        }
-
-        async function handleQuickSubmit(e) {
-            e.preventDefault();
+        function setFilter(type) {
+            currentFilter = type;
             
-            if (!userSession || !userSession.uid) {
-                alert("錯誤：未偵測到登入狀態，請重新登入。");
-                window.location.reload();
+            document.querySelectorAll('.filter-btn').forEach(btn => btn.classList.remove('active'));
+            if (type !== 'custom') document.getElementById(`btn-${type}`).classList.add('active');
+            if (type === 'custom') document.getElementById('btn-custom').classList.add('bg-indigo-100');
+
+            const now = new Date();
+            let startDate = new Date();
+
+            if (type === '30days') {
+                startDate.setDate(now.getDate() - 30);
+            } else if (type === '6months') {
+                startDate.setMonth(now.getMonth() - 6);
+            } else if (type === '1year') {
+                startDate.setFullYear(now.getFullYear() - 1);
+            } else if (type === 'custom') {
+                const s = document.getElementById('filter-start').value;
+                const e = document.getElementById('filter-end').value;
+                if (!s || !e) { alert("請選擇開始與結束日期"); return; }
+                startDate = new Date(s);
+                now.setTime(new Date(e).getTime() + 86399000);
+            }
+
+            filteredData = allUserData.filter(d => {
+                const dDate = new Date(d.timestamp);
+                return dDate >= startDate && dDate <= now;
+            });
+
+            filteredData.sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp));
+            updateDashboardUI(filteredData);
+        }
+        
+        function refreshCurrentUserData() {
+            if (currentSelectedUid) fetchUserData(currentSelectedUid);
+        }
+
+        function updateDashboardUI(data) { 
+            if (!data || data.length === 0) { 
+                document.getElementById('val-sbp').innerText = '--'; 
+                document.getElementById('val-dbp').innerText = '--'; 
+                document.getElementById('val-glucose').innerText = '--'; 
+                renderCharts([]); 
+                document.getElementById('historyTable').innerHTML = '<tr><td colspan="3" class="p-4 text-center text-slate-400">該時段無資料</td></tr>';
+                return; 
+            } 
+
+            const latestBP = [...data].reverse().find(d => d.sbp != null);
+            const latestGlu = [...data].reverse().find(d => d.glucose != null);
+
+            if (latestBP) {
+                document.getElementById('val-sbp').innerText = latestBP.sbp;
+                document.getElementById('val-dbp').innerText = latestBP.dbp;
+                document.getElementById('val-pulse').innerText = latestBP.pulse || '--';
+            } else {
+                document.getElementById('val-sbp').innerText = '--';
+                document.getElementById('val-dbp').innerText = '--';
+            }
+
+            if (latestGlu) {
+                document.getElementById('val-glucose').innerText = latestGlu.glucose;
+            } else {
+                document.getElementById('val-glucose').innerText = '--';
+            }
+
+            const historyBody = document.getElementById('historyTable'); 
+            const displayList = [...data].reverse(); 
+            
+            historyBody.innerHTML = displayList.map(d => { 
+                const dateObj = new Date(d.timestamp); 
+                const timeStr = `${dateObj.getFullYear()}/${(dateObj.getMonth()+1).toString().padStart(2,'0')}/${dateObj.getDate().toString().padStart(2,'0')} ${String(dateObj.getHours()).padStart(2,'0')}:${String(dateObj.getMinutes()).padStart(2,'0')}`; 
+                
+                let bpDisplay = (d.sbp) ? `<span class="text-rose-600">${d.sbp}</span>/<span class="text-blue-600">${d.dbp}</span> <span class="text-xs text-slate-400">(${d.pulse})</span>` : '-';
+                let gluDisplay = (d.glucose) ? `<span class="text-amber-600 font-bold">${d.glucose}</span>` : '-';
+
+                return `
+                    <tr class="hover:bg-slate-50 transition">
+                        <td class="py-3 pl-2 text-slate-500 font-mono text-xs">${timeStr}</td>
+                        <td class="py-3 text-right font-medium text-sm">${bpDisplay}</td>
+                        <td class="py-3 pr-2 text-right font-medium text-sm">${gluDisplay}</td>
+                    </tr>`; 
+            }).join(''); 
+
+            renderCharts(data); 
+        }
+
+        function renderCharts(data) { 
+            const labels = data.map(d => { 
+                const date = new Date(d.timestamp); 
+                return `${date.getMonth()+1}/${date.getDate()}`; 
+            }); 
+            
+            const sbpData = data.map(d => d.sbp); 
+            const dbpData = data.map(d => d.dbp); 
+            const glucoseData = data.map(d => d.glucose); 
+
+            const ctxBP = document.getElementById('mainChart').getContext('2d'); 
+            if (bpChartInstance) bpChartInstance.destroy(); 
+            bpChartInstance = new Chart(ctxBP, { 
+                type: 'line', 
+                data: { 
+                    labels: labels, 
+                    datasets: [
+                        { label: '收縮壓', data: sbpData, borderColor: '#F43F5E', backgroundColor: 'rgba(244, 63, 94, 0.1)', borderWidth: 2, tension: 0.3, fill: true, spanGaps: true }, 
+                        { label: '舒張壓', data: dbpData, borderColor: '#3B82F6', backgroundColor: 'rgba(59, 130, 246, 0.1)', borderWidth: 2, tension: 0.3, fill: true, spanGaps: true }
+                    ] 
+                }, 
+                options: { 
+                    responsive: true, maintainAspectRatio: false, 
+                    plugins: { legend: { position: 'top', align: 'end' } }, 
+                    scales: { y: { suggestedMin: 60, suggestedMax: 160 } } 
+                } 
+            }); 
+
+            const ctxGlu = document.getElementById('glucoseChart').getContext('2d'); 
+            if (glucoseChartInstance) glucoseChartInstance.destroy(); 
+            glucoseChartInstance = new Chart(ctxGlu, { 
+                type: 'line', 
+                data: { 
+                    labels: labels, 
+                    datasets: [{ label: '血糖', data: glucoseData, borderColor: '#F59E0B', backgroundColor: 'rgba(245, 158, 11, 0.1)', borderWidth: 2, tension: 0.3, fill: true, spanGaps: true }] 
+                }, 
+                options: { 
+                    responsive: true, maintainAspectRatio: false, 
+                    plugins: { legend: { display: false } }, 
+                    scales: { y: { suggestedMin: 70, suggestedMax: 180 } } 
+                } 
+            }); 
+        }
+
+        function downloadCSV() {
+            if (!filteredData || filteredData.length === 0) {
+                alert("目前篩選範圍內沒有資料可下載");
                 return;
             }
 
-            const btn = document.getElementById('btn-submit');
-            const originalText = btn.innerHTML;
+            let csvContent = "\uFEFF時間,收縮壓,舒張壓,心率,血糖,情境,備註\n";
+
+            [...filteredData].reverse().forEach(row => {
+                const d = new Date(row.timestamp);
+                const timeStr = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')} ${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}`;
+                
+                csvContent += `${timeStr},${row.sbp||''},${row.dbp||''},${row.pulse||''},${row.glucose||''},${row.context||''},${row.note||''}\n`;
+            });
+
+            const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+            const link = document.createElement("a");
+            const url = URL.createObjectURL(blob);
+            const userName = document.getElementById('currentUserName').innerText;
             
-            btn.disabled = true;
-            btn.innerHTML = `<i data-lucide="loader-2" class="w-5 h-5 animate-spin"></i> 傳送中...`;
-            lucide.createIcons();
+            link.setAttribute("href", url);
+            link.setAttribute("download", `${userName}_健康紀錄_${currentFilter}.csv`);
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+        }
+        
+        async function getAIAnalysis() { 
+            if (!currentSelectedUid) { alert("請先選擇一位用戶"); return; } 
+            const modal = document.getElementById('aiAnalysisModal'); 
+            const content = document.getElementById('aiModalContent'); 
+            const btnTTS = document.getElementById('btn-tts');
+            
+            modal.classList.remove('hidden'); modal.classList.add('flex'); 
+            content.innerHTML = `<div class="flex flex-col items-center justify-center py-12"><div class="tech-loader"><div class="tech-ring"></div><div class="tech-ring"></div><i data-lucide="sparkles" class="tech-heart w-8 h-8"></i></div><p class="text-slate-500 mt-4 font-bold tracking-wider">AI ANALYZING...</p></div>`; 
+            btnTTS.classList.add('hidden'); 
 
-            const type = document.querySelector('input[name="dataType"]:checked').value;
-            let payload = {
-                action: 'addData',
-                uid: userSession.uid, 
-                type: type,
-                note: document.getElementById('note').value,
-                timestamp: new Date().toISOString()
-            };
+            try { 
+                const response = await fetch(`${API_URL}?action=askAI&uid=${currentSelectedUid}`); 
+                const data = await response.json(); 
+                if (data.result) { 
+                    content.innerHTML = `<div class="prose prose-sm text-slate-700">${marked.parse(data.result)}</div>`; 
+                    btnTTS.classList.remove('hidden'); 
+                    window.speechSynthesis.getVoices();
+                } else { throw new Error("AI 無回應"); } 
+            } catch (err) { 
+                content.innerHTML = `<div class="text-center py-8 text-rose-500">分析失敗: ${err.message}</div>`; 
+            } 
+        }
 
-            if (type === 'BloodPressure') {
-                payload.sbp = document.getElementById('sbp').value;
-                payload.dbp = document.getElementById('dbp').value;
-                payload.hr = document.getElementById('hr').value;
-                if (!payload.sbp || !payload.dbp) { alert("請輸入完整的血壓數值"); resetBtn(); return; }
+        function toggleSpeech() {
+            if (synth.speaking && !synth.paused) {
+                synth.cancel();
+                isSpeaking = false;
+                updateTTSButton(false);
             } else {
-                payload.bs = document.getElementById('bs').value;
-                payload.time = document.querySelector('input[name="bsTime"]:checked').value;
-                if (!payload.bs) { alert("請輸入血糖數值"); resetBtn(); return; }
+                const contentEl = document.getElementById('aiModalContent');
+                const contentText = contentEl.innerText || contentEl.textContent;
+                if (!contentText) return;
+                synth.cancel(); 
+                speechUtterance = new SpeechSynthesisUtterance(contentText);
+                speechUtterance.lang = 'zh-TW'; 
+                speechUtterance.rate = 1.0;     
+                const voices = synth.getVoices();
+                const targetVoice = voices.find(v => v.name === "Google 國語（臺灣）") || voices.find(v => v.name.includes("Google") && v.lang.includes("zh-TW")) || voices.find(v => v.name.includes("Taiwan")) || voices.find(v => v.lang === "zh-TW");
+                if (targetVoice) speechUtterance.voice = targetVoice;
+                speechUtterance.onend = () => { isSpeaking = false; updateTTSButton(false); };
+                synth.speak(speechUtterance);
+                isSpeaking = true;
+                updateTTSButton(true);
             }
+        }
 
-            try {
-                await fetch(API_URL, {
-                    method: 'POST',
-                    mode: 'no-cors',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(payload)
-                });
-
-                setTimeout(() => {
-                    alert("紀錄已成功儲存！");
-                    window.location.href = 'dashboard.html';
-                }, 800);
-
-            } catch (error) {
-                console.error(error);
-                alert("發生錯誤，請稍後再試。");
-                resetBtn();
+        function updateTTSButton(playing) {
+            const btnText = document.getElementById('btn-tts-text');
+            const icon = document.querySelector('#btn-tts i');
+            if (playing) {
+                btnText.innerText = "停止朗讀";
+                icon.setAttribute('data-lucide', 'square'); 
+                document.getElementById('btn-tts').classList.add('bg-rose-50', 'text-rose-600', 'border-rose-100');
+                document.getElementById('btn-tts').classList.remove('hover:bg-indigo-50', 'text-indigo-600', 'border-indigo-100');
+            } else {
+                btnText.innerText = "語音播放";
+                icon.setAttribute('data-lucide', 'volume-2'); 
+                document.getElementById('btn-tts').classList.remove('bg-rose-50', 'text-rose-600', 'border-rose-100');
+                document.getElementById('btn-tts').classList.add('hover:bg-indigo-50', 'text-indigo-600', 'border-indigo-100');
             }
+            lucide.createIcons();
+        }
 
-            function resetBtn() {
-                btn.disabled = false;
-                btn.innerHTML = originalText;
-                lucide.createIcons();
-            }
+        function closeAiModal() { 
+            if (synth.speaking) { synth.cancel(); isSpeaking = false; updateTTSButton(false); }
+            document.getElementById('aiAnalysisModal').classList.add('hidden'); 
+            document.getElementById('aiAnalysisModal').classList.remove('flex'); 
         }
     </script>
 </body>
