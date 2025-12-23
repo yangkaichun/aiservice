@@ -24,7 +24,6 @@
         const savedSession = localStorage.getItem('healthTwinSession');
         let loggedInSession = null;
         if (!savedSession) {
-            // 這裡不使用 alert，直接跳轉，體驗更順暢
             window.location.href = 'index.html';
         } else {
             loggedInSession = JSON.parse(savedSession);
@@ -43,25 +42,9 @@
         .prose p { margin-bottom: 0.8em; line-height: 1.6; }
         .filter-btn { @apply px-3 py-1.5 text-xs font-medium rounded-lg border border-slate-200 text-slate-600 hover:bg-slate-50 transition; }
         .filter-btn.active { @apply bg-indigo-600 text-white border-indigo-600; }
-
-        /* === 酷炫資料同步 Loading (Tech Pulse) === */
+        
+        /* 載入區塊置中 */
         #loadingState { display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 60vh; }
-        .tech-loader { position: relative; width: 80px; height: 80px; display: flex; align-items: center; justify-content: center; }
-        .tech-ring {
-            position: absolute; border-radius: 50%; border: 2px solid transparent;
-            border-top-color: #4f46e5; border-bottom-color: #ec4899;
-            width: 100%; height: 100%; animation: spin 1.5s linear infinite;
-        }
-        .tech-ring:nth-child(2) {
-            width: 70%; height: 70%; border: 2px solid transparent;
-            border-left-color: #06b6d4; border-right-color: #8b5cf6;
-            animation: spin-reverse 1s linear infinite;
-        }
-        .tech-heart { animation: pulse-fast 1s ease-in-out infinite; color: #4338ca; }
-
-        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
-        @keyframes spin-reverse { 0% { transform: rotate(0deg); } 100% { transform: rotate(-360deg); } }
-        @keyframes pulse-fast { 0%, 100% { transform: scale(1); opacity: 1; } 50% { transform: scale(0.85); opacity: 0.7; } }
     </style>
 </head>
 <body class="text-slate-800 h-screen flex overflow-hidden relative">
@@ -228,13 +211,7 @@
             </div>
             
             <div id="loadingState">
-                <div class="tech-loader">
-                    <div class="tech-ring"></div>
-                    <div class="tech-ring"></div>
-                    <i data-lucide="activity" class="tech-heart w-8 h-8"></i>
                 </div>
-                <p class="mt-4 text-indigo-600 font-bold tracking-widest text-sm animate-pulse">ANALYZING HEALTH DATA...</p>
-            </div>
         </div>
     </main>
 
@@ -255,6 +232,13 @@
 
         document.addEventListener('DOMContentLoaded', () => {
             lucide.createIcons();
+            
+            // 注入資料載入動畫
+            const loadingState = document.getElementById('loadingState');
+            if(loadingState && window.getLoaderHTML) {
+                loadingState.innerHTML = window.getLoaderHTML();
+            }
+
             initDashboard();
         });
 
@@ -340,7 +324,7 @@
                     selectUser(users[0].uid, users[0].name);
                 }
 
-                // [關鍵] 資料載入完成，關閉 loading.js 的動畫
+                // [關鍵] 資料載入完成，關閉開場動畫
                 if (typeof window.hideLoading === 'function') {
                     window.hideLoading();
                 }
@@ -349,7 +333,7 @@
                 console.error("Init Error:", error);
                 document.getElementById('userList').innerHTML = '<div class="p-4 text-center text-rose-500 text-sm">載入使用者失敗</div>';
                 
-                // 即使失敗也要關閉動畫，不然使用者會卡在 Loading
+                // 發生錯誤也要關閉動畫
                 if (typeof window.hideLoading === 'function') {
                     window.hideLoading();
                 }
@@ -609,7 +593,7 @@
             const btnTTS = document.getElementById('btn-tts');
             
             modal.classList.remove('hidden'); modal.classList.add('flex'); 
-            content.innerHTML = `<div class="flex flex-col items-center justify-center py-12"><div class="w-10 h-10 border-4 border-indigo-200 border-t-indigo-600 rounded-full animate-spin"></div><p class="text-slate-500 mt-4">Gemini 正在分析數據...</p></div>`; 
+            content.innerHTML = `<div class="flex flex-col items-center justify-center py-12"><div class="tech-loader"><div class="tech-ring"></div><div class="tech-ring"></div><i data-lucide="sparkles" class="tech-heart w-8 h-8"></i></div><p class="text-slate-500 mt-4 font-bold tracking-wider">AI ANALYZING...</p></div>`; 
             btnTTS.classList.add('hidden'); 
 
             try { 
