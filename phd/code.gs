@@ -1,17 +1,19 @@
 // ==========================================
-// YangHome Health Backend API (v2.3 - Gemini 2.0)
+// YangHome Health Backend API (v3.1 - Secure Login)
 // ==========================================
 
 const SPREADSHEET_ID = SpreadsheetApp.getActiveSpreadsheet().getId();
 const SHEET_USERS = "Users";
 const SHEET_DATA = "Data";
 
-// 請填入您的 API Key
+// [設定] Google Client ID (用於後端驗證 Token 合法性)
+const GOOGLE_CLIENT_ID = "142808541856-1sfda1hcfk12p1r0a5fbmldugb1f99vn.apps.googleusercontent.com";
+
+// [設定] Gemini API Key
 const GEMINI_API_KEY = "AIzaSyDnRyQUyW-0EgB0hSzyPFZu6mT_0L12xSg"; 
 
 function doGet(e) {
   const action = e.parameter.action;
-  
   if (action === "login") return handleLogin(e);
   if (action === "getData") return handleGetData(e);
   if (action === "getSettings") return handleGetSettings(e);
@@ -30,6 +32,9 @@ function doPost(e) {
 
     if (action === "addData") return handleAddData(data);
     if (action === "updateProfile") return handleUpdateProfile(data);
+    if (action === "bindAccount") return handleBindAccount(data);
+    // 處理真實社群登入 (含 Token 驗證)
+    if (action === "socialLogin") return handleSocialLogin(data);
     
     return responseJSON({ error: "Unknown action" });
   } catch (err) {
@@ -38,6 +43,94 @@ function doPost(e) {
 }
 
 // --- 核心邏輯 ---
+
+// [驗證] 向 Google 驗證 Token 是否合法
+function verifyGoogleToken(token) {
+  try {
+    // 呼叫 Google Token Info API
+    const url = "https://oauth2.googleapis.com/tokeninfo?id_token=" + token;
+    const response = UrlFetchApp.fetch(url, { muteHttpExceptions: true });
+    
+    if (response.getResponseCode() !== 200) {
+      console.log("Token verification failed:", response.getContentText());
+      return null;
+    }
+
+    const payload = JSON.parse(response.getContentText());
+    
+    // 檢查 Token 是否屬於我們的 Client ID (防止跨站偽造)
+    if (payload.aud !== GOOGLE_CLIENT_ID) {
+      console.log("Client ID mismatch. Expected:", GOOGLE_CLIENT_ID, "Got:", payload.aud);
+      return null;
+    }
+    
+    return payload; // 回傳包含 email, name, picture 的物件
+  } catch (e) {
+    console.error("Verification error:", e);
+    return null;
+  }
+}
+
+// [核心] 處理真實 Google 登入
+function handleSocialLogin(data) {
+  // 1. 驗證 Token
+  const googleUser = verifyGoogleToken(data.token);
+  
+  if (!googleUser) {
+    return responseJSON({ success: false, message: "Invalid ID Token" });
+  }
+
+  const email = String(googleUser.email).trim().toLowerCase();
+  const name = googleUser.name || "Google User";
+  const providerType = 'google';
+
+  const sheet = SpreadsheetApp.openById(SPREADSHEET_ID).getSheetByName(SHEET_USERS);
+  const rows = sheet.getDataRange().getValues();
+  
+  // 2. 搜尋現有使用者
+  for (let i = 1; i < rows.length; i++) {
+    const row = rows[i];
+    if (String(row[1]).trim().toLowerCase() === email) {
+      
+      // 補上 provider 標記
+      let currentProvider = String(row[5] || "");
+      if (!currentProvider.toLowerCase().includes(providerType)) {
+        currentProvider = currentProvider ? currentProvider + "," + providerType : providerType;
+        sheet.getRange(i + 1, 6).setValue(currentProvider);
+      }
+      
+      return responseJSON({
+        success: true,
+        isNewUser: false,
+        user: { 
+          uid: row[0], 
+          email: row[1], 
+          name: row[2], 
+          role: row[4] || 'user', 
+          provider: currentProvider 
+        }
+      });
+    }
+  }
+
+  // 3. 若找不到，自動註冊
+  const newUid = "U" + new Date().getTime();
+  const timestamp = new Date();
+  
+  sheet.appendRow([newUid, email, name, "", "user", providerType, timestamp]);
+  
+  return responseJSON({
+    success: true,
+    isNewUser: true,
+    user: { 
+      uid: newUid, 
+      email: email, 
+      name: name, 
+      role: 'user', 
+      provider: providerType 
+    }
+  });
+}
 
 function handleLogin(e) {
   const email = e.parameter.email;
@@ -86,11 +179,11 @@ function handleGetData(e) {
 function handleAddData(data) {
   const sheet = SpreadsheetApp.openById(SPREADSHEET_ID).getSheetByName(SHEET_DATA);
   const timestamp = new Date();
-  
   let context = '', sbp = '', dbp = '', hr = '', glucose = '', note = data.note || '';
 
   if (data.type === 'BloodPressure') {
-    sbp = data.sbp; dbp = data.dbp; hr = data.hr; context = "一般量測";
+    sbp = data.sbp; dbp = data.dbp; hr = data.hr;
+    context = "一般量測";
   } else if (data.type === 'BloodSugar') {
     glucose = data.bs;
     const timeMap = { 'fasting': '空腹', 'postprandial': '飯後', 'wakeup': '起床', 'bedtime': '睡前' };
@@ -104,14 +197,35 @@ function handleAddData(data) {
 function handleUpdateProfile(data) {
   const sheet = SpreadsheetApp.openById(SPREADSHEET_ID).getSheetByName(SHEET_USERS);
   const rows = sheet.getDataRange().getValues();
+  
   for (let i = 1; i < rows.length; i++) {
-    if (rows[i][1] === data.userEmail) { 
+    if (String(rows[i][1]).toLowerCase() === String(data.userEmail).toLowerCase()) { 
       sheet.getRange(i + 1, 3).setValue(data.userName);
       sheet.getRange(i + 1, 4).setValue("'" + data.userBirthday);
       return responseJSON({ success: true, message: "Profile updated" });
     }
   }
   return responseJSON({ success: false, message: "User not found" });
+}
+
+function handleBindAccount(data) {
+  const sheet = SpreadsheetApp.openById(SPREADSHEET_ID).getSheetByName(SHEET_USERS);
+  const rows = sheet.getDataRange().getValues();
+  const targetEmail = String(data.userEmail).toLowerCase();
+  const newProvider = data.newProvider;
+
+  for (let i = 1; i < rows.length; i++) {
+    if (String(rows[i][1]).toLowerCase() === targetEmail) {
+      let currentProvider = String(rows[i][5] || "");
+      if (!currentProvider.includes(newProvider)) {
+        if (currentProvider.length > 0) currentProvider += "," + newProvider;
+        else currentProvider = newProvider;
+        sheet.getRange(i + 1, 6).setValue(currentProvider);
+      }
+      return responseJSON({ success: true, message: "Account bound successfully", provider: currentProvider });
+    }
+  }
+  return responseJSON({ success: false, message: "User not found for binding" });
 }
 
 function handleAskAI(e) {
@@ -137,7 +251,7 @@ function handleAskAI(e) {
   }
 
   if (!historyText) return responseJSON({ result: "目前沒有足夠的數據可供 AI 分析。" });
-
+  
   const prompt = `你是一位專業的家庭健康顧問。請根據以下使用者的生理數據給予簡短的健康評估與建議。
   請使用「台灣繁體中文」回答，語氣要親切、正面且專業。請針對異常數值給予具體的生活作息或飲食建議。
   
@@ -161,26 +275,20 @@ function formatDate(dateInput) {
   } catch (e) { return ''; }
 }
 
-// [重點修改] 切換至 Gemini 2.0 Flash Experimental
 function callGemini(prompt) {
-  // 使用 v1beta 版本的 gemini-2.0-flash-exp 模型
   const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-exp:generateContent?key=${GEMINI_API_KEY}`;
-  
   const payload = {
     contents: [{ parts: [{ text: prompt }] }]
   };
-  
   const options = {
     method: 'post',
     contentType: 'application/json',
     payload: JSON.stringify(payload),
     muteHttpExceptions: true
   };
-  
   try {
     const response = UrlFetchApp.fetch(url, options);
     const json = JSON.parse(response.getContentText());
-    
     if (json.candidates && json.candidates.length > 0) {
       return json.candidates[0].content.parts[0].text;
     } else if (json.error) {
