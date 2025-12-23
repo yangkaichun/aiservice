@@ -25,8 +25,6 @@
         .glass-card { background: rgba(255, 255, 255, 0.95); backdrop-filter: blur(10px); border: 1px solid rgba(255, 255, 255, 0.5); box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1); }
         .animate-fade-in { animation: fadeIn 0.6s cubic-bezier(0.16, 1, 0.3, 1); }
         @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
-        
-        /* 安裝按鈕呼吸特效 */
         .btn-pulse { animation: softPulse 2s infinite; }
         @keyframes softPulse { 0% { box-shadow: 0 0 0 0 rgba(79, 70, 229, 0.4); } 70% { box-shadow: 0 0 0 10px rgba(79, 70, 229, 0); } 100% { box-shadow: 0 0 0 0 rgba(79, 70, 229, 0); } }
     </style>
@@ -78,7 +76,6 @@
         </div>
 
         <div id="login-section" class="space-y-5">
-            
             <div class="flex justify-center transform hover:scale-[1.02] transition-transform">
                 <div id="g_id_onload"
                      data-client_id="142808541856-1sfda1hcfk12p1r0a5fbmldugb1f99vn.apps.googleusercontent.com" 
@@ -123,7 +120,6 @@
             </div>
 
             <form id="quickAddForm" onsubmit="handleQuickSubmit(event)" class="space-y-5">
-                
                 <div class="grid grid-cols-2 gap-3 p-1.5 bg-slate-100 rounded-2xl">
                     <label class="cursor-pointer text-center relative">
                         <input type="radio" name="dataType" value="BloodPressure" class="peer hidden" checked onchange="toggleFields()">
@@ -201,7 +197,6 @@
                         <span>查看生理量測資訊</span>
                     </a>
                 </div>
-
             </form>
         </div>
 
@@ -218,24 +213,28 @@
         lucide.createIcons();
         let userSession = null;
 
-        // --- 導入動畫與載入邏輯 ---
-        window.addEventListener('load', () => {
-            // [關鍵] 網頁資源載入完成後，立即停止動畫
+        // [關鍵修復]：確保 load 事件能正確關閉動畫，即使是快速載入
+        function stopInitialLoading() {
             if (typeof window.hideLoading === 'function') {
                 window.hideLoading();
             } else {
-                const overlay = document.getElementById('global-intro-overlay');
+                // 強制隱藏的 Fallback
+                const overlay = document.getElementById('global-loader-overlay');
                 if(overlay) overlay.style.display = 'none';
                 document.body.style.overflow = 'auto';
             }
-
             checkLoginStatus();
-        });
+        }
 
-        // --- PWA 安裝邏輯 ---
+        if (document.readyState === 'complete') {
+            stopInitialLoading();
+        } else {
+            window.addEventListener('load', stopInitialLoading);
+        }
+
+        // PWA 邏輯
         let deferredPrompt;
         const btnInstall = document.getElementById('btn-install-app');
-        
         window.addEventListener('beforeinstallprompt', (e) => {
             e.preventDefault();
             deferredPrompt = e;
@@ -243,10 +242,7 @@
 
         const isIos = /iPhone|iPad|iPod/.test(navigator.userAgent) && !window.MSStream;
         const isStandalone = window.navigator.standalone || window.matchMedia('(display-mode: standalone)').matches;
-
-        if (isStandalone) {
-            btnInstall.classList.add('hidden');
-        }
+        if (isStandalone) { btnInstall.classList.add('hidden'); }
 
         function installPWA() {
             if (isIos) {
@@ -254,11 +250,9 @@
                 document.getElementById('ios-install-modal').classList.add('flex');
             } else if (deferredPrompt) {
                 deferredPrompt.prompt();
-                deferredPrompt.userChoice.then((choiceResult) => {
-                    deferredPrompt = null;
-                });
+                deferredPrompt.userChoice.then((choiceResult) => { deferredPrompt = null; });
             } else {
-                alert("請使用瀏覽器選單中的「安裝應用程式」或「加入主畫面」功能。\n(iOS 用戶請使用 Safari 分享按鈕)");
+                alert("請使用瀏覽器選單中的「安裝應用程式」或「加入主畫面」。");
             }
         }
 
@@ -267,15 +261,13 @@
             document.getElementById('ios-install-modal').classList.remove('flex');
         }
 
-        // --- 登入與資料邏輯 ---
-
+        // 登入狀態檢查
         function checkLoginStatus() {
             const savedSession = localStorage.getItem('healthTwinSession');
             const loginSection = document.getElementById('login-section');
             const userSection = document.getElementById('user-section');
             const mainCard = document.getElementById('main-card');
 
-            // 注意：這裡是首頁，若沒登入就顯示登入按鈕，不跳轉
             if (savedSession) {
                 userSession = JSON.parse(savedSession);
                 document.getElementById('display-name').innerText = userSession.name || 'User';
@@ -297,7 +289,6 @@
         async function handleCredentialResponse(response) {
             const responsePayload = decodeJwtResponse(response.credential);
             
-            // 使用 loading.js 提供的 Loader
             const loader = document.getElementById('full-loader');
             if(loader && window.getLoaderHTML) {
                 loader.innerHTML = window.getLoaderHTML();
