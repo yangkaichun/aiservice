@@ -225,8 +225,8 @@
         let currentSelectedUid = null;
         let currentUserInfo = null; 
         
-        const synth = window.speechSynthesis;
-        let speechUtterance = null;
+        // Google Cloud TTS 變數
+        let currentAudio = null;
         let isSpeaking = false;
 
         document.addEventListener('DOMContentLoaded', () => {
@@ -601,55 +601,112 @@
                 if (data.result) { 
                     content.innerHTML = `<div class="prose prose-sm text-slate-700">${marked.parse(data.result)}</div>`; 
                     btnTTS.classList.remove('hidden'); 
-                    window.speechSynthesis.getVoices();
                 } else { throw new Error("AI 無回應"); } 
             } catch (err) { 
                 content.innerHTML = `<div class="text-center py-8 text-rose-500">分析失敗: ${err.message}</div>`; 
             } 
         }
 
-        function toggleSpeech() {
-            if (synth.speaking && !synth.paused) {
-                synth.cancel();
+        // ==========================================
+        // 修改：透過後端 Relay 呼叫 Google Cloud TTS
+        // ==========================================
+        async function toggleSpeech() {
+            // 如果目前正在播放，則停止
+            if (currentAudio && !currentAudio.paused) {
+                currentAudio.pause();
+                currentAudio.currentTime = 0;
                 isSpeaking = false;
                 updateTTSButton(false);
-            } else {
-                const contentEl = document.getElementById('aiModalContent');
-                const contentText = contentEl.innerText || contentEl.textContent;
-                if (!contentText) return;
-                synth.cancel(); 
-                speechUtterance = new SpeechSynthesisUtterance(contentText);
-                speechUtterance.lang = 'zh-TW'; 
-                speechUtterance.rate = 1.0;     
-                const voices = synth.getVoices();
-                const targetVoice = voices.find(v => v.name === "Google 國語（臺灣）") || voices.find(v => v.name.includes("Google") && v.lang.includes("zh-TW")) || voices.find(v => v.name.includes("Taiwan")) || voices.find(v => v.lang === "zh-TW");
-                if (targetVoice) speechUtterance.voice = targetVoice;
-                speechUtterance.onend = () => { isSpeaking = false; updateTTSButton(false); };
-                synth.speak(speechUtterance);
-                isSpeaking = true;
-                updateTTSButton(true);
+                return;
+            }
+
+            const contentEl = document.getElementById('aiModalContent');
+            const contentText = contentEl.innerText || contentEl.textContent;
+            
+            if (!contentText) return;
+
+            updateTTSButton(true, true); // 顯示載入中
+
+            try {
+                // 改為呼叫後端 API (API_URL)
+                // action: 'getTTS'
+                const response = await fetch(API_URL, {
+                    method: 'POST',
+                    body: JSON.stringify({
+                        action: 'getTTS',
+                        text: contentText,
+                        uid: currentSelectedUid || 'unknown'
+                    })
+                });
+
+                const data = await response.json();
+
+                if (data.error) {
+                    throw new Error(data.error);
+                }
+
+                if (data.audioContent) {
+                    const audioSrc = "data:audio/mp3;base64," + data.audioContent;
+                    
+                    if (currentAudio) {
+                        currentAudio.pause();
+                        currentAudio = null;
+                    }
+                    
+                    currentAudio = new Audio(audioSrc);
+                    
+                    currentAudio.onended = () => {
+                        isSpeaking = false;
+                        updateTTSButton(false);
+                    };
+
+                    currentAudio.play();
+                    isSpeaking = true;
+                    updateTTSButton(true, false); // 顯示停止按鈕
+                }
+
+            } catch (error) {
+                console.error("TTS Error:", error);
+                alert("語音生成失敗: " + error.message);
+                isSpeaking = false;
+                updateTTSButton(false);
             }
         }
 
-        function updateTTSButton(playing) {
+        function updateTTSButton(playing, isLoading = false) {
+            const btn = document.getElementById('btn-tts');
             const btnText = document.getElementById('btn-tts-text');
             const icon = document.querySelector('#btn-tts i');
-            if (playing) {
+            
+            if (isLoading) {
+                btnText.innerText = "生成語音中...";
+                icon.setAttribute('data-lucide', 'loader-2');
+                icon.classList.add('animate-spin');
+                btn.classList.add('bg-indigo-50', 'text-indigo-600', 'border-indigo-100');
+            } else if (playing) {
                 btnText.innerText = "停止朗讀";
                 icon.setAttribute('data-lucide', 'square'); 
-                document.getElementById('btn-tts').classList.add('bg-rose-50', 'text-rose-600', 'border-rose-100');
-                document.getElementById('btn-tts').classList.remove('hover:bg-indigo-50', 'text-indigo-600', 'border-indigo-100');
+                icon.classList.remove('animate-spin');
+                btn.classList.remove('hover:bg-indigo-50', 'text-indigo-600', 'border-indigo-100');
+                btn.classList.add('bg-rose-50', 'text-rose-600', 'border-rose-100');
             } else {
                 btnText.innerText = "語音播放";
                 icon.setAttribute('data-lucide', 'volume-2'); 
-                document.getElementById('btn-tts').classList.remove('bg-rose-50', 'text-rose-600', 'border-rose-100');
-                document.getElementById('btn-tts').classList.add('hover:bg-indigo-50', 'text-indigo-600', 'border-indigo-100');
+                icon.classList.remove('animate-spin');
+                btn.classList.remove('bg-rose-50', 'text-rose-600', 'border-rose-100');
+                btn.classList.add('hover:bg-indigo-50', 'text-indigo-600', 'border-indigo-100');
             }
             lucide.createIcons();
         }
 
         function closeAiModal() { 
-            if (synth.speaking) { synth.cancel(); isSpeaking = false; updateTTSButton(false); }
+            if (currentAudio && !currentAudio.paused) {
+                currentAudio.pause();
+                currentAudio = null;
+            }
+            isSpeaking = false; 
+            updateTTSButton(false);
+            
             document.getElementById('aiAnalysisModal').classList.add('hidden'); 
             document.getElementById('aiAnalysisModal').classList.remove('flex'); 
         }
