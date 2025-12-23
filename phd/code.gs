@@ -1,5 +1,5 @@
 // ==========================================
-// YangHome Health Backend API (v3.1 - Secure Login)
+// YangHome Health Backend API (v3.2 - TTS Integrated)
 // ==========================================
 
 const SPREADSHEET_ID = SpreadsheetApp.getActiveSpreadsheet().getId();
@@ -8,9 +8,10 @@ const SHEET_DATA = "Data";
 
 // [設定] Google Client ID (用於後端驗證 Token 合法性)
 const GOOGLE_CLIENT_ID = "142808541856-1sfda1hcfk12p1r0a5fbmldugb1f99vn.apps.googleusercontent.com";
-
 // [設定] Gemini API Key
 const GEMINI_API_KEY = "AIzaSyDnRyQUyW-0EgB0hSzyPFZu6mT_0L12xSg"; 
+// [設定] Google Cloud TTS API Key (從前端移至後端保護)
+const GOOGLE_TTS_API_KEY = "AQ.Ab8RN6JeJZblLdbZ_8miIr4td99zJCHtnR-dS0ELWMwBVnuULw";
 
 function doGet(e) {
   const action = e.parameter.action;
@@ -35,6 +36,8 @@ function doPost(e) {
     if (action === "bindAccount") return handleBindAccount(data);
     // 處理真實社群登入 (含 Token 驗證)
     if (action === "socialLogin") return handleSocialLogin(data);
+    // [新增] 處理 TTS 請求
+    if (action === "getTTS") return handleGetTTS(data);
     
     return responseJSON({ error: "Unknown action" });
   } catch (err) {
@@ -43,6 +46,53 @@ function doPost(e) {
 }
 
 // --- 核心邏輯 ---
+
+// [新增] 處理 Text-to-Speech 請求
+function handleGetTTS(data) {
+  if (!GOOGLE_TTS_API_KEY) return responseJSON({ error: "TTS API Key 未設定" });
+  
+  const text = data.text;
+  if (!text) return responseJSON({ error: "No text provided" });
+
+  const url = `https://texttospeech.googleapis.com/v1/text:synthesize?key=${GOOGLE_TTS_API_KEY}`;
+  
+  const payload = {
+    input: { text: text },
+    voice: { 
+      languageCode: 'zh-TW', 
+      name: 'zh-TW-Neural2-A', // 使用 Neural2 高品質女性語音
+      ssmlGender: 'FEMALE' 
+    },
+    audioConfig: { 
+      audioEncoding: 'MP3',
+      speakingRate: 1.0,
+      pitch: 0
+    }
+  };
+
+  try {
+    const response = UrlFetchApp.fetch(url, {
+      method: 'post',
+      contentType: 'application/json',
+      payload: JSON.stringify(payload),
+      muteHttpExceptions: true
+    });
+
+    const responseCode = response.getResponseCode();
+    const responseText = response.getContentText();
+
+    if (responseCode !== 200) {
+      return responseJSON({ error: "Google TTS Error: " + responseText });
+    }
+
+    // Google API 直接回傳 { "audioContent": "base64..." }
+    // 我們直接將這個 JSON 回傳給前端
+    return ContentService.createTextOutput(responseText).setMimeType(ContentService.MimeType.JSON);
+
+  } catch (e) {
+    return responseJSON({ error: "Backend Fetch Error: " + e.toString() });
+  }
+}
 
 // [驗證] 向 Google 驗證 Token 是否合法
 function verifyGoogleToken(token) {
@@ -57,7 +107,6 @@ function verifyGoogleToken(token) {
     }
 
     const payload = JSON.parse(response.getContentText());
-    
     // 檢查 Token 是否屬於我們的 Client ID (防止跨站偽造)
     if (payload.aud !== GOOGLE_CLIENT_ID) {
       console.log("Client ID mismatch. Expected:", GOOGLE_CLIENT_ID, "Got:", payload.aud);
@@ -75,7 +124,6 @@ function verifyGoogleToken(token) {
 function handleSocialLogin(data) {
   // 1. 驗證 Token
   const googleUser = verifyGoogleToken(data.token);
-  
   if (!googleUser) {
     return responseJSON({ success: false, message: "Invalid ID Token" });
   }
@@ -83,7 +131,6 @@ function handleSocialLogin(data) {
   const email = String(googleUser.email).trim().toLowerCase();
   const name = googleUser.name || "Google User";
   const providerType = 'google';
-
   const sheet = SpreadsheetApp.openById(SPREADSHEET_ID).getSheetByName(SHEET_USERS);
   const rows = sheet.getDataRange().getValues();
   
@@ -116,7 +163,6 @@ function handleSocialLogin(data) {
   // 3. 若找不到，自動註冊
   const newUid = "U" + new Date().getTime();
   const timestamp = new Date();
-  
   sheet.appendRow([newUid, email, name, "", "user", providerType, timestamp]);
   
   return responseJSON({
@@ -137,7 +183,6 @@ function handleLogin(e) {
   const uid = e.parameter.uid; 
   const sheet = SpreadsheetApp.openById(SPREADSHEET_ID).getSheetByName(SHEET_USERS);
   const rows = sheet.getDataRange().getValues();
-  
   for (let i = 1; i < rows.length; i++) {
     const row = rows[i];
     if (String(row[1]).toLowerCase() === String(email).toLowerCase() && String(row[0]) === String(uid)) {
@@ -197,7 +242,6 @@ function handleAddData(data) {
 function handleUpdateProfile(data) {
   const sheet = SpreadsheetApp.openById(SPREADSHEET_ID).getSheetByName(SHEET_USERS);
   const rows = sheet.getDataRange().getValues();
-  
   for (let i = 1; i < rows.length; i++) {
     if (String(rows[i][1]).toLowerCase() === String(data.userEmail).toLowerCase()) { 
       sheet.getRange(i + 1, 3).setValue(data.userName);
@@ -213,7 +257,6 @@ function handleBindAccount(data) {
   const rows = sheet.getDataRange().getValues();
   const targetEmail = String(data.userEmail).toLowerCase();
   const newProvider = data.newProvider;
-
   for (let i = 1; i < rows.length; i++) {
     if (String(rows[i][1]).toLowerCase() === targetEmail) {
       let currentProvider = String(rows[i][5] || "");
@@ -236,7 +279,6 @@ function handleAskAI(e) {
   const data = sheet.getDataRange().getValues();
   let historyText = "";
   let count = 0;
-  
   for (let i = data.length - 1; i >= 1; i--) {
     if (String(data[i][1]) === String(uid)) {
       const row = data[i];
@@ -251,9 +293,8 @@ function handleAskAI(e) {
   }
 
   if (!historyText) return responseJSON({ result: "目前沒有足夠的數據可供 AI 分析。" });
-  
   const prompt = `你是一位專業的家庭健康顧問。請根據以下使用者的生理數據給予簡短的健康評估與建議。
-  請使用「台灣繁體中文」回答，語氣要親切、正面且專業。請針對異常數值給予具體的生活作息或飲食建議。
+  請使用「台灣繁體中文」回答，語氣要親切、正面且專業。請針對異常數值給予具體的生活作息或飲食建議，文字要少於1000字。
   
   數據如下：
   ${historyText}`;
