@@ -185,18 +185,33 @@
                         <div v-if="currentTab === 'admin_users'" class="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden animate-fade-in-up">
                             <div class="p-6 border-b border-gray-100 flex justify-between items-center bg-gray-50/50">
                                 <h3 class="font-bold text-gray-900">使用者權限清單</h3>
-                                <button @click="showAddUserModal = true" class="bg-black text-white px-4 py-2 rounded-lg text-sm font-bold shadow hover:bg-gray-800 transition"><i class="fa-solid fa-plus mr-2"></i> 新增使用者</button>
+                                <button @click="openAddUserModal" class="bg-black text-white px-4 py-2 rounded-lg text-sm font-bold shadow hover:bg-gray-800 transition"><i class="fa-solid fa-plus mr-2"></i> 新增使用者</button>
                             </div>
                             <table class="w-full text-left text-sm text-gray-600">
                                 <thead class="bg-white text-gray-400 font-bold uppercase text-[10px] tracking-wider border-b border-gray-100">
-                                    <tr><th class="px-6 py-4">姓名</th><th class="px-6 py-4">Email</th><th class="px-6 py-4">單位</th><th class="px-6 py-4">角色</th><th class="px-6 py-4 text-right">管理</th></tr>
+                                    <tr>
+                                        <th class="px-6 py-4">姓名</th>
+                                        <th class="px-6 py-4">EMAIL</th>
+                                        <th class="px-6 py-4">單位</th>
+                                        <th class="px-6 py-4">角色</th>
+                                        <th class="px-6 py-4 text-right">管理</th>
+                                    </tr>
                                 </thead>
                                 <tbody class="divide-y divide-gray-50">
-                                    <tr v-for="u in users" :key="u.id" class="hover:bg-gray-50/80">
-                                        <td class="px-6 py-4 font-bold text-gray-900">{{ u.name }}</td><td class="px-6 py-4 font-mono text-xs">{{ u.email }}</td><td class="px-6 py-4">{{ u.organization }}</td>
-                                        <td class="px-6 py-4"><span :class="roleBadgeClass(u.role)" class="px-2.5 py-1 rounded text-[10px] font-bold uppercase border">{{ translateRole(u.role) }}</span></td>
+                                    <tr v-for="u in users" :key="u.id" class="hover:bg-gray-50/80 group">
+                                        <td class="px-6 py-4 font-bold text-gray-900">{{ u.name }}</td>
+                                        <td class="px-6 py-4 font-mono text-xs text-gray-700">{{ u.email }}</td>
+                                        <td class="px-6 py-4">{{ u.organization }}</td>
+                                        <td class="px-6 py-4">
+                                            <span :class="roleBadgeClass(u.role)" class="px-2.5 py-1 rounded text-[10px] font-bold uppercase border">{{ translateRole(u.role) }}</span>
+                                        </td>
                                         <td class="px-6 py-4 text-right">
-                                             <button v-if="u.email !== 'kaichun.yang@gmail.com'" @click="deleteUser(u.id)" class="text-red-400 hover:text-red-600"><i class="fa-solid fa-trash"></i></button>
+                                             <button @click="openEditUserModal(u)" class="text-brand-blue hover:text-blue-700 mr-3 p-1 rounded hover:bg-blue-50 transition" title="編輯">
+                                                <i class="fa-solid fa-pen-to-square"></i>
+                                            </button>
+                                            <button v-if="u.email !== 'kaichun.yang@gmail.com'" @click="deleteUser(u.id)" class="text-gray-400 hover:text-red-600 p-1 rounded hover:bg-red-50 transition" title="刪除">
+                                                <i class="fa-solid fa-trash"></i>
+                                            </button>
                                         </td>
                                     </tr>
                                 </tbody>
@@ -269,7 +284,46 @@
             </div>
 
             <div v-if="showAddPatientModal" class="fixed inset-0 z-50 flex items-center justify-center bg-gray-900/60 backdrop-blur-sm p-4"><div class="bg-white rounded-2xl shadow-2xl w-full max-w-lg p-8"><h3 class="font-bold text-xl mb-4">新增個案</h3><form @submit.prevent="submitPatientManual" class="space-y-4"><input v-model="newPatient.name" placeholder="姓名" class="w-full border p-2 rounded"><input v-model="newPatient.nationalId" placeholder="身分證" class="w-full border p-2 rounded"><input v-model="newPatient.birthDate" type="date" class="w-full border p-2 rounded"><select v-model="newPatient.gender" class="w-full border p-2 rounded"><option value="male">男</option><option value="female">女</option></select><div class="flex justify-end space-x-2"><button type="button" @click="showAddPatientModal = false" class="px-4 py-2 bg-gray-200 rounded">取消</button><button type="submit" class="px-4 py-2 bg-blue-600 text-white rounded">儲存</button></div></form></div></div>
+            
             <div v-if="showAddUserModal" class="fixed inset-0 z-50 flex items-center justify-center bg-gray-900/60 backdrop-blur-sm"><div class="bg-white rounded-2xl shadow-2xl w-full max-w-md p-8 border border-gray-100"><h3 class="text-xl font-bold text-gray-900 mb-6 tracking-tight">建立新帳號</h3><form @submit.prevent="submitNewUser" class="space-y-4"><input v-model="newUser.name" required placeholder="姓名" class="w-full border border-gray-200 rounded-lg px-4 py-3"><input v-model="newUser.email" type="email" required placeholder="Email" class="w-full border border-gray-200 rounded-lg px-4 py-3"><div class="flex justify-end space-x-3 mt-8 pt-4"><button type="button" @click="showAddUserModal = false" class="px-4 py-2 text-xs font-bold text-gray-400">取消</button><button type="submit" class="px-6 py-2 bg-black text-white rounded-lg text-xs font-bold">建立</button></div></form></div></div>
+
+            <div v-if="showEditUserModal" class="fixed inset-0 z-50 flex items-center justify-center bg-gray-900/60 backdrop-blur-sm">
+                <div class="bg-white rounded-2xl shadow-2xl w-full max-w-md p-8 border border-gray-100 animate-fade-in-up">
+                    <h3 class="text-xl font-bold text-gray-900 mb-6 tracking-tight">編輯使用者權限</h3>
+                    <form @submit.prevent="submitEditUser" class="space-y-4">
+                        <div>
+                            <label class="block text-xs font-bold text-gray-500 mb-1">姓名</label>
+                            <input v-model="editingUser.name" required class="w-full border border-gray-200 rounded-lg px-4 py-2 text-gray-900 focus:ring-2 focus:ring-brand-blue outline-none">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-bold text-gray-500 mb-1">Email (Google 帳號)</label>
+                            <input v-model="editingUser.email" type="email" required class="w-full border border-gray-200 rounded-lg px-4 py-2 text-gray-900 focus:ring-2 focus:ring-brand-blue outline-none">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-bold text-gray-500 mb-1">所屬單位</label>
+                            <input v-model="editingUser.organization" required class="w-full border border-gray-200 rounded-lg px-4 py-2 text-gray-900 focus:ring-2 focus:ring-brand-blue outline-none">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-bold text-gray-500 mb-1">系統角色</label>
+                            <select v-model="editingUser.role" class="w-full border border-gray-200 rounded-lg px-4 py-2 bg-white focus:ring-2 focus:ring-brand-blue outline-none">
+                                <option value="admin">系統管理員 (Admin)</option>
+                                <option value="case_manager">個案管理師</option>
+                                <option value="physician">醫師</option>
+                                <option value="hospital_staff">一般院內人員</option>
+                            </select>
+                            <p class="text-[10px] text-gray-400 mt-1">* 設定為 Admin 可登入系統並管理權限</p>
+                        </div>
+                        
+                        <div class="flex justify-end space-x-3 mt-8 pt-4 border-t border-gray-50">
+                            <button type="button" @click="showEditUserModal = false" class="px-4 py-2 text-sm font-bold text-gray-500 hover:bg-gray-100 rounded-lg">取消</button>
+                            <button type="submit" class="px-6 py-2 bg-brand-blue text-white rounded-lg text-sm font-bold hover:bg-blue-700 shadow-lg hover:shadow-xl transition">
+                                <span v-if="loading"><i class="fa-solid fa-spinner fa-spin mr-1"></i> 儲存中</span>
+                                <span v-else>確認修改</span>
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
 
         </div>
     </div>
@@ -292,8 +346,16 @@
                     showDetailModal: false, selectedPatient: {}, patientObservations: [], latestMetrics: {}, bpChart: null, gluChart: null,
                     form: { timing: '起床空腹', sys: '', dia: '', hr: '', glu: '', note: '' },
 
-                    showAddPatientModal: false, showAddUserModal: false,
-                    newPatient: { name: '', nationalId: '', birthDate: '', gender: 'male' }, newUser: { name: '', email: '', role: 'hospital_staff', organization: '遠傳醫院' },
+                    showAddPatientModal: false, 
+                    
+                    // User Management Modals
+                    showAddUserModal: false, 
+                    showEditUserModal: false,
+                    
+                    newPatient: { name: '', nationalId: '', birthDate: '', gender: 'male' }, 
+                    newUser: { name: '', email: '', role: 'hospital_staff', organization: '遠傳醫院' },
+                    editingUser: { id: '', name: '', email: '', role: '', organization: '' }, // For editing
+
                     searchKeyword: ''
                 }
             },
@@ -355,10 +417,10 @@
                     return; 
                 }
 
-                // 2. 初始化使用者狀態 (關鍵修正：一定要設 isLoggedIn = true)
+                // 2. 初始化使用者狀態
                 try {
                     this.currentUser = JSON.parse(user);
-                    this.isLoggedIn = true; // <--- 關鍵修復點
+                    this.isLoggedIn = true; 
                 } catch(e) {
                     console.error("User data parse error", e);
                     window.location.href = 'login.html';
@@ -369,11 +431,11 @@
                 setTimeout(() => { 
                     this.startFadeOut = true; 
                     setTimeout(() => { this.showSplash = false; }, 800); 
-                }, 1500); // 縮短一點載入時間體驗較好
+                }, 1500); 
 
                 // 4. 載入資料
                 this.refreshData();
-                this.fetchData('users'); // 載入使用者名單供管理用
+                this.fetchData('users'); 
             },
             methods: {
                 completeLogin(user) { this.currentUser = user; this.isLoggedIn = true; this.refreshData(); this.loading = false; },
@@ -483,8 +545,52 @@
                 },
                 
                 async submitPatientManual() { const p = new URLSearchParams({ action: 'addPatient', ...this.newPatient }); await fetch(`${API_BASE_URL}?${p}`); this.showAddPatientModal = false; this.refreshData(); },
-                async submitNewUser() { const p = new URLSearchParams({ action: 'addUser', ...this.newUser }); await fetch(`${API_BASE_URL}?${p}`); this.showAddUserModal = false; this.fetchData('users'); },
-                async deleteUser(id) { if(confirm('確定要刪除此使用者嗎？')) { await fetch(`${API_BASE_URL}?action=deleteUser&id=${id}`); this.fetchData('users'); } },
+                
+                // --- User Management Methods ---
+                openAddUserModal() {
+                    this.newUser = { name: '', email: '', role: 'hospital_staff', organization: '遠傳醫院' };
+                    this.showAddUserModal = true;
+                },
+                async submitNewUser() { 
+                    const p = new URLSearchParams({ action: 'addUser', ...this.newUser }); 
+                    await fetch(`${API_BASE_URL}?${p}`); 
+                    this.showAddUserModal = false; 
+                    this.fetchData('users'); 
+                },
+                async deleteUser(id) { 
+                    if(confirm('確定要刪除此使用者嗎？')) { 
+                        await fetch(`${API_BASE_URL}?action=deleteUser&id=${id}`); 
+                        this.fetchData('users'); 
+                    } 
+                },
+                openEditUserModal(user) {
+                    this.editingUser = JSON.parse(JSON.stringify(user)); 
+                    this.showEditUserModal = true;
+                },
+                async submitEditUser() {
+                    this.loading = true;
+                    try {
+                        const params = new URLSearchParams({
+                            action: 'editUser',
+                            id: this.editingUser.id,
+                            name: this.editingUser.name,
+                            email: this.editingUser.email,
+                            role: this.editingUser.role,
+                            organization: this.editingUser.organization
+                        });
+                        const res = await fetch(`${API_BASE_URL}?${params.toString()}`);
+                        const json = await res.json();
+                        if (json.status === 'success') {
+                            alert('修改成功！');
+                            this.showEditUserModal = false;
+                            this.fetchData('users'); 
+                        } else {
+                            alert('修改失敗: ' + json.message);
+                        }
+                    } catch (e) { alert('連線錯誤'); console.error(e); } 
+                    finally { this.loading = false; }
+                },
+                // ---------------------------------
                 
                 navClass(id, color) { return this.currentTab === id ? `bg-gradient-to-r ${color} text-white shadow-lg` : 'text-gray-500 hover:bg-white'; },
                 getTabTitle(tab) { return { 'dashboard': '系統主控台', 'patients': '個案管理清單', 'observations': '生理監控', 'admin_users': '系統權限管理', 'referrals': '雙向轉診管理', 'health_edu': '衛教資源中心', 'reports': '數據報表中心', 'consultation': '線上照會區', 'knowledge_base': '共照知識庫' }[tab] || tab; },
