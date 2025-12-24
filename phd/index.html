@@ -21,7 +21,9 @@
     <script src="config.js"></script>
 
     <style>
+        /* [修正] 移除 overflow-hidden，改為 min-h-screen 並允許捲動 */
         body { font-family: 'Inter', sans-serif; background-color: #0f172a; }
+        
         /* 科技感玻璃卡片 */
         .tech-card { 
             background: rgba(255, 255, 255, 0.05); 
@@ -46,7 +48,7 @@
         }
     </style>
 </head>
-<body class="text-slate-200 min-h-screen flex flex-col items-center justify-center p-4 relative overflow-hidden">
+<body class="text-slate-200 min-h-screen flex flex-col items-center justify-center p-4 py-10 relative">
 
     <div class="fixed top-0 left-0 w-full h-full overflow-hidden -z-10 pointer-events-none">
         <div class="absolute top-[10%] left-[20%] w-[500px] h-[500px] bg-indigo-600/20 rounded-full blur-[120px] animate-pulse"></div>
@@ -202,9 +204,14 @@
                 </div>
             </form>
 
-            <button onclick="installPWA()" id="btn-install-app" class="w-full py-3.5 bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-500 hover:to-blue-500 text-white rounded-xl font-bold transition-all flex items-center justify-center gap-2 shadow-lg shadow-cyan-500/20 btn-pulse mt-6 border border-white/10 hidden">
+            <button onclick="installPWA()" id="btn-install-android" class="w-full py-3.5 bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-500 hover:to-blue-500 text-white rounded-xl font-bold transition-all flex items-center justify-center gap-2 shadow-lg shadow-cyan-500/20 btn-pulse mt-6 border border-white/10 hidden">
                 <i data-lucide="download" class="w-5 h-5"></i>
-                <span>安裝應用程式 (App)</span>
+                <span>💻 安裝應用程式</span>
+            </button>
+
+            <button onclick="showIosInstall()" id="btn-install-ios" class="w-full py-3.5 bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-500 hover:to-blue-500 text-white rounded-xl font-bold transition-all flex items-center justify-center gap-2 shadow-lg shadow-cyan-500/20 btn-pulse mt-6 border border-white/10 hidden">
+                <i data-lucide="share" class="w-5 h-5"></i>
+                <span>📲 安裝到 iPhone/iPad</span>
             </button>
         </div>
 
@@ -221,42 +228,61 @@
         lucide.createIcons();
         let userSession = null;
 
-        document.addEventListener('DOMContentLoaded', () => {
-            // 1. 初始化圖標
-            lucide.createIcons();
-            
-            // 2. 檢查登入狀態並更新 UI
-            checkLoginStatus();
-
-            // 3. 所有初始化完成後，手動關閉 Loading
-            // 由於 loading.js 自動注入並顯示，我們只需要負責關閉它
+        function stopInitialLoading() {
             if (typeof window.hideLoading === 'function') {
                 window.hideLoading();
+            } else {
+                const overlay = document.getElementById('global-loader-overlay');
+                if(overlay) overlay.style.display = 'none';
+                document.body.style.overflow = 'auto';
             }
-        });
+            checkLoginStatus();
+        }
 
+        if (document.readyState === 'complete') {
+            stopInitialLoading();
+        } else {
+            window.addEventListener('load', stopInitialLoading);
+        }
+
+        // PWA 安裝邏輯 (區分 iOS 與 Android/PC)
         let deferredPrompt;
-        const btnInstall = document.getElementById('btn-install-app');
+        const btnAndroid = document.getElementById('btn-install-android');
+        const btnIos = document.getElementById('btn-install-ios');
+        
+        // 1. 偵測 Android/Chrome (Native Prompt)
         window.addEventListener('beforeinstallprompt', (e) => {
             e.preventDefault();
             deferredPrompt = e;
-            if(btnInstall) btnInstall.classList.remove('hidden');
+            if(btnAndroid) btnAndroid.classList.remove('hidden');
         });
 
+        // 2. 偵測 iOS (Safari)
         const isIos = /iPhone|iPad|iPod/.test(navigator.userAgent) && !window.MSStream;
+        // 如果是 iOS 且還沒安裝 (standalone 模式外)
         const isStandalone = window.navigator.standalone || window.matchMedia('(display-mode: standalone)').matches;
-        if (isStandalone && btnInstall) { btnInstall.classList.add('hidden'); }
+        
+        if (isIos && !isStandalone && btnIos) {
+            btnIos.classList.remove('hidden');
+        }
 
+        if (isStandalone) { 
+            if(btnAndroid) btnAndroid.classList.add('hidden'); 
+            if(btnIos) btnIos.classList.add('hidden');
+        }
+
+        // Android/PC 安裝觸發
         function installPWA() {
-            if (isIos) {
-                document.getElementById('ios-install-modal').classList.remove('hidden');
-                document.getElementById('ios-install-modal').classList.add('flex');
-            } else if (deferredPrompt) {
+            if (deferredPrompt) {
                 deferredPrompt.prompt();
                 deferredPrompt.userChoice.then((choiceResult) => { deferredPrompt = null; });
-            } else {
-                alert("請使用瀏覽器選單中的「安裝應用程式」或「加入主畫面」。");
             }
+        }
+
+        // iOS 安裝觸發
+        function showIosInstall() {
+            document.getElementById('ios-install-modal').classList.remove('hidden');
+            document.getElementById('ios-install-modal').classList.add('flex');
         }
 
         function closeIosModal() {
