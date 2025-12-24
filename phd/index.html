@@ -202,7 +202,7 @@
                 </div>
             </form>
 
-            <button onclick="installPWA()" id="btn-install-app" class="w-full py-3.5 bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-500 hover:to-blue-500 text-white rounded-xl font-bold transition-all flex items-center justify-center gap-2 shadow-lg shadow-cyan-500/20 btn-pulse mt-6 border border-white/10">
+            <button onclick="installPWA()" id="btn-install-app" class="w-full py-3.5 bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-500 hover:to-blue-500 text-white rounded-xl font-bold transition-all flex items-center justify-center gap-2 shadow-lg shadow-cyan-500/20 btn-pulse mt-6 border border-white/10 hidden">
                 <i data-lucide="download" class="w-5 h-5"></i>
                 <span>安裝應用程式 (App)</span>
             </button>
@@ -221,33 +221,31 @@
         lucide.createIcons();
         let userSession = null;
 
-        function stopInitialLoading() {
+        document.addEventListener('DOMContentLoaded', () => {
+            // 1. 初始化圖標
+            lucide.createIcons();
+            
+            // 2. 檢查登入狀態並更新 UI
+            checkLoginStatus();
+
+            // 3. 所有初始化完成後，手動關閉 Loading
+            // 由於 loading.js 自動注入並顯示，我們只需要負責關閉它
             if (typeof window.hideLoading === 'function') {
                 window.hideLoading();
-            } else {
-                const overlay = document.getElementById('global-loader-overlay');
-                if(overlay) overlay.style.display = 'none';
-                document.body.style.overflow = 'auto';
             }
-            checkLoginStatus();
-        }
-
-        if (document.readyState === 'complete') {
-            stopInitialLoading();
-        } else {
-            window.addEventListener('load', stopInitialLoading);
-        }
+        });
 
         let deferredPrompt;
         const btnInstall = document.getElementById('btn-install-app');
         window.addEventListener('beforeinstallprompt', (e) => {
             e.preventDefault();
             deferredPrompt = e;
+            if(btnInstall) btnInstall.classList.remove('hidden');
         });
 
         const isIos = /iPhone|iPad|iPod/.test(navigator.userAgent) && !window.MSStream;
         const isStandalone = window.navigator.standalone || window.matchMedia('(display-mode: standalone)').matches;
-        if (isStandalone) { btnInstall.classList.add('hidden'); }
+        if (isStandalone && btnInstall) { btnInstall.classList.add('hidden'); }
 
         function installPWA() {
             if (isIos) {
