@@ -48,6 +48,33 @@
 </head>
 <body class="text-slate-800 h-screen flex overflow-hidden relative">
 
+    <div id="ios-install-modal" class="fixed inset-0 bg-black/70 z-50 hidden flex-col items-center justify-end pb-10 backdrop-blur-md animate-fade-in" onclick="closeIosModal()">
+        <div class="bg-white w-[90%] max-w-md rounded-3xl p-6 relative shadow-2xl" onclick="event.stopPropagation()">
+            <button onclick="closeIosModal()" class="absolute top-4 right-4 text-slate-400 hover:text-slate-600"><i data-lucide="x" class="w-6 h-6"></i></button>
+            <div class="text-center">
+                <div class="w-14 h-14 bg-indigo-50 text-indigo-600 rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-inner">
+                    <i data-lucide="share" class="w-7 h-7"></i>
+                </div>
+                <h3 class="text-xl font-bold text-slate-800 mb-2">安裝應用程式</h3>
+                <p class="text-sm text-slate-500 mb-6">為獲得最佳體驗，請將此網頁加入主畫面：</p>
+                <div class="space-y-3 text-left text-sm text-slate-600 bg-slate-50 p-5 rounded-2xl border border-slate-100">
+                    <div class="flex items-center gap-3">
+                        <span class="w-6 h-6 rounded-full bg-white border border-slate-200 flex items-center justify-center font-bold text-xs text-indigo-600 shadow-sm">1</span>
+                        <span>點擊瀏覽器工具列的 <strong>分享</strong> <i data-lucide="share" class="w-4 h-4 inline align-text-bottom"></i></span>
+                    </div>
+                    <div class="flex items-center gap-3">
+                        <span class="w-6 h-6 rounded-full bg-white border border-slate-200 flex items-center justify-center font-bold text-xs text-indigo-600 shadow-sm">2</span>
+                        <span>往下滑，選擇 <strong>加入主畫面</strong> <i data-lucide="plus-square" class="w-4 h-4 inline align-text-bottom"></i></span>
+                    </div>
+                    <div class="flex items-center gap-3">
+                        <span class="w-6 h-6 rounded-full bg-white border border-slate-200 flex items-center justify-center font-bold text-xs text-indigo-600 shadow-sm">3</span>
+                        <span>點擊右上角的 <strong>加入</strong> 即可</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <div id="aiAnalysisModal" class="fixed inset-0 bg-black/60 z-50 hidden flex-col justify-center items-center p-4 backdrop-blur-sm animate-fade-in" onclick="closeAiModal()">
         <div class="bg-white w-full max-w-2xl rounded-2xl shadow-2xl flex flex-col max-h-[85vh] overflow-hidden relative" onclick="event.stopPropagation()">
             <div class="p-5 border-b border-slate-100 flex justify-between items-center bg-gradient-to-r from-indigo-50 to-white">
@@ -95,6 +122,10 @@
         </div>
 
         <div class="mt-auto p-4 border-t border-slate-100 bg-slate-50">
+            <button onclick="installPWA()" id="btn-install-sidebar" class="w-full py-2.5 px-4 bg-slate-800 text-white hover:bg-slate-900 rounded-lg text-sm font-bold transition flex items-center justify-center gap-2 mb-2 shadow-md">
+                <i data-lucide="download" class="w-4 h-4"></i> 安裝 App
+            </button>
+
             <button onclick="getAIAnalysis()" class="w-full py-3 px-4 btn-gemini rounded-xl text-sm font-bold transition flex items-center justify-center gap-2 mb-3 shadow-md group"><i data-lucide="sparkles" class="w-4 h-4 group-hover:scale-110 transition-transform"></i>AI 分析 (Gemini)</button>
             <a href="accountsetting.html" class="w-full py-2.5 px-4 bg-white border border-slate-200 hover:bg-slate-100 text-slate-500 hover:text-slate-800 rounded-lg text-sm font-medium transition flex items-center justify-center gap-2 mb-2 shadow-sm"><i data-lucide="link" class="w-4 h-4"></i> 帳號綁定</a>
             <a href="setting.html" class="w-full py-2.5 px-4 bg-white border border-slate-200 hover:bg-slate-100 text-slate-500 hover:text-slate-800 rounded-lg text-sm font-medium transition flex items-center justify-center gap-2 mb-2 shadow-sm group"><i data-lucide="settings-2" class="w-4 h-4 group-hover:rotate-90 transition-transform duration-500"></i> 管理者後台</a>
@@ -229,6 +260,10 @@
         let currentAudio = null;
         let isSpeaking = false;
 
+        // PWA 安裝變數
+        let deferredPrompt;
+        const btnInstall = document.getElementById('btn-install-sidebar');
+
         document.addEventListener('DOMContentLoaded', () => {
             lucide.createIcons();
             
@@ -238,8 +273,35 @@
                 loadingState.innerHTML = window.getLoaderHTML();
             }
 
+            // PWA 安裝邏輯
+            window.addEventListener('beforeinstallprompt', (e) => {
+                e.preventDefault();
+                deferredPrompt = e;
+            });
+            const isStandalone = window.navigator.standalone || window.matchMedia('(display-mode: standalone)').matches;
+            if (isStandalone && btnInstall) { btnInstall.classList.add('hidden'); }
+
             initDashboard();
         });
+
+        const isIos = /iPhone|iPad|iPod/.test(navigator.userAgent) && !window.MSStream;
+
+        function installPWA() {
+            if (isIos) {
+                document.getElementById('ios-install-modal').classList.remove('hidden');
+                document.getElementById('ios-install-modal').classList.add('flex');
+            } else if (deferredPrompt) {
+                deferredPrompt.prompt();
+                deferredPrompt.userChoice.then((choiceResult) => { deferredPrompt = null; });
+            } else {
+                alert("請使用瀏覽器選單中的「安裝應用程式」或「加入主畫面」。");
+            }
+        }
+
+        function closeIosModal() {
+            document.getElementById('ios-install-modal').classList.add('hidden');
+            document.getElementById('ios-install-modal').classList.remove('flex');
+        }
 
         function updateSidebarDisplayName(name, pictureUrl) {
             document.getElementById('sidebar-user-name').innerText = name || "Guest";
@@ -323,7 +385,6 @@
                     selectUser(users[0].uid, users[0].name);
                 }
 
-                // [關鍵] 資料載入完成，關閉開場動畫
                 if (typeof window.hideLoading === 'function') {
                     window.hideLoading();
                 }
@@ -332,7 +393,6 @@
                 console.error("Init Error:", error);
                 document.getElementById('userList').innerHTML = '<div class="p-4 text-center text-rose-500 text-sm">載入使用者失敗</div>';
                 
-                // 發生錯誤也要關閉動畫
                 if (typeof window.hideLoading === 'function') {
                     window.hideLoading();
                 }
@@ -514,10 +574,12 @@
             renderCharts(data); 
         }
 
+        // [修改] renderCharts: 增加時間顯示 (HH:mm)
         function renderCharts(data) { 
             const labels = data.map(d => { 
-                const date = new Date(d.timestamp); 
-                return `${date.getMonth()+1}/${date.getDate()}`; 
+                const date = new Date(d.timestamp);
+                const timeStr = `${String(date.getHours()).padStart(2, '0')}:${String(date.getMinutes()).padStart(2, '0')}`;
+                return `${date.getMonth()+1}/${date.getDate()} ${timeStr}`; 
             }); 
             
             const sbpData = data.map(d => d.sbp); 
@@ -607,11 +669,7 @@
             } 
         }
 
-        // ==========================================
-        // 修改：透過後端 Relay 呼叫 Google Cloud TTS
-        // ==========================================
         async function toggleSpeech() {
-            // 如果目前正在播放，則停止
             if (currentAudio && !currentAudio.paused) {
                 currentAudio.pause();
                 currentAudio.currentTime = 0;
@@ -625,11 +683,9 @@
             
             if (!contentText) return;
 
-            updateTTSButton(true, true); // 顯示載入中
+            updateTTSButton(true, true);
 
             try {
-                // 改為呼叫後端 API (API_URL)
-                // action: 'getTTS'
                 const response = await fetch(API_URL, {
                     method: 'POST',
                     body: JSON.stringify({
@@ -662,7 +718,7 @@
 
                     currentAudio.play();
                     isSpeaking = true;
-                    updateTTSButton(true, false); // 顯示停止按鈕
+                    updateTTSButton(true, false);
                 }
 
             } catch (error) {
@@ -677,17 +733,14 @@
             const btn = document.getElementById('btn-tts');
             const btnText = document.getElementById('btn-tts-text');
             
-            // 1. 移除舊的圖示
             const existingIcon = btn.querySelector('svg') || btn.querySelector('i');
             if (existingIcon) {
                 existingIcon.remove();
             }
 
-            // 2. 建立新的圖示標籤
             const newIcon = document.createElement('i');
             newIcon.classList.add('w-5', 'h-5', 'group-hover:scale-110', 'transition-transform');
             
-            // 3. 設定狀態與樣式
             if (isLoading) {
                 btnText.innerText = "生成語音中...";
                 newIcon.setAttribute('data-lucide', 'loader-2');
@@ -709,10 +762,7 @@
                 btn.classList.add('hover:bg-indigo-50', 'text-indigo-600', 'border-indigo-100');
             }
             
-            // 4. 將新圖示插入到文字前面
             btn.insertBefore(newIcon, btnText);
-            
-            // 5. 重新渲染圖示
             lucide.createIcons();
         }
 
