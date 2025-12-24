@@ -11,7 +11,7 @@
     }
 </script>
 
-<script src="https://cdnjs.cloudflare.com/ajax/libs/dom-to-image/2.6.0/dom-to-image.min.js"></script>
+<script src="https://html2canvas.hertzen.com/dist/html2canvas.min.js"></script>
 
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -466,16 +466,18 @@ function toggleRedBorder() {
     borderBtnText.textContent = mainCanvas.classList.contains("hide-selection") ? "顯示選取框" : "隱藏選取框";
 }
 
+// 修改 2: 重寫 saveAsJpeg 函數，使用 html2canvas 邏輯
 function saveAsJpeg() {
     const node = document.getElementById("main-canvas");
     const wrapper = document.getElementById("scale-wrapper");
     const originalTransform = wrapper.style.transform;
 
+    // 暫時移除縮放以獲得原始解析度
     wrapper.style.transition = "none";
     wrapper.style.transform = "scale(1)";
     wrapper.style.transformOrigin = "top left";
 
-    // 強制移除所有可能導致灰邊的樣式
+    // 強制移除所有可能導致灰邊的樣式 (與原本邏輯保持一致)
     const cards = node.querySelectorAll('.slot-card');
     cards.forEach(card => {
         card.classList.remove('active-slot');
@@ -490,22 +492,20 @@ function saveAsJpeg() {
         }
     });
 
-    domtoimage.toPng(node, {
+    // 使用 html2canvas 替代 dom-to-image
+    html2canvas(node, {
         width: 2500,
         height: 1686,
-        bgcolor: "#f4f6f8", 
-        style: {
-            transform: "none",
-            transformOrigin: "top left",
-            margin: "0"
-        }
-    })
-    .then(function (dataUrl) {
+        scale: 1, // 已經是高解析度尺寸，scale 設為 1 即可
+        useCORS: true, // 關鍵修正：允許跨域讀取圖片/字型
+        backgroundColor: "#f4f6f8" // 防止透明背景變黑
+    }).then(function (canvas) {
         const link = document.createElement("a");
         link.download = "hospital-menu-final.png";
-        link.href = dataUrl;
+        link.href = canvas.toDataURL("image/png");
         link.click();
 
+        // 恢復縮放
         wrapper.style.transform = originalTransform;
         wrapper.style.transformOrigin = "center center";
         setTimeout(() => { 
@@ -513,8 +513,7 @@ function saveAsJpeg() {
             renderCanvas();
         }, 50);
         renderCanvas();
-    })
-    .catch(function (error) {
+    }).catch(function (error) {
         console.error("截圖失敗:", error);
         alert("截圖發生錯誤，請稍後再試");
         wrapper.style.transform = originalTransform;
