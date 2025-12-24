@@ -6,7 +6,7 @@
  */
 
 // Google Apps Script 部署網址 (後端 API)
-const API_BASE_URL = 'https://script.google.com/macros/s/AKfycbyi5RlyWCBZvAs-FHaI_TtfnYfEY3HalXQgrDLfD6wfuHE89Hcx4aF_Yrje7DnSAog3/exec';
+const API_BASE_URL = 'https://script.google.com/macros/s/AKfycbxhUbyQgl19S_ih2dtqZ5g0c3wWJJ1hCBZ2p9ACmI_OAv8qZcJMpoKErhLLCkfy26Q6/exec';
 
 // Google OAuth 2.0 用戶端 ID (用於管理員登入驗證)
 const GOOGLE_CLIENT_ID = '1087860144140-upfitccfmtj5ibsg8tk9o0gu2efgt819.apps.googleusercontent.com';
