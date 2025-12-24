@@ -16,87 +16,62 @@
     
     <script src="https://accounts.google.com/gsi/client" async defer></script>
     
-    <script src="loading.js"></script>
-    
     <script src="config.js"></script>
 
     <style>
-        /* 1. 白底背景設定 */
-        body { font-family: 'Inter', sans-serif; background-color: #f8fafc; color: #1e293b; }
+        /* 1. 極簡白底風格設定 */
+        body { 
+            font-family: 'Inter', sans-serif; 
+            background-color: #f8fafc; /* 淺灰白背景 */
+            color: #1e293b; /* 深色文字 */
+        }
         
-        /* 2. 動態霓虹邊框卡片 (白底版) */
-        .tech-card { 
-            position: relative;
-            background: rgba(255, 255, 255, 0.85); /* 不透明度高的白色背景 */
-            backdrop-filter: blur(20px); 
-            -webkit-backdrop-filter: blur(20px);
-            border-radius: 2rem;
-            /* 邊框透過偽元素實現，這裡設透明 */
-            border: 2px solid transparent;
-            background-clip: padding-box; 
-            box-shadow: 0 10px 40px -10px rgba(0, 0, 0, 0.1);
+        /* 2. 簡約卡片 (無霓虹、無玻璃模糊) */
+        .clean-card { 
+            background-color: #ffffff;
+            border-radius: 1.5rem;
+            border: 1px solid #e2e8f0; /* 淺灰邊框 */
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
             overflow: hidden;
         }
 
-        /* 實現動態流動邊框 */
-        .tech-card::before {
-            content: '';
-            position: absolute;
-            top: 0; right: 0; bottom: 0; left: 0;
-            z-index: -1;
-            margin: -2px; /* 延伸出卡片範圍形成邊框 */
-            border-radius: inherit; 
-            /* 亮色系的流動漸層 */
-            background: linear-gradient(60deg, #3b82f6, #8b5cf6, #ec4899, #3b82f6, #06b6d4);
-            background-size: 300% 300%;
-            animation: border-gradient-anim 4s ease infinite;
-        }
-
-        @keyframes border-gradient-anim {
-            0% { background-position: 0% 50%; }
-            50% { background-position: 100% 50%; }
-            100% { background-position: 0% 50%; }
-        }
-
-        .animate-fade-in { animation: fadeIn 0.6s cubic-bezier(0.16, 1, 0.3, 1); }
-        @keyframes fadeIn { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
-        
-        /* 按鈕脈衝特效 */
-        .btn-pulse { position: relative; overflow: hidden; }
-        .btn-pulse::after {
-            content: ''; position: absolute; top: 0; left: 0; width: 100%; height: 100%;
-            background: inherit; border-radius: inherit; z-index: -1;
-            animation: neonPulse 2s infinite;
-        }
-        @keyframes neonPulse { 
-            0% { box-shadow: 0 0 0 0 rgba(59, 130, 246, 0.4); } 
-            70% { box-shadow: 0 0 0 10px rgba(59, 130, 246, 0); } 
-            100% { box-shadow: 0 0 0 0 rgba(59, 130, 246, 0); } 
-        }
-
-        /* 輸入框聚焦樣式 (白底適配) */
-        .tech-input:focus, .tech-input-group input:focus {
-            border-color: #6366f1;
+        /* 輸入框樣式 */
+        .clean-input {
             background-color: #ffffff;
-            box-shadow: 0 0 0 4px rgba(99, 102, 241, 0.1);
+            border: 1px solid #cbd5e1;
+            color: #334155;
+        }
+        .clean-input:focus {
+            border-color: #6366f1;
+            outline: none;
+            box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1); /* 聚焦時淡淡的藍暈 */
+        }
+        
+        /* 選項按鈕樣式 */
+        .radio-label {
+            background-color: #f1f5f9;
+            color: #64748b;
+            border: 1px solid transparent;
+        }
+        input:checked + .radio-label {
+            background-color: #ffffff;
+            border-color: #e2e8f0;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+            color: #4f46e5;
+            font-weight: 600;
         }
     </style>
 </head>
 <body class="min-h-screen flex flex-col items-center justify-center p-4 py-10 relative">
 
-    <div class="fixed top-0 left-0 w-full h-full overflow-hidden -z-10 pointer-events-none">
-        <div class="absolute top-[5%] left-[10%] w-[600px] h-[600px] bg-blue-200/40 rounded-full blur-[100px] animate-pulse"></div>
-        <div class="absolute bottom-[5%] right-[5%] w-[500px] h-[500px] bg-purple-200/40 rounded-full blur-[100px] animate-pulse" style="animation-delay: 2s;"></div>
-    </div>
-
-    <div id="ios-install-modal" class="fixed inset-0 bg-black/50 z-50 hidden flex-col items-center justify-end pb-10 backdrop-blur-sm animate-fade-in" onclick="closeIosModal()">
-        <div class="bg-white w-[90%] max-w-md rounded-3xl p-6 relative shadow-2xl border border-slate-100" onclick="event.stopPropagation()">
+    <div id="ios-install-modal" class="fixed inset-0 bg-black/50 z-50 hidden flex-col items-center justify-end pb-10 animate-fade-in" onclick="closeIosModal()">
+        <div class="bg-white w-[90%] max-w-md rounded-3xl p-6 relative shadow-2xl" onclick="event.stopPropagation()">
             <button onclick="closeIosModal()" class="absolute top-4 right-4 text-slate-400 hover:text-slate-600"><i data-lucide="x" class="w-6 h-6"></i></button>
             <div class="text-center">
-                <div class="w-14 h-14 bg-indigo-50 text-indigo-600 rounded-2xl flex items-center justify-center mx-auto mb-4 border border-indigo-100 shadow-sm">
+                <div class="w-14 h-14 bg-indigo-50 text-indigo-600 rounded-2xl flex items-center justify-center mx-auto mb-4 border border-indigo-100">
                     <i data-lucide="share" class="w-7 h-7"></i>
                 </div>
-                <h3 class="text-xl font-bold text-slate-800 mb-2 tracking-wide">安裝應用程式</h3>
+                <h3 class="text-xl font-bold text-slate-800 mb-2">安裝應用程式</h3>
                 <p class="text-sm text-slate-500 mb-6">為獲得最佳體驗，請將此網頁加入主畫面：</p>
                 <div class="space-y-3 text-left text-sm text-slate-600 bg-slate-50 p-5 rounded-2xl border border-slate-200">
                     <div class="flex items-center gap-3">
@@ -116,20 +91,20 @@
         </div>
     </div>
 
-    <div class="tech-card w-full max-w-md p-8 animate-fade-in transition-all duration-300 my-8" id="main-card">
+    <div class="clean-card w-full max-w-md p-8 my-8" id="main-card">
         
         <div class="text-center mb-8">
             <div class="flex justify-center mb-6">
-                <div class="w-24 h-24 bg-white rounded-3xl flex items-center justify-center shadow-lg overflow-hidden p-3 border border-slate-100 relative group">
-                    <img src="image/yanghealth.png" alt="YangHealth Logo" class="w-full h-full object-contain relative z-10">
+                <div class="w-24 h-24 bg-white rounded-3xl flex items-center justify-center shadow-sm overflow-hidden p-4 border border-slate-100">
+                    <img src="image/yanghealth.png" alt="YangHealth Logo" class="w-full h-full object-contain">
                 </div>
             </div>
             <h1 class="text-3xl font-bold text-slate-800 tracking-tight">YangHome Health</h1>
-            <p class="text-indigo-500 text-xs font-bold mt-2 tracking-[0.2em] uppercase">AI-Powered Health Monitor</p>
+            <p class="text-slate-400 text-xs font-bold mt-2 tracking-widest uppercase">AI-Powered Health Monitor</p>
         </div>
 
         <div id="login-section" class="space-y-6">
-            <div class="flex justify-center transform hover:scale-[1.02] transition-transform duration-300">
+            <div class="flex justify-center">
                 <div id="g_id_onload"
                      data-client_id="142808541856-1sfda1hcfk12p1r0a5fbmldugb1f99vn.apps.googleusercontent.com" 
                      data-callback="handleCredentialResponse"
@@ -147,53 +122,53 @@
         </div>
 
         <div id="user-section" class="hidden">
-            <div class="flex justify-between items-center mb-6 bg-slate-50 p-4 rounded-2xl border border-slate-200">
+            <div class="flex justify-between items-center mb-6 bg-slate-50 p-4 rounded-2xl border border-slate-100">
                 <div>
-                    <p class="text-[10px] uppercase tracking-wider text-indigo-500 font-bold mb-0.5">Current User</p>
-                    <h2 class="text-lg font-bold text-slate-800 tracking-wide" id="display-name">User</h2>
+                    <p class="text-[10px] uppercase tracking-wider text-slate-400 font-bold mb-0.5">Current User</p>
+                    <h2 class="text-lg font-bold text-slate-800" id="display-name">User</h2>
                     <p class="text-xs text-slate-500 truncate max-w-[150px]" id="display-email">...</p>
                 </div>
-                <button onclick="logout()" class="p-2.5 bg-white text-rose-500 hover:bg-rose-50 rounded-xl transition-all shadow-sm border border-slate-200 hover:border-rose-200 group" title="登出">
-                    <i data-lucide="log-out" class="w-5 h-5 group-hover:scale-110 transition-transform"></i>
+                <button onclick="logout()" class="p-2.5 bg-white text-rose-500 hover:bg-rose-50 rounded-xl transition-all shadow-sm border border-slate-200" title="登出">
+                    <i data-lucide="log-out" class="w-5 h-5"></i>
                 </button>
             </div>
 
             <form id="quickAddForm" onsubmit="handleQuickSubmit(event)" class="space-y-5">
-                <div class="grid grid-cols-2 gap-3 p-1.5 bg-slate-100 rounded-2xl border border-slate-200">
-                    <label class="cursor-pointer text-center relative">
+                <div class="grid grid-cols-2 gap-3 p-1 bg-slate-100 rounded-2xl">
+                    <label class="cursor-pointer text-center relative block">
                         <input type="radio" name="dataType" value="BloodPressure" class="peer hidden" checked onchange="toggleFields()">
-                        <div class="py-2.5 rounded-xl text-sm font-bold text-slate-500 peer-checked:bg-white peer-checked:text-indigo-600 peer-checked:shadow-sm peer-checked:border peer-checked:border-slate-200 transition-all z-10 relative">
+                        <div class="radio-label py-2.5 rounded-xl text-sm transition-all">
                             血壓記錄
                         </div>
                     </label>
-                    <label class="cursor-pointer text-center relative">
+                    <label class="cursor-pointer text-center relative block">
                         <input type="radio" name="dataType" value="BloodSugar" class="peer hidden" onchange="toggleFields()">
-                        <div class="py-2.5 rounded-xl text-sm font-bold text-slate-500 peer-checked:bg-white peer-checked:text-pink-600 peer-checked:shadow-sm peer-checked:border peer-checked:border-slate-200 transition-all z-10 relative">
+                        <div class="radio-label py-2.5 rounded-xl text-sm transition-all">
                             血糖記錄
                         </div>
                     </label>
                 </div>
 
-                <div id="field-bp" class="grid grid-cols-2 gap-4 animate-fade-in">
+                <div id="field-bp" class="grid grid-cols-2 gap-4">
                     <div class="col-span-1">
                         <label class="block text-xs font-bold text-slate-500 mb-1.5 ml-1">收縮壓 (SYS)</label>
-                        <input type="number" id="sbp" class="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl tech-input text-slate-800 outline-none transition text-center font-mono text-xl font-bold placeholder-slate-400" placeholder="120">
+                        <input type="number" id="sbp" class="w-full px-4 py-3 clean-input rounded-xl text-center font-mono text-xl font-bold placeholder-slate-300" placeholder="120">
                     </div>
                     <div class="col-span-1">
                         <label class="block text-xs font-bold text-slate-500 mb-1.5 ml-1">舒張壓 (DIA)</label>
-                        <input type="number" id="dbp" class="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl tech-input text-slate-800 outline-none transition text-center font-mono text-xl font-bold placeholder-slate-400" placeholder="80">
+                        <input type="number" id="dbp" class="w-full px-4 py-3 clean-input rounded-xl text-center font-mono text-xl font-bold placeholder-slate-300" placeholder="80">
                     </div>
                     <div class="col-span-2">
                         <label class="block text-xs font-bold text-slate-500 mb-1.5 ml-1">心率 (BPM)</label>
-                        <input type="number" id="hr" class="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl tech-input text-slate-800 outline-none transition text-center font-mono text-xl font-bold placeholder-slate-400" placeholder="72">
+                        <input type="number" id="hr" class="w-full px-4 py-3 clean-input rounded-xl text-center font-mono text-xl font-bold placeholder-slate-300" placeholder="72">
                     </div>
                 </div>
 
-                <div id="field-bs" class="hidden space-y-4 animate-fade-in">
-                    <div class="tech-input-group">
+                <div id="field-bs" class="hidden space-y-4">
+                    <div>
                         <label class="block text-xs font-bold text-slate-500 mb-1.5 ml-1">血糖數值 (mg/dL)</label>
                         <div class="relative">
-                            <input type="number" id="bs" class="w-full pl-6 pr-12 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:border-pink-500 focus:ring-2 focus:ring-pink-500/20 outline-none transition font-mono text-xl font-bold text-slate-800 placeholder-slate-400" placeholder="100">
+                            <input type="number" id="bs" class="w-full pl-6 pr-12 py-3 clean-input rounded-xl font-mono text-xl font-bold placeholder-slate-300" placeholder="100">
                             <div class="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 text-xs font-bold">mg/dL</div>
                         </div>
                     </div>
@@ -202,19 +177,19 @@
                         <div class="grid grid-cols-2 gap-2">
                             <label class="cursor-pointer">
                                 <input type="radio" name="bsTime" value="fasting" class="peer hidden" checked>
-                                <div class="py-2.5 text-center text-xs font-medium border border-slate-200 rounded-xl bg-slate-50 text-slate-500 peer-checked:bg-pink-50 peer-checked:border-pink-200 peer-checked:text-pink-600 transition hover:bg-slate-100">飯前</div>
+                                <div class="py-2.5 text-center text-xs font-medium border border-slate-200 rounded-xl bg-white text-slate-500 peer-checked:bg-indigo-50 peer-checked:border-indigo-200 peer-checked:text-indigo-600 transition hover:bg-slate-50">飯前</div>
                             </label>
                             <label class="cursor-pointer">
                                 <input type="radio" name="bsTime" value="postprandial" class="peer hidden">
-                                <div class="py-2.5 text-center text-xs font-medium border border-slate-200 rounded-xl bg-slate-50 text-slate-500 peer-checked:bg-pink-50 peer-checked:border-pink-200 peer-checked:text-pink-600 transition hover:bg-slate-100">飯後</div>
+                                <div class="py-2.5 text-center text-xs font-medium border border-slate-200 rounded-xl bg-white text-slate-500 peer-checked:bg-indigo-50 peer-checked:border-indigo-200 peer-checked:text-indigo-600 transition hover:bg-slate-50">飯後</div>
                             </label>
                             <label class="cursor-pointer">
                                 <input type="radio" name="bsTime" value="wakeup" class="peer hidden">
-                                <div class="py-2.5 text-center text-xs font-medium border border-slate-200 rounded-xl bg-slate-50 text-slate-500 peer-checked:bg-pink-50 peer-checked:border-pink-200 peer-checked:text-pink-600 transition hover:bg-slate-100">起床</div>
+                                <div class="py-2.5 text-center text-xs font-medium border border-slate-200 rounded-xl bg-white text-slate-500 peer-checked:bg-indigo-50 peer-checked:border-indigo-200 peer-checked:text-indigo-600 transition hover:bg-slate-50">起床</div>
                             </label>
                             <label class="cursor-pointer">
                                 <input type="radio" name="bsTime" value="bedtime" class="peer hidden">
-                                <div class="py-2.5 text-center text-xs font-medium border border-slate-200 rounded-xl bg-slate-50 text-slate-500 peer-checked:bg-pink-50 peer-checked:border-pink-200 peer-checked:text-pink-600 transition hover:bg-slate-100">睡前</div>
+                                <div class="py-2.5 text-center text-xs font-medium border border-slate-200 rounded-xl bg-white text-slate-500 peer-checked:bg-indigo-50 peer-checked:border-indigo-200 peer-checked:text-indigo-600 transition hover:bg-slate-50">睡前</div>
                             </label>
                         </div>
                     </div>
@@ -222,27 +197,27 @@
 
                 <div>
                     <label class="block text-xs font-bold text-slate-500 mb-1.5 ml-1">備註 (Note)</label>
-                    <input type="text" id="note" class="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl tech-input text-slate-800 outline-none transition text-sm placeholder-slate-400" placeholder="例: 剛運動完...">
+                    <input type="text" id="note" class="w-full px-4 py-3 clean-input rounded-xl text-sm placeholder-slate-300" placeholder="例: 剛運動完...">
                 </div>
 
                 <div class="space-y-3 pt-4 border-t border-slate-100">
                     
-                    <button type="button" onclick="installPWA()" id="btn-install-android" class="w-full py-3.5 bg-gradient-to-r from-sky-500 to-blue-600 hover:from-sky-600 hover:to-blue-700 text-white rounded-xl font-bold transition-all flex items-center justify-center gap-2 shadow-lg shadow-blue-500/20 btn-pulse hidden mb-3 transform hover:scale-[1.02]">
+                    <button type="button" onclick="installPWA()" id="btn-install-android" class="w-full py-3.5 bg-sky-500 hover:bg-sky-600 text-white rounded-xl font-bold transition-all flex items-center justify-center gap-2 shadow-md hover:shadow-lg hidden mb-3">
                         <i data-lucide="download" class="w-5 h-5"></i>
-                        <span>💻 安裝應用程式</span>
+                        <span>安裝應用程式</span>
                     </button>
 
-                    <button type="button" onclick="showIosInstall()" id="btn-install-ios" class="w-full py-3.5 bg-gradient-to-r from-sky-500 to-blue-600 hover:from-sky-600 hover:to-blue-700 text-white rounded-xl font-bold transition-all flex items-center justify-center gap-2 shadow-lg shadow-blue-500/20 btn-pulse hidden mb-3 transform hover:scale-[1.02]">
+                    <button type="button" onclick="showIosInstall()" id="btn-install-ios" class="w-full py-3.5 bg-sky-500 hover:bg-sky-600 text-white rounded-xl font-bold transition-all flex items-center justify-center gap-2 shadow-md hover:shadow-lg hidden mb-3">
                         <i data-lucide="share" class="w-5 h-5"></i>
-                        <span>📲 安裝到 iPhone/iPad</span>
+                        <span>安裝到 iPhone/iPad</span>
                     </button>
 
-                    <button type="submit" id="btn-submit" class="w-full py-4 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl font-bold shadow-lg shadow-indigo-600/30 transition-all active:scale-95 flex items-center justify-center gap-2">
+                    <button type="submit" id="btn-submit" class="w-full py-3.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl font-bold shadow-md hover:shadow-lg transition-all active:scale-95 flex items-center justify-center gap-2">
                         <span>快速記錄</span>
                         <i data-lucide="send" class="w-4 h-4"></i>
                     </button>
                     
-                    <a href="dashboard.html" class="w-full py-3.5 bg-white border border-slate-200 hover:bg-slate-50 text-slate-600 rounded-xl font-bold text-sm transition-all flex items-center justify-center gap-2 active:scale-95 shadow-sm">
+                    <a href="dashboard.html" class="w-full py-3.5 bg-white border border-slate-200 hover:bg-slate-50 text-slate-600 rounded-xl font-bold text-sm transition-all flex items-center justify-center gap-2 active:scale-95 shadow-sm hover:shadow">
                         <i data-lucide="bar-chart-2" class="w-4 h-4 text-indigo-500"></i>
                         <span>查看生理量測資訊</span>
                     </a>
@@ -250,49 +225,32 @@
             </form>
         </div>
 
-        <div class="mt-8 pt-6 border-t border-slate-200 text-[10px] uppercase tracking-widest text-center text-slate-400">
+        <div class="mt-8 pt-6 border-t border-slate-100 text-[10px] uppercase tracking-widest text-center text-slate-400">
             <p>&copy; 2024 YangHome Health System</p>
         </div>
     </div>
     
-    <div id="full-loader" class="fixed inset-0 z-50 hidden flex-col items-center justify-center bg-white/90 backdrop-blur-sm">
-        </div>
-
     <script>
         const API_URL = config.API_URL;
         lucide.createIcons();
         let userSession = null;
 
-        function stopInitialLoading() {
-            if (typeof window.hideLoading === 'function') {
-                window.hideLoading();
-            } else {
-                const overlay = document.getElementById('global-loader-overlay');
-                if(overlay) overlay.style.display = 'none';
-                document.body.style.overflow = 'auto';
-            }
+        // 直接初始化，無需等待 Loading 動畫
+        document.addEventListener('DOMContentLoaded', () => {
             checkLoginStatus();
-        }
+        });
 
-        if (document.readyState === 'complete') {
-            stopInitialLoading();
-        } else {
-            window.addEventListener('load', stopInitialLoading);
-        }
-
-        // PWA 安裝邏輯 (區分 iOS 與 Android/PC)
+        // PWA 安裝邏輯
         let deferredPrompt;
         const btnAndroid = document.getElementById('btn-install-android');
         const btnIos = document.getElementById('btn-install-ios');
         
-        // 1. 偵測 Android/Chrome (Native Prompt)
         window.addEventListener('beforeinstallprompt', (e) => {
             e.preventDefault();
             deferredPrompt = e;
             if(btnAndroid) btnAndroid.classList.remove('hidden');
         });
 
-        // 2. 偵測 iOS (Safari)
         const isIos = /iPhone|iPad|iPod/.test(navigator.userAgent) && !window.MSStream;
         const isStandalone = window.navigator.standalone || window.matchMedia('(display-mode: standalone)').matches;
         
@@ -305,7 +263,6 @@
             if(btnIos) btnIos.classList.add('hidden');
         }
 
-        // Android/PC 安裝觸發
         function installPWA() {
             if (deferredPrompt) {
                 deferredPrompt.prompt();
@@ -313,7 +270,6 @@
             }
         }
 
-        // iOS 安裝觸發
         function showIosInstall() {
             document.getElementById('ios-install-modal').classList.remove('hidden');
             document.getElementById('ios-install-modal').classList.add('flex');
@@ -351,13 +307,7 @@
         async function handleCredentialResponse(response) {
             const responsePayload = decodeJwtResponse(response.credential);
             
-            const loader = document.getElementById('full-loader');
-            if(loader && window.getLoaderHTML) {
-                loader.innerHTML = window.getLoaderHTML();
-                loader.classList.remove('hidden');
-                loader.classList.add('flex');
-            }
-
+            // 這裡不再顯示全屏 Loader，可視需要加入簡單的按鈕 Loading 狀態
             try {
                 await fetch(API_URL, {
                     method: 'POST',
@@ -370,7 +320,7 @@
                     })
                 });
                 
-                await new Promise(r => setTimeout(r, 1500)); 
+                await new Promise(r => setTimeout(r, 1000)); 
                 
                 const settingsResp = await fetch(`${API_URL}?action=getSettings`);
                 const users = await settingsResp.json();
@@ -395,11 +345,6 @@
             } catch (e) {
                 console.error(e);
                 alert("登入連線錯誤");
-            } finally {
-                if(loader) {
-                    loader.classList.add('hidden');
-                    loader.classList.remove('flex');
-                }
             }
         }
 
