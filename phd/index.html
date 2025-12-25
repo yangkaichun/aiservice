@@ -28,8 +28,8 @@
             font-family: 'Inter', sans-serif; 
             background-color: #f8fafc; /* 淺灰白背景 */
             color: #1e293b; /* 深色文字 */
-            min-height: 100vh; /* 確保最小高度 */
-            overflow-y: auto; /* 允許垂直捲動 */
+            min-height: 100vh;
+            overflow-y: auto;
         }
         
         /* 2. 簡約卡片 */
@@ -81,7 +81,7 @@
             transform: translateY(0);
         }
 
-        /* 登入遮罩動畫 */
+        /* 登入遮罩 */
         #login-overlay {
             backdrop-filter: blur(5px);
         }
@@ -106,7 +106,7 @@
                 <div class="space-y-3 text-left text-sm text-slate-600 bg-slate-50 p-5 rounded-2xl border border-slate-200">
                     <div class="flex items-center gap-3">
                         <span class="w-6 h-6 rounded-full bg-white border border-slate-200 flex items-center justify-center font-bold text-xs text-indigo-600 shadow-sm">1</span>
-                        <span>點擊瀏覽器工具列的 <strong>分享</strong> 或 <strong>選單</strong> <i data-lucide="more-vertical" class="w-4 h-4 inline align-text-bottom"></i></span>
+                        <span id="modal-step-1">點擊瀏覽器工具列的 <strong>分享</strong> <i data-lucide="share" class="w-4 h-4 inline align-text-bottom"></i> 或 <strong>選單</strong> <i data-lucide="more-vertical" class="w-4 h-4 inline align-text-bottom"></i></span>
                     </div>
                     <div class="flex items-center gap-3">
                         <span class="w-6 h-6 rounded-full bg-white border border-slate-200 flex items-center justify-center font-bold text-xs text-indigo-600 shadow-sm">2</span>
@@ -274,7 +274,7 @@
             initInstallButton();
         });
 
-        // PWA 安裝邏輯：強制顯示按鈕
+        // PWA 安裝邏輯：捕捉事件（僅 Android/Desktop 有機會觸發）
         window.addEventListener('beforeinstallprompt', (e) => {
             e.preventDefault();
             deferredPrompt = e;
@@ -285,7 +285,7 @@
             const btn = document.getElementById('btn-install-app');
             const isStandalone = window.navigator.standalone || window.matchMedia('(display-mode: standalone)').matches;
             
-            // 如果已經安裝，隱藏按鈕
+            // 如果已經安裝，則不顯示
             if (isStandalone) {
                 btn.classList.add('hidden');
                 return;
@@ -307,20 +307,20 @@
                 icon.setAttribute('data-lucide', 'download');
             }
             
-            // 強制顯示按鈕 (除非已安裝)
+            // [修正] 強制移除 hidden，確保使用者能看到按鈕
             btn.classList.remove('hidden');
             lucide.createIcons();
         }
 
         function handleInstallApp() {
-            // 如果有捕捉到原生事件 (Android/Desktop 有 Service Worker 時)
+            // 1. 如果有原生的安裝事件 (Android/Desktop 且環境支援)
             if (deferredPrompt) {
                 deferredPrompt.prompt();
                 deferredPrompt.userChoice.then((choiceResult) => {
                     deferredPrompt = null;
                 });
             } else {
-                // 否則顯示手動教學 Modal (iOS 或無 SW 的環境)
+                // 2. 如果沒有原生事件 (iOS 或環境不支援自動安裝)，顯示手動教學 Modal
                 document.getElementById('install-modal').classList.remove('hidden');
                 document.getElementById('install-modal').classList.add('flex');
             }
@@ -358,7 +358,7 @@
         async function handleCredentialResponse(response) {
             const responsePayload = decodeJwtResponse(response.credential);
             
-            // [新增] 顯示登入遮罩，防止重複點擊
+            // 顯示登入遮罩
             const overlay = document.getElementById('login-overlay');
             overlay.classList.remove('hidden');
             overlay.classList.add('flex');
@@ -367,8 +367,6 @@
                 // 發送 POST 請求
                 const res = await fetch(API_URL, {
                     method: 'POST',
-                    // 不設定 Content-Type: application/json 以避免 CORS 預檢失敗 (GAS 限制)
-                    // GAS 能夠自動解析 stringify 後的內容
                     body: JSON.stringify({
                         action: 'socialLogin',
                         token: response.credential, 
@@ -398,7 +396,7 @@
                 console.error(e);
                 alert("登入連線錯誤 (請檢查網路或稍後再試)");
             } finally {
-                // [新增] 無論成功失敗，都要關閉遮罩
+                // 關閉遮罩
                 overlay.classList.add('hidden');
                 overlay.classList.remove('flex');
             }
