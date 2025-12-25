@@ -1,5 +1,5 @@
 // ==========================================
-// YangHome Health Backend API (v3.5 - Fix Voice Model)
+// YangHome Health Backend API (v3.6 - Fix Syntax & Date Format)
 // ==========================================
 
 const SPREADSHEET_ID = SpreadsheetApp.getActiveSpreadsheet().getId();
