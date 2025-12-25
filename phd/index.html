@@ -341,13 +341,9 @@
             const responsePayload = decodeJwtResponse(response.credential);
             
             try {
-                // [關鍵修正] 移除 no-cors，改用正常 CORS 請求
-                // 這樣我們可以直接讀取後端回傳的 JSON (包含正確的 user data)
+                // [關鍵] 修正 POST 請求，移除 Content-Type header 以避免 CORS 預檢
                 const res = await fetch(API_URL, {
                     method: 'POST',
-                    // mode: 'no-cors', // 已移除
-                    headers: { 'Content-Type': 'application/json' }, // Apps Script doPost 通常能處理 json body
-                    // 如果遇到 CORS 錯誤，可嘗試改用 'text/plain;charset=utf-8'
                     body: JSON.stringify({
                         action: 'socialLogin',
                         token: response.credential, 
@@ -355,7 +351,6 @@
                     })
                 });
                 
-                // 直接解析後端回傳的 JSON，不再需要等待和重新 getSettings
                 const data = await res.json();
                 
                 if (data.success) {
@@ -376,7 +371,7 @@
 
             } catch (e) {
                 console.error(e);
-                alert("登入連線錯誤 (請確認後端已部署為 Execute as: Me, Access: Anyone)");
+                alert("登入連線錯誤 (請確認 Apps Script 已更新)");
             }
         }
 
@@ -445,10 +440,9 @@
             }
 
             try {
+                // [關鍵] 修正 POST 請求，移除 Content-Type header
                 await fetch(API_URL, {
                     method: 'POST',
-                    mode: 'no-cors',
-                    headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify(payload)
                 });
 
