@@ -58,9 +58,9 @@
 </head>
 <body class="text-slate-800 h-screen flex overflow-hidden relative">
 
-    <div id="install-modal" class="fixed inset-0 bg-black/50 z-50 hidden flex-col items-center justify-end pb-10 animate-fade-in" onclick="closeInstallModal()">
+    <div id="ios-install-modal" class="fixed inset-0 bg-black/50 z-50 hidden flex-col items-center justify-end pb-10 animate-fade-in" onclick="closeIosModal()">
         <div class="bg-white w-[90%] max-w-md rounded-3xl p-6 relative shadow-2xl" onclick="event.stopPropagation()">
-            <button onclick="closeInstallModal()" class="absolute top-4 right-4 text-slate-400 hover:text-slate-600"><i data-lucide="x" class="w-6 h-6"></i></button>
+            <button onclick="closeIosModal()" class="absolute top-4 right-4 text-slate-400 hover:text-slate-600"><i data-lucide="x" class="w-6 h-6"></i></button>
             <div class="text-center">
                 <div class="w-14 h-14 bg-indigo-50 text-indigo-600 rounded-2xl flex items-center justify-center mx-auto mb-4 border border-indigo-100">
                     <img src="image/yanghealth.png" class="w-10 h-10 object-contain">
@@ -70,15 +70,15 @@
                 <div class="space-y-3 text-left text-sm text-slate-600 bg-slate-50 p-5 rounded-2xl border border-slate-200">
                     <div class="flex items-center gap-3">
                         <span class="w-6 h-6 rounded-full bg-white border border-slate-200 flex items-center justify-center font-bold text-xs text-indigo-600 shadow-sm">1</span>
-                        <span>點擊瀏覽器工具列的 <strong>分享</strong> 或 <strong>選單</strong> <i data-lucide="more-vertical" class="w-4 h-4 inline align-text-bottom"></i></span>
+                        <span>點擊瀏覽器下方工具列的 <strong>分享</strong> <i data-lucide="share" class="w-4 h-4 inline align-text-bottom"></i></span>
                     </div>
                     <div class="flex items-center gap-3">
                         <span class="w-6 h-6 rounded-full bg-white border border-slate-200 flex items-center justify-center font-bold text-xs text-indigo-600 shadow-sm">2</span>
-                        <span>尋找並選擇 <strong>加入主畫面</strong> 或 <strong>安裝應用程式</strong> <i data-lucide="plus-square" class="w-4 h-4 inline align-text-bottom"></i></span>
+                        <span>往下滑，選擇 <strong>加入主畫面</strong> <i data-lucide="plus-square" class="w-4 h-4 inline align-text-bottom"></i></span>
                     </div>
                     <div class="flex items-center gap-3">
                         <span class="w-6 h-6 rounded-full bg-white border border-slate-200 flex items-center justify-center font-bold text-xs text-indigo-600 shadow-sm">3</span>
-                        <span>點擊 <strong>加入</strong> 或 <strong>安裝</strong> 即可</span>
+                        <span>點擊右上角的 <strong>加入</strong> 即可</span>
                     </div>
                 </div>
             </div>
@@ -132,7 +132,7 @@
         </div>
 
         <div class="mt-auto p-4 border-t border-slate-100 bg-slate-50">
-            <button onclick="handleInstallApp()" id="btn-install-sidebar" class="w-full py-2.5 px-4 bg-sky-500 hover:bg-sky-600 text-white rounded-lg text-sm font-bold transition flex items-center justify-center gap-2 mb-2 shadow-sm hidden">
+            <button onclick="installPWA()" id="btn-install-sidebar" class="w-full py-2.5 px-4 bg-sky-500 hover:bg-sky-600 text-white rounded-lg text-sm font-bold transition flex items-center justify-center gap-2 mb-2 shadow-sm hidden">
                 <i data-lucide="download" class="w-4 h-4"></i>
                 <span id="sidebar-install-text">安裝 App</span>
             </button>
@@ -275,23 +275,29 @@
         let isSpeaking = false;
 
         let deferredPrompt;
+        const btnInstall = document.getElementById('btn-install-sidebar');
 
         document.addEventListener('DOMContentLoaded', () => {
             lucide.createIcons();
             
-            // 捕捉 PWA 安裝事件
+            // PWA 安裝邏輯
             window.addEventListener('beforeinstallprompt', (e) => {
                 e.preventDefault();
                 deferredPrompt = e;
-                console.log("Captured beforeinstallprompt");
+                initInstallButton(); // 重新檢查以顯示按鈕
             });
 
+            // 初始化按鈕
             initInstallButton();
+            
             initDashboard();
         });
 
+        // [關鍵修正]：處理按鈕圖示與點擊事件
         function initInstallButton() {
             const btn = document.getElementById('btn-install-sidebar');
+            if (!btn) return;
+
             const isStandalone = window.navigator.standalone || window.matchMedia('(display-mode: standalone)').matches;
             
             // 如果已安裝，隱藏按鈕
@@ -303,14 +309,34 @@
             // 判斷 iOS / Android
             const isIos = /iPhone|iPad|iPod/.test(navigator.userAgent) && !window.MSStream;
             const btnText = document.getElementById('sidebar-install-text');
-            const icon = btn.querySelector('i');
+            
+            // 移除舊的圖示
+            const oldIcon = btn.querySelector('svg') || btn.querySelector('i');
+            if (oldIcon) oldIcon.remove();
+
+            // 建立新圖示
+            const newIcon = document.createElement('i');
+            newIcon.classList.add('w-4', 'h-4');
 
             if (isIos) {
-                btnText.innerText = "安裝 App (iOS)";
-                icon.setAttribute('data-lucide', 'share');
+                if (btnText) btnText.innerText = "安裝 App (iOS)";
+                newIcon.setAttribute('data-lucide', 'share');
+                // iOS 不支援自動安裝，只能顯示教學
+                btn.onclick = () => {
+                    document.getElementById('ios-install-modal').classList.remove('hidden');
+                    document.getElementById('ios-install-modal').classList.add('flex');
+                };
             } else {
-                btnText.innerText = "安裝 App";
-                icon.setAttribute('data-lucide', 'download');
+                if (btnText) btnText.innerText = "安裝 App";
+                newIcon.setAttribute('data-lucide', 'download');
+                btn.onclick = installPWA;
+            }
+            
+            // 插入圖示
+            if (btnText) {
+                btn.insertBefore(newIcon, btnText);
+            } else {
+                btn.appendChild(newIcon);
             }
             
             // 強制顯示按鈕
@@ -318,22 +344,24 @@
             lucide.createIcons();
         }
 
-        function handleInstallApp() {
+        const isIos = /iPhone|iPad|iPod/.test(navigator.userAgent) && !window.MSStream;
+
+        function installPWA() {
             if (deferredPrompt) {
                 deferredPrompt.prompt();
-                deferredPrompt.userChoice.then((choiceResult) => {
-                    deferredPrompt = null;
-                });
+                deferredPrompt.userChoice.then((choiceResult) => { deferredPrompt = null; });
+            } else if (isIos) {
+                // 如果是 iOS，顯示教學
+                document.getElementById('ios-install-modal').classList.remove('hidden');
+                document.getElementById('ios-install-modal').classList.add('flex');
             } else {
-                // 手動教學
-                document.getElementById('install-modal').classList.remove('hidden');
-                document.getElementById('install-modal').classList.add('flex');
+                alert("請使用瀏覽器選單中的「安裝應用程式」或「加入主畫面」。");
             }
         }
 
-        function closeInstallModal() {
-            document.getElementById('install-modal').classList.add('hidden');
-            document.getElementById('install-modal').classList.remove('flex');
+        function closeIosModal() {
+            document.getElementById('ios-install-modal').classList.add('hidden');
+            document.getElementById('ios-install-modal').classList.remove('flex');
         }
 
         function updateSidebarDisplayName(name, pictureUrl) {
@@ -670,8 +698,11 @@
         function updateTTSButton(playing, isLoading = false) {
             const btn = document.getElementById('btn-tts');
             const btnText = document.getElementById('btn-tts-text');
+            
+            // 修正錯誤的核心：先移除，再新增
             const existingIcon = btn.querySelector('svg') || btn.querySelector('i');
             if (existingIcon) existingIcon.remove();
+            
             const newIcon = document.createElement('i');
             newIcon.classList.add('w-5', 'h-5', 'group-hover:scale-110', 'transition-transform');
             
