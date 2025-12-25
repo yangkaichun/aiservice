@@ -32,10 +32,9 @@
     </script>
 
     <style>
-        /* 1. 極簡白底風格 */
-        body { font-family: 'Inter', sans-serif; background-color: #F8FAFC; color: #1e293b; }
+        /* 極簡白底風格 */
+        body { font-family: 'Inter', sans-serif; background-color: #F8FAFC; color: #1e293b; min-height: 100vh; overflow-y: auto; }
         
-        /* 2. 簡約卡片樣式 (取代原本的 glass-card) */
         .clean-card { 
             background: #ffffff; 
             border: 1px solid #e2e8f0; 
@@ -45,7 +44,6 @@
         
         .sidebar-transition { transition: transform 0.3s ease-in-out; }
         
-        /* 按鈕樣式微調 */
         .btn-gemini { background: linear-gradient(135deg, #6366f1, #8b5cf6); color: white; border: none; }
         .btn-gemini:hover { background: linear-gradient(135deg, #4f46e5, #7c3aed); transform: translateY(-1px); box-shadow: 0 4px 12px rgba(139, 92, 246, 0.25); }
         
@@ -60,9 +58,9 @@
 </head>
 <body class="text-slate-800 h-screen flex overflow-hidden relative">
 
-    <div id="ios-install-modal" class="fixed inset-0 bg-black/50 z-50 hidden flex-col items-center justify-end pb-10 animate-fade-in" onclick="closeIosModal()">
+    <div id="install-modal" class="fixed inset-0 bg-black/50 z-50 hidden flex-col items-center justify-end pb-10 animate-fade-in" onclick="closeInstallModal()">
         <div class="bg-white w-[90%] max-w-md rounded-3xl p-6 relative shadow-2xl" onclick="event.stopPropagation()">
-            <button onclick="closeIosModal()" class="absolute top-4 right-4 text-slate-400 hover:text-slate-600"><i data-lucide="x" class="w-6 h-6"></i></button>
+            <button onclick="closeInstallModal()" class="absolute top-4 right-4 text-slate-400 hover:text-slate-600"><i data-lucide="x" class="w-6 h-6"></i></button>
             <div class="text-center">
                 <div class="w-14 h-14 bg-indigo-50 text-indigo-600 rounded-2xl flex items-center justify-center mx-auto mb-4 border border-indigo-100">
                     <img src="image/yanghealth.png" class="w-10 h-10 object-contain">
@@ -72,15 +70,15 @@
                 <div class="space-y-3 text-left text-sm text-slate-600 bg-slate-50 p-5 rounded-2xl border border-slate-200">
                     <div class="flex items-center gap-3">
                         <span class="w-6 h-6 rounded-full bg-white border border-slate-200 flex items-center justify-center font-bold text-xs text-indigo-600 shadow-sm">1</span>
-                        <span>點擊瀏覽器下方工具列的 <strong>分享</strong> <i data-lucide="share" class="w-4 h-4 inline align-text-bottom"></i></span>
+                        <span>點擊瀏覽器工具列的 <strong>分享</strong> 或 <strong>選單</strong> <i data-lucide="more-vertical" class="w-4 h-4 inline align-text-bottom"></i></span>
                     </div>
                     <div class="flex items-center gap-3">
                         <span class="w-6 h-6 rounded-full bg-white border border-slate-200 flex items-center justify-center font-bold text-xs text-indigo-600 shadow-sm">2</span>
-                        <span>往下滑，選擇 <strong>加入主畫面</strong> <i data-lucide="plus-square" class="w-4 h-4 inline align-text-bottom"></i></span>
+                        <span>尋找並選擇 <strong>加入主畫面</strong> 或 <strong>安裝應用程式</strong> <i data-lucide="plus-square" class="w-4 h-4 inline align-text-bottom"></i></span>
                     </div>
                     <div class="flex items-center gap-3">
                         <span class="w-6 h-6 rounded-full bg-white border border-slate-200 flex items-center justify-center font-bold text-xs text-indigo-600 shadow-sm">3</span>
-                        <span>點擊右上角的 <strong>加入</strong> 即可</span>
+                        <span>點擊 <strong>加入</strong> 或 <strong>安裝</strong> 即可</span>
                     </div>
                 </div>
             </div>
@@ -134,12 +132,9 @@
         </div>
 
         <div class="mt-auto p-4 border-t border-slate-100 bg-slate-50">
-            <button onclick="installPWA()" id="btn-install-android" class="w-full py-2.5 px-4 bg-sky-500 hover:bg-sky-600 text-white rounded-lg text-sm font-bold transition flex items-center justify-center gap-2 mb-2 shadow-sm hidden">
-                <i data-lucide="download" class="w-4 h-4"></i> 安裝 App
-            </button>
-
-            <button onclick="showIosInstall()" id="btn-install-ios" class="w-full py-2.5 px-4 bg-sky-500 hover:bg-sky-600 text-white rounded-lg text-sm font-bold transition flex items-center justify-center gap-2 mb-2 shadow-sm hidden">
-                <i data-lucide="share" class="w-4 h-4"></i> 安裝 App (iOS)
+            <button onclick="handleInstallApp()" id="btn-install-sidebar" class="w-full py-2.5 px-4 bg-sky-500 hover:bg-sky-600 text-white rounded-lg text-sm font-bold transition flex items-center justify-center gap-2 mb-2 shadow-sm hidden">
+                <i data-lucide="download" class="w-4 h-4"></i>
+                <span id="sidebar-install-text">安裝 App</span>
             </button>
 
             <button onclick="getAIAnalysis()" class="w-full py-3 px-4 btn-gemini rounded-xl text-sm font-bold transition flex items-center justify-center gap-2 mb-3 shadow-md group"><i data-lucide="sparkles" class="w-4 h-4 group-hover:scale-110 transition-transform"></i>AI 分析 (Gemini)</button>
@@ -279,51 +274,66 @@
         let currentAudio = null;
         let isSpeaking = false;
 
-        // PWA 變數
         let deferredPrompt;
-        const btnAndroid = document.getElementById('btn-install-android');
-        const btnIos = document.getElementById('btn-install-ios');
 
         document.addEventListener('DOMContentLoaded', () => {
             lucide.createIcons();
             
-            // PWA 安裝邏輯
+            // 捕捉 PWA 安裝事件
             window.addEventListener('beforeinstallprompt', (e) => {
                 e.preventDefault();
                 deferredPrompt = e;
-                if(btnAndroid) btnAndroid.classList.remove('hidden');
+                console.log("Captured beforeinstallprompt");
             });
 
-            const isIos = /iPhone|iPad|iPod/.test(navigator.userAgent) && !window.MSStream;
-            const isStandalone = window.navigator.standalone || window.matchMedia('(display-mode: standalone)').matches;
-            
-            if (isIos && !isStandalone && btnIos) {
-                btnIos.classList.remove('hidden');
-            }
-
-            if (isStandalone) { 
-                if(btnAndroid) btnAndroid.classList.add('hidden'); 
-                if(btnIos) btnIos.classList.add('hidden');
-            }
-
+            initInstallButton();
             initDashboard();
         });
 
-        function installPWA() {
+        function initInstallButton() {
+            const btn = document.getElementById('btn-install-sidebar');
+            const isStandalone = window.navigator.standalone || window.matchMedia('(display-mode: standalone)').matches;
+            
+            // 如果已安裝，隱藏按鈕
+            if (isStandalone) {
+                btn.classList.add('hidden');
+                return;
+            }
+
+            // 判斷 iOS / Android
+            const isIos = /iPhone|iPad|iPod/.test(navigator.userAgent) && !window.MSStream;
+            const btnText = document.getElementById('sidebar-install-text');
+            const icon = btn.querySelector('i');
+
+            if (isIos) {
+                btnText.innerText = "安裝 App (iOS)";
+                icon.setAttribute('data-lucide', 'share');
+            } else {
+                btnText.innerText = "安裝 App";
+                icon.setAttribute('data-lucide', 'download');
+            }
+            
+            // 強制顯示按鈕
+            btn.classList.remove('hidden');
+            lucide.createIcons();
+        }
+
+        function handleInstallApp() {
             if (deferredPrompt) {
                 deferredPrompt.prompt();
-                deferredPrompt.userChoice.then((choiceResult) => { deferredPrompt = null; });
+                deferredPrompt.userChoice.then((choiceResult) => {
+                    deferredPrompt = null;
+                });
+            } else {
+                // 手動教學
+                document.getElementById('install-modal').classList.remove('hidden');
+                document.getElementById('install-modal').classList.add('flex');
             }
         }
 
-        function showIosInstall() {
-            document.getElementById('ios-install-modal').classList.remove('hidden');
-            document.getElementById('ios-install-modal').classList.add('flex');
-        }
-
-        function closeIosModal() {
-            document.getElementById('ios-install-modal').classList.add('hidden');
-            document.getElementById('ios-install-modal').classList.remove('flex');
+        function closeInstallModal() {
+            document.getElementById('install-modal').classList.add('hidden');
+            document.getElementById('install-modal').classList.remove('flex');
         }
 
         function updateSidebarDisplayName(name, pictureUrl) {
@@ -442,7 +452,6 @@
         }
 
         async function fetchUserData(uid) {
-            // 這裡不再顯示 full-screen loading，僅顯示區塊 loading
             document.getElementById('loadingState').classList.remove('hidden'); 
             document.getElementById('dashboardContent').classList.add('hidden');
             
@@ -538,7 +547,6 @@
             renderCharts(data); 
         }
 
-        // [修改] 圖表增加顯示時間 (HH:mm)
         function renderCharts(data) { 
             const labels = data.map(d => { 
                 const date = new Date(d.timestamp); 
