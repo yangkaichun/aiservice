@@ -3,13 +3,17 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="default">
+    <meta name="apple-mobile-web-app-title" content="YangHealth">
     <meta name="theme-color" content="#ffffff">
+    
+    <link rel="apple-touch-icon" href="image/yanghealth.png">
+    <link rel="icon" type="image/x-icon" href="image/yanghealth.ico">
     
     <title>YangHome Health | 智慧健康監控</title>
     
-    <link rel="icon" type="image/x-icon" href="image/yanghealth.ico">
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap" rel="stylesheet">
     <script src="https://unpkg.com/lucide@latest"></script>
@@ -60,6 +64,20 @@
             color: #4f46e5;
             font-weight: 600;
         }
+
+        /* App 安裝按鈕特效 */
+        .app-install-btn {
+            background: linear-gradient(to right, #1e293b, #334155);
+            color: white;
+            transition: all 0.3s ease;
+        }
+        .app-install-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px -5px rgba(30, 41, 59, 0.3);
+        }
+        .app-install-btn:active {
+            transform: translateY(0);
+        }
     </style>
 </head>
 <body class="min-h-screen flex flex-col items-center justify-center p-4 py-10 relative">
@@ -69,7 +87,7 @@
             <button onclick="closeIosModal()" class="absolute top-4 right-4 text-slate-400 hover:text-slate-600"><i data-lucide="x" class="w-6 h-6"></i></button>
             <div class="text-center">
                 <div class="w-14 h-14 bg-indigo-50 text-indigo-600 rounded-2xl flex items-center justify-center mx-auto mb-4 border border-indigo-100">
-                    <i data-lucide="share" class="w-7 h-7"></i>
+                    <img src="image/yanghealth.png" class="w-10 h-10 object-contain">
                 </div>
                 <h3 class="text-xl font-bold text-slate-800 mb-2">安裝應用程式</h3>
                 <p class="text-sm text-slate-500 mb-6">為獲得最佳體驗，請將此網頁加入主畫面：</p>
@@ -202,14 +220,30 @@
 
                 <div class="space-y-3 pt-4 border-t border-slate-100">
                     
-                    <button type="button" onclick="installPWA()" id="btn-install-android" class="w-full py-3.5 bg-sky-500 hover:bg-sky-600 text-white rounded-xl font-bold transition-all flex items-center justify-center gap-2 shadow-md hover:shadow-lg hidden mb-3">
-                        <i data-lucide="download" class="w-5 h-5"></i>
-                        <span>安裝應用程式</span>
+                    <button type="button" onclick="installPWA()" id="btn-install-android" class="w-full py-2 px-3 app-install-btn rounded-xl flex items-center justify-between shadow-md hidden mb-3">
+                        <div class="flex items-center gap-3">
+                            <div class="w-10 h-10 bg-white rounded-lg flex items-center justify-center overflow-hidden p-1 shadow-sm">
+                                <img src="image/yanghealth.png" alt="App Icon" class="w-full h-full object-contain">
+                            </div>
+                            <div class="text-left">
+                                <div class="text-xs font-medium text-slate-300">Install App</div>
+                                <div class="text-sm font-bold text-white">安裝應用程式</div>
+                            </div>
+                        </div>
+                        <i data-lucide="download" class="w-5 h-5 text-white/80 mr-1"></i>
                     </button>
 
-                    <button type="button" onclick="showIosInstall()" id="btn-install-ios" class="w-full py-3.5 bg-sky-500 hover:bg-sky-600 text-white rounded-xl font-bold transition-all flex items-center justify-center gap-2 shadow-md hover:shadow-lg hidden mb-3">
-                        <i data-lucide="share" class="w-5 h-5"></i>
-                        <span>安裝到 iPhone/iPad</span>
+                    <button type="button" onclick="showIosInstall()" id="btn-install-ios" class="w-full py-2 px-3 app-install-btn rounded-xl flex items-center justify-between shadow-md hidden mb-3">
+                        <div class="flex items-center gap-3">
+                            <div class="w-10 h-10 bg-white rounded-lg flex items-center justify-center overflow-hidden p-1 shadow-sm">
+                                <img src="image/yanghealth.png" alt="App Icon" class="w-full h-full object-contain">
+                            </div>
+                            <div class="text-left">
+                                <div class="text-xs font-medium text-slate-300">Install for iOS</div>
+                                <div class="text-sm font-bold text-white">安裝到 iPhone</div>
+                            </div>
+                        </div>
+                        <i data-lucide="share" class="w-5 h-5 text-white/80 mr-1"></i>
                     </button>
 
                     <button type="submit" id="btn-submit" class="w-full py-3.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl font-bold shadow-md hover:shadow-lg transition-all active:scale-95 flex items-center justify-center gap-2">
@@ -235,7 +269,6 @@
         lucide.createIcons();
         let userSession = null;
 
-        // 直接初始化，無需等待 Loading 動畫
         document.addEventListener('DOMContentLoaded', () => {
             checkLoginStatus();
         });
@@ -307,7 +340,6 @@
         async function handleCredentialResponse(response) {
             const responsePayload = decodeJwtResponse(response.credential);
             
-            // 這裡不再顯示全屏 Loader，可視需要加入簡單的按鈕 Loading 狀態
             try {
                 await fetch(API_URL, {
                     method: 'POST',
@@ -322,7 +354,8 @@
                 
                 await new Promise(r => setTimeout(r, 1000)); 
                 
-                const settingsResp = await fetch(`${API_URL}?action=getSettings`);
+                // 修正：針對 Safari 快取問題，加入時間戳記
+                const settingsResp = await fetch(`${API_URL}?action=getSettings&t=${new Date().getTime()}`);
                 const users = await settingsResp.json();
                 const myUser = users.find(u => u.email.toLowerCase() === responsePayload.email.toLowerCase());
                 
