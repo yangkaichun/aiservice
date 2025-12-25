@@ -341,10 +341,13 @@
             const responsePayload = decodeJwtResponse(response.credential);
             
             try {
-                await fetch(API_URL, {
+                // [關鍵修正] 移除 no-cors，改用正常 CORS 請求
+                // 這樣我們可以直接讀取後端回傳的 JSON (包含正確的 user data)
+                const res = await fetch(API_URL, {
                     method: 'POST',
-                    mode: 'no-cors', 
-                    headers: { 'Content-Type': 'application/json' },
+                    // mode: 'no-cors', // 已移除
+                    headers: { 'Content-Type': 'application/json' }, // Apps Script doPost 通常能處理 json body
+                    // 如果遇到 CORS 錯誤，可嘗試改用 'text/plain;charset=utf-8'
                     body: JSON.stringify({
                         action: 'socialLogin',
                         token: response.credential, 
@@ -352,19 +355,15 @@
                     })
                 });
                 
-                await new Promise(r => setTimeout(r, 1000)); 
+                // 直接解析後端回傳的 JSON，不再需要等待和重新 getSettings
+                const data = await res.json();
                 
-                // 修正：針對 Safari 快取問題，加入時間戳記
-                const settingsResp = await fetch(`${API_URL}?action=getSettings&t=${new Date().getTime()}`);
-                const users = await settingsResp.json();
-                const myUser = users.find(u => u.email.toLowerCase() === responsePayload.email.toLowerCase());
-                
-                if (myUser) {
+                if (data.success) {
                     const sessionData = {
-                        uid: myUser.uid,
-                        email: myUser.email,
-                        name: myUser.name,
-                        role: myUser.role,
+                        uid: data.user.uid,
+                        email: data.user.email,
+                        name: data.user.name,
+                        role: data.user.role,
                         provider: 'google',
                         picture: responsePayload.picture,
                         timestamp: new Date().getTime()
@@ -372,12 +371,12 @@
                     localStorage.setItem('healthTwinSession', JSON.stringify(sessionData));
                     checkLoginStatus();
                 } else {
-                    alert("系統同步延遲，請重新登入或稍後再試。");
+                    alert("登入失敗：" + (data.message || "未知錯誤"));
                 }
 
             } catch (e) {
                 console.error(e);
-                alert("登入連線錯誤");
+                alert("登入連線錯誤 (請確認後端已部署為 Execute as: Me, Access: Anyone)");
             }
         }
 
