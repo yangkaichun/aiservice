@@ -38,7 +38,7 @@
         <div class="bg-white w-full max-w-md rounded-xl p-6 shadow-2xl relative">
             <h3 class="text-lg font-bold text-slate-800 mb-4">編輯使用者資料</h3>
             <form id="editForm" onsubmit="handleEditSubmit(event)" class="space-y-4">
-                <input type="hidden" id="edit-email">
+                <input type="hidden" id="edit-uid">
                 
                 <div>
                     <label class="block text-sm font-bold text-slate-600 mb-1">姓名</label>
@@ -73,7 +73,7 @@
 
         async function fetchUsers() {
             try {
-                // 這裡使用 fetch，無需 headers，避免 CORS
+                // 使用 POST 且不帶 headers，避免 CORS
                 const res = await fetch(`${API_URL}?t=${new Date().getTime()}`, {
                     method: 'POST',
                     body: JSON.stringify({
@@ -141,9 +141,9 @@
             if(!confirm(`確定要${actionName}此用戶嗎？`)) return;
             
             try {
+                // 完全移除 headers，只保留 body
                 const res = await fetch(API_URL, {
                     method: 'POST',
-                    // [修正] 完全移除 headers，只保留 body
                     body: JSON.stringify({
                         action: 'adminAuthorize',
                         adminEmail: currentUser.email,
@@ -165,7 +165,7 @@
 
         function openEditModal(userStr) {
             const user = JSON.parse(decodeURIComponent(userStr));
-            document.getElementById('edit-email').value = user.email;
+            document.getElementById('edit-uid').value = user.uid; // 使用 UID
             document.getElementById('edit-name').value = user.name;
             document.getElementById('edit-birthday').value = user.birthday;
             
@@ -178,6 +178,7 @@
             document.getElementById('edit-modal').classList.remove('flex');
         }
 
+        // [關鍵修正]：使用 adminUpdateUser，且 fetch 不帶 headers
         async function handleEditSubmit(e) {
             e.preventDefault();
             
@@ -187,19 +188,20 @@
             btn.innerHTML = `<i data-lucide="loader-2" class="w-4 h-4 animate-spin"></i> 處理中...`;
             lucide.createIcons();
 
-            const email = document.getElementById('edit-email').value;
+            const uid = document.getElementById('edit-uid').value;
             const name = document.getElementById('edit-name').value;
             const birthday = document.getElementById('edit-birthday').value;
 
             try {
                 const res = await fetch(API_URL, {
                     method: 'POST',
-                    // [關鍵修正]：完全移除 headers 行，讓瀏覽器發送簡單請求，避免 GAS 的 CORS 錯誤
+                    // [重點] 移除 headers 設定，讓瀏覽器發送簡單請求 (Simple Request)
                     body: JSON.stringify({
-                        action: 'updateProfile', 
-                        userEmail: email,        
-                        userName: name,
-                        userBirthday: birthday
+                        action: 'adminUpdateUser', 
+                        adminEmail: currentUser.email,
+                        targetUid: uid,        
+                        newName: name,
+                        newBirthday: birthday
                     })
                 });
                 
