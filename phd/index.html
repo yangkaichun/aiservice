@@ -165,6 +165,19 @@
                     <a href="policy.html" class="text-indigo-500 hover:text-indigo-600 hover:underline">隱私權政策</a>
                 </p>
             </div>
+
+            <button type="button" onclick="handleInstallApp()" id="btn-install-login" class="w-full py-2 px-3 app-install-btn rounded-xl flex items-center justify-between shadow-md mt-4 hidden">
+                <div class="flex items-center gap-3">
+                    <div class="w-10 h-10 bg-white rounded-lg flex items-center justify-center overflow-hidden p-1 shadow-sm">
+                        <img src="image/yanghealth.png" alt="App Icon" class="w-full h-full object-contain">
+                    </div>
+                    <div class="text-left">
+                        <div class="text-xs font-medium text-slate-300" id="install-subtitle-login">Install App</div>
+                        <div class="text-sm font-bold text-white" id="install-title-login">安裝應用程式</div>
+                    </div>
+                </div>
+                <i data-lucide="download" class="w-5 h-5 text-white/80 mr-1"></i>
+            </button>
         </div>
 
         <div id="user-section" class="hidden">
@@ -333,27 +346,41 @@
         const isStandalone = window.navigator.standalone || window.matchMedia('(display-mode: standalone)').matches;
 
         function initInstallButton() {
-            const btn = document.getElementById('btn-install-app');
+            // [修正邏輯] 同時處理登入前與登入後的安裝按鈕
+            const btnApp = document.getElementById('btn-install-app');
+            const btnLogin = document.getElementById('btn-install-login');
+            
             if (isStandalone) {
-                btn.classList.add('hidden');
+                if(btnApp) btnApp.classList.add('hidden');
+                if(btnLogin) btnLogin.classList.add('hidden');
                 return;
             }
 
-            const title = document.getElementById('install-title');
-            const subtitle = document.getElementById('install-subtitle');
-            const icon = btn.querySelector('i');
+            const buttons = [
+                { btn: btnApp, titleId: 'install-title', subId: 'install-subtitle' },
+                { btn: btnLogin, titleId: 'install-title-login', subId: 'install-subtitle-login' }
+            ];
 
-            if (isIos) {
-                title.innerText = "安裝到 iPhone";
-                subtitle.innerText = "Install for iOS";
-                icon.setAttribute('data-lucide', 'share');
-            } else {
-                title.innerText = "安裝應用程式";
-                subtitle.innerText = "Install App";
-                icon.setAttribute('data-lucide', 'download');
-            }
+            buttons.forEach(item => {
+                if (item.btn) {
+                    const title = document.getElementById(item.titleId);
+                    const subtitle = document.getElementById(item.subId);
+                    const icon = item.btn.querySelector('i');
+
+                    if (isIos) {
+                        if(title) title.innerText = "安裝到 iPhone";
+                        if(subtitle) subtitle.innerText = "Install for iOS";
+                        if(icon) icon.setAttribute('data-lucide', 'share');
+                    } else {
+                        if(title) title.innerText = "安裝應用程式";
+                        if(subtitle) subtitle.innerText = "Install App";
+                        if(icon) icon.setAttribute('data-lucide', 'download');
+                    }
+                    
+                    item.btn.classList.remove('hidden');
+                }
+            });
             
-            btn.classList.remove('hidden');
             lucide.createIcons();
         }
 
