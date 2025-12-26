@@ -73,9 +73,10 @@
 
         async function fetchUsers() {
             try {
-                // 這裡使用 POST 且不帶 Header，確保避免 CORS 問題
+                // 使用 text/plain 避免 CORS 預檢錯誤
                 const res = await fetch(`${API_URL}?t=${new Date().getTime()}`, {
                     method: 'POST',
+                    headers: { "Content-Type": "text/plain" },
                     body: JSON.stringify({
                         action: 'adminGetUsers',
                         adminEmail: currentUser.email
@@ -89,7 +90,7 @@
                 }
             } catch (e) {
                 console.error(e);
-                alert("連線錯誤 (Fetch Error)");
+                alert("連線錯誤");
             }
         }
 
@@ -141,9 +142,9 @@
             if(!confirm(`確定要${actionName}此用戶嗎？`)) return;
             
             try {
-                // [修正] 移除 headers，只保留 body，避免 CORS 預檢失敗
                 const res = await fetch(API_URL, {
                     method: 'POST',
+                    headers: { "Content-Type": "text/plain" },
                     body: JSON.stringify({
                         action: 'adminAuthorize',
                         adminEmail: currentUser.email,
@@ -178,7 +179,7 @@
             document.getElementById('edit-modal').classList.remove('flex');
         }
 
-        // [核心修正] 移除 headers，解決 CORS 問題
+        // [重要修正]：使用現有的 updateProfile 功能，並加上 text/plain header
         async function handleEditSubmit(e) {
             e.preventDefault();
             
@@ -195,10 +196,10 @@
             try {
                 const res = await fetch(API_URL, {
                     method: 'POST',
-                    // [重點] 移除 headers 設定，讓瀏覽器發送簡單請求 (Simple Request)
-                    // Google Apps Script 會自動解析 body string
+                    // [關鍵] 指定 text/plain 避免 CORS 錯誤
+                    headers: { "Content-Type": "text/plain" },
                     body: JSON.stringify({
-                        action: 'updateProfile', // 使用 code.gs 現有的功能
+                        action: 'updateProfile', // 使用既有的後端功能
                         userEmail: email,        
                         userName: name,
                         userBirthday: birthday
@@ -216,7 +217,7 @@
                 }
             } catch (err) {
                 console.error(err);
-                alert("連線錯誤，請檢查網路或稍後再試。");
+                alert("連線錯誤，請稍後再試。");
             } finally {
                 btn.disabled = false;
                 btn.innerHTML = originalText;
