@@ -69,7 +69,7 @@
             font-weight: 600;
         }
 
-        /* App 安裝按鈕特效 (深色風格以突顯) */
+        /* App 安裝按鈕特效 */
         .app-install-btn {
             background: linear-gradient(to right, #1e293b, #334155);
             color: white;
@@ -108,19 +108,7 @@
                 
                 <div class="space-y-3 text-left text-sm text-slate-600 bg-slate-50 p-5 rounded-2xl border border-slate-200">
                     <div id="install-steps-content">
-                        <div class="flex items-center gap-3">
-                            <span class="w-6 h-6 rounded-full bg-white border border-slate-200 flex items-center justify-center font-bold text-xs text-indigo-600 shadow-sm">1</span>
-                            <span>點擊瀏覽器選單 <i data-lucide="more-vertical" class="w-4 h-4 inline align-text-bottom"></i> 或分享 <i data-lucide="share" class="w-4 h-4 inline align-text-bottom"></i></span>
                         </div>
-                        <div class="flex items-center gap-3 mt-3">
-                            <span class="w-6 h-6 rounded-full bg-white border border-slate-200 flex items-center justify-center font-bold text-xs text-indigo-600 shadow-sm">2</span>
-                            <span>選擇 <strong>加入主畫面</strong> 或 <strong>安裝應用程式</strong></span>
-                        </div>
-                        <div class="flex items-center gap-3 mt-3">
-                            <span class="w-6 h-6 rounded-full bg-white border border-slate-200 flex items-center justify-center font-bold text-xs text-indigo-600 shadow-sm">3</span>
-                            <span>點擊 <strong>加入</strong> 或 <strong>安裝</strong></span>
-                        </div>
-                    </div>
                 </div>
             </div>
         </div>
@@ -166,6 +154,33 @@
                 <button onclick="logout()" class="p-2.5 bg-white text-rose-500 hover:bg-rose-50 rounded-xl transition-all shadow-sm border border-slate-200" title="登出">
                     <i data-lucide="log-out" class="w-5 h-5"></i>
                 </button>
+            </div>
+
+            <div id="latest-data-card" class="mb-6 bg-white p-4 rounded-2xl border border-slate-100 hidden shadow-sm">
+                <div class="flex items-center justify-between mb-3">
+                    <h3 class="text-xs font-bold text-slate-400 uppercase tracking-wider">最近更新</h3>
+                    <span id="display-time" class="text-[10px] text-slate-400 bg-slate-50 px-2 py-0.5 rounded-full">--</span>
+                </div>
+                <div class="grid grid-cols-3 gap-3 text-center">
+                    <div class="p-3 bg-rose-50 rounded-xl border border-rose-100">
+                        <div class="flex items-center justify-center gap-1 text-[10px] text-rose-400 font-bold mb-1">
+                            <i data-lucide="heart" class="w-3 h-3"></i> 血壓
+                        </div>
+                        <div class="text-sm font-bold text-rose-600"><span id="display-bp">--/--</span></div>
+                    </div>
+                    <div class="p-3 bg-emerald-50 rounded-xl border border-emerald-100">
+                        <div class="flex items-center justify-center gap-1 text-[10px] text-emerald-400 font-bold mb-1">
+                            <i data-lucide="activity" class="w-3 h-3"></i> 心率
+                        </div>
+                        <div class="text-sm font-bold text-emerald-600"><span id="display-hr">--</span></div>
+                    </div>
+                    <div class="p-3 bg-amber-50 rounded-xl border border-amber-100">
+                        <div class="flex items-center justify-center gap-1 text-[10px] text-amber-400 font-bold mb-1">
+                            <i data-lucide="droplet" class="w-3 h-3"></i> 血糖
+                        </div>
+                        <div class="text-sm font-bold text-amber-600"><span id="display-bs">--</span></div>
+                    </div>
+                </div>
             </div>
 
             <form id="quickAddForm" onsubmit="handleQuickSubmit(event)" class="space-y-5">
@@ -237,14 +252,14 @@
 
                 <div class="space-y-3 pt-4 border-t border-slate-100">
                     
-                    <button type="button" onclick="handleInstallApp()" id="btn-install-app" class="w-full py-2 px-3 app-install-btn rounded-xl flex items-center justify-between shadow-md mb-3">
+                    <button type="button" onclick="handleInstallApp()" id="btn-install-app" class="w-full py-2 px-3 app-install-btn rounded-xl flex items-center justify-between shadow-md mb-3 hidden">
                         <div class="flex items-center gap-3">
                             <div class="w-10 h-10 bg-white rounded-lg flex items-center justify-center overflow-hidden p-1 shadow-sm">
                                 <img src="image/yanghealth.png" alt="App Icon" class="w-full h-full object-contain">
                             </div>
                             <div class="text-left">
-                                <div class="text-xs font-medium text-slate-300">Install App</div>
-                                <div class="text-sm font-bold text-white">安裝應用程式</div>
+                                <div class="text-xs font-medium text-slate-300" id="install-subtitle">Install App</div>
+                                <div class="text-sm font-bold text-white" id="install-title">安裝應用程式</div>
                             </div>
                         </div>
                         <i data-lucide="download" class="w-5 h-5 text-white/80 mr-1"></i>
@@ -279,36 +294,48 @@
             initInstallButton();
         });
 
-        // 捕捉原生的安裝事件 (僅在符合 PWA 標準的 Android/Desktop 觸發)
         window.addEventListener('beforeinstallprompt', (e) => {
             e.preventDefault();
             deferredPrompt = e;
             console.log("Captured beforeinstallprompt event");
         });
 
-        // 判斷是否為 iOS
+        // 判斷裝置
         const isIos = /iPhone|iPad|iPod/.test(navigator.userAgent) && !window.MSStream;
-        // 判斷是否已安裝
         const isStandalone = window.navigator.standalone || window.matchMedia('(display-mode: standalone)').matches;
 
         function initInstallButton() {
             const btn = document.getElementById('btn-install-app');
             if (isStandalone) {
-                btn.classList.add('hidden'); // 如果已安裝則隱藏
-            } else {
-                btn.classList.remove('hidden'); // 強制顯示
+                btn.classList.add('hidden');
+                return;
             }
+
+            const title = document.getElementById('install-title');
+            const subtitle = document.getElementById('install-subtitle');
+            const icon = btn.querySelector('i');
+
+            if (isIos) {
+                title.innerText = "安裝到 iPhone";
+                subtitle.innerText = "Install for iOS";
+                icon.setAttribute('data-lucide', 'share');
+            } else {
+                title.innerText = "安裝應用程式";
+                subtitle.innerText = "Install App";
+                icon.setAttribute('data-lucide', 'download');
+            }
+            
+            btn.classList.remove('hidden');
+            lucide.createIcons();
         }
 
         function handleInstallApp() {
             if (deferredPrompt) {
-                // 情況 1: 瀏覽器支援自動安裝 (Android/Desktop PWA)
                 deferredPrompt.prompt();
                 deferredPrompt.userChoice.then((choiceResult) => {
                     deferredPrompt = null;
                 });
             } else {
-                // 情況 2: iOS 或 瀏覽器不支援自動安裝 -> 顯示教學視窗
                 showInstallInstructions();
             }
         }
@@ -317,7 +344,6 @@
             const modal = document.getElementById('install-modal');
             const content = document.getElementById('install-steps-content');
             
-            // 根據裝置動態調整教學內容
             if (isIos) {
                 content.innerHTML = `
                     <div class="flex items-center gap-3">
@@ -334,7 +360,6 @@
                     </div>
                 `;
             } else {
-                // Android / Desktop 的手動教學
                 content.innerHTML = `
                     <div class="flex items-center gap-3">
                         <span class="w-6 h-6 rounded-full bg-white border border-slate-200 flex items-center justify-center font-bold text-xs text-indigo-600 shadow-sm">1</span>
@@ -353,7 +378,7 @@
             
             modal.classList.remove('hidden');
             modal.classList.add('flex');
-            lucide.createIcons(); // 刷新圖示
+            lucide.createIcons();
         }
 
         function closeInstallModal() {
@@ -376,6 +401,9 @@
                 userSection.classList.remove('hidden');
                 mainCard.classList.remove('max-w-md'); 
                 mainCard.classList.add('max-w-lg');
+                
+                // [新增] 登入後抓取最新資料
+                fetchLatestData(userSession.uid);
             } else {
                 loginSection.classList.remove('hidden');
                 userSection.classList.add('hidden');
@@ -383,6 +411,60 @@
                 mainCard.classList.remove('max-w-lg');
             }
             lucide.createIcons();
+        }
+
+        // [新增] 抓取使用者最新資料函式
+        async function fetchLatestData(uid) {
+            const card = document.getElementById('latest-data-card');
+            const displayBP = document.getElementById('display-bp');
+            const displayHR = document.getElementById('display-hr');
+            const displayBS = document.getElementById('display-bs');
+            const displayTime = document.getElementById('display-time');
+
+            try {
+                // 加入時間戳記避免快取
+                const response = await fetch(`${API_URL}?action=getData&uid=${encodeURIComponent(uid)}&t=${new Date().getTime()}`);
+                const rawData = await response.json();
+
+                if (rawData && rawData.length > 0) {
+                    // 後端回傳順序為：最新的在最前面 (假設後端回傳是 push 上去的，通常 array index 0 是最舊，last 是最新)
+                    // 檢查 code.gs: handleGetData 是從下往上讀 (i--) push 到 result，所以 result[0] 是最新的。
+                    
+                    // 尋找最新一筆有血壓的資料
+                    const latestBP = rawData.find(d => d.sbp && d.dbp);
+                    // 尋找最新一筆有血糖的資料
+                    const latestBS = rawData.find(d => d.glucose);
+                    
+                    if (latestBP) {
+                        displayBP.innerText = `${latestBP.sbp}/${latestBP.dbp}`;
+                        displayHR.innerText = latestBP.hr || '--';
+                    }
+                    if (latestBS) {
+                        displayBS.innerText = latestBS.glucose;
+                    }
+
+                    // 顯示最後更新時間 (取兩者中較新的)
+                    let lastDateStr = null;
+                    if (latestBP && latestBS) {
+                        const dateBP = new Date(latestBP.date);
+                        const dateBS = new Date(latestBS.date);
+                        lastDateStr = (dateBP > dateBS) ? latestBP.date : latestBS.date;
+                    } else if (latestBP) {
+                        lastDateStr = latestBP.date;
+                    } else if (latestBS) {
+                        lastDateStr = latestBS.date;
+                    }
+
+                    if (lastDateStr) {
+                        const dateObj = new Date(lastDateStr);
+                        const timeStr = `${dateObj.getMonth()+1}/${dateObj.getDate()} ${String(dateObj.getHours()).padStart(2,'0')}:${String(dateObj.getMinutes()).padStart(2,'0')}`;
+                        displayTime.innerText = timeStr;
+                        card.classList.remove('hidden');
+                    }
+                }
+            } catch (e) {
+                console.error("Error fetching latest data:", e);
+            }
         }
 
         async function handleCredentialResponse(response) {
@@ -496,12 +578,18 @@
             try {
                 await fetch(API_URL, {
                     method: 'POST',
+                    mode: 'no-cors',
+                    headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify(payload)
                 });
 
                 setTimeout(() => {
                     alert("紀錄已成功儲存！");
-                    window.location.href = 'dashboard.html';
+                    // [新增] 儲存後立即重新抓取最新資料更新 UI
+                    fetchLatestData(userSession.uid);
+                    // 清空輸入框
+                    document.getElementById('note').value = '';
+                    resetBtn();
                 }, 800);
 
             } catch (error) {
