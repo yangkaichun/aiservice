@@ -280,48 +280,38 @@
         document.addEventListener('DOMContentLoaded', () => {
             lucide.createIcons();
             
-            // PWA 安裝邏輯
             window.addEventListener('beforeinstallprompt', (e) => {
                 e.preventDefault();
                 deferredPrompt = e;
-                initInstallButton(); // 重新檢查以顯示按鈕
+                initInstallButton();
             });
 
-            // 初始化按鈕
             initInstallButton();
-            
             initDashboard();
         });
 
-        // [關鍵修正]：處理按鈕圖示與點擊事件
+        // 安裝按鈕邏輯
         function initInstallButton() {
             const btn = document.getElementById('btn-install-sidebar');
             if (!btn) return;
 
             const isStandalone = window.navigator.standalone || window.matchMedia('(display-mode: standalone)').matches;
-            
-            // 如果已安裝，隱藏按鈕
             if (isStandalone) {
                 btn.classList.add('hidden');
                 return;
             }
 
-            // 判斷 iOS / Android
             const isIos = /iPhone|iPad|iPod/.test(navigator.userAgent) && !window.MSStream;
             const btnText = document.getElementById('sidebar-install-text');
-            
-            // 移除舊的圖示
             const oldIcon = btn.querySelector('svg') || btn.querySelector('i');
             if (oldIcon) oldIcon.remove();
 
-            // 建立新圖示
             const newIcon = document.createElement('i');
             newIcon.classList.add('w-4', 'h-4');
 
             if (isIos) {
                 if (btnText) btnText.innerText = "安裝 App (iOS)";
                 newIcon.setAttribute('data-lucide', 'share');
-                // iOS 不支援自動安裝，只能顯示教學
                 btn.onclick = () => {
                     document.getElementById('ios-install-modal').classList.remove('hidden');
                     document.getElementById('ios-install-modal').classList.add('flex');
@@ -332,14 +322,9 @@
                 btn.onclick = installPWA;
             }
             
-            // 插入圖示
-            if (btnText) {
-                btn.insertBefore(newIcon, btnText);
-            } else {
-                btn.appendChild(newIcon);
-            }
+            if (btnText) btn.insertBefore(newIcon, btnText);
+            else btn.appendChild(newIcon);
             
-            // 強制顯示按鈕
             btn.classList.remove('hidden');
             lucide.createIcons();
         }
@@ -351,7 +336,6 @@
                 deferredPrompt.prompt();
                 deferredPrompt.userChoice.then((choiceResult) => { deferredPrompt = null; });
             } else if (isIos) {
-                // 如果是 iOS，顯示教學
                 document.getElementById('ios-install-modal').classList.remove('hidden');
                 document.getElementById('ios-install-modal').classList.add('flex');
             } else {
@@ -396,38 +380,33 @@
 
         async function initDashboard() {
             try {
-                // 1. 抓取系統設定/使用者列表 (等待完成)
                 const response = await fetch(`${API_URL}?action=getSettings`);
                 const users = await response.json();
-                renderUserList(users);
                 
-                // 2. 判斷登入者並載入其數據
+                // [關鍵修正] 過濾未授權用戶 (只顯示 active)
+                const authorizedUsers = users.filter(u => u.status === 'active');
+                
+                renderUserList(authorizedUsers);
+                
                 if (loggedInSession) {
-                    const me = users.find(u => u.uid === loggedInSession.uid);
+                    const me = authorizedUsers.find(u => u.uid === loggedInSession.uid);
                     
                     if (me) {
                         updateSidebarDisplayName(me.name, loggedInSession.picture);
                         await selectUser(me.uid, me.name, me);
                     } else {
+                        // 如果自己是 pending 但意外進來，或者被停權，這裡做個簡單處理
+                        // 基本上 index.html 會擋，但若已在 dashboard 被停權，可顯示自己但列表不顯示別人
                         const sessionName = loggedInSession.name || loggedInSession.email;
                         updateSidebarDisplayName(sessionName, loggedInSession.picture);
                         
-                        const tempUser = { uid: loggedInSession.uid, name: sessionName, email: loggedInSession.email, role: loggedInSession.role || 'user', provider: loggedInSession.provider };
-                        const listContainer = document.getElementById('userList');
-                        const div = document.createElement('div');
-                        const avatarContent = loggedInSession.picture ? `<img src="${loggedInSession.picture}" class="w-full h-full object-cover">` : loggedInSession.name.charAt(0).toUpperCase();
-                        div.className = `p-3 rounded-xl cursor-pointer hover:bg-indigo-50 hover:text-indigo-600 transition flex items-center gap-3 text-slate-600 font-medium group user-item border border-transparent`;
-                        div.innerHTML = `<div class="w-8 h-8 rounded-full bg-indigo-100 flex items-center justify-center font-bold text-indigo-600 border border-slate-200 overflow-hidden">${avatarContent}</div><span class="truncate">${sessionName} (您)</span>`;
-                        div.onclick = () => { selectUser(tempUser.uid, sessionName, tempUser); if (window.innerWidth < 1024) toggleSidebar(); };
-                        if(listContainer.firstChild) listContainer.insertBefore(div, listContainer.firstChild); else listContainer.appendChild(div);
-
-                        await selectUser(tempUser.uid, sessionName, tempUser);
+                        // 這裡選擇不強制加入列表，只顯示自己數據
+                        await selectUser(loggedInSession.uid, sessionName, loggedInSession);
                     }
-                } else if (users.length > 0) {
-                    await selectUser(users[0].uid, users[0].name);
+                } else if (authorizedUsers.length > 0) {
+                    await selectUser(authorizedUsers[0].uid, authorizedUsers[0].name);
                 }
 
-                // 資料載入完成，隱藏 loading 區塊
                 document.getElementById('loadingState').classList.add('hidden');
                 document.getElementById('dashboardContent').classList.remove('hidden');
                 document.getElementById('dashboardContent').classList.add('animate-fade-in');
@@ -442,7 +421,7 @@
             const listContainer = document.getElementById('userList'); 
             document.getElementById('userCount').innerText = users.length; 
             listContainer.innerHTML = ''; 
-            if (users.length === 0) { listContainer.innerHTML = '<div class="p-4 text-center text-sm text-slate-400">無使用者</div>'; return; } 
+            if (users.length === 0) { listContainer.innerHTML = '<div class="p-4 text-center text-sm text-slate-400">無可用使用者</div>'; return; } 
             users.forEach(user => { 
                 const div = document.createElement('div'); 
                 const avatarText = user.name ? user.name.charAt(0).toUpperCase() : '?'; 
@@ -698,11 +677,8 @@
         function updateTTSButton(playing, isLoading = false) {
             const btn = document.getElementById('btn-tts');
             const btnText = document.getElementById('btn-tts-text');
-            
-            // 修正錯誤的核心：先移除，再新增
             const existingIcon = btn.querySelector('svg') || btn.querySelector('i');
             if (existingIcon) existingIcon.remove();
-            
             const newIcon = document.createElement('i');
             newIcon.classList.add('w-5', 'h-5', 'group-hover:scale-110', 'transition-transform');
             
