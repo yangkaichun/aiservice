@@ -50,7 +50,8 @@
 
         async function fetchUsers() {
             try {
-                const res = await fetch(API_URL, {
+                // 加時間戳記避免快取
+                const res = await fetch(`${API_URL}?t=${new Date().getTime()}`, {
                     method: 'POST',
                     body: JSON.stringify({
                         action: 'adminGetUsers',
@@ -79,9 +80,18 @@
                     ? `<span class="px-2 py-1 bg-amber-100 text-amber-700 rounded-full text-xs font-bold">待審核</span>`
                     : `<span class="px-2 py-1 bg-emerald-100 text-emerald-700 rounded-full text-xs font-bold">已啟用</span>`;
                 
-                const actionBtn = isPending
-                    ? `<button onclick="authorize('${user.uid}')" class="px-3 py-1.5 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition shadow-sm text-xs font-bold">授權開通</button>`
-                    : `<span class="text-slate-300">-</span>`;
+                // [修改] 根據狀態顯示不同按鈕
+                // 如果是 pending -> 顯示授權 (藍色)
+                // 如果是 active -> 顯示取消授權 (紅色)
+                // 排除管理員自己
+                let actionBtn = '';
+                if (user.email === 'kaichun.yang@gmail.com') {
+                    actionBtn = `<span class="text-slate-300">管理員</span>`;
+                } else if (isPending) {
+                    actionBtn = `<button onclick="updateStatus('${user.uid}', 'active')" class="px-3 py-1.5 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition shadow-sm text-xs font-bold">授權開通</button>`;
+                } else {
+                    actionBtn = `<button onclick="updateStatus('${user.uid}', 'pending')" class="px-3 py-1.5 bg-rose-500 text-white rounded-lg hover:bg-rose-600 transition shadow-sm text-xs font-bold">取消授權</button>`;
+                }
 
                 const tr = document.createElement('tr');
                 tr.className = "border-b border-slate-100 hover:bg-slate-50";
@@ -98,8 +108,10 @@
             });
         }
 
-        async function authorize(targetUid) {
-            if(!confirm("確定要授權此用戶嗎？")) return;
+        // [修改] 統一函式處理狀態變更
+        async function updateStatus(targetUid, newStatus) {
+            const actionName = newStatus === 'active' ? '授權' : '取消授權';
+            if(!confirm(`確定要${actionName}此用戶嗎？`)) return;
             
             try {
                 const res = await fetch(API_URL, {
@@ -107,13 +119,14 @@
                     body: JSON.stringify({
                         action: 'adminAuthorize',
                         adminEmail: currentUser.email,
-                        targetUid: targetUid
+                        targetUid: targetUid,
+                        status: newStatus // 傳入新狀態
                     })
                 });
                 const data = await res.json();
                 if (data.success) {
-                    alert("授權成功");
-                    fetchUsers(); // 重新整理
+                    alert(`${actionName}成功`);
+                    fetchUsers(); // 重新整理列表
                 } else {
                     alert("失敗: " + data.message);
                 }
