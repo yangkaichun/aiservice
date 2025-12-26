@@ -73,10 +73,9 @@
 
         async function fetchUsers() {
             try {
-                //                 const res = await fetch(`${API_URL}?t=${new Date().getTime()}`, {
+                // 這裡使用 POST 且不帶 Header，確保避免 CORS 問題
+                const res = await fetch(`${API_URL}?t=${new Date().getTime()}`, {
                     method: 'POST',
-                    // 加入 text/plain 避免 CORS 預檢
-                    headers: { "Content-Type": "text/plain" },
                     body: JSON.stringify({
                         action: 'adminGetUsers',
                         adminEmail: currentUser.email
@@ -90,7 +89,7 @@
                 }
             } catch (e) {
                 console.error(e);
-                alert("連線錯誤");
+                alert("連線錯誤 (Fetch Error)");
             }
         }
 
@@ -142,9 +141,9 @@
             if(!confirm(`確定要${actionName}此用戶嗎？`)) return;
             
             try {
+                // [修正] 移除 headers，只保留 body，避免 CORS 預檢失敗
                 const res = await fetch(API_URL, {
                     method: 'POST',
-                    headers: { "Content-Type": "text/plain" }, // 避免 CORS 錯誤
                     body: JSON.stringify({
                         action: 'adminAuthorize',
                         adminEmail: currentUser.email,
@@ -179,7 +178,7 @@
             document.getElementById('edit-modal').classList.remove('flex');
         }
 
-        // [關鍵修正]：handleEditSubmit
+        // [核心修正] 移除 headers，解決 CORS 問題
         async function handleEditSubmit(e) {
             e.preventDefault();
             
@@ -196,10 +195,10 @@
             try {
                 const res = await fetch(API_URL, {
                     method: 'POST',
-                    // [關鍵] 指定 text/plain 讓 GAS 不會因為 OPTIONS 預檢失敗而報 CORS 錯誤
-                    headers: { "Content-Type": "text/plain;charset=utf-8" },
+                    // [重點] 移除 headers 設定，讓瀏覽器發送簡單請求 (Simple Request)
+                    // Google Apps Script 會自動解析 body string
                     body: JSON.stringify({
-                        action: 'updateProfile', 
+                        action: 'updateProfile', // 使用 code.gs 現有的功能
                         userEmail: email,        
                         userName: name,
                         userBirthday: birthday
@@ -217,7 +216,7 @@
                 }
             } catch (err) {
                 console.error(err);
-                alert("連線錯誤，請稍後再試。");
+                alert("連線錯誤，請檢查網路或稍後再試。");
             } finally {
                 btn.disabled = false;
                 btn.innerHTML = originalText;
