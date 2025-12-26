@@ -51,7 +51,7 @@
                 
                 <div class="flex justify-end gap-2 mt-6">
                     <button type="button" onclick="closeEditModal()" class="px-4 py-2 text-slate-500 hover:bg-slate-100 rounded-lg">取消</button>
-                    <button type="submit" class="px-4 py-2 bg-indigo-600 text-white hover:bg-indigo-700 rounded-lg font-bold">儲存變更</button>
+                    <button type="submit" id="btn-save-edit" class="px-4 py-2 bg-indigo-600 text-white hover:bg-indigo-700 rounded-lg font-bold transition flex items-center gap-2">儲存變更</button>
                 </div>
             </form>
         </div>
@@ -73,8 +73,10 @@
 
         async function fetchUsers() {
             try {
-                const res = await fetch(`${API_URL}?t=${new Date().getTime()}`, {
+                //                 const res = await fetch(`${API_URL}?t=${new Date().getTime()}`, {
                     method: 'POST',
+                    // 加入 text/plain 避免 CORS 預檢
+                    headers: { "Content-Type": "text/plain" },
                     body: JSON.stringify({
                         action: 'adminGetUsers',
                         adminEmail: currentUser.email
@@ -112,8 +114,7 @@
                     authBtn = `<button onclick="updateStatus('${user.uid}', 'pending')" class="px-3 py-1.5 bg-rose-500 text-white rounded-lg hover:bg-rose-600 transition shadow-sm text-xs font-bold mr-2">取消授權</button>`;
                 }
 
-                // [新增] 編輯按鈕
-                // 將 user 物件轉為字串以便傳入函式 (排除自己以免誤改)
+                // 編輯按鈕
                 const userDataStr = encodeURIComponent(JSON.stringify(user));
                 const editBtn = `<button onclick="openEditModal('${userDataStr}')" class="px-3 py-1.5 bg-slate-200 text-slate-600 hover:bg-slate-300 rounded-lg transition shadow-sm text-xs font-bold flex items-center gap-1"><i data-lucide="edit-2" class="w-3 h-3"></i> 編輯</button>`;
 
@@ -133,7 +134,7 @@
                 `;
                 tbody.appendChild(tr);
             });
-            lucide.createIcons(); // 重新渲染圖示
+            lucide.createIcons();
         }
 
         async function updateStatus(targetUid, newStatus) {
@@ -143,6 +144,7 @@
             try {
                 const res = await fetch(API_URL, {
                     method: 'POST',
+                    headers: { "Content-Type": "text/plain" }, // 避免 CORS 錯誤
                     body: JSON.stringify({
                         action: 'adminAuthorize',
                         adminEmail: currentUser.email,
@@ -162,7 +164,6 @@
             }
         }
 
-        // [新增] 開啟編輯視窗
         function openEditModal(userStr) {
             const user = JSON.parse(decodeURIComponent(userStr));
             document.getElementById('edit-email').value = user.email;
@@ -178,9 +179,16 @@
             document.getElementById('edit-modal').classList.remove('flex');
         }
 
-        // [新增] 提交編輯 (使用現有的 updateProfile 路由)
+        // [關鍵修正]：handleEditSubmit
         async function handleEditSubmit(e) {
             e.preventDefault();
+            
+            const btn = document.getElementById('btn-save-edit');
+            const originalText = btn.innerHTML;
+            btn.disabled = true;
+            btn.innerHTML = `<i data-lucide="loader-2" class="w-4 h-4 animate-spin"></i> 處理中...`;
+            lucide.createIcons();
+
             const email = document.getElementById('edit-email').value;
             const name = document.getElementById('edit-name').value;
             const birthday = document.getElementById('edit-birthday').value;
@@ -188,14 +196,18 @@
             try {
                 const res = await fetch(API_URL, {
                     method: 'POST',
+                    // [關鍵] 指定 text/plain 讓 GAS 不會因為 OPTIONS 預檢失敗而報 CORS 錯誤
+                    headers: { "Content-Type": "text/plain;charset=utf-8" },
                     body: JSON.stringify({
-                        action: 'updateProfile', // 重用現有的更新功能
-                        userEmail: email,        // 指定目標 Email
+                        action: 'updateProfile', 
+                        userEmail: email,        
                         userName: name,
                         userBirthday: birthday
                     })
                 });
+                
                 const data = await res.json();
+                
                 if (data.success) {
                     alert("更新成功");
                     closeEditModal();
@@ -204,7 +216,11 @@
                     alert("更新失敗: " + data.message);
                 }
             } catch (err) {
-                alert("連線錯誤");
+                console.error(err);
+                alert("連線錯誤，請稍後再試。");
+            } finally {
+                btn.disabled = false;
+                btn.innerHTML = originalText;
             }
         }
     </script>
