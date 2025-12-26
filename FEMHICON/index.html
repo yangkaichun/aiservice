@@ -1,606 +1,252 @@
 <!DOCTYPE html>
 <html lang="zh-TW">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>亞東醫院完整功能整合版</title>
+<style>
+    :root {
+        --main-green: #00854a; /* 亞東標準綠 */
+        --light-green: #e8f5e9;
+        --bg-color: #f4f6f8;
+        --text-color: #333;
+    }
+    body {
+        font-family: "Microsoft JhengHei", "Heiti TC", sans-serif;
+        background-color: var(--bg-color);
+        margin: 0;
+        padding: 20px;
+        display: flex;
+        justify-content: center;
+    }
+    .container {
+        width: 100%;
+        max-width: 900px;
+        display: flex;
+        flex-direction: column;
+        gap: 30px;
+    }
     
-    <meta name="apple-mobile-web-app-capable" content="yes">
-    <meta name="apple-mobile-web-app-status-bar-style" content="default">
-    <meta name="apple-mobile-web-app-title" content="YangHealth">
-    <meta name="theme-color" content="#ffffff">
-    
-    <link rel="manifest" href="manifest.json">
-    <link rel="apple-touch-icon" href="image/yanghealth.png">
-    <link rel="icon" type="image/x-icon" href="image/yanghealth.ico">
-    
-    <title>YangHome Health | 智慧健康監控</title>
-    
-    <script src="https://cdn.tailwindcss.com"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap" rel="stylesheet">
-    <script src="https://unpkg.com/lucide@latest"></script>
-    
-    <script src="https://accounts.google.com/gsi/client" async defer></script>
-    
-    <script src="config.js"></script>
+    /* === 標題樣式 === */
+    .section-title {
+        font-size: 1.2rem;
+        font-weight: bold;
+        color: var(--main-green);
+        border-left: 5px solid var(--main-green);
+        padding-left: 10px;
+        margin: 20px 0 10px 0;
+        background-color: #fff;
+        padding: 10px 15px;
+        border-radius: 5px;
+        box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+    }
 
-    <style>
-        /* 1. 極簡白底風格設定 */
-        body { 
-            font-family: 'Inter', sans-serif; 
-            background-color: #f8fafc; 
-            color: #1e293b;
-            min-height: 100vh;
-            overflow-y: auto;
-        }
-        
-        /* 2. 簡約卡片 */
-        .clean-card { 
-            background-color: #ffffff;
-            border-radius: 1.5rem;
-            border: 1px solid #e2e8f0; 
-            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
-            overflow: hidden;
-        }
+    /* === 網格佈局 === */
+    .grid-box {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+        gap: 15px;
+    }
 
-        /* 輸入框樣式 */
-        .clean-input {
-            background-color: #ffffff;
-            border: 1px solid #cbd5e1;
-            color: #334155;
-        }
-        .clean-input:focus {
-            border-color: #6366f1;
-            outline: none;
-            box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1); 
-        }
-        
-        /* 選項按鈕樣式 */
-        .radio-label {
-            background-color: #f1f5f9;
-            color: #64748b;
-            border: 1px solid transparent;
-        }
-        input:checked + .radio-label {
-            background-color: #ffffff;
-            border-color: #e2e8f0;
-            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
-            color: #4f46e5;
-            font-weight: 600;
-        }
+    /* === 卡片通用樣式 === */
+    .menu-item {
+        background: #fff;
+        border-radius: 12px;
+        padding: 20px 10px;
+        text-align: center;
+        box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        transition: transform 0.2s, box-shadow 0.2s;
+        min-height: 120px;
+        cursor: pointer;
+    }
+    .menu-item:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 8px 15px rgba(0,0,0,0.1);
+    }
 
-        /* App 安裝按鈕特效 */
-        .app-install-btn {
-            background: linear-gradient(to right, #1e293b, #334155);
-            color: white;
-            transition: all 0.3s ease;
-        }
-        .app-install-btn:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 10px 20px -5px rgba(30, 41, 59, 0.3);
-        }
-        .app-install-btn:active {
-            transform: translateY(0);
-        }
+    /* === 圖標通用設定 === */
+    .icon-svg {
+        fill: var(--main-green);
+        width: 50px;
+        height: 50px;
+        margin-bottom: 12px;
+    }
+    .icon-stroke {
+        fill: none;
+        stroke: var(--main-green);
+        stroke-width: 2.5;
+        stroke-linecap: round;
+        stroke-linejoin: round;
+        width: 50px;
+        height: 50px;
+        margin-bottom: 12px;
+    }
 
-        /* 登入遮罩 */
-        #login-overlay {
-            backdrop-filter: blur(5px);
-        }
-    </style>
+    /* === 文字設定 === */
+    .label {
+        font-size: 16px;
+        font-weight: bold;
+        color: var(--text-color);
+        line-height: 1.4;
+    }
+
+    /* === 特殊區塊：亞東愛健康 (綠底) === */
+    .menu-item.special-green {
+        background-color: var(--main-green);
+    }
+    .menu-item.special-green .label {
+        color: white;
+        font-size: 20px;
+    }
+
+</style>
 </head>
-<body class="flex flex-col items-center justify-center p-4 py-10 relative">
+<body>
 
-    <div id="login-overlay" class="fixed inset-0 bg-white/80 z-50 hidden flex-col items-center justify-center">
-        <div class="w-12 h-12 border-4 border-indigo-200 border-t-indigo-600 rounded-full animate-spin"></div>
-        <p class="mt-4 text-indigo-600 font-bold text-lg animate-pulse">正在登入中，請稍候...</p>
+<div class="container">
+
+    <div>
+        <div class="section-title">首頁常用服務 (Main Menu)</div>
+        <div class="grid-box">
+            
+            <div class="menu-item">
+                <svg class="icon-stroke" viewBox="0 0 100 100" style="stroke-width:6;">
+                    <path d="M50,90 C50,90 10,65 10,35 C10,15 25,5 45,15 C50,18 50,18 55,15 C75,5 90,15 90,35 C90,65 50,90 50,90 Z" />
+                    <polyline points="25,35 35,35 45,20 55,50 65,35 75,35" />
+                </svg>
+                <div class="label">掛號及<br>就醫指南</div>
+            </div>
+
+            <div class="menu-item">
+                <svg class="icon-svg" viewBox="0 0 24 24">
+                   <path d="M21,11l-7-5v2C9,8 5.8,10 3,12c-1.1,0.7 -1.1,2.3 0,3.1c2.8,2 6,4 11,4v2l7-5c0.6-0.4 0.6-1.5 0-1.9z M7,13.5c-0.83,0 -1.5-0.67 -1.5-1.5s0.67-1.5 1.5-1.5s1.5,0.67 1.5,1.5S7.83,13.5 7,13.5z"/>
+                   <path d="M21 8l2-2 M22 12h2 M21 16l2 2" stroke="var(--main-green)" stroke-width="2" stroke-linecap="round"/>
+                </svg>
+                <div class="label">最新消息</div>
+            </div>
+
+            <div class="menu-item">
+                <svg class="icon-stroke" viewBox="0 0 24 24">
+                    <rect x="5" y="2" width="14" height="20" rx="2" ry="2" />
+                    <line x1="11" y1="18" x2="13" y2="18" stroke-width="2"/>
+                </svg>
+                <div class="label">APP下載及<br>病人參與問卷</div>
+            </div>
+
+            <div class="menu-item">
+                <svg class="icon-svg" viewBox="0 0 24 24">
+                    <path d="M19,11h-5V6c0-0.55-0.45-1-1-1h-2c-0.55,0-1,0.45-1,1v5H5c-0.55,0-1,0.45-1,1v2c0,0.55,0.45,1,1,1h5v5c0,0.55,0.45,1,1,1h2c0.55,0,1-0.45,1-1v-5h5c0.55,0,1-0.45,1-1v-2C20,11.45,19.55,11,19,11z"/>
+                </svg>
+                <div class="label">特色醫療及<br>衛教專區</div>
+            </div>
+
+            <div class="menu-item special-green">
+                <svg viewBox="0 0 24 24" style="width:50px; height:50px; fill:white; margin-bottom:12px;">
+                    <path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/>
+                </svg>
+                <div class="label">亞東❤️健康</div>
+            </div>
+
+            <div class="menu-item">
+                <svg class="icon-stroke" viewBox="0 0 24 24" stroke-width="3">
+                    <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71" />
+                    <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71" />
+                </svg>
+                <div class="label">綁定資訊</div>
+            </div>
+        </div>
     </div>
 
-    <div id="install-modal" class="fixed inset-0 bg-black/50 z-50 hidden flex-col items-center justify-end pb-10 animate-fade-in" onclick="closeInstallModal()">
-        <div class="bg-white w-[90%] max-w-md rounded-3xl p-6 relative shadow-2xl" onclick="event.stopPropagation()">
-            <button onclick="closeInstallModal()" class="absolute top-4 right-4 text-slate-400 hover:text-slate-600"><i data-lucide="x" class="w-6 h-6"></i></button>
-            <div class="text-center">
-                <div class="w-16 h-16 bg-white rounded-2xl flex items-center justify-center mx-auto mb-4 border border-indigo-100 shadow-sm overflow-hidden p-2">
-                    <img src="image/yanghealth.png" class="w-full h-full object-contain">
-                </div>
-                <h3 class="text-xl font-bold text-slate-800 mb-2">安裝應用程式</h3>
-                <p class="text-sm text-slate-500 mb-6" id="install-instructions-text">請依照以下步驟將 App 加入主畫面：</p>
-                
-                <div class="space-y-3 text-left text-sm text-slate-600 bg-slate-50 p-5 rounded-2xl border border-slate-200">
-                    <div id="install-steps-content">
-                        </div>
-                </div>
+    <div>
+        <div class="section-title">亞東官網細項 (Website Details)</div>
+        <div class="grid-box">
+            <div class="menu-item">
+                <svg class="icon-svg" viewBox="0 0 24 24"><path d="M16 11c1.66 0 2.99-1.34 2.99-3S17.66 5 16 5c-1.66 0-3 1.34-3 3s1.34 3 3 3zm-8 0c1.66 0 2.99-1.34 2.99-3S9.66 5 8 5C6.34 5 5 6.34 5 8s1.34 3 3 3zm0 2c-2.33 0-7 1.17-7 3.5V19h14v-2.5c0-2.33-4.67-3.5-7-3.5zm8 0c-.29 0-.62.02-.97.05 1.16.84 1.97 1.97 1.97 3.45V19h6v-2.5c0-2.33-4.67-3.5-7-3.5z"/></svg>
+                <div class="label">醫療團隊</div>
+            </div>
+            <div class="menu-item">
+                <svg class="icon-svg" viewBox="0 0 24 24"><path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35zM12 11c1.1 0 2-.9 2-2s-.9-2-2-2-2 .9-2 2 .9 2 2 2z"/></svg>
+                <div class="label">為民服務</div>
             </div>
         </div>
     </div>
 
-    <div class="clean-card w-full max-w-md p-8 my-8 mb-20" id="main-card">
-        
-        <div class="text-center mb-8">
-            <div class="flex justify-center mb-6">
-                <div class="w-24 h-24 bg-white rounded-3xl flex items-center justify-center shadow-sm overflow-hidden p-4 border border-slate-100">
-                    <img src="image/yanghealth.png" alt="YangHealth Logo" class="w-full h-full object-contain">
-                </div>
-            </div>
-            <h1 class="text-3xl font-bold text-slate-800 tracking-tight">YangHome Health</h1>
-            <p class="text-slate-400 text-xs font-bold mt-2 tracking-widest uppercase">AI-Powered Health Monitor</p>
-        </div>
-
-        <div id="login-section" class="space-y-6">
-            <div class="flex justify-center">
-                <div id="g_id_onload"
-                     data-client_id="142808541856-1sfda1hcfk12p1r0a5fbmldugb1f99vn.apps.googleusercontent.com" 
-                     data-callback="handleCredentialResponse"
-                     data-auto_prompt="false">
-                </div>
-                <div class="g_id_signin"
-                     data-type="standard"
-                     data-size="large"
-                     data-theme="filled_blue" 
-                     data-text="sign_in_with"
-                     data-shape="pill"
-                     data-logo_alignment="left">
-                </div>
-            </div>
-        </div>
-
-        <div id="user-section" class="hidden">
-            <div class="flex justify-between items-center mb-6 bg-slate-50 p-4 rounded-2xl border border-slate-100">
-                <div>
-                    <p class="text-[10px] uppercase tracking-wider text-slate-400 font-bold mb-0.5">Current User</p>
-                    <h2 class="text-lg font-bold text-slate-800" id="display-name">User</h2>
-                    <p class="text-xs text-slate-500 truncate max-w-[150px]" id="display-email">...</p>
-                </div>
-                <button onclick="logout()" class="p-2.5 bg-white text-rose-500 hover:bg-rose-50 rounded-xl transition-all shadow-sm border border-slate-200" title="登出">
-                    <i data-lucide="log-out" class="w-5 h-5"></i>
-                </button>
+    <div>
+        <div class="section-title">更多消息與數位服務 (Digital Services)</div>
+        <div class="grid-box">
+            
+            <div class="menu-item">
+                <svg class="icon-svg" viewBox="0 0 24 24"><path d="M20 2H4c-1.1 0-2 .9-2 2v18l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zM6 9h12v2H6V9zm8 5H6v-2h8v2zm4-6H6V6h12v2z"/></svg>
+                <div class="label">更多消息(Line)</div>
             </div>
 
-            <div id="latest-data-card" class="mb-6 hidden animate-fade-in">
-                <div class="flex items-center justify-between mb-3 px-1">
-                    <h3 class="text-xs font-bold text-slate-400 uppercase tracking-wider flex items-center gap-1">
-                        <i data-lucide="activity" class="w-3 h-3"></i> 最新量測
-                    </h3>
-                    <span id="display-time" class="text-[10px] text-slate-400 bg-slate-100 px-2 py-0.5 rounded-full font-mono">--</span>
-                </div>
-                <div class="grid grid-cols-2 gap-3 mb-3">
-                    <div class="p-4 bg-rose-50 rounded-2xl border border-rose-100 relative overflow-hidden">
-                        <div class="absolute -right-2 -top-2 w-12 h-12 bg-rose-100 rounded-full opacity-50"></div>
-                        <div class="flex items-center gap-1.5 text-rose-500 text-xs font-bold mb-1"><i data-lucide="heart" class="w-3 h-3"></i> 收縮壓</div>
-                        <div class="flex items-baseline gap-1"><span id="val-sys" class="text-2xl font-bold text-slate-800">--</span><span class="text-[10px] text-slate-400">mmHg</span></div>
-                    </div>
-                    <div class="p-4 bg-blue-50 rounded-2xl border border-blue-100 relative overflow-hidden">
-                        <div class="absolute -right-2 -top-2 w-12 h-12 bg-blue-100 rounded-full opacity-50"></div>
-                        <div class="flex items-center gap-1.5 text-blue-500 text-xs font-bold mb-1"><i data-lucide="activity" class="w-3 h-3"></i> 舒張壓</div>
-                        <div class="flex items-baseline gap-1"><span id="val-dia" class="text-2xl font-bold text-slate-800">--</span><span class="text-[10px] text-slate-400">mmHg</span></div>
-                    </div>
-                </div>
-                <div class="grid grid-cols-2 gap-3">
-                    <div class="p-4 bg-emerald-50 rounded-2xl border border-emerald-100 relative overflow-hidden">
-                        <div class="absolute -right-2 -top-2 w-12 h-12 bg-emerald-100 rounded-full opacity-50"></div>
-                        <div class="flex items-center gap-1.5 text-emerald-500 text-xs font-bold mb-1"><i data-lucide="zap" class="w-3 h-3"></i> 心率</div>
-                        <div class="flex items-baseline gap-1"><span id="val-hr" class="text-2xl font-bold text-slate-800">--</span><span class="text-[10px] text-slate-400">BPM</span></div>
-                    </div>
-                    <div class="p-4 bg-amber-50 rounded-2xl border border-amber-100 relative overflow-hidden">
-                        <div class="absolute -right-2 -top-2 w-12 h-12 bg-amber-100 rounded-full opacity-50"></div>
-                        <div class="flex items-center gap-1.5 text-amber-500 text-xs font-bold mb-1"><i data-lucide="droplet" class="w-3 h-3"></i> 血糖</div>
-                        <div class="flex items-baseline gap-1"><span id="val-bs" class="text-2xl font-bold text-slate-800">--</span><span class="text-[10px] text-slate-400">mg/dL</span></div>
-                    </div>
-                </div>
+            <div class="menu-item">
+                <svg class="icon-svg" viewBox="0 0 24 24"><path d="M19 3h-1V1h-2v2H8V1H6v2H5c-1.11 0-2 .9-2 2v14c0 1.1.89 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm0 16H5V8h14v11zM12 10l1.25 3.25L16 14l-2.25 1.5L14.5 19 12 17.25 9.5 19l.75-3.5L8 14l2.75-.75L12 10z"/></svg>
+                <div class="label">近期活動(Line)</div>
             </div>
 
-            <form id="quickAddForm" onsubmit="handleQuickSubmit(event)" class="space-y-5">
-                <div class="grid grid-cols-2 gap-3 p-1 bg-slate-100 rounded-2xl">
-                    <label class="cursor-pointer text-center relative block">
-                        <input type="radio" name="dataType" value="BloodPressure" class="peer hidden" checked onchange="toggleFields()">
-                        <div class="radio-label py-2.5 rounded-xl text-sm transition-all">
-                            血壓記錄
-                        </div>
-                    </label>
-                    <label class="cursor-pointer text-center relative block">
-                        <input type="radio" name="dataType" value="BloodSugar" class="peer hidden" onchange="toggleFields()">
-                        <div class="radio-label py-2.5 rounded-xl text-sm transition-all">
-                            血糖記錄
-                        </div>
-                    </label>
-                </div>
+            <div class="menu-item">
+                <svg class="icon-svg" viewBox="0 0 24 24"><path d="M14,2H6A2,2 0 0,0 4,4V20A2,2 0 0,0 6,22H18A2,2 0 0,0 20,20V8L14,2M12,18C9.5,18 7,16.5 7,14C7,11.5 9.5,10 12,10C14.5,10 17,11.5 17,14C17,16.5 14.5,18 12,18M13,9V3.5L18.5,9H13Z"/></svg>
+                <div class="label">亞東訊息</div>
+            </div>
 
-                <div id="field-bp" class="grid grid-cols-2 gap-4">
-                    <div class="col-span-1">
-                        <label class="block text-xs font-bold text-slate-500 mb-1.5 ml-1">收縮壓 (SYS)</label>
-                        <input type="number" id="sbp" class="w-full px-4 py-3 clean-input rounded-xl text-center font-mono text-xl font-bold placeholder-slate-300" placeholder="120">
-                    </div>
-                    <div class="col-span-1">
-                        <label class="block text-xs font-bold text-slate-500 mb-1.5 ml-1">舒張壓 (DIA)</label>
-                        <input type="number" id="dbp" class="w-full px-4 py-3 clean-input rounded-xl text-center font-mono text-xl font-bold placeholder-slate-300" placeholder="80">
-                    </div>
-                    <div class="col-span-2">
-                        <label class="block text-xs font-bold text-slate-500 mb-1.5 ml-1">心率 (BPM)</label>
-                        <input type="number" id="hr" class="w-full px-4 py-3 clean-input rounded-xl text-center font-mono text-xl font-bold placeholder-slate-300" placeholder="72">
-                    </div>
-                </div>
+            <div class="menu-item">
+                <svg class="icon-svg" viewBox="0 0 24 24"><path d="M13,3A9,9 0 0,0 4,12H1l4.89,5.73L10.79,12H7.93A7,7 0 0,1 13,5A7,7 0 0,1 20,12A7,7 0 0,1 13,19C11.07,19 9.32,18.21 8.06,16.94L6.64,18.36C8.27,20 10.5,21 13,21A9,9 0 0,0 22,12A9,9 0 0,0 13,3M12,7V12.25L16.5,14.92L17.25,13.65L13.5,11.5V7H12Z"/></svg>
+                <div class="label">慢箋預約</div>
+            </div>
 
-                <div id="field-bs" class="hidden space-y-4">
-                    <div>
-                        <label class="block text-xs font-bold text-slate-500 mb-1.5 ml-1">血糖數值 (mg/dL)</label>
-                        <div class="relative">
-                            <input type="number" id="bs" class="w-full pl-6 pr-12 py-3 clean-input rounded-xl font-mono text-xl font-bold placeholder-slate-300" placeholder="100">
-                            <div class="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 text-xs font-bold">mg/dL</div>
-                        </div>
-                    </div>
-                    <div>
-                        <label class="block text-xs font-bold text-slate-500 mb-1.5 ml-1">測量時機</label>
-                        <div class="grid grid-cols-2 gap-2">
-                            <label class="cursor-pointer">
-                                <input type="radio" name="bsTime" value="fasting" class="peer hidden" checked>
-                                <div class="py-2.5 text-center text-xs font-medium border border-slate-200 rounded-xl bg-white text-slate-500 peer-checked:bg-indigo-50 peer-checked:border-indigo-200 peer-checked:text-indigo-600 transition hover:bg-slate-50">飯前</div>
-                            </label>
-                            <label class="cursor-pointer">
-                                <input type="radio" name="bsTime" value="postprandial" class="peer hidden">
-                                <div class="py-2.5 text-center text-xs font-medium border border-slate-200 rounded-xl bg-white text-slate-500 peer-checked:bg-indigo-50 peer-checked:border-indigo-200 peer-checked:text-indigo-600 transition hover:bg-slate-50">飯後</div>
-                            </label>
-                            <label class="cursor-pointer">
-                                <input type="radio" name="bsTime" value="wakeup" class="peer hidden">
-                                <div class="py-2.5 text-center text-xs font-medium border border-slate-200 rounded-xl bg-white text-slate-500 peer-checked:bg-indigo-50 peer-checked:border-indigo-200 peer-checked:text-indigo-600 transition hover:bg-slate-50">起床</div>
-                            </label>
-                            <label class="cursor-pointer">
-                                <input type="radio" name="bsTime" value="bedtime" class="peer hidden">
-                                <div class="py-2.5 text-center text-xs font-medium border border-slate-200 rounded-xl bg-white text-slate-500 peer-checked:bg-indigo-50 peer-checked:border-indigo-200 peer-checked:text-indigo-600 transition hover:bg-slate-50">睡前</div>
-                            </label>
-                        </div>
-                    </div>
-                </div>
+            <div class="menu-item">
+                <svg class="icon-svg" viewBox="0 0 24 24"><path d="M18 10.48V6c0-1.1-.9-2-2-2H4c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2v-4.48l4 3.98v-11l-4 3.98zM9 12c0 1.66 1.34 3 3 3s3-1.34 3-3-1.34-3-3-3-3 1.34-3 3 1.34 3 3 1.34 3 3 3zm0 2c-1.47 0-4.27.81-5.6 2.14C-.27 16.81 0 18.19 0 18.19V20h6v-2.58c0-2.57 3-3.42 3-3.42H5z"/></svg>
+                <div class="label">遠距醫療</div>
+            </div>
 
-                <div>
-                    <label class="block text-xs font-bold text-slate-500 mb-1.5 ml-1">備註 (Note)</label>
-                    <input type="text" id="note" class="w-full px-4 py-3 clean-input rounded-xl text-sm placeholder-slate-300" placeholder="例: 剛運動完...">
-                </div>
+            <div class="menu-item">
+                <svg class="icon-svg" viewBox="0 0 24 24"><path d="M17,18H7V6H17M17,4H7A2,2 0 0,0 5,6V18A2,2 0 0,0 7,20H17A2,2 0 0,0 19,18V6C19,4.89 18.1,4 17,4M13,15H11V13H13V15M13,11H11V9H13V11Z"/></svg>
+                <div class="label">醫指付</div>
+            </div>
 
-                <div class="space-y-3 pt-4 border-t border-slate-100">
-                    
-                    <button type="button" onclick="handleInstallApp()" id="btn-install-app" class="w-full py-2 px-3 app-install-btn rounded-xl flex items-center justify-between shadow-md mb-3 hidden">
-                        <div class="flex items-center gap-3">
-                            <div class="w-10 h-10 bg-white rounded-lg flex items-center justify-center overflow-hidden p-1 shadow-sm">
-                                <img src="image/yanghealth.png" alt="App Icon" class="w-full h-full object-contain">
-                            </div>
-                            <div class="text-left">
-                                <div class="text-xs font-medium text-slate-300" id="install-subtitle">Install App</div>
-                                <div class="text-sm font-bold text-white" id="install-title">安裝應用程式</div>
-                            </div>
-                        </div>
-                        <i data-lucide="download" class="w-5 h-5 text-white/80 mr-1"></i>
-                    </button>
+            <div class="menu-item">
+                <svg class="icon-svg" viewBox="0 0 24 24"><path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04c.39-.39.39-1.02 0-1.41l-2.34-2.34c-.39-.39-1.02-.39-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z"/></svg>
+                <div class="label">電子簽名</div>
+            </div>
 
-                    <button type="submit" id="btn-submit" class="w-full py-3.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl font-bold shadow-md hover:shadow-lg transition-all active:scale-95 flex items-center justify-center gap-2">
-                        <span>快速記錄</span>
-                        <i data-lucide="send" class="w-4 h-4"></i>
-                    </button>
-                    
-                    <a href="dashboard.html" class="w-full py-3.5 bg-white border border-slate-200 hover:bg-slate-50 text-slate-600 rounded-xl font-bold text-sm transition-all flex items-center justify-center gap-2 active:scale-95 shadow-sm hover:shadow">
-                        <i data-lucide="bar-chart-2" class="w-4 h-4 text-indigo-500"></i>
-                        <span>查看生理量測資訊</span>
-                    </a>
-                </div>
-            </form>
-        </div>
+            <div class="menu-item">
+                <svg class="icon-svg" viewBox="0 0 24 24"><path d="M14,2H6A2,2 0 0,0 4,4V20A2,2 0 0,0 6,22H18A2,2 0 0,0 20,20V8L14,2M12,18C9.5,18 7,16.5 7,14C7,11.5 9.5,10 12,10C14.5,10 17,11.5 17,14C17,16.5 14.5,18 12,18M13,9V3.5L18.5,9H13Z"/></svg>
+                <div class="label">健康聲明書</div>
+            </div>
 
-        <div class="mt-8 pt-6 border-t border-slate-100 text-[10px] uppercase tracking-widest text-center text-slate-400">
-            <p>&copy; 2024 YangHome Health System</p>
+            <div class="menu-item">
+                <svg class="icon-svg" viewBox="0 0 24 24"><path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-7 14H7v-2h5v2zm4-4H7v-2h9v2zm0-4H7V7h9v2z"/></svg>
+                <div class="label">健康問卷</div>
+            </div>
         </div>
     </div>
-    
-    <script>
-        const API_URL = config.API_URL;
-        lucide.createIcons();
-        let userSession = null;
-        let deferredPrompt;
 
-        document.addEventListener('DOMContentLoaded', () => {
-            checkLoginStatus();
-            initInstallButton();
-        });
+    <div>
+        <div class="section-title">使用說明 (Instructions)</div>
+        <div class="grid-box">
+            <div class="menu-item">
+                <svg class="icon-svg" viewBox="0 0 24 24"><path d="M11 17H7c-1.1 0-2-.9-2-2V9c0-1.1.9-2 2-2h4v2H7v6h4v2zm6-10h-4v2h4v6h-4v2h4c1.1 0 2-.9 2-2V9c0-1.1-.9-2-2-2z"/></svg>
+                <div class="label">如何綁定</div>
+            </div>
 
-        window.addEventListener('beforeinstallprompt', (e) => {
-            e.preventDefault();
-            deferredPrompt = e;
-            console.log("Captured beforeinstallprompt event");
-        });
+            <div class="menu-item">
+                <svg class="icon-svg" viewBox="0 0 24 24"><path d="M18 2H6c-1.1 0-2 .9-2 2v16c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zM6 4h5v8l-2.5-1.5L6 12V4z"/></svg>
+                <div class="label">愛健康<br>使用方式</div>
+            </div>
 
-        const isIos = /iPhone|iPad|iPod/.test(navigator.userAgent) && !window.MSStream;
-        const isStandalone = window.navigator.standalone || window.matchMedia('(display-mode: standalone)').matches;
+            <div class="menu-item">
+                <svg class="icon-svg" viewBox="0 0 24 24"><path d="M6 10c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2zm12 0c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2zm-6 0c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2z"/></svg>
+                <div class="label">其他...</div>
+            </div>
+        </div>
+    </div>
 
-        function initInstallButton() {
-            const btn = document.getElementById('btn-install-app');
-            if (isStandalone) {
-                btn.classList.add('hidden');
-                return;
-            }
+</div>
 
-            const title = document.getElementById('install-title');
-            const subtitle = document.getElementById('install-subtitle');
-            const icon = btn.querySelector('i');
-
-            if (isIos) {
-                title.innerText = "安裝到 iPhone";
-                subtitle.innerText = "Install for iOS";
-                icon.setAttribute('data-lucide', 'share');
-            } else {
-                title.innerText = "安裝應用程式";
-                subtitle.innerText = "Install App";
-                icon.setAttribute('data-lucide', 'download');
-            }
-            
-            btn.classList.remove('hidden');
-            lucide.createIcons();
-        }
-
-        function handleInstallApp() {
-            if (deferredPrompt) {
-                deferredPrompt.prompt();
-                deferredPrompt.userChoice.then((choiceResult) => {
-                    deferredPrompt = null;
-                });
-            } else {
-                showInstallInstructions();
-            }
-        }
-
-        function showInstallInstructions() {
-            const modal = document.getElementById('install-modal');
-            const content = document.getElementById('install-steps-content');
-            
-            if (isIos) {
-                content.innerHTML = `
-                    <div class="flex items-center gap-3">
-                        <span class="w-6 h-6 rounded-full bg-white border border-slate-200 flex items-center justify-center font-bold text-xs text-indigo-600 shadow-sm">1</span>
-                        <span>點擊下方工具列的 <strong>分享</strong> <i data-lucide="share" class="w-4 h-4 inline align-text-bottom"></i></span>
-                    </div>
-                    <div class="flex items-center gap-3 mt-3">
-                        <span class="w-6 h-6 rounded-full bg-white border border-slate-200 flex items-center justify-center font-bold text-xs text-indigo-600 shadow-sm">2</span>
-                        <span>往下滑，選擇 <strong>加入主畫面</strong> <i data-lucide="plus-square" class="w-4 h-4 inline align-text-bottom"></i></span>
-                    </div>
-                    <div class="flex items-center gap-3 mt-3">
-                        <span class="w-6 h-6 rounded-full bg-white border border-slate-200 flex items-center justify-center font-bold text-xs text-indigo-600 shadow-sm">3</span>
-                        <span>點擊右上角的 <strong>加入</strong> 即可</span>
-                    </div>
-                `;
-            } else {
-                content.innerHTML = `
-                    <div class="flex items-center gap-3">
-                        <span class="w-6 h-6 rounded-full bg-white border border-slate-200 flex items-center justify-center font-bold text-xs text-indigo-600 shadow-sm">1</span>
-                        <span>點擊瀏覽器選單 <i data-lucide="more-vertical" class="w-4 h-4 inline align-text-bottom"></i> (或網址列的安裝圖示)</span>
-                    </div>
-                    <div class="flex items-center gap-3 mt-3">
-                        <span class="w-6 h-6 rounded-full bg-white border border-slate-200 flex items-center justify-center font-bold text-xs text-indigo-600 shadow-sm">2</span>
-                        <span>選擇 <strong>安裝應用程式</strong> 或 <strong>加入主畫面</strong></span>
-                    </div>
-                    <div class="flex items-center gap-3 mt-3">
-                        <span class="w-6 h-6 rounded-full bg-white border border-slate-200 flex items-center justify-center font-bold text-xs text-indigo-600 shadow-sm">3</span>
-                        <span>依照指示完成安裝</span>
-                    </div>
-                `;
-            }
-            
-            modal.classList.remove('hidden');
-            modal.classList.add('flex');
-            lucide.createIcons();
-        }
-
-        function closeInstallModal() {
-            document.getElementById('install-modal').classList.add('hidden');
-            document.getElementById('install-modal').classList.remove('flex');
-        }
-
-        function checkLoginStatus() {
-            const savedSession = localStorage.getItem('healthTwinSession');
-            const loginSection = document.getElementById('login-section');
-            const userSection = document.getElementById('user-section');
-            const mainCard = document.getElementById('main-card');
-
-            if (savedSession) {
-                userSession = JSON.parse(savedSession);
-                
-                // [核心修正] 如果狀態是 pending，立刻跳轉，不要繼續渲染
-                if (userSession.status === 'pending') {
-                    window.location.href = 'waitforuserright.html';
-                    return;
-                }
-
-                document.getElementById('display-name').innerText = userSession.name || 'User';
-                document.getElementById('display-email').innerText = userSession.email || '';
-                
-                loginSection.classList.add('hidden');
-                userSection.classList.remove('hidden');
-                mainCard.classList.remove('max-w-md'); 
-                mainCard.classList.add('max-w-lg');
-                
-                fetchLatestData(userSession.uid);
-            } else {
-                loginSection.classList.remove('hidden');
-                userSection.classList.add('hidden');
-                mainCard.classList.add('max-w-md');
-                mainCard.classList.remove('max-w-lg');
-            }
-            lucide.createIcons();
-        }
-
-        async function fetchLatestData(uid) {
-            const card = document.getElementById('latest-data-card');
-            const displaySys = document.getElementById('val-sys');
-            const displayDia = document.getElementById('val-dia');
-            const displayHR = document.getElementById('val-hr');
-            const displayBS = document.getElementById('val-bs');
-            const displayTime = document.getElementById('display-time');
-
-            try {
-                const response = await fetch(`${API_URL}?action=getData&uid=${encodeURIComponent(uid)}&t=${new Date().getTime()}`);
-                const rawData = await response.json();
-
-                if (rawData && rawData.length > 0) {
-                    const latestBP = rawData.find(d => d.sbp && d.dbp);
-                    const latestBS = rawData.find(d => d.glucose);
-                    
-                    if (latestBP) {
-                        displaySys.innerText = latestBP.sbp;
-                        displayDia.innerText = latestBP.dbp;
-                        displayHR.innerText = latestBP.hr || '--';
-                    }
-                    if (latestBS) {
-                        displayBS.innerText = latestBS.glucose;
-                    }
-
-                    let lastDateStr = null;
-                    if (latestBP && latestBS) {
-                        const dateBP = new Date(latestBP.date);
-                        const dateBS = new Date(latestBS.date);
-                        lastDateStr = (dateBP > dateBS) ? latestBP.date : latestBS.date;
-                    } else if (latestBP) {
-                        lastDateStr = latestBP.date;
-                    } else if (latestBS) {
-                        lastDateStr = latestBS.date;
-                    }
-
-                    if (lastDateStr) {
-                        const dateObj = new Date(lastDateStr);
-                        const timeStr = `${String(dateObj.getMonth()+1).padStart(2,'0')}/${String(dateObj.getDate()).padStart(2,'0')} ${String(dateObj.getHours()).padStart(2,'0')}:${String(dateObj.getMinutes()).padStart(2,'0')}`;
-                        displayTime.innerText = timeStr;
-                        card.classList.remove('hidden');
-                    }
-                }
-            } catch (e) {
-                console.error("Error fetching latest data:", e);
-            }
-        }
-
-        async function handleCredentialResponse(response) {
-            const responsePayload = decodeJwtResponse(response.credential);
-            const overlay = document.getElementById('login-overlay');
-            overlay.classList.remove('hidden'); overlay.classList.add('flex');
-
-            try {
-                const res = await fetch(API_URL, {
-                    method: 'POST',
-                    body: JSON.stringify({
-                        action: 'socialLogin',
-                        token: response.credential, 
-                        provider: 'google'
-                    })
-                });
-                const data = await res.json();
-
-                if (data.isNewUser) {
-                    const signupData = { email: data.email, name: data.name, picture: data.picture };
-                    sessionStorage.setItem('signupPrefill', JSON.stringify(signupData));
-                    window.location.href = 'signup.html';
-                } else if (data.success) {
-                    const sessionData = { ...data.user, picture: responsePayload.picture };
-                    localStorage.setItem('healthTwinSession', JSON.stringify(sessionData));
-                    
-                    // [核心修正] 再次檢查 status，若是 pending 則跳轉
-                    if (data.user.status === 'pending') {
-                        window.location.href = 'waitforuserright.html';
-                    } else {
-                        checkLoginStatus(); // 原地更新 UI
-                    }
-                } else {
-                    alert("登入失敗：" + (data.message || "未知錯誤"));
-                }
-            } catch (e) {
-                console.error(e);
-                alert("登入連線錯誤");
-            } finally {
-                overlay.classList.add('hidden'); overlay.classList.remove('flex');
-            }
-        }
-
-        function decodeJwtResponse(token) {
-            var base64Url = token.split('.')[1];
-            var base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
-            var jsonPayload = decodeURIComponent(window.atob(base64).split('').map(function(c) {
-                return '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2);
-            }).join(''));
-            return JSON.parse(jsonPayload);
-        }
-
-        function logout() {
-            if(confirm("確定要登出嗎？")) {
-                localStorage.removeItem('healthTwinSession');
-                try { google.accounts.id.disableAutoSelect(); } catch(e){}
-                window.location.reload();
-            }
-        }
-
-        function toggleFields() {
-            const type = document.querySelector('input[name="dataType"]:checked').value;
-            if (type === 'BloodPressure') {
-                document.getElementById('field-bp').classList.remove('hidden');
-                document.getElementById('field-bs').classList.add('hidden');
-            } else {
-                document.getElementById('field-bp').classList.add('hidden');
-                document.getElementById('field-bs').classList.remove('hidden');
-            }
-        }
-
-        async function handleQuickSubmit(e) {
-            e.preventDefault();
-            if (!userSession || !userSession.uid) {
-                alert("錯誤：未偵測到登入狀態，請重新登入。");
-                window.location.reload();
-                return;
-            }
-
-            const btn = document.getElementById('btn-submit');
-            const originalText = btn.innerHTML;
-            btn.disabled = true;
-            btn.innerHTML = `<i data-lucide="loader-2" class="w-5 h-5 animate-spin"></i> 傳送中...`;
-            lucide.createIcons();
-
-            const type = document.querySelector('input[name="dataType"]:checked').value;
-            let payload = {
-                action: 'addData',
-                uid: userSession.uid, 
-                type: type,
-                note: document.getElementById('note').value,
-                timestamp: new Date().toISOString()
-            };
-
-            if (type === 'BloodPressure') {
-                payload.sbp = document.getElementById('sbp').value;
-                payload.dbp = document.getElementById('dbp').value;
-                payload.hr = document.getElementById('hr').value;
-                if (!payload.sbp || !payload.dbp) { alert("請輸入完整的血壓數值"); resetBtn(); return; }
-            } else {
-                payload.bs = document.getElementById('bs').value;
-                payload.time = document.querySelector('input[name="bsTime"]:checked').value;
-                if (!payload.bs) { alert("請輸入血糖數值"); resetBtn(); return; }
-            }
-
-            try {
-                await fetch(API_URL, {
-                    method: 'POST',
-                    mode: 'no-cors',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(payload)
-                });
-
-                setTimeout(() => {
-                    alert("紀錄已成功儲存！");
-                    fetchLatestData(userSession.uid);
-                    document.getElementById('note').value = '';
-                    resetBtn();
-                }, 800);
-
-            } catch (error) {
-                console.error(error);
-                alert("發生錯誤，請稍後再試。");
-                resetBtn();
-            }
-
-            function resetBtn() {
-                btn.disabled = false;
-                btn.innerHTML = originalText;
-                lucide.createIcons();
-            }
-        }
-    </script>
 </body>
 </html>
