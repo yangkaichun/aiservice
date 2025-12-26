@@ -380,31 +380,38 @@
 
         async function initDashboard() {
             try {
-                const response = await fetch(`${API_URL}?action=getSettings`);
+                // 1. 取得使用者列表 (含狀態)
+                // 為了避免快取問題，加上時間戳記
+                const response = await fetch(`${API_URL}?action=getSettings&t=${new Date().getTime()}`);
                 const users = await response.json();
                 
-                // [關鍵修正] 過濾未授權用戶 (只顯示 active)
-                const authorizedUsers = users.filter(u => u.status === 'active');
+                // [關鍵修改] 篩選狀態為 active 的使用者
+                const activeUsers = users.filter(u => u.status === 'active');
                 
-                renderUserList(authorizedUsers);
+                renderUserList(activeUsers);
                 
                 if (loggedInSession) {
-                    const me = authorizedUsers.find(u => u.uid === loggedInSession.uid);
+                    // 確認登入者是否也在 active 清單中
+                    const me = activeUsers.find(u => u.uid === loggedInSession.uid);
                     
                     if (me) {
                         updateSidebarDisplayName(me.name, loggedInSession.picture);
                         await selectUser(me.uid, me.name, me);
                     } else {
-                        // 如果自己是 pending 但意外進來，或者被停權，這裡做個簡單處理
-                        // 基本上 index.html 會擋，但若已在 dashboard 被停權，可顯示自己但列表不顯示別人
+                        // 如果自己被停權或尚未授權，但不知為何進來了，顯示警告並導回
+                        console.warn("User not active or not found in list.");
+                        if (users.find(u => u.uid === loggedInSession.uid)?.status === 'pending') {
+                            window.location.href = 'waitforuserright.html';
+                            return;
+                        }
+                        
+                        // Fallback: 雖然不在清單 (可能資料延遲)，還是先顯示自己
                         const sessionName = loggedInSession.name || loggedInSession.email;
                         updateSidebarDisplayName(sessionName, loggedInSession.picture);
-                        
-                        // 這裡選擇不強制加入列表，只顯示自己數據
                         await selectUser(loggedInSession.uid, sessionName, loggedInSession);
                     }
-                } else if (authorizedUsers.length > 0) {
-                    await selectUser(authorizedUsers[0].uid, authorizedUsers[0].name);
+                } else if (activeUsers.length > 0) {
+                    await selectUser(activeUsers[0].uid, activeUsers[0].name);
                 }
 
                 document.getElementById('loadingState').classList.add('hidden');
@@ -421,7 +428,12 @@
             const listContainer = document.getElementById('userList'); 
             document.getElementById('userCount').innerText = users.length; 
             listContainer.innerHTML = ''; 
-            if (users.length === 0) { listContainer.innerHTML = '<div class="p-4 text-center text-sm text-slate-400">無可用使用者</div>'; return; } 
+            
+            if (users.length === 0) { 
+                listContainer.innerHTML = '<div class="p-4 text-center text-sm text-slate-400">無可用使用者</div>'; 
+                return; 
+            } 
+
             users.forEach(user => { 
                 const div = document.createElement('div'); 
                 const avatarText = user.name ? user.name.charAt(0).toUpperCase() : '?'; 
@@ -463,7 +475,8 @@
             document.getElementById('dashboardContent').classList.add('hidden');
             
             try {
-                const response = await fetch(`${API_URL}?action=getData&uid=${encodeURIComponent(uid)}`);
+                // 同樣加上時間戳記，避免快取舊數據
+                const response = await fetch(`${API_URL}?action=getData&uid=${encodeURIComponent(uid)}&t=${new Date().getTime()}`);
                 const rawData = await response.json();
                 
                 allUserData = rawData.map(item => {
@@ -677,8 +690,10 @@
         function updateTTSButton(playing, isLoading = false) {
             const btn = document.getElementById('btn-tts');
             const btnText = document.getElementById('btn-tts-text');
+            
             const existingIcon = btn.querySelector('svg') || btn.querySelector('i');
             if (existingIcon) existingIcon.remove();
+            
             const newIcon = document.createElement('i');
             newIcon.classList.add('w-5', 'h-5', 'group-hover:scale-110', 'transition-transform');
             
@@ -699,14 +714,19 @@
                 btn.classList.remove('bg-rose-50', 'text-rose-600', 'border-rose-100', 'bg-indigo-50');
                 btn.classList.add('hover:bg-indigo-50', 'text-indigo-600', 'border-indigo-100');
             }
+            
             btn.insertBefore(newIcon, btnText);
             lucide.createIcons();
         }
 
         function closeAiModal() { 
-            if (currentAudio && !currentAudio.paused) { currentAudio.pause(); currentAudio = null; }
+            if (currentAudio && !currentAudio.paused) {
+                currentAudio.pause();
+                currentAudio = null;
+            }
             isSpeaking = false; 
             updateTTSButton(false);
+            
             document.getElementById('aiAnalysisModal').classList.add('hidden'); 
             document.getElementById('aiAnalysisModal').classList.remove('flex'); 
         }
