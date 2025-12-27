@@ -1,13 +1,15 @@
 /**
  * HeyGen API Configuration & Helper Functions
- * 取代原有的 D-ID 邏輯，改用 HeyGen Talking Photo API v2
+ * 負責處理 HeyGen Talking Photo API v2 的串接
  */
 
 const HEYGEN_CONFIG = {
-    // 您提供的 HeyGen API Key
+    // [修正] 移除了錯誤的前綴 "did.js"，保留正確的 sk_ 開頭 Key
     API_KEY: "sk_V2_hgu_kSpjn87oKgN_ianxihtBBD8Ml0rzlfp05chlDCAaqZ4S",
+    
     // 建立影片任務 API (Talking Photo)
     GENERATE_URL: "https://api.heygen.com/v2/video/generate",
+    
     // 檢查狀態 API
     STATUS_URL: "https://api.heygen.com/v1/video_status.get"
 };
@@ -15,9 +17,13 @@ const HEYGEN_CONFIG = {
 /**
  * 建立 HeyGen 說話任務
  * @param {string} text - 要朗讀的文字
- * @param {string} sourceUrl - Avatar 圖片的完整公開網址 (必須是 Public URL)
+ * @param {string} sourceUrl - Avatar 圖片的完整公開網址
  */
 async function createHeyGenTask(text, sourceUrl) {
+    console.log("正在呼叫 HeyGen API...");
+    console.log("Text:", text.substring(0, 20) + "...");
+    console.log("Image:", sourceUrl);
+
     const response = await fetch(HEYGEN_CONFIG.GENERATE_URL, {
         method: 'POST',
         headers: {
@@ -34,9 +40,7 @@ async function createHeyGenTask(text, sourceUrl) {
                     voice: {
                         type: "text",
                         input_text: text,
-                        // 預設使用台灣中文女聲 (若 HeyGen 不支援此 ID，請更換為 HeyGen 列表中的有效 voice_id)
-                        // 常見 HeyGen 中文 ID 範例: "c0c32607530846069905d63f03672522" 或類似
-                        // 這裡嘗試指定 provider (視 HeyGen 支援度而定，若失敗請改用純 ID)
+                        // 使用通用中文語音 ID (若此 ID 無效，API 會報錯，屆時需更換)
                         voice_id: "c0c32607530846069905d63f03672522" 
                     }
                 }
@@ -49,14 +53,29 @@ async function createHeyGenTask(text, sourceUrl) {
     });
 
     if (!response.ok) {
-        const err = await response.json();
-        console.error("HeyGen Create Error:", err);
-        throw new Error(err.message || "HeyGen API 請求失敗");
+        // 嘗試讀取錯誤訊息
+        const errText = await response.text();
+        console.error("HeyGen API Error Response:", errText);
+        
+        let errMsg = "HeyGen API 請求失敗";
+        try {
+            const errJson = JSON.parse(errText);
+            errMsg += ": " + (errJson.message || errJson.error?.message || "未知錯誤");
+        } catch(e) {
+            errMsg += ": " + response.statusText;
+        }
+        throw new Error(errMsg);
     }
 
     const data = await response.json();
-    // HeyGen v2 回傳的是 data.data.video_id
-    return data.data.video_id; 
+    console.log("HeyGen Task Created:", data);
+    
+    // HeyGen v2 回傳結構通常是 data.data.video_id
+    if (data.data && data.data.video_id) {
+        return data.data.video_id;
+    } else {
+        throw new Error("無法取得 Video ID，API 回傳格式可能已變更");
+    }
 }
 
 /**
@@ -73,47 +92,43 @@ async function getHeyGenStatus(videoId) {
         }
     });
 
-    if (!response.ok) throw new Error("無法取得 HeyGen 狀態");
+    if (!response.ok) throw new Error("無法取得 HeyGen 狀態: " + response.statusText);
     return await response.json();
 }
 
 /**
- * 主流程：建立並等待影片完成 (供 dashboard2.html 呼叫)
+ * 主流程：建立並等待影片完成
  */
 async function generateAndPollVideo(text, imageUrl) {
-    console.log("Starting HeyGen process with image:", imageUrl);
-    
     // 1. 建立任務
     const videoId = await createHeyGenTask(text, imageUrl);
     console.log("HeyGen Video ID:", videoId);
 
-    // 2. 輪詢直到完成 (每隔 3 秒檢查一次，HeyGen 生成較慢)
+    // 2. 輪詢直到完成 (每隔 3 秒檢查一次，最多 2 分鐘)
     return new Promise((resolve, reject) => {
         let attempts = 0;
-        const maxAttempts = 60; // 最多等待 3 分鐘
+        const maxAttempts = 40; 
 
         const interval = setInterval(async () => {
             attempts++;
             try {
                 const resp = await getHeyGenStatus(videoId);
-                const status = resp.data.status;
+                const status = resp.data ? resp.data.status : "unknown";
                 console.log(`HeyGen Status (${attempts}):`, status);
 
                 if (status === "completed") {
                     clearInterval(interval);
-                    // 回傳影片網址
                     resolve(resp.data.video_url);
                 } else if (status === "failed" || status === "error") {
                     clearInterval(interval);
-                    reject(new Error("HeyGen 影片生成失敗: " + (resp.data.error || "未知錯誤")));
+                    reject(new Error("影片生成失敗: " + (resp.data.error || "未知原因")));
                 } else if (attempts >= maxAttempts) {
                     clearInterval(interval);
-                    reject(new Error("生成逾時，請稍後再試"));
+                    reject(new Error("生成逾時 (超過 2 分鐘)"));
                 }
-                // 若是 "pending" 或 "processing" 則繼續等待
             } catch (err) {
                 console.error("Polling Error:", err);
-                // 網路錯誤不一定代表生成失敗，繼續嘗試
+                // 網路錯誤不中斷，繼續重試直到逾時
                 if (attempts >= maxAttempts) {
                     clearInterval(interval);
                     reject(err);
