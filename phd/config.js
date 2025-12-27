@@ -1,4 +1,4 @@
 
 const config = {
-    API_URL: "https://script.google.com/macros/s/AKfycbxERPlYotN_rx1QlFw5WdoYv2BXARll7Umfj1kIJhoLM6Jfxu-oVHYgULxdYKkyxrJ7pA/exec"
+    API_URL: "https://script.google.com/macros/s/AKfycbwHD7_wJZhQY6a_wAxTCB9QlVC6fiiEGlJg5joF3Yeicvm8rOBmVQexz4qIh36oc0C5wQ/exec"
 };
