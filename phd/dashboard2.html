@@ -62,13 +62,14 @@
             width: 100%;
             height: auto;
             border-radius: 0.5rem;
+            max-height: 70vh; /* 避免在小螢幕上太高 */
         }
     </style>
 </head>
 <body class="text-slate-800 h-screen flex overflow-hidden relative">
 
     <div id="avatarModal" class="fixed inset-0 bg-black/80 z-[60] hidden flex-col justify-center items-center p-4 backdrop-blur-sm animate-fade-in" onclick="closeAvatarModal()">
-        <div class="bg-white w-full max-w-sm rounded-2xl shadow-2xl overflow-hidden relative" onclick="event.stopPropagation()">
+        <div class="bg-white w-full max-w-md rounded-2xl shadow-2xl overflow-hidden relative" onclick="event.stopPropagation()">
             <div class="p-4 border-b border-slate-100 flex justify-between items-center bg-gradient-to-r from-indigo-50 to-white">
                 <h3 class="font-bold text-lg text-slate-800 flex items-center gap-2">
                     <i data-lucide="video" class="w-5 h-5 text-indigo-600"></i> AI Avatar (HeyGen)
@@ -76,15 +77,18 @@
                 <button onclick="closeAvatarModal()" class="p-1 hover:bg-slate-100 rounded-full transition"><i data-lucide="x" class="w-6 h-6 text-slate-400"></i></button>
             </div>
             
-            <div class="p-4 bg-black flex justify-center items-center min-h-[300px]">
+            <div class="p-6 bg-slate-900 flex justify-center items-center min-h-[320px]">
                 
                 <div id="avatarLoading" class="flex flex-col items-center justify-center text-white text-center">
-                    <div class="w-12 h-12 border-4 border-indigo-400 border-t-transparent rounded-full animate-spin mb-4"></div>
-                    <p class="text-sm font-bold tracking-wide">AI 影片生成中...</p>
+                    <div class="relative w-16 h-16 mb-4">
+                        <div class="absolute inset-0 border-4 border-indigo-500/30 rounded-full"></div>
+                        <div class="absolute inset-0 border-4 border-indigo-500 border-t-transparent rounded-full animate-spin"></div>
+                    </div>
+                    <p class="text-base font-bold tracking-wide">AI 影片生成中...</p>
                     <p class="text-xs text-slate-400 mt-2">這可能需要 30~60 秒，請稍候</p>
                 </div>
                 
-                <video id="avatarVideo" controls playsinline class="hidden w-full h-full object-contain"></video>
+                <video id="avatarVideo" controls playsinline class="hidden shadow-lg"></video>
             </div>
         </div>
     </div>
@@ -313,18 +317,21 @@
         let currentAudio = null;
         let isSpeaking = false;
 
+        let deferredPrompt;
+        const btnInstall = document.getElementById('btn-install-sidebar');
+
         document.addEventListener('DOMContentLoaded', () => {
             lucide.createIcons();
+            
+            // PWA 安裝邏輯
+            window.addEventListener('beforeinstallprompt', (e) => {
+                e.preventDefault();
+                deferredPrompt = e;
+                initInstallButton();
+            });
+
             initInstallButton();
             initDashboard();
-        });
-
-        // 安裝按鈕邏輯
-        let deferredPrompt;
-        window.addEventListener('beforeinstallprompt', (e) => {
-            e.preventDefault();
-            deferredPrompt = e;
-            initInstallButton();
         });
 
         function initInstallButton() {
@@ -339,24 +346,27 @@
 
             const isIos = /iPhone|iPad|iPod/.test(navigator.userAgent) && !window.MSStream;
             const btnText = document.getElementById('sidebar-install-text');
-            const icon = btn.querySelector('i');
+            const oldIcon = btn.querySelector('svg') || btn.querySelector('i');
+            if (oldIcon) oldIcon.remove();
 
-            // 先移除可能重複的圖示
-            const existingIcon = btn.querySelector('svg') || btn.querySelector('i');
-            if (existingIcon && existingIcon !== icon) existingIcon.remove();
+            const newIcon = document.createElement('i');
+            newIcon.classList.add('w-4', 'h-4');
 
             if (isIos) {
-                if(btnText) btnText.innerText = "安裝 App (iOS)";
-                if(icon) icon.setAttribute('data-lucide', 'share');
+                if (btnText) btnText.innerText = "安裝 App (iOS)";
+                newIcon.setAttribute('data-lucide', 'share');
                 btn.onclick = () => {
                     document.getElementById('ios-install-modal').classList.remove('hidden');
                     document.getElementById('ios-install-modal').classList.add('flex');
                 };
             } else {
-                if(btnText) btnText.innerText = "安裝 App";
-                if(icon) icon.setAttribute('data-lucide', 'download');
+                if (btnText) btnText.innerText = "安裝 App";
+                newIcon.setAttribute('data-lucide', 'download');
                 btn.onclick = installPWA;
             }
+            
+            if (btnText) btn.insertBefore(newIcon, btnText);
+            else btn.appendChild(newIcon);
             
             btn.classList.remove('hidden');
             lucide.createIcons();
@@ -382,7 +392,7 @@
         }
 
         // ------------------------------------------
-        // [新增] Avatar 播放邏輯 (串接 did.js / HeyGen)
+        // [修改] Avatar 播放邏輯 (串接 did.js / HeyGen)
         // ------------------------------------------
         async function playAvatar() {
             // 停止原有的 TTS
@@ -412,12 +422,13 @@
             video.src = "";
 
             try {
-                // 取得目前網址，組合成 Avatar 圖片的絕對路徑
-                // 注意：HeyGen API 需要公開的 URL，如果是 localhost 測試可能會失敗
+                // [修正] HeyGen API 要求圖片必須是 Public URL
+                // 請確保 image/avatar.png 已部署到網路上 (例如 GitHub Pages)
                 const baseUrl = window.location.href.substring(0, window.location.href.lastIndexOf('/') + 1);
+                // 這裡假設您的 avatar.png 位於 image 資料夾下
                 const avatarImageUrl = baseUrl + 'image/avatar.png';
                 
-                // 呼叫 did.js 中的 generateAndPollVideo
+                // 呼叫 did.js 中的 generateAndPollVideo (現在內部是 HeyGen 邏輯)
                 const videoUrl = await generateAndPollVideo(contentText, avatarImageUrl);
                 
                 // 隱藏 Loading，顯示影片
@@ -478,7 +489,7 @@
 
         async function initDashboard() {
             try {
-                // 讀取設定與使用者列表
+                // 1. 抓取系統設定/使用者列表 (等待完成)
                 const response = await fetch(`${API_URL}?action=getSettings&t=${new Date().getTime()}`);
                 const users = await response.json();
                 
@@ -486,13 +497,14 @@
                 const activeUsers = users.filter(u => u.status === 'active');
                 renderUserList(activeUsers);
                 
+                // 2. 判斷登入者並載入其數據
                 if (loggedInSession) {
                     const me = activeUsers.find(u => u.uid === loggedInSession.uid);
+                    
                     if (me) {
                         updateSidebarDisplayName(me.name, loggedInSession.picture);
                         await selectUser(me.uid, me.name, me);
                     } else {
-                        // Fallback
                         const sessionName = loggedInSession.name || loggedInSession.email;
                         updateSidebarDisplayName(sessionName, loggedInSession.picture);
                         await selectUser(loggedInSession.uid, sessionName, loggedInSession);
@@ -501,6 +513,7 @@
                     await selectUser(activeUsers[0].uid, activeUsers[0].name);
                 }
 
+                // 資料載入完成，隱藏 loading 區塊
                 document.getElementById('loadingState').classList.add('hidden');
                 document.getElementById('dashboardContent').classList.remove('hidden');
                 document.getElementById('dashboardContent').classList.add('animate-fade-in');
@@ -515,12 +528,7 @@
             const listContainer = document.getElementById('userList'); 
             document.getElementById('userCount').innerText = users.length; 
             listContainer.innerHTML = ''; 
-            
-            if (users.length === 0) { 
-                listContainer.innerHTML = '<div class="p-4 text-center text-sm text-slate-400">無可用使用者</div>'; 
-                return; 
-            } 
-
+            if (users.length === 0) { listContainer.innerHTML = '<div class="p-4 text-center text-sm text-slate-400">無可用使用者</div>'; return; } 
             users.forEach(user => { 
                 const div = document.createElement('div'); 
                 const avatarText = user.name ? user.name.charAt(0).toUpperCase() : '?'; 
@@ -535,13 +543,26 @@
         async function selectUser(uid, name, userObj = null) {
             currentSelectedUid = uid;
             currentUserInfo = userObj;
-            
+            updateBindingIcons(userObj);
+
             document.querySelectorAll('.user-item').forEach(el => { el.classList.remove('bg-indigo-50', 'text-indigo-600', 'shadow-sm', 'border-indigo-100'); el.classList.add('border-transparent'); }); 
             const element = document.getElementById(`user-item-${uid}`); 
             if (element) { element.classList.add('bg-indigo-50', 'text-indigo-600', 'shadow-sm', 'border-indigo-100'); element.classList.remove('border-transparent'); } 
             
             document.getElementById('currentUserName').innerText = name;
             await fetchUserData(uid);
+        }
+
+        function updateBindingIcons(user) {
+            const googleIcon = document.getElementById('icon-google');
+            const lineIcon = document.getElementById('icon-line');
+            googleIcon.classList.remove('text-indigo-600'); googleIcon.classList.add('text-slate-300');
+            lineIcon.classList.remove('text-[#06C755]'); lineIcon.classList.add('text-slate-300');
+            if (user && user.provider) {
+                const providers = user.provider.toLowerCase();
+                if (providers.includes('google')) { googleIcon.classList.remove('text-slate-300'); googleIcon.classList.add('text-indigo-600'); }
+                if (providers.includes('line')) { lineIcon.classList.remove('text-slate-300'); lineIcon.classList.add('text-[#06C755]'); }
+            }
         }
 
         async function fetchUserData(uid) {
@@ -798,7 +819,10 @@
             if (currentAudio && !currentAudio.paused) { currentAudio.pause(); currentAudio = null; }
             isSpeaking = false; 
             updateTTSButton(false);
-            closeAvatarModal(); // 確保也關閉影片視窗
+            
+            // 關閉 AI Modal 時也要確保 Avatar Modal 關閉
+            closeAvatarModal();
+            
             document.getElementById('aiAnalysisModal').classList.add('hidden'); 
             document.getElementById('aiAnalysisModal').classList.remove('flex'); 
         }
