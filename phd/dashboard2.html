@@ -56,13 +56,8 @@
         
         #loadingState { display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 60vh; }
         
-        /* 影片播放容器 */
         video {
-            display: block;
-            width: 100%;
-            height: auto;
-            border-radius: 0.5rem;
-            max-height: 70vh; /* 避免在小螢幕上太高 */
+            display: block; width: 100%; height: auto; border-radius: 0.5rem;
         }
     </style>
 </head>
@@ -317,21 +312,18 @@
         let currentAudio = null;
         let isSpeaking = false;
 
-        let deferredPrompt;
-        const btnInstall = document.getElementById('btn-install-sidebar');
-
         document.addEventListener('DOMContentLoaded', () => {
             lucide.createIcons();
-            
-            // PWA 安裝邏輯
-            window.addEventListener('beforeinstallprompt', (e) => {
-                e.preventDefault();
-                deferredPrompt = e;
-                initInstallButton();
-            });
-
             initInstallButton();
             initDashboard();
+        });
+
+        // 安裝按鈕邏輯 (與 Index.html 同步)
+        let deferredPrompt;
+        window.addEventListener('beforeinstallprompt', (e) => {
+            e.preventDefault();
+            deferredPrompt = e;
+            initInstallButton();
         });
 
         function initInstallButton() {
@@ -346,27 +338,20 @@
 
             const isIos = /iPhone|iPad|iPod/.test(navigator.userAgent) && !window.MSStream;
             const btnText = document.getElementById('sidebar-install-text');
-            const oldIcon = btn.querySelector('svg') || btn.querySelector('i');
-            if (oldIcon) oldIcon.remove();
-
-            const newIcon = document.createElement('i');
-            newIcon.classList.add('w-4', 'h-4');
+            const icon = btn.querySelector('i');
 
             if (isIos) {
-                if (btnText) btnText.innerText = "安裝 App (iOS)";
-                newIcon.setAttribute('data-lucide', 'share');
+                if(btnText) btnText.innerText = "安裝 App (iOS)";
+                if(icon) icon.setAttribute('data-lucide', 'share');
                 btn.onclick = () => {
                     document.getElementById('ios-install-modal').classList.remove('hidden');
                     document.getElementById('ios-install-modal').classList.add('flex');
                 };
             } else {
-                if (btnText) btnText.innerText = "安裝 App";
-                newIcon.setAttribute('data-lucide', 'download');
+                if(btnText) btnText.innerText = "安裝 App";
+                if(icon) icon.setAttribute('data-lucide', 'download');
                 btn.onclick = installPWA;
             }
-            
-            if (btnText) btn.insertBefore(newIcon, btnText);
-            else btn.appendChild(newIcon);
             
             btn.classList.remove('hidden');
             lucide.createIcons();
@@ -392,10 +377,9 @@
         }
 
         // ------------------------------------------
-        // [修改] Avatar 播放邏輯 (串接 did.js / HeyGen)
+        // [新增] Avatar 播放 (串接 HeyGen 邏輯)
         // ------------------------------------------
         async function playAvatar() {
-            // 停止原有的 TTS
             if (currentAudio) { currentAudio.pause(); currentAudio = null; }
             isSpeaking = false; 
             updateTTSButton(false);
@@ -408,7 +392,6 @@
                 return;
             }
 
-            // 開啟播放 Modal
             const modal = document.getElementById('avatarModal');
             const loading = document.getElementById('avatarLoading');
             const video = document.getElementById('avatarVideo');
@@ -422,16 +405,13 @@
             video.src = "";
 
             try {
-                // [修正] HeyGen API 要求圖片必須是 Public URL
-                // 請確保 image/avatar.png 已部署到網路上 (例如 GitHub Pages)
+                // 自動組合成絕對路徑
                 const baseUrl = window.location.href.substring(0, window.location.href.lastIndexOf('/') + 1);
-                // 這裡假設您的 avatar.png 位於 image 資料夾下
                 const avatarImageUrl = baseUrl + 'image/avatar.png';
                 
-                // 呼叫 did.js 中的 generateAndPollVideo (現在內部是 HeyGen 邏輯)
+                // 呼叫 did.js 中的函式
                 const videoUrl = await generateAndPollVideo(contentText, avatarImageUrl);
                 
-                // 隱藏 Loading，顯示影片
                 loading.classList.add('hidden');
                 loading.classList.remove('flex');
                 
@@ -451,7 +431,6 @@
             const video = document.getElementById('avatarVideo');
             video.pause();
             video.src = "";
-            
             modal.classList.add('hidden');
             modal.classList.remove('flex');
         }
@@ -489,18 +468,14 @@
 
         async function initDashboard() {
             try {
-                // 1. 抓取系統設定/使用者列表 (等待完成)
                 const response = await fetch(`${API_URL}?action=getSettings&t=${new Date().getTime()}`);
                 const users = await response.json();
                 
-                // 篩選 active 使用者
                 const activeUsers = users.filter(u => u.status === 'active');
                 renderUserList(activeUsers);
                 
-                // 2. 判斷登入者並載入其數據
                 if (loggedInSession) {
                     const me = activeUsers.find(u => u.uid === loggedInSession.uid);
-                    
                     if (me) {
                         updateSidebarDisplayName(me.name, loggedInSession.picture);
                         await selectUser(me.uid, me.name, me);
@@ -513,7 +488,6 @@
                     await selectUser(activeUsers[0].uid, activeUsers[0].name);
                 }
 
-                // 資料載入完成，隱藏 loading 區塊
                 document.getElementById('loadingState').classList.add('hidden');
                 document.getElementById('dashboardContent').classList.remove('hidden');
                 document.getElementById('dashboardContent').classList.add('animate-fade-in');
@@ -528,7 +502,12 @@
             const listContainer = document.getElementById('userList'); 
             document.getElementById('userCount').innerText = users.length; 
             listContainer.innerHTML = ''; 
-            if (users.length === 0) { listContainer.innerHTML = '<div class="p-4 text-center text-sm text-slate-400">無可用使用者</div>'; return; } 
+            
+            if (users.length === 0) { 
+                listContainer.innerHTML = '<div class="p-4 text-center text-sm text-slate-400">無可用使用者</div>'; 
+                return; 
+            } 
+
             users.forEach(user => { 
                 const div = document.createElement('div'); 
                 const avatarText = user.name ? user.name.charAt(0).toUpperCase() : '?'; 
@@ -543,26 +522,13 @@
         async function selectUser(uid, name, userObj = null) {
             currentSelectedUid = uid;
             currentUserInfo = userObj;
-            updateBindingIcons(userObj);
-
+            
             document.querySelectorAll('.user-item').forEach(el => { el.classList.remove('bg-indigo-50', 'text-indigo-600', 'shadow-sm', 'border-indigo-100'); el.classList.add('border-transparent'); }); 
             const element = document.getElementById(`user-item-${uid}`); 
             if (element) { element.classList.add('bg-indigo-50', 'text-indigo-600', 'shadow-sm', 'border-indigo-100'); element.classList.remove('border-transparent'); } 
             
             document.getElementById('currentUserName').innerText = name;
             await fetchUserData(uid);
-        }
-
-        function updateBindingIcons(user) {
-            const googleIcon = document.getElementById('icon-google');
-            const lineIcon = document.getElementById('icon-line');
-            googleIcon.classList.remove('text-indigo-600'); googleIcon.classList.add('text-slate-300');
-            lineIcon.classList.remove('text-[#06C755]'); lineIcon.classList.add('text-slate-300');
-            if (user && user.provider) {
-                const providers = user.provider.toLowerCase();
-                if (providers.includes('google')) { googleIcon.classList.remove('text-slate-300'); googleIcon.classList.add('text-indigo-600'); }
-                if (providers.includes('line')) { lineIcon.classList.remove('text-slate-300'); lineIcon.classList.add('text-[#06C755]'); }
-            }
         }
 
         async function fetchUserData(uid) {
@@ -735,7 +701,7 @@
             modal.classList.remove('hidden'); modal.classList.add('flex'); 
             content.innerHTML = `<div class="flex flex-col items-center justify-center py-12"><div class="tech-loader"><div class="tech-ring"></div><div class="tech-ring"></div><i data-lucide="sparkles" class="tech-heart w-8 h-8"></i></div><p class="text-slate-500 mt-4 font-bold tracking-wider">AI ANALYZING...</p></div>`; 
             btnTTS.classList.add('hidden'); 
-            btnAvatar.classList.add('hidden'); // 先隱藏
+            btnAvatar.classList.add('hidden'); 
 
             try { 
                 const response = await fetch(`${API_URL}?action=askAI&uid=${currentSelectedUid}`); 
@@ -743,7 +709,7 @@
                 if (data.result) { 
                     content.innerHTML = `<div class="prose prose-sm text-slate-700">${marked.parse(data.result)}</div>`; 
                     btnTTS.classList.remove('hidden'); 
-                    btnAvatar.classList.remove('hidden'); // 分析成功後顯示
+                    btnAvatar.classList.remove('hidden'); 
                 } else { throw new Error("AI 無回應"); } 
             } catch (err) { 
                 content.innerHTML = `<div class="text-center py-8 text-rose-500">分析失敗: ${err.message}</div>`; 
@@ -819,10 +785,7 @@
             if (currentAudio && !currentAudio.paused) { currentAudio.pause(); currentAudio = null; }
             isSpeaking = false; 
             updateTTSButton(false);
-            
-            // 關閉 AI Modal 時也要確保 Avatar Modal 關閉
-            closeAvatarModal();
-            
+            closeAvatarModal(); 
             document.getElementById('aiAnalysisModal').classList.add('hidden'); 
             document.getElementById('aiAnalysisModal').classList.remove('flex'); 
         }
