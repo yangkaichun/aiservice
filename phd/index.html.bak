@@ -1,0 +1,655 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
+    <meta name="apple-mobile-web-app-title" content="YangHealth">
+    <meta name="theme-color" content="#ffffff">
+    
+    <link rel="manifest" href="manifest.json">
+    <link rel="apple-touch-icon" href="image/yanghealth.png">
+    <link rel="icon" type="image/x-icon" href="image/yanghealth.ico">
+    
+    <title>YangHome Health | 智慧健康監控</title>
+    
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap" rel="stylesheet">
+    <script src="https://unpkg.com/lucide@latest"></script>
+    
+    <script src="https://accounts.google.com/gsi/client" async defer></script>
+    
+    <script src="config.js"></script>
+
+    <style>
+        /* 1. 極簡白底風格設定 */
+        body { 
+            font-family: 'Inter', sans-serif; 
+            background-color: #f8fafc; 
+            color: #1e293b;
+            min-height: 100vh;
+            overflow-y: auto;
+        }
+        
+        /* 2. 簡約卡片 */
+        .clean-card { 
+            background-color: #ffffff;
+            border-radius: 1.5rem;
+            border: 1px solid #e2e8f0; 
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+            overflow: hidden;
+        }
+
+        /* 輸入框樣式 */
+        .clean-input {
+            background-color: #ffffff;
+            border: 1px solid #cbd5e1;
+            color: #334155;
+        }
+        .clean-input:focus {
+            border-color: #6366f1;
+            outline: none;
+            box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1); 
+        }
+        
+        /* 選項按鈕樣式 */
+        .radio-label {
+            background-color: #f1f5f9;
+            color: #64748b;
+            border: 1px solid transparent;
+        }
+        input:checked + .radio-label {
+            background-color: #ffffff;
+            border-color: #e2e8f0;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+            color: #4f46e5;
+            font-weight: 600;
+        }
+
+        /* App 安裝按鈕特效 */
+        .app-install-btn {
+            background: linear-gradient(to right, #1e293b, #334155);
+            color: white;
+            transition: all 0.3s ease;
+        }
+        .app-install-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px -5px rgba(30, 41, 59, 0.3);
+        }
+        .app-install-btn:active {
+            transform: translateY(0);
+        }
+
+        /* 登入遮罩 */
+        #login-overlay {
+            backdrop-filter: blur(5px);
+        }
+    </style>
+</head>
+<body class="flex flex-col items-center justify-center p-4 py-10 relative">
+
+    <div id="login-overlay" class="fixed inset-0 bg-white/80 z-50 hidden flex-col items-center justify-center">
+        <div class="w-12 h-12 border-4 border-indigo-200 border-t-indigo-600 rounded-full animate-spin"></div>
+        <p class="mt-4 text-indigo-600 font-bold text-lg animate-pulse">正在登入中，請稍候...</p>
+    </div>
+
+    <div id="install-modal" class="fixed inset-0 bg-black/50 z-50 hidden flex-col items-center justify-end pb-10 animate-fade-in" onclick="closeInstallModal()">
+        <div class="bg-white w-[90%] max-w-md rounded-3xl p-6 relative shadow-2xl" onclick="event.stopPropagation()">
+            <button onclick="closeInstallModal()" class="absolute top-4 right-4 text-slate-400 hover:text-slate-600"><i data-lucide="x" class="w-6 h-6"></i></button>
+            <div class="text-center">
+                <div class="w-16 h-16 bg-white rounded-2xl flex items-center justify-center mx-auto mb-4 border border-indigo-100 shadow-sm overflow-hidden p-2">
+                    <img src="image/yanghealth.png" class="w-full h-full object-contain">
+                </div>
+                <h3 class="text-xl font-bold text-slate-800 mb-2">安裝應用程式</h3>
+                <p class="text-sm text-slate-500 mb-6" id="install-instructions-text">請依照以下步驟將 App 加入主畫面：</p>
+                
+                <div class="space-y-3 text-left text-sm text-slate-600 bg-slate-50 p-5 rounded-2xl border border-slate-200">
+                    <div id="install-steps-content">
+                        </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="clean-card w-full max-w-md p-8 my-8 mb-4" id="main-card">
+        
+        <div class="text-center mb-8">
+            <div class="flex justify-center mb-6">
+                <div class="w-24 h-24 bg-white rounded-3xl flex items-center justify-center shadow-sm overflow-hidden p-4 border border-slate-100">
+                    <img src="image/yanghealth.png" alt="YangHealth Logo" class="w-full h-full object-contain">
+                </div>
+            </div>
+            <h1 class="text-3xl font-bold text-slate-800 tracking-tight">YangHome Health</h1>
+            <p class="text-slate-400 text-xs font-bold mt-2 tracking-widest uppercase">AI-Powered Health Monitor</p>
+        </div>
+
+        <div id="login-section" class="space-y-6">
+            <div class="bg-slate-50 p-4 rounded-xl border border-slate-100 text-sm text-slate-600 space-y-3 mb-4">
+                <h2 class="font-bold text-slate-800 flex items-center gap-2">
+                    <i data-lucide="info" class="w-4 h-4 text-indigo-500"></i> 關於本服務
+                </h2>
+                <p>YangHome Health 是一個專為家庭設計的智慧健康監測系統，提供以下功能：</p>
+                <ul class="list-disc list-outside pl-4 space-y-1 text-xs">
+                    <li>記錄與追蹤每日血壓、心率與血糖數據。</li>
+                    <li>利用 AI 技術分析健康趨勢並提供建議。</li>
+                    <li>支援家庭成員管理與數據可視化圖表。</li>
+                </ul>
+                <p class="text-xs text-slate-400 mt-2">
+                    我們會存取您的 Google 基本資料（姓名、Email、頭像）以建立個人化帳戶。您的健康數據將被加密儲存且僅供授權人員檢視。
+                </p>
+            </div>
+
+            <div class="flex justify-center">
+                <div id="g_id_onload"
+                     data-client_id="142808541856-1sfda1hcfk12p1r0a5fbmldugb1f99vn.apps.googleusercontent.com" 
+                     data-callback="handleCredentialResponse"
+                     data-auto_prompt="false">
+                </div>
+                <div class="g_id_signin"
+                     data-type="standard"
+                     data-size="large"
+                     data-theme="filled_blue" 
+                     data-text="sign_in_with"
+                     data-shape="pill"
+                     data-logo_alignment="left">
+                </div>
+            </div>
+            
+            <div class="text-center pt-2">
+                <p class="text-[10px] text-slate-400">
+                    登入即代表您同意
+                    <a href="pubpolicy.html" class="text-indigo-500 hover:text-indigo-600 hover:underline">服務條款</a>
+                    與
+                    <a href="policy.html" class="text-indigo-500 hover:text-indigo-600 hover:underline">隱私權政策</a>
+                </p>
+            </div>
+
+            <button type="button" onclick="handleInstallApp()" id="btn-install-login" class="w-full py-2 px-3 app-install-btn rounded-xl flex items-center justify-between shadow-md mt-4 hidden">
+                <div class="flex items-center gap-3">
+                    <div class="w-10 h-10 bg-white rounded-lg flex items-center justify-center overflow-hidden p-1 shadow-sm">
+                        <img src="image/yanghealth.png" alt="App Icon" class="w-full h-full object-contain">
+                    </div>
+                    <div class="text-left">
+                        <div class="text-xs font-medium text-slate-300" id="install-subtitle-login">Install App</div>
+                        <div class="text-sm font-bold text-white" id="install-title-login">安裝應用程式</div>
+                    </div>
+                </div>
+                <i data-lucide="download" class="w-5 h-5 text-white/80 mr-1"></i>
+            </button>
+        </div>
+
+        <div id="user-section" class="hidden">
+            <div class="flex justify-between items-center mb-6 bg-slate-50 p-4 rounded-2xl border border-slate-100">
+                <div>
+                    <p class="text-[10px] uppercase tracking-wider text-slate-400 font-bold mb-0.5">Current User</p>
+                    <h2 class="text-lg font-bold text-slate-800" id="display-name">User</h2>
+                    <p class="text-xs text-slate-500 truncate max-w-[150px]" id="display-email">...</p>
+                </div>
+                <button onclick="logout()" class="p-2.5 bg-white text-rose-500 hover:bg-rose-50 rounded-xl transition-all shadow-sm border border-slate-200" title="登出">
+                    <i data-lucide="log-out" class="w-5 h-5"></i>
+                </button>
+            </div>
+
+            <div id="latest-data-card" class="mb-6 hidden animate-fade-in">
+                <div class="flex items-center justify-between mb-3 px-1">
+                    <h3 class="text-xs font-bold text-slate-400 uppercase tracking-wider flex items-center gap-1">
+                        <i data-lucide="activity" class="w-3 h-3"></i> 最新量測
+                    </h3>
+                    <span id="display-time" class="text-[10px] text-slate-400 bg-slate-100 px-2 py-0.5 rounded-full font-mono">--</span>
+                </div>
+                <div class="grid grid-cols-2 gap-3 mb-3">
+                    <div class="p-4 bg-rose-50 rounded-2xl border border-rose-100 relative overflow-hidden">
+                        <div class="absolute -right-2 -top-2 w-12 h-12 bg-rose-100 rounded-full opacity-50"></div>
+                        <div class="flex items-center gap-1.5 text-rose-500 text-xs font-bold mb-1"><i data-lucide="heart" class="w-3 h-3"></i> 收縮壓</div>
+                        <div class="flex items-baseline gap-1"><span id="val-sys" class="text-2xl font-bold text-slate-800">--</span><span class="text-[10px] text-slate-400">mmHg</span></div>
+                    </div>
+                    <div class="p-4 bg-blue-50 rounded-2xl border border-blue-100 relative overflow-hidden">
+                        <div class="absolute -right-2 -top-2 w-12 h-12 bg-blue-100 rounded-full opacity-50"></div>
+                        <div class="flex items-center gap-1.5 text-blue-500 text-xs font-bold mb-1"><i data-lucide="activity" class="w-3 h-3"></i> 舒張壓</div>
+                        <div class="flex items-baseline gap-1"><span id="val-dia" class="text-2xl font-bold text-slate-800">--</span><span class="text-[10px] text-slate-400">mmHg</span></div>
+                    </div>
+                </div>
+                <div class="grid grid-cols-2 gap-3">
+                    <div class="p-4 bg-emerald-50 rounded-2xl border border-emerald-100 relative overflow-hidden">
+                        <div class="absolute -right-2 -top-2 w-12 h-12 bg-emerald-100 rounded-full opacity-50"></div>
+                        <div class="flex items-center gap-1.5 text-emerald-500 text-xs font-bold mb-1"><i data-lucide="zap" class="w-3 h-3"></i> 心率</div>
+                        <div class="flex items-baseline gap-1"><span id="val-hr" class="text-2xl font-bold text-slate-800">--</span><span class="text-[10px] text-slate-400">BPM</span></div>
+                    </div>
+                    <div class="p-4 bg-amber-50 rounded-2xl border border-amber-100 relative overflow-hidden">
+                        <div class="absolute -right-2 -top-2 w-12 h-12 bg-amber-100 rounded-full opacity-50"></div>
+                        <div class="flex items-center gap-1.5 text-amber-500 text-xs font-bold mb-1"><i data-lucide="droplet" class="w-3 h-3"></i> 血糖</div>
+                        <div class="flex items-baseline gap-1"><span id="val-bs" class="text-2xl font-bold text-slate-800">--</span><span class="text-[10px] text-slate-400">mg/dL</span></div>
+                    </div>
+                </div>
+            </div>
+
+            <form id="quickAddForm" onsubmit="handleQuickSubmit(event)" class="space-y-5">
+                <div class="grid grid-cols-2 gap-3 p-1 bg-slate-100 rounded-2xl">
+                    <label class="cursor-pointer text-center relative block">
+                        <input type="radio" name="dataType" value="BloodPressure" class="peer hidden" checked onchange="toggleFields()">
+                        <div class="radio-label py-2.5 rounded-xl text-sm transition-all">
+                            血壓記錄
+                        </div>
+                    </label>
+                    <label class="cursor-pointer text-center relative block">
+                        <input type="radio" name="dataType" value="BloodSugar" class="peer hidden" onchange="toggleFields()">
+                        <div class="radio-label py-2.5 rounded-xl text-sm transition-all">
+                            血糖記錄
+                        </div>
+                    </label>
+                </div>
+
+                <div id="field-bp" class="grid grid-cols-2 gap-4">
+                    <div class="col-span-1">
+                        <label class="block text-xs font-bold text-slate-500 mb-1.5 ml-1">收縮壓 (SYS)</label>
+                        <input type="number" id="sbp" class="w-full px-4 py-3 clean-input rounded-xl text-center font-mono text-xl font-bold placeholder-slate-300" placeholder="120">
+                    </div>
+                    <div class="col-span-1">
+                        <label class="block text-xs font-bold text-slate-500 mb-1.5 ml-1">舒張壓 (DIA)</label>
+                        <input type="number" id="dbp" class="w-full px-4 py-3 clean-input rounded-xl text-center font-mono text-xl font-bold placeholder-slate-300" placeholder="80">
+                    </div>
+                    <div class="col-span-2">
+                        <label class="block text-xs font-bold text-slate-500 mb-1.5 ml-1">心率 (BPM)</label>
+                        <input type="number" id="hr" class="w-full px-4 py-3 clean-input rounded-xl text-center font-mono text-xl font-bold placeholder-slate-300" placeholder="72">
+                    </div>
+                </div>
+
+                <div id="field-bs" class="hidden space-y-4">
+                    <div>
+                        <label class="block text-xs font-bold text-slate-500 mb-1.5 ml-1">血糖數值 (mg/dL)</label>
+                        <div class="relative">
+                            <input type="number" id="bs" class="w-full pl-6 pr-12 py-3 clean-input rounded-xl font-mono text-xl font-bold placeholder-slate-300" placeholder="100">
+                            <div class="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 text-xs font-bold">mg/dL</div>
+                        </div>
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold text-slate-500 mb-1.5 ml-1">測量時機</label>
+                        <div class="grid grid-cols-2 gap-2">
+                            <label class="cursor-pointer">
+                                <input type="radio" name="bsTime" value="fasting" class="peer hidden" checked>
+                                <div class="py-2.5 text-center text-xs font-medium border border-slate-200 rounded-xl bg-white text-slate-500 peer-checked:bg-indigo-50 peer-checked:border-indigo-200 peer-checked:text-indigo-600 transition hover:bg-slate-50">飯前</div>
+                            </label>
+                            <label class="cursor-pointer">
+                                <input type="radio" name="bsTime" value="postprandial" class="peer hidden">
+                                <div class="py-2.5 text-center text-xs font-medium border border-slate-200 rounded-xl bg-white text-slate-500 peer-checked:bg-indigo-50 peer-checked:border-indigo-200 peer-checked:text-indigo-600 transition hover:bg-slate-50">飯後</div>
+                            </label>
+                            <label class="cursor-pointer">
+                                <input type="radio" name="bsTime" value="wakeup" class="peer hidden">
+                                <div class="py-2.5 text-center text-xs font-medium border border-slate-200 rounded-xl bg-white text-slate-500 peer-checked:bg-indigo-50 peer-checked:border-indigo-200 peer-checked:text-indigo-600 transition hover:bg-slate-50">起床</div>
+                            </label>
+                            <label class="cursor-pointer">
+                                <input type="radio" name="bsTime" value="bedtime" class="peer hidden">
+                                <div class="py-2.5 text-center text-xs font-medium border border-slate-200 rounded-xl bg-white text-slate-500 peer-checked:bg-indigo-50 peer-checked:border-indigo-200 peer-checked:text-indigo-600 transition hover:bg-slate-50">睡前</div>
+                            </label>
+                        </div>
+                    </div>
+                </div>
+
+                <div>
+                    <label class="block text-xs font-bold text-slate-500 mb-1.5 ml-1">備註 (Note)</label>
+                    <input type="text" id="note" class="w-full px-4 py-3 clean-input rounded-xl text-sm placeholder-slate-300" placeholder="例: 剛運動完...">
+                </div>
+
+                <div class="space-y-3 pt-4 border-t border-slate-100">
+                    
+                    <button type="button" onclick="handleInstallApp()" id="btn-install-app" class="w-full py-2 px-3 app-install-btn rounded-xl flex items-center justify-between shadow-md mb-3 hidden">
+                        <div class="flex items-center gap-3">
+                            <div class="w-10 h-10 bg-white rounded-lg flex items-center justify-center overflow-hidden p-1 shadow-sm">
+                                <img src="image/yanghealth.png" alt="App Icon" class="w-full h-full object-contain">
+                            </div>
+                            <div class="text-left">
+                                <div class="text-xs font-medium text-slate-300" id="install-subtitle">Install App</div>
+                                <div class="text-sm font-bold text-white" id="install-title">安裝應用程式</div>
+                            </div>
+                        </div>
+                        <i data-lucide="download" class="w-5 h-5 text-white/80 mr-1"></i>
+                    </button>
+
+                    <button type="submit" id="btn-submit" class="w-full py-3.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl font-bold shadow-md hover:shadow-lg transition-all active:scale-95 flex items-center justify-center gap-2">
+                        <span>快速記錄</span>
+                        <i data-lucide="send" class="w-4 h-4"></i>
+                    </button>
+                    
+                    <a href="dashboard.html" class="w-full py-3.5 bg-white border border-slate-200 hover:bg-slate-50 text-slate-600 rounded-xl font-bold text-sm transition-all flex items-center justify-center gap-2 active:scale-95 shadow-sm hover:shadow">
+                        <i data-lucide="bar-chart-2" class="w-4 h-4 text-indigo-500"></i>
+                        <span>查看生理量測資訊</span>
+                    </a>
+                </div>
+            </form>
+        </div>
+
+        <div class="mt-8 pt-6 border-t border-slate-100 text-[10px] uppercase tracking-widest text-center text-slate-400">
+            <p>&copy; 2024 YangHome Health System</p>
+        </div>
+    </div>
+    
+    <script>
+        const API_URL = config.API_URL;
+        lucide.createIcons();
+        let userSession = null;
+        let deferredPrompt;
+
+        document.addEventListener('DOMContentLoaded', () => {
+            checkLoginStatus();
+            initInstallButton();
+        });
+
+        window.addEventListener('beforeinstallprompt', (e) => {
+            e.preventDefault();
+            deferredPrompt = e;
+            console.log("Captured beforeinstallprompt event");
+        });
+
+        const isIos = /iPhone|iPad|iPod/.test(navigator.userAgent) && !window.MSStream;
+        const isStandalone = window.navigator.standalone || window.matchMedia('(display-mode: standalone)').matches;
+
+        function initInstallButton() {
+            // [修正邏輯] 同時處理登入前與登入後的安裝按鈕
+            const btnApp = document.getElementById('btn-install-app');
+            const btnLogin = document.getElementById('btn-install-login');
+            
+            if (isStandalone) {
+                if(btnApp) btnApp.classList.add('hidden');
+                if(btnLogin) btnLogin.classList.add('hidden');
+                return;
+            }
+
+            const buttons = [
+                { btn: btnApp, titleId: 'install-title', subId: 'install-subtitle' },
+                { btn: btnLogin, titleId: 'install-title-login', subId: 'install-subtitle-login' }
+            ];
+
+            buttons.forEach(item => {
+                if (item.btn) {
+                    const title = document.getElementById(item.titleId);
+                    const subtitle = document.getElementById(item.subId);
+                    const icon = item.btn.querySelector('i');
+
+                    if (isIos) {
+                        if(title) title.innerText = "安裝到 iPhone";
+                        if(subtitle) subtitle.innerText = "Install for iOS";
+                        if(icon) icon.setAttribute('data-lucide', 'share');
+                    } else {
+                        if(title) title.innerText = "安裝應用程式";
+                        if(subtitle) subtitle.innerText = "Install App";
+                        if(icon) icon.setAttribute('data-lucide', 'download');
+                    }
+                    
+                    item.btn.classList.remove('hidden');
+                }
+            });
+            
+            lucide.createIcons();
+        }
+
+        function handleInstallApp() {
+            if (deferredPrompt) {
+                deferredPrompt.prompt();
+                deferredPrompt.userChoice.then((choiceResult) => {
+                    deferredPrompt = null;
+                });
+            } else {
+                showInstallInstructions();
+            }
+        }
+
+        function showInstallInstructions() {
+            const modal = document.getElementById('install-modal');
+            const content = document.getElementById('install-steps-content');
+            
+            if (isIos) {
+                content.innerHTML = `
+                    <div class="flex items-center gap-3">
+                        <span class="w-6 h-6 rounded-full bg-white border border-slate-200 flex items-center justify-center font-bold text-xs text-indigo-600 shadow-sm">1</span>
+                        <span>點擊下方工具列的 <strong>分享</strong> <i data-lucide="share" class="w-4 h-4 inline align-text-bottom"></i></span>
+                    </div>
+                    <div class="flex items-center gap-3 mt-3">
+                        <span class="w-6 h-6 rounded-full bg-white border border-slate-200 flex items-center justify-center font-bold text-xs text-indigo-600 shadow-sm">2</span>
+                        <span>往下滑，選擇 <strong>加入主畫面</strong> <i data-lucide="plus-square" class="w-4 h-4 inline align-text-bottom"></i></span>
+                    </div>
+                    <div class="flex items-center gap-3 mt-3">
+                        <span class="w-6 h-6 rounded-full bg-white border border-slate-200 flex items-center justify-center font-bold text-xs text-indigo-600 shadow-sm">3</span>
+                        <span>點擊右上角的 <strong>加入</strong> 即可</span>
+                    </div>
+                `;
+            } else {
+                content.innerHTML = `
+                    <div class="flex items-center gap-3">
+                        <span class="w-6 h-6 rounded-full bg-white border border-slate-200 flex items-center justify-center font-bold text-xs text-indigo-600 shadow-sm">1</span>
+                        <span>點擊瀏覽器選單 <i data-lucide="more-vertical" class="w-4 h-4 inline align-text-bottom"></i> (或網址列的安裝圖示)</span>
+                    </div>
+                    <div class="flex items-center gap-3 mt-3">
+                        <span class="w-6 h-6 rounded-full bg-white border border-slate-200 flex items-center justify-center font-bold text-xs text-indigo-600 shadow-sm">2</span>
+                        <span>選擇 <strong>安裝應用程式</strong> 或 <strong>加入主畫面</strong></span>
+                    </div>
+                    <div class="flex items-center gap-3 mt-3">
+                        <span class="w-6 h-6 rounded-full bg-white border border-slate-200 flex items-center justify-center font-bold text-xs text-indigo-600 shadow-sm">3</span>
+                        <span>依照指示完成安裝</span>
+                    </div>
+                `;
+            }
+            
+            modal.classList.remove('hidden');
+            modal.classList.add('flex');
+            lucide.createIcons();
+        }
+
+        function closeInstallModal() {
+            document.getElementById('install-modal').classList.add('hidden');
+            document.getElementById('install-modal').classList.remove('flex');
+        }
+
+        function checkLoginStatus() {
+            const savedSession = localStorage.getItem('healthTwinSession');
+            const loginSection = document.getElementById('login-section');
+            const userSection = document.getElementById('user-section');
+            const mainCard = document.getElementById('main-card');
+
+            if (savedSession) {
+                userSession = JSON.parse(savedSession);
+                
+                if (userSession.status === 'pending') {
+                    window.location.href = 'waitforuserright.html';
+                    return;
+                }
+
+                document.getElementById('display-name').innerText = userSession.name || 'User';
+                document.getElementById('display-email').innerText = userSession.email || '';
+                
+                loginSection.classList.add('hidden');
+                userSection.classList.remove('hidden');
+                mainCard.classList.remove('max-w-md'); 
+                mainCard.classList.add('max-w-lg');
+                
+                fetchLatestData(userSession.uid);
+            } else {
+                loginSection.classList.remove('hidden');
+                userSection.classList.add('hidden');
+                mainCard.classList.add('max-w-md');
+                mainCard.classList.remove('max-w-lg');
+            }
+            lucide.createIcons();
+        }
+
+        async function fetchLatestData(uid) {
+            const card = document.getElementById('latest-data-card');
+            const displaySys = document.getElementById('val-sys');
+            const displayDia = document.getElementById('val-dia');
+            const displayHR = document.getElementById('val-hr');
+            const displayBS = document.getElementById('val-bs');
+            const displayTime = document.getElementById('display-time');
+
+            try {
+                const response = await fetch(`${API_URL}?action=getData&uid=${encodeURIComponent(uid)}&t=${new Date().getTime()}`);
+                const rawData = await response.json();
+
+                if (rawData && rawData.length > 0) {
+                    const latestBP = rawData.find(d => d.sbp && d.dbp);
+                    const latestBS = rawData.find(d => d.glucose);
+                    
+                    if (latestBP) {
+                        displaySys.innerText = latestBP.sbp;
+                        displayDia.innerText = latestBP.dbp;
+                        displayHR.innerText = latestBP.hr || '--';
+                    }
+                    if (latestBS) {
+                        displayBS.innerText = latestBS.glucose;
+                    }
+
+                    let lastDateStr = null;
+                    if (latestBP && latestBS) {
+                        const dateBP = new Date(latestBP.date);
+                        const dateBS = new Date(latestBS.date);
+                        lastDateStr = (dateBP > dateBS) ? latestBP.date : latestBS.date;
+                    } else if (latestBP) {
+                        lastDateStr = latestBP.date;
+                    } else if (latestBS) {
+                        lastDateStr = latestBS.date;
+                    }
+
+                    if (lastDateStr) {
+                        const dateObj = new Date(lastDateStr);
+                        const timeStr = `${String(dateObj.getMonth()+1).padStart(2,'0')}/${String(dateObj.getDate()).padStart(2,'0')} ${String(dateObj.getHours()).padStart(2,'0')}:${String(dateObj.getMinutes()).padStart(2,'0')}`;
+                        displayTime.innerText = timeStr;
+                        card.classList.remove('hidden');
+                    }
+                }
+            } catch (e) {
+                console.error("Error fetching latest data:", e);
+            }
+        }
+
+        async function handleCredentialResponse(response) {
+            const responsePayload = decodeJwtResponse(response.credential);
+            const overlay = document.getElementById('login-overlay');
+            overlay.classList.remove('hidden'); overlay.classList.add('flex');
+
+            try {
+                const res = await fetch(API_URL, {
+                    method: 'POST',
+                    body: JSON.stringify({
+                        action: 'socialLogin',
+                        token: response.credential, 
+                        provider: 'google'
+                    })
+                });
+                const data = await res.json();
+
+                if (data.isNewUser) {
+                    const signupData = { email: data.email, name: data.name, picture: data.picture };
+                    sessionStorage.setItem('signupPrefill', JSON.stringify(signupData));
+                    window.location.href = 'signup.html';
+                } else if (data.success) {
+                    const sessionData = { ...data.user, picture: responsePayload.picture };
+                    localStorage.setItem('healthTwinSession', JSON.stringify(sessionData));
+                    
+                    if (data.user.status === 'pending') {
+                        window.location.href = 'waitforuserright.html';
+                    } else {
+                        checkLoginStatus(); // 原地更新 UI
+                    }
+                } else {
+                    alert("登入失敗：" + (data.message || "未知錯誤"));
+                }
+            } catch (e) {
+                console.error(e);
+                alert("登入連線錯誤");
+            } finally {
+                overlay.classList.add('hidden'); overlay.classList.remove('flex');
+            }
+        }
+
+        function decodeJwtResponse(token) {
+            var base64Url = token.split('.')[1];
+            var base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
+            var jsonPayload = decodeURIComponent(window.atob(base64).split('').map(function(c) {
+                return '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2);
+            }).join(''));
+            return JSON.parse(jsonPayload);
+        }
+
+        function logout() {
+            if(confirm("確定要登出嗎？")) {
+                localStorage.removeItem('healthTwinSession');
+                try { google.accounts.id.disableAutoSelect(); } catch(e){}
+                window.location.reload();
+            }
+        }
+
+        function toggleFields() {
+            const type = document.querySelector('input[name="dataType"]:checked').value;
+            if (type === 'BloodPressure') {
+                document.getElementById('field-bp').classList.remove('hidden');
+                document.getElementById('field-bs').classList.add('hidden');
+            } else {
+                document.getElementById('field-bp').classList.add('hidden');
+                document.getElementById('field-bs').classList.remove('hidden');
+            }
+        }
+
+        async function handleQuickSubmit(e) {
+            e.preventDefault();
+            if (!userSession || !userSession.uid) {
+                alert("錯誤：未偵測到登入狀態，請重新登入。");
+                window.location.reload();
+                return;
+            }
+
+            const btn = document.getElementById('btn-submit');
+            const originalText = btn.innerHTML;
+            btn.disabled = true;
+            btn.innerHTML = `<i data-lucide="loader-2" class="w-5 h-5 animate-spin"></i> 傳送中...`;
+            lucide.createIcons();
+
+            const type = document.querySelector('input[name="dataType"]:checked').value;
+            let payload = {
+                action: 'addData',
+                uid: userSession.uid, 
+                type: type,
+                note: document.getElementById('note').value,
+                timestamp: new Date().toISOString()
+            };
+
+            if (type === 'BloodPressure') {
+                payload.sbp = document.getElementById('sbp').value;
+                payload.dbp = document.getElementById('dbp').value;
+                payload.hr = document.getElementById('hr').value;
+                if (!payload.sbp || !payload.dbp) { alert("請輸入完整的血壓數值"); resetBtn(); return; }
+            } else {
+                payload.bs = document.getElementById('bs').value;
+                payload.time = document.querySelector('input[name="bsTime"]:checked').value;
+                if (!payload.bs) { alert("請輸入血糖數值"); resetBtn(); return; }
+            }
+
+            try {
+                await fetch(API_URL, {
+                    method: 'POST',
+                    mode: 'no-cors',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+
+                setTimeout(() => {
+                    alert("紀錄已成功儲存！");
+                    fetchLatestData(userSession.uid);
+                    document.getElementById('note').value = '';
+                    resetBtn();
+                }, 800);
+
+            } catch (error) {
+                console.error(error);
+                alert("發生錯誤，請稍後再試。");
+                resetBtn();
+            }
+
+            function resetBtn() {
+                btn.disabled = false;
+                btn.innerHTML = originalText;
+                lucide.createIcons();
+            }
+        }
+    </script>
+</body>
+</html>
