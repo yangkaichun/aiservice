@@ -5,7 +5,7 @@
 
 const HEYGEN_CONFIG = {
     // 您提供的 HeyGen API Key
-    API_KEY: "sk_V2_hgu_k8vIJDdLJQd_G02YPAbdwcz5YSqaOOVFzHXDHXMQYKMu",
+    API_KEY: "sk_V2_hgu_kSpjn87oKgN_ianxihtBBD8Ml0rzlfp05chlDCAaqZ4S",
     // 建立影片任務 API (Talking Photo)
     GENERATE_URL: "https://api.heygen.com/v2/video/generate",
     // 檢查狀態 API
