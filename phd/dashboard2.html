@@ -121,11 +121,13 @@
     </div>
 
     <div id="mobileOverlay" class="fixed inset-0 bg-black/50 z-20 hidden lg:hidden" onclick="toggleSidebar()"></div>
+
     <aside id="sidebar" class="fixed inset-y-0 left-0 w-72 bg-white border-r border-slate-200 flex flex-col z-30 shadow-2xl lg:shadow-none transform -translate-x-full lg:translate-x-0 sidebar-transition lg:relative">
-       <div class="p-6 border-b border-slate-100 flex justify-between items-center">
+        <div class="p-6 border-b border-slate-100 flex justify-between items-center">
             <div><div class="flex items-center gap-2 text-indigo-600 font-bold text-xl"><i data-lucide="activity" class="w-6 h-6"></i>YangHome Health</div><p class="text-xs text-slate-400 mt-1">智慧醫療監測系統</p></div>
             <button onclick="toggleSidebar()" class="lg:hidden text-slate-400 hover:text-slate-600"><i data-lucide="x" class="w-6 h-6"></i></button>
         </div>
+        
         <div class="p-4 pb-2">
             <div class="flex items-center gap-3 p-3 bg-slate-50 rounded-xl border border-slate-100 shadow-sm">
                 <div id="avatar-container" class="w-10 h-10 rounded-full bg-white border border-slate-200 flex items-center justify-center overflow-hidden shrink-0">
@@ -137,11 +139,20 @@
                 </div>
             </div>
         </div>
+
         <div class="p-4 flex-1 overflow-hidden flex flex-col">
             <h3 class="text-xs font-bold text-slate-400 uppercase tracking-wider mb-3 px-2 flex justify-between items-center">選擇用戶<span id="userCount" class="bg-slate-100 text-slate-500 py-0.5 px-2 rounded-full text-[10px]">0</span></h3>
-            <div id="userList" class="space-y-1 overflow-y-auto flex-1 pr-1"></div>
+            <div id="userList" class="space-y-1 overflow-y-auto flex-1 pr-1">
+                <div class="p-4 text-center text-slate-400 text-sm animate-pulse"><i data-lucide="loader-2" class="w-5 h-5 animate-spin mx-auto mb-2"></i>正在載入使用者...</div>
+            </div>
         </div>
+
         <div class="mt-auto p-4 border-t border-slate-100 bg-slate-50">
+            <button onclick="installPWA()" id="btn-install-sidebar" class="w-full py-2.5 px-4 bg-sky-500 hover:bg-sky-600 text-white rounded-lg text-sm font-bold transition flex items-center justify-center gap-2 mb-2 shadow-sm hidden">
+                <i data-lucide="download" class="w-4 h-4"></i>
+                <span id="sidebar-install-text">安裝 App</span>
+            </button>
+
             <button onclick="getAIAnalysis()" class="w-full py-3 px-4 btn-gemini rounded-xl text-sm font-bold transition flex items-center justify-center gap-2 mb-3 shadow-md group"><i data-lucide="sparkles" class="w-4 h-4 group-hover:scale-110 transition-transform"></i>AI 分析 (Gemini)</button>
             <a href="accountsetting.html" class="w-full py-2.5 px-4 bg-white border border-slate-200 hover:bg-slate-100 text-slate-500 hover:text-slate-800 rounded-lg text-sm font-medium transition flex items-center justify-center gap-2 mb-2 shadow-sm"><i data-lucide="link" class="w-4 h-4"></i> 帳號綁定</a>
             <a href="setting.html" class="w-full py-2.5 px-4 bg-white border border-slate-200 hover:bg-slate-100 text-slate-500 hover:text-slate-800 rounded-lg text-sm font-medium transition flex items-center justify-center gap-2 mb-2 shadow-sm group"><i data-lucide="settings-2" class="w-4 h-4 group-hover:rotate-90 transition-transform duration-500"></i> 管理者後台</a>
@@ -151,7 +162,7 @@
     </aside>
 
     <main class="flex-1 flex flex-col h-full overflow-hidden relative w-full">
-       <header class="h-16 bg-white/90 backdrop-blur-md border-b border-slate-200 flex justify-between items-center px-4 lg:px-8 sticky top-0 z-10 shrink-0">
+        <header class="h-16 bg-white/90 backdrop-blur-md border-b border-slate-200 flex justify-between items-center px-4 lg:px-8 sticky top-0 z-10 shrink-0">
             <div class="flex items-center gap-3">
                 <button onclick="toggleSidebar()" class="lg:hidden p-2 -ml-2 text-slate-600 hover:bg-slate-100 rounded-lg"><i data-lucide="menu" class="w-6 h-6"></i></button>
                 <div class="overflow-hidden">
@@ -160,6 +171,14 @@
                 </div>
             </div>
             <div class="flex items-center gap-3">
+                <div class="flex items-center gap-1.5 mr-2">
+                    <div class="group relative flex items-center" title="Google 帳號狀態">
+                        <i data-lucide="globe" id="icon-google" class="w-5 h-5 text-slate-300"></i>
+                    </div>
+                    <div class="group relative flex items-center" title="LINE 帳號狀態">
+                        <i data-lucide="message-circle" id="icon-line" class="w-5 h-5 text-slate-300"></i>
+                    </div>
+                </div>
                 <button onclick="refreshCurrentUserData()" class="p-2 text-slate-500 hover:bg-slate-100 rounded-lg transition" title="刷新"><i data-lucide="refresh-cw" class="w-5 h-5"></i></button>
             </div>
         </header>
@@ -271,70 +290,52 @@
         let currentAudio = null;
         let isSpeaking = false;
 
+        // PWA 變數
+        let deferredPrompt;
+        const btnAndroid = document.getElementById('btn-install-android');
+        const btnIos = document.getElementById('btn-install-ios');
+
         document.addEventListener('DOMContentLoaded', () => {
             lucide.createIcons();
+            
+            // PWA 安裝邏輯
+            window.addEventListener('beforeinstallprompt', (e) => {
+                e.preventDefault();
+                deferredPrompt = e;
+                if(btnAndroid) btnAndroid.classList.remove('hidden');
+            });
+
+            const isIos = /iPhone|iPad|iPod/.test(navigator.userAgent) && !window.MSStream;
+            const isStandalone = window.navigator.standalone || window.matchMedia('(display-mode: standalone)').matches;
+            
+            if (isIos && !isStandalone && btnIos) {
+                btnIos.classList.remove('hidden');
+            }
+
+            if (isStandalone) { 
+                if(btnAndroid) btnAndroid.classList.add('hidden'); 
+                if(btnIos) btnIos.classList.add('hidden');
+            }
+
             initDashboard();
         });
 
-        // ------------------------------------------
-        // [關鍵修正] Avatar 播放邏輯
-        // ------------------------------------------
-        async function playAvatar() {
-            if (currentAudio) { currentAudio.pause(); currentAudio = null; }
-            isSpeaking = false; 
-            updateTTSButton(false);
-
-            const contentEl = document.getElementById('aiModalContent');
-            const contentText = contentEl.innerText || contentEl.textContent;
-            
-            if (!contentText) {
-                alert("沒有分析內容可供朗讀");
-                return;
-            }
-
-            const modal = document.getElementById('avatarModal');
-            const loading = document.getElementById('avatarLoading');
-            const video = document.getElementById('avatarVideo');
-            
-            modal.classList.remove('hidden');
-            modal.classList.add('flex');
-            loading.classList.remove('hidden');
-            loading.classList.add('flex');
-            video.classList.add('hidden');
-            video.pause();
-            video.src = "";
-
-            try {
-                // 自動組合成絕對路徑 (HeyGen 需要公開 URL)
-                const baseUrl = window.location.href.substring(0, window.location.href.lastIndexOf('/') + 1);
-                const avatarImageUrl = baseUrl + 'image/avatar.png'; // 確保您已經上傳了 avatar.png 到 image 資料夾
-                
-                // 呼叫 did.js 中的函式 (現在內部是 HeyGen 邏輯)
-                const videoUrl = await generateAndPollVideo(contentText, avatarImageUrl);
-                
-                loading.classList.add('hidden');
-                loading.classList.remove('flex');
-                
-                video.src = videoUrl;
-                video.classList.remove('hidden');
-                video.play();
-
-            } catch (err) {
-                console.error("Avatar Gen Error:", err);
-                alert("Avatar 生成失敗: " + err.message);
-                closeAvatarModal();
+        function installPWA() {
+            if (deferredPrompt) {
+                deferredPrompt.prompt();
+                deferredPrompt.userChoice.then((choiceResult) => { deferredPrompt = null; });
             }
         }
 
-        function closeAvatarModal() {
-            const modal = document.getElementById('avatarModal');
-            const video = document.getElementById('avatarVideo');
-            video.pause();
-            video.src = "";
-            modal.classList.add('hidden');
-            modal.classList.remove('flex');
+        function showIosInstall() {
+            document.getElementById('ios-install-modal').classList.remove('hidden');
+            document.getElementById('ios-install-modal').classList.add('flex');
         }
-        // ------------------------------------------
+
+        function closeIosModal() {
+            document.getElementById('ios-install-modal').classList.add('hidden');
+            document.getElementById('ios-install-modal').classList.remove('flex');
+        }
 
         function updateSidebarDisplayName(name, pictureUrl) {
             document.getElementById('sidebar-user-name').innerText = name || "Guest";
@@ -368,26 +369,38 @@
 
         async function initDashboard() {
             try {
-                const response = await fetch(`${API_URL}?action=getSettings&t=${new Date().getTime()}`);
+                // 1. 抓取系統設定/使用者列表 (等待完成)
+                const response = await fetch(`${API_URL}?action=getSettings`);
                 const users = await response.json();
+                renderUserList(users);
                 
-                const activeUsers = users.filter(u => u.status === 'active');
-                renderUserList(activeUsers);
-                
+                // 2. 判斷登入者並載入其數據
                 if (loggedInSession) {
-                    const me = activeUsers.find(u => u.uid === loggedInSession.uid);
+                    const me = users.find(u => u.uid === loggedInSession.uid);
+                    
                     if (me) {
                         updateSidebarDisplayName(me.name, loggedInSession.picture);
                         await selectUser(me.uid, me.name, me);
                     } else {
                         const sessionName = loggedInSession.name || loggedInSession.email;
                         updateSidebarDisplayName(sessionName, loggedInSession.picture);
-                        await selectUser(loggedInSession.uid, sessionName, loggedInSession);
+                        
+                        const tempUser = { uid: loggedInSession.uid, name: sessionName, email: loggedInSession.email, role: loggedInSession.role || 'user', provider: loggedInSession.provider };
+                        const listContainer = document.getElementById('userList');
+                        const div = document.createElement('div');
+                        const avatarContent = loggedInSession.picture ? `<img src="${loggedInSession.picture}" class="w-full h-full object-cover">` : loggedInSession.name.charAt(0).toUpperCase();
+                        div.className = `p-3 rounded-xl cursor-pointer hover:bg-indigo-50 hover:text-indigo-600 transition flex items-center gap-3 text-slate-600 font-medium group user-item border border-transparent`;
+                        div.innerHTML = `<div class="w-8 h-8 rounded-full bg-indigo-100 flex items-center justify-center font-bold text-indigo-600 border border-slate-200 overflow-hidden">${avatarContent}</div><span class="truncate">${sessionName} (您)</span>`;
+                        div.onclick = () => { selectUser(tempUser.uid, sessionName, tempUser); if (window.innerWidth < 1024) toggleSidebar(); };
+                        if(listContainer.firstChild) listContainer.insertBefore(div, listContainer.firstChild); else listContainer.appendChild(div);
+
+                        await selectUser(tempUser.uid, sessionName, tempUser);
                     }
-                } else if (activeUsers.length > 0) {
-                    await selectUser(activeUsers[0].uid, activeUsers[0].name);
+                } else if (users.length > 0) {
+                    await selectUser(users[0].uid, users[0].name);
                 }
 
+                // 資料載入完成，隱藏 loading 區塊
                 document.getElementById('loadingState').classList.add('hidden');
                 document.getElementById('dashboardContent').classList.remove('hidden');
                 document.getElementById('dashboardContent').classList.add('animate-fade-in');
@@ -402,12 +415,7 @@
             const listContainer = document.getElementById('userList'); 
             document.getElementById('userCount').innerText = users.length; 
             listContainer.innerHTML = ''; 
-            
-            if (users.length === 0) { 
-                listContainer.innerHTML = '<div class="p-4 text-center text-sm text-slate-400">無可用使用者</div>'; 
-                return; 
-            } 
-
+            if (users.length === 0) { listContainer.innerHTML = '<div class="p-4 text-center text-sm text-slate-400">無使用者</div>'; return; } 
             users.forEach(user => { 
                 const div = document.createElement('div'); 
                 const avatarText = user.name ? user.name.charAt(0).toUpperCase() : '?'; 
@@ -422,7 +430,8 @@
         async function selectUser(uid, name, userObj = null) {
             currentSelectedUid = uid;
             currentUserInfo = userObj;
-            
+            updateBindingIcons(userObj);
+
             document.querySelectorAll('.user-item').forEach(el => { el.classList.remove('bg-indigo-50', 'text-indigo-600', 'shadow-sm', 'border-indigo-100'); el.classList.add('border-transparent'); }); 
             const element = document.getElementById(`user-item-${uid}`); 
             if (element) { element.classList.add('bg-indigo-50', 'text-indigo-600', 'shadow-sm', 'border-indigo-100'); element.classList.remove('border-transparent'); } 
@@ -431,12 +440,25 @@
             await fetchUserData(uid);
         }
 
+        function updateBindingIcons(user) {
+            const googleIcon = document.getElementById('icon-google');
+            const lineIcon = document.getElementById('icon-line');
+            googleIcon.classList.remove('text-indigo-600'); googleIcon.classList.add('text-slate-300');
+            lineIcon.classList.remove('text-[#06C755]'); lineIcon.classList.add('text-slate-300');
+            if (user && user.provider) {
+                const providers = user.provider.toLowerCase();
+                if (providers.includes('google')) { googleIcon.classList.remove('text-slate-300'); googleIcon.classList.add('text-indigo-600'); }
+                if (providers.includes('line')) { lineIcon.classList.remove('text-slate-300'); lineIcon.classList.add('text-[#06C755]'); }
+            }
+        }
+
         async function fetchUserData(uid) {
+            // 這裡不再顯示 full-screen loading，僅顯示區塊 loading
             document.getElementById('loadingState').classList.remove('hidden'); 
             document.getElementById('dashboardContent').classList.add('hidden');
             
             try {
-                const response = await fetch(`${API_URL}?action=getData&uid=${encodeURIComponent(uid)}&t=${new Date().getTime()}`);
+                const response = await fetch(`${API_URL}?action=getData&uid=${encodeURIComponent(uid)}`);
                 const rawData = await response.json();
                 
                 allUserData = rawData.map(item => {
@@ -527,6 +549,52 @@
             renderCharts(data); 
         }
 
+        // [修改] 圖表增加顯示時間 (HH:mm)
+        function renderCharts(data) { 
+            const labels = data.map(d => { 
+                const date = new Date(d.timestamp); 
+                const timeStr = `${String(date.getHours()).padStart(2, '0')}:${String(date.getMinutes()).padStart(2, '0')}`;
+                return `${date.getMonth()+1}/${date.getDate()} ${timeStr}`; 
+            }); 
+            
+            const sbpData = data.map(d => d.sbp); 
+            const dbpData = data.map(d => d.dbp); 
+            const glucoseData = data.map(d => d.glucose); 
+
+            const ctxBP = document.getElementById('mainChart').getContext('2d'); 
+            if (bpChartInstance) bpChartInstance.destroy(); 
+            bpChartInstance = new Chart(ctxBP, { 
+                type: 'line', 
+                data: { 
+                    labels: labels, 
+                    datasets: [
+                        { label: '收縮壓', data: sbpData, borderColor: '#F43F5E', backgroundColor: 'rgba(244, 63, 94, 0.1)', borderWidth: 2, tension: 0.3, fill: true, spanGaps: true }, 
+                        { label: '舒張壓', data: dbpData, borderColor: '#3B82F6', backgroundColor: 'rgba(59, 130, 246, 0.1)', borderWidth: 2, tension: 0.3, fill: true, spanGaps: true }
+                    ] 
+                }, 
+                options: { 
+                    responsive: true, maintainAspectRatio: false, 
+                    plugins: { legend: { position: 'top', align: 'end' } }, 
+                    scales: { y: { suggestedMin: 60, suggestedMax: 160 } } 
+                } 
+            }); 
+
+            const ctxGlu = document.getElementById('glucoseChart').getContext('2d'); 
+            if (glucoseChartInstance) glucoseChartInstance.destroy(); 
+            glucoseChartInstance = new Chart(ctxGlu, { 
+                type: 'line', 
+                data: { 
+                    labels: labels, 
+                    datasets: [{ label: '血糖', data: glucoseData, borderColor: '#F59E0B', backgroundColor: 'rgba(245, 158, 11, 0.1)', borderWidth: 2, tension: 0.3, fill: true, spanGaps: true }] 
+                }, 
+                options: { 
+                    responsive: true, maintainAspectRatio: false, 
+                    plugins: { legend: { display: false } }, 
+                    scales: { y: { suggestedMin: 70, suggestedMax: 180 } } 
+                } 
+            }); 
+        }
+
         function downloadCSV() {
             if (!filteredData || filteredData.length === 0) { alert("目前篩選範圍內沒有資料可下載"); return; }
             let csvContent = "\uFEFF時間,收縮壓,舒張壓,心率,血糖,情境,備註\n";
@@ -551,20 +619,15 @@
             const modal = document.getElementById('aiAnalysisModal'); 
             const content = document.getElementById('aiModalContent'); 
             const btnTTS = document.getElementById('btn-tts');
-            const btnAvatar = document.getElementById('btn-avatar');
-            
             modal.classList.remove('hidden'); modal.classList.add('flex'); 
             content.innerHTML = `<div class="flex flex-col items-center justify-center py-12"><div class="tech-loader"><div class="tech-ring"></div><div class="tech-ring"></div><i data-lucide="sparkles" class="tech-heart w-8 h-8"></i></div><p class="text-slate-500 mt-4 font-bold tracking-wider">AI ANALYZING...</p></div>`; 
             btnTTS.classList.add('hidden'); 
-            btnAvatar.classList.add('hidden'); // 先隱藏
-
             try { 
                 const response = await fetch(`${API_URL}?action=askAI&uid=${currentSelectedUid}`); 
                 const data = await response.json(); 
                 if (data.result) { 
                     content.innerHTML = `<div class="prose prose-sm text-slate-700">${marked.parse(data.result)}</div>`; 
                     btnTTS.classList.remove('hidden'); 
-                    btnAvatar.classList.remove('hidden'); // 分析成功後顯示
                 } else { throw new Error("AI 無回應"); } 
             } catch (err) { 
                 content.innerHTML = `<div class="text-center py-8 text-rose-500">分析失敗: ${err.message}</div>`; 
@@ -640,7 +703,6 @@
             if (currentAudio && !currentAudio.paused) { currentAudio.pause(); currentAudio = null; }
             isSpeaking = false; 
             updateTTSButton(false);
-            closeAvatarModal(); 
             document.getElementById('aiAnalysisModal').classList.add('hidden'); 
             document.getElementById('aiAnalysisModal').classList.remove('flex'); 
         }
