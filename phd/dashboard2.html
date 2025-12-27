@@ -33,10 +33,9 @@
     </script>
 
     <style>
-        /* 1. 極簡白底風格 */
+        /* 極簡白底風格 */
         body { font-family: 'Inter', sans-serif; background-color: #F8FAFC; color: #1e293b; }
         
-        /* 2. 簡約卡片樣式 */
         .clean-card { 
             background: #ffffff; 
             border: 1px solid #e2e8f0; 
@@ -46,7 +45,6 @@
         
         .sidebar-transition { transition: transform 0.3s ease-in-out; }
         
-        /* 按鈕樣式微調 */
         .btn-gemini { background: linear-gradient(135deg, #6366f1, #8b5cf6); color: white; border: none; }
         .btn-gemini:hover { background: linear-gradient(135deg, #4f46e5, #7c3aed); transform: translateY(-1px); box-shadow: 0 4px 12px rgba(139, 92, 246, 0.25); }
         
@@ -58,20 +56,12 @@
         
         #loadingState { display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 60vh; }
         
-        /* Avatar 影片容器樣式 */
-        .video-container {
-            position: relative;
+        /* 影片播放容器 */
+        video {
+            display: block;
             width: 100%;
-            padding-top: 100%; /* 1:1 Aspect Ratio */
-            background: #000;
-            border-radius: 1rem;
-            overflow: hidden;
-        }
-        .video-container video {
-            position: absolute;
-            top: 0; left: 0;
-            width: 100%; height: 100%;
-            object-fit: cover;
+            height: auto;
+            border-radius: 0.5rem;
         }
     </style>
 </head>
@@ -81,19 +71,20 @@
         <div class="bg-white w-full max-w-sm rounded-2xl shadow-2xl overflow-hidden relative" onclick="event.stopPropagation()">
             <div class="p-4 border-b border-slate-100 flex justify-between items-center bg-gradient-to-r from-indigo-50 to-white">
                 <h3 class="font-bold text-lg text-slate-800 flex items-center gap-2">
-                    <i data-lucide="video" class="w-5 h-5 text-indigo-600"></i> AI Avatar
+                    <i data-lucide="video" class="w-5 h-5 text-indigo-600"></i> AI Avatar (HeyGen)
                 </h3>
                 <button onclick="closeAvatarModal()" class="p-1 hover:bg-slate-100 rounded-full transition"><i data-lucide="x" class="w-6 h-6 text-slate-400"></i></button>
             </div>
             
             <div class="p-4 bg-black flex justify-center items-center min-h-[300px]">
-                <div id="avatarLoading" class="hidden flex-col items-center justify-center text-white">
-                    <i data-lucide="loader-2" class="w-10 h-10 animate-spin text-indigo-400 mb-3"></i>
-                    <p class="text-sm font-medium">正在生成 AI 影片...</p>
-                    <p class="text-xs text-slate-400 mt-1">這可能需要幾秒鐘</p>
+                
+                <div id="avatarLoading" class="flex flex-col items-center justify-center text-white text-center">
+                    <div class="w-12 h-12 border-4 border-indigo-400 border-t-transparent rounded-full animate-spin mb-4"></div>
+                    <p class="text-sm font-bold tracking-wide">AI 影片生成中...</p>
+                    <p class="text-xs text-slate-400 mt-2">這可能需要 30~60 秒，請稍候</p>
                 </div>
                 
-                <video id="avatarVideo" controls class="w-full h-auto rounded-lg hidden" playsinline></video>
+                <video id="avatarVideo" controls playsinline class="hidden w-full h-full object-contain"></video>
             </div>
         </div>
     </div>
@@ -180,6 +171,11 @@
         </div>
 
         <div class="mt-auto p-4 border-t border-slate-100 bg-slate-50">
+            <button onclick="installPWA()" id="btn-install-sidebar" class="w-full py-2.5 px-4 bg-sky-500 hover:bg-sky-600 text-white rounded-lg text-sm font-bold transition flex items-center justify-center gap-2 mb-2 shadow-sm hidden">
+                <i data-lucide="download" class="w-4 h-4"></i>
+                <span id="sidebar-install-text">安裝 App</span>
+            </button>
+
             <button onclick="getAIAnalysis()" class="w-full py-3 px-4 btn-gemini rounded-xl text-sm font-bold transition flex items-center justify-center gap-2 mb-3 shadow-md group"><i data-lucide="sparkles" class="w-4 h-4 group-hover:scale-110 transition-transform"></i>AI 分析 (Gemini)</button>
             <a href="accountsetting.html" class="w-full py-2.5 px-4 bg-white border border-slate-200 hover:bg-slate-100 text-slate-500 hover:text-slate-800 rounded-lg text-sm font-medium transition flex items-center justify-center gap-2 mb-2 shadow-sm"><i data-lucide="link" class="w-4 h-4"></i> 帳號綁定</a>
             <a href="setting.html" class="w-full py-2.5 px-4 bg-white border border-slate-200 hover:bg-slate-100 text-slate-500 hover:text-slate-800 rounded-lg text-sm font-medium transition flex items-center justify-center gap-2 mb-2 shadow-sm group"><i data-lucide="settings-2" class="w-4 h-4 group-hover:rotate-90 transition-transform duration-500"></i> 管理者後台</a>
@@ -319,14 +315,77 @@
 
         document.addEventListener('DOMContentLoaded', () => {
             lucide.createIcons();
+            initInstallButton();
             initDashboard();
         });
 
+        // 安裝按鈕邏輯
+        let deferredPrompt;
+        window.addEventListener('beforeinstallprompt', (e) => {
+            e.preventDefault();
+            deferredPrompt = e;
+            initInstallButton();
+        });
+
+        function initInstallButton() {
+            const btn = document.getElementById('btn-install-sidebar');
+            if (!btn) return;
+
+            const isStandalone = window.navigator.standalone || window.matchMedia('(display-mode: standalone)').matches;
+            if (isStandalone) {
+                btn.classList.add('hidden');
+                return;
+            }
+
+            const isIos = /iPhone|iPad|iPod/.test(navigator.userAgent) && !window.MSStream;
+            const btnText = document.getElementById('sidebar-install-text');
+            const icon = btn.querySelector('i');
+
+            // 先移除可能重複的圖示
+            const existingIcon = btn.querySelector('svg') || btn.querySelector('i');
+            if (existingIcon && existingIcon !== icon) existingIcon.remove();
+
+            if (isIos) {
+                if(btnText) btnText.innerText = "安裝 App (iOS)";
+                if(icon) icon.setAttribute('data-lucide', 'share');
+                btn.onclick = () => {
+                    document.getElementById('ios-install-modal').classList.remove('hidden');
+                    document.getElementById('ios-install-modal').classList.add('flex');
+                };
+            } else {
+                if(btnText) btnText.innerText = "安裝 App";
+                if(icon) icon.setAttribute('data-lucide', 'download');
+                btn.onclick = installPWA;
+            }
+            
+            btn.classList.remove('hidden');
+            lucide.createIcons();
+        }
+
+        const isIos = /iPhone|iPad|iPod/.test(navigator.userAgent) && !window.MSStream;
+
+        function installPWA() {
+            if (deferredPrompt) {
+                deferredPrompt.prompt();
+                deferredPrompt.userChoice.then((choiceResult) => { deferredPrompt = null; });
+            } else if (isIos) {
+                document.getElementById('ios-install-modal').classList.remove('hidden');
+                document.getElementById('ios-install-modal').classList.add('flex');
+            } else {
+                alert("請使用瀏覽器選單中的「安裝應用程式」或「加入主畫面」。");
+            }
+        }
+
+        function closeIosModal() {
+            document.getElementById('ios-install-modal').classList.add('hidden');
+            document.getElementById('ios-install-modal').classList.remove('flex');
+        }
+
         // ------------------------------------------
-        // [新增] Avatar 處理邏輯
+        // [新增] Avatar 播放邏輯 (串接 did.js / HeyGen)
         // ------------------------------------------
         async function playAvatar() {
-            // 停止原本的 TTS
+            // 停止原有的 TTS
             if (currentAudio) { currentAudio.pause(); currentAudio = null; }
             isSpeaking = false; 
             updateTTSButton(false);
@@ -339,7 +398,7 @@
                 return;
             }
 
-            // 顯示 Modal 與 Loading
+            // 開啟播放 Modal
             const modal = document.getElementById('avatarModal');
             const loading = document.getElementById('avatarLoading');
             const video = document.getElementById('avatarVideo');
@@ -350,27 +409,28 @@
             loading.classList.add('flex');
             video.classList.add('hidden');
             video.pause();
+            video.src = "";
 
             try {
-                // 自動組合 Avatar 圖片的完整路徑
-                // 注意：D-ID API 需要公開可存取的 URL。如果是在 localhost 測試會失敗。
-                // 必須部署到 GitHub Pages 或其他公開伺服器。
+                // 取得目前網址，組合成 Avatar 圖片的絕對路徑
+                // 注意：HeyGen API 需要公開的 URL，如果是 localhost 測試可能會失敗
                 const baseUrl = window.location.href.substring(0, window.location.href.lastIndexOf('/') + 1);
                 const avatarImageUrl = baseUrl + 'image/avatar.png';
                 
-                // 呼叫 did.js 流程
+                // 呼叫 did.js 中的 generateAndPollVideo
                 const videoUrl = await generateAndPollVideo(contentText, avatarImageUrl);
                 
-                // 播放影片
+                // 隱藏 Loading，顯示影片
                 loading.classList.add('hidden');
                 loading.classList.remove('flex');
+                
                 video.src = videoUrl;
                 video.classList.remove('hidden');
                 video.play();
 
             } catch (err) {
-                console.error("Avatar Error:", err);
-                alert("生成 Avatar 影片失敗: " + err.message);
+                console.error("Avatar Gen Error:", err);
+                alert("Avatar 生成失敗: " + err.message);
                 closeAvatarModal();
             }
         }
@@ -380,20 +440,11 @@
             const video = document.getElementById('avatarVideo');
             video.pause();
             video.src = "";
+            
             modal.classList.add('hidden');
             modal.classList.remove('flex');
         }
         // ------------------------------------------
-
-        function showIosInstall() {
-            document.getElementById('ios-install-modal').classList.remove('hidden');
-            document.getElementById('ios-install-modal').classList.add('flex');
-        }
-
-        function closeIosModal() {
-            document.getElementById('ios-install-modal').classList.add('hidden');
-            document.getElementById('ios-install-modal').classList.remove('flex');
-        }
 
         function updateSidebarDisplayName(name, pictureUrl) {
             document.getElementById('sidebar-user-name').innerText = name || "Guest";
@@ -427,7 +478,8 @@
 
         async function initDashboard() {
             try {
-                const response = await fetch(`${API_URL}?action=getSettings`);
+                // 讀取設定與使用者列表
+                const response = await fetch(`${API_URL}?action=getSettings&t=${new Date().getTime()}`);
                 const users = await response.json();
                 
                 // 篩選 active 使用者
@@ -678,7 +730,6 @@
         }
 
         async function toggleSpeech() {
-            // ... (保持原有的 TTS 邏輯) ...
             if (currentAudio && !currentAudio.paused) {
                 currentAudio.pause();
                 currentAudio.currentTime = 0;
@@ -747,10 +798,7 @@
             if (currentAudio && !currentAudio.paused) { currentAudio.pause(); currentAudio = null; }
             isSpeaking = false; 
             updateTTSButton(false);
-            
-            // 關閉 AI Modal 時也要確保 Avatar Modal 關閉
-            closeAvatarModal();
-            
+            closeAvatarModal(); // 確保也關閉影片視窗
             document.getElementById('aiAnalysisModal').classList.add('hidden'); 
             document.getElementById('aiAnalysisModal').classList.remove('flex'); 
         }
