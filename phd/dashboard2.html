@@ -56,6 +56,7 @@
         
         #loadingState { display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 60vh; }
         
+        /* 影片播放容器 */
         video {
             display: block; width: 100%; height: auto; border-radius: 0.5rem;
         }
@@ -312,18 +313,21 @@
         let currentAudio = null;
         let isSpeaking = false;
 
+        let deferredPrompt;
+        const btnInstall = document.getElementById('btn-install-sidebar');
+
         document.addEventListener('DOMContentLoaded', () => {
             lucide.createIcons();
+            
+            // PWA 安裝邏輯
+            window.addEventListener('beforeinstallprompt', (e) => {
+                e.preventDefault();
+                deferredPrompt = e;
+                initInstallButton();
+            });
+
             initInstallButton();
             initDashboard();
-        });
-
-        // 安裝按鈕邏輯 (與 Index.html 同步)
-        let deferredPrompt;
-        window.addEventListener('beforeinstallprompt', (e) => {
-            e.preventDefault();
-            deferredPrompt = e;
-            initInstallButton();
         });
 
         function initInstallButton() {
@@ -377,7 +381,7 @@
         }
 
         // ------------------------------------------
-        // [新增] Avatar 播放 (串接 HeyGen 邏輯)
+        // [新增] Avatar 播放 (串接 did.js / HeyGen)
         // ------------------------------------------
         async function playAvatar() {
             if (currentAudio) { currentAudio.pause(); currentAudio = null; }
@@ -522,13 +526,26 @@
         async function selectUser(uid, name, userObj = null) {
             currentSelectedUid = uid;
             currentUserInfo = userObj;
-            
+            updateBindingIcons(userObj);
+
             document.querySelectorAll('.user-item').forEach(el => { el.classList.remove('bg-indigo-50', 'text-indigo-600', 'shadow-sm', 'border-indigo-100'); el.classList.add('border-transparent'); }); 
             const element = document.getElementById(`user-item-${uid}`); 
             if (element) { element.classList.add('bg-indigo-50', 'text-indigo-600', 'shadow-sm', 'border-indigo-100'); element.classList.remove('border-transparent'); } 
             
             document.getElementById('currentUserName').innerText = name;
             await fetchUserData(uid);
+        }
+
+        function updateBindingIcons(user) {
+            const googleIcon = document.getElementById('icon-google');
+            const lineIcon = document.getElementById('icon-line');
+            googleIcon.classList.remove('text-indigo-600'); googleIcon.classList.add('text-slate-300');
+            lineIcon.classList.remove('text-[#06C755]'); lineIcon.classList.add('text-slate-300');
+            if (user && user.provider) {
+                const providers = user.provider.toLowerCase();
+                if (providers.includes('google')) { googleIcon.classList.remove('text-slate-300'); googleIcon.classList.add('text-indigo-600'); }
+                if (providers.includes('line')) { lineIcon.classList.remove('text-slate-300'); lineIcon.classList.add('text-[#06C755]'); }
+            }
         }
 
         async function fetchUserData(uid) {
@@ -701,7 +718,7 @@
             modal.classList.remove('hidden'); modal.classList.add('flex'); 
             content.innerHTML = `<div class="flex flex-col items-center justify-center py-12"><div class="tech-loader"><div class="tech-ring"></div><div class="tech-ring"></div><i data-lucide="sparkles" class="tech-heart w-8 h-8"></i></div><p class="text-slate-500 mt-4 font-bold tracking-wider">AI ANALYZING...</p></div>`; 
             btnTTS.classList.add('hidden'); 
-            btnAvatar.classList.add('hidden'); 
+            btnAvatar.classList.add('hidden'); // 先隱藏
 
             try { 
                 const response = await fetch(`${API_URL}?action=askAI&uid=${currentSelectedUid}`); 
@@ -709,7 +726,7 @@
                 if (data.result) { 
                     content.innerHTML = `<div class="prose prose-sm text-slate-700">${marked.parse(data.result)}</div>`; 
                     btnTTS.classList.remove('hidden'); 
-                    btnAvatar.classList.remove('hidden'); 
+                    btnAvatar.classList.remove('hidden'); // 分析成功後顯示
                 } else { throw new Error("AI 無回應"); } 
             } catch (err) { 
                 content.innerHTML = `<div class="text-center py-8 text-rose-500">分析失敗: ${err.message}</div>`; 
@@ -792,3 +809,4 @@
     </script>
 </body>
 </html>
+}
