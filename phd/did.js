@@ -17,7 +17,15 @@ async function generateAndPollVideo(text, imageUrl) {
         })
     });
 
-    const genData = await genResponse.json();
+    // 讀取回應文字並嘗試解析為 JSON，避免 SyntaxError
+    let genData;
+    const respText = await genResponse.text();
+    try {
+        genData = JSON.parse(respText);
+    } catch (e) {
+        console.error("Non-JSON response from backend:", respText);
+        throw new Error("後端回應錯誤 (請檢查 Apps Script 部署或 Log)");
+    }
     
     // 如果後端回傳錯誤
     if (genData.error) {
@@ -54,7 +62,8 @@ async function generateAndPollVideo(text, imageUrl) {
                     resolve(statusData.data.video_url);
                 } else if (status === "failed" || status === "error") {
                     clearInterval(interval);
-                    reject(new Error("生成失敗: " + (statusData.data?.error?.message || statusData.data?.error || "未知錯誤")));
+                    const errMsg = statusData.data?.error?.message || statusData.data?.error || "未知錯誤";
+                    reject(new Error("生成失敗: " + errMsg));
                 } else if (attempts >= maxAttempts) {
                     clearInterval(interval);
                     reject(new Error("生成逾時"));
