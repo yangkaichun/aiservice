@@ -3,17 +3,13 @@
  * 透過 Google Apps Script 後端轉發請求，解決 CORS 與上傳邏輯
  */
 
-// API_URL 來自 config.js，請確保該檔案已引入
-// 如果 config.js 尚未載入，請手動填入您的 GAS 網址
-// const API_URL = "您的_GOOGLE_SCRIPT_URL"; 
-
 async function generateAndPollVideo(text, imageUrl) {
     console.log("正在呼叫後端生成影片...", text.length, imageUrl);
 
-    // 1. 呼叫後端建立任務 (包含註冊圖片 + 生成)
+    // 1. 呼叫後端建立任務 (包含 上傳 -> 註冊 -> 生成)
     const genResponse = await fetch(API_URL, {
         method: 'POST',
-        // [修正] 移除 Content-Type 以避免 GAS CORS 預檢失敗 (GAS 會自動處理純文字 body)
+        // 移除 Content-Type 以避免 GAS CORS 預檢失敗
         body: JSON.stringify({
             action: "heygen_generate",
             text: text,
@@ -23,6 +19,7 @@ async function generateAndPollVideo(text, imageUrl) {
 
     const genData = await genResponse.json();
     
+    // 如果後端回傳錯誤 (例如 "photar_not_found" 的問題會在後端被捕捉並以 JSON 回傳)
     if (genData.error) {
         throw new Error(genData.error);
     }
@@ -30,7 +27,7 @@ async function generateAndPollVideo(text, imageUrl) {
     const videoId = genData.video_id;
     console.log("任務建立成功，Video ID:", videoId);
 
-    // 2. 輪詢狀態 (透過後端轉發)
+    // 2. 輪詢狀態
     return new Promise((resolve, reject) => {
         let attempts = 0;
         const maxAttempts = 100; // 5分鐘逾時
@@ -47,8 +44,6 @@ async function generateAndPollVideo(text, imageUrl) {
                 });
                 
                 const statusData = await statusResponse.json();
-                
-                // HeyGen 回傳結構通常在 data.status
                 const status = statusData.data ? statusData.data.status : "unknown";
                 console.log(`生成狀態 (${attempts}):`, status);
 
@@ -64,8 +59,7 @@ async function generateAndPollVideo(text, imageUrl) {
                 }
             } catch (err) {
                 console.error("Polling Error:", err);
-                // 網路錯誤繼續重試
             }
-        }, 3000); // 每 3 秒檢查一次
+        }, 3000); 
     });
 }
