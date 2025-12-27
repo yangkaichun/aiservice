@@ -6,9 +6,10 @@
 async function generateAndPollVideo(text, imageUrl) {
     console.log("正在呼叫後端生成影片...", text.length, imageUrl);
 
-    // 1. 呼叫後端建立任務 (包含 註冊 Talking Photo -> 重試生成)
+    // 1. 呼叫後端建立任務 (包含 註冊 Talking Photo -> 生成)
     const genResponse = await fetch(API_URL, {
         method: 'POST',
+        // 移除 Content-Type 以避免 GAS CORS 預檢失敗 (GAS 會自動處理純文字 body)
         body: JSON.stringify({
             action: "heygen_generate",
             text: text,
@@ -16,16 +17,9 @@ async function generateAndPollVideo(text, imageUrl) {
         })
     });
 
-    // 這裡增加錯誤處理，防止後端回傳 HTML 導致 JSON parse 失敗
-    let genData;
-    try {
-        const respText = await genResponse.text();
-        genData = JSON.parse(respText);
-    } catch (e) {
-        console.error("Non-JSON response from backend:", e);
-        throw new Error("後端回應錯誤 (請檢查 Apps Script 是否部署成功)");
-    }
+    const genData = await genResponse.json();
     
+    // 如果後端回傳錯誤
     if (genData.error) {
         throw new Error(genData.error);
     }
@@ -60,8 +54,7 @@ async function generateAndPollVideo(text, imageUrl) {
                     resolve(statusData.data.video_url);
                 } else if (status === "failed" || status === "error") {
                     clearInterval(interval);
-                    const errMsg = statusData.data?.error?.message || statusData.data?.error || "未知錯誤";
-                    reject(new Error("生成失敗: " + errMsg));
+                    reject(new Error("生成失敗: " + (statusData.data?.error?.message || statusData.data?.error || "未知錯誤")));
                 } else if (attempts >= maxAttempts) {
                     clearInterval(interval);
                     reject(new Error("生成逾時"));
