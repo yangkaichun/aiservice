@@ -164,6 +164,11 @@
                 <i data-lucide="download" class="w-5 h-5 text-white/80 mr-1"></i>
             </button>
 
+            <a href="main.html" class="w-full py-3 px-3 bg-white border border-slate-200 hover:bg-slate-50 text-slate-600 rounded-xl font-bold text-sm transition-all flex items-center justify-center gap-2 shadow-sm mt-3 mb-1 group">
+                <i data-lucide="layout-template" class="w-4 h-4 text-indigo-500 group-hover:scale-110 transition-transform"></i>
+                詳細軟體功能介紹
+            </a>
+
             <div class="bg-slate-50 p-4 rounded-xl border border-slate-100 text-sm text-slate-600 space-y-3 mb-4">
                 <h2 class="font-bold text-slate-800 flex items-center gap-2">
                     <i data-lucide="info" class="w-4 h-4 text-indigo-500"></i> 關於本服務
@@ -330,10 +335,19 @@
         lucide.createIcons();
         let userSession = null;
         let deferredPrompt;
+        let redirectTimeout; // [新增] 計時器變數
 
         document.addEventListener('DOMContentLoaded', () => {
             checkLoginStatus();
             initInstallButton();
+
+            // [新增] 檢查是否已登入，若無則啟動 30 秒倒數
+            if (!localStorage.getItem('healthTwinSession')) {
+                console.log("No session found, starting 30s redirect timer...");
+                redirectTimeout = setTimeout(() => {
+                    window.location.href = 'main.html';
+                }, 30000); // 30 秒後跳轉
+            }
         });
 
         window.addEventListener('beforeinstallprompt', (e) => {
@@ -346,7 +360,6 @@
         const isStandalone = window.navigator.standalone || window.matchMedia('(display-mode: standalone)').matches;
 
         function initInstallButton() {
-            // 同時處理登入前與登入後的安裝按鈕
             const btnApp = document.getElementById('btn-install-app');
             const btnLogin = document.getElementById('btn-install-login');
             
@@ -450,6 +463,12 @@
             if (savedSession) {
                 userSession = JSON.parse(savedSession);
                 
+                // [新增] 如果已登入，取消跳轉計時器
+                if (redirectTimeout) {
+                    clearTimeout(redirectTimeout);
+                    console.log("Session active, redirect timer cancelled.");
+                }
+
                 if (userSession.status === 'pending') {
                     window.location.href = 'waitforuserright.html';
                     return;
@@ -545,6 +564,9 @@
                     const sessionData = { ...data.user, picture: responsePayload.picture };
                     localStorage.setItem('healthTwinSession', JSON.stringify(sessionData));
                     
+                    // 登入成功，取消計時器
+                    if (redirectTimeout) clearTimeout(redirectTimeout);
+
                     if (data.user.status === 'pending') {
                         window.location.href = 'waitforuserright.html';
                     } else {
