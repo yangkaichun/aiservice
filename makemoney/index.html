@@ -9,7 +9,7 @@
     <link rel="shortcut icon" href="image/icon.ico" type="image/x-icon">
 
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700;900&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 
     <style>
@@ -19,8 +19,9 @@
             min-height: 100vh;
             display: flex;
             flex-direction: column;
-            justify-content: center; /* 垂直置中 */
+            justify-content: center;
             align-items: center;
+            padding-bottom: 50px; /* 預留底部簽名空間 */
         }
 
         .main-container {
@@ -117,7 +118,7 @@
             transform: translateY(-2px);
         }
 
-        /* 底部資訊 */
+        /* 底部資訊與狀態 */
         .footer-info {
             margin-top: 40px;
             color: #adb5bd;
@@ -129,17 +130,32 @@
             text-decoration: none;
             margin: 0 10px;
         }
-        .footer-info a:hover {
-            color: #6c757d;
-        }
         .stats-badge {
-            font-size: 0.8rem;
-            background: #e9ecef;
+            font-size: 0.9rem;
+            background: #f8f9fa;
             color: #6c757d;
-            padding: 4px 10px;
-            border-radius: 10px;
-            margin-top: 10px;
+            padding: 8px 15px;
+            border-radius: 20px;
+            margin-top: 20px;
             display: inline-block;
+            border: 1px solid #e9ecef;
+        }
+
+        /* Modify by KC 簽名樣式 (強調) */
+        .kc-signature {
+            font-size: 3.5rem; /* 字體加大 */
+            font-weight: 900;  /* 極粗體 */
+            color: #212529;    /* 深黑色強調 */
+            text-align: center;
+            margin-top: 60px;
+            text-transform: uppercase;
+            letter-spacing: 3px;
+            opacity: 0.8;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.1);
+            font-family: 'Arial Black', 'Helvetica Neue', sans-serif; /* 使用更粗的字體 */
+            border-top: 1px solid #dee2e6;
+            padding-top: 20px;
+            width: 100%;
         }
     </style>
 </head>
@@ -169,16 +185,20 @@
             </div>
 
             <div id="stats" class="stats-badge">
-                <div class="spinner-border spinner-border-sm" role="status"></div> 資料讀取中...
+                <div class="spinner-border spinner-border-sm text-secondary" role="status"></div> 系統狀態檢查中...
             </div>
         </div>
 
         <div class="footer-info">
             <a href="https://openfunltd.github.io/pcc-viewer/date.html" target="_blank">依日期瀏覽</a> | 
             <a href="https://openfunltd.github.io/pcc-viewer/unit.html" target="_blank">依機關瀏覽</a>
-            <br><br>
+            <br>
             Source: <a href="https://pcc-api.openfun.app/api/getinfo">OpenFun API</a>
         </div>
+    </div>
+
+    <div class="kc-signature">
+        Modify by KC
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
@@ -208,13 +228,33 @@
             tagContainer.appendChild(btn);
         });
 
-        // 3. 取得資料狀態
+        // 3. 取得資料狀態 (修復 undefined 錯誤)
         var api_base = 'https://pcc-api.openfun.app'; 
+        
         $(document).ready(function() {
-            $.get(api_base + '/api/getinfo', function(data) {
-                $('#stats').html(`系統狀態：最新資料 ${data.newest_date}`);
-            }, 'json').fail(function() {
-                $('#stats').html('API 連線狀態：異常');
+            $.ajax({
+                url: api_base + '/api/getinfo',
+                dataType: 'json',
+                success: function(data) {
+                    // 安全獲取日期，如果 newest_date 不存在則嘗試其他欄位或顯示預設值
+                    let dateStr = data.newest_date || data.date || data.latest_date;
+                    
+                    if (dateStr) {
+                        // 簡單格式化：如果是 20251125 這種格式，轉為 2025/11/25
+                        if (dateStr.length === 8 && !isNaN(dateStr)) {
+                            dateStr = dateStr.substring(0,4) + '/' + dateStr.substring(4,6) + '/' + dateStr.substring(6,8);
+                        }
+                        $('#stats').html(`<span class="text-success"><i class="fas fa-check-circle"></i></span> 系統狀態：最新資料 ${dateStr}`);
+                    } else {
+                        // 如果 API 回傳成功但沒有日期欄位
+                         $('#stats').html(`系統狀態：連線成功 (無日期資料)`);
+                         console.log("Full Data:", data); // 方便 Debug
+                    }
+                },
+                error: function(jqXHR, textStatus, errorThrown) {
+                    // 連線失敗時顯示
+                    $('#stats').html('<span class="text-danger"><i class="fas fa-exclamation-triangle"></i> 無法取得最新資料時間</span>');
+                }
             });
         });
     </script>
