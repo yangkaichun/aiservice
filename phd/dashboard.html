@@ -161,7 +161,7 @@
 
     <div id="mobileOverlay" class="fixed inset-0 bg-black/50 z-20 hidden lg:hidden" onclick="toggleSidebar()"></div>
 
-    <aside id="sidebar" class="fixed inset-y-0 left-0 w-72 bg-white border-r border-slate-200 flex flex-col z-30 shadow-2xl lg:shadow-none transform -translate-x-full lg:translate-x-0 sidebar-transition lg:relative hidden lg:flex">
+    <aside id="sidebar" class="fixed inset-y-0 left-0 w-72 bg-white border-r border-slate-200 flex flex-col z-30 shadow-2xl lg:shadow-none transform -translate-x-full lg:translate-x-0 sidebar-transition lg:relative">
         <div class="p-6 border-b border-slate-100 flex justify-between items-center">
             <div><div class="flex items-center gap-2 text-indigo-600 font-bold text-xl"><i data-lucide="activity" class="w-6 h-6"></i>YangHome Health</div><p class="text-xs text-slate-400 mt-1">智慧醫療監測系統</p></div>
             <button onclick="toggleSidebar()" class="lg:hidden text-slate-400 hover:text-slate-600"><i data-lucide="x" class="w-6 h-6"></i></button>
@@ -219,6 +219,10 @@
                     </div>
                 </div>
                 <button onclick="refreshCurrentUserData()" class="p-2 text-slate-500 hover:bg-slate-100 rounded-lg transition" title="刷新"><i data-lucide="refresh-cw" class="w-5 h-5"></i></button>
+                
+                <button onclick="logout()" class="lg:hidden p-2 text-slate-500 hover:text-rose-500 hover:bg-slate-100 rounded-lg transition" title="登出">
+                    <i data-lucide="log-out" class="w-5 h-5"></i>
+                </button>
             </div>
         </header>
 
@@ -667,7 +671,6 @@
             renderCharts(data); 
         }
 
-        // [美化] 曲線圖表 (保持上一步驟的設計)
         function renderCharts(data) { 
             const labels = data.map(d => { 
                 const date = new Date(d.timestamp); 
@@ -679,7 +682,6 @@
             const dbpData = data.map(d => d.dbp); 
             const glucoseData = data.map(d => d.glucose); 
 
-            // 血壓圖表
             const ctxBP = document.getElementById('mainChart').getContext('2d'); 
             if (bpChartInstance) bpChartInstance.destroy(); 
             
@@ -760,7 +762,6 @@
                 } 
             }); 
 
-            // 血糖圖表
             const ctxGlu = document.getElementById('glucoseChart').getContext('2d'); 
             if (glucoseChartInstance) glucoseChartInstance.destroy(); 
             
@@ -850,7 +851,8 @@
             modal.classList.remove('hidden'); modal.classList.add('flex'); 
             content.innerHTML = `<div class="flex flex-col items-center justify-center py-12"><div class="tech-loader"><div class="tech-ring"></div><div class="tech-ring"></div><i data-lucide="sparkles" class="tech-heart w-8 h-8"></i></div><p class="text-slate-500 mt-4 font-bold tracking-wider">AI ANALYZING...</p></div>`; 
             btnTTS.classList.add('hidden'); 
-            btnAvatar.classList.add('hidden'); // 先隱藏
+            // [修改] 先隱藏 Avatar 按鈕
+            btnAvatar.classList.remove('hidden'); 
 
             try { 
                 const response = await fetch(`${API_URL}?action=askAI&uid=${currentSelectedUid}`); 
@@ -858,7 +860,7 @@
                 if (data.result) { 
                     content.innerHTML = `<div class="prose prose-sm text-slate-700">${marked.parse(data.result)}</div>`; 
                     btnTTS.classList.remove('hidden'); 
-                    btnAvatar.classList.remove('hidden'); // 分析成功後顯示
+                    // btnAvatar 保持顯示但 disabled
                 } else { throw new Error("AI 無回應"); } 
             } catch (err) { 
                 content.innerHTML = `<div class="text-center py-8 text-rose-500">分析失敗: ${err.message}</div>`; 
