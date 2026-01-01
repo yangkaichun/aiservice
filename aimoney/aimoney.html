@@ -3,169 +3,194 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>政府採購 AI 戰情室</title>
-    
+    <title>政府採購 AI 戰情室 v2.0</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.0/papaparse.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
-    
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;700&display=swap');
         body { font-family: 'Noto Sans TC', sans-serif; }
-        .card-hover:hover { transform: translateY(-5px); box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1); }
+        .card-hover:hover { transform: translateY(-5px); box-shadow: 0 10px 20px rgba(0,0,0,0.1); }
+        .btn-gradient { background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%); }
     </style>
 </head>
 <body class="bg-slate-50 min-h-screen text-slate-800">
 
-    <nav class="bg-white border-b border-slate-200 sticky top-0 z-50 shadow-sm">
+    <nav class="bg-white border-b border-slate-200 sticky top-0 z-50 shadow-sm/50 backdrop-blur-md bg-white/90">
         <div class="container mx-auto px-4 h-16 flex justify-between items-center">
             <div class="flex items-center gap-3">
-                <div class="bg-blue-600 text-white w-10 h-10 flex items-center justify-center rounded-lg shadow-blue-200 shadow-md">
+                <div class="bg-blue-600 text-white w-10 h-10 flex items-center justify-center rounded-lg shadow-lg shadow-blue-500/30">
                     <i class="fas fa-robot text-xl"></i>
                 </div>
-                <div>
-                    <h1 class="font-bold text-xl text-slate-900 tracking-tight">政府採購 AI 戰情室</h1>
-                    <div class="flex items-center gap-2 text-xs text-slate-500">
-                        <span class="w-2 h-2 bg-green-500 rounded-full animate-pulse"></span>
-                        即時連線 Google Sheets
-                    </div>
-                </div>
+                <h1 class="font-bold text-xl text-slate-900 tracking-tight">政府採購 AI 戰情室</h1>
             </div>
-            
-            <a href="https://web.pcc.gov.tw/prkms/today/common/todayTender" target="_blank" 
-               class="hidden md:flex items-center gap-2 px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-600 rounded-md transition duration-200 text-sm font-medium">
-                <i class="fas fa-external-link-alt"></i> 原始採購網
-            </a>
+            <div class="flex gap-2">
+                <button onclick="sendTestData()" class="hidden md:flex items-center gap-2 px-3 py-2 bg-amber-100 hover:bg-amber-200 text-amber-700 rounded-md transition text-sm font-bold border border-amber-200">
+                    <i class="fas fa-vial"></i> 測試連線
+                </button>
+                <a href="https://web.pcc.gov.tw/prkms/today/common/todayTender" target="_blank" class="flex items-center gap-2 px-3 py-2 bg-slate-100 hover:bg-slate-200 text-slate-600 rounded-md transition text-sm font-medium">
+                    <i class="fas fa-external-link-alt"></i> 採購網
+                </a>
+            </div>
         </div>
     </nav>
 
     <main class="container mx-auto px-4 py-8">
-        
-        <div id="loading" class="flex flex-col items-center justify-center py-20 text-slate-400">
-            <i class="fas fa-circle-notch fa-spin fa-3x text-blue-500 mb-4"></i>
-            <p class="text-lg">正在讀取最新標案資料...</p>
-        </div>
 
-        <div id="error-msg" class="hidden text-center py-20 text-red-500 bg-red-50 rounded-lg border border-red-100 mx-auto max-w-2xl">
-            <i class="fas fa-exclamation-circle fa-2x mb-2"></i>
-            <p>資料讀取失敗，請確認 Google Sheet 是否已發布為 CSV 格式。</p>
-        </div>
+        <script>
+            /* ============================================================
+               ⚙️ 請在此修改您的連結
+               ============================================================ */
+            // 1. Google Sheet CSV 發布連結
+            const SHEET_CSV_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vRkEEW8B0tTRNlfJ2x0XTGoLh2fn02FXgPf2GF4lY_fZS0teUFHGq_qhjofp8zHMpqRiOhN9fcMz2MX/pub?output=csv";
 
-        <div id="tender-list" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 hidden">
+            // 2. n8n Webhook 正式連結 (Production URL)
+            const WEBHOOK_URL = "https://ai.yangkaichun.net/webhook/pcc-receiver";
+            /* ============================================================ */
+        </script>
+
+        <div class="grid md:grid-cols-2 gap-6 mb-8">
+            <div class="bg-white border border-blue-100 rounded-2xl p-6 shadow-sm flex flex-col justify-between relative overflow-hidden group">
+                <div class="absolute top-0 right-0 w-32 h-32 bg-blue-50 rounded-full -mr-16 -mt-16 transition group-hover:scale-110"></div>
+                <div>
+                    <h2 class="text-lg font-bold text-slate-800 mb-2"><i class="fas fa-download text-blue-500 mr-2"></i>安裝抓取工具</h2>
+                    <p class="text-sm text-slate-500 mb-4">請將下方按鈕 <strong class="text-blue-600">拖曳到書籤列</strong>，在採購網頁面點擊即可使用。</p>
+                </div>
+                <a id="bookmarklet-link" href="" onclick="return false;" class="block w-full text-center bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 rounded-xl shadow-lg shadow-blue-500/30 transition transform hover:-translate-y-1 cursor-grab active:cursor-grabbing">
+                    <i class="fas fa-bookmark mr-2"></i> AI 採購分析 (拖拉我)
+                </a>
             </div>
+
+            <div class="bg-white border border-slate-200 rounded-2xl p-6 shadow-sm flex flex-col justify-between">
+                <div>
+                    <h2 class="text-lg font-bold text-slate-800 mb-2"><i class="fas fa-network-wired text-green-500 mr-2"></i>系統狀態測試</h2>
+                    <p class="text-sm text-slate-500 mb-4">點擊下方按鈕，網頁會模擬傳送一筆「測試資料」給 AI，驗證 n8n 是否正常運作。</p>
+                </div>
+                <button onclick="sendTestData()" class="w-full bg-slate-800 hover:bg-slate-900 text-white font-bold py-3 rounded-xl shadow-lg transition transform hover:-translate-y-1">
+                    <i class="fas fa-paper-plane mr-2"></i> 發送測試數據 (Execute Java)
+                </button>
+            </div>
+        </div>
+
+        <div class="flex items-center justify-between mb-6">
+            <h2 class="text-2xl font-bold text-slate-800 flex items-center gap-2">
+                <i class="fas fa-chart-line text-blue-600"></i> 最新標案情報
+            </h2>
+            <button onclick="location.reload()" class="text-sm text-slate-500 hover:text-blue-600 transition">
+                <i class="fas fa-sync-alt mr-1"></i> 重新整理
+            </button>
+        </div>
+        
+        <div id="loading" class="text-center py-20">
+            <div class="inline-block animate-spin rounded-full h-12 w-12 border-4 border-blue-100 border-t-blue-600 mb-4"></div>
+            <p class="text-slate-400 font-medium">正在連線資料庫...</p>
+        </div>
+
+        <div id="tender-list" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 hidden"></div>
 
     </main>
 
-    <footer class="text-center py-8 text-slate-400 text-sm">
-        <p>© 2026 AI Tender Dashboard. Powered by n8n & Google Gemini.</p>
+    <footer class="text-center py-8 text-slate-400 text-sm border-t border-slate-200 mt-12 bg-white">
+        <p>© 2026 Government Procurement AI Dashboard.</p>
     </footer>
 
     <script>
-        /* =================================================================
-           核心設定區
-           ================================================================= */
-        // 您的 Google Sheet CSV 連結
-        const SHEET_CSV_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vRkEEW8B0tTRNlfJ2x0XTGoLh2fn02FXgPf2GF4lY_fZS0teUFHGq_qhjofp8zHMpqRiOhN9fcMz2MX/pub?output=csv";
+        // 1. 初始化書籤按鈕代碼
+        const bookmarkletCode = `javascript:(function(){const u="${WEBHOOK_URL}";let t=[];const r=document.querySelectorAll("#print_area tr");r.forEach((e,n)=>{if(n===0)return;const c=e.querySelectorAll("td");if(c.length>3){const a=c[1]?.innerText.trim(),l=c[2]?.innerText.trim(),p=c[3]?.innerText.trim(),h=c[2]?.querySelector("a")?.href;l&&h&&t.push({agency:a,title:l,price:p,link:h})}});if(t.length===0)alert("⚠️ 找不到標案，請確認您在採購網頁面上。");else if(confirm("🔎 找到 "+t.length+" 筆標案，傳送給 AI 分析？")){fetch(u,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({data:t})}).then(e=>{e.ok?alert("✅ 傳送成功！"):alert("❌ 傳送失敗")}).catch(e=>alert("❌ 錯誤："+e))}})();`;
+        document.getElementById('bookmarklet-link').href = bookmarkletCode;
 
-        /* =================================================================
-           資料讀取與渲染邏輯
-           ================================================================= */
+        // 2. 測試連線功能 (Execute JS in HTML)
+        function sendTestData() {
+            Swal.fire({
+                title: '正在發送測試...',
+                text: '模擬一筆標案資料傳送給 n8n',
+                didOpen: () => Swal.showLoading()
+            });
+
+            // 模擬資料
+            const testData = [{
+                agency: "測試機關_HTML前端",
+                title: "測試標案 - " + new Date().toLocaleString(),
+                price: "1,000,000",
+                link: "https://web.pcc.gov.tw"
+            }];
+
+            fetch(WEBHOOK_URL, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ data: testData })
+            })
+            .then(response => {
+                if(response.ok) {
+                    Swal.fire('成功！', '測試資料已發送，AI 分析後會寫入 Google Sheet。請稍後重新整理網頁查看。', 'success');
+                } else {
+                    Swal.fire('失敗', 'n8n 回傳錯誤，請檢查 Webhook URL', 'error');
+                }
+            })
+            .catch(error => {
+                Swal.fire('連線錯誤', '無法連線到 n8n (CORS 或 網址錯誤)', 'error');
+            });
+        }
+
+        // 3. 讀取 Google Sheet CSV
         Papa.parse(SHEET_CSV_URL, {
-            download: true,
-            header: true,
-            skipEmptyLines: true,
+            download: true, header: true, skipEmptyLines: true,
             complete: function(results) {
-                const listContainer = document.getElementById('tender-list');
-                const loadingIndicator = document.getElementById('loading');
+                const list = document.getElementById('tender-list');
+                document.getElementById('loading').classList.add('hidden');
                 
-                // 隱藏 Loading
-                loadingIndicator.classList.add('hidden');
-                
-                // 檢查是否有資料
                 if (!results.data || results.data.length === 0) {
-                    listContainer.innerHTML = `
-                        <div class="col-span-full text-center py-12 text-slate-400">
-                            <i class="fas fa-inbox fa-3x mb-4"></i>
-                            <p>目前沒有資料，請先執行 n8n 流程。</p>
-                        </div>`;
-                    listContainer.classList.remove('hidden');
+                    list.innerHTML = `<div class="col-span-full text-center text-slate-400 py-10">尚無資料，請使用書籤工具抓取或點擊測試按鈕。</div>`;
+                    list.classList.remove('hidden');
                     return;
                 }
 
-                // 顯示列表容器
-                listContainer.classList.remove('hidden');
-
-                // 反轉陣列，讓最新的資料排在最前面
-                const tenders = results.data.reverse();
+                list.classList.remove('hidden');
+                const tenders = results.data.reverse(); // 最新在最前
 
                 tenders.forEach(item => {
-                    // 防呆：如果標題是空的則跳過
                     if (!item.Title) return;
 
-                    // 1. 判斷分類顏色 (AI, 醫療, 軟體, 其他)
-                    let badgeColor = "bg-gray-100 text-gray-600 border-gray-200";
-                    let icon = "fa-tag";
-                    
-                    const category = (item.Category || "").toLowerCase();
-                    if (category.includes("ai") || category.includes("人工智慧")) {
-                        badgeColor = "bg-purple-100 text-purple-700 border-purple-200";
-                        icon = "fa-robot";
-                    } else if (category.includes("醫療") || category.includes("醫院")) {
-                        badgeColor = "bg-green-100 text-green-700 border-green-200";
-                        icon = "fa-hospital";
-                    } else if (category.includes("軟體") || category.includes("資訊") || category.includes("系統")) {
-                        badgeColor = "bg-blue-100 text-blue-700 border-blue-200";
-                        icon = "fa-laptop-code";
-                    }
+                    // 分類樣式邏輯
+                    let catClass = "bg-gray-100 text-gray-600";
+                    let icon = "fa-folder";
+                    const c = (item.Category || "").toLowerCase();
+                    if (c.includes("ai")) { catClass = "bg-purple-100 text-purple-600"; icon = "fa-brain"; }
+                    else if (c.includes("醫")) { catClass = "bg-emerald-100 text-emerald-600"; icon = "fa-heartbeat"; }
+                    else if (c.includes("軟體") || c.includes("資訊")) { catClass = "bg-blue-100 text-blue-600"; icon = "fa-laptop-code"; }
+                    else if (c.includes("測試")) { catClass = "bg-amber-100 text-amber-600"; icon = "fa-vial"; }
 
-                    // 2. 處理金額顯示 (如果沒有金額顯示未公開)
-                    const priceDisplay = item.Price ? item.Price : "預算金額未公開";
-
-                    // 3. 建立卡片 HTML 結構
                     const card = document.createElement('div');
-                    card.className = "card-hover bg-white rounded-xl border border-slate-200 p-5 flex flex-col h-full transition-all duration-300";
-                    
+                    card.className = "card-hover bg-white rounded-xl border border-slate-100 p-5 flex flex-col h-full transition-all duration-300";
                     card.innerHTML = `
-                        <div class="flex justify-between items-start mb-4">
-                            <span class="text-xs font-bold px-2.5 py-1 rounded border ${badgeColor} flex items-center gap-1">
+                        <div class="flex justify-between items-start mb-3">
+                            <span class="text-xs font-bold px-2 py-1 rounded-md ${catClass} flex items-center gap-1">
                                 <i class="fas ${icon}"></i> ${item.Category || '未分類'}
                             </span>
-                            <span class="text-xs text-slate-500 bg-slate-50 px-2 py-1 rounded border border-slate-100 truncate max-w-[120px]" title="${item.Agency}">
-                                ${item.Agency}
-                            </span>
+                            <span class="text-xs text-slate-400 bg-slate-50 px-2 py-1 rounded truncate max-w-[100px]">${item.Agency}</span>
                         </div>
-                        
-                        <h3 class="font-bold text-lg text-slate-800 mb-3 leading-snug hover:text-blue-600 transition-colors">
+                        <h3 class="font-bold text-lg text-slate-800 mb-2 leading-snug hover:text-blue-600 transition">
                             <a href="${item.Link}" target="_blank">${item.Title}</a>
                         </h3>
-                        
-                        <div class="bg-amber-50 rounded-lg p-3 mb-4 border border-amber-100 relative group">
-                            <div class="absolute top-3 left-3 w-1 h-full bg-amber-400 rounded-full opacity-0 group-hover:opacity-0 hidden"></div>
-                            <p class="text-sm text-slate-700 leading-relaxed">
-                                <i class="fas fa-lightbulb text-amber-500 mr-1.5"></i> 
-                                ${item.Summary || 'AI 分析處理中...'}
+                        <div class="bg-slate-50 rounded-lg p-3 mb-4 border border-slate-100">
+                            <p class="text-sm text-slate-600 leading-relaxed">
+                                <i class="fas fa-magic text-amber-400 mr-1.5"></i> 
+                                ${item.Summary || '等待 AI 分析...'}
                             </p>
                         </div>
-
-                        <div class="mt-auto pt-4 border-t border-slate-100 flex justify-between items-center">
-                            <div class="flex items-center text-slate-600 font-mono text-sm font-semibold">
-                                <i class="fas fa-coins text-slate-400 mr-2"></i>
-                                ${priceDisplay}
-                            </div>
-                            <a href="${item.Link}" target="_blank" 
-                               class="inline-flex items-center justify-center w-8 h-8 rounded-full bg-blue-50 text-blue-600 hover:bg-blue-600 hover:text-white transition-all duration-300">
-                                <i class="fas fa-arrow-right text-sm"></i>
+                        <div class="mt-auto pt-4 border-t border-slate-50 flex justify-between items-center text-sm">
+                            <span class="font-mono font-bold text-slate-600">💰 ${item.Price || '-'}</span>
+                            <a href="${item.Link}" target="_blank" class="w-8 h-8 flex items-center justify-center rounded-full bg-blue-50 text-blue-600 hover:bg-blue-600 hover:text-white transition">
+                                <i class="fas fa-arrow-right text-xs"></i>
                             </a>
                         </div>
                     `;
-
-                    listContainer.appendChild(card);
+                    list.appendChild(card);
                 });
             },
-            error: function(err) {
-                console.error("CSV Parse Error:", err);
-                document.getElementById('loading').classList.add('hidden');
-                document.getElementById('error-msg').classList.remove('hidden');
+            error: function() {
+                document.getElementById('loading').innerHTML = `<p class="text-red-500">無法讀取資料，請檢查 Google Sheet CSV 連結。</p>`;
             }
         });
     </script>
