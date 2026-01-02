@@ -7,61 +7,83 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.0/papaparse.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
-    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;700&display=swap');
-        body { font-family: 'Noto Sans TC', sans-serif; }
-        .card-hover:hover { transform: translateY(-5px); box-shadow: 0 10px 20px rgba(0,0,0,0.1); }
+        @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700&display=swap');
+        body { font-family: 'Noto Sans TC', sans-serif; background-color: #f8fafc; }
+        
+        /* 自定義捲軸 */
+        ::-webkit-scrollbar { width: 8px; }
+        ::-webkit-scrollbar-track { background: #f1f5f9; }
+        ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+
         .btn-loading { pointer-events: none; opacity: 0.7; }
     </style>
 </head>
-<body class="bg-slate-50 min-h-screen text-slate-800">
+<body class="text-slate-800">
 
     <script>
-        // 1. Google Sheet CSV 連結 (請換成您的)
-
+        // 1. Google Sheet CSV 連結 (使用 CORS Proxy)
         const SHEET_CSV_URL = "https://corsproxy.io/?" + encodeURIComponent("https://docs.google.com/spreadsheets/d/e/2PACX-1vRkEEW8B0tTRNlfJ2x0XTGoLh2fn02FXgPf2GF4lY_fZS0teUFHGq_qhjofp8zHMpqRiOhN9fcMz2MX/pub?output=csv");
 
-        // 2. n8n Webhook 觸發網址 (請換成您的 Production URL)
+        // 2. n8n Webhook 觸發網址
         const N8N_WEBHOOK_URL = "https://ai.yangkaichun.net/webhook/pcc-trigger"; 
     </script>
 
-    <nav class="bg-white border-b border-slate-200 sticky top-0 z-50 shadow-sm/50 backdrop-blur-md bg-white/90">
+    <nav class="bg-white/80 border-b border-slate-200 sticky top-0 z-50 backdrop-blur-md">
         <div class="container mx-auto px-4 h-16 flex justify-between items-center">
             <div class="flex items-center gap-3">
-                <div class="bg-blue-600 text-white w-10 h-10 flex items-center justify-center rounded-lg shadow-lg shadow-blue-500/30">
-                    <i class="fas fa-robot text-xl"></i>
+                <div class="bg-gradient-to-br from-blue-600 to-blue-700 text-white w-10 h-10 flex items-center justify-center rounded-xl shadow-lg shadow-blue-500/20">
+                    <i class="fas fa-gavel text-lg"></i>
                 </div>
-                <h1 class="font-bold text-xl text-slate-900 tracking-tight">政府採購戰情室</h1>
+                <div>
+                    <h1 class="font-bold text-xl text-slate-900 tracking-tight">政府採購戰情室</h1>
+                    <p class="text-[10px] text-slate-500 -mt-1 font-medium tracking-wide">SMART MONITORING</p>
+                </div>
             </div>
             
             <button id="runBtn" onclick="runAnalysis()" 
-                class="flex items-center gap-2 px-6 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-full transition font-bold shadow-lg shadow-blue-500/30">
-                <i class="fas fa-rocket"></i> 立即執行分析
+                class="group flex items-center gap-2 px-5 py-2 bg-slate-900 hover:bg-blue-600 text-white rounded-full transition-all duration-300 font-bold shadow-lg shadow-slate-300/50 hover:shadow-blue-500/30">
+                <i class="fas fa-sync-alt group-hover:rotate-180 transition-transform duration-500"></i> 
+                <span>立即分析</span>
             </button>
         </div>
     </nav>
 
-    <main class="container mx-auto px-4 py-8">
-        <div class="flex justify-between items-end mb-6">
+    <main class="container mx-auto px-4 py-8 max-w-5xl">
+        <div class="flex flex-col sm:flex-row justify-between items-end mb-6 gap-4 border-b border-slate-200 pb-4">
             <div>
-                <h2 class="text-2xl font-bold text-slate-800">最新篩選結果</h2>
-                <p class="text-sm text-slate-500 mt-1">關鍵字：AI, 資安, 醫院, 系統, 伺服器...</p>
+                <h2 class="text-2xl font-bold text-slate-800 flex items-center gap-2">
+                    <i class="fas fa-list-ul text-blue-600"></i> 最新標案列表
+                </h2>
+                <p class="text-sm text-slate-500 mt-1 flex items-center gap-2">
+                    <i class="fas fa-filter text-slate-400 text-xs"></i>
+                    監控關鍵字：<span class="bg-slate-100 px-2 py-0.5 rounded text-slate-600 text-xs font-mono">AI, 資安, 醫院, 系統, 伺服器...</span>
+                </p>
             </div>
-            <div class="text-xs text-slate-400" id="last-update">等待載入...</div>
+            <div class="flex items-center gap-2 text-xs font-mono text-slate-400 bg-white px-3 py-1 rounded-full border border-slate-200 shadow-sm">
+                <span class="w-2 h-2 rounded-full bg-green-500 animate-pulse"></span>
+                <span id="last-update">等待載入...</span>
+            </div>
         </div>
 
-        <div id="tender-list" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        <div id="tender-list" class="space-y-3">
             </div>
 
-        <div id="loading" class="text-center py-20 hidden">
-            <i class="fas fa-circle-notch fa-spin fa-3x text-blue-500 mb-4"></i>
-            <p class="text-slate-500 animate-pulse">正在抓取並分析最新標案，請稍候...</p>
+        <div id="loading" class="text-center py-24 hidden">
+            <div class="relative inline-flex">
+                <div class="w-16 h-16 bg-blue-100 rounded-full animate-ping absolute opacity-75"></div>
+                <div class="w-16 h-16 bg-blue-600 text-white rounded-full flex items-center justify-center relative shadow-xl">
+                    <i class="fas fa-satellite-dish fa-spin text-2xl"></i>
+                </div>
+            </div>
+            <p class="text-slate-600 font-medium mt-6 animate-pulse">正在連線至採購網抓取最新資料...</p>
+            <p class="text-slate-400 text-sm mt-1">流程：清空舊資料 &rarr; 抓取 &rarr; 篩選 &rarr; 寫入</p>
         </div>
     </main>
 
     <script>
-        // 頁面載入時自動讀取一次 Sheet
         document.addEventListener('DOMContentLoaded', () => {
             fetchData();
         });
@@ -70,21 +92,28 @@
         function runAnalysis() {
             const btn = document.getElementById('runBtn');
             const icon = btn.querySelector('i');
+            const btnText = btn.querySelector('span');
             
             // UI 變更為 Loading 狀態
-            btn.classList.add('btn-loading');
+            btn.classList.add('btn-loading', 'bg-slate-700');
             icon.className = "fas fa-circle-notch fa-spin";
-            btn.innerHTML = '<i class="fas fa-circle-notch fa-spin mr-2"></i> 執行中...';
+            btnText.innerText = '分析執行中...';
             
             Swal.fire({
-                title: '正在執行分析...',
-                text: '系統正在清空舊資料 -> 抓取新標案 -> 關鍵字過濾 -> 寫入資料庫，請稍候約 5-10 秒。',
+                title: '正在執行全網掃描',
+                html: '系統正在執行以下動作：<br><br>' +
+                      '<div class="text-left text-sm ml-8">' +
+                      '<i class="fas fa-check text-green-500 mr-2"></i> 清空舊資料庫<br>' +
+                      '<i class="fas fa-check text-green-500 mr-2"></i> 爬取政府採購網<br>' +
+                      '<i class="fas fa-check text-green-500 mr-2"></i> 關鍵字智能過濾<br>' +
+                      '<i class="fas fa-check text-green-500 mr-2"></i> 寫入最新結果' +
+                      '</div>',
+                icon: 'info',
                 showConfirmButton: false,
                 allowOutsideClick: false,
                 didOpen: () => Swal.showLoading()
             });
 
-            // 發送 Webhook 請求 (使用 text/plain 避開 CORS 預檢)
             fetch(N8N_WEBHOOK_URL, {
                 method: "POST",
                 headers: { "Content-Type": "text/plain" }, 
@@ -95,12 +124,11 @@
                     Swal.fire({
                         icon: 'success',
                         title: '分析完成！',
-                        text: '資料庫已更新，正在重新載入列表...',
+                        text: '資料庫已更新，正在為您載入最新列表...',
                         timer: 1500,
                         showConfirmButton: false
                     });
-                    // 成功後重新讀取 Sheet
-                    setTimeout(fetchData, 2000); // 延遲一下確保 Sheet 寫入完成
+                    setTimeout(fetchData, 2000); 
                 } else {
                     throw new Error('n8n 回應錯誤');
                 }
@@ -109,21 +137,20 @@
                 Swal.fire('執行失敗', '無法連線到 n8n，請檢查 Webhook URL 或 CORS 設定。', 'error');
             })
             .finally(() => {
-                // 還原按鈕狀態
-                btn.classList.remove('btn-loading');
-                btn.innerHTML = '<i class="fas fa-rocket mr-2"></i> 立即執行分析';
+                btn.classList.remove('btn-loading', 'bg-slate-700');
+                icon.className = "fas fa-sync-alt group-hover:rotate-180";
+                btnText.innerText = '立即分析';
             });
         }
 
-        // 2. 讀取 Google Sheet 資料
+        // 2. 讀取 Google Sheet 資料 (列表呈現版)
         function fetchData() {
             const list = document.getElementById('tender-list');
             const loading = document.getElementById('loading');
             
-            list.innerHTML = ''; // 清空現有列表
+            list.innerHTML = ''; 
             loading.classList.remove('hidden');
 
-            // 加上時間戳記防止 CSV 快取
             const cacheBuster = SHEET_CSV_URL + "&t=" + new Date().getTime();
 
             Papa.parse(cacheBuster, {
@@ -132,52 +159,77 @@
                 skipEmptyLines: true,
                 complete: function(results) {
                     loading.classList.add('hidden');
-                    const tenders = results.data.reverse(); // 最新在最前
+                    const tenders = results.data.reverse(); 
 
                     if (!tenders || tenders.length === 0) {
-                        list.innerHTML = `<div class="col-span-full text-center py-12 text-slate-400 bg-slate-100 rounded-lg">
-                            <i class="fas fa-inbox fa-3x mb-3"></i><br>目前沒有符合關鍵字的標案<br>請點擊右上角按鈕重新抓取
+                        list.innerHTML = `
+                        <div class="text-center py-16 bg-white rounded-2xl border border-dashed border-slate-300 shadow-sm">
+                            <div class="w-16 h-16 bg-slate-50 text-slate-300 rounded-full flex items-center justify-center mx-auto mb-4">
+                                <i class="fas fa-folder-open text-3xl"></i>
+                            </div>
+                            <h3 class="text-lg font-bold text-slate-700">目前沒有資料</h3>
+                            <p class="text-slate-500 text-sm mt-1">請點擊右上角「立即分析」按鈕開始抓取</p>
                         </div>`;
                         return;
                     }
 
-                    document.getElementById('last-update').innerText = '最後更新: ' + new Date().toLocaleTimeString();
+                    document.getElementById('last-update').innerText = new Date().toLocaleTimeString('zh-TW', {hour12: false}) + ' 更新';
 
                     tenders.forEach(item => {
                         if (!item.Title) return;
 
-                        // 判斷關鍵字標籤顏色
-                        let tagColor = "bg-blue-100 text-blue-700";
+                        // 顏色邏輯
+                        let tagStyle = "bg-blue-50 text-blue-600 border-blue-100";
+                        let iconClass = "fas fa-tag";
+                        
                         const cat = (item.Category || "").toLowerCase();
-                        if (cat.includes("資安")) tagColor = "bg-red-100 text-red-700";
-                        if (cat.includes("ai") || cat.includes("智慧")) tagColor = "bg-purple-100 text-purple-700";
-                        if (cat.includes("醫")) tagColor = "bg-green-100 text-green-700";
+                        if (cat.includes("資安")) { tagStyle = "bg-red-50 text-red-600 border-red-100"; iconClass = "fas fa-shield-alt"; }
+                        else if (cat.includes("ai") || cat.includes("智慧")) { tagStyle = "bg-purple-50 text-purple-600 border-purple-100"; iconClass = "fas fa-brain"; }
+                        else if (cat.includes("醫")) { tagStyle = "bg-green-50 text-green-600 border-green-100"; iconClass = "fas fa-user-md"; }
+                        else if (cat.includes("網") || cat.includes("系統")) { tagStyle = "bg-cyan-50 text-cyan-600 border-cyan-100"; iconClass = "fas fa-network-wired"; }
 
                         const card = document.createElement('div');
-                        card.className = "card-hover bg-white rounded-xl border border-slate-200 p-5 flex flex-col h-full transition-all duration-300";
+                        // 使用 Flex Row 佈局，加上 group 屬性以便做 hover 效果
+                        card.className = "group relative bg-white rounded-xl border border-slate-200 p-4 sm:p-5 flex flex-col sm:flex-row items-start sm:items-center gap-4 hover:shadow-lg hover:border-blue-300 hover:-translate-y-0.5 transition-all duration-300";
+                        
                         card.innerHTML = `
-                            <div class="flex justify-between items-start mb-3">
-                                <span class="text-xs font-bold px-2 py-1 rounded ${tagColor}">
-                                    <i class="fas fa-tag mr-1"></i>${item.Category || '關鍵字命中'}
-                                </span>
-                                <span class="text-xs text-slate-500 bg-slate-50 px-2 py-1 rounded truncate max-w-[120px]">${item.Agency}</span>
+                            <div class="flex sm:flex-col items-center gap-3 min-w-[90px] border-b sm:border-b-0 sm:border-r border-slate-100 pb-2 sm:pb-0 sm:pr-4">
+                                <div class="w-10 h-10 rounded-full bg-slate-50 text-slate-400 flex items-center justify-center group-hover:bg-blue-600 group-hover:text-white transition-colors duration-300">
+                                    <i class="far fa-calendar-alt text-lg"></i>
+                                </div>
+                                <div class="flex flex-col text-left sm:text-center">
+                                    <span class="text-[10px] text-slate-400 font-bold uppercase tracking-wider">截止日期</span>
+                                    <span class="text-sm font-mono font-bold text-slate-700 group-hover:text-blue-600 transition-colors">${item.Date || 'N/A'}</span>
+                                </div>
                             </div>
-                            
-                            <h3 class="font-bold text-lg text-slate-800 mb-2 leading-snug hover:text-blue-600">
-                                <a href="${item.Link}" target="_blank">${item.Title}</a>
-                            </h3>
-                            
-                            <div class="bg-slate-50 rounded p-3 mb-4 border border-slate-100">
-                                <p class="text-sm text-slate-600 line-clamp-2">
-                                    <i class="fas fa-search text-slate-400 mr-1"></i> 
-                                    ${item.Summary || '符合監控關鍵字'}
+
+                            <div class="flex-1 min-w-0 w-full">
+                                <div class="flex flex-wrap items-center gap-2 mb-2">
+                                    <span class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-bold border ${tagStyle}">
+                                        <i class="${iconClass} text-[10px]"></i> ${item.Category || '一般'}
+                                    </span>
+                                    <span class="inline-flex items-center gap-1 text-xs text-slate-500 bg-slate-50 px-2 py-0.5 rounded border border-slate-100">
+                                        <i class="fas fa-building text-slate-300"></i> ${item.Agency}
+                                    </span>
+                                </div>
+                                
+                                <h3 class="text-lg font-bold text-slate-800 leading-snug mb-1 group-hover:text-blue-700 transition-colors">
+                                    <a href="${item.Link}" target="_blank" class="decoration-blue-300 decoration-2 underline-offset-2 hover:underline">
+                                        ${item.Title}
+                                    </a>
+                                </h3>
+                                
+                                <p class="text-sm text-slate-500 truncate group-hover:text-slate-600">
+                                    <i class="fas fa-info-circle text-slate-300 mr-1.5"></i>
+                                    ${item.Summary || '點擊右側按鈕查看詳細標案內容'}
                                 </p>
                             </div>
 
-                            <div class="mt-auto pt-3 border-t border-slate-100 flex justify-between items-center text-sm">
-                                <span class="font-mono text-slate-500"><i class="far fa-calendar-alt mr-1"></i>${item.Deadline || '詳見內頁'}</span>
-                                <a href="${item.Link}" target="_blank" class="w-8 h-8 flex items-center justify-center rounded-full bg-blue-50 text-blue-600 hover:bg-blue-600 hover:text-white transition">
-                                    <i class="fas fa-arrow-right"></i>
+                            <div class="mt-2 sm:mt-0 w-full sm:w-auto flex justify-end">
+                                <a href="${item.Link}" target="_blank" 
+                                   class="flex items-center justify-center gap-2 w-full sm:w-12 sm:h-12 rounded-lg bg-slate-50 text-slate-400 border border-slate-100 group-hover:bg-blue-600 group-hover:text-white group-hover:border-blue-600 transition-all duration-300 shadow-sm">
+                                    <i class="fas fa-external-link-alt"></i>
+                                    <span class="sm:hidden text-sm font-bold">查看標案</span>
                                 </a>
                             </div>
                         `;
