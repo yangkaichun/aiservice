@@ -3,9 +3,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>政府採購戰情室 (即時版)</title>
+    <title>政府採購戰情室 (GAS版)</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.0/papaparse.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
     <style>
@@ -24,8 +23,9 @@
 <body class="text-slate-800">
 
     <script>
-        // 1. Google Sheet CSV 連結 (使用 CORS Proxy)
-        const SHEET_CSV_URL = "https://corsproxy.io/?" + encodeURIComponent("https://docs.google.com/spreadsheets/d/e/2PACX-1vRkEEW8B0tTRNlfJ2x0XTGoLh2fn02FXgPf2GF4lY_fZS0teUFHGq_qhjofp8zHMpqRiOhN9fcMz2MX/pub?output=csv");
+        // 1. Google Apps Script Web App URL (請填入您剛剛部署取得的網址)
+        // 網址應該是 https://script.google.com/macros/s/......./exec
+        const GAS_API_URL = "https://script.google.com/macros/s/AKfycbz2zqIzkNwgKjfjqCjlYKJcCy0ZpFddjDECYQ7dtD-v-eLKeT5blBCnPLVZeOIcLpj-sw/exec";
 
         // 2. n8n Webhook 觸發網址
         const N8N_WEBHOOK_URL = "https://ai.yangkaichun.net/webhook/pcc-trigger"; 
@@ -78,8 +78,8 @@
                     <i class="fas fa-satellite-dish fa-spin text-2xl"></i>
                 </div>
             </div>
-            <p class="text-slate-600 font-medium mt-6 animate-pulse">正在連線至採購網抓取最新資料...</p>
-            <p class="text-slate-400 text-sm mt-1">流程：清空舊資料 &rarr; 抓取 &rarr; 篩選 &rarr; 寫入</p>
+            <p class="text-slate-600 font-medium mt-6 animate-pulse">正在連線資料庫讀取最新資料...</p>
+            <p class="text-slate-400 text-sm mt-1">資料來源：Google Apps Script API</p>
         </div>
     </main>
 
@@ -128,7 +128,8 @@
                         timer: 1500,
                         showConfirmButton: false
                     });
-                    setTimeout(fetchData, 2000); 
+                    // 延遲久一點，確保 GAS 讀取到最新寫入的資料
+                    setTimeout(fetchData, 3000); 
                 } else {
                     throw new Error('n8n 回應錯誤');
                 }
@@ -143,7 +144,7 @@
             });
         }
 
-        // 2. 讀取 Google Sheet 資料 (列表呈現版)
+        // 2. 透過 GAS 讀取資料 (取代原本的 PapaParse CSV)
         function fetchData() {
             const list = document.getElementById('tender-list');
             const loading = document.getElementById('loading');
@@ -151,15 +152,13 @@
             list.innerHTML = ''; 
             loading.classList.remove('hidden');
 
-            const cacheBuster = SHEET_CSV_URL + "&t=" + new Date().getTime();
-
-            Papa.parse(cacheBuster, {
-                download: true,
-                header: true,
-                skipEmptyLines: true,
-                complete: function(results) {
+            fetch(GAS_API_URL)
+                .then(response => response.json())
+                .then(data => {
                     loading.classList.add('hidden');
-                    const tenders = results.data.reverse(); 
+                    
+                    // GAS 回傳的就是 JSON 陣列，直接反轉顯示最新
+                    const tenders = data.reverse(); 
 
                     if (!tenders || tenders.length === 0) {
                         list.innerHTML = `
@@ -176,9 +175,10 @@
                     document.getElementById('last-update').innerText = new Date().toLocaleTimeString('zh-TW', {hour12: false}) + ' 更新';
 
                     tenders.forEach(item => {
+                        // GAS 讀取的 Key 對應 Google Sheet 第一列 (Date, Agency, Title, Summary, Link, Price, Category)
                         if (!item.Title) return;
 
-                        // 顏色邏輯
+                        // 顏色邏輯 (與舊版一致)
                         let tagStyle = "bg-blue-50 text-blue-600 border-blue-100";
                         let iconClass = "fas fa-tag";
                         
@@ -189,7 +189,6 @@
                         else if (cat.includes("網") || cat.includes("系統")) { tagStyle = "bg-cyan-50 text-cyan-600 border-cyan-100"; iconClass = "fas fa-network-wired"; }
 
                         const card = document.createElement('div');
-                        // 使用 Flex Row 佈局，加上 group 屬性以便做 hover 效果
                         card.className = "group relative bg-white rounded-xl border border-slate-200 p-4 sm:p-5 flex flex-col sm:flex-row items-start sm:items-center gap-4 hover:shadow-lg hover:border-blue-300 hover:-translate-y-0.5 transition-all duration-300";
                         
                         card.innerHTML = `
@@ -235,13 +234,12 @@
                         `;
                         list.appendChild(card);
                     });
-                },
-                error: function(err) {
+                })
+                .catch(err => {
                     console.error(err);
                     loading.classList.add('hidden');
-                    Swal.fire('讀取失敗', '無法讀取 Google Sheet，請確認網址正確。', 'error');
-                }
-            });
+                    Swal.fire('讀取失敗', '無法讀取資料庫 (GAS API)，請檢查防火牆或網址設定。', 'error');
+                });
         }
     </script>
 </body>
