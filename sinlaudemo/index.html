@@ -49,6 +49,10 @@
         .autocomplete-results { position: absolute; z-index: 50; background: white; border: 1px solid #e5e7eb; width: 100%; max-height: 200px; overflow-y: auto; border-radius: 0.5rem; box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1); }
         .autocomplete-item { padding: 0.5rem 0.75rem; cursor: pointer; font-size: 0.875rem; border-bottom: 1px solid #f3f4f6; }
         .autocomplete-item:hover { background-color: #eff6ff; color: #0066FF; }
+
+        /* Dashboard Specific Styles */
+        .dashboard-card { transition: all 0.3s ease; }
+        .dashboard-card:hover { transform: translateY(-2px); box-shadow: 0 10px 20px -5px rgba(0, 0, 0, 0.1); }
     </style>
 </head>
 <body class="h-screen flex overflow-hidden antialiased text-gray-800 bg-gray-50">
@@ -110,7 +114,7 @@
                 </div>
             </aside>
 
-            <main class="flex-1 bg-gray-50/50 flex flex-col min-w-0">
+            <main class="flex-1 bg-gray-50 flex flex-col min-w-0">
                 <header class="h-16 bg-white border-b border-gray-100 flex justify-between items-center px-8 sticky top-0 z-10 shadow-sm/50">
                     <div class="flex items-center">
                         <h2 class="text-xl font-bold text-gray-800">{{ getTabTitle(currentTab) }}</h2>
@@ -124,30 +128,85 @@
                 <div class="flex-1 overflow-auto p-8">
                     <div class="max-w-7xl mx-auto h-full">
                         
-                        <div v-if="currentTab === 'dashboard'" class="space-y-6 animate-fade-in-up">
-                            <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
-                                <div class="p-6 rounded-2xl bg-white border border-gray-100 shadow-sm hover:shadow-lg transition relative overflow-hidden">
-                                    <p class="text-xs font-bold text-gray-400 uppercase">管理個案數</p>
-                                    <h3 class="text-4xl font-extrabold text-gray-800 mt-2">{{ patients.length }}</h3>
-                                    <div class="absolute right-4 bottom-4 w-12 h-12 bg-blue-50 rounded-full flex items-center justify-center text-brand-blue"><i class="fa-solid fa-users text-xl"></i></div>
-                                </div>
-                                <div class="p-6 rounded-2xl bg-white border border-gray-100 shadow-sm hover:shadow-lg transition relative overflow-hidden">
-                                    <p class="text-xs font-bold text-gray-400 uppercase">今日異常警示</p>
-                                    <h3 class="text-4xl font-extrabold text-brand-red mt-2">{{ abnormalCount }}</h3>
-                                    <div class="absolute right-4 bottom-4 w-12 h-12 bg-red-50 rounded-full flex items-center justify-center text-brand-red animate-pulse"><i class="fa-solid fa-heart-pulse text-xl"></i></div>
-                                </div>
-                                <div class="p-6 rounded-2xl bg-white border border-gray-100 shadow-sm hover:shadow-lg transition relative overflow-hidden">
-                                    <p class="text-xs font-bold text-gray-400 uppercase">待辦事項</p>
-                                    <h3 class="text-4xl font-extrabold text-gray-800 mt-2">5</h3>
-                                    <div class="absolute right-4 bottom-4 w-12 h-12 bg-orange-50 rounded-full flex items-center justify-center text-brand-orange"><i class="fa-regular fa-clipboard text-xl"></i></div>
-                                </div>
+                        <div v-if="currentTab === 'dashboard'" class="space-y-8 animate-fade-in-up">
+                            
+                            <div>
+                                <h1 class="text-3xl font-extrabold text-gray-800">早安，{{ currentUser.name }} {{ translateRole(currentUser.role) }}</h1>
+                                <p class="text-gray-500 mt-2 text-sm">
+                                    今天是 {{ todayDate }}，這是您的今日總覽。
+                                </p>
                             </div>
-                            <div class="p-5 rounded-2xl bg-gradient-to-r from-yellow-50 to-white border border-yellow-100 flex items-start shadow-sm">
-                                <div class="p-2 bg-yellow-100 rounded-lg text-yellow-700 mr-4"><i class="fa-solid fa-bullhorn"></i></div>
-                                <div><h4 class="font-bold text-gray-800 text-sm">系統公告</h4><p class="text-sm text-gray-600 mt-1 leading-relaxed">FHIR 資料交換平台將於本週五晚間進行例行性維護。</p></div>
-                            </div>
-                        </div>
 
+                            <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                                <div class="bg-white p-6 rounded-2xl border border-gray-100 shadow-sm dashboard-card flex items-center">
+                                    <div class="w-16 h-16 rounded-full bg-blue-50 flex items-center justify-center text-blue-500 mr-5">
+                                        <i class="fa-regular fa-calendar-check text-2xl"></i>
+                                    </div>
+                                    <div>
+                                        <p class="text-xs font-bold text-gray-400 uppercase tracking-wide">今日待辦事項</p>
+                                        <h3 class="text-3xl font-extrabold text-gray-800 mt-1">12</h3>
+                                    </div>
+                                </div>
+
+                                <div class="bg-white p-6 rounded-2xl border border-gray-100 shadow-sm dashboard-card flex items-center cursor-pointer" @click="navigate('observations')">
+                                    <div class="w-16 h-16 rounded-full bg-red-50 flex items-center justify-center text-red-500 mr-5">
+                                        <i class="fa-solid fa-triangle-exclamation text-2xl"></i>
+                                    </div>
+                                    <div>
+                                        <p class="text-xs font-bold text-gray-400 uppercase tracking-wide">生理數據異常警示</p>
+                                        <h3 class="text-3xl font-extrabold text-red-600 mt-1">{{ abnormalCount }}</h3>
+                                    </div>
+                                </div>
+
+                                <div class="bg-white p-6 rounded-2xl border border-gray-100 shadow-sm dashboard-card flex items-center cursor-pointer" @click="currentTab = 'patients'">
+                                    <div class="w-16 h-16 rounded-full bg-green-50 flex items-center justify-center text-green-500 mr-5">
+                                        <i class="fa-solid fa-plus text-2xl"></i>
+                                    </div>
+                                    <div>
+                                        <p class="text-xs font-bold text-gray-400 uppercase tracking-wide">新轉介個案</p>
+                                        <h3 class="text-3xl font-extrabold text-gray-800 mt-1">5</h3>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div>
+                                <h3 class="text-lg font-bold text-gray-700 mb-4">服務項目入口</h3>
+                                <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-6">
+                                    <div class="bg-white p-8 rounded-2xl border border-gray-100 shadow-sm dashboard-card flex flex-col items-center justify-center text-center cursor-pointer hover:border-blue-200 group">
+                                        <div class="w-20 h-20 rounded-full bg-blue-50 flex items-center justify-center text-brand-blue mb-4 group-hover:scale-110 transition-transform">
+                                            <i class="fa-solid fa-arrow-up-from-bracket text-3xl"></i>
+                                        </div>
+                                        <h4 class="font-bold text-gray-800 text-lg">出院準備</h4>
+                                        <p class="text-xs text-gray-400 mt-2">管理病患出院與轉介流程</p>
+                                    </div>
+
+                                    <div class="bg-white p-8 rounded-2xl border border-gray-100 shadow-sm dashboard-card flex flex-col items-center justify-center text-center cursor-pointer hover:border-yellow-200 group">
+                                        <div class="w-20 h-20 rounded-full bg-yellow-50 flex items-center justify-center text-yellow-500 mb-4 group-hover:scale-110 transition-transform">
+                                            <i class="fa-solid fa-truck-medical text-3xl"></i>
+                                        </div>
+                                        <h4 class="font-bold text-gray-800 text-lg">急性後期照護(PAC)</h4>
+                                        <p class="text-xs text-gray-400 mt-2">追蹤PAC個案的復健進度</p>
+                                    </div>
+
+                                    <div class="bg-white p-8 rounded-2xl border border-gray-100 shadow-sm dashboard-card flex flex-col items-center justify-center text-center cursor-pointer hover:border-purple-200 group">
+                                        <div class="w-20 h-20 rounded-full bg-purple-50 flex items-center justify-center text-brand-purple mb-4 group-hover:scale-110 transition-transform">
+                                            <i class="fa-solid fa-video text-3xl"></i>
+                                        </div>
+                                        <h4 class="font-bold text-gray-800 text-lg">居家醫療(HAH)</h4>
+                                        <p class="text-xs text-gray-400 mt-2">管理在宅急症照護個案</p>
+                                    </div>
+
+                                    <div class="bg-white p-8 rounded-2xl border border-gray-100 shadow-sm dashboard-card flex flex-col items-center justify-center text-center cursor-pointer hover:border-teal-200 group">
+                                        <div class="w-20 h-20 rounded-full bg-teal-50 flex items-center justify-center text-teal-500 mb-4 group-hover:scale-110 transition-transform">
+                                            <i class="fa-solid fa-arrow-trend-up text-3xl"></i>
+                                        </div>
+                                        <h4 class="font-bold text-gray-800 text-lg">長照服務</h4>
+                                        <p class="text-xs text-gray-400 mt-2">銜接與管理長照ABC資源</p>
+                                    </div>
+                                </div>
+                            </div>
+
+                        </div>
                         <div v-if="currentTab === 'patients'" class="h-full flex flex-col bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden animate-fade-in-up">
                             <div class="p-4 border-b border-gray-100 flex items-center justify-between bg-gray-50/30">
                                 <div class="relative w-72">
@@ -425,6 +484,9 @@
                     loading: false, isLoggedIn: false, loginEmail: '', loginError: '', showSplash: true, startFadeOut: false,
                     currentUser: null, currentTab: 'dashboard', users: [], patients: [], observations: [],
                     currentPage: 1, itemsPerPage: 10,
+                    
+                    // Dashboard Date
+                    todayDate: '',
 
                     // Modal States
                     showDetailModal: false, selectedPatient: {}, patientObservations: [], latestMetrics: {}, bpChart: null, gluChart: null,
@@ -515,6 +577,7 @@
 
                 setTimeout(() => { this.startFadeOut = true; setTimeout(() => { this.showSplash = false; }, 800); }, 1500); 
 
+                this.setTodayDate();
                 this.refreshData();
                 this.fetchData('users'); 
                 this.loadICD10();
@@ -523,6 +586,16 @@
                 logout() { localStorage.removeItem('currentUser'); window.location.href = 'login.html'; },
                 navigate(tabId) { if (tabId === 'observations') window.open('phddashboard.html', '_blank'); else if (tabId === 'referrals') window.open('refer.html', '_blank'); else this.currentTab = tabId; },
                 
+                setTodayDate() {
+                    const date = new Date();
+                    const year = date.getFullYear();
+                    const month = String(date.getMonth() + 1).padStart(2, '0');
+                    const day = String(date.getDate()).padStart(2, '0');
+                    const weekdays = ['星期日', '星期一', '星期二', '星期三', '星期四', '星期五', '星期六'];
+                    const weekday = weekdays[date.getDay()];
+                    this.todayDate = `${year}年${month}月${day}日 ${weekday}`;
+                },
+
                 async fetchData(endpoint) {
                    try {
                        const res = await fetch(`${API_BASE_URL}?endpoint=${endpoint}&_t=${new Date().getTime()}`);
