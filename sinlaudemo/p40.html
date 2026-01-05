@@ -1,0 +1,519 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="shortcut icon" href="image/feticon.ico">
+    <title>訪視血壓紀錄器</title>
+
+    <script src="https://unpkg.com/html5-qrcode@2.0.9/dist/html5-qrcode.min.js"></script>
+
+    <style>
+        /* --- 基本樣式 --- */
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, "Noto Sans", sans-serif;
+            background-color: #f0f4f8;
+            color: #333;
+            margin: 0;
+            padding: 20px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            box-sizing: border-box;
+        }
+
+        .container {
+            width: 100%;
+            max-width: 600px;
+            background-color: #ffffff;
+            border-radius: 12px;
+            box-shadow: 0 6px 18px rgba(0, 0, 0, 0.07);
+            overflow: hidden;
+        }
+
+        header {
+            background-color: #007bff;
+            color: white;
+            padding: 20px;
+            text-align: center;
+            font-size: 1.5em;
+            font-weight: bold;
+        }
+
+        /* --- 步驟樣式 --- */
+        .step {
+            padding: 25px;
+            border-bottom: 1px solid #eee;
+            /* 預設隱藏所有步驟 */
+            display: none;
+        }
+
+        /* 顯示當前步驟 */
+        .step.active {
+            display: block;
+        }
+
+        .step h2 {
+            font-size: 1.3em;
+            color: #0056b3;
+            margin-top: 0;
+            border-bottom: 2px solid #007bff;
+            padding-bottom: 10px;
+        }
+
+        .step p {
+            font-size: 1em;
+            line-height: 1.6;
+            color: #555;
+        }
+
+        /* --- 圖片預留位置 (已修改) --- */
+        .placeholder-img {
+            display: block;
+            width: 80%; /* 修改為畫面寬度的 80% */
+            height: auto;
+            margin: 20px auto;
+            background-color: #f4f4f4;
+            border: 2px dashed #ccc;
+            border-radius: 8px;
+            text-align: center;
+            padding: 40px 0;
+            box-sizing: border-box;
+            font-style: italic;
+            color: #888;
+        }
+
+        /* --- 按鈕樣式 --- */
+        button {
+            display: block;
+            width: 100%;
+            padding: 15px;
+            font-size: 1.1em;
+            font-weight: bold;
+            color: #ffffff;
+            background-color: #007bff;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: background-color 0.3s;
+            margin-top: 15px;
+        }
+
+        button:hover {
+            background-color: #0056b3;
+        }
+
+        button:disabled {
+            background-color: #c0c0c0;
+            cursor: not-allowed;
+        }
+
+        /* --- 表單元素 --- */
+        label {
+            display: block;
+            font-weight: bold;
+            margin-top: 15px;
+            margin-bottom: 8px;
+        }
+
+        input[type="text"] {
+            width: 100%;
+            padding: 12px;
+            font-size: 1em;
+            border: 1px solid #ccc;
+            border-radius: 8px;
+            box-sizing: border-box; /* 確保 padding 不影響寬度 */
+        }
+        
+        /* --- 掃描器 --- */
+        #scanner-container {
+            width: 100%;
+            border: 2px solid #ddd;
+            border-radius: 8px;
+            overflow: hidden;
+            display: none; /* 預設隱藏 */
+            margin-top: 15px;
+        }
+        #scanner-video {
+            width: 100%;
+            height: auto;
+            display: block;
+        }
+        .scan-divider {
+            text-align: center;
+            font-weight: bold;
+            color: #888;
+            margin: 20px 0;
+        }
+
+        /* --- 血壓讀數 --- */
+        .reading-display {
+            background-color: #f9f9f9;
+            border: 1px solid #e0e0e0;
+            border-radius: 8px;
+            padding: 20px;
+            text-align: center;
+        }
+        .reading-display h3 {
+            margin: 0 0 15px 0;
+            color: #333;
+        }
+        .reading-display p {
+            font-size: 1.8em;
+            font-weight: bold;
+            color: #007bff;
+            margin: 5px 0;
+        }
+
+        /* --- 上傳成功 Modal --- */
+        #success-modal {
+            display: none; /* 預設隱藏 */
+            position: fixed;
+            z-index: 1000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            overflow: auto;
+            background-color: rgba(0, 0, 0, 0.6);
+            justify-content: center;
+            align-items: center;
+        }
+        .modal-content {
+            background-color: #fefefe;
+            margin: auto;
+            padding: 30px;
+            border-radius: 10px;
+            text-align: center;
+            width: 80%;
+            max-width: 300px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+        }
+        #success-icon {
+            width: 100px;
+            height: 100px;
+            background-color: #f0f0f0;
+            border: 2px dashed #4CAF50;
+            border-radius: 50%;
+            margin: 0 auto 20px auto;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-style: italic;
+            color: #888;
+        }
+        .modal-content h3 {
+            color: #4CAF50;
+            font-size: 1.5em;
+            margin-bottom: 20px;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <header>Health+ 血壓紀錄器</header>
+
+        <div id="step-1" class="step active">
+            <h2>步驟 1：藍芽配對</h2>
+            <p>請開啟「FORA P40」血壓計的電源與藍芽功能，然後點擊下方按鈕進行配對。</p>
+            
+            <img src="image/p40_1.png" alt="FORA P40 血壓計" class="placeholder-img">
+            
+            <p id="bt-status" style="text-align: center; font-weight: bold; color: #d9534f;">狀態：尚未連線</p>
+            <button id="btn-pair">開始配對</button>
+            <button id="btn-next-1" class.="btn-next" disabled>下一步</button>
+        </div>
+
+        <div id="step-2" class="step">
+            <h2>步驟 2：個案身份識別</h2>
+            
+            <label for="patient-id">手動輸入身分證字號</label>
+            <input type="text" id="patient-id" placeholder="請輸入身分證字號">
+            
+            <div class="scan-divider">或</div>
+            
+            <button id="btn-scan">開啟相機掃描</button>
+            
+            <div id="scanner-container">
+                <video id="scanner-video"></video>
+            </div>
+            <button id="btn-stop-scan" style="display:none; background-color: #d9534f;">關閉相機</button>
+
+            <img src="image/p40_2.jpg" alt="掃描示意圖" class="placeholder-img">
+
+            <button id="btn-next-2" class="btn-next" disabled>下一步</button>
+        </div>
+
+        <div id="step-3" class="step">
+            <h2>步驟 3：量測血壓</h2>
+            <p>請將手臂放入血壓計壓脈帶，按下血壓計上的「開始」按鈕進行量測。完成後，數據將自動傳送至此處。</p>
+
+            <img src="image/p40_3.jpg" alt="量測示意圖" class="placeholder-img">
+            
+            <div id="bp-reading-display" class="reading-display" style="display: none;">
+                <h3>量測結果</h3>
+                <p id="reading-sys">收縮壓 (SYS): --- mmHg</p>
+                <p id="reading-dia">舒張壓 (DIA): --- mmHg</p>
+                <p id="reading-pul">脈搏 (PUL): --- bpm</p>
+            </div>
+            
+            <p id="measure-status" style="text-align: center; font-weight: bold; margin-top: 15px;">
+                狀態：等待血壓計量測...
+            </p>
+            
+            <button id="btn-next-3" class="btn-next" disabled>下一步</button>
+        </div>
+
+        <div id="step-4" class="step">
+            <h2>步驟 4：確認並上傳</h2>
+            <p>請確認以下資料是否正確，然後點擊上傳。</p>
+            
+            <div class="reading-display">
+                <h3>待上傳資料</h3>
+                <p id="summary-id">ID: ----------</p>
+                <p id="summary-sys">收縮壓: --- mmHg</p>
+                <p id="summary-dia">舒張壓: --- mmHg</p>
+                <p id="summary-pul">脈搏: --- bpm</p>
+            </div>
+            
+            <button id="btn-upload">上傳至 Health+ 平台</button>
+            <button id="btn-restart" style="background-color: #777;">重新量測</button>
+        </div>
+    </div>
+
+    <div id="success-modal">
+        <div class="modal-content">
+            <img src="image/p40_4.jpg" alt="上傳成功" id="success-icon" style="width: 80px; height: 80px; margin: 0 auto 20px auto; border-radius: 50%;">
+            
+            <h3>上傳成功！</h3>
+            <button id="btn-close-modal">完成 (返回首頁)</button>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            
+            // --- 獲取所有需要的 DOM 元素 ---
+            const steps = document.querySelectorAll('.step');
+            const btnPair = document.getElementById('btn-pair');
+            const btStatus = document.getElementById('bt-status');
+            const btnNext1 = document.getElementById('btn-next-1');
+            
+            const patientIdInput = document.getElementById('patient-id');
+            const btnScan = document.getElementById('btn-scan');
+            const btnStopScan = document.getElementById('btn-stop-scan');
+            const scannerContainer = document.getElementById('scanner-container');
+            const videoEl = document.getElementById('scanner-video');
+            const btnNext2 = document.getElementById('btn-next-2');
+            
+            const bpReadingDisplay = document.getElementById('bp-reading-display');
+            const measureStatus = document.getElementById('measure-status');
+            const readingSys = document.getElementById('reading-sys');
+            const readingDia = document.getElementById('reading-dia');
+            const readingPul = document.getElementById('reading-pul');
+            const btnNext3 = document.getElementById('btn-next-3');
+
+            const summaryId = document.getElementById('summary-id');
+            const summarySys = document.getElementById('summary-sys');
+            const summaryDia = document.getElementById('summary-dia');
+            const summaryPul = document.getElementById('summary-pul');
+            const btnUpload = document.getElementById('btn-upload');
+            const btnRestart = document.getElementById('btn-restart');
+            
+            const successModal = document.getElementById('success-modal');
+            const btnCloseModal = document.getElementById('btn-close-modal');
+            
+            let html5QrcodeScanner;
+            let patientID = null;
+            let bpData = null;
+
+            // --- 步驟切換邏輯 ---
+            function showStep(stepNum) {
+                steps.forEach(step => step.classList.remove('active'));
+                document.getElementById(`step-${stepNum}`).classList.add('active');
+            }
+
+            // --- 步驟 1：藍芽配對 (模擬) ---
+            btnPair.addEventListener('click', () => {
+                btStatus.textContent = '狀態：配對中...';
+                btStatus.style.color = '#f0ad4e';
+                
+                // *** 模擬藍芽配對 ***
+                // ----------------------------------------------------
+                // 在此處應加入真實的 Web Bluetooth API (navigator.bluetooth.requestDevice)
+                // ----------------------------------------------------
+                setTimeout(() => {
+                    btStatus.textContent = '狀態：已連線至 FORA P40';
+                    btStatus.style.color = '#4CAF50';
+                    btnNext1.disabled = false;
+                    btnPair.disabled = true;
+                }, 2000); // 模擬2秒配對時間
+            });
+
+            btnNext1.addEventListener('click', () => showStep(2));
+
+            // --- 步驟 2：個案識別 ---
+            patientIdInput.addEventListener('input', () => {
+                btnNext2.disabled = patientIdInput.value.trim() === '';
+            });
+
+            // 初始化掃描器
+            html5QrcodeScanner = new Html5Qrcode("scanner-video");
+
+            const qrCodeSuccessCallback = (decodedText, decodedResult) => {
+                // 掃描成功
+                patientIdInput.value = decodedText;
+                patientID = decodedText;
+                btnNext2.disabled = false;
+                stopScanner();
+                alert(`掃描成功: ${decodedText}`);
+            };
+
+            const qrCodeErrorCallback = (errorMessage) => {
+                // 錯誤處理 (通常是找不到條碼，可以忽略)
+                // console.warn(`QR Code scan error: ${errorMessage}`);
+            };
+
+            // 啟動掃描器
+            btnScan.addEventListener('click', () => {
+                scannerContainer.style.display = 'block';
+                btnStopScan.style.display = 'block';
+                btnScan.style.display = 'none';
+                
+                html5QrcodeScanner.start(
+                    { facingMode: "environment" }, // 優先使用後鏡頭
+                    {
+                        fps: 10, // 每秒掃描 10 次
+                        qrbox: { width: 250, height: 150 } // 掃描框大小
+                    },
+                    qrCodeSuccessCallback,
+                    qrCodeErrorCallback
+                ).catch(err => {
+                    alert('無法啟動相機。請確認已授權。');
+                    console.error('Cannot start camera:', err);
+                    stopScanner();
+                });
+            });
+
+            // 停止掃描器
+            function stopScanner() {
+                if (html5QrcodeScanner && html5QrcodeScanner.isScanning) {
+                    html5QrcodeScanner.stop().catch(err => {
+                        console.error("Failed to stop scanner:", err);
+                    });
+                }
+                scannerContainer.style.display = 'none';
+                btnStopScan.style.display = 'none';
+                btnScan.style.display = 'block';
+            }
+
+            btnStopScan.addEventListener('click', stopScanner);
+
+            btnNext2.addEventListener('click', () => {
+                patientID = patientIdInput.value.trim();
+                if (!patientID) {
+                    alert('請輸入或掃描身分證字號');
+                    return;
+                }
+                showStep(3);
+                // 進入步驟3後，開始模擬接收血壓數據
+                simulateBpMeasurement();
+            });
+
+            // --- 步驟 3：量測血壓 (模擬) ---
+            function simulateBpMeasurement() {
+                measureStatus.textContent = '狀態：正在量測，請保持靜止...';
+                bpReadingDisplay.style.display = 'none';
+                btnNext3.disabled = true;
+
+                // *** 模擬血壓計傳輸數據 ***
+                // ----------------------------------------------------
+                // 在此處應加入真實的 Web Bluetooth GATT 特徵讀取 (characteristic.readValue)
+                // ----------------------------------------------------
+                setTimeout(() => {
+                    // 模擬收到的數據
+                    bpData = {
+                        sys: Math.floor(Math.random() * 20) + 110, // 110-130
+                        dia: Math.floor(Math.random() * 15) + 70,  // 70-85
+                        pul: Math.floor(Math.random() * 20) + 60   // 60-80
+                    };
+
+                    readingSys.textContent = `收縮壓 (SYS): ${bpData.sys} mmHg`;
+                    readingDia.textContent = `舒張壓 (DIA): ${bpData.dia} mmHg`;
+                    readingPul.textContent = `脈搏 (PUL): ${bpData.pul} bpm`;
+                    
+                    bpReadingDisplay.style.display = 'block';
+                    measureStatus.textContent = '狀態：量測完成！';
+                    measureStatus.style.color = '#4CAF50';
+                    btnNext3.disabled = false;
+
+                }, 5000); // 模擬5秒量測時間
+            }
+
+            btnNext3.addEventListener('click', () => {
+                // 填充步驟4的確認資料
+                summaryId.textContent = `ID: ${patientID}`;
+                summarySys.textContent = `收縮壓: ${bpData.sys} mmHg`;
+                summaryDia.textContent = `舒張壓: ${bpData.dia} mmHg`;
+                summaryPul.textContent = `脈搏: ${bpData.pul} bpm`;
+                showStep(4);
+            });
+            
+            // --- 步驟 4：上傳資料 (模擬) ---
+            btnUpload.addEventListener('click', () => {
+                btnUpload.textContent = '上傳中...';
+                btnUpload.disabled = true;
+
+                // *** 模擬上傳到 Health+ 平台 ***
+                // ----------------------------------------------------
+                // 在此處應加入真實的 fetch 或 axios API 請求 (POST)
+                // ----------------------------------------------------
+                setTimeout(() => {
+                    // 顯示成功 Modal
+                    successModal.style.display = 'flex';
+                    
+                    // 重設按鈕
+                    btnUpload.textContent = '上傳至 Health+ 平台';
+                    btnUpload.disabled = false;
+                }, 2000); // 模擬2秒上傳時間
+            });
+
+            // --- 重置流程 ---
+            function resetApp() {
+                successModal.style.display = 'none';
+                showStep(1);
+
+                // 重設步驟 1
+                btStatus.textContent = '狀態：尚未連線';
+                btStatus.style.color = '#d9534f';
+                btnPair.disabled = false;
+                btnNext1.disabled = true;
+                
+                // 重設步驟 2
+                patientIdInput.value = '';
+                patientID = null;
+                btnNext2.disabled = true;
+                stopScanner();
+
+                // 重設步驟 3
+                bpData = null;
+                bpReadingDisplay.style.display = 'none';
+                measureStatus.textContent = '狀態：等待血壓計量測...';
+                measureStatus.style.color = '#333';
+                btnNext3.disabled = true;
+            }
+
+            btnCloseModal.addEventListener('click', resetApp);
+            btnRestart.addEventListener('click', () => {
+                if(confirm('您確定要放棄此次量測，重新開始嗎？')) {
+                    resetApp();
+                }
+            });
+
+        });
+    </script>
+
+</body>
+</html>
