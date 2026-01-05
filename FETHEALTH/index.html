@@ -3,9 +3,9 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>遠傳醫院全人照護個案管理平台 | Future Health OS</title>
+    <title>遠傳醫院全人照護平台 | Serverless Core</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@300;400;500;700&family=Share+Tech+Mono&family=Orbitron:wght@400;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@300;400;500;700&family=Share+Tech+Mono&family=Orbitron:wght@500;700;900&display=swap" rel="stylesheet">
     <script>
         tailwind.config = {
             darkMode: 'class',
@@ -13,11 +13,11 @@
                 extend: {
                     colors: {
                         tech: {
-                            black: '#020617',
-                            dark: '#0f172a',
-                            cyan: '#06b6d4',
-                            neon: '#22d3ee',
-                            blue: '#3b82f6'
+                            black: '#000000',
+                            panel: '#050505',
+                            cyan: '#00f0ff', /* 更強烈的青色 */
+                            blue: '#0066ff',
+                            dim: '#1a1a1a'
                         }
                     },
                     fontFamily: {
@@ -25,446 +25,390 @@
                         mono: ['Share Tech Mono', 'monospace'],
                         header: ['Orbitron', 'sans-serif']
                     },
-                    backgroundImage: {
-                        'grid-pattern': "linear-gradient(to right, #1e293b 1px, transparent 1px), linear-gradient(to bottom, #1e293b 1px, transparent 1px)",
+                    animation: {
+                        'pulse-fast': 'pulse 1.5s cubic-bezier(0.4, 0, 0.6, 1) infinite',
+                        'scan': 'scan 3s linear infinite',
+                    },
+                    keyframes: {
+                        scan: {
+                            '0%': { transform: 'translateY(-100%)' },
+                            '100%': { transform: 'translateY(100%)' }
+                        }
                     }
                 }
             }
         }
     </script>
     <style>
-        /* 全域設定 */
-        body { 
-            background-color: #000000; 
-            color: #e2e8f0; 
-            overflow-x: hidden; 
+        body { background-color: #000000; color: #e2e8f0; overflow-x: hidden; }
+        
+        /* 網格背景 */
+        .bg-grid {
+            background-size: 50px 50px;
+            background-image: linear-gradient(to right, rgba(0, 240, 255, 0.03) 1px, transparent 1px),
+                              linear-gradient(to bottom, rgba(0, 240, 255, 0.03) 1px, transparent 1px);
+        }
+
+        /* 互動圖片區域游標 */
+        .cursor-next { cursor: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='40' height='40' viewBox='0 0 24 24' fill='none' stroke='%2300f0ff' stroke-width='2'><path d='M9 18l6-6-6-6'/></svg>") 20 20, auto; }
+        
+        /* 霓虹發光 */
+        .neon-text { text-shadow: 0 0 10px rgba(0, 240, 255, 0.7); }
+        .neon-border { box-shadow: 0 0 15px rgba(0, 240, 255, 0.15), inset 0 0 10px rgba(0, 240, 255, 0.05); }
+
+        /* 影片播放器樣式 */
+        .video-overlay {
+            background: linear-gradient(0deg, rgba(0,0,0,0.9) 0%, rgba(0,0,0,0) 40%);
         }
         
-        /* 背景網格特效 */
-        .bg-tech-grid {
-            background-size: 40px 40px;
-            background-image: linear-gradient(to right, rgba(30, 41, 59, 0.3) 1px, transparent 1px),
-                              linear-gradient(to bottom, rgba(30, 41, 59, 0.3) 1px, transparent 1px);
-            mask-image: linear-gradient(to bottom, black 40%, transparent 100%);
-        }
+        /* 滾動條 */
+        ::-webkit-scrollbar { width: 5px; }
+        ::-webkit-scrollbar-thumb { background: #0066ff; border-radius: 2px; }
+        ::-webkit-scrollbar-track { background: #000; }
 
-        /* 滾動條美化 */
-        ::-webkit-scrollbar { width: 6px; }
-        ::-webkit-scrollbar-track { background: #020617; }
-        ::-webkit-scrollbar-thumb { background: #06b6d4; border-radius: 3px; }
-
-        /* HUD 邊框裝飾 */
-        .hud-card {
-            background: rgba(15, 23, 42, 0.6);
-            backdrop-filter: blur(8px);
-            border: 1px solid rgba(34, 211, 238, 0.1);
-            position: relative;
-            transition: all 0.3s ease;
+        /* 掃描線 */
+        .scanline::before {
+            content: " "; display: block; position: absolute; top: 0; left: 0; bottom: 0; right: 0;
+            background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.25) 50%), linear-gradient(90deg, rgba(255, 0, 0, 0.06), rgba(0, 255, 0, 0.02), rgba(0, 0, 255, 0.06));
+            z-index: 2; background-size: 100% 2px, 3px 100%; pointer-events: none;
         }
-        .hud-card::before, .hud-card::after {
-            content: ''; position: absolute; width: 10px; height: 10px;
-            border-color: #22d3ee; transition: all 0.3s ease;
-        }
-        .hud-card::before { top: -1px; left: -1px; border-top: 2px solid #22d3ee; border-left: 2px solid #22d3ee; }
-        .hud-card::after { bottom: -1px; right: -1px; border-bottom: 2px solid #22d3ee; border-right: 2px solid #22d3ee; }
-        
-        .hud-card:hover {
-            border-color: rgba(34, 211, 238, 0.5);
-            box-shadow: 0 0 20px rgba(6, 182, 212, 0.2);
-            transform: translateY(-2px);
-        }
-        .hud-card:hover::before, .hud-card:hover::after { width: 100%; height: 100%; opacity: 0.3; }
-
-        /* 開場動畫：心電圖與系統啟動 */
-        #loading-screen {
-            position: fixed; inset: 0; background: #000; z-index: 9999;
-            display: flex; flex-direction: column; justify-content: center; align-items: center;
-        }
-        .ecg-line {
-            width: 300px; height: 100px;
-            position: relative; overflow: hidden;
-            border-bottom: 1px solid #1e293b;
-        }
-        .ecg-path {
-            stroke: #22d3ee; stroke-width: 2; fill: none;
-            stroke-dasharray: 1000; stroke-dashoffset: 1000;
-            animation: dash 3s linear infinite;
-            filter: drop-shadow(0 0 5px #22d3ee);
-        }
-        @keyframes dash {
-            0% { stroke-dashoffset: 1000; }
-            100% { stroke-dashoffset: 0; }
-        }
-        .loading-text {
-            font-family: 'Share Tech Mono', monospace;
-            color: #22d3ee; margin-top: 20px; letter-spacing: 4px;
-            text-shadow: 0 0 10px rgba(34, 211, 238, 0.8);
-        }
-        .system-check {
-            font-family: 'Share Tech Mono', monospace; font-size: 0.8rem; color: #64748b;
-            margin-top: 10px; text-align: center; line-height: 1.5;
-        }
-        @keyframes fadeOut { from { opacity: 1; } to { opacity: 0; visibility: hidden; } }
-
-        /* 燈箱優化 */
-        .lightbox { 
-            display: none; position: fixed; inset: 0; z-index: 5000; 
-            background: rgba(0, 0, 0, 0.95); backdrop-filter: blur(10px);
-            justify-content: center; align-items: center;
-        }
-        .lightbox-content {
-            border: 1px solid #22d3ee;
-            box-shadow: 0 0 50px rgba(34, 211, 238, 0.2);
-        }
-
-        /* 文字發光特效 */
-        .glow-text { text-shadow: 0 0 10px rgba(34, 211, 238, 0.5); }
     </style>
 </head>
-<body class="selection:bg-cyan-500 selection:text-black">
+<body class="selection:bg-tech-cyan selection:text-black">
 
-    <div id="loading-screen">
-        <svg class="ecg-line" viewBox="0 0 300 100">
-            <path class="ecg-path" d="M0,50 L30,50 L40,20 L50,80 L60,50 L100,50 L110,10 L120,90 L130,50 L300,50" />
-        </svg>
-        <div class="loading-text" id="loading-text">SYSTEM INITIALIZING...</div>
-        <div class="system-check" id="logs">
-            > BIOS CHECK: OK<br>
-            > LOADING MEDICAL PROTOCOLS...<br>
-            > ESTABLISHING SECURE LINK...
-        </div>
-    </div>
-
-    <nav class="fixed w-full z-40 top-0 border-b border-cyan-900/30 bg-black/80 backdrop-blur-md">
-        <div class="w-full px-6 py-3 flex justify-between items-center">
-            <a href="#" class="flex items-center gap-3 group">
-                <div class="relative w-8 h-8 flex items-center justify-center">
-                    <div class="absolute inset-0 bg-cyan-500 blur-md opacity-20 group-hover:opacity-40 transition"></div>
-                    <svg class="w-6 h-6 text-cyan-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.828 14.828a4 4 0 01-5.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
-                </div>
-                <div>
-                    <h1 class="font-header text-lg font-bold text-white tracking-wider group-hover:text-cyan-400 transition">FH.OS <span class="text-xs text-cyan-600 font-mono">v3.0</span></h1>
-                </div>
-            </a>
-            
-            <div class="hidden md:flex space-x-10 text-sm font-mono text-slate-400">
-                <a href="#demos" class="hover:text-cyan-400 transition hover:glow-text">DEMO_VIEW</a>
-                <a href="#architecture" class="hover:text-cyan-400 transition hover:glow-text">SYS_ARCH</a>
-                <a href="#modules" class="hover:text-cyan-400 transition hover:glow-text">MODULES</a>
-                <a href="#iot" class="hover:text-cyan-400 transition hover:glow-text">IOT_LINK</a>
+    <nav class="fixed w-full z-50 top-0 bg-black/80 backdrop-blur-lg border-b border-tech-cyan/20">
+        <div class="flex justify-between items-center px-6 py-4">
+            <div class="flex items-center gap-3">
+                <div class="w-2 h-8 bg-tech-cyan shadow-[0_0_15px_#00f0ff]"></div>
+                <h1 class="font-header text-xl tracking-widest text-white">FUTURE <span class="text-tech-cyan">HEALTH.OS</span></h1>
             </div>
-
-            <a href="https://health.yangkaichun.net/sinlaudemo" target="_blank" class="relative group overflow-hidden px-6 py-2 bg-transparent border border-cyan-500/50 rounded-none text-cyan-400 font-mono text-xs uppercase tracking-widest hover:bg-cyan-500/10 transition-all duration-300">
-                <span class="relative z-10 flex items-center gap-2">
-                    Start Demo
-                    <svg class="w-3 h-3 group-hover:translate-x-1 transition" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7l5 5m0 0l-5 5m5-5H6"></path></svg>
-                </span>
-                <div class="absolute inset-0 bg-cyan-400/20 transform -translate-x-full group-hover:translate-x-0 transition-transform duration-300 skew-x-12 origin-left"></div>
-            </a>
+            <div class="flex gap-8 text-xs font-mono text-gray-400">
+                <div class="flex items-center gap-2">
+                    <span class="w-2 h-2 rounded-full bg-green-500 animate-pulse"></span>
+                    SYSTEM ONLINE
+                </div>
+                <div>ID: ADMIN_YANG</div>
+            </div>
         </div>
     </nav>
 
-    <header class="relative pt-32 pb-20 overflow-hidden w-full">
-        <div class="absolute inset-0 bg-tech-grid opacity-30 pointer-events-none"></div>
-        <div class="absolute top-0 right-0 w-[50vw] h-[50vw] bg-blue-900/10 rounded-full blur-[100px] pointer-events-none"></div>
+    <section id="architecture" class="relative min-h-screen pt-24 pb-12 flex flex-col md:flex-row items-center justify-center bg-grid overflow-hidden">
         
-        <div class="w-full px-4 text-center relative z-10">
-            <div class="inline-flex items-center gap-2 border border-cyan-900/50 bg-cyan-950/30 px-4 py-1 rounded-full mb-8 backdrop-blur-sm">
-                <span class="w-2 h-2 rounded-full bg-cyan-500 animate-pulse"></span>
-                <span class="text-cyan-400 text-xs font-mono tracking-[0.2em]">NEXT GEN HEALTHCARE OS</span>
-            </div>
-            
-            <h1 class="text-6xl md:text-8xl font-bold text-white mb-6 font-header tracking-tight">
-                FUTURE <span class="text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 to-blue-600 glow-text">HEALTH</span>
-            </h1>
-            
-            <p class="text-xl md:text-2xl text-slate-400 mb-12 max-w-4xl mx-auto font-light">
-                遠傳醫院全人照護個案管理平台<br>
-                <span class="text-sm font-mono text-cyan-600 mt-2 block">Google Apps Script Serverless Architecture</span>
-            </p>
+        <div class="absolute top-0 right-0 w-[800px] h-[800px] bg-blue-900/10 rounded-full blur-[120px] pointer-events-none"></div>
 
-            <div class="w-full max-w-[95%] mx-auto relative group cursor-pointer border border-slate-800 bg-slate-900/50 backdrop-blur-sm" onclick="openLightbox('image/24.png', 'image')">
-                <div class="absolute top-0 left-0 w-4 h-4 border-t-2 border-l-2 border-cyan-500 z-20"></div>
-                <div class="absolute top-0 right-0 w-4 h-4 border-t-2 border-r-2 border-cyan-500 z-20"></div>
-                <div class="absolute bottom-0 left-0 w-4 h-4 border-b-2 border-l-2 border-cyan-500 z-20"></div>
-                <div class="absolute bottom-0 right-0 w-4 h-4 border-b-2 border-r-2 border-cyan-500 z-20"></div>
-                
-                <div class="absolute inset-0 bg-black/60 flex items-center justify-center opacity-0 group-hover:opacity-100 transition z-10 backdrop-blur-[2px]">
-                    <span class="border border-cyan-400/50 text-cyan-400 px-6 py-2 font-mono hover:bg-cyan-500 hover:text-black transition">MAXIMIZE INTERFACE</span>
+        <div class="container mx-auto px-4 flex flex-col lg:flex-row gap-12 h-full items-center relative z-10">
+            
+            <div class="lg:w-1/3 space-y-8">
+                <div class="inline-block px-3 py-1 border border-tech-cyan text-tech-cyan font-mono text-xs mb-2 bg-tech-cyan/10">
+                    // SYSTEM_CORE_V3
                 </div>
-                <img src="image/24.png" alt="Dashboard UI" class="w-full h-[60vh] object-cover object-top opacity-80 group-hover:opacity-40 transition duration-700">
+                
+                <div id="text-slide-1" class="slide-content transition-all duration-500 block opacity-100 transform translate-x-0">
+                    <h2 class="text-5xl md:text-7xl font-header font-bold text-white mb-6 leading-tight">
+                        Serverless<br><span class="text-transparent bg-clip-text bg-gradient-to-r from-tech-cyan to-tech-blue neon-text">Core</span>
+                    </h2>
+                    <p class="text-gray-400 text-lg leading-relaxed mb-6 font-light">
+                        利用 <strong class="text-white">Google Cloud</strong> 原生生態系，結合 <strong class="text-white">Vue.js 3</strong> 與 <strong class="text-white">EAV 動態資料模型</strong>。打造無伺服器、高擴充性的醫療運算核心。
+                    </p>
+                    <div class="flex gap-2">
+                        <div class="h-1 w-12 bg-tech-cyan"></div>
+                        <div class="h-1 w-4 bg-gray-800"></div>
+                        <div class="h-1 w-4 bg-gray-800"></div>
+                    </div>
+                </div>
+
+                <div id="text-slide-2" class="slide-content transition-all duration-500 hidden opacity-0 transform translate-x-10">
+                    <h2 class="text-5xl md:text-7xl font-header font-bold text-white mb-6 leading-tight">
+                        Elastic<br><span class="text-tech-blue neon-text">Data Model</span>
+                    </h2>
+                    <p class="text-gray-400 text-lg leading-relaxed mb-6 font-light">
+                        突破傳統資料庫限制。EAV (Entity-Attribute-Value) 架構允許<strong class="text-white">無限新增評估欄位</strong>，無需停機修改資料庫結構，適應快速變化的醫療需求。
+                    </p>
+                    <div class="flex gap-2">
+                        <div class="h-1 w-4 bg-gray-800"></div>
+                        <div class="h-1 w-12 bg-tech-blue"></div>
+                        <div class="h-1 w-4 bg-gray-800"></div>
+                    </div>
+                </div>
+
+                <div id="text-slide-3" class="slide-content transition-all duration-500 hidden opacity-0 transform translate-x-10">
+                    <h2 class="text-5xl md:text-7xl font-header font-bold text-white mb-6 leading-tight">
+                        Logic<br><span class="text-purple-500 neon-text">Engine</span>
+                    </h2>
+                    <p class="text-gray-400 text-lg leading-relaxed mb-6 font-light">
+                        內建自動化運算引擎。從 <strong class="text-white">BMI、eGFR 到代謝症候群判定</strong>，所有數值輸入即時運算，大幅減少醫護人員手動計算錯誤與時間成本。
+                    </p>
+                    <div class="flex gap-2">
+                        <div class="h-1 w-4 bg-gray-800"></div>
+                        <div class="h-1 w-4 bg-gray-800"></div>
+                        <div class="h-1 w-12 bg-purple-500"></div>
+                    </div>
+                </div>
+
+                <div class="pt-8 border-t border-gray-800 flex items-center gap-4 text-gray-500 font-mono text-xs">
+                    <span class="animate-pulse text-tech-cyan">►</span>
+                    CLICK IMAGE RIGHT SIDE TO NAVIGATE
+                </div>
+            </div>
+
+            <div class="lg:w-2/3 w-full relative group cursor-next select-none" onclick="nextSlide()">
+                <div class="absolute -inset-1 bg-gradient-to-r from-tech-cyan to-blue-600 rounded-lg blur opacity-20 group-hover:opacity-40 transition duration-1000"></div>
+                
+                <div class="relative bg-tech-panel border border-gray-800 rounded-lg overflow-hidden shadow-2xl aspect-[16/9] ring-1 ring-white/10 group-hover:ring-tech-cyan/50 transition duration-500">
+                    
+                    <img id="hero-image" src="image/1.png" alt="System Architecture" class="w-full h-full object-cover object-center transition-all duration-700 transform scale-100 group-hover:scale-105">
+                    
+                    <div class="absolute inset-0 bg-gradient-to-b from-transparent via-tech-cyan/5 to-transparent h-[10%] w-full animate-scan pointer-events-none"></div>
+                    
+                    <div class="absolute bottom-6 right-6 font-mono text-xs text-tech-cyan bg-black/70 px-4 py-2 border border-tech-cyan/30 backdrop-blur-sm">
+                        STATUS: ACTIVE<br>
+                        MODE: INTERACTIVE
+                    </div>
+
+                    <div class="absolute top-0 right-0 w-1/2 h-full opacity-0 hover:opacity-100 transition duration-300 bg-gradient-to-l from-tech-cyan/10 to-transparent flex items-center justify-end pr-8">
+                        <svg class="w-12 h-12 text-tech-cyan drop-shadow-[0_0_10px_rgba(0,240,255,0.8)]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path></svg>
+                    </div>
+                </div>
             </div>
         </div>
-    </header>
+    </section>
 
-    <section id="demos" class="py-10 bg-black relative border-t border-slate-800">
-        <div class="w-full px-2 md:px-4">
-            <div class="flex items-end justify-between mb-6 px-2">
+    <section class="py-24 bg-black relative border-y border-gray-900">
+        <div class="container mx-auto px-4">
+             <div class="flex items-center justify-between mb-16">
+                <h3 class="text-3xl font-header font-bold text-white"><span class="text-tech-cyan">///</span> MODULES</h3>
+                <div class="h-px bg-gray-800 flex-grow mx-8"></div>
+                <span class="font-mono text-gray-500">03_LOADED</span>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
+                <div class="group relative bg-tech-panel border border-gray-800 p-1 hover:border-tech-cyan/50 transition duration-500">
+                    <div class="h-64 overflow-hidden relative">
+                        <img src="image/14.png" class="w-full h-full object-cover opacity-60 group-hover:opacity-100 group-hover:scale-110 transition duration-700">
+                        <div class="absolute bottom-0 left-0 bg-black/80 px-4 py-1 text-tech-cyan font-mono text-sm border-t border-r border-tech-cyan/30">ICOPE.sys</div>
+                    </div>
+                    <div class="p-6">
+                        <h4 class="text-xl font-bold text-white mb-2">ICOPE 長者評估</h4>
+                        <p class="text-gray-500 text-sm">六大面向自動判讀，整合世界衛生組織標準。</p>
+                    </div>
+                </div>
+
+                <div class="group relative bg-tech-panel border border-gray-800 p-1 hover:border-tech-cyan/50 transition duration-500">
+                    <div class="h-64 overflow-hidden relative">
+                        <img src="image/17.png" class="w-full h-full object-cover opacity-60 group-hover:opacity-100 group-hover:scale-110 transition duration-700">
+                         <div class="absolute bottom-0 left-0 bg-black/80 px-4 py-1 text-tech-cyan font-mono text-sm border-t border-r border-tech-cyan/30">CMS.sys</div>
+                    </div>
+                    <div class="p-6">
+                        <h4 class="text-xl font-bold text-white mb-2">CMS 照顧管理</h4>
+                        <p class="text-gray-500 text-sm">失能等級自動運算，無縫串接長照2.0資源。</p>
+                    </div>
+                </div>
+
+                <div class="group relative bg-tech-panel border border-gray-800 p-1 hover:border-tech-cyan/50 transition duration-500">
+                    <div class="h-64 overflow-hidden relative">
+                        <img src="image/15.png" class="w-full h-full object-cover opacity-60 group-hover:opacity-100 group-hover:scale-110 transition duration-700">
+                         <div class="absolute bottom-0 left-0 bg-black/80 px-4 py-1 text-tech-cyan font-mono text-sm border-t border-r border-tech-cyan/30">LACE.sys</div>
+                    </div>
+                    <div class="p-6">
+                        <h4 class="text-xl font-bold text-white mb-2">出院準備服務</h4>
+                        <p class="text-gray-500 text-sm">LACE 風險評估視覺化，降低再入院率。</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <section id="demos" class="py-12 bg-[#020202] relative min-h-screen flex flex-col justify-center">
+        <div class="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/dark-matter.png')] opacity-30"></div>
+        
+        <div class="container mx-auto px-4 relative z-10 w-full max-w-[95%]">
+            
+            <div class="mb-6 flex items-end justify-between border-b border-gray-800 pb-2">
                 <div>
-                    <h2 class="text-3xl font-header font-bold text-white flex items-center gap-3">
-                        <span class="text-cyan-500">///</span> SYSTEM DEMOS
+                    <h2 class="text-4xl md:text-5xl font-header font-bold text-white flex items-center gap-4">
+                        <span class="w-3 h-12 bg-red-600 shadow-[0_0_15px_#ff0000]"></span>
+                        LIVE OPERATION
                     </h2>
                 </div>
-                <div class="font-mono text-xs text-cyan-600 animate-pulse">LIVE FEED CONNECTED</div>
-            </div>
-
-            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-2">
-                <div class="hud-card group cursor-pointer bg-slate-900/40" onclick="openLightbox('image/HAH血壓機操作.webm', 'video')">
-                    <div class="relative aspect-video w-full overflow-hidden bg-black">
-                        <div class="absolute top-2 left-2 bg-red-600 text-white text-[10px] px-2 py-0.5 font-mono z-10">REC</div>
-                        <video class="w-full h-full object-cover opacity-60 group-hover:opacity-100 group-hover:scale-110 transition duration-700" muted loop onmouseover="this.play()" onmouseout="this.pause()">
-                            <source src="image/HAH血壓機操作.webm" type="video/webm">
-                        </video>
-                        <div class="absolute inset-0 bg-gradient-to-t from-black/90 via-transparent to-transparent opacity-80"></div>
-                        <div class="absolute bottom-3 left-3 right-3">
-                            <h3 class="text-cyan-300 font-bold text-sm font-mono truncate">HAH_BP_MONITOR_V2</h3>
-                            <p class="text-slate-500 text-xs truncate">IoT 設備串接與數據上傳</p>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="hud-card group cursor-pointer bg-slate-900/40" onclick="openLightbox('image/出院準備服務手機操作.webm', 'video')">
-                    <div class="relative aspect-video w-full overflow-hidden bg-black">
-                         <div class="absolute top-2 left-2 bg-red-600 text-white text-[10px] px-2 py-0.5 font-mono z-10">REC</div>
-                        <video class="w-full h-full object-cover opacity-60 group-hover:opacity-100 group-hover:scale-110 transition duration-700" muted loop onmouseover="this.play()" onmouseout="this.pause()">
-                            <source src="image/出院準備服務手機操作.webm" type="video/webm">
-                        </video>
-                        <div class="absolute inset-0 bg-gradient-to-t from-black/90 via-transparent to-transparent opacity-80"></div>
-                        <div class="absolute bottom-3 left-3 right-3">
-                            <h3 class="text-cyan-300 font-bold text-sm font-mono truncate">MOBILE_LACE_ASSESSMENT</h3>
-                            <p class="text-slate-500 text-xs truncate">行動端出院準備服務</p>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="hud-card group cursor-pointer bg-slate-900/40" onclick="openLightbox('image/電子轉診系統操作.webm', 'video')">
-                    <div class="relative aspect-video w-full overflow-hidden bg-black">
-                         <div class="absolute top-2 left-2 bg-red-600 text-white text-[10px] px-2 py-0.5 font-mono z-10">REC</div>
-                        <video class="w-full h-full object-cover opacity-60 group-hover:opacity-100 group-hover:scale-110 transition duration-700" muted loop onmouseover="this.play()" onmouseout="this.pause()">
-                            <source src="image/電子轉診系統操作.webm" type="video/webm">
-                        </video>
-                        <div class="absolute inset-0 bg-gradient-to-t from-black/90 via-transparent to-transparent opacity-80"></div>
-                        <div class="absolute bottom-3 left-3 right-3">
-                            <h3 class="text-cyan-300 font-bold text-sm font-mono truncate">E-REFERRAL_SYSTEM</h3>
-                            <p class="text-slate-500 text-xs truncate">雙向轉診自動化流程</p>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="hud-card group cursor-pointer bg-slate-900/40" onclick="openLightbox('image/綜合護理評估系統操作.webm', 'video')">
-                    <div class="relative aspect-video w-full overflow-hidden bg-black">
-                         <div class="absolute top-2 left-2 bg-red-600 text-white text-[10px] px-2 py-0.5 font-mono z-10">REC</div>
-                        <video class="w-full h-full object-cover opacity-60 group-hover:opacity-100 group-hover:scale-110 transition duration-700" muted loop onmouseover="this.play()" onmouseout="this.pause()">
-                            <source src="image/綜合護理評估系統操作.webm" type="video/webm">
-                        </video>
-                        <div class="absolute inset-0 bg-gradient-to-t from-black/90 via-transparent to-transparent opacity-80"></div>
-                        <div class="absolute bottom-3 left-3 right-3">
-                            <h3 class="text-cyan-300 font-bold text-sm font-mono truncate">COMPREHENSIVE_NURSING</h3>
-                            <p class="text-slate-500 text-xs truncate">表單邏輯與自動計分</p>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="hud-card group cursor-pointer bg-slate-900/40" onclick="openLightbox('image/據點血壓計操作.webm', 'video')">
-                    <div class="relative aspect-video w-full overflow-hidden bg-black">
-                         <div class="absolute top-2 left-2 bg-red-600 text-white text-[10px] px-2 py-0.5 font-mono z-10">REC</div>
-                        <video class="w-full h-full object-cover opacity-60 group-hover:opacity-100 group-hover:scale-110 transition duration-700" muted loop onmouseover="this.play()" onmouseout="this.pause()">
-                            <source src="image/據點血壓計操作.webm" type="video/webm">
-                        </video>
-                        <div class="absolute inset-0 bg-gradient-to-t from-black/90 via-transparent to-transparent opacity-80"></div>
-                        <div class="absolute bottom-3 left-3 right-3">
-                            <h3 class="text-cyan-300 font-bold text-sm font-mono truncate">COMMUNITY_SCREENING</h3>
-                            <p class="text-slate-500 text-xs truncate">社區據點大量篩檢模式</p>
-                        </div>
-                    </div>
+                <div class="flex items-center gap-4">
+                    <span class="text-red-500 font-mono animate-pulse">● REC</span>
+                    <span class="text-gray-500 font-mono text-sm" id="timer">00:00:00:00</span>
                 </div>
             </div>
-        </div>
-    </section>
 
-    <section id="architecture" class="py-24 relative overflow-hidden">
-        <div class="w-full px-4 md:px-10">
-            <div class="flex flex-col md:flex-row gap-16 items-center">
-                <div class="md:w-1/2">
-                    <div class="text-cyan-500 font-mono text-sm mb-2">/ ARCHITECTURE</div>
-                    <h2 class="text-4xl md:text-5xl font-bold text-white mb-6">Serverless Core</h2>
-                    <p class="text-lg text-slate-400 mb-8 leading-relaxed font-light">
-                        利用 Google Cloud 原生生態系，結合 <span class="text-cyan-400">Vue.js 3</span> 與 <span class="text-cyan-400">EAV 動態資料模型</span>。打造無伺服器、高擴充性的醫療運算核心。
-                    </p>
-                    <div class="grid grid-cols-1 gap-4">
-                        <div class="border border-slate-800 p-4 bg-slate-900/30 flex items-center gap-4 hover:border-cyan-500/50 transition">
-                            <div class="w-10 h-10 rounded bg-cyan-900/30 text-cyan-400 flex items-center justify-center font-bold">01</div>
-                            <div class="text-slate-300">Infinite Scaling Data Model (EAV)</div>
+            <div class="flex flex-col lg:flex-row gap-4 h-[75vh]">
+                
+                <div class="lg:w-3/4 bg-black border border-gray-800 relative shadow-[0_0_50px_rgba(0,0,0,0.8)] overflow-hidden group">
+                    <div class="absolute top-0 left-0 w-8 h-8 border-t-2 border-l-2 border-tech-cyan z-20"></div>
+                    <div class="absolute top-0 right-0 w-8 h-8 border-t-2 border-r-2 border-tech-cyan z-20"></div>
+                    <div class="absolute bottom-0 left-0 w-8 h-8 border-b-2 border-l-2 border-tech-cyan z-20"></div>
+                    <div class="absolute bottom-0 right-0 w-8 h-8 border-b-2 border-r-2 border-tech-cyan z-20"></div>
+
+                    <video id="main-video" class="w-full h-full object-contain bg-black" autoplay muted playsinline>
+                        <source src="image/HAH血壓機操作.webm" type="video/webm">
+                    </video>
+
+                    <div class="absolute top-6 left-8 z-10 font-mono text-sm text-tech-cyan drop-shadow-md bg-black/50 px-2 rounded">
+                        CAM_01: <span id="video-title" class="text-white font-bold text-lg">HAH血壓機操作</span>
+                    </div>
+
+                    <div class="absolute bottom-0 left-0 w-full h-1 bg-gray-800">
+                        <div id="progress-bar" class="h-full bg-red-500 w-0 transition-all duration-100 ease-linear"></div>
+                    </div>
+                </div>
+
+                <div class="lg:w-1/4 flex flex-col gap-2 overflow-y-auto pr-1 custom-scroll bg-tech-panel/50 border border-gray-900 p-2">
+                    <div class="playlist-item cursor-pointer p-3 bg-gray-900/50 border-l-2 border-transparent hover:border-tech-cyan hover:bg-gray-800 transition group flex gap-3 items-center active-item" onclick="changeVideo(0, this)">
+                        <div class="w-24 h-16 bg-black flex-shrink-0 relative overflow-hidden border border-gray-700">
+                            <video src="image/HAH血壓機操作.webm" class="w-full h-full object-cover opacity-60"></video>
                         </div>
-                        <div class="border border-slate-800 p-4 bg-slate-900/30 flex items-center gap-4 hover:border-cyan-500/50 transition">
-                            <div class="w-10 h-10 rounded bg-cyan-900/30 text-cyan-400 flex items-center justify-center font-bold">02</div>
-                            <div class="text-slate-300">Automated Logic Engine (BMI/eGFR)</div>
+                        <div class="flex-1 overflow-hidden">
+                            <h5 class="text-gray-200 font-bold text-sm truncate group-hover:text-tech-cyan">HAH血壓機操作</h5>
+                            <p class="text-xs text-gray-500 mt-1 font-mono">IoT DATA SYNC</p>
+                        </div>
+                    </div>
+
+                    <div class="playlist-item cursor-pointer p-3 bg-gray-900/50 border-l-2 border-transparent hover:border-tech-cyan hover:bg-gray-800 transition group flex gap-3 items-center" onclick="changeVideo(1, this)">
+                        <div class="w-24 h-16 bg-black flex-shrink-0 relative overflow-hidden border border-gray-700">
+                            <video src="image/出院準備服務手機操作.webm" class="w-full h-full object-cover opacity-60"></video>
+                        </div>
+                        <div class="flex-1 overflow-hidden">
+                            <h5 class="text-gray-200 font-bold text-sm truncate group-hover:text-tech-cyan">出院準備手機版</h5>
+                            <p class="text-xs text-gray-500 mt-1 font-mono">MOBILE APP</p>
+                        </div>
+                    </div>
+
+                    <div class="playlist-item cursor-pointer p-3 bg-gray-900/50 border-l-2 border-transparent hover:border-tech-cyan hover:bg-gray-800 transition group flex gap-3 items-center" onclick="changeVideo(2, this)">
+                        <div class="w-24 h-16 bg-black flex-shrink-0 relative overflow-hidden border border-gray-700">
+                            <video src="image/電子轉診系統操作.webm" class="w-full h-full object-cover opacity-60"></video>
+                        </div>
+                        <div class="flex-1 overflow-hidden">
+                            <h5 class="text-gray-200 font-bold text-sm truncate group-hover:text-tech-cyan">電子轉診系統</h5>
+                            <p class="text-xs text-gray-500 mt-1 font-mono">REFERRAL SYS</p>
+                        </div>
+                    </div>
+
+                    <div class="playlist-item cursor-pointer p-3 bg-gray-900/50 border-l-2 border-transparent hover:border-tech-cyan hover:bg-gray-800 transition group flex gap-3 items-center" onclick="changeVideo(3, this)">
+                        <div class="w-24 h-16 bg-black flex-shrink-0 relative overflow-hidden border border-gray-700">
+                            <video src="image/綜合護理評估系統操作.webm" class="w-full h-full object-cover opacity-60"></video>
+                        </div>
+                        <div class="flex-1 overflow-hidden">
+                            <h5 class="text-gray-200 font-bold text-sm truncate group-hover:text-tech-cyan">綜合護理評估</h5>
+                            <p class="text-xs text-gray-500 mt-1 font-mono">ASSESSMENT</p>
+                        </div>
+                    </div>
+
+                    <div class="playlist-item cursor-pointer p-3 bg-gray-900/50 border-l-2 border-transparent hover:border-tech-cyan hover:bg-gray-800 transition group flex gap-3 items-center" onclick="changeVideo(4, this)">
+                        <div class="w-24 h-16 bg-black flex-shrink-0 relative overflow-hidden border border-gray-700">
+                            <video src="image/據點血壓計操作.webm" class="w-full h-full object-cover opacity-60"></video>
+                        </div>
+                        <div class="flex-1 overflow-hidden">
+                            <h5 class="text-gray-200 font-bold text-sm truncate group-hover:text-tech-cyan">據點血壓計</h5>
+                            <p class="text-xs text-gray-500 mt-1 font-mono">COMMUNITY</p>
                         </div>
                     </div>
                 </div>
-                <div class="md:w-1/2 relative" onclick="openLightbox('image/1.png', 'image')">
-                    <img src="image/1.png" alt="Architecture" class="w-full rounded border border-slate-700 opacity-80 hover:opacity-100 transition cursor-zoom-in shadow-[0_0_30px_rgba(6,182,212,0.15)]">
-                </div>
             </div>
-        </div>
-    </section>
-
-    <section id="modules" class="py-24 bg-[#050505]">
-        <div class="w-full px-4 md:px-8">
-            <h2 class="text-3xl font-bold text-white mb-10 text-center"><span class="text-cyan-500">///</span> CORE MODULES</h2>
             
-            <div class="grid md:grid-cols-3 gap-6">
-                <div class="hud-card p-6" onclick="openLightbox('image/21.png', 'image')">
-                    <div class="h-48 overflow-hidden mb-4 border border-slate-700 opacity-80 hover:opacity-100 transition">
-                        <img src="image/21.png" class="w-full h-full object-cover">
-                    </div>
-                    <h3 class="text-xl font-bold text-white mb-2">線上照會通訊</h3>
-                    <p class="text-slate-500 text-sm">醫師與個管師的加密即時通訊，整合病歷數據。</p>
-                </div>
-
-                <div class="hud-card p-6" onclick="openLightbox('image/22.png', 'image')">
-                    <div class="h-48 overflow-hidden mb-4 border border-slate-700 opacity-80 hover:opacity-100 transition">
-                        <img src="image/22.png" class="w-full h-full object-cover">
-                    </div>
-                    <h3 class="text-xl font-bold text-white mb-2">共照知識庫</h3>
-                    <p class="text-slate-500 text-sm">數位化糖尿病共照網手冊與衛教資源中心。</p>
-                </div>
-
-                <div class="hud-card p-6" onclick="openLightbox('image/23.png', 'image')">
-                    <div class="h-48 overflow-hidden mb-4 border border-slate-700 opacity-80 hover:opacity-100 transition relative">
-                        <img src="image/23.png" class="w-full h-full object-cover">
-                         <div class="absolute inset-0 flex items-center justify-center bg-black/50">
-                            <span class="font-mono text-cyan-400 text-xs border border-cyan-500 px-2 py-1">PROCESSING</span>
-                        </div>
-                    </div>
-                    <h3 class="text-xl font-bold text-white mb-2">雙向轉診中心</h3>
-                    <p class="text-slate-500 text-sm">視覺化轉診追蹤，自動化回覆機制。</p>
-                </div>
-            </div>
+            <a href="https://health.yangkaichun.net/sinlaudemo" target="_blank" class="block mt-6 text-center border border-gray-800 bg-gray-900/50 py-4 hover:bg-tech-cyan hover:text-black transition duration-300 font-mono tracking-widest text-sm">
+                > LAUNCH FULL INTERACTIVE DEMO <
+            </a>
         </div>
     </section>
 
-    <section id="assessment" class="py-20 border-t border-slate-900">
-        <div class="w-full px-4 md:px-8">
-             <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
-                <div class="group cursor-pointer p-4 border border-slate-800 hover:border-cyan-500 hover:bg-slate-900 transition" onclick="openLightbox('image/14.png', 'image')">
-                    <img src="image/14.png" class="w-full h-32 object-cover mb-3 opacity-70 group-hover:opacity-100 transition">
-                    <h3 class="text-cyan-400 font-mono text-lg">ICOPE</h3>
-                    <p class="text-slate-500 text-xs">長者六大面向評估</p>
-                </div>
-                <div class="group cursor-pointer p-4 border border-slate-800 hover:border-cyan-500 hover:bg-slate-900 transition" onclick="openLightbox('image/17.png', 'image')">
-                    <img src="image/17.png" class="w-full h-32 object-cover mb-3 opacity-70 group-hover:opacity-100 transition">
-                    <h3 class="text-cyan-400 font-mono text-lg">CMS</h3>
-                    <p class="text-slate-500 text-xs">長照失能等級運算</p>
-                </div>
-                <div class="group cursor-pointer p-4 border border-slate-800 hover:border-cyan-500 hover:bg-slate-900 transition" onclick="openLightbox('image/15.png', 'image')">
-                    <img src="image/15.png" class="w-full h-32 object-cover mb-3 opacity-70 group-hover:opacity-100 transition">
-                    <h3 class="text-cyan-400 font-mono text-lg">LACE</h3>
-                    <p class="text-slate-500 text-xs">出院準備風險評估</p>
-                </div>
-                <div class="group cursor-pointer p-4 border border-slate-800 hover:border-cyan-500 hover:bg-slate-900 transition" onclick="openLightbox('image/20.png', 'image')">
-                    <img src="image/20.png" class="w-full h-32 object-cover mb-3 opacity-70 group-hover:opacity-100 transition">
-                    <h3 class="text-cyan-400 font-mono text-lg">PAC</h3>
-                    <p class="text-slate-500 text-xs">急性後期照護計畫</p>
-                </div>
-             </div>
-        </div>
-    </section>
-
-    <section id="iot" class="py-24 bg-gradient-to-r from-slate-950 to-slate-900 border-t border-slate-800">
-        <div class="w-full px-4 md:px-10 flex flex-col md:flex-row items-center gap-12">
-            <div class="md:w-1/2">
-                <h2 class="text-4xl font-bold text-white mb-6">IoT Bio-Monitoring</h2>
-                <p class="text-slate-400 mb-8">
-                    即時串接藍芽血壓計、血糖機。系統自動偵測並標示 <span class="text-red-500 font-bold">高風險異常 (CRITICAL)</span>，確保黃金處理時間。
-                </p>
-                <div class="flex gap-4">
-                     <button class="px-6 py-3 border border-cyan-500 text-cyan-400 hover:bg-cyan-500 hover:text-black transition font-mono uppercase text-sm" onclick="openLightbox('image/4.png', 'image')">Manual Input</button>
-                     <button class="px-6 py-3 border border-cyan-500 text-cyan-400 hover:bg-cyan-500 hover:text-black transition font-mono uppercase text-sm" onclick="openLightbox('image/8.png', 'image')">Bluetooth Sync</button>
-                </div>
-            </div>
-            <div class="md:w-1/2" onclick="openLightbox('image/11.png', 'image')">
-                <div class="relative group cursor-pointer">
-                    <div class="absolute inset-0 bg-cyan-500 blur-xl opacity-20 group-hover:opacity-40 transition"></div>
-                    <img src="image/11.png" class="relative z-10 w-full border border-slate-600 rounded shadow-2xl">
-                </div>
-            </div>
-        </div>
-    </section>
-
-    <footer class="bg-black py-8 border-t border-slate-900 text-center font-mono text-xs text-slate-600">
-        <p>SYSTEM STATUS: ONLINE | SECURE CONNECTION</p>
-        <p class="mt-2">© 2026 Kaichun Yang. Designed for Holistic Healthcare Management.</p>
+    <footer class="bg-black py-6 border-t border-gray-900 text-center font-mono text-xs text-gray-600">
+        POWERED BY GOOGLE CLOUD | © 2026 KAICHUN YANG
     </footer>
 
-    <div id="lightbox-modal" class="lightbox" onclick="closeLightbox()">
-        <div id="lightbox-container" class="relative w-[95vw] h-[90vh] flex items-center justify-center">
-            <button onclick="closeLightbox()" class="absolute top-4 right-4 text-white text-4xl hover:text-cyan-400 z-50 mix-blend-difference">&times;</button>
-        </div>
-    </div>
-
     <script>
-        // 開場動畫邏輯
-        window.addEventListener('load', () => {
-            const loadingScreen = document.getElementById('loading-screen');
-            const loadingText = document.getElementById('loading-text');
-            const logs = document.getElementById('logs');
-            
-            setTimeout(() => { loadingText.innerText = "LOADING MODULES..."; logs.innerHTML += "<br>> ACCESSING DATABASE..."; }, 2000);
-            setTimeout(() => { loadingText.innerText = "SYNCING DATA..."; logs.innerHTML += "<br>> USER BIOMETRICS VERIFIED"; }, 4500);
-            setTimeout(() => { 
-                loadingText.innerText = "ACCESS GRANTED"; 
-                loadingText.style.color = "#22d3ee";
-                loadingText.classList.add("glow-text");
-            }, 7500);
+        // --- 1. 互動式圖片輪播邏輯 (Story Mode) ---
+        let currentSlide = 0;
+        const slides = [
+            { textId: 'text-slide-1', img: 'image/1.png' }, // 請確保這張是架構圖
+            { textId: 'text-slide-2', img: 'image/21.png' }, // 示意圖，可替換
+            { textId: 'text-slide-3', img: 'image/23.png' }  // 示意圖，可替換
+        ];
+        
+        function nextSlide() {
+            // 隱藏當前文字
+            document.getElementById(slides[currentSlide].textId).classList.add('hidden', 'opacity-0', 'translate-x-10');
+            document.getElementById(slides[currentSlide].textId).classList.remove('block', 'opacity-100', 'translate-x-0');
 
+            // 增加索引
+            currentSlide = (currentSlide + 1) % slides.length;
+
+            // 切換圖片 (模擬淡入淡出)
+            const imgEl = document.getElementById('hero-image');
+            imgEl.style.opacity = 0;
             setTimeout(() => {
-                loadingScreen.style.animation = "fadeOut 0.5s forwards";
-                setTimeout(() => { loadingScreen.style.display = 'none'; }, 500);
-            }, 8000); // 維持8秒
-        });
+                imgEl.src = slides[currentSlide].img;
+                imgEl.style.opacity = 1;
+            }, 300);
 
-        // 燈箱邏輯
-        function openLightbox(src, type) {
-            const modal = document.getElementById('lightbox-modal');
-            const container = document.getElementById('lightbox-container');
+            // 顯示新文字
+            setTimeout(() => {
+                const newText = document.getElementById(slides[currentSlide].textId);
+                newText.classList.remove('hidden');
+                // 強制重繪以觸發 transition
+                void newText.offsetWidth; 
+                newText.classList.remove('opacity-0', 'translate-x-10');
+                newText.classList.add('block', 'opacity-100', 'translate-x-0');
+            }, 300);
+        }
+
+        // --- 2. 影片自動播放系統 (Cinema Mode) ---
+        const videoList = [
+            { src: 'image/HAH血壓機操作.webm', title: 'HAH血壓機操作' },
+            { src: 'image/出院準備服務手機操作.webm', title: '出院準備服務手機操作' },
+            { src: 'image/電子轉診系統操作.webm', title: '電子轉診系統操作' },
+            { src: 'image/綜合護理評估系統操作.webm', title: '綜合護理評估系統操作' },
+            { src: 'image/據點血壓計操作.webm', title: '據點血壓計操作' }
+        ];
+        
+        let currentVideoIndex = 0;
+        const mainVideo = document.getElementById('main-video');
+        const videoTitle = document.getElementById('video-title');
+        const progressBar = document.getElementById('progress-bar');
+        const playlistItems = document.querySelectorAll('.playlist-item');
+
+        // 更新 UI 狀態
+        function updateActiveItem(index) {
+            playlistItems.forEach(item => {
+                item.classList.remove('border-tech-cyan', 'bg-gray-800');
+                item.classList.add('border-transparent', 'bg-gray-900/50');
+            });
+            playlistItems[index].classList.remove('border-transparent', 'bg-gray-900/50');
+            playlistItems[index].classList.add('border-tech-cyan', 'bg-gray-800');
+        }
+
+        function changeVideo(index, element) {
+            currentVideoIndex = index;
+            const data = videoList[index];
             
-            // 保留關閉按鈕，清除其他內容
-            const closeBtn = container.querySelector('button');
-            container.innerHTML = '';
-            container.appendChild(closeBtn);
-
-            if (type === 'video') {
-                const video = document.createElement('video');
-                video.src = src;
-                video.controls = true;
-                video.autoplay = true;
-                // 最大化影片尺寸
-                video.className = "w-full h-full object-contain border border-slate-700 bg-black shadow-[0_0_50px_rgba(6,182,212,0.1)]";
-                container.appendChild(video);
-            } else {
-                const img = document.createElement('img');
-                img.src = src;
-                img.className = "w-full h-full object-contain border border-slate-700 bg-black";
-                container.appendChild(img);
-            }
-
-            modal.style.display = 'flex';
-            document.body.style.overflow = 'hidden';
+            mainVideo.src = data.src;
+            videoTitle.innerText = data.title;
+            mainVideo.play();
+            updateActiveItem(index);
         }
 
-        function closeLightbox() {
-            const modal = document.getElementById('lightbox-modal');
-            const container = document.getElementById('lightbox-container');
-            const video = container.querySelector('video');
-            if (video) video.pause();
-            modal.style.display = 'none';
-            document.body.style.overflow = 'auto';
-        }
+        // 自動播放下一首
+        mainVideo.onended = () => {
+            currentVideoIndex = (currentVideoIndex + 1) % videoList.length;
+            changeVideo(currentVideoIndex);
+        };
 
-        document.addEventListener('keydown', (e) => {
-            if (e.key === "Escape") closeLightbox();
-        });
+        // 進度條與時間模擬
+        mainVideo.ontimeupdate = () => {
+            const percentage = (mainVideo.currentTime / mainVideo.duration) * 100;
+            progressBar.style.width = percentage + '%';
+        };
+
+        // 假的系統時間
+        setInterval(() => {
+            const now = new Date();
+            document.getElementById('timer').innerText = now.toISOString().split('T')[1].replace('Z', '') + ':' + Math.floor(Math.random()*99);
+        }, 100);
+
     </script>
 </body>
 </html>
