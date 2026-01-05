@@ -98,7 +98,7 @@
                     <a v-for="item in currentMenu" :key="item.id" href="#" @click.prevent="navigate(item.id)" :class="navClass(item.id, item.color)" class="flex items-center px-4 py-3 text-sm font-bold rounded-xl transition-all duration-200 group">
                         <div :class="['w-8 h-8 rounded-lg flex items-center justify-center mr-3 transition-colors duration-200', currentTab === item.id ? 'bg-white/20 text-white' : 'bg-gray-100 ' + item.textColor]"><i :class="item.icon"></i></div>
                         {{ item.label }}
-                        <i v-if="['observations', 'referrals', 'p1000', 'p40'].includes(item.id)" class="fa-solid fa-arrow-up-right-from-square ml-auto text-xs opacity-30"></i>
+                        <i v-if="['observations', 'referrals', 'p1000', 'p40', 'assessment_form'].includes(item.id)" class="fa-solid fa-arrow-up-right-from-square ml-auto text-xs opacity-30"></i>
                     </a>
                     
                     <template v-if="currentUser.role === 'admin'">
@@ -171,7 +171,7 @@
 
                             <div>
                                 <h3 class="text-lg font-bold text-gray-700 mb-4">服務項目入口</h3>
-                                <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-6">
+                                <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-5 gap-6">
                                     <div class="bg-white p-8 rounded-2xl border border-gray-100 shadow-sm dashboard-card flex flex-col items-center justify-center text-center cursor-pointer hover:border-blue-200 group">
                                         <div class="w-20 h-20 rounded-full bg-blue-50 flex items-center justify-center text-brand-blue mb-4 group-hover:scale-110 transition-transform">
                                             <i class="fa-solid fa-arrow-up-from-bracket text-3xl"></i>
@@ -203,6 +203,15 @@
                                         <h4 class="font-bold text-gray-800 text-lg">長照服務</h4>
                                         <p class="text-xs text-gray-400 mt-2">銜接與管理長照ABC資源</p>
                                     </div>
+                                    
+                                    <div class="bg-white p-8 rounded-2xl border border-gray-100 shadow-sm dashboard-card flex flex-col items-center justify-center text-center cursor-pointer hover:border-cyan-200 group" @click="navigate('assessment_form')">
+                                        <div class="w-20 h-20 rounded-full bg-cyan-50 flex items-center justify-center text-cyan-600 mb-4 group-hover:scale-110 transition-transform">
+                                            <i class="fa-solid fa-clipboard-list text-3xl"></i>
+                                        </div>
+                                        <h4 class="font-bold text-gray-800 text-lg">評估表單</h4>
+                                        <p class="text-xs text-gray-400 mt-2">填寫各項護理評估量表</p>
+                                    </div>
+
                                 </div>
                             </div>
 
@@ -530,7 +539,8 @@
                         { id: 'referrals', label: '電子轉診系統', icon: 'fa-solid fa-file-medical', color: 'from-green-500 to-emerald-600', textColor: 'text-green-600' },
                         // New Items Added Here
                         { id: 'p1000', label: '據點量血壓', icon: 'fa-solid fa-store', color: 'from-indigo-500 to-purple-600', textColor: 'text-indigo-600' },
-                        { id: 'p40', label: '居訪量血壓', icon: 'fa-solid fa-house-medical', color: 'from-pink-500 to-rose-600', textColor: 'text-pink-600' }
+                        { id: 'p40', label: '居訪量血壓', icon: 'fa-solid fa-house-medical', color: 'from-pink-500 to-rose-600', textColor: 'text-pink-600' },
+                        { id: 'assessment_form', label: '評估表單', icon: 'fa-solid fa-clipboard-list', color: 'from-cyan-500 to-blue-600', textColor: 'text-cyan-600' }
                     ];
                     
                     // 醫師的完整選單
@@ -593,6 +603,7 @@
                     // New Navigation Logic
                     else if (tabId === 'p1000') window.open('p1000.html', '_blank');
                     else if (tabId === 'p40') window.open('p40.html', '_blank');
+                    else if (tabId === 'assessment_form') window.open('form.html', '_blank');
                     else this.currentTab = tabId; 
                 },
                 
@@ -664,4 +675,143 @@
                     this.patientObservations = allObs; 
                     
                     this.latestMetrics = {
-                        sys:
+                        sys: allObs.find(o=>o.code==='systolic_bp')?.value,
+                        dia: allObs.find(o=>o.code==='diastolic_bp')?.value,
+                        hr:  allObs.find(o=>o.code==='heart_rate')?.value,
+                        glu: allObs.find(o=>o.code.startsWith('glucose'))?.value
+                    };
+
+                    const filtered = this.filterObsByDate(allObs);
+                    const chartData = [...filtered].sort((a,b) => new Date(a.timestamp) - new Date(b.timestamp));
+                    this.$nextTick(() => { this.renderCharts(chartData); });
+                },
+
+                // --- Data Submission (Vitals) ---
+                async submitData() {
+                    this.loading = true;
+                    const requests = []; const now = new Date();
+                    const createReq = (code, val, unit) => {
+                        const params = new URLSearchParams({ action: 'addObservation', patientId: this.selectedPatient.id, code: code, value: val, unit: unit });
+                        return fetch(`${API_BASE_URL}?${params.toString()}`);
+                    };
+                    try {
+                        if(this.form.sys) requests.push(createReq('systolic_bp', this.form.sys, 'mmHg'));
+                        if(this.form.dia) requests.push(createReq('diastolic_bp', this.form.dia, 'mmHg'));
+                        if(this.form.hr)  requests.push(createReq('heart_rate', this.form.hr, 'BPM'));
+                        if(this.form.glu) { const code = this.form.timing.includes('空腹') ? 'glucose_ac' : 'glucose_pc'; requests.push(createReq(code, this.form.glu, 'mg/dL')); }
+                        await Promise.all(requests);
+                        alert('生理數據上傳成功！');
+                        this.form.sys=''; this.form.dia=''; this.form.hr=''; this.form.glu='';
+                        this.refreshData().then(() => this.updatePatientData());
+                    } catch(e) { alert('上傳失敗'); } finally { this.loading = false; }
+                },
+
+                // --- Data Submission (Medical) ---
+                async submitMedical() {
+                    this.loading = true;
+                    const requests = [];
+                    const createReq = (code, val) => {
+                        const params = new URLSearchParams({ action: 'addObservation', patientId: this.selectedPatient.id, code: code, value: val, unit: 'text' });
+                        return fetch(`${API_BASE_URL}?${params.toString()}`);
+                    };
+                    try {
+                        if(this.form.icdCode) requests.push(createReq('diagnosis_icd10', `${this.form.icdCode} ${this.form.icdDesc}`));
+                        if(this.form.summary) requests.push(createReq('clinical_summary', this.form.summary));
+                        if(this.form.labResults) requests.push(createReq('lab_results', this.form.labResults));
+                        
+                        await Promise.all(requests);
+                        alert('病歷資料儲存成功！');
+                        this.form.icdCode=''; this.form.icdDesc=''; this.icdQuery=''; this.form.summary=''; this.form.labResults='';
+                        this.refreshData().then(() => this.updatePatientData());
+                    } catch(e) { alert('儲存失敗'); } finally { this.loading = false; }
+                },
+
+                // --- DICOM Logic ---
+                async fetchDicoms() {
+                    try {
+                        const res = await fetch(`${API_BASE_URL}?endpoint=dicoms&patientId=${this.selectedPatient.id}&_t=${Date.now()}`);
+                        const json = await res.json();
+                        if(json.status === 'success') this.dicomList = json.data;
+                    } catch(e) { console.error(e); }
+                },
+                async uploadDicom() {
+                    if (!this.newDicom.summary) { alert('請輸入影像摘要'); return; }
+                    this.loading = true;
+                    // Simulate Upload: Only save metadata
+                    try {
+                        const params = new URLSearchParams({
+                            action: 'addDicom',
+                            patientId: this.selectedPatient.id,
+                            filename: `DICOM_${Date.now()}.zip`,
+                            summary: this.newDicom.summary
+                        });
+                        await fetch(`${API_BASE_URL}?${params.toString()}`);
+                        alert('DICOM 模擬上傳成功！');
+                        this.newDicom.summary = '';
+                        this.fetchDicoms();
+                    } catch(e) { alert('上傳錯誤'); } finally { this.loading = false; }
+                },
+
+                // --- ICD-10 Logic ---
+                async loadICD10() {
+                    try {
+                        const res = await fetch('ICD10.xls');
+                        const arrayBuffer = await res.arrayBuffer();
+                        const workbook = XLSX.read(arrayBuffer, { type: 'array' });
+                        const firstSheetName = workbook.SheetNames[0];
+                        const jsonData = XLSX.utils.sheet_to_json(workbook.Sheets[firstSheetName], { header: 1 });
+                        this.icdDatabase = jsonData.slice(1).map(row => ({ code: row[0], descEn: row[2], desc: row[3] })).filter(item => item.code);
+                    } catch (e) { console.error("ICD Load Error (Ensure ICD10.xls is present)"); }
+                },
+                searchICD() { 
+                    if (this.icdQuery.length<1){this.showIcdList=false;return;} 
+                    const k=this.icdQuery.toLowerCase(); 
+                    this.filteredIcdList=this.icdDatabase.filter(i=>(i.code&&i.code.toLowerCase().includes(k))||(i.desc&&i.desc.toLowerCase().includes(k))).slice(0,20); 
+                    this.showIcdList=true; 
+                },
+                selectICD(item) { 
+                    this.form.icdCode = item.code; 
+                    this.form.icdDesc = item.desc;
+                    this.icdQuery = `${item.code} - ${item.desc}`; 
+                    this.showIcdList = false; 
+                },
+
+                // --- Charts ---
+                renderCharts(data) {
+                    if(this.bpChart) this.bpChart.destroy();
+                    if(this.gluChart) this.gluChart.destroy();
+                    const labels = [...new Set(data.map(d => d.timestamp.slice(0, 16)))];
+                    
+                    const sysData = labels.map(l => { const f = data.find(d => d.timestamp.startsWith(l) && d.code === 'systolic_bp'); return f ? f.value : null; });
+                    const diaData = labels.map(l => { const f = data.find(d => d.timestamp.startsWith(l) && d.code === 'diastolic_bp'); return f ? f.value : null; });
+                    
+                    this.bpChart = new Chart(document.getElementById('bpChart'), { type: 'line', data: { labels: labels, datasets: [ { label: '收縮壓', data: sysData, borderColor: '#ef4444', backgroundColor: 'rgba(239, 68, 68, 0.1)', fill: true, tension: 0.4 }, { label: '舒張壓', data: diaData, borderColor: '#3b82f6', backgroundColor: 'rgba(59, 130, 246, 0.1)', fill: true, tension: 0.4 } ] }, options: { responsive: true, maintainAspectRatio: false } });
+                    
+                    const gluData = labels.map(l => { const f = data.find(d => d.timestamp.startsWith(l) && d.code.startsWith('glucose')); return f ? f.value : null; });
+                    this.gluChart = new Chart(document.getElementById('gluChart'), { type: 'line', data: { labels: labels, datasets: [{ label: '血糖', data: gluData, borderColor: '#f97316', backgroundColor: 'rgba(249, 115, 22, 0.1)', fill: true, tension: 0.4 }] }, options: { responsive: true, maintainAspectRatio: false } });
+                },
+
+                // --- User Management (保留原有功能) ---
+                openAddUserModal() { this.newUser = { name: '', email: '', role: 'hospital_staff', organization: '遠傳醫院' }; this.showAddUserModal = true; },
+                async submitNewUser() { const p = new URLSearchParams({ action: 'addUser', ...this.newUser }); await fetch(`${API_BASE_URL}?${p}`); this.showAddUserModal = false; this.fetchData('users'); },
+                openEditUserModal(user) { this.editingUser = JSON.parse(JSON.stringify(user)); this.showEditUserModal = true; },
+                async submitEditUser() { 
+                    this.loading = true;
+                    try {
+                        const params = new URLSearchParams({ action: 'editUser', ...this.editingUser });
+                        await fetch(`${API_BASE_URL}?${params.toString()}`);
+                        this.showEditUserModal = false; this.fetchData('users');
+                    } finally { this.loading = false; }
+                },
+                async deleteUser(id) { if(confirm('刪除?')) { await fetch(`${API_BASE_URL}?action=deleteUser&id=${id}`); this.fetchData('users'); } },
+                
+                navClass(id, color) { return this.currentTab === id ? `bg-gradient-to-r ${color} text-white shadow-lg` : 'text-gray-500 hover:bg-white'; },
+                getTabTitle(tab) { return { 'dashboard': '系統主控台', 'patients': '個案管理清單', 'observations': '生理監控', 'admin_users': '系統權限管理', 'health_edu': '衛教資源中心', 'reports': '數據報表中心', 'consultation': '線上照會區', 'knowledge_base': '共照知識庫', 'referrals': '雙向轉診管理', 'p1000': '據點血壓站', 'p40': '居家訪視量測', 'assessment_form': '護理評估表單' }[tab] || tab; },
+                translateRole(role) { return { 'admin': '管理員', 'case_manager': '個管師', 'physician': '醫師', 'hospital_staff': '院內人員' }[role] || role; },
+                roleBadgeClass(role) { return 'bg-gray-100 text-gray-700 border-gray-200'; },
+                translateCode(code) { return { 'systolic_bp': '收縮壓', 'diastolic_bp': '舒張壓', 'glucose_ac': '飯前血糖', 'glucose_pc': '飯後血糖', 'heart_rate': '心率', 'diagnosis_icd10': '診斷 (ICD-10)', 'clinical_summary': '病歷摘要', 'lab_results': '檢驗報告' }[code] || code; }
+            }
+        }).mount('#app');
+    </script>
+</body>
+</html>
