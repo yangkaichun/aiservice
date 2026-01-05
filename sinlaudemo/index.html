@@ -1,613 +1,723 @@
 <!DOCTYPE html>
-<html lang="zh-Hant">
+<html lang="zh-TW">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>遠傳醫院 - 社區醫療全人照護平台</title>
-     <link rel="shortcut icon" href="feticon.ico">
-    <script src="https://cdn.tailwindcss.com"></script>
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <title>遠傳醫院個案管理平台</title>
     
-    <script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.5/dist/JsBarcode.all.min.js"></script>
+    <link rel="icon" href="image/carepathicon.ico">
 
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Noto+Sans+TC:wght@400;500;700&display=swap" rel="stylesheet">
+    <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700&display=swap" rel="stylesheet">
+    
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://accounts.google.com/gsi/client" async defer></script>
+    <script src="https://cdn.sheetjs.com/xlsx-0.20.0/package/dist/xlsx.full.min.js"></script>
 
+    <script src="config.js"></script>
+    
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: { sans: ['Noto Sans TC', 'Microsoft JhengHei', 'sans-serif'] },
+                    colors: {
+                        brand: { blue: '#0066FF', purple: '#7B2CBF', teal: '#0096C7', green: '#2E8B57', orange: '#FB8500', red: '#D00000' }
+                    }
+                }
+            }
+        }
+    </script>
     <style>
-        body {
-            font-family: 'Inter', 'Noto Sans TC', sans-serif;
-        }
-        .sidebar-scroll::-webkit-scrollbar { display: none; }
-        .sidebar-scroll { -ms-overflow-style: none; scrollbar-width: none; }
-        .active-nav {
-            background-color: #ECFDF5;
-            color: #065F46;
-        }
+        ::-webkit-scrollbar { width: 6px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 3px; }
+        [v-cloak] { display: none; }
+        body { background-color: #f3f4f6; }
+        .btn-gradient { background-size: 200% auto; transition: 0.5s; }
+        .btn-gradient:hover { background-position: right center; }
+        .loader-bar { width: 0%; height: 4px; background: linear-gradient(90deg, #0066FF, #7B2CBF); animation: loading 1.5s ease-in-out forwards; }
+        @keyframes loading { 0% { width: 0%; } 100% { width: 100%; } }
+        .fade-out { animation: fadeOut 0.5s ease-out forwards; }
+        @keyframes fadeOut { to { opacity: 0; visibility: hidden; } }
+        .fade-in-up { animation: fadeInUp 0.5s ease-out forwards; }
+        @keyframes fadeInUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+        
+        /* Autocomplete Style */
+        .autocomplete-results { position: absolute; z-index: 50; background: white; border: 1px solid #e5e7eb; width: 100%; max-height: 200px; overflow-y: auto; border-radius: 0.5rem; box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1); }
+        .autocomplete-item { padding: 0.5rem 0.75rem; cursor: pointer; font-size: 0.875rem; border-bottom: 1px solid #f3f4f6; }
+        .autocomplete-item:hover { background-color: #eff6ff; color: #0066FF; }
     </style>
 </head>
-<body class="bg-gray-100">
+<body class="h-screen flex overflow-hidden antialiased text-gray-800 bg-gray-50">
+    <div id="app" class="w-full flex h-full" v-cloak>
 
-    <div id="app-container" class="flex h-screen overflow-hidden">
-        <aside class="w-64 bg-white shadow-md flex-shrink-0 flex flex-col">
-            <div class="h-16 flex items-center justify-center border-b px-4">
-                <img src="fetlogo.png" alt="Logo" class="h-9 mr-2">
+        <div v-if="showSplash" class="fixed inset-0 z-[999] flex flex-col items-center justify-center bg-white" :class="{'fade-out': startFadeOut}">
+            <div class="mb-8 animate-bounce">
+                <div class="w-24 h-24 rounded-3xl bg-gradient-to-br from-brand-blue to-brand-purple flex items-center justify-center text-white shadow-2xl">
+                    <i class="fa-solid fa-hospital-user text-5xl"></i>
+                </div>
             </div>
-            <div class="h-16 flex items-center justify-center border-b px-4">
-                <span class="text-lg font-bold text-gray-700">遠傳醫院照護平台</span>
+            <h1 class="text-3xl font-bold text-gray-800 mb-2 tracking-widest">遠傳醫院</h1>
+            <p class="text-gray-500 text-sm mb-12 uppercase tracking-wide">Professional Case Management</p>
+            <div class="w-64 bg-gray-100 rounded-full h-1 overflow-hidden"><div class="loader-bar"></div></div>
+            <p class="mt-4 text-xs text-gray-400">系統載入中...</p>
+        </div>
+
+        <div v-if="!isLoggedIn" class="fixed inset-0 z-50 flex items-center justify-center bg-gray-100">
+            <div class="text-center">
+                <p class="text-gray-500 mb-4">正在驗證您的身分...</p>
+                <a href="login.html" class="text-brand-blue font-bold hover:underline">如果沒有自動跳轉，請點此重新登入</a>
             </div>
-            
-            <nav class="flex-1 px-4 py-6 space-y-2 overflow-y-auto sidebar-scroll">
-                <a href="#" onclick="showPage('home')" class="nav-item group flex items-center px-4 py-2.5 rounded-md text-sm font-medium">
-                    <svg class="h-6 w-6 mr-3" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"/></svg>
-                    <span>首頁儀表板</span>
-                </a>
-                
-                <a href="#" onclick="showPage('fet-plan')" class="nav-item group flex items-center px-4 py-2.5 rounded-md text-sm font-medium">
-                    <svg class="h-6 w-6 mr-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
-                    </svg>
-                    <span>網站規劃藍圖</span>
-                </a>
+        </div>
 
-                <a href="https://yangkaichun.github.io/aiservice/sinlau2/" target="_blank" rel="noopener noreferrer" class="nav-item group flex items-center px-4 py-2.5 rounded-md text-sm font-medium text-gray-600 hover:bg-gray-100">
-                    <svg class="h-6 w-6 mr-3" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 01-9 9m9-9a9 9 0 00-9-9m9 9H3m9 9a9 9 0 01-9-9m9 9c1.657 0 3-4.03 3-9s-1.343-9-3-9m0 18c-1.657 0-3-4.03-3-9s1.343-9 3-9m-9 9a9 9 0 019-9" /></svg>
-                    <span>數位共享平台</span>
-                </a>
-                    
-                <p class="px-4 pt-4 pb-2 text-xs font-semibold text-gray-500 uppercase">核心功能</p>
-                <a href="#" onclick="showPage('case-overview')" class="nav-item group flex items-center px-4 py-2.5 rounded-md text-sm font-medium">
-                    <svg class="h-6 w-6 mr-3" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"/></svg>
-                    <span>個案管理總覽</span>
-                </a>
-                <a href="p1000.html" class="nav-item group flex items-center px-4 py-2.5 rounded-md text-sm font-medium">
-                    <svg class="h-6 w-6 mr-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4.318 6.318a4.5 4.5 0 016.364 0L12 7.636l1.318-1.318a4.5 4.5 0 016.364 6.364L12 20.364l-7.682-7.682a4.5 4.5 0 010-6.364z" />
-                    </svg>
-                    <span>據點量測血壓</span>
-                </a>
-
-                <a href="p40.html" class="nav-item group flex items-center px-4 py-2.5 rounded-md text-sm font-medium">
-                    <svg class="h-6 w-6 mr-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4.318 6.318a4.5 4.5 0 016.364 0L12 7.636l1.318-1.318a4.5 4.5 0 016.364 6.364L12 20.364l-7.682-7.682a4.5 4.5 0 010-6.364z" />
-                    </svg>
-                    <span>居訪量血壓</span>
-                </a>
-
-
-                
-                <a href="#" onclick="showPage('monitoring')" class="nav-item group flex items-center px-4 py-2.5 rounded-md text-sm font-medium">
-                    <svg class="h-6 w-6 mr-3" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" /></svg>
-                    <span>即時監測</span>
-                </a>
-                 <a href="#" onclick="showPage('referral')" class="nav-item group flex items-center px-4 py-2.5 rounded-md text-sm font-medium">
-                    <svg class="h-6 w-6 mr-3" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4" /></svg>
-                    <span>電子轉介</span>
-                </a>
-                <a href="#" onclick="showPage('communication')" class="nav-item group flex items-center px-4 py-2.5 rounded-md text-sm font-medium">
-                    <svg class="h-6 w-6 mr-3" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"/></svg>
-                    <span>跨團隊溝通</span>
-                </a>
-                 <a href="#" onclick="showPage('scheduling')" class="nav-item group flex items-center px-4 py-2.5 rounded-md text-sm font-medium">
-                    <svg class="h-6 w-6 mr-3" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>
-                    <span>訪視排程</span>
-                </a>
-
-                <p class="px-4 pt-4 pb-2 text-xs font-semibold text-gray-500 uppercase">數據分析</p>
-                 <a href="#" onclick="showPage('dashboard')" class="nav-item group flex items-center px-4 py-2.5 rounded-md text-sm font-medium">
-                    <svg class="h-6 w-6 mr-3" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/></svg>
-                    <span>統計儀表板</span>
-                </a>
-
-                <p class="px-4 pt-4 pb-2 text-xs font-semibold text-gray-500 uppercase">系統</p>
-                <a href="#" onclick="showPage('admin')" class="nav-item group flex items-center px-4 py-2.5 rounded-md text-sm font-medium">
-                    <svg class="h-6 w-6 mr-3" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" /><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /></svg>
-                    <span>後台管理</span>
-                </a>
-            </nav>
-            <div class="px-4 py-4 border-t">
-                <div class="flex items-center">
-                    <img class="h-10 w-10 rounded-full object-cover" src="nurse1.jpg" alt="User Avatar">
-                    <div class="ml-3">
-                        <p class="text-sm font-semibold text-gray-800">遠傳 護理督導</p>
-                        <p class="text-xs text-gray-500">社區護理中心</p>
+        <div v-else class="w-full flex h-full">
+            <aside class="w-64 bg-white border-r border-gray-200 flex flex-col z-20 shadow-sm">
+                <div class="h-16 flex items-center px-6 border-b border-gray-100">
+                    <div class="w-8 h-8 bg-gradient-to-br from-brand-blue to-brand-purple rounded-lg flex items-center justify-center text-white mr-3 shadow-md"><i class="fa-solid fa-heart-pulse text-sm"></i></div>
+                    <span class="font-bold text-lg text-gray-800">遠傳醫院 <span class="font-normal text-gray-400 text-sm">平台</span></span>
+                </div>
+                <div class="px-5 py-6">
+                    <div class="flex items-center p-3 rounded-2xl bg-gradient-to-r from-gray-50 to-white border border-gray-100 shadow-sm">
+                        <img v-if="currentUser.picture" :src="currentUser.picture" class="w-10 h-10 rounded-full border border-gray-100 mr-3">
+                        <div v-else class="w-10 h-10 rounded-full bg-brand-blue text-white flex items-center justify-center font-bold mr-3">{{ currentUser.name ? currentUser.name[0] : 'U' }}</div>
+                        <div class="overflow-hidden">
+                            <p class="text-sm font-bold text-gray-800 truncate">{{ currentUser.name }}</p>
+                            <p class="text-xs text-gray-500 truncate">{{ translateRole(currentUser.role) }}</p>
+                        </div>
                     </div>
                 </div>
-                 <button class="w-full mt-4 flex items-center justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-gray-600 hover:bg-gray-700">
-                    登出
-                </button>
-            </div>
-        </aside>
+                <nav class="flex-1 px-4 space-y-1.5 overflow-y-auto custom-scrollbar">
+                    <div class="px-2 mb-2 mt-2 text-xs font-bold text-gray-400">主要功能</div>
+                    <a v-for="item in currentMenu" :key="item.id" href="#" @click.prevent="navigate(item.id)" :class="navClass(item.id, item.color)" class="flex items-center px-4 py-3 text-sm font-bold rounded-xl transition-all duration-200 group">
+                        <div :class="['w-8 h-8 rounded-lg flex items-center justify-center mr-3 transition-colors duration-200', currentTab === item.id ? 'bg-white/20 text-white' : 'bg-gray-100 ' + item.textColor]"><i :class="item.icon"></i></div>
+                        {{ item.label }}
+                        <i v-if="['observations', 'referrals'].includes(item.id)" class="fa-solid fa-arrow-up-right-from-square ml-auto text-xs opacity-30"></i>
+                    </a>
+                    
+                    <template v-if="currentUser.role === 'admin'">
+                        <div class="px-2 mb-2 mt-8 text-xs font-bold text-gray-400">系統管理</div>
+                        <a href="#" @click.prevent="currentTab = 'admin_users'" :class="navClass('admin_users', 'from-gray-800 to-black')" class="flex items-center px-4 py-3 text-sm font-bold rounded-xl transition-all group">
+                            <div :class="['w-8 h-8 rounded-lg flex items-center justify-center mr-3 transition-colors', currentTab === 'admin_users' ? 'bg-white/20 text-white' : 'bg-gray-100 text-gray-600']"><i class="fa-solid fa-shield-halved"></i></div>
+                            使用者權限
+                        </a>
+                    </template>
+                </nav>
+                <div class="p-4 border-t border-gray-100">
+                    <button @click="logout" class="w-full flex items-center justify-center px-4 py-2.5 text-sm font-bold text-gray-500 hover:text-red-600 hover:bg-red-50 rounded-xl transition"><i class="fa-solid fa-arrow-right-from-bracket mr-2"></i> 登出系統</button>
+                </div>
+            </aside>
 
-        <main class="flex-1 overflow-y-auto">
-            <header class="sticky top-0 bg-white/80 backdrop-blur-md z-20 border-b">
-                <div class="flex items-center justify-between h-16 px-6">
-                    <div id="page-title" class="text-lg font-semibold text-gray-800">首頁儀表板</div>
-                    <div class="flex items-center space-x-6">
-                        <button class="relative text-gray-500 hover:text-gray-700">
-                             <svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" /></svg>
-                             <span class="absolute -top-1 -right-1 flex h-3 w-3"><span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span><span class="relative inline-flex rounded-full h-3 w-3 bg-red-500"></span></span>
+            <main class="flex-1 bg-gray-50/50 flex flex-col min-w-0">
+                <header class="h-16 bg-white border-b border-gray-100 flex justify-between items-center px-8 sticky top-0 z-10 shadow-sm/50">
+                    <div class="flex items-center">
+                        <h2 class="text-xl font-bold text-gray-800">{{ getTabTitle(currentTab) }}</h2>
+                        <span class="ml-4 px-3 py-1 rounded-full text-xs font-bold bg-blue-50 text-blue-600 border border-blue-100">{{ currentUser.organization }}</span>
+                    </div>
+                    <div class="flex items-center space-x-3">
+                         <button @click="refreshData" class="w-10 h-10 flex items-center justify-center rounded-lg border border-gray-200 text-gray-400 hover:text-brand-blue hover:border-brand-blue hover:bg-blue-50 transition bg-white" title="重新整理"><i class="fa-solid fa-rotate-right" :class="{'fa-spin': loading}"></i></button>
+                    </div>
+                </header>
+
+                <div class="flex-1 overflow-auto p-8">
+                    <div class="max-w-7xl mx-auto h-full">
+                        
+                        <div v-if="currentTab === 'dashboard'" class="space-y-6 animate-fade-in-up">
+                            <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                                <div class="p-6 rounded-2xl bg-white border border-gray-100 shadow-sm hover:shadow-lg transition relative overflow-hidden">
+                                    <p class="text-xs font-bold text-gray-400 uppercase">管理個案數</p>
+                                    <h3 class="text-4xl font-extrabold text-gray-800 mt-2">{{ patients.length }}</h3>
+                                    <div class="absolute right-4 bottom-4 w-12 h-12 bg-blue-50 rounded-full flex items-center justify-center text-brand-blue"><i class="fa-solid fa-users text-xl"></i></div>
+                                </div>
+                                <div class="p-6 rounded-2xl bg-white border border-gray-100 shadow-sm hover:shadow-lg transition relative overflow-hidden">
+                                    <p class="text-xs font-bold text-gray-400 uppercase">今日異常警示</p>
+                                    <h3 class="text-4xl font-extrabold text-brand-red mt-2">{{ abnormalCount }}</h3>
+                                    <div class="absolute right-4 bottom-4 w-12 h-12 bg-red-50 rounded-full flex items-center justify-center text-brand-red animate-pulse"><i class="fa-solid fa-heart-pulse text-xl"></i></div>
+                                </div>
+                                <div class="p-6 rounded-2xl bg-white border border-gray-100 shadow-sm hover:shadow-lg transition relative overflow-hidden">
+                                    <p class="text-xs font-bold text-gray-400 uppercase">待辦事項</p>
+                                    <h3 class="text-4xl font-extrabold text-gray-800 mt-2">5</h3>
+                                    <div class="absolute right-4 bottom-4 w-12 h-12 bg-orange-50 rounded-full flex items-center justify-center text-brand-orange"><i class="fa-regular fa-clipboard text-xl"></i></div>
+                                </div>
+                            </div>
+                            <div class="p-5 rounded-2xl bg-gradient-to-r from-yellow-50 to-white border border-yellow-100 flex items-start shadow-sm">
+                                <div class="p-2 bg-yellow-100 rounded-lg text-yellow-700 mr-4"><i class="fa-solid fa-bullhorn"></i></div>
+                                <div><h4 class="font-bold text-gray-800 text-sm">系統公告</h4><p class="text-sm text-gray-600 mt-1 leading-relaxed">FHIR 資料交換平台將於本週五晚間進行例行性維護。</p></div>
+                            </div>
+                        </div>
+
+                        <div v-if="currentTab === 'patients'" class="h-full flex flex-col bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden animate-fade-in-up">
+                            <div class="p-4 border-b border-gray-100 flex items-center justify-between bg-gray-50/30">
+                                <div class="relative w-72">
+                                    <i class="fa-solid fa-magnifying-glass absolute left-3 top-3 text-gray-400"></i>
+                                    <input v-model="searchKeyword" type="text" placeholder="搜尋姓名、身分證或病歷號..." class="w-full pl-10 pr-4 py-2.5 bg-white border border-gray-200 rounded-xl text-sm focus:ring-2 focus:ring-blue-100 outline-none transition">
+                                </div>
+                                <div class="flex items-center space-x-3">
+                                    <div class="flex items-center text-sm text-gray-500">
+                                        <span class="mr-2">每頁顯示:</span>
+                                        <select v-model="itemsPerPage" class="border border-gray-200 rounded-lg py-1.5 px-2 bg-white focus:ring-2 focus:ring-brand-blue outline-none"><option :value="10">10 筆</option><option :value="50">50 筆</option><option :value="100">100 筆</option></select>
+                                    </div>
+                                    <button @click="showAddPatientModal = true" class="btn-gradient px-4 py-2 bg-gradient-to-r from-brand-blue to-indigo-600 text-white text-sm font-bold rounded-lg hover:shadow-lg transition flex items-center"><i class="fa-solid fa-plus mr-2"></i> 新增個案</button>
+                                </div>
+                            </div>
+                            <div class="flex-1 overflow-auto">
+                                <table class="w-full text-left border-collapse">
+                                    <thead class="bg-white sticky top-0 z-10 border-b border-gray-100 text-gray-500 text-xs font-bold uppercase tracking-wider">
+                                        <tr><th class="px-6 py-4">病歷號</th><th class="px-6 py-4">姓名</th><th class="px-6 py-4">身分證號</th><th class="px-6 py-4">性別</th><th class="px-6 py-4">最後更新</th><th class="px-6 py-4 text-right">操作</th></tr>
+                                    </thead>
+                                    <tbody class="divide-y divide-gray-50 text-sm">
+                                        <tr v-for="p in paginatedPatients" :key="p.id" class="hover:bg-blue-50/30 transition">
+                                            <td class="px-6 py-4 font-mono text-gray-500">{{ p.id }}</td><td class="px-6 py-4 font-bold text-gray-900">{{ p.name }}</td><td class="px-6 py-4 text-gray-600 font-mono">{{ p.nationalId }}</td>
+                                            <td class="px-6 py-4"><span class="px-2 py-1 rounded text-xs bg-gray-100">{{ p.gender === 'male' ? '男' : '女' }}</span></td>
+                                            <td class="px-6 py-4 text-xs text-gray-400">{{ p.lastUpdate || '-' }}</td>
+                                            <td class="px-6 py-4 text-right"><button @click="openPatientDetail(p)" class="text-sm font-bold text-brand-blue bg-blue-50 hover:bg-brand-blue hover:text-white transition px-4 py-1.5 rounded-lg">查看詳情</button></td>
+                                        </tr>
+                                        <tr v-if="paginatedPatients.length === 0"><td colspan="6" class="px-6 py-12 text-center text-gray-400"><i class="fa-regular fa-folder-open text-2xl mb-2 block"></i>查無資料</td></tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                            <div class="p-4 border-t border-gray-100 bg-gray-50 flex justify-between items-center" v-if="filteredSortedPatients.length > 0">
+                                <span class="text-sm text-gray-500">顯示 {{ (currentPage - 1) * itemsPerPage + 1 }} - {{ Math.min(currentPage * itemsPerPage, filteredSortedPatients.length) }} 筆，共 {{ filteredSortedPatients.length }} 筆</span>
+                                <div class="flex space-x-2">
+                                    <button @click="currentPage--" :disabled="currentPage === 1" class="px-3 py-1.5 rounded border border-gray-200 bg-white text-gray-600 hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed">上一頁</button>
+                                    <button @click="currentPage++" :disabled="currentPage >= totalPages" class="px-3 py-1.5 rounded border border-gray-200 bg-white text-gray-600 hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed">下一頁</button>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div v-if="currentTab === 'admin_users'" class="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden animate-fade-in-up">
+                            <div class="p-6 border-b border-gray-100 flex justify-between items-center bg-gray-50/50">
+                                <h3 class="font-bold text-gray-900">使用者權限清單</h3>
+                                <button @click="openAddUserModal" class="bg-black text-white px-4 py-2 rounded-lg text-sm font-bold shadow hover:bg-gray-800 transition"><i class="fa-solid fa-plus mr-2"></i> 新增使用者</button>
+                            </div>
+                            <table class="w-full text-left text-sm text-gray-600">
+                                <thead class="bg-white text-gray-400 font-bold uppercase text-[10px] tracking-wider border-b border-gray-100">
+                                    <tr><th class="px-6 py-4">姓名</th><th class="px-6 py-4">EMAIL</th><th class="px-6 py-4">單位</th><th class="px-6 py-4">角色</th><th class="px-6 py-4 text-right">管理</th></tr>
+                                </thead>
+                                <tbody class="divide-y divide-gray-50">
+                                    <tr v-for="u in users" :key="u.id" class="hover:bg-gray-50/80 group">
+                                        <td class="px-6 py-4 font-bold text-gray-900">{{ u.name }}</td><td class="px-6 py-4 font-mono text-xs text-gray-700">{{ u.email }}</td><td class="px-6 py-4">{{ u.organization }}</td>
+                                        <td class="px-6 py-4"><span :class="roleBadgeClass(u.role)" class="px-2.5 py-1 rounded text-[10px] font-bold uppercase border">{{ translateRole(u.role) }}</span></td>
+                                        <td class="px-6 py-4 text-right">
+                                            <button @click="openEditUserModal(u)" class="text-brand-blue hover:text-blue-700 mr-3 p-1 rounded hover:bg-blue-50 transition"><i class="fa-solid fa-pen-to-square"></i></button>
+                                            <button v-if="u.email !== 'kaichun.yang@gmail.com'" @click="deleteUser(u.id)" class="text-gray-400 hover:text-red-600 p-1 rounded hover:bg-red-50 transition"><i class="fa-solid fa-trash"></i></button>
+                                        </td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+
+                        <div v-if="currentTab === 'health_edu'" class="bg-white rounded-2xl border border-gray-100 shadow-sm p-8 animate-fade-in-up min-h-[500px]">
+                            <h3 class="text-2xl font-bold text-emerald-600 mb-6"><i class="fa-solid fa-book-medical mr-3"></i>衛教資源中心</h3>
+                            <div class="grid grid-cols-3 gap-6">
+                                <div class="bg-emerald-50 p-6 rounded-xl border border-emerald-100 hover:shadow-lg transition cursor-pointer">
+                                    <i class="fa-solid fa-utensils text-4xl text-emerald-500 mb-4"></i>
+                                    <h4 class="font-bold text-gray-800">糖尿病飲食指南</h4>
+                                    <p class="text-xs text-gray-500 mt-2">最新 2024 版本，包含外食建議。</p>
+                                </div>
+                                <div class="bg-blue-50 p-6 rounded-xl border border-blue-100 hover:shadow-lg transition cursor-pointer">
+                                    <i class="fa-solid fa-person-running text-4xl text-blue-500 mb-4"></i>
+                                    <h4 class="font-bold text-gray-800">高血壓運動處方</h4>
+                                    <p class="text-xs text-gray-500 mt-2">每週 150 分鐘中等強度運動。</p>
+                                </div>
+                                <div class="bg-orange-50 p-6 rounded-xl border border-orange-100 hover:shadow-lg transition cursor-pointer">
+                                    <i class="fa-solid fa-eye text-4xl text-orange-500 mb-4"></i>
+                                    <h4 class="font-bold text-gray-800">視網膜病變預防</h4>
+                                    <p class="text-xs text-gray-500 mt-2">定期檢查的重要性與自我檢測。</p>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div v-if="currentTab === 'reports'" class="bg-white rounded-2xl border border-gray-100 shadow-sm p-8 animate-fade-in-up min-h-[500px]">
+                            <h3 class="text-2xl font-bold text-gray-700 mb-6"><i class="fa-solid fa-file-invoice mr-3"></i>數據報表中心</h3>
+                            <div class="bg-gray-50 rounded-xl border border-gray-200 p-12 flex flex-col items-center justify-center h-64">
+                                <i class="fa-solid fa-chart-area text-6xl text-gray-300 mb-4"></i>
+                                <p class="text-gray-500 font-bold">月度個案管理成效報表 生成中...</p>
+                                <button class="mt-4 px-6 py-2 bg-gray-800 text-white rounded-lg text-sm hover:bg-black transition">下載 PDF 預覽</button>
+                            </div>
+                        </div>
+
+                        <div v-if="currentTab === 'consultation'" class="bg-white rounded-2xl border border-gray-100 shadow-sm p-8 animate-fade-in-up min-h-[500px]">
+                            <h3 class="text-2xl font-bold text-orange-500 mb-6"><i class="fa-solid fa-comments mr-3"></i>線上照會區</h3>
+                            <div class="space-y-4">
+                                <div class="p-4 border border-gray-200 rounded-xl flex items-start bg-white">
+                                    <div class="w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center text-blue-600 font-bold mr-4">陳</div>
+                                    <div class="flex-1">
+                                        <div class="flex justify-between">
+                                            <h4 class="font-bold text-gray-800">陳醫師 (新陳代謝科)</h4>
+                                            <span class="text-xs text-gray-400">10分鐘前</span>
+                                        </div>
+                                        <p class="text-sm text-gray-600 mt-1">關於病患 P276335 的血糖控制不佳，建議調整藥物劑量...</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div v-if="currentTab === 'knowledge_base'" class="bg-white rounded-2xl border border-gray-100 shadow-sm p-8 animate-fade-in-up min-h-[500px]">
+                            <h3 class="text-2xl font-bold text-purple-600 mb-6"><i class="fa-solid fa-book-open mr-3"></i>共照知識庫</h3>
+                            <div class="space-y-2">
+                                <div class="p-3 bg-purple-50 text-purple-800 rounded-lg text-sm font-bold cursor-pointer hover:bg-purple-100"><i class="fa-solid fa-file-pdf mr-2"></i>2025 糖尿病共照網作業手冊.pdf</div>
+                                <div class="p-3 bg-purple-50 text-purple-800 rounded-lg text-sm font-bold cursor-pointer hover:bg-purple-100"><i class="fa-solid fa-file-word mr-2"></i>個案管理追蹤表單範本.docx</div>
+                            </div>
+                        </div>
+
+                    </div>
+                </div>
+            </main>
+
+            <div v-if="showDetailModal" class="fixed inset-0 z-50 flex items-center justify-center bg-gray-900/90 backdrop-blur-sm p-4">
+                <div class="bg-white rounded-3xl shadow-2xl w-full max-w-[95rem] h-[95vh] flex flex-col overflow-hidden animate-fade-in-up">
+                    <div class="px-8 py-5 border-b border-gray-100 flex justify-between items-center bg-white shrink-0">
+                        <div>
+                            <h2 class="text-2xl font-bold text-gray-900 flex items-center">
+                                {{ selectedPatient.name }} 
+                                <span class="ml-3 text-sm font-normal text-gray-500 bg-gray-100 px-2 py-1 rounded font-mono">{{ selectedPatient.id }}</span>
+                            </h2>
+                            <p class="text-sm text-gray-500 mt-1">
+                                <i class="fa-solid fa-venus-mars mr-1"></i> {{ selectedPatient.gender==='male'?'男':'女' }} 
+                                <span class="mx-2">|</span> 
+                                <i class="fa-solid fa-cake-candles mr-1"></i> {{ selectedPatient.birthDate }}
+                            </p>
+                        </div>
+                        <button @click="showDetailModal = false" class="w-10 h-10 rounded-full bg-gray-100 hover:bg-gray-200 flex items-center justify-center transition">
+                            <i class="fa-solid fa-xmark text-xl text-gray-600"></i>
                         </button>
                     </div>
-                </div>
-            </header>
 
-            <div id="home" class="page-content p-8">
-                <h1 class="text-3xl font-bold text-gray-800">早安，遠傳督導</h1>
-                <p class="text-gray-500 mt-1">今天是 2025年10月13日 星期一，這是您的今日總覽。</p>
-                <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mt-8">
-                    <div class="bg-white p-6 rounded-lg shadow-md flex items-center"><div class="bg-blue-100 p-3 rounded-full"><svg class="h-8 w-8 text-blue-500" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg></div><div class="ml-4"><p class="text-gray-500">今日待辦事項</p><p class="text-2xl font-bold text-gray-800">12</p></div></div>
-                    <div class="bg-white p-6 rounded-lg shadow-md flex items-center"><div class="bg-red-100 p-3 rounded-full"><svg class="h-8 w-8 text-red-500" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/></svg></div><div class="ml-4"><p class="text-gray-500">生理數據異常警示</p><p class="text-2xl font-bold text-red-600">3</p></div></div>
-                    <div class="bg-white p-6 rounded-lg shadow-md flex items-center"><div class="bg-green-100 p-3 rounded-full"><svg class="h-8 w-8 text-green-500" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg></div><div class="ml-4"><p class="text-gray-500">新轉介個案</p><p class="text-2xl font-bold text-gray-800">5</p></div></div>
-                </div>
-                <div class="mt-10">
-                    <h2 class="text-xl font-semibold text-gray-700 mb-4">服務項目入口</h2>
-                    <div class="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-                        <a href="#" onclick="showPage('discharge-planning')" class="menu-card bg-white p-6 rounded-lg shadow-md hover:shadow-xl hover:-translate-y-1 transition-all flex flex-col items-center justify-center text-center"><div class="bg-sky-100 p-4 rounded-full"><svg class="h-10 w-10 text-sky-600" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 11l3-3m0 0l3 3m-3-3v8m0-13a9 9 0 110 18 9 9 0 010-18z" /></svg></div><h3 class="mt-4 font-semibold text-gray-800">出院準備</h3><p class="mt-1 text-sm text-gray-500">管理病患出院與轉介流程</p></a>
-                        <a href="#" onclick="showPage('pac-care')" class="menu-card bg-white p-6 rounded-lg shadow-md hover:shadow-xl hover:-translate-y-1 transition-all flex flex-col items-center justify-center text-center"><div class="bg-amber-100 p-4 rounded-full"><svg class="h-10 w-10 text-amber-600" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path d="M9 17a2 2 0 11-4 0 2 2 0 014 0zM19 17a2 2 0 11-4 0 2 2 0 014 0z" /><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16V6a1 1 0 00-1-1H4a1 1 0 00-1 1v10l2-2h8a1 1 0 001-1z" /></svg></div><h3 class="mt-4 font-semibold text-gray-800">急性後期照護(PAC)</h3><p class="mt-1 text-sm text-gray-500">追蹤PAC個案的復健進度</p></a>
-                        <a href="#" onclick="showPage('hah-care')" class="menu-card bg-white p-6 rounded-lg shadow-md hover:shadow-xl hover:-translate-y-1 transition-all flex flex-col items-center justify-center text-center"><div class="bg-indigo-100 p-4 rounded-full"><svg class="h-10 w-10 text-indigo-600" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" /></svg></div><h3 class="mt-4 font-semibold text-gray-800">居家醫療(HAH)</h3><p class="mt-1 text-sm text-gray-500">管理在宅急症照護個案</p></a>
-                        <a href="#" onclick="showPage('long-term-care')" class="menu-card bg-white p-6 rounded-lg shadow-md hover:shadow-xl hover:-translate-y-1 transition-all flex flex-col items-center justify-center text-center"><div class="bg-teal-100 p-4 rounded-full"><svg class="h-10 w-10 text-teal-600" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" /></svg></div><h3 class="mt-4 font-semibold text-gray-800">長照服務</h3><p class="mt-1 text-sm text-gray-500">銜接與管理長照ABC資源</p></a>
-                    </div>
-                </div>
-            </div>
-
-            <div id="fet-plan" class="page-content p-8 hidden">
-                <div class="relative bg-gradient-to-r from-red-600 to-rose-500 rounded-2xl p-8 text-white shadow-lg overflow-hidden mb-8">
-                    <div class="relative z-10">
-                        <h3 class="text-3xl font-bold mb-2">Far EasTone Hospital Website Renewal</h3>
-                        <p class="text-red-100 text-lg opacity-90">遠傳醫院數位轉型與網站重構計畫</p>
-                        <div class="mt-6 flex space-x-3">
-                            <div class="px-4 py-2 bg-white/20 backdrop-blur-sm rounded-lg border border-white/30 text-sm font-bold flex items-center">
-                                <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
-                                提升使用者體驗
+                    <div class="flex-1 overflow-hidden flex bg-gray-50">
+                        <div class="flex-1 overflow-y-auto p-8 space-y-6 custom-scrollbar">
+                            <div class="grid grid-cols-4 gap-5">
+                                <div class="bg-white p-5 rounded-2xl shadow-sm border-l-4 border-red-500 relative"><p class="text-xs font-bold text-red-500 mb-1">收縮壓 (SYS)</p><h3 class="text-4xl font-extrabold text-gray-800">{{ latestMetrics.sys || '--' }} <span class="text-sm text-gray-400 font-normal">mmHg</span></h3></div>
+                                <div class="bg-white p-5 rounded-2xl shadow-sm border-l-4 border-blue-500 relative"><p class="text-xs font-bold text-blue-500 mb-1">舒張壓 (DIA)</p><h3 class="text-4xl font-extrabold text-gray-800">{{ latestMetrics.dia || '--' }} <span class="text-sm text-gray-400 font-normal">mmHg</span></h3></div>
+                                <div class="bg-white p-5 rounded-2xl shadow-sm border-l-4 border-green-500 relative"><p class="text-xs font-bold text-green-600 mb-1">心率 (HR)</p><h3 class="text-4xl font-extrabold text-gray-800">{{ latestMetrics.hr || '--' }} <span class="text-sm text-gray-400 font-normal">BPM</span></h3></div>
+                                <div class="bg-white p-5 rounded-2xl shadow-sm border-l-4 border-orange-500 relative"><p class="text-xs font-bold text-orange-500 mb-1">血糖 (GLU)</p><h3 class="text-4xl font-extrabold text-gray-800">{{ latestMetrics.glu || '--' }} <span class="text-sm text-gray-400 font-normal">mg/dL</span></h3></div>
                             </div>
-                            <div class="px-4 py-2 bg-white/20 backdrop-blur-sm rounded-lg border border-white/30 text-sm font-bold flex items-center">
-                                <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 18h.01M8 21h8a2 2 0 002-2V5a2 2 0 00-2-2H8a2 2 0 00-2 2v14a2 2 0 002 2z"></path></svg>
-                                行動裝置友善
-                            </div>
-                        </div>
-                    </div>
-                </div>
 
-                <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
-                    <div class="bg-white p-6 rounded-2xl border border-gray-100 shadow-md hover:shadow-lg transition">
-                        <div class="w-12 h-12 bg-blue-100 rounded-xl flex items-center justify-center text-blue-600 mb-4">
-                            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"></path></svg>
-                        </div>
-                        <h4 class="text-lg font-bold text-gray-800 mb-3">1. 核心目標</h4>
-                        <ul class="space-y-3">
-                            <li class="flex items-start text-sm text-gray-600">
-                                <svg class="w-5 h-5 text-red-500 mt-0.5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
-                                <span>優化線上掛號與看診進度查詢流程</span>
-                            </li>
-                            <li class="flex items-start text-sm text-gray-600">
-                                <svg class="w-5 h-5 text-red-500 mt-0.5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
-                                <span>建立響應式設計 (RWD)，支援手機瀏覽</span>
-                            </li>
-                            <li class="flex items-start text-sm text-gray-600">
-                                <svg class="w-5 h-5 text-red-500 mt-0.5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
-                                <span>整合衛教資訊與線上諮詢功能</span>
-                            </li>
-                        </ul>
-                    </div>
-
-                    <div class="bg-white p-6 rounded-2xl border border-gray-100 shadow-md hover:shadow-lg transition">
-                        <div class="w-12 h-12 bg-purple-100 rounded-xl flex items-center justify-center text-purple-600 mb-4">
-                            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"></path></svg>
-                        </div>
-                        <h4 class="text-lg font-bold text-gray-800 mb-3">2. 網站架構</h4>
-                        <ul class="space-y-3">
-                            <li class="flex items-start text-sm text-gray-600">
-                                <span class="font-bold text-gray-800 mr-2">首頁:</span>
-                                <span>最新消息輪播、門診快速入口</span>
-                            </li>
-                            <li class="flex items-start text-sm text-gray-600">
-                                <span class="font-bold text-gray-800 mr-2">就醫指南:</span>
-                                <span>交通指引、掛號須知、醫師介紹</span>
-                            </li>
-                            <li class="flex items-start text-sm text-gray-600">
-                                <span class="font-bold text-gray-800 mr-2">會員專區:</span>
-                                <span>個人健康存摺、預約記錄管理</span>
-                            </li>
-                        </ul>
-                    </div>
-
-                    <div class="bg-white p-6 rounded-2xl border border-gray-100 shadow-md hover:shadow-lg transition">
-                        <div class="w-12 h-12 bg-orange-100 rounded-xl flex items-center justify-center text-orange-600 mb-4">
-                            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
-                        </div>
-                        <h4 class="text-lg font-bold text-gray-800 mb-3">3. 開發時程</h4>
-                        <div class="relative pl-4 border-l-2 border-gray-200 space-y-6">
-                            <div class="relative">
-                                <div class="absolute -left-[21px] top-1 w-3 h-3 bg-red-500 rounded-full border-2 border-white"></div>
-                                <p class="text-xs font-bold text-red-600 mb-1">Phase 1 (已完成)</p>
-                                <p class="text-sm text-gray-600">需求訪談、UI/UX 介面設計定案。</p>
+                            <div class="flex justify-between items-center bg-white p-3 rounded-xl border border-gray-100 shadow-sm">
+                                <span class="text-xs font-bold text-gray-500 ml-2">圖表顯示區間：</span>
+                                <div class="flex space-x-2">
+                                    <button @click="changeDateRange('30d')" :class="dateRange==='30d'?'bg-gray-800 text-white':'bg-gray-100 text-gray-600 hover:bg-gray-200'" class="px-3 py-1.5 rounded-lg text-xs font-bold transition">近30天</button>
+                                    <button @click="changeDateRange('6m')" :class="dateRange==='6m'?'bg-gray-800 text-white':'bg-gray-100 text-gray-600 hover:bg-gray-200'" class="px-3 py-1.5 rounded-lg text-xs font-bold transition">近半年</button>
+                                    <button @click="changeDateRange('1y')" :class="dateRange==='1y'?'bg-gray-800 text-white':'bg-gray-100 text-gray-600 hover:bg-gray-200'" class="px-3 py-1.5 rounded-lg text-xs font-bold transition">近一年</button>
+                                    <button @click="changeDateRange('custom')" :class="dateRange==='custom'?'bg-gray-800 text-white':'bg-gray-100 text-gray-600 hover:bg-gray-200'" class="px-3 py-1.5 rounded-lg text-xs font-bold transition">自訂</button>
+                                </div>
+                                <div v-if="dateRange === 'custom'" class="flex items-center space-x-2 ml-4">
+                                    <input v-model="filterStartDate" type="date" class="border rounded px-2 py-1 text-xs">
+                                    <span class="text-gray-400">-</span>
+                                    <input v-model="filterEndDate" type="date" class="border rounded px-2 py-1 text-xs">
+                                    <button @click="updatePatientData" class="bg-brand-blue text-white px-3 py-1 rounded text-xs">更新</button>
+                                </div>
                             </div>
-                            <div class="relative">
-                                <div class="absolute -left-[21px] top-1 w-3 h-3 bg-blue-500 rounded-full border-2 border-white animate-pulse"></div>
-                                <p class="text-xs font-bold text-blue-600 mb-1">Phase 2 (進行中)</p>
-                                <p class="text-sm text-gray-600">前端切版 (Tailwind)、資料庫建置。</p>
+
+                            <div class="grid grid-cols-1 xl:grid-cols-2 gap-6">
+                                <div class="bg-white p-6 rounded-2xl shadow-sm border border-gray-100"><h4 class="font-bold text-gray-700 mb-4 flex items-center"><i class="fa-solid fa-heart-pulse mr-2 text-red-500"></i> 血壓/心率趨勢</h4><div class="h-64"><canvas id="bpChart"></canvas></div></div>
+                                <div class="bg-white p-6 rounded-2xl shadow-sm border border-gray-100"><h4 class="font-bold text-gray-700 mb-4 flex items-center"><i class="fa-solid fa-droplet mr-2 text-orange-500"></i> 血糖趨勢</h4><div class="h-64"><canvas id="gluChart"></canvas></div></div>
                             </div>
-                            <div class="relative">
-                                <div class="absolute -left-[21px] top-1 w-3 h-3 bg-gray-300 rounded-full border-2 border-white"></div>
-                                <p class="text-xs font-bold text-gray-400 mb-1">Phase 3 (預計 Q3)</p>
-                                <p class="text-sm text-gray-600">系統測試、資安檢測、正式上線。</p>
+
+                            <div class="bg-white p-6 rounded-2xl shadow-sm border border-gray-100">
+                                <h4 class="font-bold text-gray-700 mb-4">詳細歷史紀錄</h4>
+                                <div class="overflow-x-auto max-h-80 custom-scrollbar">
+                                    <table class="w-full text-left text-sm">
+                                        <thead class="bg-gray-50 text-gray-500 uppercase text-xs font-bold sticky top-0">
+                                            <tr><th class="px-4 py-3">時間</th><th class="px-4 py-3">項目</th><th class="px-4 py-3">內容/數值</th><th class="px-4 py-3">單位/備註</th></tr>
+                                        </thead>
+                                        <tbody class="divide-y divide-gray-50">
+                                            <tr v-for="obs in patientObservations" :key="obs.id">
+                                                <td class="px-4 py-3 font-mono text-gray-500 text-xs">{{ obs.timestamp }}</td>
+                                                <td class="px-4 py-3 font-bold text-gray-800">{{ translateCode(obs.code) }}</td>
+                                                <td class="px-4 py-3 font-mono font-bold text-brand-blue">{{ obs.value }}</td>
+                                                <td class="px-4 py-3 text-gray-500 text-xs">{{ obs.unit }}</td>
+                                            </tr>
+                                            <tr v-if="patientObservations.length === 0"><td colspan="4" class="px-4 py-8 text-center text-gray-400">尚無資料</td></tr>
+                                        </tbody>
+                                    </table>
+                                </div>
                             </div>
                         </div>
-                    </div>
-                </div>
-            </div>
 
-            <div id="case-overview" class="page-content p-8 hidden">
-                 <div class="flex justify-between items-center">
-                    <h1 class="text-2xl font-bold text-gray-800">個案管理總覽</h1>
-                    <button class="bg-emerald-600 text-white px-4 py-2 rounded-md hover:bg-emerald-700 text-sm">新增個案</button>
-                </div>
-                <div class="mt-6 bg-white p-4 rounded-lg shadow-sm flex items-center space-x-4">
-                    <div class="relative flex-grow"><span class="absolute inset-y-0 left-0 flex items-center pl-3"><svg class="h-5 w-5 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg></span><input type="text" placeholder="搜尋姓名或病歷號..." class="w-full pl-10 pr-4 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-emerald-500"></div>
-                    <select class="border rounded-md py-2 px-3 focus:outline-none focus:ring-2 focus:ring-emerald-500"><option>所有服務類型</option><option>出院準備</option><option>急性後期照護 (PAC)</option><option>居家醫療 (HAH)</option><option>安寧照護</option></select>
-                    <select class="border rounded-md py-2 px-3 focus:outline-none focus:ring-2 focus:ring-emerald-500"><option>所有狀態</option><option>新案</option><option>追蹤中</option><option>待結案</option><option>已結案</option></select>
-                </div>
-                
-                <div class="mt-6 bg-white rounded-lg shadow-sm overflow-hidden">
-                    <table class="w-full divide-y divide-gray-200">
-                        <thead class="bg-gray-50">
-                            <tr>
-                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">姓名</th>
-                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">病歷號</th>
-                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">身份證字號</th>
-                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Barcode</th>
-                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">目前服務</th>
-                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">上次聯繫</th>
-                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">狀態</th>
-                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">操作</th>
-                            </tr>
-                        </thead>
-                        <tbody class="bg-white divide-y divide-gray-200">
-                            <tr class="hover:bg-gray-50">
-                                <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">陳 O 雄</td>
-                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">36979XX</td>
-                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">A123456789</td>
-                                <td class="px-6 py-4 whitespace-nowrap">
-                                    <svg class="barcode-svg" data-value="A123456789"></svg>
-                                </td>
-                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">急性後期照護 (PAC) - 腦中風</td>
-                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">2025-10-12</td>
-                                <td class="px-6 py-4 whitespace-nowrap"><span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-yellow-100 text-yellow-800">追蹤中</span></td>
-                                <td class="px-6 py-4 whitespace-nowrap text-sm font-medium"><a href="#" onclick="showPage('patient-detail')" class="text-emerald-600 hover:text-emerald-900">查看詳情</a></td>
-                            </tr>
-                            <tr class="hover:bg-red-50">
-                                <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">林 O 妹</td>
-                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">41951XX</td>
-                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">F234567890</td>
-                                <td class="px-6 py-4 whitespace-nowrap">
-                                    <svg class="barcode-svg" data-value="F234567890"></svg>
-                                </td>
-                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">居家醫療 (HAH) - COPD</td>
-                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">2025-10-13 09:15</td>
-                                <td class="px-6 py-4 whitespace-nowrap"><span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-red-100 text-red-800 animate-pulse">血氧過低警示</span></td>
-                                <td class="px-6 py-4 whitespace-nowrap text-sm font-medium"><a href="#" onclick="showPage('patient-detail')" class="text-emerald-600 hover:text-emerald-900">查看詳情</a></td>
-                            </tr>
-                            <tr class="hover:bg-gray-50">
-                                <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">張 O 華</td>
-                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">28125XX</td>
-                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">H123456789</td>
-                                <td class="px-6 py-4 whitespace-nowrap">
-                                    <svg class="barcode-svg" data-value="H123456789"></svg>
-                                </td>
-                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">出院準備 - 髖關節置換</td>
-                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">2025-10-11</td>
-                                <td class="px-6 py-4 whitespace-nowrap"><span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-blue-100 text-blue-800">新案</span></td>
-                                <td class="px-6 py-4 whitespace-nowrap text-sm font-medium"><a href="#" onclick="showPage('patient-detail')" class="text-emerald-600 hover:text-emerald-900">查看詳情</a></td>
-                            </tr>
-                            <tr class="hover:bg-gray-50">
-                                <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">李 O 蘭</td>
-                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">19468XX</td>
-                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">Q234567890</td>
-                                <td class="px-6 py-4 whitespace-nowrap">
-                                    <svg class="barcode-svg" data-value="Q234567890"></svg>
-                                </td>
-                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">安寧居家</td>
-                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">2025-10-10</td>
-                                <td class="px-6 py-4 whitespace-nowrap"><span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-gray-100 text-gray-800">已結案</span></td>
-                                <td class="px-6 py-4 whitespace-nowrap text-sm font-medium"><a href="#" onclick="showPage('patient-detail')" class="text-emerald-600 hover:text-emerald-900">查看詳情</a></td>
-                            </tr>
-                        </tbody>
-                    </table>
-                </div>
-            </div>
+                        <div class="w-[450px] bg-white border-l border-gray-200 flex flex-col shadow-2xl z-10">
+                            <div class="flex border-b border-gray-200">
+                                <button @click="detailTab='vitals'" :class="detailTab==='vitals'?'border-brand-blue text-brand-blue':'border-transparent text-gray-500 hover:text-gray-700'" class="flex-1 py-4 text-sm font-bold border-b-2 transition">生理數據</button>
+                                <button @click="detailTab='medical'" :class="detailTab==='medical'?'border-brand-blue text-brand-blue':'border-transparent text-gray-500 hover:text-gray-700'" class="flex-1 py-4 text-sm font-bold border-b-2 transition">病歷摘要</button>
+                                <button @click="detailTab='dicom'" :class="detailTab==='dicom'?'border-brand-blue text-brand-blue':'border-transparent text-gray-500 hover:text-gray-700'" class="flex-1 py-4 text-sm font-bold border-b-2 transition">醫學影像</button>
+                            </div>
 
-            <div id="patient-detail" class="page-content hidden">
-                 <div class="bg-white shadow-sm sticky top-16 z-10">
-                    <div class="px-8 pt-6">
-                        <button onclick="showPage('case-overview')" class="mb-4 text-emerald-600 hover:text-emerald-800 flex items-center text-sm"><svg class="h-5 w-5 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/></svg>返回個案總覽</button>
-                        <div class="flex items-center justify-between pb-4">
-                            <div><h1 class="text-2xl font-bold text-gray-800">陳 O 雄 (病歷號: 36979XX)</h1><p class="text-gray-500 mt-1 text-sm">70歲 | 男性 | 主要診斷: 急性腦中風</p></div>
-                            <div class="flex space-x-2"><button class="bg-gray-200 text-gray-700 px-4 py-2 rounded-md hover:bg-gray-300 text-sm">發送訊息</button><button class="bg-sky-500 text-white px-4 py-2 rounded-md hover:bg-sky-600 text-sm">發起視訊</button></div>
+                            <div class="flex-1 overflow-y-auto p-6 bg-gray-50">
+                                
+                                <form v-if="detailTab==='vitals'" @submit.prevent="submitData" class="space-y-6">
+                                    <div><label class="block text-xs font-bold text-gray-400 mb-1.5 uppercase">測量時機</label><select v-model="form.timing" class="w-full border border-gray-200 rounded-xl p-3 text-sm focus:ring-2 focus:ring-brand-blue outline-none bg-white"><option>起床空腹</option><option>早餐後</option><option>午餐前</option><option>午餐後</option><option>晚餐前</option><option>晚餐後</option><option>睡前</option></select></div>
+                                    <div class="bg-white p-4 rounded-xl border border-gray-100 space-y-4 shadow-sm"><div class="flex items-center text-sm font-bold text-gray-700 mb-2"><i class="fa-solid fa-heart-pulse mr-2 text-red-500"></i> 血壓 (BP)</div><div class="grid grid-cols-2 gap-3"><div><label class="text-[10px] font-bold text-gray-400 uppercase">收縮壓</label><input v-model="form.sys" type="number" class="w-full border border-gray-200 rounded-lg px-3 py-2 text-lg font-bold text-center outline-none" placeholder="---"></div><div><label class="text-[10px] font-bold text-gray-400 uppercase">舒張壓</label><input v-model="form.dia" type="number" class="w-full border border-gray-200 rounded-lg px-3 py-2 text-lg font-bold text-center outline-none" placeholder="---"></div></div></div>
+                                    <div class="grid grid-cols-2 gap-4"><div><label class="block text-xs font-bold text-green-600 mb-1 uppercase">心跳 (BPM)</label><input v-model="form.hr" type="number" class="w-full border border-gray-200 rounded-xl px-4 py-3 text-lg font-bold text-center outline-none bg-white" placeholder="---"></div><div><label class="block text-xs font-bold text-orange-500 mb-1 uppercase">血糖 (mg/dL)</label><input v-model="form.glu" type="number" class="w-full border border-gray-200 rounded-xl px-4 py-3 text-lg font-bold text-center outline-none bg-white" placeholder="---"></div></div>
+                                    <button type="submit" :disabled="loading" class="w-full btn-gradient bg-gradient-to-r from-brand-blue to-indigo-600 text-white py-4 rounded-xl font-bold shadow-lg hover:shadow-xl transition flex justify-center items-center"><span v-if="loading"><i class="fa-solid fa-spinner fa-spin mr-2"></i> 上傳中...</span><span v-else>上傳生理數據</span></button>
+                                </form>
+
+                                <form v-if="detailTab==='medical'" @submit.prevent="submitMedical" class="space-y-6">
+                                    <div class="relative">
+                                        <label class="block text-xs font-bold text-gray-500 mb-1">診斷代碼 (ICD-10)</label>
+                                        <input type="text" v-model="icdQuery" @input="searchICD" placeholder="輸入代碼或關鍵字搜尋..." class="w-full border border-gray-200 rounded-xl p-3 text-sm focus:ring-2 focus:ring-brand-blue outline-none bg-white">
+                                        <div v-if="showIcdList" class="autocomplete-results mt-1 shadow-lg">
+                                            <div v-for="item in filteredIcdList" :key="item.code" @click="selectICD(item)" class="autocomplete-item hover:bg-blue-50">
+                                                <div class="font-bold text-brand-blue">{{ item.code }}</div>
+                                                <div class="text-xs text-gray-600">{{ item.desc }}</div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div><label class="block text-xs font-bold text-gray-500 mb-1">病歷摘要</label><textarea v-model="form.summary" class="w-full border border-gray-200 rounded-xl p-3 text-sm h-32 resize-none focus:ring-2 focus:ring-brand-blue outline-none bg-white" placeholder="輸入主訴、病史摘要..."></textarea></div>
+                                    <div><label class="block text-xs font-bold text-gray-500 mb-1">檢驗結果資訊</label><textarea v-model="form.labResults" class="w-full border border-gray-200 rounded-xl p-3 text-sm h-32 resize-none focus:ring-2 focus:ring-brand-blue outline-none bg-white" placeholder="輸入重點檢驗數值 (如 HbA1c, LDL)..."></textarea></div>
+                                    <button type="submit" :disabled="loading" class="w-full btn-gradient bg-gradient-to-r from-teal-500 to-emerald-600 text-white py-4 rounded-xl font-bold shadow-lg hover:shadow-xl transition flex justify-center items-center"><span v-if="loading"><i class="fa-solid fa-spinner fa-spin mr-2"></i> 上傳中...</span><span v-else>儲存病歷資料</span></button>
+                                </form>
+
+                                <div v-if="detailTab==='dicom'" class="space-y-6">
+                                    <div class="bg-white p-5 rounded-xl border border-gray-100 shadow-sm">
+                                        <h4 class="font-bold text-gray-800 mb-4 border-b pb-2">上傳影像 (模擬)</h4>
+                                        <div class="space-y-4">
+                                            <input type="file" accept=".zip" class="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-xs file:font-semibold file:bg-blue-50 file:text-brand-blue hover:file:bg-blue-100">
+                                            <textarea v-model="newDicom.summary" class="w-full border border-gray-200 rounded-lg p-3 text-sm h-20 resize-none outline-none" placeholder="輸入影像摘要 (例如: Chest CT, with contrast)..."></textarea>
+                                            <button @click="uploadDicom" :disabled="loading" class="w-full bg-gray-800 text-white py-2 rounded-lg text-sm font-bold hover:bg-black transition">模擬上傳</button>
+                                        </div>
+                                    </div>
+                                    
+                                    <div class="bg-white p-5 rounded-xl border border-gray-100 shadow-sm flex-1">
+                                        <h4 class="font-bold text-gray-800 mb-4 border-b pb-2">影像資料庫</h4>
+                                        <div v-if="dicomList.length === 0" class="text-center text-gray-400 py-4 text-sm">尚無影像資料</div>
+                                        <div class="space-y-3">
+                                            <div v-for="d in dicomList" :key="d.id" class="p-3 bg-gray-50 rounded-lg border border-gray-100 hover:bg-blue-50 transition group cursor-pointer" @click="selectedDicom=d">
+                                                <div class="flex justify-between items-start">
+                                                    <div>
+                                                        <div class="font-bold text-sm text-gray-800"><i class="fa-solid fa-file-zipper mr-2 text-gray-500"></i>{{ d.filename || 'DICOM_Archive.zip' }}</div>
+                                                        <div class="text-[10px] text-gray-400 mt-1">{{ d.timestamp }}</div>
+                                                    </div>
+                                                    <button class="text-brand-blue hover:text-blue-700"><i class="fa-solid fa-download"></i></button>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <div v-if="selectedDicom" class="bg-blue-50 p-4 rounded-xl border border-blue-100 animate-fade-in-up">
+                                        <p class="text-[10px] font-bold text-blue-500 uppercase mb-1">檔案摘要說明</p>
+                                        <p class="text-sm text-gray-700 font-bold leading-relaxed">{{ selectedDicom.summary }}</p>
+                                        <p class="text-[10px] text-gray-400 mt-2 text-right">ID: {{ selectedDicom.id }}</p>
+                                    </div>
+                                </div>
+
+                            </div>
                         </div>
                     </div>
-                    <div class="border-b border-gray-200"><nav class="-mb-px flex space-x-8 px-8" id="patient-tabs"><a href="#" class="tab-item border-emerald-500 text-emerald-600 whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm">生理數據</a><a href="#" class="tab-item border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm">照護紀錄</a><a href="#" class="tab-item border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm">團隊溝通</a><a href="#" class="tab-item border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm">文件與影像</a><a href="#" class="tab-item border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm">轉介歷程</a></nav></div>
-                </div>
-                <div class="p-8"><div class="tab-content" id="vitals-content"><div class="flex justify-between items-center mb-6"><h2 class="text-xl font-semibold text-gray-700">生理數據趨勢圖</h2><input type="date" value="2025-10-13" class="border rounded-md py-2 px-3 focus:outline-none focus:ring-2 focus:ring-emerald-500 text-sm"></div><div class="grid grid-cols-1 xl:grid-cols-2 gap-6"><div class="bg-white p-6 rounded-lg shadow-sm"><h3 class="font-semibold text-gray-700">血壓 (mmHg)</h3><canvas id="bpChart"></canvas></div><div class="bg-white p-6 rounded-lg shadow-sm"><h3 class="font-semibold text-gray-700">心率 (bpm) & 血氧 (%)</h3><canvas id="hrSpo2Chart"></canvas></div></div><div class="mt-8 bg-white rounded-lg shadow-sm overflow-hidden"><h3 class="p-4 font-semibold text-gray-700 border-b">詳細數據紀錄</h3><table class="w-full"><thead class="bg-gray-50"><tr><th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">量測時間</th><th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">項目</th><th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">結果</th><th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">備註</th></tr></thead><tbody><tr class="border-t"><td class="px-6 py-3 text-sm text-gray-600">10/13 08:30</td><td class="px-6 py-3 text-sm font-medium">血壓</td><td class="px-6 py-3 text-sm">135 / 88 mmHg</td><td class="px-6 py-3 text-sm text-gray-500">起床後量測</td></tr><tr class="border-t"><td class="px-6 py-3 text-sm text-gray-600">10/13 08:30</td><td class="px-6 py-3 text-sm font-medium">心率</td><td class="px-6 py-3 text-sm">72 bpm</td><td class="px-6 py-3 text-sm text-gray-500"></td></tr><tr class="border-t"><td class="px-6 py-3 text-sm text-gray-600">10/13 08:30</td><td class="px-6 py-3 text-sm font-medium">血氧</td><td class="px-6 py-3 text-sm">98 %</td><td class="px-6 py-3 text-sm text-gray-500"></td></tr><tr class="border-t bg-red-50"><td class="px-6 py-3 text-sm text-gray-600">10/12 21:00</td><td class="px-6 py-3 text-sm font-medium">血壓</td><td class="px-6 py-3 text-sm font-bold text-red-600">162 / 95 mmHg</td><td class="px-6 py-3 text-sm text-red-500">系統警示: 高血壓</td></tr></tbody></table></div></div><div class="tab-content hidden" id="records-content"><h2 class="text-xl font-semibold text-gray-700 mb-6">照護紀錄</h2><div class="space-y-8"><div><div class="flex items-center"><div class="bg-sky-500 h-8 w-8 rounded-full flex items-center justify-center text-white font-bold">醫</div><div class="ml-4"><p class="font-semibold">陳家宏 醫師 (家醫科) - PAC訪視</p><p class="text-sm text-gray-500">2025-10-12 14:30</p></div></div><div class="mt-2 ml-6 pl-6 border-l-2 border-gray-200"><p class="p-4 bg-sky-50 rounded-md text-gray-700">個案今日精神狀況佳，復健配合度良好。右上肢肌力有進步，囑咐家屬協助每日被動關節運動。血壓偏高，已調整降血壓藥物，請居家護理師密切監測。</p></div></div><div><div class="flex items-center"><div class="bg-emerald-500 h-8 w-8 rounded-full flex items-center justify-center text-white font-bold">護</div><div class="ml-4"><p class="font-semibold">王心怡 居家護理師 - 居家訪視</p><p class="text-sm text-gray-500">2025-10-11 10:00</p></div></div><div class="mt-2 ml-6 pl-6 border-l-2 border-gray-200"><p class="p-4 bg-emerald-50 rounded-md text-gray-700">完成傷口換藥，傷口清潔無滲液。教導家屬翻身拍背技巧，家屬表示已了解。本日血壓 145/90 mmHg，已回報醫師。</p></div></div></div></div></div>
-            </div>
-
-            <div id="communication" class="page-content hidden">
-                <div class="flex h-full"><aside class="w-1/3 xl:w-1/4 bg-white border-r flex flex-col"><div class="p-4 border-b"><h2 class="text-xl font-bold text-gray-800">訊息</h2><input type="text" placeholder="搜尋對話..." class="w-full mt-2 px-3 py-2 border rounded-md text-sm focus:outline-none focus:ring-1 focus:ring-emerald-500"></div><div class="flex-1 overflow-y-auto"><a href="#" class="flex items-center px-4 py-3 border-b hover:bg-gray-50 bg-emerald-50 border-l-4 border-emerald-500"><div class="relative"><img class="h-12 w-12 rounded-full object-cover" src="group.jpg" alt="Group Avatar"><span class="absolute bottom-0 right-0 block h-3 w-3 rounded-full bg-green-400 ring-2 ring-white"></span></div><div class="ml-4 flex-1"><p class="font-semibold text-gray-800">陳 O 雄 照護團隊</p><p class="text-sm text-gray-500 truncate">家屬：好的，謝謝醫師！</p></div><div class="text-right text-xs text-gray-500"><p>15分鐘前</p><span class="mt-1 inline-flex items-center justify-center px-2 py-1 text-xs font-bold leading-none text-white bg-red-500 rounded-full">2</span></div></a><a href="#" class="flex items-center px-4 py-3 border-b hover:bg-gray-50"><div class="relative"><img class="h-12 w-12 rounded-full object-cover" src="group.jpg" alt="Group Avatar"></div><div class="ml-4 flex-1"><p class="font-semibold text-gray-800">林 O 妹 緊急討論群</p><p class="text-sm text-gray-500 truncate">遠傳：@陳醫師 病患血氧持續偏低</p></div><div class="text-right text-xs text-gray-500"><p>2小時前</p></div></a><a href="#" class="flex items-center px-4 py-3 border-b hover:bg-gray-50"><div class="relative"><img class="h-12 w-12 rounded-full object-cover" src="group.jpg" alt="Group Avatar"></div><div class="ml-4 flex-1"><p class="font-semibold text-gray-800">社區護理中心 (公告)</p><p class="text-sm text-gray-500 truncate">行政組：提醒您，下週一為中秋...</p></div><div class="text-right text-xs text-gray-500"><p>昨天</p></div></a></div></aside><section class="flex-1 flex flex-col"><div class="h-16 flex items-center justify-between border-b bg-white px-6"><div><h3 class="text-lg font-semibold">陳 O 雄 照護團隊</h3><p class="text-sm text-gray-500">成員: 陳家宏醫師, 王心怡護理師, 家屬(陳先生)...</p></div><div><button class="p-2 text-gray-500 hover:text-gray-700"><svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" /></svg></button><button class="p-2 text-gray-500 hover:text-gray-700"><svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg></button></div></div><div class="flex-1 overflow-y-auto p-6 space-y-6"><div class="flex items-start gap-3"><img class="h-10 w-10 rounded-full object-cover" src="doctor.jpg" alt="Avatar"><div><p class="font-semibold text-sm">陳家宏 醫師 <span class="text-gray-400 font-normal ml-2">上午 09:15</span></p><div class="mt-1 bg-sky-100 p-3 rounded-lg rounded-tl-none"><p>家屬您好，提醒一下伯父這週的降血壓藥物有調整，請務必按照新處方服用，並持續監測血壓。有任何問題隨時提出。</p></div></div></div><div class="flex items-start gap-3 justify-end"><div class="text-right"><p class="font-semibold text-sm"><span class="text-gray-400 font-normal mr-2">上午 09:18</span> 家屬 (陳先生)</p><div class="mt-1 bg-emerald-100 p-3 rounded-lg rounded-tr-none text-left"><p>好的，謝謝醫師！</p></div></div><img class="h-10 w-10 rounded-full object-cover" src="member.jpg" alt="Avatar"></div><div class="text-center text-sm text-gray-400 my-4"><span>- - - - - - -  今日下午  - - - - - - -</span></div><div class="flex items-start gap-3"><img class="h-10 w-10 rounded-full object-cover" src="message.jpg" alt="Avatar"><div class="text-gray-500 text-sm italic mt-2">系統訊息：個案的生理數據報告已更新。 [點此查看]</div></div></div><div class="bg-white border-t p-4 flex items-center"><button class="p-2 text-gray-500 hover:text-gray-700"><svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13" /></svg></button><input type="text" placeholder="輸入訊息..." class="flex-1 mx-2 px-4 py-2 bg-gray-100 rounded-full focus:outline-none"><button class="bg-emerald-600 text-white rounded-full p-3 hover:bg-emerald-700"><svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" /></svg></button></div></section></div>
-            </div>
-
-            <div id="dashboard" class="page-content p-8 hidden">
-                <div class="flex justify-between items-center"><h1 class="text-2xl font-bold text-gray-800">統計儀表板</h1><div class="flex items-center space-x-2"><span class="text-sm text-gray-600">日期區間:</span><input type="date" value="2025-09-01" class="border rounded-md py-1 px-2 text-sm focus:outline-none focus:ring-1 focus:ring-emerald-500"><span>-</span><input type="date" value="2025-09-30" class="border rounded-md py-1 px-2 text-sm focus:outline-none focus:ring-1 focus:ring-emerald-500"></div></div>
-                <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mt-8"><div class="bg-white p-6 rounded-lg shadow-md"><p class="text-gray-500">在案個案總數</p><p class="text-3xl font-bold text-gray-800 mt-1">1,286</p></div><div class="bg-white p-6 rounded-lg shadow-md"><p class="text-gray-500">平均照護天數</p><p class="text-3xl font-bold text-gray-800 mt-1">42.5 天</p></div><div class="bg-white p-6 rounded-lg shadow-md"><p class="text-gray-500">緊急返院率 (本月)</p><p class="text-3xl font-bold text-red-600 mt-1">2.1%</p></div></div>
-                <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mt-8"><div class="bg-white p-6 rounded-lg shadow-sm"><h3 class="font-semibold text-gray-700 mb-4">各服務類型個案分佈</h3><canvas id="caseDistributionChart"></canvas></div><div class="bg-white p-6 rounded-lg shadow-sm"><h3 class="font-semibold text-gray-700 mb-4">每月新收案與結案趨勢</h3><canvas id="monthlyTrendChart"></canvas></div></div>
-                <div class="mt-8 bg-white rounded-lg shadow-sm overflow-hidden"><h3 class="p-4 font-semibold text-gray-700 border-b">高風險個案列表</h3><table class="w-full"><thead class="bg-gray-50"><tr><th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">姓名</th><th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">服務類型</th><th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">風險項目</th><th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">負責人</th></tr></thead><tbody><tr class="border-t hover:bg-gray-50"><td class="px-6 py-4 text-sm font-medium">林 O 妹</td><td class="px-6 py-4 text-sm text-gray-600">居家醫療 (HAH)</td><td class="px-6 py-4 text-sm text-red-600">連續3日血氧低於95%</td><td class="px-6 py-4 text-sm text-gray-600">王心怡 護理師</td></tr><tr class="border-t hover:bg-gray-50"><td class="px-6 py-4 text-sm font-medium">王 O 發</td><td class="px-6 py-4 text-sm text-gray-600">居家醫療 (HAH)</td><td class="px-6 py-4 text-sm text-red-600">24小時內2次跌倒偵測</td><td class="px-6 py-4 text-sm text-gray-600">李雅玲 護理師</td></tr></tbody></table></div>
-            </div>
-            
-            <div id="monitoring" class="page-content p-8 hidden">
-                <div class="flex justify-between items-center mb-6"><h1 class="text-2xl font-bold text-gray-800">即時監測儀表板</h1><div class="flex items-center space-x-2 text-sm"><span class="h-3 w-3 bg-green-500 rounded-full"></span><span>正常</span><span class="h-3 w-3 bg-yellow-500 rounded-full ml-4"></span><span>中度風險</span><span class="h-3 w-3 bg-red-500 rounded-full ml-4"></span><span>高度風險</span></div></div>
-                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-                    <div class="bg-white p-5 rounded-lg shadow-md border-l-4 border-red-500"><div class="flex justify-between items-center"><p class="font-bold text-lg">林 O 妹 (HAH)</p><span class="text-xs text-red-600 font-semibold animate-pulse">高度風險</span></div><p class="text-sm text-gray-500">病歷號: 41951XX</p><div class="mt-4 grid grid-cols-2 gap-4 text-center"><div><p class="text-xs text-gray-500">血氧 SpO2</p><p class="text-2xl font-bold text-red-600">92<span class="text-base font-normal">%</span></p></div><div><p class="text-xs text-gray-500">心率</p><p class="text-2xl font-bold">105<span class="text-base font-normal">bpm</span></p></div><div><p class="text-xs text-gray-500">血壓</p><p class="text-lg font-bold">145/90</p></div><div><p class="text-xs text-gray-500">體溫</p><p class="text-lg font-bold">37.8<span class="text-base font-normal">°C</span></p></div></div><button onclick="showPage('patient-detail')" class="w-full mt-4 text-sm bg-gray-200 py-2 rounded-md hover:bg-gray-300">查看詳情</button></div>
-                    <div class="bg-white p-5 rounded-lg shadow-md border-l-4 border-yellow-500"><div class="flex justify-between items-center"><p class="font-bold text-lg">王 O 發 (HAH)</p><span class="text-xs text-yellow-600 font-semibold">中度風險</span></div><p class="text-sm text-gray-500">病歷號: 55829XX</p><div class="mt-4 grid grid-cols-2 gap-4 text-center"><div><p class="text-xs text-gray-500">血氧 SpO2</p><p class="text-2xl font-bold">96<span class="text-base font-normal">%</span></p></div><div><p class="text-xs text-gray-500">心率</p><p class="text-2xl font-bold">95<span class="text-base font-normal">bpm</span></p></div><div><p class="text-xs text-gray-500">血壓</p><p class="text-lg font-bold text-yellow-600">155/92</p></div><div><p class="text-xs text-gray-500">體溫</p><p class="text-lg font-bold">36.9<span class="text-base font-normal">°C</span></p></div></div><button onclick="showPage('patient-detail')" class="w-full mt-4 text-sm bg-gray-200 py-2 rounded-md hover:bg-gray-300">查看詳情</button></div>
-                    <div class="bg-white p-5 rounded-lg shadow-md border-l-4 border-green-500"><div class="flex justify-between items-center"><p class="font-bold text-lg">陳 O 雄 (PAC)</p><span class="text-xs text-green-600 font-semibold">正常</span></div><p class="text-sm text-gray-500">病歷號: 36979XX</p><div class="mt-4 grid grid-cols-2 gap-4 text-center"><div><p class="text-xs text-gray-500">血氧 SpO2</p><p class="text-2xl font-bold">98<span class="text-base font-normal">%</span></p></div><div><p class="text-xs text-gray-500">心率</p><p class="text-2xl font-bold">72<span class="text-base font-normal">bpm</span></p></div><div><p class="text-xs text-gray-500">血壓</p><p class="text-lg font-bold">135/88</p></div><div><p class="text-xs text-gray-500">體溫</p><p class="text-lg font-bold">36.5<span class="text-base font-normal">°C</span></p></div></div><button onclick="showPage('patient-detail')" class="w-full mt-4 text-sm bg-gray-200 py-2 rounded-md hover:bg-gray-300">查看詳情</button></div>
                 </div>
             </div>
 
-            <div id="referral" class="page-content p-8 hidden">
-                 <div class="flex justify-between items-center mb-6"><h1 class="text-2xl font-bold text-gray-800">電子轉介中心</h1><button class="bg-emerald-600 text-white px-5 py-2 rounded-md hover:bg-emerald-700 text-sm font-medium">建立新轉介</button></div>
-                 <div class="bg-white rounded-lg shadow-sm p-6">
-                    <div class="flex justify-between items-center border-b pb-4 mb-4"><h2 class="text-xl font-semibold">轉介單列表</h2></div>
-                    <table class="w-full"><thead class="bg-gray-50"><tr><th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">個案姓名</th><th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">轉介類型</th><th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">轉出/轉入單位</th><th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">日期</th><th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">狀態</th></tr></thead><tbody class="divide-y"><tr><td class="px-4 py-3 font-medium">張 O 華</td><td class="px-4 py-3 text-gray-600">出院準備 -> 長照B</td><td class="px-4 py-3 text-gray-600">板橋A長照中心</td><td class="px-4 py-3 text-gray-600">2025-10-12</td><td class="px-4 py-3"><span class="px-2 py-1 text-xs font-semibold rounded-full bg-green-100 text-green-800">已接受</span></td></tr><tr><td class="px-4 py-3 font-medium">李 O 明</td><td class="px-4 py-3 text-gray-600">PAC 轉銜</td><td class="px-4 py-3 text-gray-600">新北聯合醫院</td><td class="px-4 py-3 text-gray-600">2025-10-11</td><td class="px-4 py-3"><span class="px-2 py-1 text-xs font-semibold rounded-full bg-yellow-100 text-yellow-800">待回覆</span></td></tr></tbody></table>
-                 </div>
-            </div>
+            <div v-if="showAddPatientModal" class="fixed inset-0 z-50 flex items-center justify-center bg-gray-900/60 backdrop-blur-sm p-4"><div class="bg-white rounded-2xl shadow-2xl w-full max-w-lg p-8"><h3 class="font-bold text-xl mb-4">新增個案</h3><form @submit.prevent="submitPatientManual" class="space-y-4"><input v-model="newPatient.name" placeholder="姓名" class="w-full border p-2 rounded"><input v-model="newPatient.nationalId" placeholder="身分證" class="w-full border p-2 rounded"><input v-model="newPatient.birthDate" type="date" class="w-full border p-2 rounded"><select v-model="newPatient.gender" class="w-full border p-2 rounded"><option value="male">男</option><option value="female">女</option></select><div class="flex justify-end space-x-2"><button type="button" @click="showAddPatientModal = false" class="px-4 py-2 bg-gray-200 rounded">取消</button><button type="submit" class="px-4 py-2 bg-blue-600 text-white rounded">儲存</button></div></form></div></div>
+            <div v-if="showAddUserModal" class="fixed inset-0 z-50 flex items-center justify-center bg-gray-900/60 backdrop-blur-sm"><div class="bg-white rounded-2xl shadow-2xl w-full max-w-md p-8 border border-gray-100"><h3 class="text-xl font-bold text-gray-900 mb-6 tracking-tight">建立新帳號</h3><form @submit.prevent="submitNewUser" class="space-y-4"><input v-model="newUser.name" required placeholder="姓名" class="w-full border border-gray-200 rounded-lg px-4 py-3"><input v-model="newUser.email" type="email" required placeholder="Email" class="w-full border border-gray-200 rounded-lg px-4 py-3"><div class="flex justify-end space-x-3 mt-8 pt-4"><button type="button" @click="showAddUserModal = false" class="px-4 py-2 text-xs font-bold text-gray-400">取消</button><button type="submit" class="px-6 py-2 bg-black text-white rounded-lg text-xs font-bold">建立</button></div></form></div></div>
+            <div v-if="showEditUserModal" class="fixed inset-0 z-50 flex items-center justify-center bg-gray-900/60 backdrop-blur-sm"><div class="bg-white rounded-2xl shadow-2xl w-full max-w-md p-8 border border-gray-100 animate-fade-in-up"><h3 class="text-xl font-bold text-gray-900 mb-6 tracking-tight">編輯使用者權限</h3><form @submit.prevent="submitEditUser" class="space-y-4"><div><label class="block text-xs font-bold text-gray-500 mb-1">姓名</label><input v-model="editingUser.name" required class="w-full border border-gray-200 rounded-lg px-4 py-2 text-gray-900 focus:ring-2 focus:ring-brand-blue outline-none"></div><div><label class="block text-xs font-bold text-gray-500 mb-1">Email</label><input v-model="editingUser.email" type="email" required class="w-full border border-gray-200 rounded-lg px-4 py-2 text-gray-900 focus:ring-2 focus:ring-brand-blue outline-none"></div><div><label class="block text-xs font-bold text-gray-500 mb-1">所屬單位</label><input v-model="editingUser.organization" required class="w-full border border-gray-200 rounded-lg px-4 py-2 text-gray-900 focus:ring-2 focus:ring-brand-blue outline-none"></div><div><label class="block text-xs font-bold text-gray-500 mb-1">系統角色</label><select v-model="editingUser.role" class="w-full border border-gray-200 rounded-lg px-4 py-2 bg-white focus:ring-2 focus:ring-brand-blue outline-none"><option value="admin">系統管理員</option><option value="case_manager">個案管理師</option><option value="physician">醫師</option><option value="hospital_staff">一般院內人員</option></select></div><div class="flex justify-end space-x-3 mt-8 pt-4 border-t border-gray-50"><button type="button" @click="showEditUserModal = false" class="px-4 py-2 text-sm font-bold text-gray-500 hover:bg-gray-100 rounded-lg">取消</button><button type="submit" class="px-6 py-2 bg-brand-blue text-white rounded-lg text-sm font-bold hover:bg-blue-700 shadow-lg hover:shadow-xl transition"><span v-if="loading"><i class="fa-solid fa-spinner fa-spin mr-1"></i> 儲存中</span><span v-else>確認修改</span></button></div></form></div></div>
 
-            <div id="scheduling" class="page-content p-8 hidden">
-                 <div class="flex justify-between items-center mb-6"><h1 class="text-2xl font-bold text-gray-800">訪視排程</h1></div>
-                 <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                    <div class="lg:col-span-2 bg-white rounded-lg shadow-sm p-4"><h2 class="font-semibold mb-4">團隊行事曆 - 2025年10月13日 (一)</h2><div class="border rounded-md divide-y"><div class="p-3"><b>09:00 - 10:00</b> | 王心怡 護理師 | 居家訪視: 陳 O 雄 (板橋區)</div><div class="p-3 bg-emerald-50"><b>10:30 - 11:30</b> | 遠傳 督導 | 居家訪視: 林 O 妹 (中和區)</div><div class="p-3"><b>14:00 - 15:00</b> | 王心怡 護理師 | PAC訪視: 李 O 明 (土城區)</div></div></div>
-                    <div class="bg-white rounded-lg shadow-sm p-4"><h2 class="font-semibold mb-2">今日訪視路徑 (遠傳 督導)</h2><p class="text-sm text-gray-500 mb-4">AI 規劃最佳路徑，預計節省 15 分鐘</p><div class="space-y-4 text-sm"><div class="flex items-start"><span class="bg-emerald-600 text-white rounded-full h-6 w-6 text-center font-bold mr-3">1</span><div><p class="font-medium">林 O 妹 (10:30)</p><p class="text-gray-500">中和區中山路二段</p></div></div><div class="flex items-start"><span class="bg-emerald-600 text-white rounded-full h-6 w-6 text-center font-bold mr-3">2</span><div><p class="font-medium">高 O 蓮 (11:45)</p><p class="text-gray-500">永和區永和路一段</p></div></div></div><a href="googlemap.html" target="_blank"><button class="w-full mt-4 bg-blue-500 text-white py-2 rounded-md hover:bg-blue-600 text-sm">開始導航</button></a></div>
-                 </div>
-            </div>
-
-            <div id="admin" class="page-content p-8 hidden">
-                <div class="flex justify-between items-center mb-6"><h1 class="text-2xl font-bold text-gray-800">後台管理</h1></div>
-                <div class="bg-white rounded-lg shadow-sm p-6"><h2 class="text-xl font-semibold mb-4">使用者權限管理</h2><table class="w-full"><thead class="bg-gray-50"><tr><th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">姓名</th><th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">單位</th><th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">角色</th><th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">操作</th></tr></thead><tbody class="divide-y"><tr><td class="px-4 py-3 font-medium">王心怡</td><td class="px-4 py-3 text-gray-600">社區護理中心</td><td class="px-4 py-3 text-gray-600">居家護理師</td><td class="px-4 py-3"><a href="#" class="text-emerald-600 hover:text-emerald-900 text-sm">編輯</a></td></tr><tr><td class="px-4 py-3 font-medium">陳家宏</td><td class="px-4 py-3 text-gray-600">家庭醫學科</td><td class="px-4 py-3 text-gray-600">居家醫療醫師</td><td class="px-4 py-3"><a href="#" class="text-emerald-600 hover:text-emerald-900 text-sm">編輯</a></td></tr></tbody></table></div>
-            </div>
-
-            <div id="discharge-planning" class="page-content p-8 hidden">
-                 <div class="flex justify-between items-center mb-6"><h1 class="text-2xl font-bold text-gray-800">出院準備</h1></div>
-                 <div class="bg-white rounded-lg shadow-sm p-6">
-                    <h2 class="text-xl font-semibold mb-4">待出院個案列表</h2>
-                    <table class="w-full">
-                        <thead class="bg-gray-50"><tr>
-                            <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">個案姓名</th>
-                            <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">預計出院日</th>
-                            <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">準備進度</th>
-                            <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">狀態</th>
-                            <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">負責人</th>
-                        </tr></thead>
-                        <tbody class="divide-y">
-                            <tr>
-                                <td class="px-4 py-3 font-medium">吳 O 玲</td><td class="px-4 py-3 text-gray-600">2025-10-15</td>
-                                <td class="px-4 py-3"><div class="w-full bg-gray-200 rounded-full h-2.5"><div class="bg-green-600 h-2.5 rounded-full" style="width: 100%"></div></div></td>
-                                <td class="px-4 py-3"><span class="px-2 py-1 text-xs font-semibold rounded-full bg-green-100 text-green-800">準備完成</span></td>
-                                <td class="px-4 py-3 text-gray-600">翁意茹</td>
-                            </tr>
-                             <tr>
-                                <td class="px-4 py-3 font-medium">陳 O 發</td><td class="px-4 py-3 text-gray-600">2025-10-16</td>
-                                <td class="px-4 py-3"><div class="w-full bg-gray-200 rounded-full h-2.5"><div class="bg-yellow-400 h-2.5 rounded-full" style="width: 75%"></div></div></td>
-                                <td class="px-4 py-3"><span class="px-2 py-1 text-xs font-semibold rounded-full bg-yellow-100 text-yellow-800">長照評估中</span></td>
-                                <td class="px-4 py-3 text-gray-600">翁意茹</td>
-                            </tr>
-                        </tbody>
-                    </table>
-                 </div>
-            </div>
-            
-            <div id="pac-care" class="page-content p-8 hidden">
-                 <div class="flex justify-between items-center mb-6"><h1 class="text-2xl font-bold text-gray-800">急性後期照護 (PAC)</h1></div>
-                 <div class="bg-white rounded-lg shadow-sm p-6">
-                    <h2 class="text-xl font-semibold mb-4">PAC 個案列表</h2>
-                    <table class="w-full">
-                        <thead class="bg-gray-50"><tr>
-                            <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">個案姓名</th>
-                            <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">PAC天數</th>
-                            <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">復健進度</th>
-                            <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">目前機構</th>
-                             <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">負責個管師</th>
-                        </tr></thead>
-                        <tbody class="divide-y">
-                            <tr>
-                                <td class="px-4 py-3 font-medium">陳 O 雄</td><td class="px-4 py-3 text-gray-600">15 / 28 天</td>
-                                <td class="px-4 py-3 text-gray-600">右上肢肌力進步</td>
-                                <td class="px-4 py-3 text-gray-600">亞東紀念醫院</td>
-                                <td class="px-4 py-3 text-gray-600">林芳鈴</td>
-                            </tr>
-                        </tbody>
-                    </table>
-                 </div>
-            </div>
-
-            <div id="hah-care" class="page-content p-8 hidden">
-                 <div class="flex justify-between items-center mb-6"><h1 class="text-2xl font-bold text-gray-800">居家醫療 (HAH)</h1></div>
-                 <div class="bg-white rounded-lg shadow-sm p-6">
-                    <h2 class="text-xl font-semibold mb-4">HAH 個案列表</h2>
-                     <p class="text-sm text-gray-500 mb-4">此頁面顯示正在接受在宅急症照護的個案，可由此處快速查看即時狀態或安排訪視。</p>
-                    <table class="w-full">
-                        <thead class="bg-gray-50"><tr>
-                            <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">個案姓名</th>
-                            <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">主要診斷</th>
-                            <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">即時狀態</th>
-                            <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">下次訪視</th>
-                            <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">主責醫師</th>
-                        </tr></thead>
-                        <tbody class="divide-y">
-                            <tr class="bg-red-50"><td class="px-4 py-3 font-medium">林 O 妹</td><td class="px-4 py-3 text-gray-600">COPD</td>
-                                <td class="px-4 py-3"><span class="px-2 py-1 text-xs font-semibold rounded-full bg-red-100 text-red-800 animate-pulse">血氧過低</span></td>
-                                <td class="px-4 py-3 text-gray-600">2025-10-14 (醫師)</td>
-                                <td class="px-4 py-3 text-gray-600">陳家宏</td>
-                            </tr>
-                            <tr><td class="px-4 py-3 font-medium">王 O 發</td><td class="px-4 py-3 text-gray-600">蜂窩性組織炎</td>
-                                <td class="px-4 py-3"><span class="px-2 py-1 text-xs font-semibold rounded-full bg-green-100 text-green-800">穩定</span></td>
-                                <td class="px-4 py-3 text-gray-600">2025-10-15 (護理師)</td>
-                                <td class="px-4 py-3 text-gray-600">陳家宏</td>
-                            </tr>
-                        </tbody>
-                    </table>
-                 </div>
-            </div>
-
-             <div id="long-term-care" class="page-content p-8 hidden">
-                 <div class="flex justify-between items-center mb-6"><h1 class="text-2xl font-bold text-gray-800">長照服務</h1></div>
-                 <div class="bg-white rounded-lg shadow-sm p-6">
-                    <h2 class="text-xl font-semibold mb-4">長照轉介與資源</h2>
-                     <table class="w-full">
-                        <thead class="bg-gray-50"><tr>
-                            <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">個案姓名</th>
-                            <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">申請服務</th>
-                            <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">轉介單位</th>
-                            <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">狀態</th>
-                        </tr></thead>
-                        <tbody class="divide-y">
-                            <tr><td class="px-4 py-3 font-medium">張 O 華</td><td class="px-4 py-3 text-gray-600">居家服務 (B碼)</td>
-                                <td class="px-4 py-3 text-gray-600">板橋A長照中心</td>
-                                <td class="px-4 py-3"><span class="px-2 py-1 text-xs font-semibold rounded-full bg-green-100 text-green-800">服務中</span></td>
-                            </tr>
-                        </tbody>
-                    </table>
-                 </div>
-            </div>
-
-
-        </main>
+        </div>
     </div>
 
     <script>
-        // 加入新的頁面 ID: 'fet-plan' (原為 sinlau-plan)
-        const allPages = ['home', 'case-overview', 'patient-detail', 'communication', 'dashboard', 'monitoring', 'referral', 'scheduling', 'admin', 'discharge-planning', 'pac-care', 'hah-care', 'long-term-care', 'fet-plan'];
-        
-        function showPage(pageId) {
-            allPages.forEach(id => {
-                const pageElement = document.getElementById(id);
-                if (pageElement) pageElement.classList.add('hidden');
-            });
-            const targetPage = document.getElementById(pageId);
-            if (targetPage) targetPage.classList.remove('hidden');
-            document.querySelector('main').scrollTop = 0;
+        const { createApp } = Vue;
 
-            let pageTitle = "首頁儀表板";
-            document.querySelectorAll('.nav-item').forEach(item => {
-                item.classList.remove('active-nav');
-                item.classList.add('text-gray-600', 'hover:bg-gray-100');
-                
-                const onclickAttr = item.getAttribute('onclick');
-                
-                if (onclickAttr && onclickAttr.includes(`'${pageId}'`)) {
-                    item.classList.add('active-nav');
-                    item.classList.remove('text-gray-600', 'hover:bg-gray-100');
-                    pageTitle = item.querySelector('span').textContent;
+        createApp({
+            data() {
+                return {
+                    googleClientId: typeof GOOGLE_CLIENT_ID !== 'undefined' ? GOOGLE_CLIENT_ID : '',
+                    loading: false, isLoggedIn: false, loginEmail: '', loginError: '', showSplash: true, startFadeOut: false,
+                    currentUser: null, currentTab: 'dashboard', users: [], patients: [], observations: [],
+                    currentPage: 1, itemsPerPage: 10,
+
+                    // Modal States
+                    showDetailModal: false, selectedPatient: {}, patientObservations: [], latestMetrics: {}, bpChart: null, gluChart: null,
+                    detailTab: 'vitals', // vitals, medical, dicom
+                    
+                    // Forms
+                    form: { timing: '起床空腹', sys: '', dia: '', hr: '', glu: '', note: '', summary: '', labResults: '', icdCode: '', icdDesc: '' },
+                    newPatient: { name: '', nationalId: '', birthDate: '', gender: 'male' }, 
+                    newUser: { name: '', email: '', role: 'hospital_staff', organization: '遠傳醫院' },
+                    editingUser: { id: '', name: '', email: '', role: '', organization: '' },
+                    showAddPatientModal: false, showAddUserModal: false, showEditUserModal: false,
+
+                    // Search & Filter
+                    searchKeyword: '',
+                    dateRange: '30d', // 30d, 6m, 1y, custom
+                    filterStartDate: '', filterEndDate: '',
+
+                    // ICD-10 Logic
+                    icdQuery: '', showIcdList: false, icdDatabase: [], filteredIcdList: [],
+
+                    // DICOM Logic
+                    dicomList: [], newDicom: { summary: '' }, selectedDicom: null
                 }
-            });
-            
-            const titleMap = {
-                'patient-detail': '個案詳情',
-                'discharge-planning': '出院準備',
-                'pac-care': '急性後期照護 (PAC)',
-                'hah-care': '居家醫療 (HAH)',
-                'long-term-care': '長照服務',
-                'fet-plan': '網站規劃藍圖' // 更新標題映射
-            };
-            if(titleMap[pageId]) {
-                pageTitle = titleMap[pageId];
-            }
-
-            document.getElementById('page-title').textContent = pageTitle;
-
-            if (pageId === 'patient-detail') {
-                initPatientCharts();
-                setupTabs();
-            } else if (pageId === 'dashboard') {
-                initDashboardCharts();
-            }
-            
-            if (pageId === 'case-overview') {
-                setTimeout(generateAllBarcodes, 50); 
-            }
-        }
-
-        function generateAllBarcodes() {
-            if (typeof JsBarcode !== 'function') {
-                console.error("JsBarcode library not loaded. Please check internet connection.");
-                return;
-            }
-            
-            const barcodeElements = document.querySelectorAll('.barcode-svg');
-            
-            barcodeElements.forEach(svg => {
-                const idValue = svg.dataset.value;
-                
-                if (idValue) {
-                    try {
-                        JsBarcode(svg, idValue, {
-                            format: "CODE128",
-                            displayValue: false,
-                            height: 30,
-                            width: 1.5,
-                            margin: 0
-                        });
-                    } catch (e) {
-                        console.error("Failed to generate barcode for:", idValue, e);
-                    }
-                }
-            });
-        }
-        
-        function setupTabs() {
-            const tabs = document.querySelectorAll('#patient-tabs .tab-item');
-            const tabContents = document.querySelectorAll('#patient-detail .tab-content');
-
-            tabs.forEach(tab => {
-                tab.addEventListener('click', (e) => {
-                    e.preventDefault();
-                    tabs.forEach(item => {
-                        item.classList.remove('border-emerald-500', 'text-emerald-600');
-                        item.classList.add('border-transparent', 'text-gray-500', 'hover:text-gray-700', 'hover:border-gray-300');
+            },
+            watch: {
+                searchKeyword() { this.currentPage = 1; }
+            },
+            computed: {
+                currentMenu() {
+                    if (!this.currentUser) return [];
+                    const common = [ { id: 'dashboard', label: '系統主控台', icon: 'fa-solid fa-chart-pie', color: 'from-blue-500 to-cyan-500', textColor: 'text-blue-500' } ];
+                    
+                    // 個案管理師與其他人員的完整選單
+                    const caseManagerMenu = [ 
+                        { id: 'patients', label: '個案管理清單', icon: 'fa-solid fa-user-injured', color: 'from-brand-blue to-indigo-600', textColor: 'text-brand-blue' }, 
+                        { id: 'observations', label: '生理監控', icon: 'fa-solid fa-heart-pulse', color: 'from-rose-500 to-pink-600', textColor: 'text-rose-500' }, 
+                        { id: 'health_edu', label: '衛教資源中心', icon: 'fa-solid fa-book-medical', color: 'from-emerald-500 to-teal-500', textColor: 'text-emerald-600' }, 
+                        { id: 'reports', label: '數據報表中心', icon: 'fa-solid fa-file-invoice', color: 'from-gray-600 to-gray-800', textColor: 'text-gray-600' }, 
+                        { id: 'consultation', label: '線上照會區', icon: 'fa-solid fa-comments', color: 'from-orange-500 to-red-500', textColor: 'text-orange-500' }, 
+                        { id: 'knowledge_base', label: '共照知識庫', icon: 'fa-solid fa-book-open', color: 'from-purple-500 to-violet-600', textColor: 'text-purple-600' }, 
+                        { id: 'referrals', label: '電子轉診系統', icon: 'fa-solid fa-file-medical', color: 'from-green-500 to-emerald-600', textColor: 'text-green-600' } 
+                    ];
+                    
+                    // 醫師的完整選單
+                    const physicianMenu = [ 
+                        { id: 'patients', label: '個案病歷查詢', icon: 'fa-solid fa-magnifying-glass', color: 'from-brand-blue to-cyan-600', textColor: 'text-brand-blue' }, 
+                        { id: 'referrals', label: '電子轉診系統', icon: 'fa-solid fa-file-medical', color: 'from-purple-500 to-violet-600', textColor: 'text-purple-600' }, 
+                        { id: 'consultation', label: '線上照會區', icon: 'fa-solid fa-comments', color: 'from-orange-500 to-red-500', textColor: 'text-orange-500' } 
+                    ];
+                    
+                    if (['case_manager', 'hospital_staff', 'admin'].includes(this.currentUser.role)) return [...common, ...caseManagerMenu];
+                    else if (this.currentUser.role === 'physician') return [...common, ...physicianMenu];
+                    return common;
+                },
+                filteredSortedPatients() {
+                    let list = this.patients.map(p => {
+                        const pObs = this.observations.filter(o => String(o.patientId || o.patientID) === String(p.id));
+                        const lastTime = pObs.length > 0 ? pObs.sort((a,b) => new Date(b.timestamp) - new Date(a.timestamp))[0].timestamp : '1970-01-01 00:00';
+                        return { ...p, lastUpdate: pObs.length > 0 ? lastTime : '' };
                     });
-                    tab.classList.add('border-emerald-500', 'text-emerald-600');
-                    tab.classList.remove('border-transparent', 'text-gray-500');
-                    const tabMap = { '生理數據': 'vitals-content', '照護紀錄': 'records-content' };
-                    const targetContentId = tabMap[tab.textContent.trim()];
-                    tabContents.forEach(content => {
-                        if (targetContentId && content.id === targetContentId) {
-                            content.classList.remove('hidden');
-                        } else {
-                            content.classList.add('hidden');
+                    if (this.searchKeyword) {
+                        const k = this.searchKeyword.toLowerCase();
+                        list = list.filter(p => p.name.includes(k) || p.nationalId.includes(k) || String(p.id).toLowerCase().includes(k));
+                    }
+                    return list.sort((a, b) => new Date(b.lastUpdate) - new Date(a.lastUpdate));
+                },
+                paginatedPatients() {
+                    const start = (this.currentPage - 1) * this.itemsPerPage;
+                    return this.filteredSortedPatients.slice(start, start + this.itemsPerPage);
+                },
+                totalPages() { return Math.ceil(this.filteredSortedPatients.length / this.itemsPerPage); },
+                abnormalCount() {
+                    const today = new Date().toISOString().slice(0, 10);
+                    const abnormalPatientIds = new Set();
+                    this.observations.forEach(o => {
+                        if (o.timestamp.startsWith(today) && ((o.code === 'systolic_bp' && o.value > 140) || (o.code.startsWith('glucose') && o.value > 126))) {
+                            abnormalPatientIds.add(o.patientId || o.patientID);
                         }
                     });
-                });
-            });
-        }
+                    return abnormalPatientIds.size;
+                }
+            },
+            mounted() {
+                const user = localStorage.getItem('currentUser');
+                if (!user) { window.location.href = 'login.html'; return; }
+                try { this.currentUser = JSON.parse(user); this.isLoggedIn = true; } 
+                catch(e) { window.location.href = 'login.html'; return; }
 
-        let bpChartInstance, hrSpo2ChartInstance, caseDistChartInstance, monthlyTrendChartInstance;
+                setTimeout(() => { this.startFadeOut = true; setTimeout(() => { this.showSplash = false; }, 800); }, 1500); 
 
-        function initPatientCharts() {
-            const bpCtx = document.getElementById('bpChart').getContext('2d');
-            const hrSpo2Ctx = document.getElementById('hrSpo2Chart').getContext('2d');
-            const labels = ['10/07', '10/08', '10/09', '10/10', '10/11', '10/12', '10/13'];
-            if (bpChartInstance) bpChartInstance.destroy();
-            bpChartInstance = new Chart(bpCtx, { type: 'line', data: { labels: labels, datasets: [{ label: '收縮壓', data: [140, 145, 138, 155, 148, 162, 135], borderColor: 'rgb(239, 68, 68)', backgroundColor: 'rgba(239, 68, 68, 0.1)', fill: true, tension: 0.3 }, { label: '舒張壓', data: [90, 92, 88, 98, 90, 95, 88], borderColor: 'rgb(59, 130, 246)', backgroundColor: 'rgba(59, 130, 246, 0.1)', fill: true, tension: 0.3 }] }, options: { responsive: true, maintainAspectRatio: true } });
-            if (hrSpo2ChartInstance) hrSpo2ChartInstance.destroy();
-            hrSpo2ChartInstance = new Chart(hrSpo2Ctx, { type: 'line', data: { labels: labels, datasets: [{ label: '心率 (bpm)', data: [78, 80, 75, 85, 82, 88, 72], borderColor: 'rgb(249, 115, 22)', yAxisID: 'y', tension: 0.3 }, { label: '血氧 (SpO2)', data: [98, 97, 98, 96, 97, 95, 98], borderColor: 'rgb(22, 163, 74)', yAxisID: 'y1', tension: 0.3 }] }, options: { responsive: true, maintainAspectRatio: true, scales: { y: { type: 'linear', display: true, position: 'left', min: 50, max: 120, title: { display: true, text: '心率 (bpm)'}}, y1: { type: 'linear', display: true, position: 'right', min: 90, max: 100, title: { display: true, text: '血氧 (%)'}, grid: { drawOnChartArea: false }}}} });
-        }
+                this.refreshData();
+                this.fetchData('users'); 
+                this.loadICD10();
+            },
+            methods: {
+                logout() { localStorage.removeItem('currentUser'); window.location.href = 'login.html'; },
+                navigate(tabId) { if (tabId === 'observations') window.open('phddashboard.html', '_blank'); else if (tabId === 'referrals') window.open('refer.html', '_blank'); else this.currentTab = tabId; },
+                
+                async fetchData(endpoint) {
+                   try {
+                       const res = await fetch(`${API_BASE_URL}?endpoint=${endpoint}&_t=${new Date().getTime()}`);
+                       const json = await res.json();
+                       if(json.status==='success') {
+                           if(endpoint==='users') this.users = json.data;
+                           if(endpoint==='dicoms') this.dicomList = json.data;
+                       }
+                   } catch(e) { console.error(e); }
+                },
+                async refreshData() {
+                    this.loading = true;
+                    try {
+                        const [pRes, oRes] = await Promise.all([ fetch(`${API_BASE_URL}?endpoint=patients`), fetch(`${API_BASE_URL}?endpoint=observations`) ]);
+                        const pJson = await pRes.json(); const oJson = await oRes.json();
+                        if (pJson.status === 'success') this.patients = pJson.data;
+                        if (oJson.status === 'success') this.observations = oJson.data;
+                    } catch (e) { console.error(e); }
+                    this.loading = false;
+                },
 
-        function initDashboardCharts() {
-            const caseDistCtx = document.getElementById('caseDistributionChart').getContext('2d');
-            const monthlyTrendCtx = document.getElementById('monthlyTrendChart').getContext('2d');
-            if (caseDistChartInstance) caseDistChartInstance.destroy();
-            caseDistChartInstance = new Chart(caseDistCtx, { type: 'doughnut', data: { labels: ['居家醫療 (HAH)', '急性後期照護 (PAC)', '出院準備', '長照服務'], datasets: [{ label: '個案數', data: [450, 310, 250, 191], backgroundColor: ['rgb(59, 130, 246)', 'rgb(249, 115, 22)', 'rgb(16, 185, 129)', 'rgb(239, 68, 68)'], hoverOffset: 4 }] }, options: { responsive: true, maintainAspectRatio: true } });
-            if (monthlyTrendChartInstance) monthlyTrendChartInstance.destroy();
-            monthlyTrendChartInstance = new Chart(monthlyTrendCtx, { type: 'bar', data: { labels: ['7月', '8月', '9月', '10月'], datasets: [ { label: '新收案', data: [110, 125, 130, 115], backgroundColor: 'rgba(16, 185, 129, 0.6)' }, { label: '結案', data: [95, 102, 115, 105], backgroundColor: 'rgba(249, 115, 22, 0.6)' } ] }, options: { responsive: true, maintainAspectRatio: true, scales: { y: { beginAtZero: true } } } });
-        }
+                // --- Modal & Detail Logic ---
+                openPatientDetail(patient) {
+                    this.selectedPatient = patient;
+                    this.showDetailModal = true;
+                    this.detailTab = 'vitals';
+                    // Reset Filters
+                    this.dateRange = '30d';
+                    this.updatePatientData();
+                    this.fetchDicoms();
+                },
+                changeDateRange(range) {
+                    this.dateRange = range;
+                    this.updatePatientData();
+                },
+                filterObsByDate(obsList) {
+                    if (this.dateRange === 'custom' && (!this.filterStartDate || !this.filterEndDate)) return obsList;
+                    
+                    const now = new Date();
+                    let cutoff = new Date();
+                    
+                    if (this.dateRange === '30d') cutoff.setDate(now.getDate() - 30);
+                    else if (this.dateRange === '6m') cutoff.setMonth(now.getMonth() - 6);
+                    else if (this.dateRange === '1y') cutoff.setFullYear(now.getFullYear() - 1);
+                    else if (this.dateRange === 'custom') {
+                        const start = new Date(this.filterStartDate);
+                        const end = new Date(this.filterEndDate); end.setHours(23,59,59);
+                        return obsList.filter(o => { const t = new Date(o.timestamp); return t >= start && t <= end; });
+                    }
+                    
+                    return obsList.filter(o => new Date(o.timestamp) >= cutoff);
+                },
+                updatePatientData() {
+                    const allObs = this.observations.filter(o => String(o.patientId || o.patientID) === String(this.selectedPatient.id)).sort((a,b) => new Date(b.timestamp) - new Date(a.timestamp));
+                    
+                    this.patientObservations = allObs; 
+                    
+                    this.latestMetrics = {
+                        sys: allObs.find(o=>o.code==='systolic_bp')?.value,
+                        dia: allObs.find(o=>o.code==='diastolic_bp')?.value,
+                        hr:  allObs.find(o=>o.code==='heart_rate')?.value,
+                        glu: allObs.find(o=>o.code.startsWith('glucose'))?.value
+                    };
 
-        document.addEventListener('DOMContentLoaded', () => {
-            showPage('home');
-        });
+                    const filtered = this.filterObsByDate(allObs);
+                    const chartData = [...filtered].sort((a,b) => new Date(a.timestamp) - new Date(b.timestamp));
+                    this.$nextTick(() => { this.renderCharts(chartData); });
+                },
+
+                // --- Data Submission (Vitals) ---
+                async submitData() {
+                    this.loading = true;
+                    const requests = []; const now = new Date();
+                    const createReq = (code, val, unit) => {
+                        const params = new URLSearchParams({ action: 'addObservation', patientId: this.selectedPatient.id, code: code, value: val, unit: unit });
+                        return fetch(`${API_BASE_URL}?${params.toString()}`);
+                    };
+                    try {
+                        if(this.form.sys) requests.push(createReq('systolic_bp', this.form.sys, 'mmHg'));
+                        if(this.form.dia) requests.push(createReq('diastolic_bp', this.form.dia, 'mmHg'));
+                        if(this.form.hr)  requests.push(createReq('heart_rate', this.form.hr, 'BPM'));
+                        if(this.form.glu) { const code = this.form.timing.includes('空腹') ? 'glucose_ac' : 'glucose_pc'; requests.push(createReq(code, this.form.glu, 'mg/dL')); }
+                        await Promise.all(requests);
+                        alert('生理數據上傳成功！');
+                        this.form.sys=''; this.form.dia=''; this.form.hr=''; this.form.glu='';
+                        this.refreshData().then(() => this.updatePatientData());
+                    } catch(e) { alert('上傳失敗'); } finally { this.loading = false; }
+                },
+
+                // --- Data Submission (Medical) ---
+                async submitMedical() {
+                    this.loading = true;
+                    const requests = [];
+                    const createReq = (code, val) => {
+                        const params = new URLSearchParams({ action: 'addObservation', patientId: this.selectedPatient.id, code: code, value: val, unit: 'text' });
+                        return fetch(`${API_BASE_URL}?${params.toString()}`);
+                    };
+                    try {
+                        if(this.form.icdCode) requests.push(createReq('diagnosis_icd10', `${this.form.icdCode} ${this.form.icdDesc}`));
+                        if(this.form.summary) requests.push(createReq('clinical_summary', this.form.summary));
+                        if(this.form.labResults) requests.push(createReq('lab_results', this.form.labResults));
+                        
+                        await Promise.all(requests);
+                        alert('病歷資料儲存成功！');
+                        this.form.icdCode=''; this.form.icdDesc=''; this.icdQuery=''; this.form.summary=''; this.form.labResults='';
+                        this.refreshData().then(() => this.updatePatientData());
+                    } catch(e) { alert('儲存失敗'); } finally { this.loading = false; }
+                },
+
+                // --- DICOM Logic ---
+                async fetchDicoms() {
+                    try {
+                        const res = await fetch(`${API_BASE_URL}?endpoint=dicoms&patientId=${this.selectedPatient.id}&_t=${Date.now()}`);
+                        const json = await res.json();
+                        if(json.status === 'success') this.dicomList = json.data;
+                    } catch(e) { console.error(e); }
+                },
+                async uploadDicom() {
+                    if (!this.newDicom.summary) { alert('請輸入影像摘要'); return; }
+                    this.loading = true;
+                    // Simulate Upload: Only save metadata
+                    try {
+                        const params = new URLSearchParams({
+                            action: 'addDicom',
+                            patientId: this.selectedPatient.id,
+                            filename: `DICOM_${Date.now()}.zip`,
+                            summary: this.newDicom.summary
+                        });
+                        await fetch(`${API_BASE_URL}?${params.toString()}`);
+                        alert('DICOM 模擬上傳成功！');
+                        this.newDicom.summary = '';
+                        this.fetchDicoms();
+                    } catch(e) { alert('上傳錯誤'); } finally { this.loading = false; }
+                },
+
+                // --- ICD-10 Logic ---
+                async loadICD10() {
+                    try {
+                        const res = await fetch('ICD10.xls');
+                        const arrayBuffer = await res.arrayBuffer();
+                        const workbook = XLSX.read(arrayBuffer, { type: 'array' });
+                        const firstSheetName = workbook.SheetNames[0];
+                        const jsonData = XLSX.utils.sheet_to_json(workbook.Sheets[firstSheetName], { header: 1 });
+                        this.icdDatabase = jsonData.slice(1).map(row => ({ code: row[0], descEn: row[2], desc: row[3] })).filter(item => item.code);
+                    } catch (e) { console.error("ICD Load Error (Ensure ICD10.xls is present)"); }
+                },
+                searchICD() { 
+                    if (this.icdQuery.length<1){this.showIcdList=false;return;} 
+                    const k=this.icdQuery.toLowerCase(); 
+                    this.filteredIcdList=this.icdDatabase.filter(i=>(i.code&&i.code.toLowerCase().includes(k))||(i.desc&&i.desc.toLowerCase().includes(k))).slice(0,20); 
+                    this.showIcdList=true; 
+                },
+                selectICD(item) { 
+                    this.form.icdCode = item.code; 
+                    this.form.icdDesc = item.desc;
+                    this.icdQuery = `${item.code} - ${item.desc}`; 
+                    this.showIcdList = false; 
+                },
+
+                // --- Charts ---
+                renderCharts(data) {
+                    if(this.bpChart) this.bpChart.destroy();
+                    if(this.gluChart) this.gluChart.destroy();
+                    const labels = [...new Set(data.map(d => d.timestamp.slice(0, 16)))];
+                    
+                    const sysData = labels.map(l => { const f = data.find(d => d.timestamp.startsWith(l) && d.code === 'systolic_bp'); return f ? f.value : null; });
+                    const diaData = labels.map(l => { const f = data.find(d => d.timestamp.startsWith(l) && d.code === 'diastolic_bp'); return f ? f.value : null; });
+                    
+                    this.bpChart = new Chart(document.getElementById('bpChart'), { type: 'line', data: { labels: labels, datasets: [ { label: '收縮壓', data: sysData, borderColor: '#ef4444', backgroundColor: 'rgba(239, 68, 68, 0.1)', fill: true, tension: 0.4 }, { label: '舒張壓', data: diaData, borderColor: '#3b82f6', backgroundColor: 'rgba(59, 130, 246, 0.1)', fill: true, tension: 0.4 } ] }, options: { responsive: true, maintainAspectRatio: false } });
+                    
+                    const gluData = labels.map(l => { const f = data.find(d => d.timestamp.startsWith(l) && d.code.startsWith('glucose')); return f ? f.value : null; });
+                    this.gluChart = new Chart(document.getElementById('gluChart'), { type: 'line', data: { labels: labels, datasets: [{ label: '血糖', data: gluData, borderColor: '#f97316', backgroundColor: 'rgba(249, 115, 22, 0.1)', fill: true, tension: 0.4 }] }, options: { responsive: true, maintainAspectRatio: false } });
+                },
+
+                // --- User Management (保留原有功能) ---
+                openAddUserModal() { this.newUser = { name: '', email: '', role: 'hospital_staff', organization: '遠傳醫院' }; this.showAddUserModal = true; },
+                async submitNewUser() { const p = new URLSearchParams({ action: 'addUser', ...this.newUser }); await fetch(`${API_BASE_URL}?${p}`); this.showAddUserModal = false; this.fetchData('users'); },
+                openEditUserModal(user) { this.editingUser = JSON.parse(JSON.stringify(user)); this.showEditUserModal = true; },
+                async submitEditUser() { 
+                    this.loading = true;
+                    try {
+                        const params = new URLSearchParams({ action: 'editUser', ...this.editingUser });
+                        await fetch(`${API_BASE_URL}?${params.toString()}`);
+                        this.showEditUserModal = false; this.fetchData('users');
+                    } finally { this.loading = false; }
+                },
+                async deleteUser(id) { if(confirm('刪除?')) { await fetch(`${API_BASE_URL}?action=deleteUser&id=${id}`); this.fetchData('users'); } },
+                
+                navClass(id, color) { return this.currentTab === id ? `bg-gradient-to-r ${color} text-white shadow-lg` : 'text-gray-500 hover:bg-white'; },
+                getTabTitle(tab) { return { 'dashboard': '系統主控台', 'patients': '個案管理清單', 'observations': '生理監控', 'admin_users': '系統權限管理', 'health_edu': '衛教資源中心', 'reports': '數據報表中心', 'consultation': '線上照會區', 'knowledge_base': '共照知識庫', 'referrals': '雙向轉診管理' }[tab] || tab; },
+                translateRole(role) { return { 'admin': '管理員', 'case_manager': '個管師', 'physician': '醫師', 'hospital_staff': '院內人員' }[role] || role; },
+                roleBadgeClass(role) { return 'bg-gray-100 text-gray-700 border-gray-200'; },
+                translateCode(code) { return { 'systolic_bp': '收縮壓', 'diastolic_bp': '舒張壓', 'glucose_ac': '飯前血糖', 'glucose_pc': '飯後血糖', 'heart_rate': '心率', 'diagnosis_icd10': '診斷 (ICD-10)', 'clinical_summary': '病歷摘要', 'lab_results': '檢驗報告' }[code] || code; }
+            }
+        }).mount('#app');
     </script>
 </body>
 </html>
