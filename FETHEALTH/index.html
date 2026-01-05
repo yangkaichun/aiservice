@@ -1,594 +1,484 @@
 <!DOCTYPE html>
-<html lang="zh-TW" class="scroll-smooth dark">
+<html lang="zh-TW">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>遠傳醫院全人照護個案管理平台 | 智慧醫療解決方案</title>
+    <title>遠傳醫院全人照護個案管理平台 | Future Health OS</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <script>
-        tailwind.config = {
-            darkMode: 'class',
-            theme: {
-                extend: {
-                    colors: {
-                        slate: {
-                            850: '#1e293b',
-                            900: '#0f172a',
-                            950: '#020617',
-                        },
-                        blue: {
-                            400: '#60a5fa',
-                            500: '#3b82f6',
-                            600: '#2563eb',
-                            700: '#1d4ed8',
-                        }
-                    },
-                    boxShadow: {
-                        'neon-blue': '0 0 20px -5px rgba(59, 130, 246, 0.5)',
-                        'neon-purple': '0 0 20px -5px rgba(168, 85, 247, 0.5)',
-                    }
-                }
-            }
-        }
-    </script>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@300;400;500;700&family=Share+Tech+Mono&display=swap" rel="stylesheet">
     <style>
-        body {
-            font-family: 'Inter', sans-serif;
-            background-color: #020617; /* 深色背景基底 */
-            color: #e2e8f0; /* 淺色文字 */
+        :root {
+            --tech-blue: #0ea5e9;
+            --tech-cyan: #06b6d4;
+            --tech-bg: #f8fafc;
         }
+        body { font-family: 'Noto Sans TC', sans-serif; background-color: var(--tech-bg); overflow-x: hidden; }
+        .font-mono { font-family: 'Share Tech Mono', monospace; }
+        
+        /* 8秒開場動畫樣式 */
+        #loading-screen {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: #0f172a; z-index: 9999;
+            display: flex; flex-direction: column; justify-content: center; align-items: center;
+            color: #0ea5e9;
+        }
+        .scan-line {
+            width: 100%; height: 2px; background: #0ea5e9;
+            position: absolute; top: 0;
+            animation: scan 2s linear infinite;
+            opacity: 0.5;
+            box-shadow: 0 0 10px #0ea5e9;
+        }
+        .loading-text { font-family: 'Share Tech Mono', monospace; font-size: 1.2rem; letter-spacing: 2px; margin-bottom: 20px; text-shadow: 0 0 10px rgba(14, 165, 233, 0.7); }
+        .progress-container { width: 300px; height: 4px; background: #1e293b; border-radius: 2px; position: relative; overflow: hidden; }
+        .progress-bar { width: 0%; height: 100%; background: #0ea5e9; box-shadow: 0 0 10px #0ea5e9; animation: loadProgress 8s cubic-bezier(0.4, 0, 0.2, 1) forwards; }
+        .system-logs { position: absolute; bottom: 50px; left: 50px; font-family: 'Share Tech Mono', monospace; font-size: 0.8rem; color: #64748b; text-align: left; }
+        
+        @keyframes scan { 0% { top: 0%; } 100% { top: 100%; } }
+        @keyframes loadProgress { 
+            0% { width: 0%; } 
+            20% { width: 10%; } 
+            40% { width: 45%; } 
+            70% { width: 80%; } 
+            100% { width: 100%; } 
+        }
+        @keyframes fadeOut { from { opacity: 1; } to { opacity: 0; visibility: hidden; } }
 
-        /* --- 8秒科技感開場動畫樣式 --- */
-        #intro-overlay {
-            position: fixed;
-            inset: 0;
-            background: #000000;
-            z-index: 9999;
-            display: flex;
-            flex-direction: column;
-            justify-content: center;
-            align-items: center;
-            transition: opacity 0.8s ease-out, visibility 0.8s;
-        }
-        #intro-overlay.hidden-intro {
-            opacity: 0;
-            visibility: hidden;
-        }
-        .cyber-loader {
-            position: relative;
-            width: 150px;
-            height: 150px;
-            margin-bottom: 2rem;
-        }
-        .cyber-circle {
-            position: absolute;
-            inset: 0;
-            border-radius: 50%;
-            border: 4px solid transparent;
-            border-top-color: #3b82f6;
-            border-right-color: #a855f7;
-            animation: cyber-spin 2s linear infinite;
-        }
-        .cyber-circle:nth-child(2) {
-            inset: 15px;
-            border-top-color: #06b6d4;
-            border-left-color: #3b82f6;
-            animation: cyber-spin 3s linear infinite reverse;
-        }
-        .cyber-circle:nth-child(3) {
-            inset: 30px;
-            border-top-color: #a855f7;
-            border-bottom-color: #06b6d4;
-            animation: cyber-spin 1.5s linear infinite;
-        }
-        .cyber-core {
-            position: absolute;
-            inset: 50px;
-            background: radial-gradient(circle, #3b82f6 0%, transparent 70%);
-            border-radius: 50%;
-            animation: core-pulse 2s ease-in-out infinite;
-        }
-        .intro-text {
-            font-size: 1.5rem;
-            font-weight: 700;
-            color: white;
-            letter-spacing: 2px;
-            opacity: 0;
-            transform: translateY(20px);
-            animation: text-reveal 1s ease-out 3s forwards;
-            background: linear-gradient(to right, #60a5fa, #c084fc);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-        }
-        .loading-bar-container {
-            width: 200px;
-            height: 4px;
-            background: #1e293b;
-            border-radius: 2px;
-            margin-top: 1rem;
-            overflow: hidden;
-            position: relative;
-        }
-        .loading-bar {
-            height: 100%;
-            width: 0%;
-            background: linear-gradient(90deg, #3b82f6, #a855f7);
-            animation: load-progress 8s linear forwards;
-            box-shadow: 0 0 10px #3b82f6;
-        }
-
-        @keyframes cyber-spin {
-            to { transform: rotate(360deg); }
-        }
-        @keyframes core-pulse {
-            0%, 100% { transform: scale(0.8); opacity: 0.5; }
-            50% { transform: scale(1.2); opacity: 1; box-shadow: 0 0 30px rgba(59, 130, 246, 0.8); }
-        }
-        @keyframes text-reveal {
-            to { opacity: 1; transform: translateY(0); }
-        }
-        @keyframes load-progress {
-            to { width: 100%; }
-        }
-
-        /* --- 主網站樣式 --- */
-        .hero-text-gradient {
-            background: linear-gradient(135deg, #60a5fa 0%, #c084fc 100%); /* 更亮的藍紫漸層 */
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            filter: drop-shadow(0 0 10px rgba(96, 165, 250, 0.3));
-        }
-        .media-card {
-            border-radius: 16px;
-            overflow: hidden;
-            /* 深色半透明背景 + 冷光邊框 */
-            background: rgba(30, 41, 59, 0.6); /* slate-800 with opacity */
+        /* 內容樣式 */
+        .glass-card {
+            background: rgba(255, 255, 255, 0.7);
             backdrop-filter: blur(12px);
-            border: 1px solid rgba(96, 165, 250, 0.2); /* blue-400 with low opacity */
-            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.3), 0 2px 4px -1px rgba(0, 0, 0, 0.2);
-            transition: all 0.3s ease;
+            -webkit-backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.5);
+            box-shadow: 0 4px 30px rgba(0, 0, 0, 0.05);
+            transition: all 0.4s ease;
         }
-        .media-card:hover {
-            transform: translateY(-5px) scale(1.01);
-            border-color: rgba(96, 165, 250, 0.5);
-            box-shadow: 0 20px 30px -10px rgba(0, 0, 0, 0.5), 0 0 20px rgba(59, 130, 246, 0.2); /* 增加藍色光暈 */
+        .glass-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 0 25px rgba(14, 165, 233, 0.2);
+            border-color: rgba(14, 165, 233, 0.4);
         }
-        .feature-icon-bg {
-            /* 深色科技感漸層背景 */
-            background: linear-gradient(135deg, rgba(30, 58, 138, 0.5) 0%, rgba(88, 28, 135, 0.5) 100%);
-            border: 1px solid rgba(96, 165, 250, 0.3);
-            color: #93c5fd; /* light blue text */
+        .tech-border {
+            position: relative;
         }
-        /* 背景網格裝飾 */
-        .bg-grid-pattern {
-            background-image: linear-gradient(to right, rgba(255,255,255,0.05) 1px, transparent 1px),
-                              linear-gradient(to bottom, rgba(255,255,255,0.05) 1px, transparent 1px);
-            background-size: 40px 40px;
-            mask-image: radial-gradient(ellipse at center, black 40%, transparent 80%);
+        .tech-border::after {
+            content: ''; position: absolute; bottom: 0; left: 0; width: 0%; height: 2px;
+            background: linear-gradient(90deg, #0ea5e9, #06b6d4);
+            transition: width 0.4s ease;
         }
-        /* 通用容器寬度設定 (極大化) */
-        .container-wide {
-            width: 100%;
-            max-width: 96%; /* 佔據螢幕 96% 寬度 */
-            margin-left: auto;
-            margin-right: auto;
-            padding-left: 1rem;
-            padding-right: 1rem;
-        }
-        @media (min-width: 1024px) {
-            .container-wide {
-                padding-left: 3rem;
-                padding-right: 3rem;
-            }
-        }
+        .glass-card:hover .tech-border::after { width: 100%; }
+
+        /* 燈箱樣式 */
+        .lightbox { display: none; position: fixed; z-index: 5000; top: 0; left: 0; width: 100%; height: 100%; background: rgba(15, 23, 42, 0.95); justify-content: center; align-items: center; padding: 0; backdrop-filter: blur(5px); }
+        .lightbox-content { max-width: 95vw; max-height: 95vh; border-radius: 4px; box-shadow: 0 0 50px rgba(6, 182, 212, 0.3); border: 1px solid #334155; }
+        video.lightbox-content { width: 80vw; height: auto; outline: none; }
     </style>
 </head>
-<body class="bg-slate-950 text-slate-200 antialiased selection:bg-blue-500/30 selection:text-blue-100 relative overflow-x-hidden">
+<body class="text-slate-800 leading-relaxed selection:bg-cyan-200 selection:text-cyan-900">
 
-    <div id="intro-overlay">
-        <div class="cyber-loader">
-            <div class="cyber-circle"></div>
-            <div class="cyber-circle"></div>
-            <div class="cyber-circle"></div>
-            <div class="cyber-core"></div>
+    <div id="loading-screen">
+        <div class="scan-line"></div>
+        <div class="loading-text" id="loading-text">INITIALIZING SYSTEM...</div>
+        <div class="progress-container">
+            <div class="progress-bar"></div>
         </div>
-        <div class="intro-text">FET SMART HEALTHCARE</div>
-        <div class="text-slate-400 text-sm mt-4 tracking-widest">SYSTEM INITIALIZING...</div>
-        <div class="loading-bar-container">
-            <div class="loading-bar"></div>
+        <div class="system-logs" id="logs">
+            > Connecting to Secure Server...<br>
+            > Loading Modules: ICOPE, PAC, CMS...<br>
+            > Verifying User Biometrics...
         </div>
     </div>
 
-    <div class="fixed inset-0 z-0 pointer-events-none">
-        <div class="absolute inset-0 bg-grid-pattern opacity-30"></div>
-        <div class="absolute top-0 left-1/4 w-96 h-96 bg-blue-600/20 rounded-full blur-[128px] -translate-y-1/2"></div>
-        <div class="absolute bottom-0 right-1/4 w-96 h-96 bg-purple-600/20 rounded-full blur-[128px] translate-y-1/2"></div>
-    </div>
-
-    <nav class="fixed w-full z-50 top-0 bg-slate-900/80 backdrop-blur-xl border-b border-slate-800/50">
-        <div class="container-wide">
-            <div class="flex justify-between items-center h-20">
-                <div class="flex items-center gap-3">
-                    <div class="bg-gradient-to-br from-blue-600 to-purple-600 p-2 rounded-lg shadow-lg shadow-blue-500/20">
-                        <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19.428 15.428a2 2 0 00-1.022-.547l-2.384-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z"></path></svg>
-                    </div>
-                    <span class="font-bold text-xl tracking-tight text-white">遠傳智慧醫療</span>
+    <nav class="bg-white/80 backdrop-blur-md shadow-sm fixed w-full z-40 top-0 border-b border-gray-200/50">
+        <div class="max-w-[98%] mx-auto px-4 py-3 flex justify-between items-center">
+            <a href="#" class="text-xl font-bold text-slate-800 flex items-center gap-3 tracking-wide hover:text-cyan-600 transition">
+                <div class="w-8 h-8 bg-gradient-to-br from-blue-500 to-cyan-400 rounded flex items-center justify-center text-white shadow-lg shadow-cyan-500/30">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path></svg>
                 </div>
-                <div class="hidden md:flex space-x-8 text-sm font-medium text-slate-300">
-                    <a href="#assessment" class="hover:text-blue-400 transition duration-300">智慧評估</a>
-                    <a href="#patient360" class="hover:text-blue-400 transition duration-300">個案視圖</a>
-                    <a href="#continuum" class="hover:text-blue-400 transition duration-300">連續性照護</a>
-                    <a href="#architecture" class="hover:text-blue-400 transition duration-300">安全架構</a>
-                </div>
-                <a href="#contact" class="hidden md:inline-flex items-center justify-center px-6 py-2.5 border border-blue-500/30 text-sm font-bold rounded-full text-white bg-blue-600/80 hover:bg-blue-500 shadow-lg shadow-blue-500/30 transition-all hover:-translate-y-0.5 backdrop-blur-sm">
-                    預約展示
-                </a>
+                遠傳智慧醫療 <span class="text-xs text-gray-400 font-mono mt-1 hidden sm:block">v3.0.1</span>
+            </a>
+            <div class="hidden md:flex space-x-6 text-sm font-medium text-slate-500">
+                <a href="#demos" class="hover:text-cyan-600 transition relative group">實境演示<span class="absolute -bottom-1 left-0 w-0 h-0.5 bg-cyan-500 transition-all group-hover:w-full"></span></a>
+                <a href="#modules" class="hover:text-cyan-600 transition relative group">核心模組<span class="absolute -bottom-1 left-0 w-0 h-0.5 bg-cyan-500 transition-all group-hover:w-full"></span></a>
+                <a href="#architecture" class="hover:text-cyan-600 transition relative group">系統架構<span class="absolute -bottom-1 left-0 w-0 h-0.5 bg-cyan-500 transition-all group-hover:w-full"></span></a>
+                <a href="#iot" class="hover:text-cyan-600 transition relative group">IoT監控<span class="absolute -bottom-1 left-0 w-0 h-0.5 bg-cyan-500 transition-all group-hover:w-full"></span></a>
             </div>
+            <button class="bg-slate-900 text-cyan-400 border border-slate-700 px-4 py-1.5 rounded-full text-xs font-mono hover:bg-cyan-500 hover:text-white transition shadow-lg hover:shadow-cyan-500/50">
+                ADMIN_LOGIN
+            </button>
         </div>
     </nav>
 
-    <section class="pt-32 pb-20 relative z-10">
-        <div class="container-wide text-center">
-            <div class="inline-flex items-center px-4 py-1.5 rounded-full bg-blue-950/50 text-blue-400 text-sm font-semibold mb-8 border border-blue-800/50 backdrop-blur-md shadow-neon-blue">
-                <span class="flex h-2 w-2 rounded-full bg-blue-500 mr-2 animate-pulse box-shadow-neon-blue"></span>
-                Next-Gen Healthcare Case Management
-            </div>
-            <h1 class="text-5xl md:text-8xl font-extrabold tracking-tight mb-8 leading-tight text-white">
-                全人、全程、全隊 <br>
-                <span class="hero-text-gradient relative z-10">照護管理新生態</span>
+    <header class="pt-32 pb-16 bg-gradient-to-b from-slate-50 via-white to-white relative overflow-hidden">
+        <div class="absolute top-0 right-0 w-[800px] h-[800px] bg-cyan-100/30 rounded-full blur-3xl -translate-y-1/2 translate-x-1/3 pointer-events-none"></div>
+        <div class="absolute top-40 left-20 w-32 h-32 bg-blue-200/40 rounded-full blur-xl animate-pulse pointer-events-none"></div>
+
+        <div class="max-w-[98%] mx-auto px-4 text-center relative z-10">
+            <span class="inline-block py-1 px-3 rounded-full bg-cyan-50 text-cyan-600 text-xs font-bold tracking-widest mb-4 border border-cyan-100">NEXT GEN HEALTHCARE</span>
+            <h1 class="text-5xl md:text-6xl font-bold text-slate-900 mb-6 tracking-tight">
+                遠傳醫院 <span class="text-transparent bg-clip-text bg-gradient-to-r from-blue-600 to-cyan-500">全人照護個案管理平台</span>
             </h1>
-            <p class="mt-6 max-w-3xl mx-auto text-xl text-slate-400 mb-16 leading-relaxed">
-                專為現代醫療機構打造。從入院評估、居家量測到長照轉介，透過 <span class="text-blue-400 font-semibold">Serverless 雲端架構</span>實現無縫協作。
+            <p class="text-xl text-slate-600 mb-10 max-w-4xl mx-auto leading-relaxed">
+                整合 <span class="font-bold text-slate-800">Google Apps Script Serverless</span> 架構。<br>
+                以人為本，打造全人、全程、全隊的無縫照護體驗。
             </p>
             
-            <div class="relative max-w-[90rem] mx-auto mb-20 group">
-                <div class="absolute -inset-2 bg-gradient-to-r from-blue-600 via-purple-600 to-blue-600 rounded-[2rem] blur-2xl opacity-30 group-hover:opacity-50 transition duration-1000 animate-pulse"></div>
-                <img src="image/Macbook-Air-health.yangkaichun.net (1).jpg" alt="智慧儀表板介面" class="relative rounded-2xl shadow-2xl border border-slate-700/50 w-full transform group-hover:scale-[1.01] transition duration-500">
+            <div class="flex justify-center gap-4 mb-16">
+                <a href="#demos" class="bg-gradient-to-r from-blue-600 to-cyan-500 text-white px-10 py-3 rounded-full font-medium hover:shadow-lg hover:shadow-cyan-500/40 transform hover:-translate-y-1 transition border-0">
+                    觀看實境操作
+                </a>
+                <a href="#architecture" class="bg-white text-slate-700 px-10 py-3 rounded-full font-medium border border-gray-200 hover:border-cyan-400 hover:text-cyan-600 transition shadow-sm">
+                    技術白皮書
+                </a>
+            </div>
+            
+            <div class="relative mx-auto max-w-[1600px] rounded-2xl shadow-2xl overflow-hidden border border-white/50 cursor-pointer group" onclick="openLightbox('image/24.png', 'image')">
+                <div class="absolute inset-0 bg-gradient-to-t from-slate-900/50 to-transparent opacity-0 group-hover:opacity-100 transition z-10 flex items-center justify-center">
+                    <span class="text-white font-mono text-lg border border-white/30 px-6 py-2 rounded bg-white/10 backdrop-blur">VIEW INTERFACE</span>
+                </div>
+                <img src="image/24.png" alt="系統登入介面" class="w-full h-auto object-cover transform group-hover:scale-[1.01] transition duration-700">
             </div>
         </div>
-    </section>
+    </header>
 
-    <section id="assessment" class="py-32 bg-slate-900/50 relative z-10">
-        <div class="container-wide">
-            <div class="grid lg:grid-cols-2 gap-20 items-start">
+    <section id="demos" class="py-20 bg-slate-900 text-white relative">
+        <div class="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/cubes.png')] opacity-10"></div>
+        <div class="max-w-[98%] mx-auto px-4 relative z-10">
+            <div class="flex flex-col md:flex-row justify-between items-end mb-10 border-b border-slate-700 pb-4">
                 <div>
-                    <div class="w-14 h-14 feature-icon-bg rounded-2xl flex items-center justify-center mb-8 shadow-neon-blue">
-                        <svg class="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
-                    </div>
-                    <h2 class="text-4xl md:text-5xl font-bold text-white mb-8 leading-tight">智慧化 <br> <span class="hero-text-gradient">綜合護理評估</span></h2>
-                    <p class="text-xl text-slate-400 mb-10 leading-relaxed">
-                        告別紙本與繁瑣計算。系統內建先進邏輯引擎，整合 ICOPE、CMS 與成人健檢表單，自動計算分數並即時判讀異常。
-                    </p>
-                    
-                    <div class="media-card bg-black mb-10 aspect-video relative group border-blue-500/30 shadow-neon-blue">
-                        <div class="absolute inset-0 flex items-center justify-center z-10 pointer-events-none">
-                            <span class="bg-slate-900/80 backdrop-blur-md text-blue-300 px-5 py-2.5 rounded-full text-sm font-bold border border-blue-500/50 flex items-center gap-2">
-                                <svg class="w-4 h-4 animate-pulse" fill="currentColor" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
-                                系統操作演示
-                            </span>
-                        </div>
-                        <video autoplay loop muted playsinline class="w-full h-full object-cover opacity-80 group-hover:opacity-100 transition duration-500">
-                            <source src="image/綜合護理評估系統操作.webm" type="video/webm">
-                        </video>
-                        <div class="absolute inset-0 bg-gradient-to-t from-slate-900/80 via-transparent to-transparent pointer-events-none"></div>
-                    </div>
+                    <h2 class="text-3xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-cyan-400 to-blue-500">系統實境演示</h2>
+                    <p class="text-slate-400 mt-2 font-mono text-sm">LIVE SYSTEM DEMONSTRATION // VIDEO LOGS</p>
                 </div>
-
-                <div class="grid gap-8">
-                    <div class="media-card">
-                        <img src="image/Macbook-Air-health.yangkaichun.net (20).png" alt="成人健檢與 eGFR 計算" class="w-full h-auto opacity-90 hover:opacity-100 transition">
-                        <div class="p-6 bg-slate-800/50 border-t border-slate-700/50 backdrop-blur-sm">
-                            <h4 class="font-bold text-xl text-white mb-2">成人預防保健</h4>
-                            <p class="text-slate-400">自動代入 MDRD 公式計算 eGFR，即時判讀代謝症候群。</p>
-                        </div>
-                    </div>
-                    <div class="grid grid-cols-2 gap-8">
-                        <div class="media-card">
-                            <img src="image/Macbook-Air-health.yangkaichun.net (18).png" alt="ICOPE 評估" class="w-full h-auto opacity-90 hover:opacity-100 transition">
-                            <div class="p-4 bg-slate-800/50 backdrop-blur-sm border-t border-slate-700/50">
-                                <h4 class="font-bold text-base text-blue-300">ICOPE 長者評估</h4>
-                            </div>
-                        </div>
-                        <div class="media-card">
-                            <img src="image/Macbook-Air-health.yangkaichun.net (19).png" alt="CMS 評估" class="w-full h-auto opacity-90 hover:opacity-100 transition">
-                            <div class="p-4 bg-slate-800/50 backdrop-blur-sm border-t border-slate-700/50">
-                                <h4 class="font-bold text-base text-purple-300">CMS 照顧管理</h4>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </section>
-
-    <section class="py-32 bg-slate-950 relative z-10">
-        <div class="container-wide">
-            <div class="text-center max-w-4xl mx-auto mb-24">
-                 <h2 class="text-4xl md:text-5xl font-bold text-white mb-8 leading-tight">HAH 居家醫療與 <span class="hero-text-gradient">IoT 遠距監控</span></h2>
-                <p class="text-xl text-slate-400">打通居家訪視「最後一哩路」的數據斷層，實現真正的即時遠距照護。</p>
+                <div class="text-xs text-slate-500 font-mono">Total 5 Modules Loaded</div>
             </div>
 
-            <div class="grid lg:grid-cols-3 gap-12 items-start">
-                <div class="lg:col-span-1 space-y-10">
-                    <div class="media-card bg-slate-900 aspect-[9/16] relative shadow-neon-blue mx-auto max-w-sm border-blue-500/30">
-                        <video autoplay loop muted playsinline class="w-full h-full object-cover opacity-90">
+            <div class="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-5 gap-4">
+                <div class="group relative bg-slate-800 rounded-lg overflow-hidden border border-slate-700 hover:border-cyan-500 transition cursor-pointer" onclick="openLightbox('image/HAH血壓機操作.webm', 'video')">
+                    <div class="aspect-video bg-black flex items-center justify-center relative">
+                        <video class="w-full h-full object-cover opacity-80 group-hover:opacity-100 transition" muted loop onmouseover="this.play()" onmouseout="this.pause()">
                             <source src="image/HAH血壓機操作.webm" type="video/webm">
                         </video>
-                        <div class="absolute bottom-8 left-0 right-0 text-center z-20">
-                            <span class="text-blue-100 text-sm bg-blue-900/80 backdrop-blur-md px-5 py-2 rounded-full border border-blue-500/30">藍芽設備自動上傳</span>
-                        </div>
-                        <div class="absolute inset-0 bg-gradient-to-t from-slate-900 via-transparent to-transparent pointer-events-none z-10"></div>
-                    </div>
-                    <div class="media-card bg-slate-800/30 p-1 hover:scale-105 transition duration-500 border-purple-500/20">
-                        <img src="image/unnamed (5).jpg" alt="IoT 裝置資料串接架構圖" class="w-full h-auto rounded-xl opacity-90 hover:opacity-100 transition">
-                        <p class="p-4 text-sm font-semibold text-center text-purple-300 bg-slate-900/50 backdrop-blur-sm rounded-b-xl border-t border-slate-700/50">IoT 設備資料上傳流程架構</p>
-                    </div>
-                </div>
-                
-                <div class="lg:col-span-2 space-y-10">
-                    <div class="media-card relative border-red-500/20 shadow-[0_0_20px_-5px_rgba(239,68,68,0.3)]">
-                        <div class="absolute top-6 right-6 z-20">
-                            <span class="bg-red-950/80 text-red-400 px-4 py-1.5 rounded-full text-sm font-bold border border-red-500/50 animate-pulse shadow-lg shadow-red-900/50 flex items-center gap-2">
-                                <span class="flex h-2 w-2 rounded-full bg-red-500 animate-ping"></span>
-                                異常警示
-                            </span>
-                        </div>
-                        <img src="image/Macbook-Air-health.yangkaichun.net (8).jpg" alt="生理監控中心" class="w-full h-auto opacity-90 hover:opacity-100 transition">
-                        <div class="p-8 bg-slate-800/50 backdrop-blur-sm border-t border-slate-700/50">
-                            <h3 class="text-2xl font-bold text-white mb-4">全院生理監控中心</h3>
-                            <p class="text-slate-400 text-lg">即時彙整所有居家個案的量測數據。當血壓或血糖超過閾值，系統自動以紅字標示並排序，協助個管師進行風險分級。</p>
-                        </div>
-                    </div>
-                    
-                    <div class="media-card flex flex-col md:flex-row border-blue-500/20">
-                        <div class="md:w-1/2 relative">
-                            <img src="image/Macbook-Air-health.yangkaichun.net (11).png" alt="線上照會" class="w-full h-full object-cover opacity-90 hover:opacity-100 transition">
-                             <div class="absolute inset-0 bg-gradient-to-r from-transparent to-slate-900/80 md:to-transparent pointer-events-none"></div>
-                        </div>
-                        <div class="p-8 md:w-1/2 flex flex-col justify-center bg-slate-800/50 backdrop-blur-sm">
-                            <h3 class="text-2xl font-bold text-white mb-4">線上照會與通訊診療</h3>
-                            <p class="text-slate-400 text-lg">內建醫護通訊模組，支援文字訊息與視訊連結，讓居家訪視團隊能即時諮詢專科醫師意見。</p>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </section>
-
-    <section id="patient360" class="py-32 bg-slate-900/50 relative z-10">
-        <div class="container-wide">
-            <div class="flex flex-col md:flex-row justify-between items-end mb-20">
-                <div>
-                    <h2 class="text-4xl md:text-5xl font-bold text-white mb-6">Patient 360 <span class="hero-text-gradient">全方位個案視圖</span></h2>
-                    <p class="text-xl text-slate-400 max-w-3xl">單一介面整合所有病歷資訊，提供醫師決策所需的完整脈絡。</p>
-                </div>
-                <div class="hidden md:block">
-                     <span class="text-sm font-medium text-blue-400 animate-bounce flex items-center gap-2">Scroll to explore <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 14l-7 7m0 0l-7-7m7 7V3"></path></svg></span>
-                </div>
-            </div>
-
-            <div class="columns-1 md:columns-2 lg:columns-3 gap-8 space-y-8">
-                <div class="media-card break-inside-avoid hover:shadow-neon-blue border-blue-500/20">
-                    <img src="image/Macbook-Air-health.yangkaichun.net (2).jpg" alt="個案列表" class="w-full h-auto opacity-90 hover:opacity-100 transition">
-                    <div class="p-5 bg-slate-800/50 backdrop-blur-sm border-t border-slate-700/50"><p class="font-bold text-lg text-blue-200">智慧搜尋與列表</p></div>
-                </div>
-                <div class="media-card break-inside-avoid border-purple-500/20">
-                    <img src="image/Macbook-Air-health.yangkaichun.net (4).jpg" alt="病歷摘要" class="w-full h-auto opacity-90 hover:opacity-100 transition">
-                    <div class="p-5 bg-slate-800/50 backdrop-blur-sm border-t border-slate-700/50"><p class="font-bold text-lg text-purple-200">病歷摘要與 ICD-10</p></div>
-                </div>
-
-                <div class="media-card break-inside-avoid hover:shadow-neon-purple border-purple-500/20">
-                    <img src="image/Macbook-Air-health.yangkaichun.net (6).jpg" alt="醫學影像" class="w-full h-auto opacity-90 hover:opacity-100 transition">
-                    <div class="p-5 bg-slate-800/50 backdrop-blur-sm border-t border-slate-700/50"><p class="font-bold text-lg text-purple-200">DICOM 影像檢視</p></div>
-                </div>
-                <div class="media-card break-inside-avoid border-blue-500/20">
-                    <img src="image/Macbook-Air-health.yangkaichun.net (3).jpg" alt="生理數據輸入" class="w-full h-auto opacity-90 hover:opacity-100 transition">
-                    <div class="p-5 bg-slate-800/50 backdrop-blur-sm border-t border-slate-700/50"><p class="font-bold text-lg text-blue-200">趨勢圖表與輸入</p></div>
-                </div>
-
-                <div class="media-card break-inside-avoid hover:shadow-neon-blue border-blue-500/20">
-                    <img src="image/Macbook-Air-health.yangkaichun.net (9).jpg" alt="歷史趨勢" class="w-full h-auto opacity-90 hover:opacity-100 transition">
-                    <div class="p-5 bg-slate-800/50 backdrop-blur-sm border-t border-slate-700/50"><p class="font-bold text-lg text-blue-200">長期生理趨勢追蹤</p></div>
-                </div>
-                <div class="media-card break-inside-avoid border-purple-500/20">
-                    <img src="image/Macbook-Air-health.yangkaichun.net (5).jpg" alt="評估歷史" class="w-full h-auto opacity-90 hover:opacity-100 transition">
-                    <div class="p-5 bg-slate-800/50 backdrop-blur-sm border-t border-slate-700/50"><p class="font-bold text-lg text-purple-200">EAV 架構歷史紀錄</p></div>
-                </div>
-            </div>
-        </div>
-    </section>
-
-    <section id="continuum" class="py-32 bg-slate-950 relative z-10">
-        <div class="container-wide">
-            <h2 class="text-4xl md:text-5xl font-bold text-white mb-24 text-center">無縫銜接的 <span class="hero-text-gradient">連續性照護</span></h2>
-            
-            <div class="space-y-32">
-                
-                <div class="grid lg:grid-cols-2 gap-20 items-center">
-                    <div class="order-2 lg:order-1">
-                        <div class="media-card bg-slate-900 aspect-[9/16] max-w-sm mx-auto shadow-2xl border-4 border-slate-800/80 rounded-[3rem] relative overflow-hidden shadow-neon-blue/50">
-                            <video autoplay loop muted playsinline class="w-full h-full object-cover rounded-[2.5rem] opacity-90">
-                                <source src="image/出院準備服務手機操作.webm" type="video/webm">
-                            </video>
-                             <div class="absolute inset-0 bg-gradient-to-t from-slate-900/50 via-transparent to-slate-900/20 pointer-events-none rounded-[3rem]"></div>
-                        </div>
-                    </div>
-                    <div class="order-1 lg:order-2 space-y-10">
-                        <div>
-                            <h3 class="text-3xl font-bold text-white mb-6 leading-tight">行動優先的 <br> 出院準備服務</h3>
-                            <p class="text-xl text-slate-400 leading-relaxed">個管師在病床邊即可完成 LACE 風險評估。手機版介面優化，支援即時衛教展示。</p>
-                        </div>
-                        <div class="media-card border-blue-500/20">
-                            <img src="image/Macbook-Air-health.yangkaichun.net (14).png" alt="出院準備桌機版" class="w-full h-auto opacity-90 hover:opacity-100 transition">
-                        </div>
-                        <div class="media-card bg-slate-800/30 p-1 hover:scale-105 transition duration-500 border-blue-500/20">
-                             <img src="image/unnamed (6).jpg" alt="行動端介面流程" class="w-full h-auto rounded-xl opacity-90 hover:opacity-100 transition">
-                             <p class="p-4 text-sm font-semibold text-center text-blue-300 bg-slate-900/50 backdrop-blur-sm rounded-b-xl border-t border-slate-700/50">行動端病患與家屬端介面示意</p>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="grid lg:grid-cols-2 gap-20 items-center">
-                    <div class="space-y-10">
-                        <div>
-                            <h3 class="text-3xl font-bold text-white mb-6">電子轉診與 PAC 管理</h3>
-                            <p class="text-xl text-slate-400 leading-relaxed">打破機構壁壘。從急性後期照護 (PAC) 到長照機構轉介，病歷資料一鍵傳輸。</p>
-                        </div>
-                        <div class="grid grid-cols-2 gap-6">
-                            <div class="media-card border-purple-500/20">
-                                <img src="image/Macbook-Air-health.yangkaichun.net (13).jpg" class="w-full h-auto opacity-90 hover:opacity-100 transition" alt="轉診列表">
-                            </div>
-                            <div class="media-card border-purple-500/20">
-                                <img src="image/Macbook-Air-health.yangkaichun.net (15).png" class="w-full h-auto opacity-90 hover:opacity-100 transition" alt="PAC前後測">
+                        <div class="absolute inset-0 flex items-center justify-center pointer-events-none">
+                            <div class="w-12 h-12 rounded-full bg-cyan-500/20 backdrop-blur border border-cyan-400 flex items-center justify-center group-hover:scale-110 transition">
+                                <svg class="w-6 h-6 text-cyan-400 ml-1" fill="currentColor" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
                             </div>
                         </div>
                     </div>
-                    <div class="media-card bg-black group relative border-purple-500/30 shadow-neon-purple">
-                         <div class="absolute inset-0 flex items-center justify-center z-10 pointer-events-none">
-                            <span class="bg-slate-900/80 backdrop-blur-md text-purple-300 px-5 py-2.5 rounded-full text-sm font-bold border border-purple-500/50 flex items-center gap-2">
-                                <svg class="w-4 h-4 animate-pulse" fill="currentColor" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
-                                轉診操作演示
-                            </span>
+                    <div class="p-3">
+                        <h3 class="text-sm font-bold text-cyan-100">HAH血壓機操作</h3>
+                        <p class="text-xs text-slate-400 mt-1">IoT 設備串接與數據上傳</p>
+                    </div>
+                </div>
+
+                <div class="group relative bg-slate-800 rounded-lg overflow-hidden border border-slate-700 hover:border-cyan-500 transition cursor-pointer" onclick="openLightbox('image/出院準備服務手機操作.webm', 'video')">
+                    <div class="aspect-video bg-black flex items-center justify-center relative">
+                        <video class="w-full h-full object-cover opacity-80 group-hover:opacity-100 transition" muted loop onmouseover="this.play()" onmouseout="this.pause()">
+                            <source src="image/出院準備服務手機操作.webm" type="video/webm">
+                        </video>
+                        <div class="absolute inset-0 flex items-center justify-center pointer-events-none">
+                            <div class="w-12 h-12 rounded-full bg-cyan-500/20 backdrop-blur border border-cyan-400 flex items-center justify-center group-hover:scale-110 transition">
+                                <svg class="w-6 h-6 text-cyan-400 ml-1" fill="currentColor" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
+                            </div>
                         </div>
-                        <video autoplay loop muted playsinline class="w-full h-auto opacity-80 group-hover:opacity-100 transition duration-500">
+                    </div>
+                    <div class="p-3">
+                        <h3 class="text-sm font-bold text-cyan-100">出院準備服務 (Mobile)</h3>
+                        <p class="text-xs text-slate-400 mt-1">行動端 LACE 評估與床邊操作</p>
+                    </div>
+                </div>
+
+                <div class="group relative bg-slate-800 rounded-lg overflow-hidden border border-slate-700 hover:border-cyan-500 transition cursor-pointer" onclick="openLightbox('image/電子轉診系統操作.webm', 'video')">
+                    <div class="aspect-video bg-black flex items-center justify-center relative">
+                        <video class="w-full h-full object-cover opacity-80 group-hover:opacity-100 transition" muted loop onmouseover="this.play()" onmouseout="this.pause()">
                             <source src="image/電子轉診系統操作.webm" type="video/webm">
                         </video>
-                        <div class="absolute inset-0 bg-gradient-to-t from-slate-900/80 via-transparent to-transparent pointer-events-none"></div>
-                    </div>
-                </div>
-
-                 <div class="grid lg:grid-cols-3 gap-12 items-start">
-                    <div class="lg:col-span-1 space-y-8">
-                        <div>
-                            <h3 class="text-3xl font-bold text-white mb-6">社區據點智慧化</h3>
-                            <p class="text-xl text-slate-400">支援條碼掃描，長輩於據點量測數據即時回傳。</p>
-                        </div>
-                         <div class="media-card bg-slate-900 border-blue-500/30 shadow-neon-blue/50">
-                            <video autoplay loop muted playsinline class="w-full h-auto opacity-90">
-                                <source src="image/據點血壓計操作.webm" type="video/webm">
-                            </video>
-                        </div>
-                    </div>
-                    <div class="lg:col-span-2 space-y-10">
-                        <div class="media-card border-blue-500/20">
-                            <img src="image/Macbook-Air-health.yangkaichun.net (16).png" alt="長照管理" class="w-full h-auto opacity-90 hover:opacity-100 transition">
-                            <div class="p-8 bg-slate-800/50 backdrop-blur-sm border-t border-slate-700/50">
-                                <h4 class="font-bold text-2xl text-white mb-4">長照 2.0 服務管理系統</h4>
-                                <p class="text-slate-400 text-lg">清晰展示 CMS 等級與長照四包錢額度使用狀況，協助 A 單位個管師精準控管資源。</p>
-                            </div>
-                        </div>
-                        <div class="grid md:grid-cols-2 gap-8">
-                            <div class="media-card bg-slate-800/30 p-1 hover:scale-105 transition duration-500 border-blue-500/20">
-                                <img src="image/unnamed (2).jpg" alt="社區整體照顧體系圖" class="w-full h-auto rounded-xl opacity-90 hover:opacity-100 transition">
-                                <p class="p-4 text-sm font-semibold text-center text-blue-300 bg-slate-900/50 backdrop-blur-sm rounded-b-xl border-t border-slate-700/50">社區整體照顧體系架構 (ABC級據點)</p>
-                            </div>
-                            <div class="media-card bg-slate-800/30 p-1 hover:scale-105 transition duration-500 border-purple-500/20">
-                                <img src="image/unnamed (3).jpg" alt="長照保險流程圖" class="w-full h-auto rounded-xl opacity-90 hover:opacity-100 transition">
-                                <p class="p-4 text-sm font-semibold text-center text-purple-300 bg-slate-900/50 backdrop-blur-sm rounded-b-xl border-t border-slate-700/50">長照保險與服務申請流程</p>
+                        <div class="absolute inset-0 flex items-center justify-center pointer-events-none">
+                            <div class="w-12 h-12 rounded-full bg-cyan-500/20 backdrop-blur border border-cyan-400 flex items-center justify-center group-hover:scale-110 transition">
+                                <svg class="w-6 h-6 text-cyan-400 ml-1" fill="currentColor" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
                             </div>
                         </div>
                     </div>
+                    <div class="p-3">
+                        <h3 class="text-sm font-bold text-cyan-100">電子轉診系統</h3>
+                        <p class="text-xs text-slate-400 mt-1">雙向轉診流程自動化演示</p>
+                    </div>
                 </div>
 
-            </div>
-        </div>
-    </section>
-
-    <section class="py-24 bg-slate-900/50 border-y border-slate-800/50 relative z-10">
-        <div class="container-wide text-center">
-            <h2 class="text-4xl font-bold text-white mb-16">賦能病患：視覺化 <span class="hero-text-gradient">衛教資源</span></h2>
-            <div class="grid md:grid-cols-2 gap-12 max-w-5xl mx-auto">
-                <div class="media-card hover:scale-105 transition duration-500 border-blue-500/20">
-                    <img src="image/Macbook-Air-health.yangkaichun.net (10).png" alt="衛教中心" class="w-full h-auto opacity-90 hover:opacity-100 transition">
-                    <p class="p-5 font-bold text-xl text-blue-200 bg-slate-800/50 backdrop-blur-sm border-t border-slate-700/50">互動式衛教指導</p>
-                </div>
-                 <div class="media-card hover:scale-105 transition duration-500 border-purple-500/20">
-                    <img src="image/Macbook-Air-health.yangkaichun.net (12).png" alt="知識庫" class="w-full h-auto opacity-90 hover:opacity-100 transition">
-                    <p class="p-5 font-bold text-xl text-purple-200 bg-slate-800/50 backdrop-blur-sm border-t border-slate-700/50">共照網知識庫文件</p>
-                </div>
-            </div>
-        </div>
-    </section>
-
-    <section id="architecture" class="py-32 bg-slate-950 relative z-10">
-        <div class="container-wide">
-            <div class="text-center mb-24">
-                <h2 class="text-4xl md:text-5xl font-bold text-white mb-8">企業級 <span class="hero-text-gradient">安全架構</span></h2>
-                <p class="text-xl text-slate-400 max-w-3xl mx-auto">基於 Google Cloud 與 Workspace 生態系，提供最高規格的資安防護。</p>
-            </div>
-            <div class="grid lg:grid-cols-2 gap-20 items-start">
-                <div class="space-y-12">
-                    <div class="flex items-start group">
-                        <div class="flex-shrink-0 w-16 h-16 bg-green-900/30 rounded-2xl flex items-center justify-center border border-green-500/30 shadow-lg shadow-green-500/20 group-hover:scale-110 transition">
-                            <svg class="w-8 h-8 text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
-                        </div>
-                        <div class="ml-8">
-                            <h3 class="text-2xl font-bold text-white mb-4">原生 Google 帳號驗證</h3>
-                            <p class="text-slate-400 text-lg leading-relaxed">直接整合 Google Workspace，無需額外記憶帳密，並支援 2FA 雙重驗證。</p>
+                <div class="group relative bg-slate-800 rounded-lg overflow-hidden border border-slate-700 hover:border-cyan-500 transition cursor-pointer" onclick="openLightbox('image/綜合護理評估系統操作.webm', 'video')">
+                    <div class="aspect-video bg-black flex items-center justify-center relative">
+                        <video class="w-full h-full object-cover opacity-80 group-hover:opacity-100 transition" muted loop onmouseover="this.play()" onmouseout="this.pause()">
+                            <source src="image/綜合護理評估系統操作.webm" type="video/webm">
+                        </video>
+                        <div class="absolute inset-0 flex items-center justify-center pointer-events-none">
+                            <div class="w-12 h-12 rounded-full bg-cyan-500/20 backdrop-blur border border-cyan-400 flex items-center justify-center group-hover:scale-110 transition">
+                                <svg class="w-6 h-6 text-cyan-400 ml-1" fill="currentColor" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
+                            </div>
                         </div>
                     </div>
-                    <div class="flex items-start group">
-                        <div class="flex-shrink-0 w-16 h-16 bg-purple-900/30 rounded-2xl flex items-center justify-center border border-purple-500/30 shadow-lg shadow-purple-500/20 group-hover:scale-110 transition">
-                            <svg class="w-8 h-8 text-purple-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"></path></svg>
-                        </div>
-                        <div class="ml-8">
-                            <h3 class="text-2xl font-bold text-white mb-4">RBAC 角色權限控管</h3>
-                            <p class="text-slate-400 text-lg leading-relaxed">嚴謹區分醫師、護理師、管理員權限，確保資料存取合規。</p>
-                        </div>
-                    </div>
-                    <div class="media-card mt-12 bg-slate-800/30 p-1 hover:scale-105 transition duration-500 border-blue-500/20">
-                        <img src="image/unnamed (4).jpg" alt="系統資料流架構圖" class="w-full h-auto rounded-xl opacity-90 hover:opacity-100 transition">
-                         <p class="p-4 text-sm font-semibold text-center text-blue-300 bg-slate-900/50 backdrop-blur-sm rounded-b-xl border-t border-slate-700/50">Serverless 雲端資料流與架構設計</p>
+                    <div class="p-3">
+                        <h3 class="text-sm font-bold text-cyan-100">綜合護理評估</h3>
+                        <p class="text-xs text-slate-400 mt-1">表單邏輯引擎與自動計分</p>
                     </div>
                 </div>
-                <div class="grid gap-8">
-                    <div class="media-card border-green-500/20 hover:shadow-[0_0_20px_-5px_rgba(34,197,94,0.5)]">
-                         <img src="image/Macbook-Air-health.yangkaichun.net.png" class="w-full h-auto opacity-90 hover:opacity-100 transition" alt="Google 登入">
+
+                <div class="group relative bg-slate-800 rounded-lg overflow-hidden border border-slate-700 hover:border-cyan-500 transition cursor-pointer" onclick="openLightbox('image/據點血壓計操作.webm', 'video')">
+                    <div class="aspect-video bg-black flex items-center justify-center relative">
+                        <video class="w-full h-full object-cover opacity-80 group-hover:opacity-100 transition" muted loop onmouseover="this.play()" onmouseout="this.pause()">
+                            <source src="image/據點血壓計操作.webm" type="video/webm">
+                        </video>
+                        <div class="absolute inset-0 flex items-center justify-center pointer-events-none">
+                            <div class="w-12 h-12 rounded-full bg-cyan-500/20 backdrop-blur border border-cyan-400 flex items-center justify-center group-hover:scale-110 transition">
+                                <svg class="w-6 h-6 text-cyan-400 ml-1" fill="currentColor" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
+                            </div>
+                        </div>
                     </div>
-                    <div class="media-card border-purple-500/20 hover:shadow-neon-purple">
-                        <img src="image/Macbook-Air-health.yangkaichun.net (17).jpg" class="w-full h-auto opacity-90 hover:opacity-100 transition" alt="權限管理">
+                    <div class="p-3">
+                        <h3 class="text-sm font-bold text-cyan-100">據點血壓計操作</h3>
+                        <p class="text-xs text-slate-400 mt-1">社區據點大量篩檢模式</p>
                     </div>
                 </div>
             </div>
         </div>
     </section>
 
-    <section class="py-32 bg-slate-900 relative z-10 overflow-hidden">
-         <div class="absolute inset-0 bg-grid-pattern opacity-10 mix-blend-overlay"></div>
-        <div class="container-wide text-center relative z-20">
-            <h2 class="text-4xl md:text-5xl font-bold text-white mb-16">為什麼選擇 <span class="hero-text-gradient">遠傳智慧醫療</span>？</h2>
-            <div class="max-w-6xl mx-auto media-card border-blue-500/30 shadow-neon-blue/30 bg-slate-800/50 p-2">
-                <img src="image/unnamed (1).png" alt="全人照護一站整合圖表" class="w-full h-auto rounded-2xl opacity-95 hover:opacity-100 transition duration-500">
+    <section id="architecture" class="py-24 bg-white relative">
+        <div class="max-w-[98%] mx-auto px-4">
+            <div class="flex flex-col md:flex-row gap-16 items-center">
+                <div class="md:w-1/2 p-4">
+                    <div class="inline-block px-3 py-1 bg-blue-50 text-blue-600 rounded border border-blue-100 text-sm font-mono mb-4">SYSTEM ARCHITECTURE</div>
+                    <h2 class="text-4xl font-bold text-slate-900 mb-6">雲端原生 Serverless 架構</h2>
+                    <p class="text-lg text-slate-600 mb-6 leading-relaxed">
+                        本系統採用 Google Cloud 生態系優勢，以 <strong>Google Apps Script</strong> 為核心，搭配 <strong>Vue.js 3</strong> 前端框架與 <strong>EAV 資料模型</strong>。
+                    </p>
+                    <ul class="space-y-4 text-slate-600">
+                        <li class="flex items-start p-3 bg-slate-50 rounded-lg border border-slate-100 hover:border-cyan-200 transition">
+                            <span class="flex-shrink-0 w-6 h-6 bg-cyan-100 text-cyan-600 rounded-full flex items-center justify-center mr-3 mt-1 text-xs">✓</span>
+                            <span><strong>高擴充性：</strong>EAV 模型支援無限新增評估欄位，無須停機修改資料庫。</span>
+                        </li>
+                        <li class="flex items-start p-3 bg-slate-50 rounded-lg border border-slate-100 hover:border-cyan-200 transition">
+                            <span class="flex-shrink-0 w-6 h-6 bg-cyan-100 text-cyan-600 rounded-full flex items-center justify-center mr-3 mt-1 text-xs">✓</span>
+                            <span><strong>自動化運算：</strong>內建 BMI、eGFR、代謝症候群邏輯引擎。</span>
+                        </li>
+                    </ul>
+                </div>
+                <div class="md:w-1/2 cursor-pointer group relative" onclick="openLightbox('image/1.png', 'image')">
+                    <div class="absolute inset-0 bg-cyan-400 blur-2xl opacity-10 group-hover:opacity-20 transition"></div>
+                    <img src="image/1.png" alt="系統架構全圖" class="relative rounded-xl shadow-2xl border border-gray-100 group-hover:scale-[1.02] transition duration-500 z-10">
+                </div>
             </div>
         </div>
     </section>
 
-    <section id="contact" class="py-32 bg-slate-950 text-center relative z-10 border-t border-slate-800/50">
-        <div class="max-w-4xl mx-auto px-4">
-            <h2 class="text-5xl font-bold text-white mb-8 leading-tight">準備好升級您的 <br> <span class="hero-text-gradient">智慧照護系統</span>了嗎？</h2>
-            <p class="text-2xl text-slate-400 mb-16">立即聯繫我們，安排專屬的系統展示與需求諮詢。</p>
-            <div class="flex flex-col sm:flex-row justify-center gap-6">
-                <a href="#" class="inline-flex items-center justify-center px-10 py-5 text-lg font-bold rounded-full text-white bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 shadow-lg shadow-blue-500/30 transition-all hover:-translate-y-1 hover:scale-105">
-                    聯繫銷售團隊
-                </a>
-                <a href="#" class="inline-flex items-center justify-center px-10 py-5 text-lg font-bold rounded-full text-slate-300 bg-slate-900/50 border border-slate-700/50 hover:bg-slate-800/50 hover:text-white transition-all backdrop-blur-sm">
-                    下載產品規格書
-                </a>
+    <section id="modules" class="py-24 bg-slate-50">
+        <div class="max-w-[98%] mx-auto px-4">
+            <div class="text-center mb-16">
+                <h2 class="text-4xl font-bold text-slate-900">個案全視角</h2>
+                <p class="text-slate-600 mt-4 text-lg">整合通訊、衛教與轉診的 360 度平台。</p>
             </div>
-            <p class="mt-20 text-sm text-slate-500 tracking-wider">© 2026 遠傳醫院全人照護個案管理平台. All rights reserved.</p>
+
+            <div class="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
+                
+                <div class="glass-card rounded-2xl p-2 cursor-pointer group tech-border" onclick="openLightbox('image/21.png', 'image')">
+                    <div class="overflow-hidden rounded-xl h-64 border border-gray-100">
+                        <img src="image/21.png" alt="線上照會系統" class="w-full h-full object-cover object-top transform group-hover:scale-105 transition duration-700">
+                    </div>
+                    <div class="p-6">
+                        <div class="flex items-center gap-2 mb-2">
+                            <span class="w-2 h-2 bg-green-400 rounded-full animate-pulse"></span>
+                            <h3 class="text-xl font-bold">線上照會與溝通</h3>
+                        </div>
+                        <p class="text-gray-500 text-sm">醫師與個管師的即時通訊平台，整合病患數據與對話紀錄，決策更精準。</p>
+                    </div>
+                </div>
+
+                <div class="glass-card rounded-2xl p-2 cursor-pointer group tech-border" onclick="openLightbox('image/22.png', 'image')">
+                    <div class="overflow-hidden rounded-xl h-64 border border-gray-100">
+                        <img src="image/22.png" alt="共照知識庫" class="w-full h-full object-cover object-top transform group-hover:scale-105 transition duration-700">
+                    </div>
+                    <div class="p-6">
+                        <div class="flex items-center gap-2 mb-2">
+                            <span class="w-2 h-2 bg-purple-400 rounded-full"></span>
+                            <h3 class="text-xl font-bold">共照知識庫</h3>
+                        </div>
+                        <p class="text-gray-500 text-sm">集中管理糖尿病共照網作業手冊、PDF 指南與衛教單張，隨時調閱。</p>
+                    </div>
+                </div>
+
+                <div class="glass-card rounded-2xl p-2 cursor-pointer group tech-border" onclick="openLightbox('image/23.png', 'image')">
+                    <div class="overflow-hidden rounded-xl h-64 border border-gray-100 relative bg-slate-800">
+                        <img src="image/23.png" alt="電子轉診系統" class="w-full h-full object-cover transform group-hover:scale-105 transition duration-700 opacity-90">
+                        <div class="absolute inset-0 flex items-center justify-center">
+                            <div class="bg-black/50 backdrop-blur-sm px-4 py-2 rounded text-white border border-white/20">SYSTEM LOADING...</div>
+                        </div>
+                    </div>
+                    <div class="p-6">
+                        <div class="flex items-center gap-2 mb-2">
+                            <span class="w-2 h-2 bg-blue-400 rounded-full"></span>
+                            <h3 class="text-xl font-bold">雙向轉診中心</h3>
+                        </div>
+                        <p class="text-gray-500 text-sm">視覺化轉診狀態追蹤，從檢視、轉出到回覆操作，流程全自動化。</p>
+                    </div>
+                </div>
+            </div>
         </div>
     </section>
+
+    <section id="assessment" class="py-24 bg-white relative overflow-hidden">
+        <div class="max-w-[98%] mx-auto px-4 relative">
+            <div class="flex items-end justify-between mb-12 border-b pb-4">
+                <div>
+                    <span class="text-cyan-600 font-bold tracking-wider uppercase text-sm font-mono">Digital Assessment 2.0</span>
+                    <h2 class="text-3xl font-bold text-slate-900 mt-2">智慧評估與連續照護</h2>
+                </div>
+            </div>
+
+            <div class="grid md:grid-cols-4 gap-6">
+                <div class="group cursor-pointer p-4 rounded-xl border border-transparent hover:border-gray-200 hover:bg-slate-50 transition" onclick="openLightbox('image/14.png', 'image')">
+                    <div class="relative overflow-hidden rounded-lg shadow-sm mb-3">
+                        <img src="image/14.png" alt="ICOPE" class="w-full h-40 object-cover">
+                    </div>
+                    <h3 class="font-bold text-slate-800">ICOPE 長者評估</h3>
+                    <p class="text-xs text-gray-400 mt-1">六大面向自動判讀</p>
+                </div>
+                <div class="group cursor-pointer p-4 rounded-xl border border-transparent hover:border-gray-200 hover:bg-slate-50 transition" onclick="openLightbox('image/17.png', 'image')">
+                    <div class="relative overflow-hidden rounded-lg shadow-sm mb-3">
+                        <img src="image/17.png" alt="CMS" class="w-full h-40 object-cover">
+                    </div>
+                    <h3 class="font-bold text-slate-800">CMS 照顧管理</h3>
+                    <p class="text-xs text-gray-400 mt-1">失能等級自動計算</p>
+                </div>
+                <div class="group cursor-pointer p-4 rounded-xl border border-transparent hover:border-gray-200 hover:bg-slate-50 transition" onclick="openLightbox('image/15.png', 'image')">
+                    <div class="relative overflow-hidden rounded-lg shadow-sm mb-3">
+                        <img src="image/15.png" alt="出院準備" class="w-full h-40 object-cover">
+                    </div>
+                    <h3 class="font-bold text-slate-800">出院準備服務</h3>
+                    <p class="text-xs text-gray-400 mt-1">LACE 風險評估視覺化</p>
+                </div>
+                <div class="group cursor-pointer p-4 rounded-xl border border-transparent hover:border-gray-200 hover:bg-slate-50 transition" onclick="openLightbox('image/20.png', 'image')">
+                    <div class="relative overflow-hidden rounded-lg shadow-sm mb-3">
+                        <img src="image/20.png" alt="PAC" class="w-full h-40 object-cover">
+                    </div>
+                    <h3 class="font-bold text-slate-800">PAC 急性後期</h3>
+                    <p class="text-xs text-gray-400 mt-1">復建成效前後測比對</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <section id="iot" class="py-24 bg-gradient-to-r from-slate-900 to-slate-800 text-white">
+        <div class="max-w-[98%] mx-auto px-4">
+            <div class="grid md:grid-cols-2 gap-16 items-center">
+                <div>
+                    <div class="inline-block px-2 py-1 bg-cyan-900 text-cyan-300 text-xs font-mono mb-4 border border-cyan-700">IoT MONITORING</div>
+                    <h2 class="text-4xl font-bold mb-6">智慧生理監控中心</h2>
+                    <p class="text-slate-300 mb-8 text-lg">
+                        即時串接藍芽血壓計、血糖機。系統自動篩選高風險個案（紅字標示），讓醫護團隊能優先處理緊急狀況。
+                    </p>
+                    <div class="grid grid-cols-2 gap-4">
+                        <div class="bg-white/5 backdrop-blur border border-white/10 p-4 rounded-lg cursor-pointer hover:bg-white/10 transition" onclick="openLightbox('image/4.png', 'image')">
+                            <p class="text-cyan-400 font-bold mb-1">手動輸入介面</p>
+                            <p class="text-xs text-slate-400">支援無設備個案</p>
+                        </div>
+                        <div class="bg-white/5 backdrop-blur border border-white/10 p-4 rounded-lg cursor-pointer hover:bg-white/10 transition" onclick="openLightbox('image/8.png', 'image')">
+                            <p class="text-cyan-400 font-bold mb-1">藍芽設備串接</p>
+                            <p class="text-xs text-slate-400">數據自動上傳雲端</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="relative group cursor-pointer" onclick="openLightbox('image/11.png', 'image')">
+                    <div class="absolute -inset-1 bg-gradient-to-r from-cyan-600 to-blue-600 rounded-xl blur opacity-25 group-hover:opacity-75 transition duration-1000 group-hover:duration-200"></div>
+                    <img src="image/11.png" alt="生理監控中心" class="relative rounded-xl shadow-2xl border border-slate-700 w-full">
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <footer class="bg-slate-950 text-slate-400 py-12 border-t border-slate-900 font-mono text-sm">
+        <div class="max-w-[98%] mx-auto px-4 text-center">
+            <h4 class="text-white text-lg font-bold mb-4 font-sans">遠傳醫院全人照護個案管理平台</h4>
+            <div class="flex justify-center space-x-6 mb-8">
+                <a href="#" class="hover:text-cyan-400 transition">關於我們</a>
+                <a href="#" class="hover:text-cyan-400 transition">系統操作手冊</a>
+                <a href="#" class="hover:text-cyan-400 transition">隱私權政策</a>
+                <a href="#" class="hover:text-cyan-400 transition">技術支援</a>
+            </div>
+            <p class="text-xs text-slate-600">
+                SYSTEM STATUS: ONLINE | © 2026 Kaichun Yang. All rights reserved. <br>
+                Designed for Holistic Healthcare Management.
+            </p>
+        </div>
+    </footer>
+
+    <div id="lightbox-modal" class="lightbox" onclick="closeLightbox()">
+        <div id="lightbox-container" class="relative">
+            <button onclick="closeLightbox()" class="absolute -top-12 right-0 text-white text-4xl hover:text-cyan-400 transition z-50">&times;</button>
+        </div>
+    </div>
 
     <script>
-        document.addEventListener('DOMContentLoaded', () => {
-            const overlay = document.getElementById('intro-overlay');
-            // 設定 8 秒後淡出 (8000ms)
+        // 8秒開場動畫邏輯
+        window.addEventListener('load', () => {
+            const loadingScreen = document.getElementById('loading-screen');
+            const loadingText = document.getElementById('loading-text');
+            const logs = document.getElementById('logs');
+            
+            // 模擬系統文字變化
+            setTimeout(() => { loadingText.innerText = "LOADING MODULES..."; }, 2000);
+            setTimeout(() => { loadingText.innerText = "ESTABLISHING CONNECTION..."; }, 4000);
+            setTimeout(() => { loadingText.innerText = "ACCESS GRANTED"; loadingText.style.color = "#4ade80"; loadingText.style.textShadow = "0 0 10px #4ade80"; }, 7000);
+
+            // 8秒後移除
             setTimeout(() => {
-                overlay.classList.add('hidden-intro');
-            }, 8000); 
+                loadingScreen.style.animation = "fadeOut 0.8s forwards";
+                setTimeout(() => { loadingScreen.style.display = 'none'; }, 800);
+            }, 8000);
+        });
+
+        // 燈箱邏輯 (升級版)
+        function openLightbox(src, type) {
+            const modal = document.getElementById('lightbox-modal');
+            const container = document.getElementById('lightbox-container');
+            
+            // 清空舊內容 (除了關閉按鈕)
+            // 由於關閉按鈕在 container 外或絕對定位，我們可以重置 innerHTML
+            // 但為了保留按鈕，我們動態建立元素
+            container.innerHTML = '<button onclick="closeLightbox()" class="absolute -top-10 -right-4 md:-right-10 text-white text-4xl hover:text-cyan-400 transition z-50 focus:outline-none">&times;</button>';
+
+            if (type === 'video') {
+                const video = document.createElement('video');
+                video.src = src;
+                video.controls = true;
+                video.autoplay = true;
+                video.className = "lightbox-content shadow-2xl shadow-cyan-500/20";
+                container.appendChild(video);
+            } else {
+                const img = document.createElement('img');
+                img.src = src;
+                img.className = "lightbox-content object-contain";
+                container.appendChild(img);
+            }
+
+            modal.style.display = 'flex';
+            document.body.style.overflow = 'hidden';
+        }
+
+        function closeLightbox() {
+            const modal = document.getElementById('lightbox-modal');
+            const container = document.getElementById('lightbox-container');
+            
+            // 暫停影片
+            const video = container.querySelector('video');
+            if (video) video.pause();
+
+            modal.style.display = 'none';
+            document.body.style.overflow = 'auto';
+        }
+
+        document.addEventListener('keydown', function(event) {
+            if (event.key === "Escape") {
+                closeLightbox();
+            }
         });
     </script>
-
 </body>
 </html>
