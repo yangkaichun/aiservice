@@ -1,17 +1,17 @@
 // ==========================================
-// YangHome Health Backend API (v14 - 整合評估表單寫入)
+// YangHome Health Backend API (v15 - 成人健檢資料整合版)
 // ==========================================
 
 const ss = SpreadsheetApp.getActiveSpreadsheet();
 
-// 1. 處理 GET 請求 (保留您原有的所有讀取與單筆寫入功能)
+// 1. 處理 GET 請求 (保留您原有的所有讀取與單筆寫入功能，不做任何刪減)
 function doGet(e) {
   const params = e.parameter;
   const action = params.action;
   let result = {};
 
   try {
-    // --- 寫入與更新操作 (原有功能) ---
+    // --- 寫入與更新操作 (原有功能保持不變) ---
     
     // 1. 新增生理數據 & 病歷資料 (單筆)
     if (action === 'addObservation') {
@@ -41,28 +41,26 @@ function doGet(e) {
     else if (action === 'deleteUser') {
       result = deleteUser(params.id);
     }
-    // 8. 登入驗證 (簡易版)
+    // 8. 登入驗證
     else if (action === 'login') {
-      // 這裡僅做範例，實務上應驗證 Google Token
-      // 為了配合前端，這裡回傳成功並尋找使用者
       const users = getNormalizedSheetData('Users');
-      // 假設 params 有 email
       const user = users.find(u => u.email === params.email); 
       if(user) {
         result = { status: 'success', user: user };
       } else {
-        // 若找不到人但登入成功，回傳基本資料 (或視為錯誤)
+        // 若找不到人但登入成功，回傳訪客身份
         result = { status: 'success', user: { name: params.name, email: params.email, role: 'guest', organization: '訪客' } };
       }
     }
 
     // --- 讀取操作 (通用查詢) ---
     else if (params.endpoint) {
-      // 支援 endpoint=patients, endpoint=users, endpoint=observations 等
-      // 注意：Sheet 名稱首字大寫，但 endpoint 通常小寫，這裡做個轉換
+      // 自動對應 Sheet 名稱 (首字大寫)
+      // 例如: patients -> Patients, observations -> Observations
       let sheetName = params.endpoint.charAt(0).toUpperCase() + params.endpoint.slice(1);
-      // 特例處理：若前端傳 patients 但 sheet 名稱是 Patients (已處理)
-      // 若前端傳 observations, sheet 是 Observations
+      
+      // 特殊處理：若前端傳 'dicoms' 對應 Sheet 可能為 'Dicoms'
+      // 請確保 Google Sheet 下方的頁籤名稱與此邏輯一致
       
       result = { status: 'success', data: getNormalizedSheetData(sheetName) };
     } 
@@ -78,7 +76,7 @@ function doGet(e) {
   return responseJSON(result);
 }
 
-// 2. [新增] 處理 POST 請求 (專門處理 form.html 的評估表單存檔)
+// 2. 處理 POST 請求 (處理 form.html 的評估表單存檔)
 function doPost(e) {
   try {
     if (!e.postData || !e.postData.contents) {
@@ -89,6 +87,7 @@ function doPost(e) {
     const action = postData.action;
 
     // 處理評估表單的批次存檔
+    // 包含此次新增的成人健檢欄位 (如 history_htn, lab_got, lab_gpt 等)
     if (action === "saveAssessment") {
       return handleSaveAssessment(postData);
     }
@@ -104,7 +103,7 @@ function doPost(e) {
 // 核心邏輯函式
 // -----------------------------------------------------------
 
-// [新增] 批次寫入評估結果到 Observations
+// [核心] 批次寫入評估結果到 Observations
 function handleSaveAssessment(data) {
   const sheet = ss.getSheetByName('Observations');
   if (!sheet) return responseJSON({ status: "error", message: "找不到 Observations 資料表" });
@@ -121,7 +120,8 @@ function handleSaveAssessment(data) {
   // 準備寫入資料 (二維陣列)
   // 欄位順序: id, patientID, timestamp, code, value, unit
   const newRows = records.map(record => {
-    const obsId = "O" + now.getTime().toString().slice(-9) + Math.floor(Math.random() * 1000); // 隨機 ID
+    // 產生隨機 ID
+    const obsId = "O" + now.getTime().toString().slice(-9) + Math.floor(Math.random() * 1000);
     return [
       obsId,
       patientId,
@@ -139,7 +139,7 @@ function handleSaveAssessment(data) {
   return responseJSON({ status: "success", count: newRows.length });
 }
 
-// [保留] 新增單筆觀測值
+// [保留] 新增單筆觀測值 (原有功能)
 function addObservation(p) {
   const sheet = ss.getSheetByName('Observations');
   if (sheet.getLastRow() === 0) {
@@ -151,24 +151,21 @@ function addObservation(p) {
   return { status: 'success', id: newId, timestamp: time };
 }
 
-// [保留] 新增轉診單
+// [保留] 新增轉診單 (原有功能)
 function addReferral(p) {
   const sheet = ss.getSheetByName('Referrals');
   const newId = 'R' + Date.now();
   const time = Utilities.formatDate(new Date(), "GMT+8", "yyyy-MM-dd HH:mm:ss");
-  // 根據 CSV 結構: id, timestamp, status, fromOrg, toOrg, patientID, patientName...
-  // 這裡簡化處理，依序填入已知欄位，未知的留空
   sheet.appendRow([newId, time, '未就診', p.fromOrg, p.toOrg, p.patientId, p.patientName, p.patientDob, p.patientIdNo, p.diagnosis, p.summary, p.purpose]);
   return { status: 'success', id: newId };
 }
 
-// [保留] 更新轉診狀態
+// [保留] 更新轉診狀態 (原有功能)
 function updateReferralStatus(p) {
   const sheet = ss.getSheetByName('Referrals');
   const data = sheet.getDataRange().getValues();
-  // 假設 id 在第 1 欄 (index 0), status 在第 3 欄 (index 2)
   const idColIndex = 0;
-  const statusColIndex = 3; 
+  const statusColIndex = 3; // 假設 status 在第 3 欄 (C欄)
   
   for (let i = 1; i < data.length; i++) {
     if (String(data[i][idColIndex]) === String(p.id)) {
@@ -180,18 +177,17 @@ function updateReferralStatus(p) {
   return { status: 'error', message: '找不到轉診單 ID' };
 }
 
-// [保留] 新增病患
+// [保留] 新增病患 (原有功能)
 function addPatient(params) {
-  const sheet = ss.getSheetByName('Patients'); // 注意大小寫，若失敗請改為 'patients'
+  const sheet = ss.getSheetByName('Patients'); // 請確保 Sheet 名稱為 Patients
   if (!sheet) return { status: 'error', message: 'Patients sheet not found' };
   
   const newId = params.id || ('P' + new Date().getTime());
-  // id, name, notionalID, birthDate, gender
   sheet.appendRow([newId, params.name, params.nationalId, params.birthDate, params.gender]);
   return { status: 'success', message: 'Patient Added' };
 }
 
-// [保留] 使用者管理相關
+// [保留] 使用者管理 (原有功能)
 function addUser(p) {
   const sheet = ss.getSheetByName('Users');
   const newId = 'U' + Date.now();
@@ -203,8 +199,7 @@ function editUser(p) {
   const sheet = ss.getSheetByName('Users');
   const data = sheet.getDataRange().getValues();
   for(let i=1; i<data.length; i++) {
-    if(String(data[i][0]) === String(p.id)) { // 假設 ID 在第一欄
-      // 更新 name, role, organization, email (假設順序為 1, 2, 3, 4)
+    if(String(data[i][0]) === String(p.id)) {
       sheet.getRange(i+1, 2, 1, 4).setValues([[p.name, p.role, p.organization, p.email]]);
       return { status: 'success' };
     }
