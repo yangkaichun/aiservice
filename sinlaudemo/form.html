@@ -138,11 +138,11 @@
                     </div>
                     <div class="md:col-span-1">
                         <label class="text-xs font-bold text-gray-500 mb-1.5 uppercase block tracking-wider">身高 (cm)</label>
-                        <input v-model="patient.height" type="number" class="input-std" @input="calculateBMI">
+                        <input v-model="patient.height" type="number" class="input-std" @input="calculateBMI" placeholder="自動帶入">
                     </div>
                     <div class="md:col-span-1">
                         <label class="text-xs font-bold text-gray-500 mb-1.5 uppercase block tracking-wider">體重 (kg)</label>
-                        <input v-model="patient.weight" type="number" class="input-std" @input="calculateBMI">
+                        <input v-model="patient.weight" type="number" class="input-std" @input="calculateBMI" placeholder="自動帶入">
                     </div>
                 </div>
                 
@@ -647,16 +647,49 @@
                     patient.bmi = '';
                 };
 
-                const selectPatient = (p) => {
+                const selectPatient = async (p) => {
+                    // Basic info
                     patient.id = p.id;
                     patient.name = p.name;
                     patient.gender = p.gender;
-                    if(p.height) patient.height = p.height;
-                    if(p.weight) patient.weight = p.weight;
-                    
                     searchQuery.value = p.id;
                     showSuggestions.value = false;
-                    calculateBMI();
+
+                    // Fetch latest Height/Weight from Observations
+                    try {
+                        loading.value = true;
+                        const res = await fetch(`${API_BASE_URL}?endpoint=observations`);
+                        const json = await res.json();
+                        if (json.status === 'success') {
+                            // Filter for this patient
+                            const patientObs = json.data.filter(o => String(o.patientID) === String(p.id));
+                            
+                            // Sort by timestamp desc
+                            patientObs.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
+
+                            // Get latest height/weight
+                            const latestH = patientObs.find(o => o.code === 'body_height');
+                            const latestW = patientObs.find(o => o.code === 'body_weight');
+
+                            if (latestH) patient.height = latestH.value;
+                            if (latestW) patient.weight = latestW.value;
+                            
+                            calculateBMI();
+                            
+                            // Populate History immediately
+                            historyResults.value = patientObs.filter(obs => 
+                                obs.code.startsWith('icope') || obs.code.startsWith('cms') || 
+                                obs.code.startsWith('health') || obs.code.startsWith('lab') || 
+                                obs.code.startsWith('sys') || obs.code.startsWith('dias') || 
+                                obs.code.startsWith('bmi') || obs.code.startsWith('body')
+                            );
+                            historySearchQuery.value = p.id;
+                        }
+                    } catch (e) {
+                        console.error(e);
+                    } finally {
+                        loading.value = false;
+                    }
                 };
 
                 document.addEventListener('click', (e) => {
