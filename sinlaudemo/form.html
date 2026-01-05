@@ -4,156 +4,395 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <link rel="shortcut icon" href="image/carepathicon.ico">
-    <title>護理評估表單系統</title>
+    <title>專業護理評估表單</title>
     
+    <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
-    
-    <style>
+    <script src="config.js"></script> <style>
         body { background-color: #f3f4f6; font-family: "Microsoft JhengHei", sans-serif; }
-        .form-section { background: white; border-radius: 12px; padding: 24px; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1); margin-bottom: 24px; }
-        .section-title { font-size: 1.125rem; font-weight: 700; color: #1f2937; margin-bottom: 16px; border-left: 4px solid #0066FF; padding-left: 12px; }
-        input[type="text"], input[type="date"], input[type="number"], select, textarea {
-            width: 100%; border: 1px solid #e5e7eb; border-radius: 8px; padding: 10px; outline: none; transition: border-color 0.2s;
-        }
-        input:focus, select:focus, textarea:focus { border-color: #0066FF; ring: 2px solid #93C5FD; }
-        label { display: block; font-size: 0.875rem; font-weight: 600; color: #4b5563; margin-bottom: 6px; }
-        .radio-group label { font-weight: normal; margin-bottom: 0; cursor: pointer; display: flex; align-items: center; }
-        .radio-group input[type="radio"] { margin-right: 8px; width: auto; }
+        .form-card { background: white; border-radius: 12px; padding: 24px; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1); margin-bottom: 24px; }
+        .tab-btn { padding: 12px 24px; font-weight: bold; border-bottom: 3px solid transparent; transition: all 0.3s; color: #6b7280; }
+        .tab-btn.active { color: #0066FF; border-bottom-color: #0066FF; background-color: #eff6ff; }
+        .input-std { width: 100%; border: 1px solid #d1d5db; border-radius: 8px; padding: 10px; margin-top: 4px; }
+        .input-std:focus { ring: 2px solid #3b82f6; border-color: #3b82f6; outline: none; }
+        .preview-row { display: flex; justify-content: space-between; border-bottom: 1px solid #f3f4f6; padding: 8px 0; }
+        .preview-label { font-weight: bold; color: #4b5563; }
+        .preview-val { color: #1f2937; }
+        [v-cloak] { display: none; }
     </style>
 </head>
-<body class="p-6 md:p-10">
-
-    <div class="max-w-4xl mx-auto">
-        <header class="mb-8 flex justify-between items-center">
-            <div>
-                <h1 class="text-2xl font-bold text-gray-800"><i class="fa-solid fa-clipboard-list text-cyan-600 mr-3"></i>綜合護理評估表單</h1>
-                <p class="text-gray-500 text-sm mt-1">遠傳醫院個案管理系統專用</p>
+<body class="text-gray-800">
+    <div id="app" class="max-w-5xl mx-auto p-4 md:p-8" v-cloak>
+        
+        <header class="flex justify-between items-center mb-6">
+            <h1 class="text-2xl font-bold flex items-center">
+                <i class="fa-solid fa-clipboard-check text-brand-blue mr-3 text-blue-600"></i>
+                綜合護理評估系統
+            </h1>
+            <div class="flex items-center space-x-3">
+                <span class="text-sm text-gray-500">操作者: {{ currentUser.name }}</span>
+                <button @click="closeWindow" class="bg-gray-200 hover:bg-gray-300 px-4 py-2 rounded-lg text-sm font-bold transition">
+                    關閉
+                </button>
             </div>
-            <button onclick="window.close()" class="text-gray-400 hover:text-gray-600 font-bold text-sm"><i class="fa-solid fa-xmark mr-1"></i>關閉視窗</button>
         </header>
 
-        <form id="assessmentForm" onsubmit="event.preventDefault(); submitForm();">
+        <div v-if="loading" class="fixed inset-0 bg-black/50 z-50 flex items-center justify-center flex-col text-white">
+            <i class="fa-solid fa-spinner fa-spin text-4xl mb-4"></i>
+            <p>{{ loadingText }}</p>
+        </div>
+
+        <div v-if="isLoggedIn">
             
-            <div class="form-section">
-                <h2 class="section-title">個案基本資料</h2>
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div class="form-card border-l-4 border-blue-500">
+                <h3 class="text-lg font-bold mb-4 text-gray-700">個案基本資料 (共用)</h3>
+                <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
                     <div>
-                        <label>個案 ID / 病歷號</label>
-                        <input type="text" id="patientId" placeholder="請輸入或掃描條碼" required>
+                        <label class="text-xs font-bold text-gray-500">個案 ID / 病歷號</label>
+                        <input v-model="patient.id" type="text" class="input-std bg-yellow-50" placeholder="請輸入 ID">
                     </div>
                     <div>
-                        <label>評估日期</label>
-                        <input type="date" id="assessDate" required>
+                        <label class="text-xs font-bold text-gray-500">姓名</label>
+                        <input v-model="patient.name" type="text" class="input-std">
                     </div>
                     <div>
-                        <label>個案姓名</label>
-                        <input type="text" id="patientName" placeholder="自動帶入">
+                        <label class="text-xs font-bold text-gray-500">身高 (cm)</label>
+                        <input v-model="patient.height" type="number" class="input-std" @input="calculateBMI">
                     </div>
                     <div>
-                        <label>評估人員</label>
-                        <input type="text" value="陳個管師 (預設)" readonly class="bg-gray-50 text-gray-500">
+                        <label class="text-xs font-bold text-gray-500">體重 (kg)</label>
+                        <input v-model="patient.weight" type="number" class="input-std" @input="calculateBMI">
                     </div>
+                </div>
+                <div class="mt-2 text-right text-sm font-bold text-blue-600" v-if="patient.bmi">
+                    BMI: {{ patient.bmi }}
                 </div>
             </div>
 
-            <div class="form-section">
-                <h2 class="section-title">評估項目選擇</h2>
-                <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
-                    <label class="border rounded-lg p-4 flex items-center cursor-pointer hover:bg-blue-50 transition border-blue-100 bg-blue-50/30">
-                        <input type="radio" name="assessType" value="adl" checked>
-                        <span class="ml-2 font-bold text-gray-700">日常生活功能 (ADL)</span>
-                    </label>
-                    <label class="border rounded-lg p-4 flex items-center cursor-pointer hover:bg-blue-50 transition">
-                        <input type="radio" name="assessType" value="iadl">
-                        <span class="ml-2 font-bold text-gray-700">工具性生活功能 (IADL)</span>
-                    </label>
-                    <label class="border rounded-lg p-4 flex items-center cursor-pointer hover:bg-blue-50 transition">
-                        <input type="radio" name="assessType" value="fall">
-                        <span class="ml-2 font-bold text-gray-700">跌倒風險評估</span>
-                    </label>
-                    <label class="border rounded-lg p-4 flex items-center cursor-pointer hover:bg-blue-50 transition">
-                        <input type="radio" name="assessType" value="nutri">
-                        <span class="ml-2 font-bold text-gray-700">營養評估 (MNA)</span>
-                    </label>
-                </div>
+            <div class="flex border-b border-gray-200 bg-white rounded-t-xl overflow-hidden shadow-sm mb-6">
+                <button @click="currentTab = 'icope'" :class="['tab-btn flex-1', currentTab === 'icope' ? 'active' : '']">
+                    ICOPE 長者評估
+                </button>
+                <button @click="currentTab = 'cms'" :class="['tab-btn flex-1', currentTab === 'cms' ? 'active' : '']">
+                    照顧管理評估 (CMS)
+                </button>
+                <button @click="currentTab = 'health'" :class="['tab-btn flex-1', currentTab === 'health' ? 'active' : '']">
+                    成人預防保健
+                </button>
             </div>
 
-            <div class="form-section">
-                <div class="flex justify-between items-center mb-4">
-                    <h2 class="section-title mb-0">巴氏量表 (Barthel Index)</h2>
-                    <span class="bg-blue-100 text-blue-800 text-xs font-bold px-2 py-1 rounded">總分計算中...</span>
-                </div>
-                
-                <div class="space-y-6">
-                    <div class="border-b pb-4">
-                        <label class="text-lg mb-2">1. 進食 (Feeding)</label>
-                        <div class="grid grid-cols-1 md:grid-cols-3 gap-3 radio-group">
-                            <label><input type="radio" name="q1" value="10"> 10分 - 可自行進食</label>
-                            <label><input type="radio" name="q1" value="5"> 5分 - 需部分協助</label>
-                            <label><input type="radio" name="q1" value="0"> 0分 - 完全需人協助</label>
-                        </div>
-                    </div>
-
-                    <div class="border-b pb-4">
-                        <label class="text-lg mb-2">2. 移位 (Transfer)</label>
-                        <div class="grid grid-cols-1 md:grid-cols-4 gap-3 radio-group">
-                            <label><input type="radio" name="q2" value="15"> 15分 - 可自行完成</label>
-                            <label><input type="radio" name="q2" value="10"> 10分 - 需些微協助</label>
-                            <label><input type="radio" name="q2" value="5"> 5分 - 可坐起但需協助移位</label>
-                            <label><input type="radio" name="q2" value="0"> 0分 - 完全無法執行</label>
-                        </div>
-                    </div>
-
-                    <div class="border-b pb-4">
-                        <label class="text-lg mb-2">3. 如廁 (Toilet use)</label>
-                        <div class="grid grid-cols-1 md:grid-cols-3 gap-3 radio-group">
-                            <label><input type="radio" name="q3" value="10"> 10分 - 可自行完成</label>
-                            <label><input type="radio" name="q3" value="5"> 5分 - 需部分協助</label>
-                            <label><input type="radio" name="q3" value="0"> 0分 - 完全需人協助</label>
-                        </div>
-                    </div>
+            <div v-if="currentTab === 'icope'" class="space-y-6 animate-fade-in-up">
+                <div class="form-card">
+                    <h3 class="section-title text-xl font-bold mb-4 text-indigo-700">初評篩檢</h3>
                     
-                    <div class="pt-2">
-                        <label>評估摘要 / 護理紀錄</label>
-                        <textarea rows="3" placeholder="請輸入重點觀察事項..."></textarea>
+                    <div class="mb-6 pb-6 border-b border-gray-100">
+                        <h4 class="font-bold text-gray-800 mb-2">A. 認知功能</h4>
+                        <div class="flex items-center space-x-4 mb-2">
+                            <span class="text-sm">1. 記憶力 (複誦3物品)</span>
+                            <div class="space-x-2">
+                                <label><input type="radio" v-model="icope.cognition_q1" value="pass"> 通過</label>
+                                <label><input type="radio" v-model="icope.cognition_q1" value="fail"> 失敗</label>
+                            </div>
+                        </div>
+                        <div class="flex items-center space-x-4">
+                            <span class="text-sm">2. 定向力 (日期/地點)</span>
+                            <div class="space-x-2">
+                                <label><input type="radio" v-model="icope.cognition_q2" value="pass"> 通過</label>
+                                <label><input type="radio" v-model="icope.cognition_q2" value="fail"> 失敗</label>
+                            </div>
+                        </div>
+                        <div v-if="isIcopeCognitionAbnormal" class="mt-4 p-4 bg-red-50 border border-red-200 rounded-lg">
+                            <p class="text-red-600 font-bold text-sm mb-2"><i class="fa-solid fa-triangle-exclamation"></i> 初評異常：請進行 AD-8 評估</p>
+                            <div class="grid grid-cols-2 gap-4 text-sm">
+                                <div v-for="n in 8" :key="n" class="flex justify-between items-center bg-white p-2 rounded border">
+                                    <span>AD8-{{n}} (判斷力/興趣/重複...)</span>
+                                    <input type="checkbox" v-model="icope.ad8_items" :value="n" class="w-5 h-5">
+                                </div>
+                            </div>
+                            <p class="mt-2 text-right text-sm font-bold">AD8 總分: {{ icope.ad8_items.length }} / 8</p>
+                        </div>
+                    </div>
+
+                    <div class="mb-6">
+                        <h4 class="font-bold text-gray-800 mb-2">B. 行動功能</h4>
+                        <div class="flex items-center space-x-4">
+                            <span class="text-sm">椅子起身測試 (5次) 是否大於 12秒?</span>
+                            <div class="space-x-2">
+                                <label><input type="radio" v-model="icope.mobility_q1" value="yes"> 是 (異常)</label>
+                                <label><input type="radio" v-model="icope.mobility_q1" value="no"> 否 (正常)</label>
+                            </div>
+                        </div>
+                        <div v-if="icope.mobility_q1 === 'yes'" class="mt-4 p-4 bg-orange-50 border border-orange-200 rounded-lg">
+                            <p class="text-orange-700 font-bold text-sm mb-2">建議進行 SPPB 量表複評</p>
+                            <label class="block text-xs font-bold mb-1">SPPB 總分 (0-12)</label>
+                            <input v-model="icope.sppb_score" type="number" class="input-std w-24">
+                        </div>
                     </div>
                 </div>
             </div>
 
-            <div class="flex gap-4">
-                <button type="submit" class="flex-1 bg-gradient-to-r from-cyan-600 to-blue-600 text-white font-bold py-4 rounded-xl shadow-lg hover:shadow-xl hover:scale-[1.01] transition transform">
-                    <i class="fa-solid fa-floppy-disk mr-2"></i> 儲存評估結果
-                </button>
-                <button type="button" onclick="window.close()" class="px-6 py-4 bg-gray-200 text-gray-600 font-bold rounded-xl hover:bg-gray-300 transition">
-                    取消
+            <div v-if="currentTab === 'cms'" class="space-y-6 animate-fade-in-up">
+                <div class="form-card">
+                    <h3 class="text-xl font-bold mb-4 text-teal-700">照顧管理評估 (ADL/IADL)</h3>
+                    
+                    <div class="space-y-4">
+                        <div class="bg-gray-50 p-4 rounded-lg">
+                            <h4 class="font-bold text-gray-700 mb-2">E1. 吃飯</h4>
+                            <select v-model="cms.adl_e1" class="input-std">
+                                <option value="1">1. 獨立</option>
+                                <option value="2">2. 需部分協助</option>
+                                <option value="3">3. 完全依賴</option>
+                            </select>
+                        </div>
+                        <div class="bg-gray-50 p-4 rounded-lg">
+                            <h4 class="font-bold text-gray-700 mb-2">E2. 洗澡</h4>
+                            <select v-model="cms.adl_e2" class="input-std">
+                                <option value="1">1. 獨立</option>
+                                <option value="2">2. 需部分協助</option>
+                            </select>
+                        </div>
+                        <div class="bg-gray-50 p-4 rounded-lg">
+                            <h4 class="font-bold text-gray-700 mb-2">F1. 使用電話 (IADL)</h4>
+                            <select v-model="cms.iadl_f1" class="input-std">
+                                <option value="1">1. 獨立</option>
+                                <option value="2">2. 僅能撥熟悉號碼</option>
+                                <option value="3">3. 僅能接聽</option>
+                                <option value="4">4. 完全無法使用</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div v-if="currentTab === 'health'" class="space-y-6 animate-fade-in-up">
+                <div class="form-card">
+                    <h3 class="text-xl font-bold mb-4 text-rose-700">成人預防保健檢查</h3>
+                    
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div>
+                            <h4 class="font-bold text-gray-600 mb-3 border-b pb-1">身體檢查</h4>
+                            <div class="space-y-3">
+                                <div><label class="text-xs">收縮壓 (mmHg)</label><input v-model="health.sbp" type="number" class="input-std"></div>
+                                <div><label class="text-xs">舒張壓 (mmHg)</label><input v-model="health.dbp" type="number" class="input-std"></div>
+                                <div><label class="text-xs">腰圍 (cm)</label><input v-model="health.waist" type="number" class="input-std"></div>
+                            </div>
+                        </div>
+                        <div>
+                            <h4 class="font-bold text-gray-600 mb-3 border-b pb-1">生化檢驗</h4>
+                            <div class="space-y-3">
+                                <div><label class="text-xs">肌酸酐 (Cre)</label><input v-model="health.cre" type="number" class="input-std"></div>
+                                <div><label class="text-xs">飯前血糖 (AC)</label><input v-model="health.glu_ac" type="number" class="input-std"></div>
+                                <div><label class="text-xs">三酸甘油脂 (TG)</label><input v-model="health.tg" type="number" class="input-std"></div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="mt-6 p-4 bg-gray-100 rounded-lg">
+                        <h4 class="font-bold text-gray-700 mb-2">自動計算結果</h4>
+                        <div class="grid grid-cols-2 gap-4 text-sm">
+                            <div class="flex justify-between"><span>eGFR:</span> <span class="font-mono font-bold">{{ calculatedEgfr }}</span></div>
+                            <div class="flex justify-between"><span>代謝症候群:</span> 
+                                <span :class="isMetabolicSyndrome ? 'text-red-600 font-bold' : 'text-green-600'">{{ isMetabolicSyndrome ? '是 (異常)' : '否' }}</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="fixed bottom-0 left-0 w-full bg-white border-t border-gray-200 p-4 shadow-lg flex justify-end items-center z-40">
+                <span class="mr-4 text-gray-500 text-sm">請確認資料無誤後再送出</span>
+                <button @click="showPreview" class="bg-gradient-to-r from-blue-600 to-blue-800 text-white px-8 py-3 rounded-xl font-bold shadow-lg hover:shadow-xl transition transform hover:scale-105">
+                    <i class="fa-solid fa-paper-plane mr-2"></i> 預覽並儲存
                 </button>
             </div>
 
-        </form>
+        </div>
+
+        <div v-if="showPreviewModal" class="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm">
+            <div class="bg-white rounded-2xl shadow-2xl w-full max-w-2xl max-h-[90vh] flex flex-col">
+                <div class="p-6 border-b border-gray-100 flex justify-between items-center bg-gray-50 rounded-t-2xl">
+                    <h3 class="text-xl font-bold text-gray-800">確認評估資料</h3>
+                    <button @click="showPreviewModal = false" class="text-gray-400 hover:text-gray-600"><i class="fa-solid fa-xmark text-xl"></i></button>
+                </div>
+                <div class="flex-1 overflow-y-auto p-6 space-y-4">
+                    
+                    <div class="bg-blue-50 p-4 rounded-lg mb-4">
+                        <h4 class="font-bold text-blue-800 mb-2">基本資料</h4>
+                        <p class="text-sm">ID: <b>{{ patient.id }}</b> | 姓名: <b>{{ patient.name }}</b></p>
+                        <p class="text-sm">BMI: <b>{{ patient.bmi }}</b></p>
+                    </div>
+
+                    <div v-if="previewData.length > 0">
+                        <div v-for="(item, idx) in previewData" :key="idx" class="preview-row">
+                            <span class="preview-label">{{ item.label }}</span>
+                            <span class="preview-val font-mono">{{ item.value }} {{ item.unit }}</span>
+                        </div>
+                    </div>
+                    <div v-else class="text-center text-gray-400 py-8">本次未填寫任何評估數據</div>
+
+                </div>
+                <div class="p-6 border-t border-gray-100 flex justify-end space-x-3 bg-white rounded-b-2xl">
+                    <button @click="showPreviewModal = false" class="px-6 py-2 rounded-lg border border-gray-300 text-gray-600 font-bold hover:bg-gray-50">返回修改</button>
+                    <button @click="submitToGas" class="px-6 py-2 rounded-lg bg-green-600 text-white font-bold hover:bg-green-700 shadow-lg">確認寫入資料庫</button>
+                </div>
+            </div>
+        </div>
+
     </div>
 
     <script>
-        // 設定預設日期為今天
-        document.getElementById('assessDate').valueAsDate = new Date();
+        const { createApp, reactive, computed, ref, onMounted } = Vue;
 
-        function submitForm() {
-            const pid = document.getElementById('patientId').value;
-            if(!pid) { alert('請輸入個案 ID'); return; }
-            
-            // 模擬儲存
-            const btn = document.querySelector('button[type="submit"]');
-            const originalText = btn.innerHTML;
-            btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin mr-2"></i> 處理中...';
-            btn.disabled = true;
+        createApp({
+            setup() {
+                const loading = ref(false);
+                const loadingText = ref('');
+                const isLoggedIn = ref(false);
+                const currentUser = ref({});
+                const currentTab = ref('icope');
+                const showPreviewModal = ref(false);
 
-            setTimeout(() => {
-                alert('評估表單已成功儲存至系統！');
-                btn.innerHTML = originalText;
-                btn.disabled = false;
-                // window.close(); // 可選：儲存後關閉
-            }, 1000);
-        }
+                // 資料模型
+                const patient = reactive({ id: '', name: '', height: '', weight: '', bmi: '' });
+                const icope = reactive({ cognition_q1: '', cognition_q2: '', ad8_items: [], mobility_q1: '', sppb_score: '' });
+                const cms = reactive({ adl_e1: '', adl_e2: '', iadl_f1: '' });
+                const health = reactive({ sbp: '', dbp: '', waist: '', cre: '', glu_ac: '', tg: '' });
+
+                // Check Login
+                onMounted(() => {
+                    const userStr = localStorage.getItem('currentUser');
+                    if (!userStr) {
+                        alert('請先登入系統');
+                        window.location.href = 'index.html'; // 強制導回首頁
+                    } else {
+                        currentUser.value = JSON.parse(userStr);
+                        isLoggedIn.value = true;
+                    }
+                });
+
+                // 計算邏輯
+                const calculateBMI = () => {
+                    if (patient.height && patient.weight) {
+                        const h = patient.height / 100;
+                        patient.bmi = (patient.weight / (h * h)).toFixed(1);
+                    }
+                };
+
+                const isIcopeCognitionAbnormal = computed(() => {
+                    return icope.cognition_q1 === 'fail' || icope.cognition_q2 === 'fail';
+                });
+
+                const calculatedEgfr = computed(() => {
+                    // 簡易 MDRD 公式範例 (男性)
+                    if (health.cre) {
+                        const age = 65; // 假設值，實際應從生日計算
+                        return (186 * Math.pow(health.cre, -1.154) * Math.pow(age, -0.203)).toFixed(1);
+                    }
+                    return '--';
+                });
+
+                const isMetabolicSyndrome = computed(() => {
+                    let count = 0;
+                    if (health.sbp >= 130 || health.dbp >= 85) count++;
+                    if (health.waist >= 90) count++; // 簡化判斷
+                    if (health.glu_ac >= 100) count++;
+                    if (health.tg >= 150) count++;
+                    return count >= 3;
+                });
+
+                // 預覽資料產生器 (只抓有填寫的)
+                const previewData = computed(() => {
+                    const list = [];
+                    // ICOPE
+                    if (icope.cognition_q1) list.push({ label: 'ICOPE-記憶力', value: icope.cognition_q1 === 'pass' ? '通過' : '失敗' });
+                    if (icope.ad8_items.length > 0) list.push({ label: 'AD-8 總分', value: icope.ad8_items.length });
+                    if (icope.sppb_score) list.push({ label: 'SPPB 分數', value: icope.sppb_score });
+                    
+                    // CMS
+                    if (cms.adl_e1) list.push({ label: 'CMS-吃飯(E1)', value: cms.adl_e1 });
+                    if (cms.adl_e2) list.push({ label: 'CMS-洗澡(E2)', value: cms.adl_e2 });
+                    
+                    // Health
+                    if (health.sbp) list.push({ label: '收縮壓', value: health.sbp, unit: 'mmHg' });
+                    if (health.glu_ac) list.push({ label: '飯前血糖', value: health.glu_ac, unit: 'mg/dL' });
+                    if (calculatedEgfr.value !== '--') list.push({ label: 'eGFR', value: calculatedEgfr.value });
+                    
+                    return list;
+                });
+
+                const showPreview = () => {
+                    if (!patient.id) { alert('請填寫個案 ID'); return; }
+                    if (previewData.value.length === 0) { alert('請至少填寫一項評估數據'); return; }
+                    showPreviewModal.value = true;
+                };
+
+                const submitToGas = async () => {
+                    loading.value = true;
+                    loadingText.value = '正在加密傳輸數據至 Google 資料庫...';
+                    showPreviewModal.value = false;
+
+                    // 1. 準備 Payload (轉換為 EAV 格式)
+                    const records = [];
+                    // Helper to push
+                    const pushRec = (code, val, unit='') => { if(val) records.push({code, value: val, unit}); };
+
+                    // Mapping Data
+                    pushRec('body_height', patient.height, 'cm');
+                    pushRec('body_weight', patient.weight, 'kg');
+                    pushRec('bmi', patient.bmi);
+                    
+                    pushRec('icope_cognition_q1', icope.cognition_q1);
+                    pushRec('icope_ad8_score', icope.ad8_items.length);
+                    
+                    pushRec('cms_adl_e1', cms.adl_e1);
+                    
+                    pushRec('systolic_bp', health.sbp, 'mmHg');
+                    pushRec('diastolic_bp', health.dbp, 'mmHg');
+                    pushRec('lab_cre', health.cre, 'mg/dL');
+                    pushRec('lab_egfr', calculatedEgfr.value, 'ml/min');
+
+                    const payload = {
+                        action: 'saveAssessment',
+                        patientId: patient.id,
+                        records: records
+                    };
+
+                    // 2. Call API (使用 fetch POST)
+                    try {
+                        // 使用 no-cors 模式或者標準模式，取決於您的 GAS 部署設定
+                        // 為了能夠讀取回應，通常建議使用 text/plain 並在 GAS 用 JSON.parse
+                        const res = await fetch(API_BASE_URL, {
+                            method: 'POST',
+                            body: JSON.stringify(payload)
+                        });
+                        const json = await res.json();
+                        
+                        if (json.status === 'success') {
+                            alert('資料儲存成功！');
+                            // 清空或重置邏輯...
+                            window.location.reload();
+                        } else {
+                            alert('儲存失敗: ' + json.message);
+                        }
+                    } catch (e) {
+                        console.error(e);
+                        alert('連線錯誤，請檢查網路');
+                    } finally {
+                        loading.value = false;
+                    }
+                };
+
+                const closeWindow = () => window.close();
+
+                return {
+                    loading, loadingText, isLoggedIn, currentUser, currentTab,
+                    patient, icope, cms, health,
+                    calculateBMI, isIcopeCognitionAbnormal, calculatedEgfr, isMetabolicSyndrome,
+                    showPreviewModal, showPreview, previewData, submitToGas, closeWindow
+                };
+            }
+        }).mount('#app');
     </script>
 </body>
 </html>
