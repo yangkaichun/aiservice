@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="shortcut icon" href="image/carepathicon.ico">
+    <title>居家醫療 HAH 管理平台</title>
+    
+    <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <script src="config.js"></script>
+
+    <style>
+        body { background-color: #f8fafc; font-family: "Microsoft JhengHei", sans-serif; }
+        [v-cloak] { display: none; }
+        .hah-card { background: white; border-radius: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.05); transition: 0.3s; border: 1px solid #e2e8f0; }
+        .hah-card:hover { transform: translateY(-2px); box-shadow: 0 8px 16px rgba(0,0,0,0.1); border-color: #c4b5fd; }
+        .btn-primary { background: linear-gradient(135deg, #7c3aed, #6d28d9); color: white; transition: 0.3s; }
+        .btn-primary:hover { opacity: 0.9; box-shadow: 0 4px 12px rgba(124, 58, 237, 0.3); }
+        .status-active { background-color: #dcfce7; color: #166534; border: 1px solid #bbf7d0; }
+        .status-closed { background-color: #f1f5f9; color: #64748b; border: 1px solid #e2e8f0; }
+        .autocomplete-results { position: absolute; z-index: 50; background: white; width: 100%; max-height: 200px; overflow-y: auto; border: 1px solid #e2e8f0; border-radius: 8px; box-shadow: 0 10px 15px -3px rgba(0,0,0,0.1); top: 100%; margin-top: 4px; }
+        .autocomplete-item { padding: 8px 12px; cursor: pointer; border-bottom: 1px solid #f8fafc; }
+        .autocomplete-item:hover { background-color: #f3f4f6; }
+    </style>
+</head>
+<body class="text-slate-700">
+    <div id="app" class="min-h-screen flex flex-col" v-cloak>
+        <header class="bg-white border-b border-gray-200 sticky top-0 z-20">
+            <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex justify-between items-center">
+                <div class="flex items-center"><div class="w-10 h-10 bg-purple-600 rounded-lg flex items-center justify-center text-white mr-3 shadow-lg"><i class="fa-solid fa-house-medical"></i></div><h1 class="text-xl font-bold text-slate-800">居家醫療 (HAH) 照護中心</h1></div>
+                <div class="flex items-center space-x-3"><span class="text-sm text-gray-500 bg-gray-50 px-3 py-1 rounded-full">{{ currentUser.name }}</span><button @click="closeWindow" class="text-gray-400 hover:text-gray-600 font-bold"><i class="fa-solid fa-xmark text-xl"></i></button></div>
+            </div>
+        </header>
+        <main class="flex-1 max-w-7xl mx-auto w-full px-4 sm:px-6 lg:px-8 py-8">
+            <div class="flex flex-col md:flex-row justify-between items-center mb-8 gap-4">
+                <div class="flex items-center space-x-4 bg-white p-2 rounded-xl shadow-sm border border-gray-100"><label class="flex items-center cursor-pointer px-3 py-1 rounded-lg hover:bg-gray-50 transition select-none"><input type="checkbox" v-model="hideClosed" class="mr-2 w-5 h-5 accent-purple-600"><span class="font-bold text-sm text-gray-600">隱藏已結案</span></label><div class="h-6 w-px bg-gray-200"></div><span class="text-xs font-bold text-gray-400">顯示: {{ filteredCases.length }} 筆</span></div>
+                <button @click="openNewCaseModal" class="btn-primary px-6 py-3 rounded-xl font-bold shadow-lg flex items-center"><i class="fa-solid fa-plus mr-2"></i> 新增 HAH 收案</button>
+            </div>
+            <div class="grid grid-cols-1 gap-4">
+                <div v-if="loading" class="text-center py-12 text-gray-400"><i class="fa-solid fa-spinner fa-spin text-3xl"></i><p class="mt-2">載入案件中...</p></div>
+                <div v-else-if="filteredCases.length === 0" class="text-center py-20 bg-white rounded-2xl border border-dashed border-gray-300"><i class="fa-solid fa-folder-open text-6xl text-gray-200 mb-4"></i><p class="text-gray-400 font-bold">目前沒有符合條件的案件</p></div>
+                <div v-else v-for="c in filteredCases" :key="c.id" class="hah-card p-6 flex flex-col md:flex-row justify-between items-start md:items-center group">
+                    <div class="flex items-start mb-4 md:mb-0 w-full md:w-1/3"><div class="w-14 h-14 rounded-full bg-purple-100 text-purple-600 flex items-center justify-center font-bold text-xl mr-4 shrink-0">{{ c.patientName[0] }}</div><div><div class="flex items-center mb-1"><h3 class="text-lg font-bold text-slate-800 mr-2">{{ c.patientName }}</h3><span class="text-xs font-mono text-gray-400 bg-gray-100 px-2 py-0.5 rounded">{{ c.patientId }}</span><span :class="c.status === 'Active' ? 'status-active' : 'status-closed'" class="ml-2 text-[10px] px-2 py-0.5 rounded-full uppercase tracking-wide font-bold">{{ c.status === 'Active' ? '照護中' : '已結案' }}</span></div><p class="text-xs text-gray-500 flex items-center"><i class="fa-solid fa-id-card mr-1"></i> {{ c.nationalId }}</p><p class="text-xs text-purple-600 font-bold mt-1 bg-purple-50 inline-block px-2 py-0.5 rounded border border-purple-100"><i class="fa-solid fa-stethoscope mr-1"></i> {{ c.diagnosis }}</p></div></div>
+                    <div class="w-full md:w-1/3 mb-4 md:mb-0 text-sm text-gray-600 pl-0 md:pl-4 border-l-0 md:border-l border-gray-100"><div class="grid grid-cols-2 gap-y-2"><div><span class="text-xs text-gray-400 block">主責醫師</span><span class="font-bold">{{ c.physician }}</span></div><div><span class="text-xs text-gray-400 block">主責護理師</span><span class="font-bold">{{ c.nurse }}</span></div><div><span class="text-xs text-gray-400 block">收案日期</span><span class="font-mono">{{ c.startDate.split(' ')[0] }}</span></div><div v-if="c.endDate"><span class="text-xs text-gray-400 block">結案日期</span><span class="font-mono">{{ c.endDate.split(' ')[0] }}</span></div></div></div>
+                    <div class="w-full md:w-1/3 flex flex-col items-end space-y-2 pl-0 md:pl-4 border-l-0 md:border-l border-gray-100">
+                        <div class="flex space-x-2 w-full justify-end"><button @click="openVideo(c)" class="bg-blue-50 text-blue-600 hover:bg-blue-100 px-3 py-1.5 rounded-lg text-xs font-bold transition flex items-center"><i class="fa-solid fa-video mr-1"></i> 視訊連結</button><button @click="viewHistory(c)" class="bg-gray-100 text-gray-600 hover:bg-gray-200 px-3 py-1.5 rounded-lg text-xs font-bold transition flex items-center"><i class="fa-solid fa-clock-rotate-left mr-1"></i> 歷史量測</button></div>
+                        <div class="flex space-x-2 w-full justify-end"><button class="text-gray-400 hover:text-gray-600 text-xs" title="下載錄影"><i class="fa-solid fa-download"></i></button><button class="text-gray-400 hover:text-gray-600 text-xs" title="視訊摘要"><i class="fa-solid fa-file-alt"></i></button></div>
+                        <div class="w-full border-t border-gray-100 my-2"></div>
+                        <div class="flex space-x-2 w-full"><button @click="openDailyNote(c)" class="flex-1 bg-purple-600 text-white hover:bg-purple-700 px-4 py-2 rounded-lg text-sm font-bold shadow-md transition flex justify-center items-center"><i class="fa-solid fa-pen-to-square mr-2"></i> 護理紀錄</button><button v-if="c.status === 'Active'" @click="confirmCloseCase(c)" class="bg-white border border-red-200 text-red-500 hover:bg-red-50 px-3 py-2 rounded-lg text-sm font-bold transition" title="結案"><i class="fa-solid fa-box-archive"></i></button></div>
+                    </div>
+                </div>
+            </div>
+        </main>
+        <div v-if="showNewCaseModal" class="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm">
+            <div class="bg-white rounded-2xl shadow-2xl w-full max-w-lg p-6 animate-fade-in-up">
+                <h3 class="text-xl font-bold text-slate-800 mb-6 flex items-center"><i class="fa-solid fa-user-plus mr-2 text-purple-600"></i>新增 HAH 收案</h3>
+                <form @submit.prevent="submitNewCase" class="space-y-4">
+                    <div class="relative"><label class="block text-xs font-bold text-gray-500 mb-1">病患搜尋 (輸入姓名或病歷號)</label><input v-model="searchQuery" @input="filterPatients" type="text" class="w-full border border-gray-300 rounded-lg p-2.5 pl-9 focus:ring-2 focus:ring-purple-500 outline-none" placeholder="搜尋..." required><i class="fa-solid fa-magnifying-glass absolute left-3 top-9 text-gray-400"></i><div v-if="patientResults.length > 0" class="autocomplete-results"><div v-for="p in patientResults" :key="p.id" @click="selectPatient(p)" class="autocomplete-item"><div class="font-bold text-slate-700">{{ p.name }}</div><div class="text-xs text-gray-500">{{ p.id }} | {{ p.nationalId }}</div></div></div></div>
+                    <div class="grid grid-cols-2 gap-4"><div><label class="block text-xs font-bold text-gray-500 mb-1">姓名</label><input v-model="newCase.patientName" type="text" class="w-full bg-gray-50 border border-gray-200 rounded-lg p-2.5 text-gray-500 cursor-not-allowed" readonly></div><div><label class="block text-xs font-bold text-gray-500 mb-1">病歷號</label><input v-model="newCase.patientId" type="text" class="w-full bg-gray-50 border border-gray-200 rounded-lg p-2.5 text-gray-500 cursor-not-allowed" readonly></div></div>
+                    <div><label class="block text-xs font-bold text-gray-500 mb-1">主診斷 (ICD-10 代碼/名稱)</label><input v-model="newCase.diagnosis" type="text" class="w-full border border-gray-300 rounded-lg p-2.5 focus:ring-2 focus:ring-purple-500 outline-none" placeholder="例如: J18.9 肺炎" required></div>
+                    <div class="grid grid-cols-2 gap-4"><div><label class="block text-xs font-bold text-gray-500 mb-1">收案日期</label><input v-model="newCase.startDate" type="date" class="w-full border border-gray-300 rounded-lg p-2.5 focus:ring-2 focus:ring-purple-500 outline-none" required></div><div><label class="block text-xs font-bold text-gray-500 mb-1">主責醫師</label><select v-model="newCase.physician" class="w-full border border-gray-300 rounded-lg p-2.5 focus:ring-2 focus:ring-purple-500 outline-none"><option v-for="u in physicians" :value="u.name">{{ u.name }}</option></select></div></div>
+                    <div><label class="block text-xs font-bold text-gray-500 mb-1">主責護理師</label><select v-model="newCase.nurse" class="w-full border border-gray-300 rounded-lg p-2.5 focus:ring-2 focus:ring-purple-500 outline-none"><option v-for="u in nurses" :value="u.name">{{ u.name }}</option></select></div>
+                    <div class="flex justify-end space-x-3 pt-4 border-t border-gray-100"><button type="button" @click="showNewCaseModal = false" class="px-4 py-2 rounded-lg text-gray-500 font-bold hover:bg-gray-100">取消</button><button type="submit" class="bg-purple-600 text-white px-6 py-2 rounded-lg font-bold hover:bg-purple-700 shadow-lg">建立收案</button></div>
+                </form>
+            </div>
+        </div>
+        <div v-if="showNoteModal" class="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm">
+            <div class="bg-white rounded-2xl shadow-2xl w-full max-w-2xl h-[80vh] flex flex-col animate-fade-in-up">
+                <div class="p-5 border-b border-gray-100 flex justify-between items-center bg-purple-50 rounded-t-2xl"><div><h3 class="text-lg font-bold text-purple-800">每日護理紀錄</h3><p class="text-xs text-purple-600">{{ selectedCase.patientName }} ({{ selectedCase.patientId }})</p></div><button @click="showNoteModal = false" class="text-gray-400 hover:text-gray-600"><i class="fa-solid fa-xmark text-xl"></i></button></div>
+                <div class="flex-1 overflow-y-auto p-5 bg-gray-50 space-y-4"><div v-for="note in caseNotes" :key="note.timestamp" class="bg-white p-4 rounded-xl border border-gray-200 shadow-sm"><div class="flex justify-between items-center mb-2"><span class="text-xs font-bold text-gray-400 bg-gray-100 px-2 py-1 rounded">{{ note.timestamp }}</span><span class="text-xs font-bold text-purple-600">護理師紀錄</span></div><p class="text-sm text-gray-700 whitespace-pre-wrap">{{ note.value }}</p></div><div v-if="caseNotes.length === 0" class="text-center text-gray-400 py-8">尚無紀錄</div></div>
+                <div class="p-5 bg-white border-t border-gray-100"><textarea v-model="newNoteContent" class="w-full border border-gray-300 rounded-lg p-3 text-sm focus:ring-2 focus:ring-purple-500 outline-none resize-none h-24" placeholder="輸入今日護理摘要、生命徵象異常說明等..."></textarea><div class="flex justify-end mt-3"><button @click="submitNote" :disabled="!newNoteContent" class="bg-purple-600 text-white px-6 py-2 rounded-lg font-bold hover:bg-purple-700 disabled:opacity-50 shadow-md"><i class="fa-solid fa-paper-plane mr-2"></i> 儲存紀錄</button></div></div>
+            </div>
+        </div>
+    </div>
+    <script>
+        const { createApp, ref, computed, onMounted, reactive } = Vue;
+        createApp({
+            setup() {
+                const currentUser = ref({}); const loading = ref(false);
+                const cases = ref([]); const patients = ref([]); const users = ref([]); const observations = ref([]);
+                const hideClosed = ref(true); const showNewCaseModal = ref(false); const showNoteModal = ref(false);
+                const searchQuery = ref(''); const patientResults = ref([]); const newCase = reactive({ patientId: '', patientName: '', nationalId: '', diagnosis: '', startDate: '', physician: '', nurse: '' });
+                const selectedCase = ref({}); const newNoteContent = ref('');
+
+                onMounted(async () => {
+                    const userStr = localStorage.getItem('currentUser');
+                    if (!userStr) { alert('請先登入'); window.close(); return; }
+                    currentUser.value = JSON.parse(userStr);
+                    await loadData();
+                });
+
+                const loadData = async () => {
+                    loading.value = true;
+                    try {
+                        const [cRes, pRes, uRes, oRes] = await Promise.all([fetch(`${API_BASE_URL}?endpoint=hah_cases`), fetch(`${API_BASE_URL}?endpoint=patients`), fetch(`${API_BASE_URL}?endpoint=users`), fetch(`${API_BASE_URL}?endpoint=observations`)]);
+                        const cJson = await cRes.json(); const pJson = await pRes.json(); const uJson = await uRes.json(); const oJson = await oRes.json();
+                        if(cJson.status === 'success') cases.value = cJson.data; if(pJson.status === 'success') patients.value = pJson.data; if(uJson.status === 'success') users.value = uJson.data; if(oJson.status === 'success') observations.value = oJson.data;
+                    } catch(e) { console.error(e); alert('資料載入失敗'); } finally { loading.value = false; }
+                };
+
+                const filteredCases = computed(() => { let list = cases.value; if(hideClosed.value) list = list.filter(c => c.status === 'Active'); return list.sort((a,b) => new Date(b.startDate) - new Date(a.startDate)); });
+                const physicians = computed(() => users.value.filter(u => u.role === 'physician'));
+                const nurses = computed(() => users.value.filter(u => u.role === 'case_manager' || u.role === 'hospital_staff'));
+                const caseNotes = computed(() => { if(!selectedCase.value.patientId) return []; return observations.value.filter(o => String(o.patientID) === String(selectedCase.value.patientId) && o.code === 'hah_daily_note').sort((a,b) => new Date(b.timestamp) - new Date(a.timestamp)); });
+
+                const openNewCaseModal = () => { Object.assign(newCase, { patientId: '', patientName: '', nationalId: '', diagnosis: '', startDate: new Date().toISOString().split('T')[0], physician: '', nurse: '' }); searchQuery.value = ''; patientResults.value = []; showNewCaseModal.value = true; };
+                const filterPatients = () => { if(!searchQuery.value) { patientResults.value = []; return; } const q = searchQuery.value.toLowerCase(); patientResults.value = patients.value.filter(p => p.name.toLowerCase().includes(q) || p.id.toLowerCase().includes(q)).slice(0, 5); };
+                const selectPatient = (p) => { newCase.patientId = p.id; newCase.patientName = p.name; newCase.nationalId = p.nationalId || p.notionaID; searchQuery.value = p.name; patientResults.value = []; };
+                const submitNewCase = async () => { if(!newCase.patientId) { alert('請選擇病患'); return; } loading.value = true; try { const payload = { action: 'addHahCase', ...newCase }; await fetch(API_BASE_URL, { method: 'POST', body: JSON.stringify(payload) }); alert('收案成功！'); showNewCaseModal.value = false; loadData(); } catch(e) { alert('建立失敗'); } finally { loading.value = false; } };
+                const confirmCloseCase = async (c) => { if(!confirm(`確定要將個案 ${c.patientName} 結案嗎？`)) return; loading.value = true; try { const endDate = new Date().toISOString().split('T')[0]; await fetch(API_BASE_URL, { method: 'POST', body: JSON.stringify({ action: 'closeHahCase', id: c.id, endDate: endDate }) }); loadData(); } catch(e) { alert('結案失敗'); } finally { loading.value = false; } };
+                const openDailyNote = (c) => { selectedCase.value = c; newNoteContent.value = ''; showNoteModal.value = true; };
+                const submitNote = async () => { loading.value = true; try { const records = [{ code: 'hah_daily_note', value: newNoteContent.value, unit: 'text' }]; await fetch(API_BASE_URL, { method: 'POST', body: JSON.stringify({ action: 'saveAssessment', patientId: selectedCase.value.patientId, records: records }) }); observations.value.push({ patientID: selectedCase.value.patientId, code: 'hah_daily_note', value: newNoteContent.value, timestamp: new Date().toISOString().replace('T', ' ').slice(0, 19) }); newNoteContent.value = ''; alert('紀錄已儲存'); } catch(e) { alert('儲存失敗'); } finally { loading.value = false; } };
+                const viewHistory = (c) => { localStorage.setItem('targetPatientId', c.patientId); window.open('form.html', '_blank'); };
+                const openVideo = (c) => { if(c.meetLink) window.open(c.meetLink, '_blank'); else alert('未設定視訊連結'); };
+                const closeWindow = () => window.close();
+
+                return { currentUser, loading, hideClosed, filteredCases, physicians, nurses, showNewCaseModal, searchQuery, patientResults, newCase, openNewCaseModal, filterPatients, selectPatient, submitNewCase, confirmCloseCase, openVideo, viewHistory, showNoteModal, selectedCase, caseNotes, newNoteContent, openDailyNote, submitNote, closeWindow };
+            }
+        }).mount('#app');
+    </script>
+</body>
+</html>
