@@ -203,7 +203,7 @@
                                         <h4 class="font-bold text-gray-800 text-lg">長照服務</h4>
                                         <p class="text-xs text-gray-400 mt-2">銜接與管理長照ABC資源</p>
                                     </div>
-                                    
+
                                     <div class="bg-white p-8 rounded-2xl border border-gray-100 shadow-sm dashboard-card flex flex-col items-center justify-center text-center cursor-pointer hover:border-cyan-200 group" @click="navigate('assessment_form')">
                                         <div class="w-20 h-20 rounded-full bg-cyan-50 flex items-center justify-center text-cyan-600 mb-4 group-hover:scale-110 transition-transform">
                                             <i class="fa-solid fa-clipboard-list text-3xl"></i>
@@ -211,7 +211,6 @@
                                         <h4 class="font-bold text-gray-800 text-lg">評估表單</h4>
                                         <p class="text-xs text-gray-400 mt-2">填寫各項護理評估量表</p>
                                     </div>
-
                                 </div>
                             </div>
 
@@ -409,6 +408,7 @@
                             <div class="flex border-b border-gray-200">
                                 <button @click="detailTab='vitals'" :class="detailTab==='vitals'?'border-brand-blue text-brand-blue':'border-transparent text-gray-500 hover:text-gray-700'" class="flex-1 py-4 text-sm font-bold border-b-2 transition">生理數據</button>
                                 <button @click="detailTab='medical'" :class="detailTab==='medical'?'border-brand-blue text-brand-blue':'border-transparent text-gray-500 hover:text-gray-700'" class="flex-1 py-4 text-sm font-bold border-b-2 transition">病歷摘要</button>
+                                <button @click="detailTab='assessments'" :class="detailTab==='assessments'?'border-brand-blue text-brand-blue':'border-transparent text-gray-500 hover:text-gray-700'" class="flex-1 py-4 text-sm font-bold border-b-2 transition">評估紀錄</button>
                                 <button @click="detailTab='dicom'" :class="detailTab==='dicom'?'border-brand-blue text-brand-blue':'border-transparent text-gray-500 hover:text-gray-700'" class="flex-1 py-4 text-sm font-bold border-b-2 transition">醫學影像</button>
                             </div>
 
@@ -436,6 +436,25 @@
                                     <div><label class="block text-xs font-bold text-gray-500 mb-1">檢驗結果資訊</label><textarea v-model="form.labResults" class="w-full border border-gray-200 rounded-xl p-3 text-sm h-32 resize-none focus:ring-2 focus:ring-brand-blue outline-none bg-white" placeholder="輸入重點檢驗數值 (如 HbA1c, LDL)..."></textarea></div>
                                     <button type="submit" :disabled="loading" class="w-full btn-gradient bg-gradient-to-r from-teal-500 to-emerald-600 text-white py-4 rounded-xl font-bold shadow-lg hover:shadow-xl transition flex justify-center items-center"><span v-if="loading"><i class="fa-solid fa-spinner fa-spin mr-2"></i> 上傳中...</span><span v-else>儲存病歷資料</span></button>
                                 </form>
+
+                                <div v-if="detailTab==='assessments'" class="space-y-6">
+                                    <div class="bg-white p-5 rounded-xl border border-gray-100 shadow-sm">
+                                        <h4 class="font-bold text-gray-800 mb-4 border-b pb-2">歷史評估總覽</h4>
+                                        <div v-if="assessmentHistory.length === 0" class="text-center text-gray-400 py-8">尚無評估資料</div>
+                                        <div v-else class="space-y-4">
+                                            <div v-for="(rec, idx) in assessmentHistory" :key="idx" class="p-3 bg-gray-50 rounded-lg border border-gray-200 flex justify-between items-center">
+                                                <div>
+                                                    <p class="text-xs text-gray-500">{{ rec.timestamp }}</p>
+                                                    <p class="font-bold text-gray-800">{{ translateCode(rec.code) }}</p>
+                                                </div>
+                                                <div class="text-right">
+                                                    <span class="text-lg font-bold text-blue-600 font-mono">{{ rec.value }}</span>
+                                                    <span class="text-xs text-gray-500 ml-1">{{ rec.unit }}</span>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
 
                                 <div v-if="detailTab==='dicom'" class="space-y-6">
                                     <div class="bg-white p-5 rounded-xl border border-gray-100 shadow-sm">
@@ -499,8 +518,11 @@
 
                     // Modal States
                     showDetailModal: false, selectedPatient: {}, patientObservations: [], latestMetrics: {}, bpChart: null, gluChart: null,
-                    detailTab: 'vitals', // vitals, medical, dicom
+                    detailTab: 'vitals', // vitals, medical, dicom, assessments
                     
+                    // Assessment History
+                    assessmentHistory: [],
+
                     // Forms
                     form: { timing: '起床空腹', sys: '', dia: '', hr: '', glu: '', note: '', summary: '', labResults: '', icdCode: '', icdDesc: '' },
                     newPatient: { name: '', nationalId: '', birthDate: '', gender: 'male' }, 
@@ -638,6 +660,17 @@
                     this.loading = false;
                 },
 
+                // --- Fetch Assessments Logic ---
+                async fetchAssessments(patientId) {
+                    const res = await fetch(`${API_BASE_URL}?endpoint=observations`);
+                    const json = await res.json();
+                    if (json.status === 'success') {
+                        this.assessmentHistory = json.data
+                            .filter(o => o.patientID === patientId && (o.code.startsWith('icope') || o.code.startsWith('cms') || o.code.startsWith('lab') || o.code.startsWith('body')))
+                            .sort((a,b) => new Date(b.timestamp) - new Date(a.timestamp));
+                    }
+                },
+
                 // --- Modal & Detail Logic ---
                 openPatientDetail(patient) {
                     this.selectedPatient = patient;
@@ -647,6 +680,7 @@
                     this.dateRange = '30d';
                     this.updatePatientData();
                     this.fetchDicoms();
+                    this.fetchAssessments(patient.id); // Add fetch assessments
                 },
                 changeDateRange(range) {
                     this.dateRange = range;
@@ -809,7 +843,7 @@
                 getTabTitle(tab) { return { 'dashboard': '系統主控台', 'patients': '個案管理清單', 'observations': '生理監控', 'admin_users': '系統權限管理', 'health_edu': '衛教資源中心', 'reports': '數據報表中心', 'consultation': '線上照會區', 'knowledge_base': '共照知識庫', 'referrals': '雙向轉診管理', 'p1000': '據點血壓站', 'p40': '居家訪視量測', 'assessment_form': '護理評估表單' }[tab] || tab; },
                 translateRole(role) { return { 'admin': '管理員', 'case_manager': '個管師', 'physician': '醫師', 'hospital_staff': '院內人員' }[role] || role; },
                 roleBadgeClass(role) { return 'bg-gray-100 text-gray-700 border-gray-200'; },
-                translateCode(code) { return { 'systolic_bp': '收縮壓', 'diastolic_bp': '舒張壓', 'glucose_ac': '飯前血糖', 'glucose_pc': '飯後血糖', 'heart_rate': '心率', 'diagnosis_icd10': '診斷 (ICD-10)', 'clinical_summary': '病歷摘要', 'lab_results': '檢驗報告' }[code] || code; }
+                translateCode(code) { return { 'systolic_bp': '收縮壓', 'diastolic_bp': '舒張壓', 'glucose_ac': '飯前血糖', 'glucose_pc': '飯後血糖', 'heart_rate': '心率', 'diagnosis_icd10': '診斷 (ICD-10)', 'clinical_summary': '病歷摘要', 'lab_results': '檢驗報告', 'icope_cognition_q1': 'ICOPE-認知(記憶)', 'icope_ad8_score': 'ICOPE-AD8總分', 'cms_adl_e1': 'CMS-吃飯', 'lab_cre': '肌酸酐', 'lab_egfr': 'eGFR' }[code] || code; }
             }
         }).mount('#app');
     </script>
