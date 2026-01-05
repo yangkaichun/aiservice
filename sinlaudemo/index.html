@@ -15,6 +15,8 @@
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://accounts.google.com/gsi/client" async defer></script>
     <script src="https://cdn.sheetjs.com/xlsx-0.20.0/package/dist/xlsx.full.min.js"></script>
+    
+    <script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.5/dist/JsBarcode.all.min.js"></script>
 
     <script src="config.js"></script>
     
@@ -45,12 +47,10 @@
         .fade-in-up { animation: fadeInUp 0.5s ease-out forwards; }
         @keyframes fadeInUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
         
-        /* Autocomplete Style */
         .autocomplete-results { position: absolute; z-index: 50; background: white; border: 1px solid #e5e7eb; width: 100%; max-height: 200px; overflow-y: auto; border-radius: 0.5rem; box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1); }
         .autocomplete-item { padding: 0.5rem 0.75rem; cursor: pointer; font-size: 0.875rem; border-bottom: 1px solid #f3f4f6; }
         .autocomplete-item:hover { background-color: #eff6ff; color: #0066FF; }
 
-        /* Dashboard Specific Styles */
         .dashboard-card { transition: all 0.3s ease; }
         .dashboard-card:hover { transform: translateY(-2px); box-shadow: 0 10px 20px -5px rgba(0, 0, 0, 0.1); }
     </style>
@@ -232,16 +232,33 @@
                             <div class="flex-1 overflow-auto">
                                 <table class="w-full text-left border-collapse">
                                     <thead class="bg-white sticky top-0 z-10 border-b border-gray-100 text-gray-500 text-xs font-bold uppercase tracking-wider">
-                                        <tr><th class="px-6 py-4">病歷號</th><th class="px-6 py-4">姓名</th><th class="px-6 py-4">身分證號</th><th class="px-6 py-4">性別</th><th class="px-6 py-4">最後更新</th><th class="px-6 py-4 text-right">操作</th></tr>
+                                        <tr>
+                                            <th class="px-6 py-4">病歷號</th>
+                                            <th class="px-6 py-4">姓名</th>
+                                            <th class="px-6 py-4">身分證號 (隱碼)</th>
+                                            <th class="px-6 py-4">性別</th>
+                                            <th class="px-6 py-4">最後更新</th>
+                                            <th class="px-6 py-4">評估表單</th>
+                                            <th class="px-6 py-4 text-right">操作</th>
+                                        </tr>
                                     </thead>
                                     <tbody class="divide-y divide-gray-50 text-sm">
                                         <tr v-for="p in paginatedPatients" :key="p.id" class="hover:bg-blue-50/30 transition">
-                                            <td class="px-6 py-4 font-mono text-gray-500">{{ p.id }}</td><td class="px-6 py-4 font-bold text-gray-900">{{ p.name }}</td><td class="px-6 py-4 text-gray-600 font-mono">{{ p.nationalId }}</td>
+                                            <td class="px-6 py-4 font-mono text-gray-500">{{ p.id }}</td>
+                                            <td class="px-6 py-4 font-bold text-gray-900">{{ p.name }}</td>
+                                            <td class="px-6 py-4 text-gray-600 font-mono">
+                                                {{ maskId(p.nationalId || p.notionaID) }}
+                                            </td>
                                             <td class="px-6 py-4"><span class="px-2 py-1 rounded text-xs bg-gray-100">{{ p.gender === 'male' ? '男' : '女' }}</span></td>
                                             <td class="px-6 py-4 text-xs text-gray-400">{{ p.lastUpdate || '-' }}</td>
+                                            <td class="px-6 py-4">
+                                                <button @click="openAssessmentForm(p)" class="text-xs font-bold text-cyan-600 bg-cyan-50 hover:bg-cyan-100 hover:text-cyan-700 px-3 py-1 rounded-md transition flex items-center">
+                                                    <i class="fa-solid fa-clipboard-list mr-1"></i> 前往評估
+                                                </button>
+                                            </td>
                                             <td class="px-6 py-4 text-right"><button @click="openPatientDetail(p)" class="text-sm font-bold text-brand-blue bg-blue-50 hover:bg-brand-blue hover:text-white transition px-4 py-1.5 rounded-lg">查看詳情</button></td>
                                         </tr>
-                                        <tr v-if="paginatedPatients.length === 0"><td colspan="6" class="px-6 py-12 text-center text-gray-400"><i class="fa-regular fa-folder-open text-2xl mb-2 block"></i>查無資料</td></tr>
+                                        <tr v-if="paginatedPatients.length === 0"><td colspan="7" class="px-6 py-12 text-center text-gray-400"><i class="fa-regular fa-folder-open text-2xl mb-2 block"></i>查無資料</td></tr>
                                     </tbody>
                                 </table>
                             </div>
@@ -355,6 +372,15 @@
 
                     <div class="flex-1 overflow-hidden flex bg-gray-50">
                         <div class="flex-1 overflow-y-auto p-8 space-y-6 custom-scrollbar">
+                            
+                            <div class="bg-white p-4 rounded-xl border border-gray-200 flex items-center justify-between shadow-sm">
+                                <div>
+                                    <p class="text-xs font-bold text-gray-400 uppercase">身分證條碼</p>
+                                    <p class="text-lg font-bold text-gray-800 font-mono">{{ selectedPatient.nationalId || selectedPatient.notionaID }}</p>
+                                </div>
+                                <svg id="barcode-modal" class="max-h-16"></svg>
+                            </div>
+
                             <div class="grid grid-cols-4 gap-5">
                                 <div class="bg-white p-5 rounded-2xl shadow-sm border-l-4 border-red-500 relative"><p class="text-xs font-bold text-red-500 mb-1">收縮壓 (SYS)</p><h3 class="text-4xl font-extrabold text-gray-800">{{ latestMetrics.sys || '--' }} <span class="text-sm text-gray-400 font-normal">mmHg</span></h3></div>
                                 <div class="bg-white p-5 rounded-2xl shadow-sm border-l-4 border-blue-500 relative"><p class="text-xs font-bold text-blue-500 mb-1">舒張壓 (DIA)</p><h3 class="text-4xl font-extrabold text-gray-800">{{ latestMetrics.dia || '--' }} <span class="text-sm text-gray-400 font-normal">mmHg</span></h3></div>
@@ -619,6 +645,14 @@
             },
             methods: {
                 logout() { localStorage.removeItem('currentUser'); window.location.href = 'login.html'; },
+                
+                // [MODIFIED] 開啟評估表單，並帶入個案ID
+                openAssessmentForm(p) {
+                    // 將目標個案 ID 存入 localStorage，讓 form.html 自動讀取
+                    localStorage.setItem('targetPatientId', p.id);
+                    window.open('form.html', '_blank');
+                },
+
                 navigate(tabId) { 
                     if (tabId === 'observations') window.open('phddashboard.html', '_blank'); 
                     else if (tabId === 'referrals') window.open('refer.html', '_blank');
@@ -629,6 +663,12 @@
                     else this.currentTab = tabId; 
                 },
                 
+                // [NEW] 隱碼處理
+                maskId(id) {
+                    if (!id || id.length < 4) return id;
+                    return id.substring(0, id.length - 4) + '****';
+                },
+
                 setTodayDate() {
                     const date = new Date();
                     const year = date.getFullYear();
@@ -680,7 +720,24 @@
                     this.dateRange = '30d';
                     this.updatePatientData();
                     this.fetchDicoms();
-                    this.fetchAssessments(patient.id); // Add fetch assessments
+                    this.fetchAssessments(patient.id);
+                    
+                    // [NEW] Generate Barcode (using JsBarcode)
+                    // 使用 nextTick 確保 DOM 已經渲染
+                    this.$nextTick(() => {
+                        const idValue = patient.nationalId || patient.notionaID;
+                        if(idValue) {
+                            try {
+                                JsBarcode("#barcode-modal", idValue, {
+                                    format: "CODE128",
+                                    lineColor: "#333",
+                                    width: 2,
+                                    height: 50,
+                                    displayValue: false
+                                });
+                            } catch(e) { console.error("Barcode gen error", e); }
+                        }
+                    });
                 },
                 changeDateRange(range) {
                     this.dateRange = range;
