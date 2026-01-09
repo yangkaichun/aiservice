@@ -10,38 +10,20 @@
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700;900&display=swap');
         body { font-family: 'Noto Sans TC', sans-serif; background-color: #f0f2f5; }
-        
-        /* 自定義捲軸 */
         ::-webkit-scrollbar { width: 8px; }
         ::-webkit-scrollbar-track { background: #f1f5f9; }
         ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
         ::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
-
         .btn-loading { pointer-events: none; opacity: 0.8; cursor: not-allowed; }
-        
-        /* 卡片漸層邊框效果 */
         .gradient-border-bottom::after {
-            content: "";
-            position: absolute;
-            bottom: 0;
-            left: 0;
-            width: 100%;
-            height: 4px;
+            content: ""; position: absolute; bottom: 0; left: 0; width: 100%; height: 4px;
             background: linear-gradient(to right, #3b82f6, #8b5cf6);
-            border-bottom-left-radius: 0.75rem;
-            border-bottom-right-radius: 0.75rem;
-            opacity: 0;
-            transition: opacity 0.3s;
+            border-bottom-left-radius: 0.75rem; border-bottom-right-radius: 0.75rem;
+            opacity: 0; transition: opacity 0.3s;
         }
-        .card-hover:hover .gradient-border-bottom::after {
-            opacity: 1;
-        }
-
-        /* 篩選按鈕激活狀態 */
+        .card-hover:hover .gradient-border-bottom::after { opacity: 1; }
         .filter-btn.active {
-            background-color: #2563eb; /* blue-600 */
-            color: white;
-            border-color: #2563eb;
+            background-color: #2563eb; color: white; border-color: #2563eb;
             box-shadow: 0 4px 6px -1px rgba(37, 99, 235, 0.3);
         }
     </style>
@@ -49,13 +31,9 @@
 <body class="text-slate-800">
 
     <script>
-        // 1. Google Apps Script Web App URL
-        const GAS_API_URL = "https://script.google.com/macros/s/AKfycbzEF7EUdCzAMEWtAHLmUANPvb59p1MQW8sIB6poXz4F9gPaUcFlKsCvcmXXSfU6aV0c8g/exec";
-
-        // 2. n8n Webhook 觸發網址
+        // --- 設定區 (已更新您的 URL) ---
+        const GAS_API_URL = "https://script.google.com/macros/s/AKfycby5sl1ATnOAkzxLEy9bbVxDgjY2_jIFR02Ls56ey9pvmJE3YgSxo9y60Xn2wx3V_YUo8g/exec";
         const N8N_WEBHOOK_URL = "https://ai.yangkaichun.net/webhook/n8n"; 
-        
-        // 全域變數儲存資料
         let globalTenders = [];
     </script>
 
@@ -67,14 +45,11 @@
                 </div>
                 <div>
                     <h1 class="font-black text-xl tracking-wide bg-clip-text text-transparent bg-gradient-to-r from-white to-blue-200">政府採購戰情室</h1>
-                    <p class="text-[10px] text-blue-200/80 font-medium tracking-widest uppercase">Intelligent Tender Monitoring</p>
                 </div>
             </div>
-            
             <button id="runBtn" onclick="runAnalysis()" 
                 class="group flex items-center gap-2 px-5 py-2 bg-blue-600 hover:bg-blue-500 text-white rounded-full transition-all duration-300 font-bold shadow-lg shadow-blue-900/50 border border-blue-400/30">
-                <i class="fas fa-radar group-hover:animate-spin"></i> 
-                <span>立即分析</span>
+                <i class="fas fa-radar group-hover:animate-spin"></i> <span class="hidden sm:inline">立即分析</span>
             </button>
         </div>
     </nav>
@@ -95,25 +70,21 @@
             </div>
         </div>
 
-        <div class="mb-8">
-            <div class="flex flex-wrap gap-2" id="filter-container">
-                <button onclick="resetFilter()" class="filter-btn active flex items-center gap-2 px-4 py-1.5 bg-slate-800 text-white rounded-full text-sm font-bold shadow-md hover:bg-slate-700 transition-all">
-                    <i class="fas fa-sync-alt text-xs"></i> 重置篩選
+        <div class="mb-8 overflow-x-auto pb-2">
+            <div class="flex flex-nowrap gap-2" id="filter-container">
+                <button onclick="resetFilter()" class="filter-btn active flex-shrink-0 flex items-center gap-2 px-4 py-1.5 bg-slate-800 text-white rounded-full text-sm font-bold shadow-md hover:bg-slate-700 transition-all">
+                    <i class="fas fa-sync-alt text-xs"></i> 重置
                 </button>
-                <button onclick="filterByKeyword('醫院')" class="filter-btn px-3 py-1.5 bg-white text-slate-600 border border-slate-200 rounded-full text-sm font-medium hover:bg-blue-50 hover:text-blue-600 transition-all">醫院</button>
-                <button onclick="filterByKeyword('深耕')" class="filter-btn px-3 py-1.5 bg-white text-slate-600 border border-slate-200 rounded-full text-sm font-medium hover:bg-blue-50 hover:text-blue-600 transition-all">深耕</button>
-                <button onclick="filterByKeyword('智慧')" class="filter-btn px-3 py-1.5 bg-white text-slate-600 border border-slate-200 rounded-full text-sm font-medium hover:bg-blue-50 hover:text-blue-600 transition-all">智慧</button>
-                <button onclick="filterByKeyword('醫療')" class="filter-btn px-3 py-1.5 bg-white text-slate-600 border border-slate-200 rounded-full text-sm font-medium hover:bg-blue-50 hover:text-blue-600 transition-all">醫療</button>
-                <button onclick="filterByKeyword('個管')" class="filter-btn px-3 py-1.5 bg-white text-slate-600 border border-slate-200 rounded-full text-sm font-medium hover:bg-blue-50 hover:text-blue-600 transition-all">個管</button>
-                <button onclick="filterByKeyword('個案管理')" class="filter-btn px-3 py-1.5 bg-white text-slate-600 border border-slate-200 rounded-full text-sm font-medium hover:bg-blue-50 hover:text-blue-600 transition-all">個案管理</button>
-                <button onclick="filterByKeyword('AI')" class="filter-btn px-3 py-1.5 bg-white text-slate-600 border border-slate-200 rounded-full text-sm font-medium hover:bg-blue-50 hover:text-blue-600 transition-all">AI</button>
-                <button onclick="filterByKeyword('智能')" class="filter-btn px-3 py-1.5 bg-white text-slate-600 border border-slate-200 rounded-full text-sm font-medium hover:bg-blue-50 hover:text-blue-600 transition-all">智能</button>
-                <button onclick="filterByKeyword('遠距')" class="filter-btn px-3 py-1.5 bg-white text-slate-600 border border-slate-200 rounded-full text-sm font-medium hover:bg-blue-50 hover:text-blue-600 transition-all">遠距</button>
+                <button onclick="filterByKeyword('醫院')" class="filter-btn flex-shrink-0 px-3 py-1.5 bg-white text-slate-600 border border-slate-200 rounded-full text-sm font-medium hover:bg-blue-50 hover:text-blue-600 transition-all">醫院</button>
+                <button onclick="filterByKeyword('智慧')" class="filter-btn flex-shrink-0 px-3 py-1.5 bg-white text-slate-600 border border-slate-200 rounded-full text-sm font-medium hover:bg-blue-50 hover:text-blue-600 transition-all">智慧</button>
+                <button onclick="filterByKeyword('系統')" class="filter-btn flex-shrink-0 px-3 py-1.5 bg-white text-slate-600 border border-slate-200 rounded-full text-sm font-medium hover:bg-blue-50 hover:text-blue-600 transition-all">系統</button>
+                <button onclick="filterByKeyword('醫療')" class="filter-btn flex-shrink-0 px-3 py-1.5 bg-white text-slate-600 border border-slate-200 rounded-full text-sm font-medium hover:bg-blue-50 hover:text-blue-600 transition-all">醫療</button>
+                <button onclick="filterByKeyword('個管')" class="filter-btn flex-shrink-0 px-3 py-1.5 bg-white text-slate-600 border border-slate-200 rounded-full text-sm font-medium hover:bg-blue-50 hover:text-blue-600 transition-all">個管</button>
+                <button onclick="filterByKeyword('AI')" class="filter-btn flex-shrink-0 px-3 py-1.5 bg-white text-slate-600 border border-slate-200 rounded-full text-sm font-medium hover:bg-blue-50 hover:text-blue-600 transition-all">AI</button>
             </div>
         </div>
 
-        <div id="tender-list" class="space-y-4">
-            </div>
+        <div id="tender-list" class="space-y-4"></div>
 
         <div id="loading" class="text-center py-32 hidden">
             <div class="relative inline-flex mb-6">
@@ -123,27 +94,22 @@
                 </div>
             </div>
             <h3 class="text-xl font-bold text-slate-700 mb-2">正在連線資料庫</h3>
-            <p class="text-slate-500 text-sm">正在同步最新標案資訊，請稍候...</p>
+            <p class="text-slate-500 text-sm">正在同步最新標案資訊...</p>
         </div>
     </main>
 
     <script>
-        document.addEventListener('DOMContentLoaded', () => {
-            fetchData();
-        });
+        document.addEventListener('DOMContentLoaded', () => { fetchData(); });
 
-        // 1. 呼叫 n8n 執行分析 (包含 5 秒等待動畫)
         function runAnalysis() {
             const btn = document.getElementById('runBtn');
             const icon = btn.querySelector('i');
             const btnText = btn.querySelector('span');
             
-            // UI 變更為 Loading 狀態
             btn.classList.add('btn-loading', 'opacity-70');
             icon.className = "fas fa-circle-notch fa-spin";
-            btnText.innerText = '請求發送中...';
+            btnText.innerText = '請求中...';
             
-            // 發送請求
             fetch(N8N_WEBHOOK_URL, {
                 method: "POST",
                 headers: { "Content-Type": "text/plain" }, 
@@ -151,68 +117,41 @@
             })
             .then(response => {
                 if(response.ok) {
-                    // 請求成功，開始 5 秒倒數動畫
                     let timerInterval;
                     Swal.fire({
                         title: '系統處理中',
-                        html: '已衝新抓取政府採購網資料，正在等待資料寫入...<br><b></b> 秒後將自動更新列表。',
-                        timer: 30000, // 5000 毫秒 = 5 秒
+                        html: '已重新抓取政府採購網資料，正在寫入資料庫...<br><b></b> 秒後將自動更新列表。',
+                        timer: 15000, 
                         timerProgressBar: true,
                         icon: 'info',
                         allowOutsideClick: false,
                         didOpen: () => {
                             Swal.showLoading();
                             const b = Swal.getHtmlContainer().querySelector('b');
-                            timerInterval = setInterval(() => {
-                                // 顯示剩餘秒數
-                                b.textContent = Math.ceil(Swal.getTimerLeft() / 1000);
-                            }, 100);
+                            timerInterval = setInterval(() => { b.textContent = Math.ceil(Swal.getTimerLeft() / 1000); }, 100);
                         },
-                        willClose: () => {
-                            clearInterval(timerInterval);
-                        }
+                        willClose: () => { clearInterval(timerInterval); }
                     }).then((result) => {
-                        // 倒數結束，執行重新抓取
                         if (result.dismiss === Swal.DismissReason.timer) {
                             fetchData();
-                            
-                            // 還原按鈕狀態
                             btn.classList.remove('btn-loading', 'opacity-70');
                             icon.className = "fas fa-radar";
                             btnText.innerText = '立即分析';
-                            
-                            // 顯示完成提示
-                            const Toast = Swal.mixin({
-                                toast: true,
-                                position: 'top-end',
-                                showConfirmButton: false,
-                                timer: 3000,
-                                timerProgressBar: true,
-                            });
-                            Toast.fire({
-                                icon: 'success',
-                                title: '列表已更新完畢'
-                            });
                         }
                     });
-                } else {
-                    throw new Error('n8n 回應錯誤');
-                }
+                } else { throw new Error('n8n Error'); }
             })
             .catch(error => {
-                Swal.fire('執行失敗', '無法連線到 n8n，請檢查 Webhook URL 或 CORS 設定。', 'error');
-                // 發生錯誤也要還原按鈕
+                Swal.fire('執行失敗', '無法連線到 n8n', 'error');
                 btn.classList.remove('btn-loading', 'opacity-70');
                 icon.className = "fas fa-radar";
                 btnText.innerText = '立即分析';
             });
         }
 
-        // 2. 透過 GAS 讀取資料
         function fetchData() {
             const list = document.getElementById('tender-list');
             const loading = document.getElementById('loading');
-            
             list.innerHTML = ''; 
             loading.classList.remove('hidden');
 
@@ -220,118 +159,115 @@
                 .then(response => response.json())
                 .then(data => {
                     loading.classList.add('hidden');
-                    
-                    // 儲存到全域變數，供篩選使用
+                    // 資料反轉，讓最新的在上面
                     globalTenders = data.reverse(); 
-                    
-                    // 預設渲染全部
                     renderTenders(globalTenders);
-                    
                     document.getElementById('last-update').innerText = new Date().toLocaleTimeString('zh-TW', {hour12: false}) + ' 更新';
                 })
                 .catch(err => {
                     console.error(err);
                     loading.classList.add('hidden');
-                    Swal.fire('讀取失敗', '無法讀取資料庫 (GAS API)，請檢查防火牆或網址設定。', 'error');
+                    Swal.fire('讀取失敗', '無法讀取 GAS 資料，請檢查權限或網址。', 'error');
                 });
         }
 
-        // 3. 渲染列表函式 (將 HTML 生成邏輯獨立出來)
+        // --- 日期解析與錯誤處理 ---
+        function parseDateString(dateInput) {
+            // 情況1: 如果是空的
+            if (!dateInput) return { md: '--/--', yr: '' };
+
+            // 情況2: 如果是 ISO 格式字串 (2024-01-01T00:00:00...)
+            let dateObj = new Date(dateInput);
+            if (!isNaN(dateObj.getTime())) {
+                let m = (dateObj.getMonth() + 1).toString().padStart(2, '0');
+                let d = dateObj.getDate().toString().padStart(2, '0');
+                return { md: `${m}/${d}`, yr: dateObj.getFullYear() + '年' };
+            }
+
+            // 情況3: 如果是文字字串 (例如 "113/05/20" 或 "2024/05/20")
+            let str = String(dateInput).trim();
+            let parts = str.split('/');
+            
+            if (parts.length >= 3) {
+                // 取最後兩個當作月日
+                let yr = parts[0];
+                let md = `${parts[1]}/${parts[2]}`;
+                // 簡單判斷如果是民國年，加上 '年' 字
+                return { md: md, yr: yr + '年' };
+            }
+            
+            return { md: 'Err', yr: '' };
+        }
+
         function renderTenders(tenders) {
             const list = document.getElementById('tender-list');
-            list.innerHTML = ''; // 先清空
+            list.innerHTML = '';
 
             if (!tenders || tenders.length === 0) {
-                list.innerHTML = `
-                <div class="text-center py-20 bg-white rounded-3xl border border-slate-200 shadow-sm">
-                    <div class="w-20 h-20 bg-slate-100 text-slate-300 rounded-full flex items-center justify-center mx-auto mb-6">
-                        <i class="fas fa-search text-4xl"></i>
-                    </div>
-                    <h3 class="text-xl font-bold text-slate-700">沒有符合條件的資料</h3>
-                    <p class="text-slate-500 mt-2">請嘗試切換關鍵字或點擊重置</p>
-                </div>`;
+                list.innerHTML = `<div class="text-center py-10 text-slate-400">目前沒有資料</div>`;
                 return;
             }
 
             tenders.forEach(item => {
+                // 如果沒有標題，跳過
                 if (!item.Title) return;
 
-                // --- 色彩邏輯 (Rich Color UI) ---
-                let badgeClass = "bg-gradient-to-r from-slate-500 to-slate-600 text-white shadow-slate-500/30";
+                // 使用新的日期解析函式
+                const dateInfo = parseDateString(item.Date);
+
+                let badgeClass = "bg-slate-500";
                 let iconClass = "fas fa-tag";
-                let cardBorder = "border-slate-200"; 
-                
                 const cat = (item.Category || "").toLowerCase();
                 
-                if (cat.includes("資安")) { 
-                    badgeClass = "bg-gradient-to-r from-red-500 to-pink-600 text-white shadow-red-500/30"; 
-                    iconClass = "fas fa-shield-alt";
-                    cardBorder = "hover:border-red-300";
-                }
-                else if (cat.includes("ai") || cat.includes("智慧") || cat.includes("智能")) { 
-                    badgeClass = "bg-gradient-to-r from-violet-500 to-purple-600 text-white shadow-purple-500/30"; 
-                    iconClass = "fas fa-brain";
-                    cardBorder = "hover:border-purple-300";
-                }
-                else if (cat.includes("醫")) { 
-                    badgeClass = "bg-gradient-to-r from-emerald-400 to-teal-600 text-white shadow-emerald-500/30"; 
-                    iconClass = "fas fa-user-md";
-                    cardBorder = "hover:border-emerald-300";
-                }
-                else if (cat.includes("網") || cat.includes("系統") || cat.includes("軟體") || cat.includes("遠距")) { 
-                    badgeClass = "bg-gradient-to-r from-blue-500 to-cyan-500 text-white shadow-blue-500/30"; 
-                    iconClass = "fas fa-network-wired";
-                    cardBorder = "hover:border-blue-300";
-                }
+                if (cat.includes("資安")) { badgeClass = "bg-red-500"; iconClass = "fas fa-shield-alt"; }
+                else if (cat.includes("ai") || cat.includes("智慧")) { badgeClass = "bg-purple-600"; iconClass = "fas fa-brain"; }
+                else if (cat.includes("醫")) { badgeClass = "bg-teal-600"; iconClass = "fas fa-user-md"; }
+                else if (cat.includes("網") || cat.includes("系統")) { badgeClass = "bg-blue-500"; iconClass = "fas fa-network-wired"; }
 
                 const card = document.createElement('div');
-                card.className = `card-hover group relative bg-white rounded-2xl border ${cardBorder} p-5 flex flex-col sm:flex-row items-start gap-5 shadow-sm hover:shadow-xl hover:-translate-y-1 transition-all duration-300 overflow-hidden gradient-border-bottom`;
+                card.className = `card-hover group relative bg-white rounded-2xl border border-slate-200 p-5 flex flex-col sm:flex-row items-start gap-5 shadow-sm hover:shadow-xl hover:-translate-y-1 transition-all duration-300 overflow-hidden gradient-border-bottom`;
                 
                 card.innerHTML = `
                     <div class="flex sm:flex-col items-center justify-center gap-3 min-w-[90px] sm:w-28 border-b sm:border-b-0 sm:border-r border-slate-100 pb-4 sm:pb-0 sm:pr-6">
-                        <div class="w-14 h-14 rounded-2xl bg-slate-50 text-slate-400 flex flex-col items-center justify-center border border-slate-100 group-hover:bg-slate-800 group-hover:text-white group-hover:border-slate-800 transition-all duration-500 shadow-inner">
-                            <span class="text-[10px] font-bold uppercase tracking-wider opacity-60 mb-0.5">截止</span>
-                            <span class="text-base font-black tracking-tight">${item.Date ? item.Date.split('/')[1]+'/'+item.Date.split('/')[2] : 'N/A'}</span> 
+                        <div class="w-14 h-14 rounded-2xl bg-slate-50 text-slate-500 flex flex-col items-center justify-center border border-slate-200 group-hover:bg-slate-800 group-hover:text-white group-hover:border-slate-800 transition-all duration-500 shadow-inner">
+                            <span class="text-[10px] font-bold uppercase opacity-60 mb-0.5">截止</span>
+                            <span class="text-base font-black tracking-tight">${dateInfo.md}</span> 
                         </div>
-                        <div class="hidden sm:block text-[10px] text-slate-400 font-mono">${item.Date ? item.Date.split('/')[0] : ''}年</div>
+                        <div class="hidden sm:block text-[12px] text-slate-400 font-mono font-bold">${dateInfo.yr}</div>
                     </div>
 
                     <div class="flex-1 w-full space-y-3">
                         <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                             <div class="flex items-center gap-2.5">
-                                <div class="w-1.5 h-8 bg-blue-600 rounded-full"></div> 
-                                <h3 class="text-lg sm:text-xl font-black text-slate-800 tracking-tight leading-none group-hover:text-blue-700 transition-colors">
-                                    ${item.Agency}
+                                <div class="w-1.5 h-6 bg-blue-600 rounded-full"></div> 
+                                <h3 class="text-sm font-bold text-slate-500 tracking-wider uppercase">
+                                    ${item.Agency || '未標示機關'}
                                 </h3>
                             </div>
                             
-                            <span class="self-start sm:self-center px-3 py-1 rounded-full text-[11px] font-bold tracking-wide shadow-md ${badgeClass}">
+                            <span class="self-start sm:self-center px-3 py-1 rounded-full text-[11px] font-bold text-white shadow-md ${badgeClass}">
                                 <i class="${iconClass} mr-1.5 text-[10px]"></i>${item.Category || '一般'}
                             </span>
                         </div>
                         
-                        <h4 class="text-base font-medium text-slate-600 leading-relaxed pl-4 border-l-2 border-slate-100 group-hover:border-blue-200 transition-colors">
-                            <a href="${item.Link}" target="_blank" class="hover:text-blue-600 hover:underline decoration-2 underline-offset-4 decoration-blue-200">
+                        <h4 class="text-xl font-bold text-slate-800 leading-snug group-hover:text-blue-700 transition-colors">
+                            <a href="${item.Link}" target="_blank" class="hover:underline decoration-2 underline-offset-4 decoration-blue-200">
                                 ${item.Title}
                             </a>
                         </h4>
                         
-                        <div class="flex items-center gap-4 pt-2">
-                            <div class="flex items-center gap-1.5 text-xs text-slate-400 bg-slate-50 px-2 py-1 rounded">
-                                <i class="fas fa-search text-slate-300"></i>
-                                <span class="truncate max-w-[200px]">${item.Summary || '符合監控條件'}</span>
-                            </div>
-                            <div class="hidden sm:flex items-center gap-1.5 text-xs text-slate-400 bg-slate-50 px-2 py-1 rounded">
-                                <i class="fas fa-file-invoice-dollar text-slate-300"></i>
-                                <span>${item.Price || '詳見內頁'}</span>
+                        <div class="flex items-center gap-4 pt-2 border-t border-slate-50 mt-2">
+                             <div class="flex items-center gap-2 text-xs text-slate-500">
+                                <i class="fas fa-file-alt text-slate-300"></i>
+                                <span class="truncate max-w-[300px]">${item.Summary || '點擊查看詳情'}</span>
                             </div>
                         </div>
                     </div>
 
                     <div class="w-full sm:w-auto flex justify-end items-center sm:self-center pl-2">
                         <a href="${item.Link}" target="_blank" 
-                           class="flex items-center justify-center w-12 h-12 rounded-full bg-slate-50 text-slate-400 hover:bg-gradient-to-br hover:from-blue-500 hover:to-indigo-600 hover:text-white hover:shadow-lg hover:shadow-blue-500/30 transition-all duration-300 border border-slate-200 hover:border-transparent group/btn">
-                            <i class="fas fa-arrow-right group-hover/btn:-rotate-45 transition-transform duration-300"></i>
+                           class="flex items-center justify-center w-10 h-10 rounded-full bg-slate-100 text-slate-400 hover:bg-blue-600 hover:text-white transition-all duration-300">
+                            <i class="fas fa-arrow-right"></i>
                         </a>
                     </div>
                 `;
@@ -339,48 +275,30 @@
             });
         }
 
-        // 4. 關鍵字篩選功能
         function filterByKeyword(keyword) {
-            // 更新按鈕樣式
             updateButtonState(keyword);
-
-            // 執行篩選 (標題、機關、類別 只要有包含該字都算)
             const filtered = globalTenders.filter(item => {
-                const titleMatch = item.Title && item.Title.includes(keyword);
-                const agencyMatch = item.Agency && item.Agency.includes(keyword);
-                const catMatch = item.Category && item.Category.includes(keyword);
-                return titleMatch || agencyMatch || catMatch;
+                const s = JSON.stringify(item).toLowerCase(); 
+                return s.includes(keyword.toLowerCase());
             });
-
             renderTenders(filtered);
         }
 
-        // 5. 重置篩選功能
         function resetFilter() {
-            // 更新按鈕樣式 (清除所有選中狀態，重置按鈕亮起)
             const buttons = document.querySelectorAll('.filter-btn');
             buttons.forEach(btn => {
                 btn.classList.remove('active', 'bg-slate-800', 'text-white');
                 btn.classList.add('bg-white', 'text-slate-600');
-                if (btn.textContent.includes('重置')) {
-                    btn.classList.add('active', 'bg-slate-800', 'text-white');
-                    btn.classList.remove('bg-white', 'text-slate-600');
-                }
+                if (btn.innerText.includes('重置')) btn.classList.add('active', 'bg-slate-800', 'text-white');
             });
-
-            // 重新渲染全部資料
             renderTenders(globalTenders);
         }
 
-        // 輔助：更新按鈕視覺狀態
         function updateButtonState(selectedKeyword) {
             const buttons = document.querySelectorAll('.filter-btn');
             buttons.forEach(btn => {
-                // 先還原所有按鈕到預設狀態
                 btn.classList.remove('active', 'bg-blue-600', 'text-white', 'bg-slate-800');
                 btn.classList.add('bg-white', 'text-slate-600');
-                
-                // 如果是選中的那顆，設為激活樣式
                 if (btn.textContent.includes(selectedKeyword)) {
                     btn.classList.remove('bg-white', 'text-slate-600');
                     btn.classList.add('active', 'bg-blue-600', 'text-white');
