@@ -26,7 +26,6 @@
             background-color: #2563eb; color: white; border-color: #2563eb;
             box-shadow: 0 4px 6px -1px rgba(37, 99, 235, 0.3);
         }
-        /* 確保圖示在圓圈中居中 */
         .icon-box { display: flex; align-items: center; justify-content: center; }
     </style>
 </head>
@@ -38,7 +37,7 @@
         const N8N_WEBHOOK_URL = "https://ai.yangkaichun.net/webhook/n8n"; 
         let globalTenders = [];
 
-        // --- 定義新分類的 UI/UX 樣式對照表 ---
+        // --- UI/UX 樣式對照表 ---
         const categoryStyleMap = {
             "醫院": { bg: "bg-rose-100", text: "text-rose-600", icon: "fas fa-hospital" },
             "遠距": { bg: "bg-indigo-100", text: "text-indigo-600", icon: "fas fa-video" },
@@ -57,7 +56,7 @@
             "系統": { bg: "bg-slate-200", text: "text-slate-700", icon: "fas fa-sitemap" },
             "微軟": { bg: "bg-blue-50", text: "text-blue-800", icon: "fab fa-microsoft" },
             "GPT": { bg: "bg-green-100", text: "text-green-700", icon: "fas fa-comments" },
-            "default": { bg: "bg-gray-100", text: "text-gray-500", icon: "fas fa-tag" } // 預防萬一
+            "default": { bg: "bg-gray-100", text: "text-gray-500", icon: "fas fa-tag" }
         };
     </script>
 
@@ -157,15 +156,20 @@
             const list = document.getElementById('tender-list');
             const loading = document.getElementById('loading');
             list.innerHTML = ''; loading.classList.remove('hidden');
+            
             fetch(GAS_API_URL).then(response => response.json()).then(data => {
                 loading.classList.add('hidden');
                 globalTenders = data.reverse();
                 renderTenders(globalTenders);
                 document.getElementById('last-update').innerText = new Date().toLocaleTimeString('zh-TW', {hour12: false}) + ' 更新';
-            }).catch(err => { console.error(err); loading.classList.add('hidden'); Swal.fire('讀取失敗', '無法讀取 GAS 資料，請檢查權限或網址。', 'error'); });
+            }).catch(err => { 
+                console.error(err); 
+                loading.classList.add('hidden'); 
+                Swal.fire('讀取失敗', '無法讀取 GAS 資料，請檢查權限或網址。', 'error'); 
+            });
         }
 
-        // --- 核心修改：渲染列表函式 ---
+        // --- 核心修改：渲染列表函式 (已改為大寫開頭) ---
         function renderTenders(tenders) {
             const list = document.getElementById('tender-list');
             list.innerHTML = '';
@@ -176,29 +180,34 @@
             }
 
             tenders.forEach(item => {
-                // 【修改 1】欄位名稱改為小寫 (title) 以符合 JSON
-                if (!item.title) return;
+                // 【修正】使用大寫欄位名稱 (Title, Agency, etc.) 
+                // 為了保險起見，使用 || 邏輯，如果大寫抓不到就試試看小寫
+                const title = item.Title || item.title;
+                if (!title) return;
 
-                // 【修改 2】日期欄位改為 deadline，並直接讀取（因為 JSON 已經是格式化好的 115/01/xx）
-                const deadlineText = item.deadline || '無日期';
+                const deadline = item.Deadline || item.deadline || '無日期';
+                const agency = item.Agency || item.agency || '未標示機關';
+                const link = item.Link || item.link || '#';
+                
+                // 【修正】Summary 和 Category 也改用大寫讀取
+                const summaryRaw = item.Summary || item.summary || "";
+                const categoryRaw = item.Category || item.category || "";
 
-                // 【修改 3】Summary 改為 summary (小寫)
-                const summaryKey = (item.summary || "").trim();
+                const summaryKey = summaryRaw.trim();
                 const style = categoryStyleMap[summaryKey] || categoryStyleMap["default"];
 
-                // 【修改 4】Category 改為 category (小寫)
                 let badgeClass = "bg-slate-500";
                 let iconClass = "fas fa-tag";
-                const cat = (item.category || "").toLowerCase();
-                if (cat.includes("資安")) { badgeClass = "bg-red-500"; iconClass = "fas fa-shield-alt"; }
-                else if (cat.includes("ai") || cat.includes("智慧")) { badgeClass = "bg-purple-600"; iconClass = "fas fa-brain"; }
-                else if (cat.includes("醫")) { badgeClass = "bg-teal-600"; iconClass = "fas fa-user-md"; }
-                else if (cat.includes("網") || cat.includes("系統")) { badgeClass = "bg-blue-500"; iconClass = "fas fa-network-wired"; }
+                const catLower = categoryRaw.toLowerCase();
+                
+                if (catLower.includes("資安")) { badgeClass = "bg-red-500"; iconClass = "fas fa-shield-alt"; }
+                else if (catLower.includes("ai") || catLower.includes("智慧")) { badgeClass = "bg-purple-600"; iconClass = "fas fa-brain"; }
+                else if (catLower.includes("醫")) { badgeClass = "bg-teal-600"; iconClass = "fas fa-user-md"; }
+                else if (catLower.includes("網") || catLower.includes("系統")) { badgeClass = "bg-blue-500"; iconClass = "fas fa-network-wired"; }
 
                 const card = document.createElement('div');
                 card.className = `card-hover group relative bg-white rounded-2xl border border-slate-200 p-4 sm:p-5 flex flex-col sm:flex-row items-stretch gap-4 sm:gap-5 shadow-sm hover:shadow-xl hover:-translate-y-1 transition-all duration-300 overflow-hidden gradient-border-bottom`;
                 
-                // --- 卡片 HTML 結構 ---
                 card.innerHTML = `
                     <div class="flex-none w-full sm:w-24 border-b sm:border-b-0 sm:border-r border-slate-100 pb-4 sm:pb-0 sm:pr-6 flex flex-row sm:flex-col items-center justify-between sm:justify-center gap-3">
                          <div class="icon-box w-14 h-14 rounded-2xl ${style.bg} ${style.text} shadow-sm">
@@ -212,28 +221,28 @@
                             <div class="flex items-center gap-2.5 pt-1">
                                 <div class="w-1.5 h-5 bg-blue-600 rounded-full"></div> 
                                 <h3 class="text-sm font-bold text-slate-500 tracking-wider uppercase truncate">
-                                    ${item.agency || '未標示機關'} 
+                                    ${agency} 
                                 </h3>
                             </div>
                             
                             <span class="inline-flex items-center px-3 py-1.5 rounded-full text-[11px] font-bold text-slate-600 bg-slate-100 border border-slate-200 whitespace-nowrap ml-auto">
                                 <i class="far fa-calendar-alt mr-1.5 text-slate-400"></i>
-                                截止日期: ${deadlineText}
+                                截止日期: ${deadline}
                             </span>
                         </div>
                         
                         <h4 class="text-xl font-black text-slate-800 leading-snug group-hover:text-blue-700 transition-colors line-clamp-2">
-                            <a href="${item.link}" target="_blank" class="hover:underline decoration-2 underline-offset-4 decoration-blue-200">
-                                ${item.title}
+                            <a href="${link}" target="_blank" class="hover:underline decoration-2 underline-offset-4 decoration-blue-200">
+                                ${title}
                             </a>
                         </h4>
                         
                         <div class="flex items-center justify-between pt-3 border-t border-slate-50 mt-2">
                              <span class="inline-flex items-center px-3 py-1 rounded-full text-[11px] font-bold text-white shadow-md ${badgeClass}">
-                                <i class="${iconClass} mr-1.5 text-[10px]"></i>${item.category || '一般'}
+                                <i class="${iconClass} mr-1.5 text-[10px]"></i>${categoryRaw || '一般'}
                             </span>
 
-                            <a href="${item.link}" target="_blank" 
+                            <a href="${link}" target="_blank" 
                                class="flex items-center justify-center w-9 h-9 rounded-full bg-slate-100 text-slate-400 hover:bg-blue-600 hover:text-white transition-all duration-300 ml-auto">
                                 <i class="fas fa-arrow-right text-sm"></i>
                             </a>
@@ -244,7 +253,6 @@
             });
         }
 
-        // 篩選函式保持不變，因為 JSON.stringify 會把所有內容轉字串，不影響小寫搜尋
         function filterByKeyword(keyword) {
             updateButtonState(keyword);
             const filtered = globalTenders.filter(item => {
