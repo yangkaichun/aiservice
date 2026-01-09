@@ -6,7 +6,7 @@
     <title>政府採購戰情室</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
-    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css" rel="stylesheet">
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700;900&display=swap');
         body { font-family: 'Noto Sans TC', sans-serif; background-color: #f0f2f5; }
@@ -26,15 +26,38 @@
             background-color: #2563eb; color: white; border-color: #2563eb;
             box-shadow: 0 4px 6px -1px rgba(37, 99, 235, 0.3);
         }
+        /* 確保圖示在圓圈中居中 */
+        .icon-box { display: flex; align-items: center; justify-content: center; }
     </style>
 </head>
 <body class="text-slate-800">
 
     <script>
-        // --- 設定區 (已更新您的 URL) ---
         const GAS_API_URL = "https://script.google.com/macros/s/AKfycby5sl1ATnOAkzxLEy9bbVxDgjY2_jIFR02Ls56ey9pvmJE3YgSxo9y60Xn2wx3V_YUo8g/exec";
         const N8N_WEBHOOK_URL = "https://ai.yangkaichun.net/webhook/n8n"; 
         let globalTenders = [];
+
+        // --- 定義新分類的 UI/UX 樣式對照表 ---
+        const categoryStyleMap = {
+            "醫院": { bg: "bg-rose-100", text: "text-rose-600", icon: "fas fa-hospital" },
+            "遠距": { bg: "bg-indigo-100", text: "text-indigo-600", icon: "fas fa-video" },
+            "深耕計畫": { bg: "bg-emerald-100", text: "text-emerald-600", icon: "fas fa-seedling" },
+            "智慧": { bg: "bg-violet-100", text: "text-violet-600", icon: "fas fa-brain" },
+            "AI": { bg: "bg-fuchsia-100", text: "text-fuchsia-600", icon: "fas fa-robot" },
+            "網路": { bg: "bg-sky-100", text: "text-sky-600", icon: "fas fa-network-wired" },
+            "資安": { bg: "bg-red-100", text: "text-red-600", icon: "fas fa-shield-alt" },
+            "建置": { bg: "bg-orange-100", text: "text-orange-600", icon: "fas fa-tools" },
+            "定位": { bg: "bg-lime-100", text: "text-lime-600", icon: "fas fa-map-marker-alt" },
+            "通訊": { bg: "bg-teal-100", text: "text-teal-600", icon: "fas fa-satellite-dish" },
+            "防火牆": { bg: "bg-amber-100", text: "text-amber-700", icon: "fas fa-dungeon" },
+            "伺服器": { bg: "bg-blue-100", text: "text-blue-600", icon: "fas fa-server" },
+            "資訊": { bg: "bg-cyan-100", text: "text-cyan-600", icon: "fas fa-database" },
+            "軟體": { bg: "bg-pink-100", text: "text-pink-600", icon: "fas fa-code" },
+            "系統": { bg: "bg-slate-200", text: "text-slate-700", icon: "fas fa-sitemap" },
+            "微軟": { bg: "bg-blue-50", text: "text-blue-800", icon: "fab fa-microsoft" },
+            "GPT": { bg: "bg-green-100", text: "text-green-700", icon: "fas fa-comments" },
+            "default": { bg: "bg-gray-100", text: "text-gray-500", icon: "fas fa-tag" } // 預防萬一
+        };
     </script>
 
     <nav class="bg-gradient-to-r from-slate-900 to-slate-800 text-white shadow-lg sticky top-0 z-50">
@@ -47,8 +70,7 @@
                     <h1 class="font-black text-xl tracking-wide bg-clip-text text-transparent bg-gradient-to-r from-white to-blue-200">政府採購戰情室</h1>
                 </div>
             </div>
-            <button id="runBtn" onclick="runAnalysis()" 
-                class="group flex items-center gap-2 px-5 py-2 bg-blue-600 hover:bg-blue-500 text-white rounded-full transition-all duration-300 font-bold shadow-lg shadow-blue-900/50 border border-blue-400/30">
+            <button id="runBtn" onclick="runAnalysis()" class="group flex items-center gap-2 px-5 py-2 bg-blue-600 hover:bg-blue-500 text-white rounded-full transition-all duration-300 font-bold shadow-lg shadow-blue-900/50 border border-blue-400/30">
                 <i class="fas fa-radar group-hover:animate-spin"></i> <span class="hidden sm:inline">立即分析</span>
             </button>
         </div>
@@ -76,11 +98,15 @@
                     <i class="fas fa-sync-alt text-xs"></i> 重置
                 </button>
                 <button onclick="filterByKeyword('醫院')" class="filter-btn flex-shrink-0 px-3 py-1.5 bg-white text-slate-600 border border-slate-200 rounded-full text-sm font-medium hover:bg-blue-50 hover:text-blue-600 transition-all">醫院</button>
+                <button onclick="filterByKeyword('遠距')" class="filter-btn flex-shrink-0 px-3 py-1.5 bg-white text-slate-600 border border-slate-200 rounded-full text-sm font-medium hover:bg-blue-50 hover:text-blue-600 transition-all">遠距</button>
                 <button onclick="filterByKeyword('智慧')" class="filter-btn flex-shrink-0 px-3 py-1.5 bg-white text-slate-600 border border-slate-200 rounded-full text-sm font-medium hover:bg-blue-50 hover:text-blue-600 transition-all">智慧</button>
-                <button onclick="filterByKeyword('系統')" class="filter-btn flex-shrink-0 px-3 py-1.5 bg-white text-slate-600 border border-slate-200 rounded-full text-sm font-medium hover:bg-blue-50 hover:text-blue-600 transition-all">系統</button>
-                <button onclick="filterByKeyword('醫療')" class="filter-btn flex-shrink-0 px-3 py-1.5 bg-white text-slate-600 border border-slate-200 rounded-full text-sm font-medium hover:bg-blue-50 hover:text-blue-600 transition-all">醫療</button>
-                <button onclick="filterByKeyword('個管')" class="filter-btn flex-shrink-0 px-3 py-1.5 bg-white text-slate-600 border border-slate-200 rounded-full text-sm font-medium hover:bg-blue-50 hover:text-blue-600 transition-all">個管</button>
                 <button onclick="filterByKeyword('AI')" class="filter-btn flex-shrink-0 px-3 py-1.5 bg-white text-slate-600 border border-slate-200 rounded-full text-sm font-medium hover:bg-blue-50 hover:text-blue-600 transition-all">AI</button>
+                <button onclick="filterByKeyword('資安')" class="filter-btn flex-shrink-0 px-3 py-1.5 bg-white text-slate-600 border border-slate-200 rounded-full text-sm font-medium hover:bg-blue-50 hover:text-blue-600 transition-all">資安</button>
+                <button onclick="filterByKeyword('系統')" class="filter-btn flex-shrink-0 px-3 py-1.5 bg-white text-slate-600 border border-slate-200 rounded-full text-sm font-medium hover:bg-blue-50 hover:text-blue-600 transition-all">系統</button>
+                <button onclick="filterByKeyword('軟體')" class="filter-btn flex-shrink-0 px-3 py-1.5 bg-white text-slate-600 border border-slate-200 rounded-full text-sm font-medium hover:bg-blue-50 hover:text-blue-600 transition-all">軟體</button>
+                <button onclick="filterByKeyword('網路')" class="filter-btn flex-shrink-0 px-3 py-1.5 bg-white text-slate-600 border border-slate-200 rounded-full text-sm font-medium hover:bg-blue-50 hover:text-blue-600 transition-all">網路</button>
+                <button onclick="filterByKeyword('伺服器')" class="filter-btn flex-shrink-0 px-3 py-1.5 bg-white text-slate-600 border border-slate-200 rounded-full text-sm font-medium hover:bg-blue-50 hover:text-blue-600 transition-all">伺服器</button>
+                <button onclick="filterByKeyword('GPT')" class="filter-btn flex-shrink-0 px-3 py-1.5 bg-white text-slate-600 border border-slate-200 rounded-full text-sm font-medium hover:bg-blue-50 hover:text-blue-600 transition-all">GPT</button>
             </div>
         </div>
 
@@ -99,106 +125,66 @@
     </main>
 
     <script>
+        // (runAnalysis 和 fetchData 函式保持不變)
         document.addEventListener('DOMContentLoaded', () => { fetchData(); });
 
         function runAnalysis() {
             const btn = document.getElementById('runBtn');
             const icon = btn.querySelector('i');
             const btnText = btn.querySelector('span');
-            
             btn.classList.add('btn-loading', 'opacity-70');
             icon.className = "fas fa-circle-notch fa-spin";
             btnText.innerText = '請求中...';
-            
-            fetch(N8N_WEBHOOK_URL, {
-                method: "POST",
-                headers: { "Content-Type": "text/plain" }, 
-                body: "trigger"
-            })
+            fetch(N8N_WEBHOOK_URL, { method: "POST", headers: { "Content-Type": "text/plain" }, body: "trigger" })
             .then(response => {
                 if(response.ok) {
                     let timerInterval;
                     Swal.fire({
                         title: '系統處理中',
                         html: '已重新抓取政府採購網資料，正在寫入資料庫...<br><b></b> 秒後將自動更新列表。',
-                        timer: 15000, 
-                        timerProgressBar: true,
-                        icon: 'info',
-                        allowOutsideClick: false,
-                        didOpen: () => {
-                            Swal.showLoading();
-                            const b = Swal.getHtmlContainer().querySelector('b');
-                            timerInterval = setInterval(() => { b.textContent = Math.ceil(Swal.getTimerLeft() / 1000); }, 100);
-                        },
+                        timer: 15000, timerProgressBar: true, icon: 'info', allowOutsideClick: false,
+                        didOpen: () => { Swal.showLoading(); const b = Swal.getHtmlContainer().querySelector('b'); timerInterval = setInterval(() => { b.textContent = Math.ceil(Swal.getTimerLeft() / 1000); }, 100); },
                         willClose: () => { clearInterval(timerInterval); }
                     }).then((result) => {
-                        if (result.dismiss === Swal.DismissReason.timer) {
-                            fetchData();
-                            btn.classList.remove('btn-loading', 'opacity-70');
-                            icon.className = "fas fa-radar";
-                            btnText.innerText = '立即分析';
-                        }
+                        if (result.dismiss === Swal.DismissReason.timer) { fetchData(); btn.classList.remove('btn-loading', 'opacity-70'); icon.className = "fas fa-radar"; btnText.innerText = '立即分析'; }
                     });
                 } else { throw new Error('n8n Error'); }
             })
-            .catch(error => {
-                Swal.fire('執行失敗', '無法連線到 n8n', 'error');
-                btn.classList.remove('btn-loading', 'opacity-70');
-                icon.className = "fas fa-radar";
-                btnText.innerText = '立即分析';
-            });
+            .catch(error => { Swal.fire('執行失敗', '無法連線到 n8n', 'error'); btn.classList.remove('btn-loading', 'opacity-70'); icon.className = "fas fa-radar"; btnText.innerText = '立即分析'; });
         }
 
         function fetchData() {
             const list = document.getElementById('tender-list');
             const loading = document.getElementById('loading');
-            list.innerHTML = ''; 
-            loading.classList.remove('hidden');
-
-            fetch(GAS_API_URL)
-                .then(response => response.json())
-                .then(data => {
-                    loading.classList.add('hidden');
-                    // 資料反轉，讓最新的在上面
-                    globalTenders = data.reverse(); 
-                    renderTenders(globalTenders);
-                    document.getElementById('last-update').innerText = new Date().toLocaleTimeString('zh-TW', {hour12: false}) + ' 更新';
-                })
-                .catch(err => {
-                    console.error(err);
-                    loading.classList.add('hidden');
-                    Swal.fire('讀取失敗', '無法讀取 GAS 資料，請檢查權限或網址。', 'error');
-                });
+            list.innerHTML = ''; loading.classList.remove('hidden');
+            fetch(GAS_API_URL).then(response => response.json()).then(data => {
+                loading.classList.add('hidden');
+                globalTenders = data.reverse();
+                renderTenders(globalTenders);
+                document.getElementById('last-update').innerText = new Date().toLocaleTimeString('zh-TW', {hour12: false}) + ' 更新';
+            }).catch(err => { console.error(err); loading.classList.add('hidden'); Swal.fire('讀取失敗', '無法讀取 GAS 資料，請檢查權限或網址。', 'error'); });
         }
 
-        // --- 日期解析與錯誤處理 ---
+        // (日期解析函式保持不變)
         function parseDateString(dateInput) {
-            // 情況1: 如果是空的
             if (!dateInput) return { md: '--/--', yr: '' };
-
-            // 情況2: 如果是 ISO 格式字串 (2024-01-01T00:00:00...)
             let dateObj = new Date(dateInput);
             if (!isNaN(dateObj.getTime())) {
                 let m = (dateObj.getMonth() + 1).toString().padStart(2, '0');
                 let d = dateObj.getDate().toString().padStart(2, '0');
-                return { md: `${m}/${d}`, yr: dateObj.getFullYear() + '年' };
+                return { md: `${m}/${d}`, yr: dateObj.getFullYear()}; // 移除 '年' 字，稍後在 UI 組合
             }
-
-            // 情況3: 如果是文字字串 (例如 "113/05/20" 或 "2024/05/20")
             let str = String(dateInput).trim();
             let parts = str.split('/');
-            
             if (parts.length >= 3) {
-                // 取最後兩個當作月日
                 let yr = parts[0];
                 let md = `${parts[1]}/${parts[2]}`;
-                // 簡單判斷如果是民國年，加上 '年' 字
-                return { md: md, yr: yr + '年' };
+                return { md: md, yr: yr }; // 移除 '年' 字
             }
-            
             return { md: 'Err', yr: '' };
         }
 
+        // --- 核心修改：渲染列表函式 ---
         function renderTenders(tenders) {
             const list = document.getElementById('tender-list');
             list.innerHTML = '';
@@ -209,72 +195,72 @@
             }
 
             tenders.forEach(item => {
-                // 如果沒有標題，跳過
                 if (!item.Title) return;
-
-                // 使用新的日期解析函式
                 const dateInfo = parseDateString(item.Date);
 
+                // 1. 處理左側分類：讀取 Summary 欄位，並從 map 中取得對應樣式
+                const summaryKey = (item.Summary || "").trim();
+                const style = categoryStyleMap[summaryKey] || categoryStyleMap["default"];
+
+                // 2. 處理中間原有的分類標籤樣式 (保持不變)
                 let badgeClass = "bg-slate-500";
                 let iconClass = "fas fa-tag";
                 const cat = (item.Category || "").toLowerCase();
-                
                 if (cat.includes("資安")) { badgeClass = "bg-red-500"; iconClass = "fas fa-shield-alt"; }
                 else if (cat.includes("ai") || cat.includes("智慧")) { badgeClass = "bg-purple-600"; iconClass = "fas fa-brain"; }
                 else if (cat.includes("醫")) { badgeClass = "bg-teal-600"; iconClass = "fas fa-user-md"; }
                 else if (cat.includes("網") || cat.includes("系統")) { badgeClass = "bg-blue-500"; iconClass = "fas fa-network-wired"; }
 
                 const card = document.createElement('div');
-                card.className = `card-hover group relative bg-white rounded-2xl border border-slate-200 p-5 flex flex-col sm:flex-row items-start gap-5 shadow-sm hover:shadow-xl hover:-translate-y-1 transition-all duration-300 overflow-hidden gradient-border-bottom`;
+                card.className = `card-hover group relative bg-white rounded-2xl border border-slate-200 p-4 sm:p-5 flex flex-col sm:flex-row items-stretch gap-4 sm:gap-5 shadow-sm hover:shadow-xl hover:-translate-y-1 transition-all duration-300 overflow-hidden gradient-border-bottom`;
                 
+                // --- 卡片 HTML 結構重組 ---
                 card.innerHTML = `
-                    <div class="flex sm:flex-col items-center justify-center gap-3 min-w-[90px] sm:w-28 border-b sm:border-b-0 sm:border-r border-slate-100 pb-4 sm:pb-0 sm:pr-6">
-                        <div class="w-14 h-14 rounded-2xl bg-slate-50 text-slate-500 flex flex-col items-center justify-center border border-slate-200 group-hover:bg-slate-800 group-hover:text-white group-hover:border-slate-800 transition-all duration-500 shadow-inner">
-                            <span class="text-[10px] font-bold uppercase opacity-60 mb-0.5">截止</span>
-                            <span class="text-base font-black tracking-tight">${dateInfo.md}</span> 
+                    <div class="flex-none w-full sm:w-24 border-b sm:border-b-0 sm:border-r border-slate-100 pb-4 sm:pb-0 sm:pr-6 flex flex-row sm:flex-col items-center justify-between sm:justify-center gap-3">
+                         <div class="icon-box w-14 h-14 rounded-2xl ${style.bg} ${style.text} shadow-sm">
+                            <i class="${style.icon} text-2xl"></i>
                         </div>
-                        <div class="hidden sm:block text-[12px] text-slate-400 font-mono font-bold">${dateInfo.yr}</div>
+                        <span class="text-sm sm:text-xs font-bold text-slate-700 text-center leading-tight tracking-wider">${summaryKey || '未分類'}</span>
                     </div>
 
-                    <div class="flex-1 w-full space-y-3">
-                        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-                            <div class="flex items-center gap-2.5">
-                                <div class="w-1.5 h-6 bg-blue-600 rounded-full"></div> 
-                                <h3 class="text-sm font-bold text-slate-500 tracking-wider uppercase">
+                    <div class="flex-1 w-full space-y-3 min-w-0">
+                        <div class="flex flex-wrap items-start justify-between gap-3">
+                            <div class="flex items-center gap-2.5 pt-1">
+                                <div class="w-1.5 h-5 bg-blue-600 rounded-full"></div> 
+                                <h3 class="text-sm font-bold text-slate-500 tracking-wider uppercase truncate">
                                     ${item.Agency || '未標示機關'}
                                 </h3>
                             </div>
                             
-                            <span class="self-start sm:self-center px-3 py-1 rounded-full text-[11px] font-bold text-white shadow-md ${badgeClass}">
-                                <i class="${iconClass} mr-1.5 text-[10px]"></i>${item.Category || '一般'}
+                            <span class="inline-flex items-center px-3 py-1.5 rounded-full text-[11px] font-bold text-slate-600 bg-slate-100 border border-slate-200 whitespace-nowrap ml-auto">
+                                <i class="far fa-calendar-alt mr-1.5 text-slate-400"></i>
+                                截止日期: ${dateInfo.yr}/${dateInfo.md}
                             </span>
                         </div>
                         
-                        <h4 class="text-xl font-bold text-slate-800 leading-snug group-hover:text-blue-700 transition-colors">
+                        <h4 class="text-xl font-black text-slate-800 leading-snug group-hover:text-blue-700 transition-colors line-clamp-2">
                             <a href="${item.Link}" target="_blank" class="hover:underline decoration-2 underline-offset-4 decoration-blue-200">
                                 ${item.Title}
                             </a>
                         </h4>
                         
-                        <div class="flex items-center gap-4 pt-2 border-t border-slate-50 mt-2">
-                             <div class="flex items-center gap-2 text-xs text-slate-500">
-                                <i class="fas fa-file-alt text-slate-300"></i>
-                                <span class="truncate max-w-[300px]">${item.Summary || '點擊查看詳情'}</span>
-                            </div>
-                        </div>
-                    </div>
+                        <div class="flex items-center justify-between pt-3 border-t border-slate-50 mt-2">
+                             <span class="inline-flex items-center px-3 py-1 rounded-full text-[11px] font-bold text-white shadow-md ${badgeClass}">
+                                <i class="${iconClass} mr-1.5 text-[10px]"></i>${item.Category || '一般'}
+                            </span>
 
-                    <div class="w-full sm:w-auto flex justify-end items-center sm:self-center pl-2">
-                        <a href="${item.Link}" target="_blank" 
-                           class="flex items-center justify-center w-10 h-10 rounded-full bg-slate-100 text-slate-400 hover:bg-blue-600 hover:text-white transition-all duration-300">
-                            <i class="fas fa-arrow-right"></i>
-                        </a>
+                            <a href="${item.Link}" target="_blank" 
+                               class="flex items-center justify-center w-9 h-9 rounded-full bg-slate-100 text-slate-400 hover:bg-blue-600 hover:text-white transition-all duration-300 ml-auto">
+                                <i class="fas fa-arrow-right text-sm"></i>
+                            </a>
+                        </div>
                     </div>
                 `;
                 list.appendChild(card);
             });
         }
 
+        // (篩選相關函式保持不變)
         function filterByKeyword(keyword) {
             updateButtonState(keyword);
             const filtered = globalTenders.filter(item => {
@@ -287,7 +273,7 @@
         function resetFilter() {
             const buttons = document.querySelectorAll('.filter-btn');
             buttons.forEach(btn => {
-                btn.classList.remove('active', 'bg-slate-800', 'text-white');
+                btn.classList.remove('active', 'bg-slate-800', 'text-white', 'bg-blue-600');
                 btn.classList.add('bg-white', 'text-slate-600');
                 if (btn.innerText.includes('重置')) btn.classList.add('active', 'bg-slate-800', 'text-white');
             });
