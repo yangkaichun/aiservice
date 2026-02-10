@@ -1,0 +1,197 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>仲智數位健康 CRM</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.min.css" rel="stylesheet">
+    
+    <style>
+        body { background-color: #f8f9fa; font-family: sans-serif; }
+        .login-cover { position: fixed; top:0; left:0; width:100%; height:100%; background:white; z-index:9999; display:flex; flex-direction:column; justify-content:center; align-items:center; }
+        .status-btn { border-radius: 20px; font-size: 0.85rem; width: 100px; }
+        .btn-cold { background:#ffebee; color:#c62828; border:1px solid #ffcdd2; }
+        .btn-active { background:#fff8e1; color:#f57f17; border:1px solid #ffecb3; }
+        .btn-signed { background:#e8f5e9; color:#2e7d32; border:1px solid #c8e6c9; }
+    </style>
+</head>
+<body>
+
+    <div id="login-section" class="login-cover">
+        <h2 class="mb-4 text-primary fw-bold">仲智數位健康 CRM</h2>
+        <p class="text-muted mb-4">請使用公司授權的 Google 帳號登入</p>
+        <div id="g_id_onload"
+             data-context="signin"
+             data-ux_mode="popup"
+             data-callback="handleCredentialResponse"
+             data-auto_prompt="false">
+        </div>
+        <div class="g_id_signin"
+             data-type="standard"
+             data-shape="rectangular"
+             data-theme="outline"
+             data-text="sign_in_with"
+             data-size="large"
+             data-logo_alignment="left">
+        </div>
+        <div id="login-loading" class="mt-3 text-secondary d-none">
+             <i class="fas fa-spinner fa-spin"></i> 驗證權限中...
+        </div>
+    </div>
+
+    <div id="app-content" class="d-none">
+        <nav class="navbar navbar-dark bg-dark px-3">
+            <span class="navbar-brand mb-0 h1"><i class="fa-solid fa-staff-snake text-info me-2"></i>仲智 CRM</span>
+            <span class="text-white" id="user-display"></span>
+            <button class="btn btn-sm btn-outline-light ms-3" onclick="logout()">登出</button>
+        </nav>
+
+        <div class="container mt-4">
+            <ul class="nav nav-pills mb-3" id="pills-tab">
+                <li class="nav-item"><button class="nav-link active" onclick="switchTab('dashboard')">戰情室</button></li>
+                <li class="nav-item"><button class="nav-link" onclick="switchTab('radar')">開發雷達</button></li>
+            </ul>
+
+            <div id="view-dashboard">
+                <div class="row g-4">
+                    <div class="col-md-4">
+                         <div class="card p-3 border-start border-4 border-primary shadow-sm">
+                             <h5 class="text-muted">簽約總額</h5>
+                             <h2 class="text-primary fw-bold" id="kpi-contract">-</h2>
+                         </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="card p-3 border-start border-4 border-success shadow-sm">
+                            <h5 class="text-muted">預估淨營收</h5>
+                            <h2 class="text-success fw-bold" id="kpi-revenue">-</h2>
+                        </div>
+                   </div>
+                </div>
+            </div>
+
+            <div id="view-radar" class="d-none">
+                <button class="btn btn-primary mb-3" onclick="loadRadarData()"><i class="fas fa-sync"></i> 重新整理</button>
+                <div class="card shadow-sm border-0">
+                    <table class="table table-hover align-middle mb-0">
+                        <thead class="table-light">
+                            <tr><th>醫院</th><th>資訊</th><th>狀態</th><th>備註</th></tr>
+                        </thead>
+                        <tbody id="radar-tbody"></tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="config.js"></script>
+    <script src="https://accounts.google.com/gsi/client" async defer></script>
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <script>
+        // 設定 Google 登入按鈕的 Client ID
+        document.getElementById('g_id_onload').setAttribute('data-client_id', CONFIG.GOOGLE_CLIENT_ID);
+
+        let g_token = null; // 存 Token
+
+        // 1. Google 登入回調
+        function handleCredentialResponse(response) {
+            console.log("Token Received");
+            g_token = response.credential;
+            $('#login-loading').removeClass('d-none');
+            $('.g_id_signin').addClass('d-none');
+
+            // 呼叫 GAS 驗證 Token
+            callGasApi('checkLogin', {}, (res) => {
+                if(res.success) {
+                    $('#login-section').fadeOut();
+                    $('#app-content').removeClass('d-none');
+                    $('#user-display').text(res.data.user.name);
+                    loadDashboard(); // 進入後自動載入
+                } else {
+                    Swal.fire('登入失敗', res.message, 'error');
+                    $('#login-loading').addClass('d-none');
+                    $('.g_id_signin').removeClass('d-none');
+                }
+            });
+        }
+
+        // 2. 通用 API 呼叫函式 (處理 CORS)
+        function callGasApi(action, payload, callback) {
+            // 使用 fetch POST + text/plain 避免 Preflight
+            fetch(CONFIG.GAS_API_URL, {
+                method: "POST",
+                headers: { "Content-Type": "text/plain;charset=utf-8" }, 
+                body: JSON.stringify({ 
+                    action: action, 
+                    token: g_token, // 每次請求都帶 Token
+                    payload: payload 
+                })
+            })
+            .then(r => r.json())
+            .then(data => callback(data))
+            .catch(err => Swal.fire('連線錯誤', err.toString(), 'error'));
+        }
+
+        // 3. 頁面邏輯
+        function switchTab(tab) {
+            $('.nav-link').removeClass('active');
+            event.target.classList.add('active');
+            $('#view-dashboard, #view-radar').addClass('d-none');
+            $(`#view-${tab}`).removeClass('d-none');
+            if(tab === 'radar') loadRadarData();
+        }
+
+        function loadDashboard() {
+            callGasApi('getDashboard', {}, (res) => {
+                if(res.success) {
+                    document.getElementById('kpi-contract').innerText = 'NT$ ' + res.data.totalContractValue.toLocaleString();
+                    document.getElementById('kpi-revenue').innerText = 'NT$ ' + res.data.netRevenue.toLocaleString();
+                }
+            });
+        }
+
+        function loadRadarData() {
+            document.getElementById('radar-tbody').innerHTML = '<tr><td colspan="4" class="text-center">載入中...</td></tr>';
+            callGasApi('getRadarList', {}, (res) => {
+                const tbody = document.getElementById('radar-tbody');
+                tbody.innerHTML = '';
+                if(res.data.length === 0) { tbody.innerHTML = '<tr><td>無資料</td></tr>'; return; }
+                
+                res.data.forEach(h => {
+                    let btnClass = 'btn-cold';
+                    if(h.Touch_Status === '開發中') btnClass = 'btn-active';
+                    if(h.Touch_Status === '已簽約') btnClass = 'btn-signed';
+                    
+                    tbody.innerHTML += `
+                        <tr>
+                            <td class="fw-bold">${h.Name}</td>
+                            <td><small class="text-muted">${h.Region} / ${h.Scale}</small></td>
+                            <td><button class="btn btn-sm ${btnClass} status-btn" onclick="toggleStatus('${h.Hospital_ID}', '${h.Touch_Status}')">${h.Touch_Status || '未接觸'}</button></td>
+                            <td><input class="form-control form-control-sm" value="${h.Note || ''}" onchange="saveNote('${h.Hospital_ID}', this.value)"></td>
+                        </tr>
+                    `;
+                });
+            });
+        }
+
+        function toggleStatus(id, current) {
+            let next = current === '未接觸' ? '開發中' : (current === '開發中' ? '已簽約' : '未接觸');
+            if(current === '已簽約') { Swal.fire('提示', '已簽約無法改回', 'info'); return; }
+            
+            callGasApi('updateStatus', { id: id, status: next }, (res) => {
+                if(res.success) loadRadarData();
+            });
+        }
+
+        function saveNote(id, val) {
+            callGasApi('updateStatus', { id: id, note: val }, () => {});
+        }
+
+        function logout() {
+            location.reload();
+        }
+    </script>
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+</body>
+</html>
