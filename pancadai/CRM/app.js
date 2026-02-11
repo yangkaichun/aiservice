@@ -1,4 +1,4 @@
-// app.js V4.6 (Fix Month Input, Data Display, Auto Login, Delete)
+// app.js V4.7 (Dashboard KPI Sync)
 
 let currentUser = null;
 let currentRole = null;
@@ -17,6 +17,7 @@ window.onload = function() {
     if(document.getElementById('modalUser')) userModal = new bootstrap.Modal(document.getElementById('modalUser'));
     if(document.getElementById('modalSettlement')) settlementModal = new bootstrap.Modal(document.getElementById('modalSettlement'));
     
+    // 初始化日期 (預設今年)
     const today = new Date();
     const y = today.getFullYear();
     const m = String(today.getMonth() + 1).padStart(2, '0');
@@ -141,7 +142,7 @@ async function loadAdminData() { if(currentRole!=='Admin')return; showLoading(tr
 // Dashboard
 function renderDashboard(data) {
     const kpi = data.kpi;
-    document.getElementById('kpi-contract-value').innerText = "$" + (kpi.totalContractValue || 0).toLocaleString();
+    // [修改] 這裡不再賦值 totalContractValue，因為會被 updateDashboardCharts 覆蓋
     document.getElementById('kpi-hospital-count').innerText = (kpi.hospitalCount || 0).toLocaleString();
     document.getElementById('kpi-region-count').innerText = Object.keys(kpi.regionStats || {}).length;
 
@@ -160,18 +161,40 @@ function renderDashboard(data) {
     updateDashboardCharts();
 }
 
+// [核心修改] 更新圖表同時計算 KPI 加總
 function updateDashboardCharts() {
     const start = getVal('dash-start'), end = getVal('dash-end'), ctxTrend = document.getElementById('chart-trend');
     if (!ctxTrend || !globalMonthlyData) return;
-    let aggData = {}; 
+    
+    let aggData = {};
+    let totalGross = 0; // [新增] 區間總 Gross
+    let totalNet = 0;   // [新增] 區間總 Net
+
     globalMonthlyData.forEach(item => {
         let ym = String(item.Year_Month).substring(0, 7);
         let gross = Number(item.Gross_Revenue) || 0, net = Number(item.Net_Revenue) || 0;
+        
         if (ym >= start && ym <= end) {
             if (!aggData[ym]) aggData[ym] = { gross: 0, net: 0 };
-            aggData[ym].gross += gross; aggData[ym].net += net;
+            aggData[ym].gross += gross; 
+            aggData[ym].net += net;
+            
+            // 累加總數
+            totalGross += gross;
+            totalNet += net;
         }
     });
+
+    // 更新 KPI 卡片
+    const kpiEl = document.getElementById('kpi-contract-value');
+    if(kpiEl) {
+        // 使用 HTML 顯示兩行數據
+        kpiEl.innerHTML = `
+            <div style="font-size: 1.1rem; color: #4e73df;">Gross: $${totalGross.toLocaleString()}</div>
+            <div style="font-size: 1.1rem; color: #1cc88a;">Net: $${totalNet.toLocaleString()}</div>
+        `;
+    }
+
     const labels = Object.keys(aggData).sort();
     const grossData = labels.map(m => aggData[m].gross), netData = labels.map(m => aggData[m].net);
     const ctx = ctxTrend.getContext('2d');
@@ -189,7 +212,7 @@ function updateDashboardCharts() {
 }
 
 function renderFinanceTable() {
-    const selMonth = getVal('finance-month-picker'); // YYYY-MM
+    const selMonth = getVal('finance-month-picker'); 
     const tbody = document.getElementById('finance-table-body'); 
     if(!tbody) return;
     tbody.innerHTML = '';
@@ -197,19 +220,15 @@ function renderFinanceTable() {
     let kpiG=0, kpiN=0, kpiA=0, kpiE=0;
     let hasData = false;
 
-    // 將資料依日期排序
     const sortedStats = [...globalStats].sort((a, b) => new Date(b.Created_At) - new Date(a.Created_At));
 
     sortedStats.forEach(s => {
-        // [關鍵修復] 處理日期比對 (YYYY-MM)
         let dataMonth = s.Year_Month;
         if (typeof dataMonth === 'object') {
-             // 如果是日期物件
              let y = dataMonth.getFullYear();
              let m = String(dataMonth.getMonth() + 1).padStart(2, '0');
              dataMonth = `${y}-${m}`;
         } else {
-             // 如果是字串
              dataMonth = String(dataMonth).substring(0, 7);
         }
 
@@ -225,12 +244,10 @@ function renderFinanceTable() {
         
         let badge = s.Invoice_Status==='Billed'?'bg-primary':(s.Invoice_Status==='Paid'?'bg-success':'bg-secondary');
         
-        // 顯示時，若 s.Year_Month 是 Date 物件，轉為本地日期字串
         let displayDate = s.Year_Month;
         if(typeof s.Year_Month === 'object') {
             displayDate = s.Year_Month.toLocaleDateString('zh-TW');
         } else {
-            // 如果是字串 (YYYY-MM-DD)，直接顯示
             displayDate = String(s.Year_Month).substring(0, 10);
         }
 
@@ -254,9 +271,9 @@ function renderFinanceTable() {
     document.getElementById('fin-kpi-ebm').innerText="$"+kpiE.toLocaleString();
 }
 
-function renderRadarTable() { /* 略 */ const reg = getVal('radar-filter-region'), lvl = getVal('radar-filter-level'), sts = getVal('radar-filter-status'); const tbody = document.getElementById('radar-table-body'); tbody.innerHTML = ''; globalHospitals.forEach(h => { if (reg!=='All' && h.Region!==reg) return; if (lvl!=='All' && h.Level!==lvl) return; if (sts!=='All' && h.Status!==sts) return; let badge = h.Status==='已簽約'?'bg-success':(h.Status==='開發中'?'bg-warning text-dark':'bg-secondary'); tbody.innerHTML += `<tr><td><strong>${h.Name}</strong></td><td>${h.Region||'-'}</td><td>${h.Level||'-'}</td><td><span class="badge ${badge}">${h.Status||''}</span></td><td>${h.Exclusivity==='Yes'?'<i class="fas fa-check text-success"></i>':'-'}</td><td><button class="btn btn-sm btn-outline-primary" onclick="openHospitalInput('${h.Hospital_ID}')">編輯</button></td></tr>`; }); }
-function renderHospitalList() { /* 略 */ const tbody = document.getElementById('hospital-list-body'); tbody.innerHTML = ''; globalHospitals.forEach(h => { tbody.innerHTML += `<tr><td>${h.Name}</td><td>${h.Level}</td><td>$${(Number(h.Unit_Price)||0).toLocaleString()}</td><td>${h.Exclusivity}</td><td>${h.Contract_End_Date ? h.Contract_End_Date.split('T')[0] : '-'}</td><td><button class="btn btn-sm btn-outline-primary" onclick="openHospitalInput('${h.Hospital_ID}')">Edit</button></td></tr>`; }); }
-function renderKOLList() { /* 略 */ const tbody = document.getElementById('kol-list-body'); tbody.innerHTML = ''; globalKOLs.forEach(k => { const hName = (globalHospitals.find(h=>h.Hospital_ID===k.Hospital_ID)||{}).Name || k.Hospital_ID; tbody.innerHTML += `<tr><td><strong>${k.Name}</strong></td><td>${hName}</td><td>${k.Title}</td><td>${k.Visit_Stage}</td><td>${k.Probability}</td><td><button class="btn btn-sm btn-outline-success" onclick="openKOLModal('${k.KOL_ID}')">Edit</button></td></tr>`; }); }
+function renderRadarTable() { const reg = getVal('radar-filter-region'), lvl = getVal('radar-filter-level'), sts = getVal('radar-filter-status'); const tbody = document.getElementById('radar-table-body'); tbody.innerHTML = ''; globalHospitals.forEach(h => { if (reg!=='All' && h.Region!==reg) return; if (lvl!=='All' && h.Level!==lvl) return; if (sts!=='All' && h.Status!==sts) return; let badge = h.Status==='已簽約'?'bg-success':(h.Status==='開發中'?'bg-warning text-dark':'bg-secondary'); tbody.innerHTML += `<tr><td><strong>${h.Name}</strong></td><td>${h.Region||'-'}</td><td>${h.Level||'-'}</td><td><span class="badge ${badge}">${h.Status||''}</span></td><td>${h.Exclusivity==='Yes'?'<i class="fas fa-check text-success"></i>':'-'}</td><td><button class="btn btn-sm btn-outline-primary" onclick="openHospitalInput('${h.Hospital_ID}')">編輯</button></td></tr>`; }); }
+function renderHospitalList() { const tbody = document.getElementById('hospital-list-body'); tbody.innerHTML = ''; globalHospitals.forEach(h => { tbody.innerHTML += `<tr><td>${h.Name}</td><td>${h.Level}</td><td>$${(Number(h.Unit_Price)||0).toLocaleString()}</td><td>${h.Exclusivity}</td><td>${h.Contract_End_Date ? h.Contract_End_Date.split('T')[0] : '-'}</td><td><button class="btn btn-sm btn-outline-primary" onclick="openHospitalInput('${h.Hospital_ID}')">Edit</button></td></tr>`; }); }
+function renderKOLList() { const tbody = document.getElementById('kol-list-body'); tbody.innerHTML = ''; globalKOLs.forEach(k => { const hName = (globalHospitals.find(h=>h.Hospital_ID===k.Hospital_ID)||{}).Name || k.Hospital_ID; tbody.innerHTML += `<tr><td><strong>${k.Name}</strong></td><td>${hName}</td><td>${k.Title}</td><td>${k.Visit_Stage}</td><td>${k.Probability}</td><td><button class="btn btn-sm btn-outline-success" onclick="openKOLModal('${k.KOL_ID}')">Edit</button></td></tr>`; }); }
 function renderUserTable(u) { const t=document.getElementById('admin-users-body'); t.innerHTML=''; u.forEach(x=>t.innerHTML+=`<tr><td>${x.Email}</td><td>${x.Name}</td><td>${x.Role}</td><td>${x.Status}</td><td>${x.Last_Login?new Date(x.Last_Login).toLocaleDateString():'-'}</td><td><button class="btn btn-sm btn-light" onclick="openUserModal('${x.Email}','${x.Name}','${x.Role}','${x.Status}')">Edit</button></td></tr>`); }
 function renderLogTable(l) { const t=document.getElementById('admin-logs-body'); t.innerHTML=''; l.reverse().forEach(x=>t.innerHTML+=`<tr><td>${new Date(x.Timestamp).toLocaleString()}</td><td>${x.User}</td><td>${x.Action}</td><td class="text-muted small">${x.Details}</td></tr>`); }
 
@@ -270,15 +287,13 @@ function openSettlementModal(id) {
     document.getElementById('form-settlement').reset();
     setVal('s-record-id', '');
     
-    // [更新] 預設為當天 (YYYY-MM-DD)
+    // 預設為當天
     const now = new Date();
-    // 考慮時區問題，使用本地 ISO 字串
     const year = now.getFullYear();
     const month = String(now.getMonth() + 1).padStart(2, '0');
     const day = String(now.getDate()).padStart(2, '0');
     setVal('s-date', `${year}-${month}-${day}`);
     
-    // 刪除按鈕控制
     const delBtn = document.getElementById('btn-delete-settlement');
     if(delBtn) delBtn.style.display = id ? 'block' : 'none';
 
@@ -287,12 +302,9 @@ function openSettlementModal(id) {
     globalHospitals.filter(h => h.Status==='已簽約').forEach(h => sel.innerHTML+=`<option value="${h.Hospital_ID}">${h.Name}</option>`);
     
     if(id) {
-        // 使用 String 確保比對正確
         const r = globalStats.find(x => String(x.Record_ID) === String(id));
         if(r) {
             setVal('s-record-id', r.Record_ID);
-            
-            // 處理日期回填：如果是日期物件，轉為 YYYY-MM-DD
             let dateVal = r.Year_Month;
             if (typeof dateVal === 'object') {
                 let y = dateVal.getFullYear();
@@ -300,7 +312,6 @@ function openSettlementModal(id) {
                 let d = String(dateVal.getDate()).padStart(2, '0');
                 dateVal = `${y}-${m}-${d}`;
             } else {
-                // 如果是字串，直接取前10碼
                 dateVal = String(dateVal).substring(0, 10);
             }
             
@@ -314,7 +325,6 @@ function openSettlementModal(id) {
     settlementModal.show(); 
 }
 
-// 刪除結算功能
 async function deleteSettlement() {
     const id = getVal('s-record-id');
     if(!id) return;
@@ -337,7 +347,6 @@ async function deleteSettlement() {
 }
 
 function calcPreview(){ const h=globalHospitals.find(x=>String(x.Hospital_ID)===String(getVal('s-hospital'))); if(h){ const u=Number(getVal('s-usage'))||0, p=Number(h.Unit_Price)||0, s=Number(h.EBM_Share_Ratio)||0; document.getElementById('s-hosp-info').innerText=`單價:${p} | 分潤:${s}%`; document.getElementById('s-prev-gross').innerText="$"+(u*p).toLocaleString(); document.getElementById('s-prev-net').innerText="$"+Math.round(u*p*(1-s/100)).toLocaleString(); } }
-// [更新] payload 改用 yearMonth 為日期
 async function submitSettlement() { const p={recordId:getVal('s-record-id'), yearMonth:getVal('s-date'), hospitalId:getVal('s-hospital'), usageCount:getVal('s-usage'), note:getVal('s-note')}; if(!p.hospitalId)return; showLoading(true); await fetch(CONFIG.SCRIPT_URL,{method:'POST',body:JSON.stringify({action:'saveMonthlyStat',userEmail:currentUser,payload:p})}); settlementModal.hide(); loadFinanceData(); showLoading(false); }
 async function toggleInvoiceStatus(id,s){ const m={'Unbilled':'Billed','Billed':'Paid','Paid':'Unbilled'}; if(confirm('變更狀態?')){showLoading(true); await fetch(CONFIG.SCRIPT_URL,{method:'POST',body:JSON.stringify({action:'updateInvoiceStatus',userEmail:currentUser,payload:{recordId:id,status:m[s]}})}); loadFinanceData(); showLoading(false);} }
 function openUserModal(e='',n='',r='User',s='Active'){ setVal('u-email',e); setVal('u-name',n); setVal('u-role',r); setVal('u-status',s); userModal.show(); }
