@@ -1,7 +1,7 @@
 const CONFIG = {
-  // 後端 GAS 的網址 (請填入剛剛部署拿到的 URL)
-  GAS_API_URL: "https://script.google.com/macros/s/AKfycbx-cpQiPVYjXKfBY5qbY-bG4xPUc9ouidVvsT-4r17wsaXR6J_qoon3BK0rnOLWKgv-kA/exec",
-  
-  // GCP 的 Client ID (請填入第一階段申請的 ID)
-  GOOGLE_CLIENT_ID: "442690120777-f3skgcs0a38bfdieu7co92343l1c3kmd.apps.googleusercontent.com"
+    // 剛才複製的 GAS Web App URL
+    SCRIPT_URL: "https://script.google.com/macros/s/AKfycbzaInZ-GhN-xWvd8h4CK8R_J9T1AKepfZpA4Uxhb1qE4DuRFeAKzuWd6SHTLL5bPB2VAQ/exec",
+    // 剛才複製的 GCP Client ID
+    GOOGLE_CLIENT_ID: "469731622214-uiqtuprq4293g3j09nfq5c43uvldadfj.apps.googleusercontent.com",
+    ADMIN_EMAIL: "kaichun.yang@gmail.com"
 };
