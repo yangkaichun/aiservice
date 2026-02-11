@@ -1,4 +1,4 @@
-// app.js V3.3 (Admin Fix)
+// app.js V3.4 (UI Gradients)
 
 let currentUser = null;
 let currentRole = null;
@@ -24,15 +24,9 @@ window.onload = function() {
     if(monthPicker) monthPicker.value = monthStr;
 };
 
-// 安全讀寫函式
-function getVal(id) {
-    const el = document.getElementById(id);
-    return el ? el.value : ''; 
-}
-function setVal(id, value) {
-    const el = document.getElementById(id);
-    if (el) el.value = value || '';
-}
+// 安全讀寫
+function getVal(id) { const el = document.getElementById(id); return el ? el.value : ''; }
+function setVal(id, value) { const el = document.getElementById(id); if (el) el.value = value || ''; }
 
 function handleCredentialResponse(response) {
     const responsePayload = decodeJwtResponse(response.credential);
@@ -79,6 +73,8 @@ async function verifyBackendAuth(email) {
     } catch (e) { console.error(e); alert("系統連線失敗"); } finally { showLoading(false); }
 }
 
+// --- Config & Nav ---
+
 async function loadSystemConfig() {
     try {
         const res = await fetch(CONFIG.SCRIPT_URL, { method: "POST", body: JSON.stringify({ action: "getConfig", userEmail: currentUser }) });
@@ -116,7 +112,7 @@ function showPage(pageId) {
 
     if (pageId === 'kols') loadKOLData();
     if (pageId === 'hospitals') loadRadarData();
-    if (pageId === 'admin') loadAdminData(); // 這裡呼叫了 loadAdminData
+    if (pageId === 'admin') loadAdminData();
     if (pageId === 'finance') loadFinanceData();
 }
 
@@ -154,7 +150,7 @@ async function loadFinanceData() {
     } catch (e) { console.error(e); } finally { showLoading(false); }
 }
 
-// --- [關鍵修正] Admin Functions (補回遺失的函式) ---
+// --- Admin ---
 
 async function loadAdminData() {
     if (currentRole !== 'Admin') return;
@@ -164,19 +160,11 @@ async function loadAdminData() {
             fetch(CONFIG.SCRIPT_URL, { method: "POST", body: JSON.stringify({ action: "getUsers", userEmail: currentUser }) }),
             fetch(CONFIG.SCRIPT_URL, { method: "POST", body: JSON.stringify({ action: "getLogs", userEmail: currentUser }) })
         ]);
-
         const jsonUsers = await resUsers.json();
         const jsonLogs = await resLogs.json();
-
         if (jsonUsers.status === 'success') renderUserTable(jsonUsers.data);
         if (jsonLogs.status === 'success') renderLogTable(jsonLogs.data);
-
-    } catch (e) {
-        console.error(e);
-        alert("載入管理資料失敗");
-    } finally {
-        showLoading(false);
-    }
+    } catch (e) { console.error(e); } finally { showLoading(false); }
 }
 
 function renderUserTable(users) {
@@ -186,20 +174,7 @@ function renderUserTable(users) {
     users.forEach(u => {
         let loginTime = u.Last_Login ? new Date(u.Last_Login).toLocaleString() : '-';
         const roleBadge = u.Role === 'Admin' ? 'bg-danger' : 'bg-info text-dark';
-        
-        tbody.innerHTML += `
-            <tr>
-                <td>${u.Email}</td>
-                <td>${u.Name}</td>
-                <td><span class="badge ${roleBadge}">${u.Role}</span></td>
-                <td>${u.Status}</td>
-                <td style="font-size:0.8em">${loginTime}</td>
-                <td>
-                    <button class="btn btn-sm btn-outline-dark" onclick="openUserModal('${u.Email}', '${u.Name}', '${u.Role}', '${u.Status}')">
-                        <i class="fas fa-edit"></i>
-                    </button>
-                </td>
-            </tr>`;
+        tbody.innerHTML += `<tr><td>${u.Email}</td><td>${u.Name}</td><td><span class="badge ${roleBadge}">${u.Role}</span></td><td>${u.Status}</td><td style="font-size:0.8em">${loginTime}</td><td><button class="btn btn-sm btn-outline-dark" onclick="openUserModal('${u.Email}', '${u.Name}', '${u.Role}', '${u.Status}')"><i class="fas fa-edit"></i></button></td></tr>`;
     });
 }
 
@@ -208,45 +183,81 @@ function renderLogTable(logs) {
     if(!tbody) return;
     tbody.innerHTML = '';
     logs.reverse().forEach(log => {
-        tbody.innerHTML += `
-            <tr>
-                <td style="white-space:nowrap;">${new Date(log.Timestamp).toLocaleString()}</td>
-                <td>${log.User}</td>
-                <td><strong>${log.Action}</strong></td>
-                <td class="text-muted">${log.Details}</td>
-            </tr>`;
+        tbody.innerHTML += `<tr><td style="white-space:nowrap;">${new Date(log.Timestamp).toLocaleString()}</td><td>${log.User}</td><td><strong>${log.Action}</strong></td><td class="text-muted">${log.Details}</td></tr>`;
     });
 }
 
-// --- Renderers ---
+// --- Dashboard & Charts with Gradients ---
 
 function renderDashboard(data) {
     const kpi = data.kpi;
     document.getElementById('kpi-contract-value').innerText = "$" + (kpi.totalContractValue || 0).toLocaleString();
     if(document.getElementById('kpi-hospital-count')) document.getElementById('kpi-hospital-count').innerText = (kpi.hospitalCount || 0).toLocaleString();
     
+    // Pie Chart
     const ctxRegion = document.getElementById('chart-region');
     if (ctxRegion) {
         if(window.myRegionChart) window.myRegionChart.destroy();
+        
         const rStats = kpi.regionStats || {};
         const rLabels = Object.keys(rStats);
         const rData = Object.values(rStats);
         if(rLabels.length === 0) { rLabels.push('無資料'); rData.push(1); }
+
         window.myRegionChart = new Chart(ctxRegion.getContext('2d'), {
-            type: 'pie',
-            data: { labels: rLabels, datasets: [{ data: rData, backgroundColor: ['#3498db', '#e74c3c', '#f1c40f', '#2ecc71', '#9b59b6'] }] }
+            type: 'doughnut', // Better than Pie for UI
+            data: {
+                labels: rLabels,
+                datasets: [{
+                    data: rData,
+                    backgroundColor: ['#4e73df', '#1cc88a', '#36b9cc', '#f6c23e', '#e74a3b'],
+                    hoverOffset: 4
+                }]
+            }
         });
     }
 
+    // Line Chart with Gradient Fill
     const ctxTrend = document.getElementById('chart-trend');
     if (ctxTrend) {
+        const ctx = ctxTrend.getContext('2d');
         if(window.myTrendChart) window.myTrendChart.destroy();
-        window.myTrendChart = new Chart(ctxTrend.getContext('2d'), {
+
+        // Create Gradient
+        const gradient = ctx.createLinearGradient(0, 0, 0, 400);
+        gradient.addColorStop(0, 'rgba(78, 115, 223, 0.5)'); // Top color
+        gradient.addColorStop(1, 'rgba(78, 115, 223, 0.05)'); // Bottom color
+
+        window.myTrendChart = new Chart(ctx, {
             type: 'line',
-            data: { labels: ['Jan', 'Feb', 'Mar'], datasets: [{ label: '營收', data: [0, 0, 0], borderColor: 'blue' }] }
+            data: {
+                labels: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun'],
+                datasets: [{
+                    label: '營收預估',
+                    data: [50, 100, 150, 200, 250, 300], // 範例數據
+                    backgroundColor: gradient,
+                    borderColor: '#4e73df',
+                    pointBackgroundColor: '#4e73df',
+                    pointBorderColor: '#fff',
+                    pointHoverBackgroundColor: '#fff',
+                    pointHoverBorderColor: '#4e73df',
+                    fill: true,
+                    tension: 0.4 // Smooth curve
+                }]
+            },
+            options: {
+                responsive: true,
+                plugins: { legend: { display: false } },
+                scales: {
+                    x: { grid: { display: false } },
+                    y: { grid: { borderDash: [2] }, beginAtZero: true }
+                }
+            }
         });
     }
 }
+
+// --- Table Renderers ---
 
 function renderRadarTable() {
     const region = getVal('radar-filter-region');
@@ -311,7 +322,7 @@ function renderFinanceTable() {
     }
 }
 
-// --- Modals ---
+// --- Actions (Submit/Open) ---
 
 function openKOLModal(id = null) {
     document.getElementById('form-kol').reset();
@@ -496,7 +507,6 @@ async function submitUser() {
     showLoading(true);
     await fetch(CONFIG.SCRIPT_URL, {method:'POST', body:JSON.stringify({action:'saveUser', userEmail:currentUser, payload:p})});
     userModal.hide(); 
-    // [關鍵修正] 現在這個函式已經定義在下方了，不會報錯
     loadAdminData(); 
     showLoading(false);
 }
