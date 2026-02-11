@@ -1,146 +1,202 @@
-const SPREADSHEET_ID = '1yblDhfRoDT-Bb0MqdSW_Wun7-QxDOQ5qtKp7K4kkz30'; // <--- 請填入
-const CLIENT_ID = '442690120777-f3skgcs0a38bfdieu7co92343l1c3kmd.apps.googleusercontent.com'; // <--- 請填入剛剛申請的 Client ID
+/* Code.gs - PancadAI CRM Backend */
 
-/* =========================================
-   API 入口 (只處理 POST)
-   為了避開 CORS Preflight 問題，我們統一用 POST + text/plain 傳輸
-   ========================================= */
+// 設定 Sheet ID (請替換為您的 Google Sheet ID)
+const SPREADSHEET_ID = '1hID8Hi42qNFyA_13BqSJgfjIE4FguQRR5wMEsXBRl0I';
+const UPLOAD_FOLDER_ID = '1tmLX1lSEa_R26S5LAyIv7IPAhPuI67Db'; // 用於存儲合約和簡報
+
+function doGet(e) {
+  return ContentService.createTextOutput("PancadAI API is Running.");
+}
+
+// 處理所有 POST 請求 (CORS 處理)
 function doPost(e) {
+  const lock = LockService.getScriptLock();
+  lock.tryLock(10000);
+
   try {
-    // 1. 解析前端傳來的資料
-    const request = JSON.parse(e.postData.contents);
-    const action = request.action;
-    const token = request.token;
-    const payload = request.payload;
-
-    // 2. 身分驗證 (Verify Token)
-    const userEmail = verifyGoogleToken(token);
-    if (!userEmail) {
-      return responseJSON({ success: false, message: 'Invalid Token' });
+    const data = JSON.parse(e.postData.contents);
+    const action = data.action;
+    const userEmail = data.userEmail; // 前端傳來的 Google User Email
+    
+    // 1. 權限驗證 (簡易版：檢查 Users Sheet 是否有此 Email 且為 Active)
+    const userRole = checkUserAuth(userEmail);
+    if (!userRole) {
+      return responseJSON({ status: 'error', message: 'Unauthorized User' });
     }
 
-    // 3. 權限檢查 (Whitelist)
-    const auth = checkUserPermission(userEmail);
-    if (!auth.allowed) {
-      return responseJSON({ success: false, message: 'Permission Denied: ' + userEmail });
-    }
-
-    // 4. 路由處理 (Router)
     let result = {};
+
+    // 2. 路由分發
     switch (action) {
-      case 'getDashboard':
-        result = getDashboardStats();
+      case 'getDashboardData':
+        result = getDashboardData();
         break;
-      case 'getRadarList':
-        result = getRadarList();
+      case 'getHospitals':
+        result = getSheetData('Hospitals');
         break;
-      case 'updateStatus':
-        result = updateHospitalStatus(payload.id, payload.status, payload.note, auth.email);
+      case 'saveHospital':
+        result = saveHospital(data.payload, userEmail);
         break;
-      case 'checkLogin':
-        // 僅回傳使用者資訊
-        result = { user: auth };
+      case 'getKOLs':
+        result = getKOLs();
+        break;
+      case 'saveKOL':
+        result = saveKOL(data.payload, userEmail);
+        break;
+      case 'getMonthlyStats':
+        result = getSheetData('Monthly_Stats');
+        break;
+      case 'saveMonthlyStat': // 輸入每月數據並計算分潤
+        result = saveMonthlyStat(data.payload, userEmail);
+        break;
+      case 'uploadFile':
+        result = uploadFileToDrive(data.fileData, data.fileName, data.mimeType);
         break;
       default:
-        throw new Error('Unknown Action');
+        result = { status: 'error', message: 'Unknown Action' };
     }
 
-    return responseJSON({ success: true, data: result });
+    return responseJSON({ status: 'success', data: result, role: userRole });
 
-  } catch (err) {
-    return responseJSON({ success: false, message: err.toString() });
+  } catch (error) {
+    return responseJSON({ status: 'error', message: error.toString() });
+  } finally {
+    lock.releaseLock();
   }
 }
 
-/* =========================================
-   輔助函式
-   ========================================= */
+// --- 核心邏輯函式 ---
 
-// 回傳 JSON 格式 (處理 CORS)
+function checkUserAuth(email) {
+  const sheet = SpreadsheetApp.openById(SPREADSHEET_ID).getSheetByName('Users');
+  const data = sheet.getDataRange().getValues();
+  // Skip header
+  for (let i = 1; i < data.length; i++) {
+    if (data[i][0] === email && data[i][3] === 'Active') {
+      return data[i][2]; // Return Role (Admin/User)
+    }
+  }
+  return null;
+}
+
+function getDashboardData() {
+  const ss = SpreadsheetApp.openById(SPREADSHEET_ID);
+  const hospSheet = ss.getSheetByName('Hospitals');
+  const statsSheet = ss.getSheetByName('Monthly_Stats');
+  
+  // 取得原始資料
+  const hospitals = hospSheet.getDataRange().getValues();
+  const stats = statsSheet.getDataRange().getValues();
+
+  // 計算 KPI
+  let totalContractValue = 0;
+  let regionStats = {};
+  let levelStats = {};
+  
+  // 遍歷醫院 (Skip header)
+  for (let i = 1; i < hospitals.length; i++) {
+    const row = hospitals[i];
+    if (row[5] === '已簽約') { // Status
+      totalContractValue += (Number(row[9]) || 0); // Contract_Amount
+      
+      // 區域統計
+      let region = row[2];
+      regionStats[region] = (regionStats[region] || 0) + 1;
+      
+      // 規模統計
+      let level = row[4];
+      levelStats[level] = (levelStats[level] || 0) + 1;
+    }
+  }
+
+  return {
+    kpi: {
+      totalContractValue: totalContractValue,
+      regionStats: regionStats,
+      levelStats: levelStats
+    },
+    rawStats: stats.slice(1) // 傳回統計數據供前端畫圖
+  };
+}
+
+function saveMonthlyStat(payload, user) {
+  const sheet = SpreadsheetApp.openById(SPREADSHEET_ID).getSheetByName('Monthly_Stats');
+  
+  // 計算邏輯：分潤計算
+  // 假設 payload 包含: hospitalId, yearMonth, usageCount, selfPayPrice, discount, ebmShareRatio
+  const revenue = payload.usageCount * payload.selfPayPrice * (1 - (payload.discount/100));
+  // EBM 分潤扣除 (例如 revenue * (1 - shareRatio))
+  const netRevenue = revenue * (1 - (payload.ebmShareRatio/100));
+
+  const rowData = [
+    Utilities.getUuid(), // ID
+    payload.hospitalId,
+    payload.yearMonth,
+    payload.usageCount,
+    revenue,
+    payload.selfPayPrice,
+    payload.discount,
+    netRevenue,
+    'Unpaid', // Default status
+    new Date()
+  ];
+  
+  sheet.appendRow(rowData);
+  logAction(user, 'Add Monthly Stat', `Hospital: ${payload.hospitalId}, Rev: ${revenue}`);
+  return { status: 'saved', netRevenue: netRevenue };
+}
+
+function saveHospital(payload, user) {
+  const sheet = SpreadsheetApp.openById(SPREADSHEET_ID).getSheetByName('Hospitals');
+  // 簡易 Upsert 邏輯：如果有 ID 則更新，無則新增
+  // 實際開發可根據 payload.hospitalId 搜尋並更新
+  // 這裡示範新增
+  const id = payload.hospitalId || Utilities.getUuid();
+  const row = [
+    id, payload.name, payload.region, payload.address, payload.level,
+    payload.status, payload.exclusivity, payload.contractStart, payload.contractEnd,
+    payload.contractAmount, payload.contractLink, payload.ebmShare, payload.salesRep, new Date()
+  ];
+  sheet.appendRow(row);
+  return { id: id };
+}
+
+function getKOLs() {
+    // 這裡應包含 Join Logic (把 Hospital Name 帶進來)，為簡化直接回傳
+    return getSheetData('KOLs');
+}
+
+// 通用讀取
+function getSheetData(sheetName) {
+  const sheet = SpreadsheetApp.openById(SPREADSHEET_ID).getSheetByName(sheetName);
+  const data = sheet.getDataRange().getValues();
+  const headers = data[0];
+  const rows = data.slice(1).map(row => {
+    let obj = {};
+    headers.forEach((h, i) => obj[h] = row[i]);
+    return obj;
+  });
+  return rows;
+}
+
+// 檔案上傳
+function uploadFileToDrive(base64Data, fileName, mimeType) {
+  const folder = DriveApp.getFolderById(UPLOAD_FOLDER_ID);
+  const decoded = Utilities.base64Decode(base64Data);
+  const blob = Utilities.newBlob(decoded, mimeType, fileName);
+  const file = folder.createFile(blob);
+  file.setSharing(DriveApp.Access.ANYONE_WITH_LINK, DriveApp.Permission.VIEW);
+  return { url: file.getUrl(), id: file.getId() };
+}
+
+// Helper: Log
+function logAction(user, action, details) {
+  const sheet = SpreadsheetApp.openById(SPREADSHEET_ID).getSheetByName('Logs');
+  sheet.appendRow([new Date(), user, action, details]);
+}
+
+// Helper: JSON Response
 function responseJSON(data) {
   return ContentService.createTextOutput(JSON.stringify(data))
     .setMimeType(ContentService.MimeType.JSON);
-}
-
-// 驗證 Google ID Token
-function verifyGoogleToken(token) {
-  try {
-    // 呼叫 Google 官方 API 驗證 Token
-    const url = 'https://oauth2.googleapis.com/tokeninfo?id_token=' + token;
-    const response = UrlFetchApp.fetch(url);
-    const data = JSON.parse(response.getContentText());
-    
-    // 確保 Token 是發給我們自己的 Client ID (安全性檢查)
-    if (data.aud !== CLIENT_ID) return null;
-    
-    return data.email;
-  } catch (e) {
-    return null;
-  }
-}
-
-// 權限檢查 (讀取 Sheet)
-function checkUserPermission(email) {
-  const ss = SpreadsheetApp.openById(SPREADSHEET_ID);
-  const sheet = ss.getSheetByName('User_Auth');
-  const data = sheet.getDataRange().getValues();
-  
-  for (let i = 1; i < data.length; i++) {
-    if (data[i][0] === email && data[i][3] === 'Active') {
-      return { allowed: true, role: data[i][2], name: data[i][1], email: email };
-    }
-  }
-  return { allowed: false, email: email };
-}
-
-// 取得儀表板數據
-function getDashboardStats() {
-  const ss = SpreadsheetApp.openById(SPREADSHEET_ID);
-  const hSheet = ss.getSheetByName('Hospital_Master');
-  const mSheet = ss.getSheetByName('Monthly_Stats');
-  const hData = hSheet.getDataRange().getValues();
-  const mData = mSheet.getDataRange().getValues();
-  
-  let stats = { totalContractValue: 0, activeContracts: 0, netRevenue: 0 };
-
-  for(let i=1; i<hData.length; i++) {
-    if(hData[i][5] === '已簽約') {
-      stats.activeContracts++;
-      stats.totalContractValue += Number(hData[i][8] || 0);
-    }
-  }
-  for(let i=1; i<mData.length; i++) {
-    stats.netRevenue += Number(mData[i][6] || 0);
-  }
-  return stats;
-}
-
-// 取得雷達列表
-function getRadarList() {
-  const ss = SpreadsheetApp.openById(SPREADSHEET_ID);
-  const sheet = ss.getSheetByName('Hospital_Master');
-  const data = sheet.getDataRange().getValues();
-  // 簡化回傳
-  return data.slice(1).map(row => ({
-    Hospital_ID: row[0], Name: row[1], Region: row[2], 
-    Scale: row[4], Touch_Status: row[5], Owner: row[6], Note: row[11]
-  }));
-}
-
-// 更新狀態
-function updateHospitalStatus(id, status, note, userEmail) {
-  const ss = SpreadsheetApp.openById(SPREADSHEET_ID);
-  const sheet = ss.getSheetByName('Hospital_Master');
-  const data = sheet.getDataRange().getValues();
-  
-  for (let i = 1; i < data.length; i++) {
-    if (data[i][0] == id) {
-      if (status) sheet.getRange(i + 1, 6).setValue(status);
-      if (note) sheet.getRange(i + 1, 12).setValue(note);
-      sheet.getRange(i + 1, 13).setValue(new Date());
-      // 可以在這裡加 Log 紀錄是誰改的 (userEmail)
-      return "Updated";
-    }
-  }
-  throw new Error("ID Not Found");
 }
