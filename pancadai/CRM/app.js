@@ -1,11 +1,11 @@
-// app.js V4.0 (Real Data & UI Polish)
+// app.js V4.1 (RWD Enhanced)
 
 let currentUser = null;
 let currentRole = null;
 let globalHospitals = []; 
 let globalKOLs = [];
-let globalStats = []; // 財務列表用的資料
-let globalMonthlyData = []; // 儀表板用的完整月結資料
+let globalStats = []; 
+let globalMonthlyData = []; 
 let globalConfig = { regions: [], levels: [] }; 
 let kolModal, userModal, settlementModal;
 
@@ -16,7 +16,6 @@ window.onload = function() {
     if(document.getElementById('modalUser')) userModal = new bootstrap.Modal(document.getElementById('modalUser'));
     if(document.getElementById('modalSettlement')) settlementModal = new bootstrap.Modal(document.getElementById('modalSettlement'));
     
-    // 設定預設日期 (今年 1月 到 12月)
     const year = new Date().getFullYear();
     if(document.getElementById('dash-start')) document.getElementById('dash-start').value = `${year}-01`;
     if(document.getElementById('dash-end')) document.getElementById('dash-end').value = `${year}-12`;
@@ -29,11 +28,16 @@ function setVal(id, value) { const el = document.getElementById(id); if (el) el.
 function showLoading(show) { document.getElementById('loading-overlay').classList.toggle('d-none', !show); }
 function logout() { currentUser = null; location.reload(); }
 
+// [新增] RWD Sidebar Toggle
+function toggleSidebar() {
+    document.getElementById('main-sidebar').classList.toggle('show');
+}
+
 // Auth
-function handleCredentialResponse(r) { currentUser = decodeJwtResponse(r.credential).email; verifyBackendAuth(currentUser); }
+function handleCredentialResponse(r) { currentUser = decodeJwtResponse(r.credential).email; verifyBackendAuth(currentUser, r.credential); }
 function decodeJwtResponse(token) { return JSON.parse(decodeURIComponent(window.atob(token.split('.')[1].replace(/-/g, '+').replace(/_/g, '/')).split('').map(c => '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2)).join(''))); }
 
-async function verifyBackendAuth(email) {
+async function verifyBackendAuth(email, token) {
     showLoading(true);
     try {
         const res = await fetch(CONFIG.SCRIPT_URL, { method: "POST", body: JSON.stringify({ action: "getDashboardData", userEmail: email }) });
@@ -43,9 +47,14 @@ async function verifyBackendAuth(email) {
             document.getElementById('login-view').classList.add('d-none');
             document.getElementById('app-view').classList.remove('d-none');
             if (currentRole === 'Admin') document.getElementById('nav-admin').classList.remove('d-none');
-            document.getElementById('user-name').innerText = email.split('@')[0];
+            
+            // 設定使用者資訊 (Desktop & Mobile)
+            const userData = decodeJwtResponse(token);
+            document.getElementById('user-name').innerText = userData.name;
+            document.getElementById('user-avatar').src = userData.picture;
+            document.getElementById('mobile-user-name').innerText = userData.name;
+            document.getElementById('mobile-user-avatar').src = userData.picture;
 
-            // [關鍵] 儲存全域資料供圖表使用
             globalMonthlyData = json.data.monthlyStats || []; 
             
             await loadSystemConfig(); 
@@ -79,11 +88,13 @@ function showPage(pageId) {
     const links = document.querySelectorAll('.nav-link');
     for(let l of links) if(l.getAttribute('onclick') && l.getAttribute('onclick').includes(pageId)) l.classList.add('active');
 
+    // [RWD] 手機版點擊後自動收合選單
+    if (window.innerWidth < 768) toggleSidebar();
+
     if (pageId === 'kols') loadKOLData();
     if (pageId === 'hospitals') loadRadarData();
     if (pageId === 'admin') loadAdminData();
     if (pageId === 'finance') loadFinanceData();
-    // [新增] 切換到 Dashboard 時自動更新圖表
     if (pageId === 'dashboard') updateDashboardCharts(); 
 }
 
@@ -93,8 +104,7 @@ async function loadKOLData() { try { const r = await fetch(CONFIG.SCRIPT_URL, { 
 async function loadFinanceData() { showLoading(true); try { if(!globalHospitals.length) await loadRadarData(); const r = await fetch(CONFIG.SCRIPT_URL, { method: "POST", body: JSON.stringify({ action: "getMonthlyStats", userEmail: currentUser }) }); globalStats = (await r.json()).data; renderFinanceTable(); } catch(e){} finally{showLoading(false);} }
 async function loadAdminData() { if(currentRole!=='Admin')return; showLoading(true); try{ const [u,l] = await Promise.all([fetch(CONFIG.SCRIPT_URL,{method:"POST",body:JSON.stringify({action:"getUsers",userEmail:currentUser})}), fetch(CONFIG.SCRIPT_URL,{method:"POST",body:JSON.stringify({action:"getLogs",userEmail:currentUser})})]); renderUserTable((await u.json()).data); renderLogTable((await l.json()).data); }catch(e){}finally{showLoading(false);} }
 
-// --- [核心功能] Dashboard & Charts (Real Data) ---
-
+// Dashboard
 function renderDashboard(data) {
     const kpi = data.kpi;
     document.getElementById('kpi-contract-value').innerText = "$" + (kpi.totalContractValue || 0).toLocaleString();
@@ -102,7 +112,6 @@ function renderDashboard(data) {
     const regionCount = Object.keys(kpi.regionStats || {}).length;
     document.getElementById('kpi-region-count').innerText = regionCount;
 
-    // 1. 圓餅圖 (Region)
     const ctxRegion = document.getElementById('chart-region');
     if (ctxRegion) {
         if(window.myRegionChart) window.myRegionChart.destroy();
@@ -112,11 +121,9 @@ function renderDashboard(data) {
         window.myRegionChart = new Chart(ctxRegion.getContext('2d'), {
             type: 'doughnut',
             data: { labels: rLabels, datasets: [{ data: rData, backgroundColor: ['#4e73df', '#1cc88a', '#36b9cc', '#f6c23e', '#e74a3b'], borderWidth: 0 }] },
-            options: { cutout: '70%', plugins: { legend: { position: 'right', labels: { boxWidth: 12 } } } }
+            options: { maintainAspectRatio: false, cutout: '70%', plugins: { legend: { position: 'right', labels: { boxWidth: 12 } } } }
         });
     }
-    
-    // 2. 繪製折線圖
     updateDashboardCharts();
 }
 
@@ -127,15 +134,11 @@ function updateDashboardCharts() {
     
     if (!ctxTrend || !globalMonthlyData) return;
 
-    // 1. 資料處理：依月份加總
-    let aggData = {}; // key: YYYY-MM, val: {gross:0, net:0}
-    
+    let aggData = {}; 
     globalMonthlyData.forEach(item => {
-        // 使用 Header Mapping 後的屬性名稱
         let ym = item.Year_Month;
         let gross = Number(item.Gross_Revenue) || 0;
         let net = Number(item.Net_Revenue) || 0;
-
         if (ym >= start && ym <= end) {
             if (!aggData[ym]) aggData[ym] = { gross: 0, net: 0 };
             aggData[ym].gross += gross;
@@ -143,80 +146,40 @@ function updateDashboardCharts() {
         }
     });
 
-    // 2. 排序月份並準備數據陣列
     const labels = Object.keys(aggData).sort();
     const grossData = labels.map(m => aggData[m].gross);
     const netData = labels.map(m => aggData[m].net);
 
-    // 3. 繪製圖表 (UI 強化)
     const ctx = ctxTrend.getContext('2d');
     if (window.myTrendChart) window.myTrendChart.destroy();
 
-    // 漸層特效 (Gradient)
     const gradGross = ctx.createLinearGradient(0, 0, 0, 300);
-    gradGross.addColorStop(0, 'rgba(78, 115, 223, 0.4)'); // 上方顏色 (Blue)
-    gradGross.addColorStop(1, 'rgba(78, 115, 223, 0.0)'); // 下方透明
+    gradGross.addColorStop(0, 'rgba(78, 115, 223, 0.4)'); 
+    gradGross.addColorStop(1, 'rgba(78, 115, 223, 0.0)'); 
 
     const gradNet = ctx.createLinearGradient(0, 0, 0, 300);
-    gradNet.addColorStop(0, 'rgba(28, 200, 138, 0.4)'); // 上方顏色 (Green)
-    gradNet.addColorStop(1, 'rgba(28, 200, 138, 0.0)'); // 下方透明
+    gradNet.addColorStop(0, 'rgba(28, 200, 138, 0.4)'); 
+    gradNet.addColorStop(1, 'rgba(28, 200, 138, 0.0)'); 
 
     window.myTrendChart = new Chart(ctx, {
         type: 'line',
         data: {
             labels: labels,
             datasets: [
-                {
-                    label: '總營收 (Gross)',
-                    data: grossData,
-                    borderColor: '#4e73df',
-                    backgroundColor: gradGross,
-                    pointBackgroundColor: '#4e73df',
-                    pointBorderColor: '#fff',
-                    pointRadius: 5,
-                    pointHoverRadius: 7,
-                    fill: true,
-                    tension: 0.4 // 平滑曲線
-                },
-                {
-                    label: '實際營收 (Net)',
-                    data: netData,
-                    borderColor: '#1cc88a',
-                    backgroundColor: gradNet,
-                    pointBackgroundColor: '#1cc88a',
-                    pointBorderColor: '#fff',
-                    pointRadius: 5,
-                    pointHoverRadius: 7,
-                    fill: true,
-                    tension: 0.4
-                }
+                { label: '總營收 (Gross)', data: grossData, borderColor: '#4e73df', backgroundColor: gradGross, pointBackgroundColor: '#4e73df', pointBorderColor: '#fff', fill: true, tension: 0.4 },
+                { label: '實際營收 (Net)', data: netData, borderColor: '#1cc88a', backgroundColor: gradNet, pointBackgroundColor: '#1cc88a', pointBorderColor: '#fff', fill: true, tension: 0.4 }
             ]
         },
         options: {
             responsive: true,
             maintainAspectRatio: false,
-            plugins: {
-                legend: { position: 'top', align: 'end' },
-                tooltip: { 
-                    backgroundColor: 'rgba(255,255,255,0.95)', 
-                    titleColor: '#6e707e', 
-                    bodyColor: '#858796', 
-                    borderColor: '#dddfeb', 
-                    borderWidth: 1,
-                    displayColors: true,
-                    padding: 10,
-                    callbacks: { label: (c) => ` ${c.dataset.label}: $${c.raw.toLocaleString()}` }
-                }
-            },
-            scales: {
-                x: { grid: { display: false } },
-                y: { grid: { borderDash: [2], color: '#f0f0f0' }, beginAtZero: true, ticks: { callback: (v) => '$' + v.toLocaleString() } }
-            }
+            plugins: { legend: { position: 'top', align: 'end' }, tooltip: { backgroundColor: 'rgba(255,255,255,0.95)', titleColor: '#6e707e', bodyColor: '#858796', borderColor: '#dddfeb', borderWidth: 1, displayColors: true, padding: 10, callbacks: { label: (c) => ` ${c.dataset.label}: $${c.raw.toLocaleString()}` } } },
+            scales: { x: { grid: { display: false } }, y: { grid: { borderDash: [2], color: '#f0f0f0' }, beginAtZero: true, ticks: { callback: (v) => '$' + v.toLocaleString() } } }
         }
     });
 }
 
-// --- List Renderers ---
+// Renderers
 function renderRadarTable() {
     const reg = getVal('radar-filter-region'), lvl = getVal('radar-filter-level'), sts = getVal('radar-filter-status');
     const tbody = document.getElementById('radar-table-body'); tbody.innerHTML = '';
@@ -257,7 +220,7 @@ function renderFinanceTable() {
 function renderUserTable(u) { const t=document.getElementById('admin-users-body'); t.innerHTML=''; u.forEach(x=>t.innerHTML+=`<tr><td>${x.Email}</td><td>${x.Name}</td><td>${x.Role}</td><td>${x.Status}</td><td>${x.Last_Login?new Date(x.Last_Login).toLocaleDateString():'-'}</td><td><button class="btn btn-sm btn-light" onclick="openUserModal('${x.Email}','${x.Name}','${x.Role}','${x.Status}')">Edit</button></td></tr>`); }
 function renderLogTable(l) { const t=document.getElementById('admin-logs-body'); t.innerHTML=''; l.reverse().forEach(x=>t.innerHTML+=`<tr><td>${new Date(x.Timestamp).toLocaleString()}</td><td>${x.User}</td><td>${x.Action}</td><td class="text-muted small">${x.Details}</td></tr>`); }
 
-// --- Actions ---
+// Actions
 function openHospitalInput(id){ showPage('hospital-input'); document.getElementById('form-hospital').reset(); setVal('h-id',''); setVal('h-link',''); if(id){ const h=globalHospitals.find(x=>x.Hospital_ID===id); if(h){ setVal('h-id',h.Hospital_ID); setVal('h-name',h.Name); setVal('h-region',h.Region); setVal('h-level',h.Level); setVal('h-address',h.Address); setVal('h-status',h.Status); setVal('h-exclusivity',h.Exclusivity); setVal('h-unit-price',h.Unit_Price); setVal('h-ebm',h.EBM_Share_Ratio); setVal('h-amount',h.Contract_Amount); setVal('h-link',h.Contract_Link); if(h.Contract_Start_Date)setVal('h-start',h.Contract_Start_Date.split('T')[0]); if(h.Contract_End_Date)setVal('h-end',h.Contract_End_Date.split('T')[0]); } } }
 async function submitHospital(){ showLoading(true); let link=getVal('h-link'); const f=document.getElementById('h-file'); if(f.files.length){ link=(await uploadFile(f.files[0])).url; } const p={hospitalId:getVal('h-id'), name:getVal('h-name'), region:getVal('h-region'), level:getVal('h-level'), address:getVal('h-address'), status:getVal('h-status'), exclusivity:getVal('h-exclusivity'), unitPrice:getVal('h-unit-price'), ebmShare:getVal('h-ebm'), contractAmount:getVal('h-amount'), contractStart:getVal('h-start'), contractEnd:getVal('h-end'), contractLink:link, salesRep:document.getElementById('user-name').innerText}; await fetch(CONFIG.SCRIPT_URL,{method:'POST',body:JSON.stringify({action:'saveHospital',userEmail:currentUser,payload:p})}); await loadRadarData(); showPage('hospitals'); showLoading(false); }
 function openKOLModal(id){ document.getElementById('form-kol').reset(); setVal('k-id',''); const s=document.getElementById('k-hospital-id'); s.innerHTML='<option value="">選擇醫院</option>'; globalHospitals.forEach(h=>s.innerHTML+=`<option value="${h.Hospital_ID}">${h.Name}</option>`); if(id){const k=globalKOLs.find(x=>x.KOL_ID===id);if(k){setVal('k-id',k.KOL_ID);setVal('k-hospital-id',k.Hospital_ID);setVal('k-name',k.Name);setVal('k-title',k.Title);setVal('k-email',k.Email);setVal('k-stage',k.Visit_Stage);setVal('k-prob',k.Probability);setVal('k-note',k.Visit_Note);}} kolModal.show(); }
