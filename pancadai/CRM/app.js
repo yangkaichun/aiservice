@@ -1,4 +1,4 @@
-// app.js V4.2 (Finance Fix)
+// app.js V4.3 (Finance Edit Fix)
 
 let currentUser = null;
 let currentRole = null;
@@ -63,6 +63,7 @@ async function loadSystemConfig() {
     try {
         const res = await fetch(CONFIG.SCRIPT_URL, { method: "POST", body: JSON.stringify({ action: "getConfig", userEmail: currentUser }) });
         const json = await res.json();
+        const rawConfig = json.data;
         globalConfig.regions = json.data.filter(r => r.Category === 'Region').map(r => r.Option_Value);
         globalConfig.levels = json.data.filter(r => r.Category === 'Hospital_Level').map(r => r.Option_Value);
         populateSelect('radar-filter-region', globalConfig.regions, '全部區域');
@@ -178,16 +179,19 @@ function renderFinanceTable() {
     const selMonth = getVal('finance-month-picker');
     const tbody = document.getElementById('finance-table-body'); tbody.innerHTML = '';
     let kpiG=0, kpiN=0, kpiA=0, kpiE=0;
-    // 排序：確保最新編輯的在前面 (雖然 Sheet 是 append，但這裡可以 sort)
+    
+    // 渲染資料 (包含編輯按鈕)
     globalStats.forEach(s => {
         if (s.Year_Month !== selMonth) return;
         const hName = (globalHospitals.find(h=>h.Hospital_ID===s.Hospital_ID)||{}).Name || s.Hospital_ID;
         const g = Number(s.Gross_Revenue)||0, n = Number(s.Net_Revenue)||0;
         kpiG+=g; kpiN+=n; kpiE+=(Number(s.EBM_Fee)||0); if (s.Invoice_Status!=='Paid') kpiA+=g;
         let badge = s.Invoice_Status==='Billed'?'bg-primary':(s.Invoice_Status==='Paid'?'bg-success':'bg-secondary');
-        // [編輯按鈕] 綁定 openSettlementModal，傳入 Record_ID
+        
+        // [關鍵] 編輯按鈕傳入 Record_ID
         tbody.innerHTML += `<tr><td><strong>${hName}</strong></td><td>${s.Usage_Count}</td><td>$${s.Unit_Price_Snapshot}</td><td>$${g.toLocaleString()}</td><td class="fw-bold text-success">$${n.toLocaleString()}</td><td><span class="badge ${badge} status-badge" onclick="toggleInvoiceStatus('${s.Record_ID}', '${s.Invoice_Status}')">${s.Invoice_Status}</span></td><td><button class="btn btn-sm btn-light" onclick="openSettlementModal('${s.Record_ID}')"><i class="fas fa-edit"></i></button></td></tr>`;
     });
+    
     document.getElementById('fin-kpi-gross').innerText="$"+kpiG.toLocaleString(); document.getElementById('fin-kpi-net').innerText="$"+kpiN.toLocaleString();
     document.getElementById('fin-kpi-ar').innerText="$"+kpiA.toLocaleString(); document.getElementById('fin-kpi-ebm').innerText="$"+kpiE.toLocaleString();
 }
@@ -211,9 +215,8 @@ function openSettlementModal(id) {
     sel.innerHTML = '<option value="">請選擇醫院...</option>';
     globalHospitals.filter(h => h.Status==='已簽約').forEach(h => sel.innerHTML+=`<option value="${h.Hospital_ID}">${h.Name}</option>`);
     
-    // 編輯模式：回填資料
+    // 編輯模式：回填資料 (使用字串比對，防止型別錯誤)
     if(id) {
-        // 從 globalStats 尋找該筆資料 (字串比對防止型別錯誤)
         const r = globalStats.find(x => String(x.Record_ID) === String(id));
         if(r) {
             setVal('s-record-id', r.Record_ID);
