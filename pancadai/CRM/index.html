@@ -6,6 +6,7 @@
     <title>PancadAI CRM - Manager</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <link rel="shortcut icon" href="https://www.pancad.ai/static/images/favicon.ico?v=20240229">
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
         body { background-color: #f8f9fa; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
@@ -14,32 +15,38 @@
         .nav-link:hover, .nav-link.active { color: white; background-color: #34495e; border-radius: 5px; }
         .card-stat { border: none; border-radius: 10px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
         .kpi-value { font-size: 2rem; font-weight: bold; color: #2c3e50; }
+        .status-badge { font-size: 0.8em; padding: 5px 10px; border-radius: 20px; }
         #loading-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(255,255,255,0.8); z-index: 9999; display: flex; justify-content: center; align-items: center; }
         .login-container { height: 100vh; display: flex; align-items: center; justify-content: center; background: #ecf0f1; }
+        /* Radar Table Style */
+        .radar-table td { vertical-align: middle; }
     </style>
 </head>
 <body>
 
     <div id="loading-overlay" class="d-none">
-        <div class="spinner-border text-primary" role="status"></div>
+        <div class="spinner-border text-primary" role="status">
+            <span class="visually-hidden">Loading...</span>
+        </div>
     </div>
 
     <section id="login-view" class="login-container">
         <div class="card p-5 shadow text-center" style="width: 400px;">
             <h2 class="mb-4 text-primary">PancadAI CRM</h2>
+            <p class="text-muted">仲智數位健康 - 內部管理系統 CRM 2.0</p>
             <div id="g_id_onload"
                  data-client_id="469731622214-uiqtuprq4293g3j09nfq5c43uvldadfj.apps.googleusercontent.com" 
                  data-callback="handleCredentialResponse"
                  data-auto_prompt="false">
             </div>
-            <div class="g_id_signin" data-type="standard" data-size="large" data-theme="filled_blue" data-shape="rectangular"></div>
+            <div class="g_id_signin" data-type="standard" data-size="large" data-theme="filled_blue" data-text="sign_in_with" data-shape="rectangular" data-logo_alignment="left"></div>
         </div>
     </section>
 
     <div id="app-view" class="container-fluid d-none">
         <div class="row">
             <div class="col-md-2 sidebar p-3">
-                <h4 class="text-center mb-4">PancadAI</h4>
+                <h4 class="text-center mb-4">PancadAI <small style="font-size:0.5em">Manager</small></h4>
                 <div class="d-flex align-items-center mb-4 px-2">
                     <img id="user-avatar" src="" class="rounded-circle me-2" style="width:30px">
                     <span id="user-name" style="font-size:0.9rem">User</span>
@@ -51,6 +58,7 @@
                     <li class="nav-item"><a class="nav-link" onclick="openHospitalInput()"><i class="fas fa-plus-circle me-2"></i> 新增醫院資料</a></li>
                     
                     <li class="nav-item"><a class="nav-link" onclick="showPage('kols')"><i class="fas fa-user-md me-2"></i> KOL 拜訪</a></li>
+                    <li class="nav-item"><a class="nav-link" onclick="showPage('finance')"><i class="fas fa-file-invoice-dollar me-2"></i> 財務報表 (Beta)</a></li>
                     <hr>
                     <li class="nav-item"><a class="nav-link text-danger" onclick="logout()"><i class="fas fa-sign-out-alt me-2"></i> 登出</a></li>
                 </ul>
@@ -59,32 +67,94 @@
             <div class="col-md-10 p-4" style="height: 100vh; overflow-y: auto;">
                 
                 <div id="page-dashboard" class="page-content">
-                    <h3>Director Dashboard</h3>
+                    <h3 class="mb-4">Director Dashboard <small class="text-muted fs-6">戰略總覽</small></h3>
                     <div class="row mb-4">
-                        <div class="col-md-4"><div class="card card-stat p-3"><span class="text-muted">本年度累計簽約金額</span><div class="kpi-value text-success" id="kpi-contract-value">$0</div></div></div>
-                        <div class="col-md-4"><div class="card card-stat p-3"><span class="text-muted">本月預估實際營收</span><div class="kpi-value text-primary" id="kpi-net-revenue">$0</div></div></div>
-                        <div class="col-md-4"><div class="card card-stat p-3"><span class="text-muted">已簽約醫院數</span><div class="kpi-value" id="kpi-hospital-count">0</div></div></div>
+                        <div class="col-md-3">
+                            <div class="card card-stat p-3">
+                                <span class="text-muted">本年度累計簽約金額</span>
+                                <div class="kpi-value text-success" id="kpi-contract-value">$0</div>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="card card-stat p-3">
+                                <span class="text-muted">本月預估實際營收 (Net)</span>
+                                <div class="kpi-value text-primary" id="kpi-net-revenue">$0</div>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="card card-stat p-3">
+                                <span class="text-muted">已簽約醫院數</span>
+                                <div class="kpi-value" id="kpi-hospital-count">0</div>
+                            </div>
+                        </div>
                     </div>
+                    
                     <div class="row">
-                        <div class="col-md-6"><canvas id="chart-region"></canvas></div>
-                        <div class="col-md-6"><canvas id="chart-trend"></canvas></div>
+                        <div class="col-md-6 mb-4">
+                            <div class="card shadow-sm p-3">
+                                <h5>市場滲透 - 區域佔比</h5>
+                                <canvas id="chart-region"></canvas>
+                            </div>
+                        </div>
+                        <div class="col-md-6 mb-4">
+                            <div class="card shadow-sm p-3">
+                                <h5>月度營收趨勢</h5>
+                                <canvas id="chart-trend"></canvas>
+                            </div>
+                        </div>
                     </div>
                 </div>
 
                 <div id="page-radar" class="page-content d-none">
-                    <h3>Prospecting Radar</h3>
-                    <div class="card p-3 mb-3">
-                        <div class="row g-2">
-                            <div class="col-md-3"><select class="form-select" id="radar-filter-region" onchange="renderRadarTable()"><option value="All">全部區域</option><option value="台北市">台北市</option><option value="新北市">新北市</option></select></div>
-                            <div class="col-md-3"><select class="form-select" id="radar-filter-level" onchange="renderRadarTable()"><option value="All">全部規模</option><option value="醫學中心">醫學中心</option><option value="健檢中心">健檢中心</option></select></div>
-                            <div class="col-md-3"><select class="form-select" id="radar-filter-status" onchange="renderRadarTable()"><option value="All">全部狀態</option><option value="已簽約">已簽約</option><option value="開發中">開發中</option></select></div>
-                            <div class="col-md-3"><button class="btn btn-primary w-100" onclick="loadRadarData()">重新整理</button></div>
+                    <h3 class="mb-3">Prospecting Radar <small class="text-muted">戰術篩選</small></h3>
+                    
+                    <div class="card p-3 mb-3 shadow-sm">
+                        <div class="row g-3">
+                            <div class="col-md-3">
+                                <label class="form-label">行政區</label>
+                                <select class="form-select" id="radar-filter-region" onchange="renderRadarTable()">
+                                    <option value="All">載入中...</option>
+                                </select>
+                            </div>
+                            <div class="col-md-3">
+                                <label class="form-label">醫院規模</label>
+                                <select class="form-select" id="radar-filter-level" onchange="renderRadarTable()">
+                                    <option value="All">載入中...</option>
+                                </select>
+                            </div>
+                            <div class="col-md-3">
+                                <label class="form-label">接觸狀態</label>
+                                <select class="form-select" id="radar-filter-status" onchange="renderRadarTable()">
+                                    <option value="All">全部狀態</option>
+                                    <option value="未接觸">未接觸</option>
+                                    <option value="開發中">開發中</option>
+                                    <option value="已簽約">已簽約</option>
+                                </select>
+                            </div>
+                            <div class="col-md-3 d-flex align-items-end">
+                                <button class="btn btn-primary w-100" onclick="loadRadarData()"><i class="fas fa-search"></i> 掃描目標</button>
+                            </div>
                         </div>
                     </div>
-                    <table class="table table-hover bg-white shadow-sm">
-                        <thead class="table-light"><tr><th>醫院名稱</th><th>區域</th><th>規模</th><th>狀態</th><th>編輯</th></tr></thead>
-                        <tbody id="radar-table-body"></tbody>
-                    </table>
+
+                    <div class="card shadow-sm">
+                        <div class="card-body p-0">
+                            <table class="table table-hover table-striped mb-0 radar-table">
+                                <thead class="table-light">
+                                    <tr>
+                                        <th>醫院名稱</th>
+                                        <th>區域</th>
+                                        <th>規模</th>
+                                        <th>狀態</th>
+                                        <th>排他性</th>
+                                        <th>操作</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="radar-table-body">
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
                 </div>
 
                 <div id="page-hospitals" class="page-content d-none">
@@ -108,19 +178,63 @@
                         <form id="form-hospital">
                             <input type="hidden" id="h-id">
                             <div class="row g-3">
-                                <div class="col-md-6"><label class="form-label">醫院名稱</label><input type="text" class="form-control" id="h-name" required></div>
-                                <div class="col-md-3"><label class="form-label">區域</label><select class="form-select" id="h-region"><option>台北市</option><option>新北市</option><option>台中市</option></select></div>
-                                <div class="col-md-3"><label class="form-label">規模</label><select class="form-select" id="h-level"><option>醫學中心</option><option>區域醫院</option><option>健檢中心</option></select></div>
-                                <div class="col-12"><label class="form-label">地址</label><input type="text" class="form-control" id="h-address"></div>
-                                <div class="col-md-4"><label class="form-label">狀態</label><select class="form-select" id="h-status"><option>未接觸</option><option>開發中</option><option>已簽約</option></select></div>
-                                <div class="col-md-4"><label class="form-label">排他條款</label><select class="form-select" id="h-exclusivity"><option value="No">No</option><option value="Yes">Yes</option></select></div>
-                                <div class="col-md-4"><label class="form-label">EBM分潤(%)</label><input type="number" class="form-control" id="h-ebm" value="0"></div>
+                                <div class="col-md-6">
+                                    <label class="form-label">醫院名稱</label>
+                                    <input type="text" class="form-control" id="h-name" required>
+                                </div>
+                                <div class="col-md-3">
+                                    <label class="form-label">區域</label>
+                                    <select class="form-select" id="h-region">
+                                        <option>載入中...</option>
+                                    </select>
+                                </div>
+                                <div class="col-md-3">
+                                    <label class="form-label">規模</label>
+                                    <select class="form-select" id="h-level">
+                                        <option>載入中...</option>
+                                    </select>
+                                </div>
+                                <div class="col-12">
+                                    <label class="form-label">地址</label>
+                                    <input type="text" class="form-control" id="h-address">
+                                </div>
+                                <div class="col-md-4">
+                                    <label class="form-label">狀態</label>
+                                    <select class="form-select" id="h-status">
+                                        <option>未接觸</option>
+                                        <option>開發中</option>
+                                        <option>已簽約</option>
+                                    </select>
+                                </div>
+                                <div class="col-md-4">
+                                    <label class="form-label">排他條款</label>
+                                    <select class="form-select" id="h-exclusivity">
+                                        <option value="No">No</option>
+                                        <option value="Yes">Yes</option>
+                                    </select>
+                                </div>
+                                <div class="col-md-4">
+                                    <label class="form-label">EBM分潤(%)</label>
+                                    <input type="number" class="form-control" id="h-ebm" value="0">
+                                </div>
                                 <hr>
                                 <h5 class="text-muted">合約資訊</h5>
-                                <div class="col-md-4"><label class="form-label">合約金額</label><input type="number" class="form-control" id="h-amount"></div>
-                                <div class="col-md-4"><label class="form-label">開始日期</label><input type="date" class="form-control" id="h-start"></div>
-                                <div class="col-md-4"><label class="form-label">結束日期</label><input type="date" class="form-control" id="h-end"></div>
-                                <div class="col-12"><label class="form-label">合約連結 (URL)</label><input type="text" class="form-control" id="h-link" placeholder="Google Drive Link"></div>
+                                <div class="col-md-4">
+                                    <label class="form-label">合約金額</label>
+                                    <input type="number" class="form-control" id="h-amount">
+                                </div>
+                                <div class="col-md-4">
+                                    <label class="form-label">開始日期</label>
+                                    <input type="date" class="form-control" id="h-start">
+                                </div>
+                                <div class="col-md-4">
+                                    <label class="form-label">結束日期</label>
+                                    <input type="date" class="form-control" id="h-end">
+                                </div>
+                                <div class="col-12">
+                                    <label class="form-label">合約連結 (URL)</label>
+                                    <input type="text" class="form-control" id="h-link" placeholder="Google Drive Link">
+                                </div>
                             </div>
                             <div class="mt-4 d-flex gap-2">
                                 <button type="button" class="btn btn-primary px-4" onclick="submitHospital()">儲存資料</button>
@@ -143,6 +257,11 @@
                             <tbody id="kol-list-body"></tbody>
                         </table>
                     </div>
+                </div>
+
+                <div id="page-finance" class="page-content d-none">
+                    <h3>財務報表</h3>
+                    <div class="alert alert-info">功能開發中 (Phase 2)</div>
                 </div>
 
             </div>
