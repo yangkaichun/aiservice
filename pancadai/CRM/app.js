@@ -1,4 +1,4 @@
-// app.js V4.6 (Fix Month Input)
+// app.js V4.6 (Fix Month Input, Data Display, Auto Login, Delete)
 
 let currentUser = null;
 let currentRole = null;
@@ -17,7 +17,6 @@ window.onload = function() {
     if(document.getElementById('modalUser')) userModal = new bootstrap.Modal(document.getElementById('modalUser'));
     if(document.getElementById('modalSettlement')) settlementModal = new bootstrap.Modal(document.getElementById('modalSettlement'));
     
-    // 初始化日期
     const today = new Date();
     const y = today.getFullYear();
     const m = String(today.getMonth() + 1).padStart(2, '0');
@@ -190,7 +189,7 @@ function updateDashboardCharts() {
 }
 
 function renderFinanceTable() {
-    const selMonth = getVal('finance-month-picker'); 
+    const selMonth = getVal('finance-month-picker'); // YYYY-MM
     const tbody = document.getElementById('finance-table-body'); 
     if(!tbody) return;
     tbody.innerHTML = '';
@@ -198,16 +197,19 @@ function renderFinanceTable() {
     let kpiG=0, kpiN=0, kpiA=0, kpiE=0;
     let hasData = false;
 
+    // 將資料依日期排序
     const sortedStats = [...globalStats].sort((a, b) => new Date(b.Created_At) - new Date(a.Created_At));
 
     sortedStats.forEach(s => {
-        // 標準化日期比對
+        // [關鍵修復] 處理日期比對 (YYYY-MM)
         let dataMonth = s.Year_Month;
         if (typeof dataMonth === 'object') {
+             // 如果是日期物件
              let y = dataMonth.getFullYear();
              let m = String(dataMonth.getMonth() + 1).padStart(2, '0');
              dataMonth = `${y}-${m}`;
         } else {
+             // 如果是字串
              dataMonth = String(dataMonth).substring(0, 7);
         }
 
@@ -223,9 +225,18 @@ function renderFinanceTable() {
         
         let badge = s.Invoice_Status==='Billed'?'bg-primary':(s.Invoice_Status==='Paid'?'bg-success':'bg-secondary');
         
+        // 顯示時，若 s.Year_Month 是 Date 物件，轉為本地日期字串
+        let displayDate = s.Year_Month;
+        if(typeof s.Year_Month === 'object') {
+            displayDate = s.Year_Month.toLocaleDateString('zh-TW');
+        } else {
+            // 如果是字串 (YYYY-MM-DD)，直接顯示
+            displayDate = String(s.Year_Month).substring(0, 10);
+        }
+
         tbody.innerHTML += `
             <tr>
-                <td><strong>${hName}</strong></td>
+                <td><strong>${hName}</strong><br><small class="text-muted">${displayDate}</small></td>
                 <td>${s.Usage_Count}</td>
                 <td>$${s.Unit_Price_Snapshot}</td>
                 <td>$${g.toLocaleString()}</td>
@@ -259,14 +270,15 @@ function openSettlementModal(id) {
     document.getElementById('form-settlement').reset();
     setVal('s-record-id', '');
     
-    // [關鍵修復] 確保月份有預設值 (從 filter 抓取，若是空的則抓今天)
-    let defaultMonth = getVal('finance-month-picker');
-    if(!defaultMonth) {
-        const d = new Date();
-        defaultMonth = d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2, '0');
-    }
-    setVal('s-month', defaultMonth);
+    // [更新] 預設為當天 (YYYY-MM-DD)
+    const now = new Date();
+    // 考慮時區問題，使用本地 ISO 字串
+    const year = now.getFullYear();
+    const month = String(now.getMonth() + 1).padStart(2, '0');
+    const day = String(now.getDate()).padStart(2, '0');
+    setVal('s-date', `${year}-${month}-${day}`);
     
+    // 刪除按鈕控制
     const delBtn = document.getElementById('btn-delete-settlement');
     if(delBtn) delBtn.style.display = id ? 'block' : 'none';
 
@@ -275,11 +287,24 @@ function openSettlementModal(id) {
     globalHospitals.filter(h => h.Status==='已簽約').forEach(h => sel.innerHTML+=`<option value="${h.Hospital_ID}">${h.Name}</option>`);
     
     if(id) {
+        // 使用 String 確保比對正確
         const r = globalStats.find(x => String(x.Record_ID) === String(id));
         if(r) {
             setVal('s-record-id', r.Record_ID);
-            let m = String(r.Year_Month).substring(0,7);
-            setVal('s-month', m);
+            
+            // 處理日期回填：如果是日期物件，轉為 YYYY-MM-DD
+            let dateVal = r.Year_Month;
+            if (typeof dateVal === 'object') {
+                let y = dateVal.getFullYear();
+                let m = String(dateVal.getMonth() + 1).padStart(2, '0');
+                let d = String(dateVal.getDate()).padStart(2, '0');
+                dateVal = `${y}-${m}-${d}`;
+            } else {
+                // 如果是字串，直接取前10碼
+                dateVal = String(dateVal).substring(0, 10);
+            }
+            
+            setVal('s-date', dateVal);
             setVal('s-hospital', r.Hospital_ID);
             setVal('s-usage', r.Usage_Count);
             setVal('s-note', r.Note);
@@ -312,7 +337,8 @@ async function deleteSettlement() {
 }
 
 function calcPreview(){ const h=globalHospitals.find(x=>String(x.Hospital_ID)===String(getVal('s-hospital'))); if(h){ const u=Number(getVal('s-usage'))||0, p=Number(h.Unit_Price)||0, s=Number(h.EBM_Share_Ratio)||0; document.getElementById('s-hosp-info').innerText=`單價:${p} | 分潤:${s}%`; document.getElementById('s-prev-gross').innerText="$"+(u*p).toLocaleString(); document.getElementById('s-prev-net').innerText="$"+Math.round(u*p*(1-s/100)).toLocaleString(); } }
-async function submitSettlement() { const p={recordId:getVal('s-record-id'), yearMonth:getVal('s-month'), hospitalId:getVal('s-hospital'), usageCount:getVal('s-usage'), note:getVal('s-note')}; if(!p.hospitalId)return; showLoading(true); await fetch(CONFIG.SCRIPT_URL,{method:'POST',body:JSON.stringify({action:'saveMonthlyStat',userEmail:currentUser,payload:p})}); settlementModal.hide(); loadFinanceData(); showLoading(false); }
+// [更新] payload 改用 yearMonth 為日期
+async function submitSettlement() { const p={recordId:getVal('s-record-id'), yearMonth:getVal('s-date'), hospitalId:getVal('s-hospital'), usageCount:getVal('s-usage'), note:getVal('s-note')}; if(!p.hospitalId)return; showLoading(true); await fetch(CONFIG.SCRIPT_URL,{method:'POST',body:JSON.stringify({action:'saveMonthlyStat',userEmail:currentUser,payload:p})}); settlementModal.hide(); loadFinanceData(); showLoading(false); }
 async function toggleInvoiceStatus(id,s){ const m={'Unbilled':'Billed','Billed':'Paid','Paid':'Unbilled'}; if(confirm('變更狀態?')){showLoading(true); await fetch(CONFIG.SCRIPT_URL,{method:'POST',body:JSON.stringify({action:'updateInvoiceStatus',userEmail:currentUser,payload:{recordId:id,status:m[s]}})}); loadFinanceData(); showLoading(false);} }
 function openUserModal(e='',n='',r='User',s='Active'){ setVal('u-email',e); setVal('u-name',n); setVal('u-role',r); setVal('u-status',s); userModal.show(); }
 async function submitUser(){ const p={email:getVal('u-email'),name:getVal('u-name'),role:getVal('u-role'),status:getVal('u-status')}; if(!p.email)return; showLoading(true); await fetch(CONFIG.SCRIPT_URL,{method:'POST',body:JSON.stringify({action:'saveUser',userEmail:currentUser,payload:p})}); userModal.hide(); loadAdminData(); showLoading(false); }
