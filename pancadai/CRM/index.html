@@ -9,44 +9,127 @@
     <link rel="shortcut icon" href="https://www.pancad.ai/static/images/favicon.ico?v=20240229">
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
-        body { background-color: #f8f9fa; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
-        .sidebar { min-height: 100vh; background-color: #2c3e50; color: white; }
-        .nav-link { color: rgba(255,255,255,0.8); margin-bottom: 5px; cursor: pointer;}
-        .nav-link:hover, .nav-link.active { color: white; background-color: #34495e; border-radius: 5px; }
-        .card-stat { border: none; border-radius: 10px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
-        .kpi-value { font-size: 2rem; font-weight: bold; color: #2c3e50; }
-        .status-badge { font-size: 0.8em; padding: 5px 10px; border-radius: 20px; cursor: pointer; }
-        #loading-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(255,255,255,0.8); z-index: 9999; display: flex; justify-content: center; align-items: center; }
-        .login-container { height: 100vh; display: flex; align-items: center; justify-content: center; background: #ecf0f1; }
+        /* 全域設定 */
+        body { 
+            background-color: #f8f9fa; 
+            font-family: 'Segoe UI', 'Microsoft JhengHei', sans-serif; 
+        }
+
+        /* 登入頁面專屬樣式 (UI/UX 優化) */
+        .login-container { 
+            height: 100vh; 
+            display: flex; 
+            align-items: center; 
+            justify-content: center; 
+            /* 現代感漸層背景 */
+            background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
+            position: relative;
+            overflow: hidden;
+        }
+        
+        /* 背景裝飾圓圈 */
+        .login-container::before {
+            content: '';
+            position: absolute;
+            top: -10%;
+            left: -10%;
+            width: 500px;
+            height: 500px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 50%;
+            z-index: 0;
+        }
+        .login-container::after {
+            content: '';
+            position: absolute;
+            bottom: -10%;
+            right: -10%;
+            width: 400px;
+            height: 400px;
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 50%;
+            z-index: 0;
+        }
+
+        .login-card {
+            width: 400px;
+            padding: 3rem;
+            border-radius: 20px;
+            /* 毛玻璃特效 */
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            box-shadow: 0 15px 35px rgba(0,0,0,0.2);
+            text-align: center;
+            z-index: 1;
+            /* 進場動畫 */
+            animation: fadeInUp 0.8s ease-out;
+        }
+
+        @keyframes fadeInUp {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .login-logo {
+            font-size: 3rem;
+            color: #1e3c72;
+            margin-bottom: 1rem;
+        }
+
+        /* 側邊欄與其他原有樣式 */
+        .sidebar { min-height: 100vh; background-color: #2c3e50; color: white; box-shadow: 2px 0 10px rgba(0,0,0,0.1); }
+        .nav-link { color: rgba(255,255,255,0.75); margin-bottom: 5px; cursor: pointer; transition: all 0.3s; }
+        .nav-link:hover, .nav-link.active { color: white; background-color: rgba(255,255,255,0.1); border-radius: 10px; transform: translateX(5px); }
+        .card-stat { border: none; border-radius: 15px; box-shadow: 0 4px 15px rgba(0,0,0,0.05); transition: transform 0.3s; }
+        .card-stat:hover { transform: translateY(-5px); }
+        .kpi-value { font-size: 2.2rem; font-weight: 700; color: #2c3e50; }
+        .status-badge { font-size: 0.8em; padding: 6px 12px; border-radius: 20px; cursor: pointer; font-weight: 500; }
+        
+        #loading-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(255,255,255,0.8); z-index: 9999; display: flex; justify-content: center; align-items: center; backdrop-filter: blur(5px); }
         .table-finance td { vertical-align: middle; }
     </style>
 </head>
 <body>
 
     <div id="loading-overlay" class="d-none">
-        <div class="spinner-border text-primary" role="status"></div>
+        <div class="spinner-border text-primary" style="width: 3rem; height: 3rem;" role="status"></div>
     </div>
 
     <section id="login-view" class="login-container">
-        <div class="card p-5 shadow text-center" style="width: 400px;">
-            <h2 class="mb-4 text-primary">PancadAI CRM</h2>
-            <p class="text-muted">仲智數位健康 - 營運管理系統 V3.3</p>
-            <div id="g_id_onload"
-                 data-client_id="469731622214-uiqtuprq4293g3j09nfq5c43uvldadfj.apps.googleusercontent.com" 
-                 data-callback="handleCredentialResponse"
-                 data-auto_prompt="false">
+        <div class="login-card">
+            <div class="login-logo"><i class="fas fa-chart-network"></i></div>
+            <h2 class="mb-2 fw-bold text-dark">PancadAI CRM</h2>
+            <p class="text-muted mb-4">仲智數位健康 - 營運管理系統</p>
+            
+            <div class="d-flex justify-content-center">
+                <div id="g_id_onload"
+                     data-client_id="469731622214-uiqtuprq4293g3j09nfq5c43uvldadfj.apps.googleusercontent.com" 
+                     data-callback="handleCredentialResponse"
+                     data-auto_prompt="false">
+                </div>
+                <div class="g_id_signin" 
+                     data-type="standard" 
+                     data-size="large" 
+                     data-theme="filled_blue" 
+                     data-text="sign_in_with" 
+                     data-shape="rectangular" 
+                     data-logo_alignment="left"
+                     data-width="250"></div>
             </div>
-            <div class="g_id_signin" data-type="standard" data-size="large" data-theme="filled_blue" data-text="sign_in_with" data-shape="rectangular" data-logo_alignment="left"></div>
+            <p class="mt-4 text-muted small">&copy; 2025 PancadAI. All Rights Reserved.</p>
         </div>
     </section>
 
     <div id="app-view" class="container-fluid d-none">
         <div class="row">
             <div class="col-md-2 sidebar p-3">
-                <h4 class="text-center mb-4">PancadAI <small style="font-size:0.5em">Manager</small></h4>
-                <div class="d-flex align-items-center mb-4 px-2">
-                    <img id="user-avatar" src="" class="rounded-circle me-2" style="width:30px">
-                    <span id="user-name" style="font-size:0.9rem">User</span>
+                <div class="text-center mb-4 mt-2">
+                    <h4 class="fw-bold">PancadAI</h4>
+                    <small class="text-white-50">Manager Console</small>
+                </div>
+                <div class="d-flex align-items-center mb-4 px-3 py-2 bg-dark bg-opacity-25 rounded-3">
+                    <img id="user-avatar" src="" class="rounded-circle me-2 border border-2 border-white" style="width:35px">
+                    <span id="user-name" style="font-size:0.9rem; font-weight:500;">User</span>
                 </div>
                 <ul class="nav flex-column">
                     <li class="nav-item"><a class="nav-link active" onclick="showPage('dashboard')"><i class="fas fa-chart-line me-2"></i> 戰略總覽</a></li>
@@ -57,10 +140,10 @@
                     <li class="nav-item"><a class="nav-link" onclick="showPage('finance')"><i class="fas fa-file-invoice-dollar me-2"></i> 財務結算中心</a></li>
                     
                     <li class="nav-item d-none" id="nav-admin">
-                        <hr class="text-white">
+                        <hr class="text-white-50">
                         <a class="nav-link text-warning" onclick="showPage('admin')"><i class="fas fa-user-shield me-2"></i> 管理者後台</a>
                     </li>
-                    <hr>
+                    <hr class="text-white-50">
                     <li class="nav-item"><a class="nav-link text-danger" onclick="logout()"><i class="fas fa-sign-out-alt me-2"></i> 登出</a></li>
                 </ul>
             </div>
@@ -68,42 +151,42 @@
             <div class="col-md-10 p-4" style="height: 100vh; overflow-y: auto;">
                 
                 <div id="page-dashboard" class="page-content">
-                    <h3 class="mb-4">Director Dashboard</h3>
+                    <h3 class="mb-4 fw-bold text-dark">Director Dashboard</h3>
                     <div class="row mb-4">
-                        <div class="col-md-4"><div class="card card-stat p-3"><span class="text-muted">本年度累計簽約金額</span><div class="kpi-value text-success" id="kpi-contract-value">$0</div></div></div>
-                        <div class="col-md-4"><div class="card card-stat p-3"><span class="text-muted">已簽約醫院數</span><div class="kpi-value" id="kpi-hospital-count">0</div></div></div>
-                        <div class="col-md-4"><div class="card card-stat p-3"><span class="text-muted">區域覆蓋率</span><div class="kpi-value text-primary" id="kpi-region-count">0</div></div></div>
+                        <div class="col-md-4"><div class="card card-stat p-4"><span class="text-muted small text-uppercase fw-bold">本年度累計簽約金額</span><div class="kpi-value text-success mt-2" id="kpi-contract-value">$0</div></div></div>
+                        <div class="col-md-4"><div class="card card-stat p-4"><span class="text-muted small text-uppercase fw-bold">本月預估實際營收 (Net)</span><div class="kpi-value text-primary mt-2" id="kpi-net-revenue">$0</div></div></div>
+                        <div class="col-md-4"><div class="card card-stat p-4"><span class="text-muted small text-uppercase fw-bold">已簽約醫院數</span><div class="kpi-value mt-2" id="kpi-hospital-count">0</div></div></div>
                     </div>
                     <div class="row">
-                        <div class="col-md-6"><div class="card shadow-sm p-3"><h5>市場滲透 - 區域佔比</h5><canvas id="chart-region"></canvas></div></div>
-                        <div class="col-md-6"><div class="card shadow-sm p-3"><h5>營收趨勢</h5><canvas id="chart-trend"></canvas></div></div>
+                        <div class="col-md-6"><div class="card shadow-sm p-4 border-0 rounded-4"><h5>市場滲透 - 區域佔比</h5><canvas id="chart-region" height="200"></canvas></div></div>
+                        <div class="col-md-6"><div class="card shadow-sm p-4 border-0 rounded-4"><h5>營收趨勢</h5><canvas id="chart-trend" height="200"></canvas></div></div>
                     </div>
                 </div>
 
                 <div id="page-radar" class="page-content d-none">
                     <h3>Prospecting Radar</h3>
-                    <div class="card p-3 mb-3 shadow-sm">
+                    <div class="card p-3 mb-3 shadow-sm border-0">
                         <div class="row g-3">
-                            <div class="col-md-3"><label class="form-label">行政區</label><select class="form-select" id="radar-filter-region" onchange="renderRadarTable()"></select></div>
-                            <div class="col-md-3"><label class="form-label">規模</label><select class="form-select" id="radar-filter-level" onchange="renderRadarTable()"></select></div>
-                            <div class="col-md-3"><label class="form-label">狀態</label><select class="form-select" id="radar-filter-status" onchange="renderRadarTable()"><option value="All">全部</option><option value="已簽約">已簽約</option><option value="開發中">開發中</option></select></div>
+                            <div class="col-md-3"><label class="form-label text-muted small">行政區</label><select class="form-select" id="radar-filter-region" onchange="renderRadarTable()"></select></div>
+                            <div class="col-md-3"><label class="form-label text-muted small">規模</label><select class="form-select" id="radar-filter-level" onchange="renderRadarTable()"></select></div>
+                            <div class="col-md-3"><label class="form-label text-muted small">狀態</label><select class="form-select" id="radar-filter-status" onchange="renderRadarTable()"><option value="All">全部</option><option value="已簽約">已簽約</option><option value="開發中">開發中</option></select></div>
                             <div class="col-md-3 d-flex align-items-end"><button class="btn btn-primary w-100" onclick="loadRadarData()">重新整理</button></div>
                         </div>
                     </div>
-                    <table class="table table-hover table-striped mb-0 radar-table bg-white"><tbody id="radar-table-body"></tbody></table>
+                    <div class="card border-0 shadow-sm"><table class="table table-hover table-striped mb-0 radar-table bg-white align-middle"><tbody id="radar-table-body"></tbody></table></div>
                 </div>
 
                 <div id="page-hospitals" class="page-content d-none">
                     <div class="d-flex justify-content-between align-items-center mb-3">
                         <h3>醫院與合約管理</h3>
-                        <button class="btn btn-success" onclick="openHospitalInput()"><i class="fas fa-plus"></i> 新增醫院</button>
+                        <button class="btn btn-success shadow-sm" onclick="openHospitalInput()"><i class="fas fa-plus"></i> 新增醫院</button>
                     </div>
-                    <div class="card shadow-sm"><table class="table table-striped mb-0"><thead class="table-dark"><tr><th>名稱</th><th>等級</th><th>單價</th><th>排他性</th><th>合約迄日</th><th>操作</th></tr></thead><tbody id="hospital-list-body"></tbody></table></div>
+                    <div class="card shadow-sm border-0"><table class="table table-hover mb-0 align-middle"><thead class="table-dark"><tr><th>名稱</th><th>等級</th><th>單價</th><th>排他性</th><th>合約迄日</th><th>操作</th></tr></thead><tbody id="hospital-list-body"></tbody></table></div>
                 </div>
 
                 <div id="page-hospital-input" class="page-content d-none">
                     <h3 id="input-page-title" class="mb-3">新增醫院資料</h3>
-                    <div class="card shadow p-4">
+                    <div class="card shadow p-4 border-0 rounded-4">
                         <form id="form-hospital">
                             <input type="hidden" id="h-id">
                             <div class="row g-3">
@@ -126,27 +209,27 @@
                 </div>
 
                 <div id="page-kols" class="page-content d-none">
-                    <div class="d-flex justify-content-between align-items-center mb-3"><h3>KOL 拜訪管理</h3><button class="btn btn-success" onclick="openKOLModal()"><i class="fas fa-plus"></i> 新增 KOL</button></div>
-                    <div class="card shadow-sm"><table class="table table-striped mb-0"><thead class="table-dark"><tr><th>姓名</th><th>醫院</th><th>職稱</th><th>階段</th><th>機率</th><th>操作</th></tr></thead><tbody id="kol-list-body"></tbody></table></div>
+                    <div class="d-flex justify-content-between align-items-center mb-3"><h3>KOL 拜訪管理</h3><button class="btn btn-success shadow-sm" onclick="openKOLModal()"><i class="fas fa-plus"></i> 新增 KOL</button></div>
+                    <div class="card shadow-sm border-0"><table class="table table-hover mb-0 align-middle"><thead class="table-dark"><tr><th>姓名</th><th>醫院</th><th>職稱</th><th>階段</th><th>機率</th><th>操作</th></tr></thead><tbody id="kol-list-body"></tbody></table></div>
                 </div>
 
                 <div id="page-finance" class="page-content d-none">
                     <div class="d-flex justify-content-between align-items-center mb-4">
                         <h3>財務結算中心</h3>
                         <div class="d-flex gap-2">
-                            <input type="month" id="finance-month-picker" class="form-control" style="width: 180px;" onchange="renderFinanceTable()">
-                            <button class="btn btn-success" onclick="openSettlementModal()"><i class="fas fa-plus"></i> 新增本月結算</button>
+                            <input type="month" id="finance-month-picker" class="form-control shadow-sm" style="width: 180px;" onchange="renderFinanceTable()">
+                            <button class="btn btn-success shadow-sm" onclick="openSettlementModal()"><i class="fas fa-plus"></i> 新增本月結算</button>
                         </div>
                     </div>
                     <div class="row mb-4">
-                        <div class="col-md-3"><div class="card card-stat p-3 border-primary"><span class="text-muted">本月預估開票 (Gross)</span><div class="kpi-value text-primary" id="fin-kpi-gross">$0</div></div></div>
-                        <div class="col-md-3"><div class="card card-stat p-3 border-success"><span class="text-muted">本月實際營收 (Net)</span><div class="kpi-value text-success" id="fin-kpi-net">$0</div></div></div>
-                        <div class="col-md-3"><div class="card card-stat p-3"><span class="text-muted">待收款項 (AR)</span><div class="kpi-value text-warning" id="fin-kpi-ar">$0</div></div></div>
-                        <div class="col-md-3"><div class="card card-stat p-3"><span class="text-muted">應付 EBM 分潤</span><div class="kpi-value text-danger" id="fin-kpi-ebm">$0</div></div></div>
+                        <div class="col-md-3"><div class="card card-stat p-3 border-start border-4 border-primary"><span class="text-muted small">本月預估開票 (Gross)</span><div class="kpi-value text-primary" id="fin-kpi-gross">$0</div></div></div>
+                        <div class="col-md-3"><div class="card card-stat p-3 border-start border-4 border-success"><span class="text-muted small">本月實際營收 (Net)</span><div class="kpi-value text-success" id="fin-kpi-net">$0</div></div></div>
+                        <div class="col-md-3"><div class="card card-stat p-3 border-start border-4 border-warning"><span class="text-muted small">待收款項 (AR)</span><div class="kpi-value text-warning" id="fin-kpi-ar">$0</div></div></div>
+                        <div class="col-md-3"><div class="card card-stat p-3 border-start border-4 border-danger"><span class="text-muted small">應付 EBM 分潤</span><div class="kpi-value text-danger" id="fin-kpi-ebm">$0</div></div></div>
                     </div>
-                    <div class="card shadow-sm">
-                        <div class="card-header bg-light fw-bold">帳務明細 (Ledger)</div>
-                        <table class="table table-hover table-finance mb-0">
+                    <div class="card shadow-sm border-0">
+                        <div class="card-header bg-white py-3 fw-bold border-bottom">帳務明細 (Ledger)</div>
+                        <table class="table table-hover table-finance mb-0 align-middle">
                             <thead class="table-light"><tr><th>醫院</th><th>使用次數</th><th>單價</th><th>應收總額 (Gross)</th><th>分潤 %</th><th>實際營收 (Net)</th><th>發票狀態</th><th>操作</th></tr></thead>
                             <tbody id="finance-table-body"></tbody>
                         </table>
@@ -157,8 +240,8 @@
                      <h3 class="mb-4">管理者後台</h3>
                      <ul class="nav nav-tabs mb-3"><li class="nav-item"><button class="nav-link active" data-bs-toggle="tab" data-bs-target="#content-users">使用者管理</button></li><li class="nav-item"><button class="nav-link" data-bs-toggle="tab" data-bs-target="#content-logs">系統日誌</button></li></ul>
                      <div class="tab-content">
-                        <div class="tab-pane fade show active" id="content-users"><button class="btn btn-warning btn-sm mb-2" onclick="openUserModal()">新增使用者</button><table class="table table-hover"><tbody id="admin-users-body"></tbody></table></div>
-                        <div class="tab-pane fade" id="content-logs"><button class="btn btn-sm btn-outline-secondary mb-2" onclick="loadAdminData()">Refresh</button><table class="table table-sm table-striped"><tbody id="admin-logs-body"></tbody></table></div>
+                        <div class="tab-pane fade show active" id="content-users"><button class="btn btn-warning btn-sm mb-2" onclick="openUserModal()">新增使用者</button><table class="table table-hover align-middle shadow-sm"><tbody id="admin-users-body"></tbody></table></div>
+                        <div class="tab-pane fade" id="content-logs"><button class="btn btn-sm btn-outline-secondary mb-2" onclick="loadAdminData()">Refresh</button><table class="table table-sm table-striped shadow-sm"><tbody id="admin-logs-body"></tbody></table></div>
                      </div>
                 </div>
 
@@ -168,7 +251,7 @@
 
     <div class="modal fade" id="modalSettlement" tabindex="-1">
         <div class="modal-dialog">
-            <div class="modal-content">
+            <div class="modal-content border-0 rounded-4">
                 <div class="modal-header bg-primary text-white"><h5 class="modal-title">新增/編輯 月結資料</h5><button class="btn-close btn-close-white" data-bs-dismiss="modal"></button></div>
                 <div class="modal-body">
                     <form id="form-settlement">
@@ -187,11 +270,8 @@
 
     <div class="modal fade" id="modalKOL" tabindex="-1">
         <div class="modal-dialog">
-            <div class="modal-content">
-                <div class="modal-header bg-success text-white">
-                    <h5 class="modal-title">編輯 KOL 資料</h5>
-                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
-                </div>
+            <div class="modal-content border-0 rounded-4">
+                <div class="modal-header bg-success text-white"><h5 class="modal-title">編輯 KOL 資料</h5><button class="btn-close btn-close-white" data-bs-dismiss="modal"></button></div>
                 <div class="modal-body">
                     <form id="form-kol">
                         <input type="hidden" id="k-id">
@@ -204,12 +284,12 @@
                         <textarea class="form-control mb-2" id="k-note" placeholder="拜訪筆記"></textarea>
                     </form>
                 </div>
-                <div class="modal-footer"><button class="btn btn-success" onclick="submitKOL()">儲存</button></div>
+                <div class="modal-footer"><button class="btn btn-secondary" data-bs-dismiss="modal">取消</button><button class="btn btn-success" onclick="submitKOL()">儲存</button></div>
             </div>
         </div>
     </div>
     
-    <div class="modal fade" id="modalUser" tabindex="-1"><div class="modal-dialog"><div class="modal-content"><div class="modal-header bg-warning"><h5 class="modal-title">編輯使用者</h5><button class="btn-close" data-bs-dismiss="modal"></button></div><div class="modal-body"><form id="form-user"><input type="email" class="form-control mb-2" id="u-email" placeholder="Email"><input type="text" class="form-control mb-2" id="u-name" placeholder="姓名"><select class="form-select mb-2" id="u-role"><option value="User">User</option><option value="Admin">Admin</option></select><select class="form-select" id="u-status"><option value="Active">Active</option><option value="Suspended">Suspended</option></select></form></div><div class="modal-footer"><button class="btn btn-warning" onclick="submitUser()">儲存</button></div></div></div></div>
+    <div class="modal fade" id="modalUser" tabindex="-1"><div class="modal-dialog"><div class="modal-content border-0 rounded-4"><div class="modal-header bg-warning"><h5 class="modal-title">編輯使用者</h5><button class="btn-close" data-bs-dismiss="modal"></button></div><div class="modal-body"><form id="form-user"><input type="email" class="form-control mb-2" id="u-email" placeholder="Email"><input type="text" class="form-control mb-2" id="u-name" placeholder="姓名"><select class="form-select mb-2" id="u-role"><option value="User">User</option><option value="Admin">Admin</option></select><select class="form-select" id="u-status"><option value="Active">Active</option><option value="Suspended">Suspended</option></select></form></div><div class="modal-footer"><button class="btn btn-warning" onclick="submitUser()">儲存</button></div></div></div></div>
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <script src="https://accounts.google.com/gsi/client" async defer></script>
