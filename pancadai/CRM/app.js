@@ -3,15 +3,14 @@
 let currentUser = null;
 let globalHospitals = []; 
 let globalKOLs = [];
-let hospitalModal, kolModal;
+let kolModal; // Only KOL uses modal now
 
 // Initialize
 window.onload = function() {
     const client_id = CONFIG.GOOGLE_CLIENT_ID;
     document.getElementById('g_id_onload').setAttribute('data-client_id', client_id);
     
-    // 初始化 Bootstrap Modals
-    hospitalModal = new bootstrap.Modal(document.getElementById('modalHospital'));
+    // 初始化 Bootstrap Modals (僅剩 KOL)
     kolModal = new bootstrap.Modal(document.getElementById('modalKOL'));
 };
 
@@ -57,13 +56,20 @@ async function verifyBackendAuth(email) {
 
 function showPage(pageId) {
     document.querySelectorAll('.page-content').forEach(el => el.classList.add('d-none'));
-    document.getElementById('page-' + pageId).classList.remove('d-none');
+    const target = document.getElementById('page-' + pageId);
+    if(target) target.classList.remove('d-none');
+    
+    // Update Sidebar Active State
     document.querySelectorAll('.nav-link').forEach(el => el.classList.remove('active'));
-    event.target.closest('.nav-link').classList.add('active'); // Fix active state
+    // Find link that calls this page (simple logic)
+    const links = document.querySelectorAll('.nav-link');
+    for(let link of links) {
+        if(link.getAttribute('onclick') && link.getAttribute('onclick').includes(pageId)) {
+            link.classList.add('active');
+        }
+    }
 
-    // 如果切換到 KOL 頁面，載入 KOL 資料
     if (pageId === 'kols') loadKOLData();
-    // 如果切換到 醫院管理頁面，確保列表是最新的
     if (pageId === 'hospitals') renderHospitalList();
 }
 
@@ -79,7 +85,7 @@ async function loadRadarData() {
         const json = await res.json();
         globalHospitals = json.data;
         renderRadarTable();
-        renderHospitalList(); // 同步更新詳細列表
+        renderHospitalList(); 
     } catch (e) { console.error(e); } finally { showLoading(false); }
 }
 
@@ -118,7 +124,7 @@ function renderRadarTable() {
                 <td>${h.Region}</td>
                 <td>${h.Level}</td>
                 <td><span class="badge ${badge}">${h.Status}</span></td>
-                <td><button class="btn btn-sm btn-outline-primary" onclick="openHospitalModal('${h.Hospital_ID}')">編輯</button></td>
+                <td><button class="btn btn-sm btn-outline-primary" onclick="openHospitalInput('${h.Hospital_ID}')">編輯</button></td>
             </tr>`;
     });
 }
@@ -135,7 +141,7 @@ function renderHospitalList() {
                 <td>${h.Exclusivity}</td>
                 <td>${h.Contract_End_Date ? h.Contract_End_Date.split('T')[0] : '-'}</td>
                 <td>${h.Contract_Amount || '-'}</td>
-                <td><button class="btn btn-sm btn-outline-primary" onclick="openHospitalModal('${h.Hospital_ID}')"><i class="fas fa-edit"></i></button></td>
+                <td><button class="btn btn-sm btn-outline-primary" onclick="openHospitalInput('${h.Hospital_ID}')"><i class="fas fa-edit"></i></button></td>
             </tr>`;
     });
 }
@@ -144,7 +150,6 @@ function renderKOLList() {
     const tbody = document.getElementById('kol-list-body');
     tbody.innerHTML = '';
     globalKOLs.forEach(k => {
-        // Find Hospital Name
         const hosp = globalHospitals.find(h => h.Hospital_ID === k.Hospital_ID);
         const hospName = hosp ? hosp.Name : k.Hospital_ID;
 
@@ -160,13 +165,18 @@ function renderKOLList() {
     });
 }
 
-// --- Form Handling (Hospital) ---
+// --- Form Handling (Hospital - NEW PAGE LOGIC) ---
 
-function openHospitalModal(id = null) {
+function openHospitalInput(id = null) {
+    // Switch to input page
+    showPage('hospital-input');
+    
+    // Reset Form
     document.getElementById('form-hospital').reset();
     document.getElementById('h-id').value = '';
     
     if (id) {
+        document.getElementById('input-page-title').innerText = "編輯醫院資料";
         const h = globalHospitals.find(x => x.Hospital_ID === id);
         if (h) {
             document.getElementById('h-id').value = h.Hospital_ID;
@@ -179,12 +189,12 @@ function openHospitalModal(id = null) {
             document.getElementById('h-ebm').value = h.EBM_Share_Ratio;
             document.getElementById('h-amount').value = h.Contract_Amount;
             document.getElementById('h-link').value = h.Contract_Link;
-            // Dates handling (cut ISO string)
             if(h.Contract_Start_Date) document.getElementById('h-start').value = h.Contract_Start_Date.split('T')[0];
             if(h.Contract_End_Date) document.getElementById('h-end').value = h.Contract_End_Date.split('T')[0];
         }
+    } else {
+        document.getElementById('input-page-title').innerText = "新增醫院資料";
     }
-    hospitalModal.show();
 }
 
 async function submitHospital() {
@@ -201,7 +211,7 @@ async function submitHospital() {
         contractStart: document.getElementById('h-start').value,
         contractEnd: document.getElementById('h-end').value,
         contractLink: document.getElementById('h-link').value,
-        salesRep: document.getElementById('user-name').innerText // Auto fill sales rep
+        salesRep: document.getElementById('user-name').innerText 
     };
 
     showLoading(true);
@@ -210,18 +220,19 @@ async function submitHospital() {
         body: JSON.stringify({ action: 'saveHospital', userEmail: currentUser, payload: payload })
     });
     
-    hospitalModal.hide();
     await loadRadarData(); // Reload data
     showLoading(false);
+    
+    // Redirect back to list
+    showPage('hospitals');
 }
 
-// --- Form Handling (KOL) ---
+// --- Form Handling (KOL - Modal) ---
 
 function openKOLModal(id = null) {
     document.getElementById('form-kol').reset();
     document.getElementById('k-id').value = '';
 
-    // Populate Hospital Select
     const sel = document.getElementById('k-hospital-id');
     sel.innerHTML = '<option value="">請選擇醫院...</option>';
     globalHospitals.forEach(h => {
@@ -279,11 +290,9 @@ function logout() {
     location.reload();
 }
 
-// Dashboard Render (Keep existing logic)
 function renderDashboard(data) {
     document.getElementById('kpi-contract-value').innerText = "$" + data.kpi.totalContractValue.toLocaleString();
     
-    // Check if chart exists and destroy to redraw
     if(window.myRegionChart) window.myRegionChart.destroy();
     
     const ctxRegion = document.getElementById('chart-region').getContext('2d');
