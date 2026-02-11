@@ -3,7 +3,7 @@
 let currentUser = null;
 let globalHospitals = []; 
 let globalKOLs = [];
-let globalConfig = { regions: [], levels: [] }; // [新增] 用於儲存設定
+let globalConfig = { regions: [], levels: [] }; 
 let kolModal;
 
 // Initialize
@@ -41,7 +41,7 @@ async function verifyBackendAuth(email) {
             document.getElementById('login-view').classList.add('d-none');
             document.getElementById('app-view').classList.remove('d-none');
             
-            // [新增] 優先載入設定檔，再渲染畫面
+            // 優先載入設定檔，再渲染畫面
             await loadSystemConfig(); 
 
             renderDashboard(json.data);
@@ -57,7 +57,7 @@ async function verifyBackendAuth(email) {
     }
 }
 
-// [新增] 載入系統設定 (區域、規模)
+// 載入系統設定 (區域、規模)
 async function loadSystemConfig() {
     try {
         const res = await fetch(CONFIG.SCRIPT_URL, { 
@@ -82,11 +82,10 @@ async function loadSystemConfig() {
     }
 }
 
-// [新增] 輔助函式：填入 Select
 function populateSelect(elementId, options, defaultText = null) {
     const el = document.getElementById(elementId);
     if (!el) return;
-    el.innerHTML = ''; // 清空
+    el.innerHTML = ''; 
     if (defaultText) {
         el.innerHTML += `<option value="All">${defaultText}</option>`;
     }
@@ -101,7 +100,7 @@ function showPage(pageId) {
     if(target) target.classList.remove('d-none');
     
     document.querySelectorAll('.nav-link').forEach(el => el.classList.remove('active'));
-    // Find active link
+    
     const links = document.querySelectorAll('.nav-link');
     for(let link of links) {
         if(link.getAttribute('onclick') && link.getAttribute('onclick').includes(pageId)) {
@@ -201,10 +200,16 @@ function renderKOLList() {
     });
 }
 
+// --- Hospital Input Logic (Edit/Create & File Upload) ---
+
 function openHospitalInput(id = null) {
     showPage('hospital-input');
+    
+    // Reset Form & File UI
     document.getElementById('form-hospital').reset();
     document.getElementById('h-id').value = '';
+    document.getElementById('h-link').value = '';
+    document.getElementById('btn-view-contract').classList.add('d-none');
     
     if (id) {
         document.getElementById('input-page-title').innerText = "編輯醫院資料";
@@ -213,7 +218,7 @@ function openHospitalInput(id = null) {
             document.getElementById('h-id').value = h.Hospital_ID;
             document.getElementById('h-name').value = h.Name;
             
-            // 設定選單值 (JS會自動匹配 value)
+            // 下拉選單賦值
             document.getElementById('h-region').value = h.Region;
             document.getElementById('h-level').value = h.Level;
             
@@ -222,7 +227,15 @@ function openHospitalInput(id = null) {
             document.getElementById('h-exclusivity').value = h.Exclusivity;
             document.getElementById('h-ebm').value = h.EBM_Share_Ratio;
             document.getElementById('h-amount').value = h.Contract_Amount;
+            
+            // 處理合約連結顯示
             document.getElementById('h-link').value = h.Contract_Link;
+            if (h.Contract_Link && h.Contract_Link.startsWith('http')) {
+                const btnView = document.getElementById('btn-view-contract');
+                btnView.href = h.Contract_Link;
+                btnView.classList.remove('d-none');
+            }
+
             if(h.Contract_Start_Date) document.getElementById('h-start').value = h.Contract_Start_Date.split('T')[0];
             if(h.Contract_End_Date) document.getElementById('h-end').value = h.Contract_End_Date.split('T')[0];
         }
@@ -232,6 +245,50 @@ function openHospitalInput(id = null) {
 }
 
 async function submitHospital() {
+    showLoading(true);
+
+    // 1. 處理檔案上傳
+    let finalContractLink = document.getElementById('h-link').value; // 預設使用現有連結
+    const fileInput = document.getElementById('h-file');
+
+    if (fileInput.files.length > 0) {
+        // 如果使用者有選擇新檔案，則執行上傳
+        try {
+            const file = fileInput.files[0];
+            const base64Data = await readFileAsBase64(file);
+            
+            // 呼叫 GAS 上傳 API
+            const uploadPayload = {
+                action: 'uploadFile',
+                userEmail: currentUser,
+                fileData: base64Data,
+                fileName: file.name,
+                mimeType: file.type
+            };
+
+            const res = await fetch(CONFIG.SCRIPT_URL, {
+                method: 'POST',
+                body: JSON.stringify(uploadPayload)
+            });
+            const json = await res.json();
+
+            if (json.status === 'success') {
+                finalContractLink = json.data.url; // 取得 Google Drive 連結
+                console.log("Upload success:", finalContractLink);
+            } else {
+                alert("檔案上傳失敗：" + json.message);
+                showLoading(false);
+                return; // 終止儲存
+            }
+        } catch (e) {
+            console.error("Upload Error:", e);
+            alert("上傳過程中發生錯誤");
+            showLoading(false);
+            return;
+        }
+    }
+
+    // 2. 準備儲存資料
     const payload = {
         hospitalId: document.getElementById('h-id').value,
         name: document.getElementById('h-name').value,
@@ -244,20 +301,28 @@ async function submitHospital() {
         contractAmount: document.getElementById('h-amount').value,
         contractStart: document.getElementById('h-start').value,
         contractEnd: document.getElementById('h-end').value,
-        contractLink: document.getElementById('h-link').value,
+        contractLink: finalContractLink, // 使用新的 (或舊的) 連結
         salesRep: document.getElementById('user-name').innerText 
     };
 
-    showLoading(true);
-    await fetch(CONFIG.SCRIPT_URL, {
-        method: 'POST',
-        body: JSON.stringify({ action: 'saveHospital', userEmail: currentUser, payload: payload })
-    });
-    
-    await loadRadarData(); 
-    showLoading(false);
-    showPage('hospitals');
+    // 3. 儲存至 Sheet
+    try {
+        await fetch(CONFIG.SCRIPT_URL, {
+            method: 'POST',
+            body: JSON.stringify({ action: 'saveHospital', userEmail: currentUser, payload: payload })
+        });
+        
+        await loadRadarData(); 
+        showPage('hospitals');
+    } catch (e) {
+        console.error(e);
+        alert("儲存失敗");
+    } finally {
+        showLoading(false);
+    }
 }
+
+// --- KOL Input Logic (Modal) ---
 
 function openKOLModal(id = null) {
     document.getElementById('form-kol').reset();
@@ -307,6 +372,7 @@ async function submitKOL() {
     showLoading(false);
 }
 
+// Helpers
 function showLoading(show) {
     const el = document.getElementById('loading-overlay');
     if(show) el.classList.remove('d-none');
@@ -331,5 +397,19 @@ function renderDashboard(data) {
                 backgroundColor: ['#3498db', '#e74c3c', '#f1c40f', '#2ecc71']
             }]
         }
+    });
+}
+
+// [新增] 讀取檔案並轉為 Base64
+function readFileAsBase64(file) {
+    return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = () => {
+            const result = reader.result;
+            const base64 = result.split(',')[1];
+            resolve(base64);
+        };
+        reader.onerror = error => reject(error);
+        reader.readAsDataURL(file);
     });
 }
