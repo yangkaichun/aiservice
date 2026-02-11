@@ -1,4 +1,4 @@
-// app.js V3.2 (Robust Fix)
+// app.js V3.3 (Admin Fix)
 
 let currentUser = null;
 let currentRole = null;
@@ -14,25 +14,21 @@ window.onload = function() {
     const client_id = CONFIG.GOOGLE_CLIENT_ID;
     document.getElementById('g_id_onload').setAttribute('data-client_id', client_id);
     
-    // 初始化 Modals (加入防呆檢查)
     if(document.getElementById('modalKOL')) kolModal = new bootstrap.Modal(document.getElementById('modalKOL'));
     if(document.getElementById('modalUser')) userModal = new bootstrap.Modal(document.getElementById('modalUser'));
     if(document.getElementById('modalSettlement')) settlementModal = new bootstrap.Modal(document.getElementById('modalSettlement'));
     
-    // 設定財務月份預設為當月
     const today = new Date();
     const monthStr = today.toISOString().slice(0, 7); 
     const monthPicker = document.getElementById('finance-month-picker');
     if(monthPicker) monthPicker.value = monthStr;
 };
 
-// [關鍵新增] 安全讀取函式：防止 ID 不存在時報錯
+// 安全讀寫函式
 function getVal(id) {
     const el = document.getElementById(id);
-    return el ? el.value : ''; // 如果找不到元素，回傳空字串，不要報錯
+    return el ? el.value : ''; 
 }
-
-// [關鍵新增] 安全寫入函式
 function setVal(id, value) {
     const el = document.getElementById(id);
     if (el) el.value = value || '';
@@ -60,10 +56,7 @@ async function verifyBackendAuth(email) {
     const payload = { action: "getDashboardData", userEmail: email };
     
     try {
-        const response = await fetch(CONFIG.SCRIPT_URL, {
-            method: "POST",
-            body: JSON.stringify(payload)
-        });
+        const response = await fetch(CONFIG.SCRIPT_URL, { method: "POST", body: JSON.stringify(payload) });
         const json = await response.json();
         
         if (json.status === 'success') {
@@ -83,30 +76,21 @@ async function verifyBackendAuth(email) {
             alert("無權限或系統錯誤: " + json.message);
             logout();
         }
-    } catch (e) {
-        console.error(e);
-        alert("系統連線失敗");
-    } finally {
-        showLoading(false);
-    }
+    } catch (e) { console.error(e); alert("系統連線失敗"); } finally { showLoading(false); }
 }
-
-// --- 系統設定 ---
 
 async function loadSystemConfig() {
     try {
         const res = await fetch(CONFIG.SCRIPT_URL, { method: "POST", body: JSON.stringify({ action: "getConfig", userEmail: currentUser }) });
         const json = await res.json();
         const rawConfig = json.data;
-
         globalConfig.regions = rawConfig.filter(r => r.Category === 'Region').map(r => r.Option_Value);
         globalConfig.levels = rawConfig.filter(r => r.Category === 'Hospital_Level').map(r => r.Option_Value);
-
         populateSelect('radar-filter-region', globalConfig.regions, '全部區域');
         populateSelect('radar-filter-level', globalConfig.levels, '全部規模');
         populateSelect('h-region', globalConfig.regions);
         populateSelect('h-level', globalConfig.levels);
-    } catch (e) { console.error("Config Load Failed", e); }
+    } catch (e) { console.error(e); }
 }
 
 function populateSelect(elementId, options, defaultText = null) {
@@ -116,8 +100,6 @@ function populateSelect(elementId, options, defaultText = null) {
     if (defaultText) el.innerHTML += `<option value="All">${defaultText}</option>`;
     options.forEach(opt => el.innerHTML += `<option value="${opt}">${opt}</option>`);
 }
-
-// --- 導航 ---
 
 function showPage(pageId) {
     document.querySelectorAll('.page-content').forEach(el => el.classList.add('d-none'));
@@ -134,11 +116,11 @@ function showPage(pageId) {
 
     if (pageId === 'kols') loadKOLData();
     if (pageId === 'hospitals') loadRadarData();
-    if (pageId === 'admin') loadAdminData();
+    if (pageId === 'admin') loadAdminData(); // 這裡呼叫了 loadAdminData
     if (pageId === 'finance') loadFinanceData();
 }
 
-// --- 資料讀取 ---
+// --- Data Loaders ---
 
 async function loadRadarData() {
     showLoading(true);
@@ -172,7 +154,71 @@ async function loadFinanceData() {
     } catch (e) { console.error(e); } finally { showLoading(false); }
 }
 
-// --- 渲染 ---
+// --- [關鍵修正] Admin Functions (補回遺失的函式) ---
+
+async function loadAdminData() {
+    if (currentRole !== 'Admin') return;
+    showLoading(true);
+    try {
+        const [resUsers, resLogs] = await Promise.all([
+            fetch(CONFIG.SCRIPT_URL, { method: "POST", body: JSON.stringify({ action: "getUsers", userEmail: currentUser }) }),
+            fetch(CONFIG.SCRIPT_URL, { method: "POST", body: JSON.stringify({ action: "getLogs", userEmail: currentUser }) })
+        ]);
+
+        const jsonUsers = await resUsers.json();
+        const jsonLogs = await resLogs.json();
+
+        if (jsonUsers.status === 'success') renderUserTable(jsonUsers.data);
+        if (jsonLogs.status === 'success') renderLogTable(jsonLogs.data);
+
+    } catch (e) {
+        console.error(e);
+        alert("載入管理資料失敗");
+    } finally {
+        showLoading(false);
+    }
+}
+
+function renderUserTable(users) {
+    const tbody = document.getElementById('admin-users-body');
+    if(!tbody) return;
+    tbody.innerHTML = '';
+    users.forEach(u => {
+        let loginTime = u.Last_Login ? new Date(u.Last_Login).toLocaleString() : '-';
+        const roleBadge = u.Role === 'Admin' ? 'bg-danger' : 'bg-info text-dark';
+        
+        tbody.innerHTML += `
+            <tr>
+                <td>${u.Email}</td>
+                <td>${u.Name}</td>
+                <td><span class="badge ${roleBadge}">${u.Role}</span></td>
+                <td>${u.Status}</td>
+                <td style="font-size:0.8em">${loginTime}</td>
+                <td>
+                    <button class="btn btn-sm btn-outline-dark" onclick="openUserModal('${u.Email}', '${u.Name}', '${u.Role}', '${u.Status}')">
+                        <i class="fas fa-edit"></i>
+                    </button>
+                </td>
+            </tr>`;
+    });
+}
+
+function renderLogTable(logs) {
+    const tbody = document.getElementById('admin-logs-body');
+    if(!tbody) return;
+    tbody.innerHTML = '';
+    logs.reverse().forEach(log => {
+        tbody.innerHTML += `
+            <tr>
+                <td style="white-space:nowrap;">${new Date(log.Timestamp).toLocaleString()}</td>
+                <td>${log.User}</td>
+                <td><strong>${log.Action}</strong></td>
+                <td class="text-muted">${log.Details}</td>
+            </tr>`;
+    });
+}
+
+// --- Renderers ---
 
 function renderDashboard(data) {
     const kpi = data.kpi;
@@ -239,7 +285,6 @@ function renderKOLList() {
     });
 }
 
-// --- 財務 (略做簡化但功能完整) ---
 function renderFinanceTable() {
     const selMonth = getVal('finance-month-picker');
     const tbody = document.getElementById('finance-table-body');
@@ -266,18 +311,16 @@ function renderFinanceTable() {
     }
 }
 
-// --- KOL Modal (修復：使用 setVal/getVal 防止當機) ---
+// --- Modals ---
 
 function openKOLModal(id = null) {
     document.getElementById('form-kol').reset();
     setVal('k-id', '');
-    
     const sel = document.getElementById('k-hospital-id');
     if(sel) {
         sel.innerHTML = '<option value="">請選擇醫院...</option>';
         globalHospitals.forEach(h => sel.innerHTML += `<option value="${h.Hospital_ID}">${h.Name}</option>`);
     }
-
     if (id) {
         const k = globalKOLs.find(x => x.KOL_ID === id);
         if (k) {
@@ -285,7 +328,7 @@ function openKOLModal(id = null) {
             setVal('k-hospital-id', k.Hospital_ID);
             setVal('k-name', k.Name);
             setVal('k-title', k.Title);
-            setVal('k-email', k.Email); // 若 HTML 缺此欄位，setVal 會忽略，不會當機
+            setVal('k-email', k.Email); 
             setVal('k-stage', k.Visit_Stage);
             setVal('k-prob', k.Probability);
             setVal('k-note', k.Visit_Note);
@@ -295,7 +338,6 @@ function openKOLModal(id = null) {
 }
 
 async function submitKOL() {
-    // 使用 getVal 確保即使 HTML 缺欄位，也會送出空字串，防止 crash
     const payload = {
         kolId: getVal('k-id'),
         hospitalId: getVal('k-hospital-id'),
@@ -306,17 +348,13 @@ async function submitKOL() {
         probability: getVal('k-prob'),
         visitNote: getVal('k-note')
     };
-    
     if (!payload.name || !payload.hospitalId) { alert("請填寫姓名與醫院"); return; }
-
     showLoading(true);
     await fetch(CONFIG.SCRIPT_URL, { method: 'POST', body: JSON.stringify({ action: 'saveKOL', userEmail: currentUser, payload: payload }) });
     kolModal.hide();
     loadKOLData();
     showLoading(false);
 }
-
-// --- Hospital Input (修復：使用 setVal/getVal) ---
 
 function openHospitalInput(id = null) {
     showPage('hospital-input');
@@ -337,7 +375,7 @@ function openHospitalInput(id = null) {
             setVal('h-status', h.Status);
             setVal('h-exclusivity', h.Exclusivity);
             setVal('h-ebm', h.EBM_Share_Ratio);
-            setVal('h-unit-price', h.Unit_Price); // 關鍵：若 HTML 缺此欄位，不會報錯
+            setVal('h-unit-price', h.Unit_Price); 
             setVal('h-amount', h.Contract_Amount);
             setVal('h-link', h.Contract_Link);
 
@@ -383,7 +421,7 @@ async function submitHospital() {
         status: getVal('h-status'),
         exclusivity: getVal('h-exclusivity'),
         ebmShare: getVal('h-ebm'),
-        unitPrice: getVal('h-unit-price'), // 使用 getVal 安全讀取
+        unitPrice: getVal('h-unit-price'), 
         contractAmount: getVal('h-amount'),
         contractStart: getVal('h-start'),
         contractEnd: getVal('h-end'),
@@ -397,7 +435,6 @@ async function submitHospital() {
     showLoading(false);
 }
 
-// --- 其他功能 (Settlement, User) ---
 function openSettlementModal(id) { 
     document.getElementById('form-settlement').reset();
     setVal('s-record-id', '');
@@ -447,21 +484,23 @@ async function toggleInvoiceStatus(id, stat) {
     }
 }
 
-// User Admin
 function openUserModal(e='', n='', r='User', s='Active') {
     setVal('u-email', e); setVal('u-name', n); setVal('u-role', r); setVal('u-status', s);
     document.getElementById('u-email').readOnly = (e!=='');
     userModal.show();
 }
+
 async function submitUser() {
     const p = { email: getVal('u-email'), name: getVal('u-name'), role: getVal('u-role'), status: getVal('u-status') };
     if(!p.email) return;
     showLoading(true);
     await fetch(CONFIG.SCRIPT_URL, {method:'POST', body:JSON.stringify({action:'saveUser', userEmail:currentUser, payload:p})});
-    userModal.hide(); loadAdminData(); showLoading(false);
+    userModal.hide(); 
+    // [關鍵修正] 現在這個函式已經定義在下方了，不會報錯
+    loadAdminData(); 
+    showLoading(false);
 }
 
-// Utils
 function readFileAsBase64(file) {
     return new Promise((r, j) => {
         const reader = new FileReader();
