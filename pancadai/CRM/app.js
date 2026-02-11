@@ -3,14 +3,13 @@
 let currentUser = null;
 let globalHospitals = []; 
 let globalKOLs = [];
-let kolModal; // Only KOL uses modal now
+let globalConfig = { regions: [], levels: [] }; // [新增] 用於儲存設定
+let kolModal;
 
 // Initialize
 window.onload = function() {
     const client_id = CONFIG.GOOGLE_CLIENT_ID;
     document.getElementById('g_id_onload').setAttribute('data-client_id', client_id);
-    
-    // 初始化 Bootstrap Modals (僅剩 KOL)
     kolModal = new bootstrap.Modal(document.getElementById('modalKOL'));
 };
 
@@ -41,8 +40,12 @@ async function verifyBackendAuth(email) {
         if (json.status === 'success') {
             document.getElementById('login-view').classList.add('d-none');
             document.getElementById('app-view').classList.remove('d-none');
+            
+            // [新增] 優先載入設定檔，再渲染畫面
+            await loadSystemConfig(); 
+
             renderDashboard(json.data);
-            loadRadarData(); // 預先載入醫院資料
+            loadRadarData();
         } else {
             alert("無權限或系統錯誤: " + json.message);
         }
@@ -54,14 +57,51 @@ async function verifyBackendAuth(email) {
     }
 }
 
+// [新增] 載入系統設定 (區域、規模)
+async function loadSystemConfig() {
+    try {
+        const res = await fetch(CONFIG.SCRIPT_URL, { 
+            method: "POST", 
+            body: JSON.stringify({ action: "getConfig", userEmail: currentUser }) 
+        });
+        const json = await res.json();
+        const rawConfig = json.data;
+
+        // 解析資料
+        globalConfig.regions = rawConfig.filter(r => r.Category === 'Region').map(r => r.Option_Value);
+        globalConfig.levels = rawConfig.filter(r => r.Category === 'Hospital_Level').map(r => r.Option_Value);
+
+        // 填入下拉選單 (包含 雷達圖篩選器 和 新增表單)
+        populateSelect('radar-filter-region', globalConfig.regions, '全部區域');
+        populateSelect('radar-filter-level', globalConfig.levels, '全部規模');
+        populateSelect('h-region', globalConfig.regions);
+        populateSelect('h-level', globalConfig.levels);
+
+    } catch (e) {
+        console.error("Config Load Failed", e);
+    }
+}
+
+// [新增] 輔助函式：填入 Select
+function populateSelect(elementId, options, defaultText = null) {
+    const el = document.getElementById(elementId);
+    if (!el) return;
+    el.innerHTML = ''; // 清空
+    if (defaultText) {
+        el.innerHTML += `<option value="All">${defaultText}</option>`;
+    }
+    options.forEach(opt => {
+        el.innerHTML += `<option value="${opt}">${opt}</option>`;
+    });
+}
+
 function showPage(pageId) {
     document.querySelectorAll('.page-content').forEach(el => el.classList.add('d-none'));
     const target = document.getElementById('page-' + pageId);
     if(target) target.classList.remove('d-none');
     
-    // Update Sidebar Active State
     document.querySelectorAll('.nav-link').forEach(el => el.classList.remove('active'));
-    // Find link that calls this page (simple logic)
+    // Find active link
     const links = document.querySelectorAll('.nav-link');
     for(let link of links) {
         if(link.getAttribute('onclick') && link.getAttribute('onclick').includes(pageId)) {
@@ -72,8 +112,6 @@ function showPage(pageId) {
     if (pageId === 'kols') loadKOLData();
     if (pageId === 'hospitals') renderHospitalList();
 }
-
-// --- Data Loading ---
 
 async function loadRadarData() {
     showLoading(true);
@@ -101,8 +139,6 @@ async function loadKOLData() {
         renderKOLList();
     } catch (e) { console.error(e); } finally { showLoading(false); }
 }
-
-// --- Rendering Tables ---
 
 function renderRadarTable() {
     const region = document.getElementById('radar-filter-region').value;
@@ -165,13 +201,8 @@ function renderKOLList() {
     });
 }
 
-// --- Form Handling (Hospital - NEW PAGE LOGIC) ---
-
 function openHospitalInput(id = null) {
-    // Switch to input page
     showPage('hospital-input');
-    
-    // Reset Form
     document.getElementById('form-hospital').reset();
     document.getElementById('h-id').value = '';
     
@@ -181,8 +212,11 @@ function openHospitalInput(id = null) {
         if (h) {
             document.getElementById('h-id').value = h.Hospital_ID;
             document.getElementById('h-name').value = h.Name;
+            
+            // 設定選單值 (JS會自動匹配 value)
             document.getElementById('h-region').value = h.Region;
             document.getElementById('h-level').value = h.Level;
+            
             document.getElementById('h-address').value = h.Address;
             document.getElementById('h-status').value = h.Status;
             document.getElementById('h-exclusivity').value = h.Exclusivity;
@@ -220,19 +254,14 @@ async function submitHospital() {
         body: JSON.stringify({ action: 'saveHospital', userEmail: currentUser, payload: payload })
     });
     
-    await loadRadarData(); // Reload data
+    await loadRadarData(); 
     showLoading(false);
-    
-    // Redirect back to list
     showPage('hospitals');
 }
-
-// --- Form Handling (KOL - Modal) ---
 
 function openKOLModal(id = null) {
     document.getElementById('form-kol').reset();
     document.getElementById('k-id').value = '';
-
     const sel = document.getElementById('k-hospital-id');
     sel.innerHTML = '<option value="">請選擇醫院...</option>';
     globalHospitals.forEach(h => {
@@ -278,7 +307,6 @@ async function submitKOL() {
     showLoading(false);
 }
 
-// Helpers
 function showLoading(show) {
     const el = document.getElementById('loading-overlay');
     if(show) el.classList.remove('d-none');
@@ -292,9 +320,7 @@ function logout() {
 
 function renderDashboard(data) {
     document.getElementById('kpi-contract-value').innerText = "$" + data.kpi.totalContractValue.toLocaleString();
-    
     if(window.myRegionChart) window.myRegionChart.destroy();
-    
     const ctxRegion = document.getElementById('chart-region').getContext('2d');
     window.myRegionChart = new Chart(ctxRegion, {
         type: 'pie',
