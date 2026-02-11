@@ -1,4 +1,4 @@
-// app.js V4.7 (Dashboard KPI Sync)
+// app.js V4.8 (Strict Access Control)
 
 let currentUser = null;
 let currentRole = null;
@@ -17,7 +17,7 @@ window.onload = function() {
     if(document.getElementById('modalUser')) userModal = new bootstrap.Modal(document.getElementById('modalUser'));
     if(document.getElementById('modalSettlement')) settlementModal = new bootstrap.Modal(document.getElementById('modalSettlement'));
     
-    // 初始化日期 (預設今年)
+    // 初始化日期
     const today = new Date();
     const y = today.getFullYear();
     const m = String(today.getMonth() + 1).padStart(2, '0');
@@ -25,11 +25,12 @@ window.onload = function() {
     if(document.getElementById('dash-end')) document.getElementById('dash-end').value = `${y}-12`;
     if(document.getElementById('finance-month-picker')) document.getElementById('finance-month-picker').value = `${y}-${m}`;
 
-    // 自動登入檢查
+    // [權限檢查] 啟動時檢查 LocalStorage
+    // 若無紀錄，直接停留在登入頁 (HTML預設行為)
     const savedUser = localStorage.getItem('pancad_user');
     if (savedUser) {
         currentUser = savedUser;
-        verifyBackendAuth(savedUser);
+        verifyBackendAuth(savedUser); // 呼叫後端驗證是否在使用者清單內
     }
 };
 
@@ -60,15 +61,20 @@ function handleCredentialResponse(r) {
 
 function decodeJwtResponse(token) { return JSON.parse(decodeURIComponent(window.atob(token.split('.')[1].replace(/-/g, '+').replace(/_/g, '/')).split('').map(c => '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2)).join(''))); }
 
+// [核心修正] 嚴格權限驗證
 async function verifyBackendAuth(email) {
     showLoading(true);
     try {
+        // 向後端請求資料，同時後端會檢查 User List
         const res = await fetch(CONFIG.SCRIPT_URL, { method: "POST", body: JSON.stringify({ action: "getDashboardData", userEmail: email }) });
         const json = await res.json();
+        
+        // 若後端回傳成功，代表 User 在清單內且 Active
         if (json.status === 'success') {
             currentRole = json.role;
             document.getElementById('login-view').classList.add('d-none');
             document.getElementById('app-view').classList.remove('d-none');
+            
             if (currentRole === 'Admin') document.getElementById('nav-admin').classList.remove('d-none');
             
             if(!document.getElementById('user-name').innerText) {
@@ -80,10 +86,16 @@ async function verifyBackendAuth(email) {
             renderDashboard(json.data);
             loadRadarData(); 
         } else { 
-            alert("無權限或系統錯誤"); 
+            // [安全性] 若後端回傳錯誤 (例如不在名單內)，強制踢出
+            alert("存取被拒：您的帳號不在允許清單中，或已被停用。請聯繫管理員。"); 
             logout(); 
         }
-    } catch (e) { console.error(e); } finally { showLoading(false); }
+    } catch (e) { 
+        console.error(e); 
+        alert("系統連線錯誤，請稍後再試。");
+        // 若連線失敗，為安全起見也登出
+        // logout(); 
+    } finally { showLoading(false); }
 }
 
 // Config & Nav
@@ -142,7 +154,6 @@ async function loadAdminData() { if(currentRole!=='Admin')return; showLoading(tr
 // Dashboard
 function renderDashboard(data) {
     const kpi = data.kpi;
-    // [修改] 這裡不再賦值 totalContractValue，因為會被 updateDashboardCharts 覆蓋
     document.getElementById('kpi-hospital-count').innerText = (kpi.hospitalCount || 0).toLocaleString();
     document.getElementById('kpi-region-count').innerText = Object.keys(kpi.regionStats || {}).length;
 
@@ -161,14 +172,13 @@ function renderDashboard(data) {
     updateDashboardCharts();
 }
 
-// [核心修改] 更新圖表同時計算 KPI 加總
 function updateDashboardCharts() {
     const start = getVal('dash-start'), end = getVal('dash-end'), ctxTrend = document.getElementById('chart-trend');
     if (!ctxTrend || !globalMonthlyData) return;
     
     let aggData = {};
-    let totalGross = 0; // [新增] 區間總 Gross
-    let totalNet = 0;   // [新增] 區間總 Net
+    let totalGross = 0; 
+    let totalNet = 0; 
 
     globalMonthlyData.forEach(item => {
         let ym = String(item.Year_Month).substring(0, 7);
@@ -178,17 +188,13 @@ function updateDashboardCharts() {
             if (!aggData[ym]) aggData[ym] = { gross: 0, net: 0 };
             aggData[ym].gross += gross; 
             aggData[ym].net += net;
-            
-            // 累加總數
             totalGross += gross;
             totalNet += net;
         }
     });
 
-    // 更新 KPI 卡片
     const kpiEl = document.getElementById('kpi-contract-value');
     if(kpiEl) {
-        // 使用 HTML 顯示兩行數據
         kpiEl.innerHTML = `
             <div style="font-size: 1.1rem; color: #4e73df;">Gross: $${totalGross.toLocaleString()}</div>
             <div style="font-size: 1.1rem; color: #1cc88a;">Net: $${totalNet.toLocaleString()}</div>
