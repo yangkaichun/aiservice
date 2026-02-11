@@ -1,4 +1,4 @@
-/* Code.gs - PancadAI CRM Backend V4.3 (Finance Fix) */
+/* Code.gs - PancadAI CRM Backend V4.6 (Date Fix) */
 
 const SPREADSHEET_ID = '1hID8Hi42qNFyA_13BqSJgfjIE4FguQRR5wMEsXBRl0I';
 const UPLOAD_FOLDER_ID = '1tmLX1lSEa_R26S5LAyIv7IPAhPuI67Db'; 
@@ -27,9 +27,10 @@ function doPost(e) {
       case 'getKOLs': result = getKOLs(); break;
       case 'saveKOL': result = saveKOL(data.payload, userEmail); break;
       
-      // [重點修復] 財務相關
+      // 財務相關
       case 'getMonthlyStats': result = getSheetData('Monthly_Stats'); break;
       case 'saveMonthlyStat': result = saveMonthlyStat(data.payload, userEmail); break;
+      case 'deleteMonthlyStat': result = deleteMonthlyStat(data.payload, userEmail); break;
       case 'updateInvoiceStatus': result = updateInvoiceStatus(data.payload, userEmail); break;
       
       case 'uploadFile': result = uploadFileToDrive(data.fileData, data.fileName, data.mimeType); break;
@@ -44,79 +45,43 @@ function doPost(e) {
   finally { lock.releaseLock(); }
 }
 
-// --- [核心修復] 財務結算儲存 (新增/編輯) ---
-function saveMonthlyStat(p, u) {
+// --- 核心邏輯 ---
+
+function deleteMonthlyStat(p, u) {
   const ss = SpreadsheetApp.openById(SPREADSHEET_ID);
-  const statsSheet = ss.getSheetByName('Monthly_Stats');
-  
-  // 1. 查找醫院單價與分潤
-  const hospitals = getSheetData('Hospitals');
-  // 強制轉型 String 比對，防止 ID 格式不符
-  const targetHosp = hospitals.find(h => String(h['Hospital_ID']) === String(p.hospitalId));
-  
-  let unitPrice = 0;
-  let ebmRatio = 0;
-  
-  if (targetHosp) {
-    // 移除可能存在的非數字字符 (如 $, %) 並轉型
-    unitPrice = Number(String(targetHosp['Unit_Price']).replace(/[^0-9.-]+/g,"")) || 0;
-    ebmRatio = Number(String(targetHosp['EBM_Share_Ratio']).replace(/[^0-9.-]+/g,"")) || 0;
-  }
-
-  // 2. 計算財務數據
-  const usage = Number(p.usageCount) || 0;
-  const gross = usage * unitPrice;
-  const ebmFee = Math.round(gross * (ebmRatio / 100));
-  const net = gross - ebmFee;
-
-  // 3. 準備寫入資料
-  const recordId = p.recordId || Utilities.getUuid();
-  const rowData = [
-    recordId,
-    p.yearMonth,
-    p.hospitalId,
-    usage,
-    unitPrice,
-    gross,
-    ebmRatio,
-    ebmFee,
-    net,
-    p.invoiceStatus || 'Unbilled',
-    p.note || '',
-    new Date()
-  ];
-
-  // 4. 判斷是新增還是更新 (透過 Record_ID)
-  const data = statsSheet.getDataRange().getValues();
-  let rowIndex = -1;
-
-  if (p.recordId) {
-    for (let i = 1; i < data.length; i++) {
-      // 比對第一欄 Record_ID
-      if (String(data[i][0]) === String(p.recordId)) {
-        rowIndex = i + 1; // 轉為 Sheet 列號 (1-based)
-        break;
-      }
+  const sheet = ss.getSheetByName('Monthly_Stats');
+  const data = sheet.getDataRange().getValues();
+  for (let i = 1; i < data.length; i++) {
+    if (String(data[i][0]) === String(p.recordId)) {
+      sheet.deleteRow(i + 1);
+      logAction(u, 'Delete Settlement', `ID: ${p.recordId}`);
+      return { status: 'success' };
     }
   }
-
-  if (rowIndex > 0) {
-    // 更新模式
-    statsSheet.getRange(rowIndex, 1, 1, rowData.length).setValues([rowData]);
-    logAction(u, 'Update Settlement', `${p.yearMonth} - ${p.hospitalId}`);
-  } else {
-    // 新增模式
-    statsSheet.appendRow(rowData);
-    logAction(u, 'New Settlement', `${p.yearMonth} - ${p.hospitalId}`);
-  }
-
-  return { status: 'success' };
+  return { status: 'error', message: 'Record not found' };
 }
 
-// ... (以下維持不變) ...
 function getDashboardData() {
   const hospitals = getSheetData('Hospitals');
-  const monthlyStats = getSheetData('Monthly_Stats'); // 確保這裡有讀取
+  
+  // [關鍵修復] 強制格式化日期為 YYYY-MM-DD
+  const monthlyStats = getSheetData('Monthly_Stats').map(item => {
+    let ym = item['Year_Month'];
+    // 檢查是否為 Google Sheet 的日期物件
+    if (Object.prototype.toString.call(ym) === '[object Date]') {
+      let y = ym.getFullYear();
+      let m = String(ym.getMonth() + 1).padStart(2, '0');
+      let d = String(ym.getDate()).padStart(2, '0');
+      // 強制寫回字串，避免傳輸時的時區位移
+      item['Year_Month'] = `${y}-${m}-${d}`;
+    } else {
+      // 若原本就是字串，嘗試正規化 (例如 2026-02 補成 2026-02-01 或保持原樣)
+      // 這裡直接轉字串傳回即可
+      item['Year_Month'] = String(ym);
+    }
+    return item;
+  });
+  
   let totalContractValue = 0, signedCount = 0, regionStats = {}, levelStats = {};
   hospitals.forEach(h => {
     if (h['Status'] === '已簽約') {
@@ -126,7 +91,33 @@ function getDashboardData() {
       let l = h['Level'] || 'Unknown'; levelStats[l] = (levelStats[l] || 0) + 1;
     }
   });
-  return { kpi: { totalContractValue, hospitalCount: signedCount, regionStats, levelStats }, monthlyStats: monthlyStats };
+
+  return {
+    kpi: { totalContractValue, hospitalCount: signedCount, regionStats, levelStats },
+    monthlyStats: monthlyStats
+  };
+}
+
+// ... (其他函式保持不變) ...
+function saveMonthlyStat(p, u) {
+  const ss = SpreadsheetApp.openById(SPREADSHEET_ID);
+  const statsSheet = ss.getSheetByName('Monthly_Stats');
+  const hospitals = getSheetData('Hospitals');
+  const targetHosp = hospitals.find(h => String(h['Hospital_ID']) === String(p.hospitalId));
+  let unitPrice = targetHosp ? (Number(String(targetHosp['Unit_Price']).replace(/[^0-9.-]+/g,"")) || 0) : 0;
+  let ebmRatio = targetHosp ? (Number(String(targetHosp['EBM_Share_Ratio']).replace(/[^0-9.-]+/g,"")) || 0) : 0;
+  const usage = Number(p.usageCount) || 0;
+  const gross = usage * unitPrice;
+  const ebmFee = Math.round(gross * (ebmRatio / 100));
+  const net = gross - ebmFee;
+  // 注意：p.yearMonth 現在是完整的日期字串 (YYYY-MM-DD)
+  const rowData = [p.recordId || Utilities.getUuid(), p.yearMonth, p.hospitalId, usage, unitPrice, gross, ebmRatio, ebmFee, net, p.invoiceStatus || 'Unbilled', p.note || '', new Date()];
+  const data = statsSheet.getDataRange().getValues();
+  let rowIndex = -1;
+  if (p.recordId) { for (let i = 1; i < data.length; i++) { if (String(data[i][0]) === String(p.recordId)) { rowIndex = i + 1; break; } } }
+  if (rowIndex > 0) { statsSheet.getRange(rowIndex, 1, 1, rowData.length).setValues([rowData]); logAction(u, 'Update Settlement', `${p.yearMonth} - ${p.hospitalId}`); } 
+  else { statsSheet.appendRow(rowData); logAction(u, 'New Settlement', `${p.yearMonth} - ${p.hospitalId}`); }
+  return { status: 'success' };
 }
 function getSheetData(name) {
   const sheet = SpreadsheetApp.openById(SPREADSHEET_ID).getSheetByName(name);
@@ -136,40 +127,12 @@ function getSheetData(name) {
   const headers = data[0];
   return data.slice(1).map(row => { let obj={}; headers.forEach((h,i)=>{obj[h.toString().trim()]=row[i]}); return obj; });
 }
-function saveHospital(p, u) {
-  const sheet = SpreadsheetApp.openById(SPREADSHEET_ID).getSheetByName('Hospitals');
-  const headers = sheet.getRange(1, 1, 1, sheet.getLastColumn()).getValues()[0];
-  const rowObj = { 'Hospital_ID': p.hospitalId || Utilities.getUuid(), 'Name': p.name, 'Region': p.region, 'Address': p.address, 'Level': p.level, 'Status': p.status, 'Exclusivity': p.exclusivity, 'Unit_Price': p.unitPrice, 'Contract_Start_Date': p.contractStart, 'Contract_End_Date': p.contractEnd, 'Contract_Amount': p.contractAmount, 'Contract_Link': p.contractLink, 'EBM_Share_Ratio': p.ebmShare, 'Sales_Rep': p.salesRep, 'Updated_At': new Date() };
-  const data = sheet.getDataRange().getValues(); let rowIndex = -1; const idIdx = headers.indexOf('Hospital_ID');
-  if (p.hospitalId && idIdx !== -1) { for (let i = 1; i < data.length; i++) { if (String(data[i][idIdx]) === String(p.hospitalId)) { rowIndex = i + 1; break; } } }
-  const rowArray = headers.map(h => rowObj[h] || '');
-  if (rowIndex > 0) sheet.getRange(rowIndex, 1, 1, rowArray.length).setValues([rowArray]); else sheet.appendRow(rowArray);
-  return { id: rowObj.Hospital_ID };
-}
+function saveHospital(p, u) { const sheet = SpreadsheetApp.openById(SPREADSHEET_ID).getSheetByName('Hospitals'); const headers = sheet.getRange(1, 1, 1, sheet.getLastColumn()).getValues()[0]; const rowObj = { 'Hospital_ID': p.hospitalId || Utilities.getUuid(), 'Name': p.name, 'Region': p.region, 'Address': p.address, 'Level': p.level, 'Status': p.status, 'Exclusivity': p.exclusivity, 'Unit_Price': p.unitPrice, 'Contract_Start_Date': p.contractStart, 'Contract_End_Date': p.contractEnd, 'Contract_Amount': p.contractAmount, 'Contract_Link': p.contractLink, 'EBM_Share_Ratio': p.ebmShare, 'Sales_Rep': p.salesRep, 'Updated_At': new Date() }; const data = sheet.getDataRange().getValues(); let rowIndex = -1; const idIdx = headers.indexOf('Hospital_ID'); if (p.hospitalId && idIdx !== -1) { for (let i = 1; i < data.length; i++) { if (String(data[i][idIdx]) === String(p.hospitalId)) { rowIndex = i + 1; break; } } } const rowArray = headers.map(h => rowObj[h] || ''); if (rowIndex > 0) sheet.getRange(rowIndex, 1, 1, rowArray.length).setValues([rowArray]); else sheet.appendRow(rowArray); return { id: rowObj.Hospital_ID }; }
 function checkUserAuth(email) { const users = getSheetData('Users'); const user = users.find(u => u.Email === email && u.Status === 'Active'); return user ? user.Role : null; }
 function getKOLs() { return getSheetData('KOLs'); }
-function saveKOL(p, u) { 
-    const sheet = SpreadsheetApp.openById(SPREADSHEET_ID).getSheetByName('KOLs');
-    const data = sheet.getDataRange().getValues(); let r = -1;
-    if(p.kolId) { for(let i=1;i<data.length;i++) if(data[i][0]===p.kolId){r=i+1;break;} }
-    const id = p.kolId||Utilities.getUuid();
-    const row = [id, p.name, p.hospitalId, p.title, '', p.email, p.visitStage, p.visitNote, p.probability, '', '', new Date()];
-    if(r>0) sheet.getRange(r,1,1,row.length).setValues([row]); else sheet.appendRow(row);
-    return {id:id};
-}
-function saveUser(p, u) { 
-    const sheet = SpreadsheetApp.openById(SPREADSHEET_ID).getSheetByName('Users');
-    const data = sheet.getDataRange().getValues(); let r = -1; for(let i=1;i<data.length;i++) if(data[i][0]===p.email){r=i+1;break;}
-    const row = [p.email, p.name, p.role, p.status, r>0?data[r-1][4]:''];
-    if(r>0) sheet.getRange(r,1,1,row.length).setValues([row]); else sheet.appendRow(row);
-    return {status:'success'};
-}
-function updateInvoiceStatus(p, u) {
-    const sheet = SpreadsheetApp.openById(SPREADSHEET_ID).getSheetByName('Monthly_Stats');
-    const data = sheet.getDataRange().getValues();
-    for(let i=1; i<data.length; i++) { if(String(data[i][0]) === String(p.recordId)) { sheet.getRange(i+1, 10).setValue(p.status); return {status:'success'}; } }
-    return {status:'error'};
-}
+function saveKOL(p, u) { const sheet = SpreadsheetApp.openById(SPREADSHEET_ID).getSheetByName('KOLs'); const data = sheet.getDataRange().getValues(); let r = -1; if(p.kolId) { for(let i=1;i<data.length;i++) if(data[i][0]===p.kolId){r=i+1;break;} } const id = p.kolId||Utilities.getUuid(); const row = [id, p.name, p.hospitalId, p.title, '', p.email, p.visitStage, p.visitNote, p.probability, '', '', new Date()]; if(r>0) sheet.getRange(r,1,1,row.length).setValues([row]); else sheet.appendRow(row); return {id:id}; }
+function saveUser(p, u) { const sheet = SpreadsheetApp.openById(SPREADSHEET_ID).getSheetByName('Users'); const data = sheet.getDataRange().getValues(); let r = -1; for(let i=1;i<data.length;i++) if(data[i][0]===p.email){r=i+1;break;} const row = [p.email, p.name, p.role, p.status, r>0?data[r-1][4]:'']; if(r>0) sheet.getRange(r,1,1,row.length).setValues([row]); else sheet.appendRow(row); return {status:'success'}; }
+function updateInvoiceStatus(p, u) { const sheet = SpreadsheetApp.openById(SPREADSHEET_ID).getSheetByName('Monthly_Stats'); const data = sheet.getDataRange().getValues(); for(let i=1; i<data.length; i++) { if(String(data[i][0]) === String(p.recordId)) { sheet.getRange(i+1, 10).setValue(p.status); return {status:'success'}; } } return {status:'error'}; }
 function uploadFileToDrive(b, n, m) { const folder = DriveApp.getFolderById(UPLOAD_FOLDER_ID); const blob = Utilities.newBlob(Utilities.base64Decode(b), m, n); const file = folder.createFile(blob); file.setSharing(DriveApp.Access.ANYONE_WITH_LINK, DriveApp.Permission.VIEW); return { url: file.getUrl() }; }
 function logAction(u, a, d) { SpreadsheetApp.openById(SPREADSHEET_ID).getSheetByName('Logs').appendRow([new Date(), u, a, d]); }
 function responseJSON(d) { return ContentService.createTextOutput(JSON.stringify(d)).setMimeType(ContentService.MimeType.JSON); }
