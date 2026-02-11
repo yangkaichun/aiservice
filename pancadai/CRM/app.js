@@ -25,10 +25,9 @@ window.onload = function() {
     if(document.getElementById('dash-end')) document.getElementById('dash-end').value = `${y}-12`;
     if(document.getElementById('finance-month-picker')) document.getElementById('finance-month-picker').value = `${y}-${m}`;
 
-    // [新增] 檢查是否已登入 (Auto Login)
+    // [新增] 檢查 LocalStorage 進行自動登入
     const savedUser = localStorage.getItem('pancad_user');
     if (savedUser) {
-        console.log("Auto login as:", savedUser);
         currentUser = savedUser;
         verifyBackendAuth(savedUser);
     }
@@ -40,7 +39,7 @@ function setVal(id, value) { const el = document.getElementById(id); if (el) el.
 function showLoading(show) { document.getElementById('loading-overlay').classList.toggle('d-none', !show); }
 function logout() { 
     currentUser = null; 
-    localStorage.removeItem('pancad_user'); // 清除紀錄
+    localStorage.removeItem('pancad_user'); 
     location.reload(); 
 }
 function toggleSidebar() { document.getElementById('main-sidebar').classList.toggle('show'); }
@@ -49,11 +48,8 @@ function toggleSidebar() { document.getElementById('main-sidebar').classList.tog
 function handleCredentialResponse(r) { 
     const payload = decodeJwtResponse(r.credential);
     currentUser = payload.email; 
+    localStorage.setItem('pancad_user', currentUser); 
     
-    // [新增] 儲存登入狀態
-    localStorage.setItem('pancad_user', currentUser);
-    
-    // 更新 UI
     document.getElementById('user-name').innerText = payload.name;
     document.getElementById('user-avatar').src = payload.picture;
     document.getElementById('mobile-user-name').innerText = payload.name;
@@ -75,8 +71,7 @@ async function verifyBackendAuth(email) {
             document.getElementById('app-view').classList.remove('d-none');
             if (currentRole === 'Admin') document.getElementById('nav-admin').classList.remove('d-none');
             
-            // 如果是自動登入，這裡補設 UI
-            if(!document.getElementById('user-name').innerText && email) {
+            if(!document.getElementById('user-name').innerText) {
                  document.getElementById('user-name').innerText = email.split('@')[0];
             }
 
@@ -210,17 +205,13 @@ function renderFinanceTable() {
     sortedStats.forEach(s => {
         // [關鍵] 處理日期格式差異 (Sheet 可能回傳日期物件或 ISO 字串)
         let dataMonth = s.Year_Month;
-        if (typeof dataMonth === 'object') { // 如果是 Date 物件
-             // 轉換為 YYYY-MM
-             let y = dataMonth.getFullYear();
-             let m = String(dataMonth.getMonth() + 1).padStart(2, '0');
-             dataMonth = `${y}-${m}`;
-        } else {
-             // 如果是字串，取前7碼
-             dataMonth = String(dataMonth).substring(0, 7);
-        }
+        
+        // 嘗試轉為字串並擷取前7碼 (YYYY-MM)
+        // 即使是 ISO String "2026-02-01T..." 也可以用 substring(0,7) 取得
+        // 即使是 "2026-02" 也可以
+        let ym = String(dataMonth).substring(0, 7);
 
-        if (dataMonth !== selMonth) return;
+        if (ym !== selMonth) return;
         
         const hosp = globalHospitals.find(h => String(h.Hospital_ID) === String(s.Hospital_ID));
         const hName = hosp ? hosp.Name : `(ID: ${s.Hospital_ID})`;
@@ -266,7 +257,7 @@ function openSettlementModal(id) {
     setVal('s-record-id', '');
     setVal('s-month', getVal('finance-month-picker'));
     
-    // [新增] 顯示/隱藏刪除按鈕
+    // 顯示/隱藏刪除按鈕
     const delBtn = document.getElementById('btn-delete-settlement');
     if(delBtn) delBtn.style.display = id ? 'block' : 'none';
 
@@ -278,15 +269,7 @@ function openSettlementModal(id) {
         const r = globalStats.find(x => String(x.Record_ID) === String(id));
         if(r) {
             setVal('s-record-id', r.Record_ID);
-            // 處理日期回填
-            let m = r.Year_Month;
-            if(typeof m === 'object') {
-                let y = m.getFullYear();
-                let mo = String(m.getMonth()+1).padStart(2,'0');
-                m = `${y}-${mo}`;
-            } else {
-                m = String(m).substring(0,7);
-            }
+            let m = String(r.Year_Month).substring(0,7);
             setVal('s-month', m);
             setVal('s-hospital', r.Hospital_ID);
             setVal('s-usage', r.Usage_Count);
