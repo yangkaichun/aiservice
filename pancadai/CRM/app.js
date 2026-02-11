@@ -1,4 +1,4 @@
-// app.js V4.5 (Auto Login & Delete Fix)
+// app.js V4.6 (Fix Month Input)
 
 let currentUser = null;
 let currentRole = null;
@@ -25,7 +25,7 @@ window.onload = function() {
     if(document.getElementById('dash-end')) document.getElementById('dash-end').value = `${y}-12`;
     if(document.getElementById('finance-month-picker')) document.getElementById('finance-month-picker').value = `${y}-${m}`;
 
-    // [新增] 檢查 LocalStorage 進行自動登入
+    // 自動登入檢查
     const savedUser = localStorage.getItem('pancad_user');
     if (savedUser) {
         currentUser = savedUser;
@@ -166,7 +166,6 @@ function updateDashboardCharts() {
     if (!ctxTrend || !globalMonthlyData) return;
     let aggData = {}; 
     globalMonthlyData.forEach(item => {
-        // [修正] 確保日期格式
         let ym = String(item.Year_Month).substring(0, 7);
         let gross = Number(item.Gross_Revenue) || 0, net = Number(item.Net_Revenue) || 0;
         if (ym >= start && ym <= end) {
@@ -190,29 +189,31 @@ function updateDashboardCharts() {
     });
 }
 
-// [核心修正] 財務列表渲染 (加強日期比對)
 function renderFinanceTable() {
-    const selMonth = getVal('finance-month-picker'); // YYYY-MM
+    const selMonth = getVal('finance-month-picker'); 
     const tbody = document.getElementById('finance-table-body'); 
     if(!tbody) return;
     tbody.innerHTML = '';
     
     let kpiG=0, kpiN=0, kpiA=0, kpiE=0;
-    
-    // 將資料依日期排序
+    let hasData = false;
+
     const sortedStats = [...globalStats].sort((a, b) => new Date(b.Created_At) - new Date(a.Created_At));
 
     sortedStats.forEach(s => {
-        // [關鍵] 處理日期格式差異 (Sheet 可能回傳日期物件或 ISO 字串)
+        // 標準化日期比對
         let dataMonth = s.Year_Month;
-        
-        // 嘗試轉為字串並擷取前7碼 (YYYY-MM)
-        // 即使是 ISO String "2026-02-01T..." 也可以用 substring(0,7) 取得
-        // 即使是 "2026-02" 也可以
-        let ym = String(dataMonth).substring(0, 7);
+        if (typeof dataMonth === 'object') {
+             let y = dataMonth.getFullYear();
+             let m = String(dataMonth.getMonth() + 1).padStart(2, '0');
+             dataMonth = `${y}-${m}`;
+        } else {
+             dataMonth = String(dataMonth).substring(0, 7);
+        }
 
-        if (ym !== selMonth) return;
+        if (dataMonth !== selMonth) return;
         
+        hasData = true;
         const hosp = globalHospitals.find(h => String(h.Hospital_ID) === String(s.Hospital_ID));
         const hName = hosp ? hosp.Name : `(ID: ${s.Hospital_ID})`;
 
@@ -234,15 +235,17 @@ function renderFinanceTable() {
             </tr>`;
     });
     
+    if(!hasData) tbody.innerHTML = `<tr><td colspan="7" class="text-center text-muted py-4">本月尚無結算資料</td></tr>`;
+
     document.getElementById('fin-kpi-gross').innerText="$"+kpiG.toLocaleString(); 
     document.getElementById('fin-kpi-net').innerText="$"+kpiN.toLocaleString();
     document.getElementById('fin-kpi-ar').innerText="$"+kpiA.toLocaleString(); 
     document.getElementById('fin-kpi-ebm').innerText="$"+kpiE.toLocaleString();
 }
 
-function renderRadarTable() { /* 略，同前版 */ const reg = getVal('radar-filter-region'), lvl = getVal('radar-filter-level'), sts = getVal('radar-filter-status'); const tbody = document.getElementById('radar-table-body'); tbody.innerHTML = ''; globalHospitals.forEach(h => { if (reg!=='All' && h.Region!==reg) return; if (lvl!=='All' && h.Level!==lvl) return; if (sts!=='All' && h.Status!==sts) return; let badge = h.Status==='已簽約'?'bg-success':(h.Status==='開發中'?'bg-warning text-dark':'bg-secondary'); tbody.innerHTML += `<tr><td><strong>${h.Name}</strong></td><td>${h.Region||'-'}</td><td>${h.Level||'-'}</td><td><span class="badge ${badge}">${h.Status||''}</span></td><td>${h.Exclusivity==='Yes'?'<i class="fas fa-check text-success"></i>':'-'}</td><td><button class="btn btn-sm btn-outline-primary" onclick="openHospitalInput('${h.Hospital_ID}')">編輯</button></td></tr>`; }); }
-function renderHospitalList() { /* 略，同前版 */ const tbody = document.getElementById('hospital-list-body'); tbody.innerHTML = ''; globalHospitals.forEach(h => { tbody.innerHTML += `<tr><td>${h.Name}</td><td>${h.Level}</td><td>$${(Number(h.Unit_Price)||0).toLocaleString()}</td><td>${h.Exclusivity}</td><td>${h.Contract_End_Date ? h.Contract_End_Date.split('T')[0] : '-'}</td><td><button class="btn btn-sm btn-outline-primary" onclick="openHospitalInput('${h.Hospital_ID}')">Edit</button></td></tr>`; }); }
-function renderKOLList() { /* 略，同前版 */ const tbody = document.getElementById('kol-list-body'); tbody.innerHTML = ''; globalKOLs.forEach(k => { const hName = (globalHospitals.find(h=>h.Hospital_ID===k.Hospital_ID)||{}).Name || k.Hospital_ID; tbody.innerHTML += `<tr><td><strong>${k.Name}</strong></td><td>${hName}</td><td>${k.Title}</td><td>${k.Visit_Stage}</td><td>${k.Probability}</td><td><button class="btn btn-sm btn-outline-success" onclick="openKOLModal('${k.KOL_ID}')">Edit</button></td></tr>`; }); }
+function renderRadarTable() { /* 略 */ const reg = getVal('radar-filter-region'), lvl = getVal('radar-filter-level'), sts = getVal('radar-filter-status'); const tbody = document.getElementById('radar-table-body'); tbody.innerHTML = ''; globalHospitals.forEach(h => { if (reg!=='All' && h.Region!==reg) return; if (lvl!=='All' && h.Level!==lvl) return; if (sts!=='All' && h.Status!==sts) return; let badge = h.Status==='已簽約'?'bg-success':(h.Status==='開發中'?'bg-warning text-dark':'bg-secondary'); tbody.innerHTML += `<tr><td><strong>${h.Name}</strong></td><td>${h.Region||'-'}</td><td>${h.Level||'-'}</td><td><span class="badge ${badge}">${h.Status||''}</span></td><td>${h.Exclusivity==='Yes'?'<i class="fas fa-check text-success"></i>':'-'}</td><td><button class="btn btn-sm btn-outline-primary" onclick="openHospitalInput('${h.Hospital_ID}')">編輯</button></td></tr>`; }); }
+function renderHospitalList() { /* 略 */ const tbody = document.getElementById('hospital-list-body'); tbody.innerHTML = ''; globalHospitals.forEach(h => { tbody.innerHTML += `<tr><td>${h.Name}</td><td>${h.Level}</td><td>$${(Number(h.Unit_Price)||0).toLocaleString()}</td><td>${h.Exclusivity}</td><td>${h.Contract_End_Date ? h.Contract_End_Date.split('T')[0] : '-'}</td><td><button class="btn btn-sm btn-outline-primary" onclick="openHospitalInput('${h.Hospital_ID}')">Edit</button></td></tr>`; }); }
+function renderKOLList() { /* 略 */ const tbody = document.getElementById('kol-list-body'); tbody.innerHTML = ''; globalKOLs.forEach(k => { const hName = (globalHospitals.find(h=>h.Hospital_ID===k.Hospital_ID)||{}).Name || k.Hospital_ID; tbody.innerHTML += `<tr><td><strong>${k.Name}</strong></td><td>${hName}</td><td>${k.Title}</td><td>${k.Visit_Stage}</td><td>${k.Probability}</td><td><button class="btn btn-sm btn-outline-success" onclick="openKOLModal('${k.KOL_ID}')">Edit</button></td></tr>`; }); }
 function renderUserTable(u) { const t=document.getElementById('admin-users-body'); t.innerHTML=''; u.forEach(x=>t.innerHTML+=`<tr><td>${x.Email}</td><td>${x.Name}</td><td>${x.Role}</td><td>${x.Status}</td><td>${x.Last_Login?new Date(x.Last_Login).toLocaleDateString():'-'}</td><td><button class="btn btn-sm btn-light" onclick="openUserModal('${x.Email}','${x.Name}','${x.Role}','${x.Status}')">Edit</button></td></tr>`); }
 function renderLogTable(l) { const t=document.getElementById('admin-logs-body'); t.innerHTML=''; l.reverse().forEach(x=>t.innerHTML+=`<tr><td>${new Date(x.Timestamp).toLocaleString()}</td><td>${x.User}</td><td>${x.Action}</td><td class="text-muted small">${x.Details}</td></tr>`); }
 
@@ -255,9 +258,15 @@ async function submitKOL(){ const p={kolId:getVal('k-id'), hospitalId:getVal('k-
 function openSettlementModal(id) { 
     document.getElementById('form-settlement').reset();
     setVal('s-record-id', '');
-    setVal('s-month', getVal('finance-month-picker'));
     
-    // 顯示/隱藏刪除按鈕
+    // [關鍵修復] 確保月份有預設值 (從 filter 抓取，若是空的則抓今天)
+    let defaultMonth = getVal('finance-month-picker');
+    if(!defaultMonth) {
+        const d = new Date();
+        defaultMonth = d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2, '0');
+    }
+    setVal('s-month', defaultMonth);
+    
     const delBtn = document.getElementById('btn-delete-settlement');
     if(delBtn) delBtn.style.display = id ? 'block' : 'none';
 
@@ -280,7 +289,7 @@ function openSettlementModal(id) {
     settlementModal.show(); 
 }
 
-// [新增] 刪除結算功能
+// 刪除結算功能
 async function deleteSettlement() {
     const id = getVal('s-record-id');
     if(!id) return;
@@ -303,7 +312,7 @@ async function deleteSettlement() {
 }
 
 function calcPreview(){ const h=globalHospitals.find(x=>String(x.Hospital_ID)===String(getVal('s-hospital'))); if(h){ const u=Number(getVal('s-usage'))||0, p=Number(h.Unit_Price)||0, s=Number(h.EBM_Share_Ratio)||0; document.getElementById('s-hosp-info').innerText=`單價:${p} | 分潤:${s}%`; document.getElementById('s-prev-gross').innerText="$"+(u*p).toLocaleString(); document.getElementById('s-prev-net').innerText="$"+Math.round(u*p*(1-s/100)).toLocaleString(); } }
-async function submitSettlement() { /* 同前版 */ const p={recordId:getVal('s-record-id'), yearMonth:getVal('s-month'), hospitalId:getVal('s-hospital'), usageCount:getVal('s-usage'), note:getVal('s-note')}; if(!p.hospitalId)return; showLoading(true); await fetch(CONFIG.SCRIPT_URL,{method:'POST',body:JSON.stringify({action:'saveMonthlyStat',userEmail:currentUser,payload:p})}); settlementModal.hide(); loadFinanceData(); showLoading(false); }
+async function submitSettlement() { const p={recordId:getVal('s-record-id'), yearMonth:getVal('s-month'), hospitalId:getVal('s-hospital'), usageCount:getVal('s-usage'), note:getVal('s-note')}; if(!p.hospitalId)return; showLoading(true); await fetch(CONFIG.SCRIPT_URL,{method:'POST',body:JSON.stringify({action:'saveMonthlyStat',userEmail:currentUser,payload:p})}); settlementModal.hide(); loadFinanceData(); showLoading(false); }
 async function toggleInvoiceStatus(id,s){ const m={'Unbilled':'Billed','Billed':'Paid','Paid':'Unbilled'}; if(confirm('變更狀態?')){showLoading(true); await fetch(CONFIG.SCRIPT_URL,{method:'POST',body:JSON.stringify({action:'updateInvoiceStatus',userEmail:currentUser,payload:{recordId:id,status:m[s]}})}); loadFinanceData(); showLoading(false);} }
 function openUserModal(e='',n='',r='User',s='Active'){ setVal('u-email',e); setVal('u-name',n); setVal('u-role',r); setVal('u-status',s); userModal.show(); }
 async function submitUser(){ const p={email:getVal('u-email'),name:getVal('u-name'),role:getVal('u-role'),status:getVal('u-status')}; if(!p.email)return; showLoading(true); await fetch(CONFIG.SCRIPT_URL,{method:'POST',body:JSON.stringify({action:'saveUser',userEmail:currentUser,payload:p})}); userModal.hide(); loadAdminData(); showLoading(false); }
