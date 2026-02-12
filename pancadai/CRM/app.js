@@ -1,4 +1,4 @@
-// app.js V4.8 (Strict Access Control)
+// app.js V4.9 (Access Control + KOL Phone)
 
 let currentUser = null;
 let currentRole = null;
@@ -25,12 +25,11 @@ window.onload = function() {
     if(document.getElementById('dash-end')) document.getElementById('dash-end').value = `${y}-12`;
     if(document.getElementById('finance-month-picker')) document.getElementById('finance-month-picker').value = `${y}-${m}`;
 
-    // [權限檢查] 啟動時檢查 LocalStorage
-    // 若無紀錄，直接停留在登入頁 (HTML預設行為)
+    // 自動登入檢查
     const savedUser = localStorage.getItem('pancad_user');
     if (savedUser) {
         currentUser = savedUser;
-        verifyBackendAuth(savedUser); // 呼叫後端驗證是否在使用者清單內
+        verifyBackendAuth(savedUser);
     }
 };
 
@@ -61,15 +60,13 @@ function handleCredentialResponse(r) {
 
 function decodeJwtResponse(token) { return JSON.parse(decodeURIComponent(window.atob(token.split('.')[1].replace(/-/g, '+').replace(/_/g, '/')).split('').map(c => '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2)).join(''))); }
 
-// [核心修正] 嚴格權限驗證
+// [核心] 權限驗證
 async function verifyBackendAuth(email) {
     showLoading(true);
     try {
-        // 向後端請求資料，同時後端會檢查 User List
         const res = await fetch(CONFIG.SCRIPT_URL, { method: "POST", body: JSON.stringify({ action: "getDashboardData", userEmail: email }) });
         const json = await res.json();
         
-        // 若後端回傳成功，代表 User 在清單內且 Active
         if (json.status === 'success') {
             currentRole = json.role;
             document.getElementById('login-view').classList.add('d-none');
@@ -86,16 +83,11 @@ async function verifyBackendAuth(email) {
             renderDashboard(json.data);
             loadRadarData(); 
         } else { 
-            // [安全性] 若後端回傳錯誤 (例如不在名單內)，強制踢出
-            alert("存取被拒：您的帳號不在允許清單中，或已被停用。請聯繫管理員。"); 
+            // 權限失敗，強制踢出
+            alert("存取被拒：您的帳號不在允許清單中，或已被停用。"); 
             logout(); 
         }
-    } catch (e) { 
-        console.error(e); 
-        alert("系統連線錯誤，請稍後再試。");
-        // 若連線失敗，為安全起見也登出
-        // logout(); 
-    } finally { showLoading(false); }
+    } catch (e) { console.error(e); logout(); } finally { showLoading(false); }
 }
 
 // Config & Nav
@@ -230,15 +222,17 @@ function renderFinanceTable() {
 
     sortedStats.forEach(s => {
         let dataMonth = s.Year_Month;
+        let dataMonthStr = "";
+        
         if (typeof dataMonth === 'object') {
              let y = dataMonth.getFullYear();
              let m = String(dataMonth.getMonth() + 1).padStart(2, '0');
-             dataMonth = `${y}-${m}`;
+             dataMonthStr = `${y}-${m}`;
         } else {
-             dataMonth = String(dataMonth).substring(0, 7);
+             dataMonthStr = String(dataMonth).substring(0, 7);
         }
 
-        if (dataMonth !== selMonth) return;
+        if (dataMonthStr !== selMonth) return;
         
         hasData = true;
         const hosp = globalHospitals.find(h => String(h.Hospital_ID) === String(s.Hospital_ID));
@@ -252,7 +246,10 @@ function renderFinanceTable() {
         
         let displayDate = s.Year_Month;
         if(typeof s.Year_Month === 'object') {
-            displayDate = s.Year_Month.toLocaleDateString('zh-TW');
+            let y = s.Year_Month.getFullYear();
+            let m = String(s.Year_Month.getMonth() + 1).padStart(2, '0');
+            let d = String(s.Year_Month.getDate()).padStart(2, '0');
+            displayDate = `${y}-${m}-${d}`;
         } else {
             displayDate = String(s.Year_Month).substring(0, 10);
         }
@@ -286,8 +283,52 @@ function renderLogTable(l) { const t=document.getElementById('admin-logs-body');
 // Actions
 function openHospitalInput(id){ showPage('hospital-input'); document.getElementById('form-hospital').reset(); setVal('h-id',''); setVal('h-link',''); if(id){ const h=globalHospitals.find(x=>x.Hospital_ID===id); if(h){ setVal('h-id',h.Hospital_ID); setVal('h-name',h.Name); setVal('h-region',h.Region); setVal('h-level',h.Level); setVal('h-address',h.Address); setVal('h-status',h.Status); setVal('h-exclusivity',h.Exclusivity); setVal('h-unit-price',h.Unit_Price); setVal('h-ebm',h.EBM_Share_Ratio); setVal('h-amount',h.Contract_Amount); setVal('h-link',h.Contract_Link); if(h.Contract_Start_Date)setVal('h-start',h.Contract_Start_Date.split('T')[0]); if(h.Contract_End_Date)setVal('h-end',h.Contract_End_Date.split('T')[0]); } } }
 async function submitHospital(){ showLoading(true); let link=getVal('h-link'); const f=document.getElementById('h-file'); if(f.files.length){ link=(await uploadFile(f.files[0])).url; } const p={hospitalId:getVal('h-id'), name:getVal('h-name'), region:getVal('h-region'), level:getVal('h-level'), address:getVal('h-address'), status:getVal('h-status'), exclusivity:getVal('h-exclusivity'), unitPrice:getVal('h-unit-price'), ebmShare:getVal('h-ebm'), contractAmount:getVal('h-amount'), contractStart:getVal('h-start'), contractEnd:getVal('h-end'), contractLink:link, salesRep:document.getElementById('user-name').innerText}; await fetch(CONFIG.SCRIPT_URL,{method:'POST',body:JSON.stringify({action:'saveHospital',userEmail:currentUser,payload:p})}); await loadRadarData(); showPage('hospitals'); showLoading(false); }
-function openKOLModal(id){ document.getElementById('form-kol').reset(); setVal('k-id',''); const s=document.getElementById('k-hospital-id'); s.innerHTML='<option value="">選擇醫院</option>'; globalHospitals.forEach(h=>s.innerHTML+=`<option value="${h.Hospital_ID}">${h.Name}</option>`); if(id){const k=globalKOLs.find(x=>x.KOL_ID===id);if(k){setVal('k-id',k.KOL_ID);setVal('k-hospital-id',k.Hospital_ID);setVal('k-name',k.Name);setVal('k-title',k.Title);setVal('k-email',k.Email);setVal('k-stage',k.Visit_Stage);setVal('k-prob',k.Probability);setVal('k-note',k.Visit_Note);}} kolModal.show(); }
-async function submitKOL(){ const p={kolId:getVal('k-id'), hospitalId:getVal('k-hospital-id'), name:getVal('k-name'), title:getVal('k-title'), email:getVal('k-email'), visitStage:getVal('k-stage'), probability:getVal('k-prob'), visitNote:getVal('k-note')}; if(!p.name)return; showLoading(true); await fetch(CONFIG.SCRIPT_URL,{method:'POST',body:JSON.stringify({action:'saveKOL',userEmail:currentUser,payload:p})}); kolModal.hide(); loadKOLData(); showLoading(false); }
+
+// [修改] 開啟 KOL 視窗時帶入電話
+function openKOLModal(id){ 
+    document.getElementById('form-kol').reset(); 
+    setVal('k-id',''); 
+    const s=document.getElementById('k-hospital-id'); 
+    s.innerHTML='<option value="">選擇醫院</option>'; 
+    globalHospitals.forEach(h=>s.innerHTML+=`<option value="${h.Hospital_ID}">${h.Name}</option>`); 
+    
+    if(id){
+        const k=globalKOLs.find(x=>x.KOL_ID===id);
+        if(k){
+            setVal('k-id',k.KOL_ID);
+            setVal('k-hospital-id',k.Hospital_ID);
+            setVal('k-name',k.Name);
+            setVal('k-title',k.Title);
+            setVal('k-email',k.Email);
+            setVal('k-phone',k.Phone); // [新增]
+            setVal('k-stage',k.Visit_Stage);
+            setVal('k-prob',k.Probability);
+            setVal('k-note',k.Visit_Note);
+        }
+    } 
+    kolModal.show(); 
+}
+
+// [修改] 送出 KOL 資料 (包含 phone)
+async function submitKOL(){ 
+    const p={
+        kolId:getVal('k-id'), 
+        hospitalId:getVal('k-hospital-id'), 
+        name:getVal('k-name'), 
+        title:getVal('k-title'), 
+        phone:getVal('k-phone'), // [新增]
+        email:getVal('k-email'), 
+        visitStage:getVal('k-stage'), 
+        probability:getVal('k-prob'), 
+        visitNote:getVal('k-note')
+    }; 
+    if(!p.name)return; 
+    showLoading(true); 
+    await fetch(CONFIG.SCRIPT_URL,{method:'POST',body:JSON.stringify({action:'saveKOL',userEmail:currentUser,payload:p})}); 
+    kolModal.hide(); 
+    loadKOLData(); 
+    showLoading(false); 
+}
 
 function openSettlementModal(id) { 
     document.getElementById('form-settlement').reset();
