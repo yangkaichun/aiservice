@@ -1,4 +1,4 @@
-// app.js V5.1 (UI Refresh, Strict Access, Features)
+// app.js V5.2 (Fix KPI Display & All Features)
 
 let currentUser = null;
 let currentRole = null;
@@ -59,7 +59,7 @@ function handleCredentialResponse(r) {
 
 function decodeJwtResponse(token) { return JSON.parse(decodeURIComponent(window.atob(token.split('.')[1].replace(/-/g, '+').replace(/_/g, '/')).split('').map(c => '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2)).join(''))); }
 
-// [權限驗證] 強制檢查
+// 權限驗證
 async function verifyBackendAuth(email) {
     showLoading(true);
     try {
@@ -141,7 +141,7 @@ async function loadFinanceData() {
 
 async function loadAdminData() { if(currentRole!=='Admin')return; showLoading(true); try{ const [u,l] = await Promise.all([fetch(CONFIG.SCRIPT_URL,{method:"POST",body:JSON.stringify({action:"getUsers",userEmail:currentUser})}), fetch(CONFIG.SCRIPT_URL,{method:"POST",body:JSON.stringify({action:"getLogs",userEmail:currentUser})})]); renderUserTable((await u.json()).data); renderLogTable((await l.json()).data); }catch(e){}finally{showLoading(false);} }
 
-// [更新] Dashboard Renderer (New UI & IDs)
+// [核心修正] Dashboard 渲染
 function renderDashboard(data) {
     const kpi = data.kpi;
     
@@ -170,7 +170,7 @@ function renderDashboard(data) {
     updateDashboardCharts();
 }
 
-// [更新] 營收卡片連動計算 (適配新 UI ID)
+// [核心修正] 營收卡片連動計算 (使用新的 kpi-gross-display ID)
 function updateDashboardCharts() {
     const start = getVal('dash-start'), end = getVal('dash-end'), ctxTrend = document.getElementById('chart-trend');
     if (!ctxTrend || !globalMonthlyData) return;
@@ -192,9 +192,10 @@ function updateDashboardCharts() {
         }
     });
 
-    // 寫入 Hero Card
+    // [修正點] 正確寫入新的 UI 元素
     const grossEl = document.getElementById('kpi-gross-display');
     const netEl = document.getElementById('kpi-net-display');
+    
     if (grossEl && netEl) {
         grossEl.innerText = "$" + totalGross.toLocaleString();
         netEl.innerText = "$" + totalNet.toLocaleString();
@@ -256,6 +257,11 @@ function renderFinanceTable() {
     });
     
     if(!hasData) tbody.innerHTML = `<tr><td colspan="7" class="text-center text-muted py-4">本月尚無結算資料</td></tr>`;
+
+    document.getElementById('fin-kpi-gross').innerText="$"+kpiG.toLocaleString(); 
+    document.getElementById('fin-kpi-net').innerText="$"+kpiN.toLocaleString();
+    document.getElementById('fin-kpi-ar').innerText="$"+kpiA.toLocaleString(); 
+    document.getElementById('fin-kpi-ebm').innerText="$"+kpiE.toLocaleString();
 }
 
 function renderRadarTable() { const reg = getVal('radar-filter-region'), lvl = getVal('radar-filter-level'), sts = getVal('radar-filter-status'); const tbody = document.getElementById('radar-table-body'); tbody.innerHTML = ''; globalHospitals.forEach(h => { if (reg!=='All' && h.Region!==reg) return; if (lvl!=='All' && h.Level!==lvl) return; if (sts!=='All' && h.Status!==sts) return; let badge = h.Status==='已簽約'?'bg-success':(h.Status==='開發中'?'bg-warning text-dark':'bg-secondary'); tbody.innerHTML += `<tr><td><strong>${h.Name}</strong></td><td>${h.Region||'-'}</td><td>${h.Level||'-'}</td><td><span class="badge ${badge}">${h.Status||''}</span></td><td>${h.Exclusivity==='Yes'?'<i class="fas fa-check text-success"></i>':'-'}</td><td><button class="btn btn-sm btn-outline-primary" onclick="openHospitalInput('${h.Hospital_ID}')">編輯</button></td></tr>`; }); }
@@ -316,7 +322,7 @@ function openSettlementModal(id) {
     document.getElementById('form-settlement').reset();
     setVal('s-record-id', '');
     
-    // 預設當天
+    // 預設為當天
     const now = new Date();
     const year = now.getFullYear();
     const month = String(now.getMonth() + 1).padStart(2, '0');
