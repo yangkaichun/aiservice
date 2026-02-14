@@ -3,8 +3,6 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-     <link rel="shortcut icon" href="https://www.pancad.ai/static/images/favicon.ico?v=20240229">
-     
     <title>PANCREASaver AI Console | PanCAD.ai</title>
     <style>
         /* --- CSS Reset & Variables --- */
@@ -220,28 +218,146 @@
         }
         .tab-btn.active { color: var(--accent-color); border-bottom-color: var(--accent-color); }
 
-        /* --- Modal --- */
+        /* --- Report Modal (Simulating A4 PDF) --- */
         .modal-overlay {
             position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            background: rgba(0,0,0,0.8); z-index: 1000;
-            display: none; justify-content: center; align-items: center;
+            background: rgba(0,0,0,0.85); z-index: 1000;
+            display: none; justify-content: center; align-items: flex-start;
+            overflow-y: auto; padding: 40px 0;
         }
         .modal {
-            background: var(--card-color); width: 800px; max-width: 90%;
-            border-radius: 12px; padding: 30px;
+            background: var(--card-color); width: 220mm; /* A4 width approx */
+            border-radius: 0; padding: 0;
+            position: relative;
+            box-shadow: 0 0 30px rgba(0,0,0,0.5);
+        }
+        
+        /* A4 Paper Style for Report Content */
+        .a4-page {
+            background: white;
+            color: black;
+            width: 100%;
+            min-height: 297mm;
+            padding: 20mm;
+            font-family: 'Times New Roman', "DFKai-SB", "BiauKai", serif; /* Serif for formal report */
             position: relative;
         }
-        .report-preview {
-            background: #fff; color: #000; padding: 40px;
-            min-height: 500px; font-family: 'Times New Roman', serif;
+
+        .report-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-end;
+            border-bottom: 3px solid #000;
+            padding-bottom: 15px;
+            margin-bottom: 20px;
         }
-        .report-header { border-bottom: 2px solid #000; margin-bottom: 20px; padding-bottom: 10px; display: flex; justify-content: space-between;}
-        .report-images { display: flex; gap: 20px; margin: 20px 0; }
-        .report-img { width: 50%; height: 200px; background: #ddd; display: flex; justify-content: center; align-items: center; position: relative;}
-        .report-mask { 
-            position: absolute; width: 40px; height: 30px; background: rgba(255, 0, 0, 0.4); 
-            border: 2px solid red; top: 40%; left: 45%; border-radius: 50%;
+        .hospital-title {
+            font-size: 24pt;
+            font-weight: bold;
+            font-family: "Microsoft JhengHei", sans-serif;
         }
+        .report-title {
+            font-size: 14pt;
+            font-weight: bold;
+            text-align: right;
+        }
+        .report-id {
+            font-size: 10pt;
+            color: #444;
+            text-align: right;
+            margin-top: 5px;
+        }
+
+        .patient-info-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 20px;
+            font-family: "Microsoft JhengHei", sans-serif;
+        }
+        .patient-info-table td {
+            padding: 8px;
+            border-bottom: 1px solid #ddd;
+            font-size: 11pt;
+        }
+        .info-label { font-weight: bold; width: 120px; color: #333; }
+
+        .result-box {
+            border: 2px solid;
+            padding: 15px;
+            margin: 20px 0;
+            border-radius: 5px;
+        }
+        .result-box.positive {
+            border-color: #d32f2f;
+            background-color: #ffebee;
+            color: #b71c1c;
+        }
+        .result-box.negative {
+            border-color: #388e3c;
+            background-color: #e8f5e9;
+            color: #1b5e20;
+        }
+        .result-header { font-size: 14pt; font-weight: bold; margin-bottom: 10px; }
+        .result-text { font-size: 11pt; line-height: 1.5; }
+
+        .image-section {
+            display: flex;
+            gap: 10px;
+            margin-top: 30px;
+            justify-content: center;
+        }
+        .image-container {
+            width: 48%;
+            text-align: center;
+        }
+        .dicom-img {
+            width: 100%;
+            height: auto;
+            aspect-ratio: 1/1;
+            background-color: #000;
+            border: 1px solid #000;
+            display: block;
+            margin-bottom: 5px;
+        }
+        .img-caption {
+            font-size: 10pt;
+            font-weight: bold;
+            color: #333;
+            margin-top: 5px;
+            font-family: "Microsoft JhengHei", sans-serif;
+        }
+
+        .report-footer {
+            margin-top: 50px;
+            font-size: 9pt;
+            color: #666;
+            border-top: 1px solid #ccc;
+            padding-top: 10px;
+            text-align: center;
+            line-height: 1.4;
+        }
+
+        /* Modal Controls */
+        .modal-controls {
+            position: absolute;
+            top: 10px;
+            right: -60px;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+        .control-btn {
+            width: 50px; height: 50px;
+            border-radius: 50%;
+            border: none;
+            background: rgba(255,255,255,0.1);
+            color: white;
+            font-size: 1.5rem;
+            cursor: pointer;
+            display: flex; align-items: center; justify-content: center;
+            transition: 0.2s;
+        }
+        .control-btn:hover { background: var(--accent-color); color: black; }
 
     </style>
 </head>
@@ -491,52 +607,80 @@
 
     <div class="modal-overlay" id="reportModal" onclick="closeModal(event)">
         <div class="modal">
-            <div style="display: flex; justify-content: space-between; margin-bottom: 10px;">
-                <h3>報告預覽 (PDF)</h3>
-                <button onclick="document.getElementById('reportModal').style.display='none'" style="background:none; border:none; color:white; font-size: 1.5rem; cursor:pointer;">&times;</button>
+            
+            <div class="modal-controls">
+                <button class="control-btn" title="下載 PDF"><span style="font-size:1.2rem;">📥</span></button>
+                <button class="control-btn" onclick="document.getElementById('reportModal').style.display='none'" title="關閉">✕</button>
             </div>
-            <div class="report-preview">
+
+            <div class="a4-page">
                 <div class="report-header">
-                    <h2 id="preview-hospital">國立臺灣大學醫學院附設醫院</h2>
+                    <div class="hospital-title">國立臺灣大學醫學院附設醫院</div>
                     <div style="text-align: right;">
-                        <div>PANCREASaver AI Report</div>
-                        <div id="preview-date">2026-02-14</div>
+                        <div class="report-title">助胰見 人工智慧胰腺癌輔助偵測系統</div>
+                        <div class="report-id">報告編號: PR-2026-5065</div>
                     </div>
                 </div>
-                <div>
-                    <p><strong>Patient Name:</strong> <span id="preview-name">Chen, XX</span></p>
-                    <p><strong>Patient ID:</strong> <span id="preview-id">A123456789</span></p>
-                    <p><strong>Accession No:</strong> ACC2026021401</p>
-                </div>
+
+                <table class="patient-info-table">
+                    <tr>
+                        <td class="info-label">姓名:</td>
+                        <td id="rpt-name">Pancreas_Cancer_02</td>
+                        <td class="info-label">影像日期:</td>
+                        <td id="rpt-date">2026-02-14</td>
+                    </tr>
+                    <tr>
+                        <td class="info-label">病歷號:</td>
+                        <td id="rpt-id">P2026021401</td>
+                        <td class="info-label">AI分析日期:</td>
+                        <td>2026-02-14</td>
+                    </tr>
+                    <tr>
+                        <td class="info-label">年齡/性別:</td>
+                        <td>65 / M</td>
+                        <td class="info-label">申請單號:</td>
+                        <td>ACC2026021401</td>
+                    </tr>
+                </table>
+
+                <h3 style="margin-top: 30px; font-family:'Microsoft JhengHei';">綜合判斷/總結 (Summary)</h3>
                 
-                <div style="background-color: #ffebee; border: 1px solid #ef4444; padding: 10px; margin: 15px 0; color: #b91c1c;">
-                    <strong>AI Analysis Result: POSITIVE (陽性)</strong><br>
-                    The CAD-assisted analysis strongly suggests the presence of a malignant pancreatic neoplasm.
-                </div>
-
-                <div class="report-images">
-                    <div class="report-img">
-                        <span style="color: #666;">Original CT</span>
+                <div id="rpt-result-box" class="result-box positive">
+                    <div class="result-header" id="rpt-result-title">
+                        陽性 Positive
                     </div>
-                    <div class="report-img">
-                        <span style="color: #666;">AI Annotation</span>
-                        <div class="report-mask"></div>
+                    <div class="result-text" id="rpt-result-desc">
+                        The CAD-assisted analysis strongly suggests the presence of a malignant pancreatic neoplasm.<br>
+                        經電腦輔助分析強烈提示胰臟內可能存在惡性腫瘤，建議進一步檢查以確認診斷。
                     </div>
                 </div>
 
-                <p style="font-size: 0.8rem; color: #666; margin-top: 30px;">
-                    *Disclaimer: 本產品 PANCREASaver 僅限於輔助醫師判讀影像，不可作為診斷的唯一依據。
-                </p>
+                <h3 style="margin-top: 30px; font-family:'Microsoft JhengHei';">影像分析結果 (Imaging Findings)</h3>
+                
+                <div class="image-section">
+                    <div class="image-container">
+                        <img src="image/book_ct1_org.svg" class="dicom-img" alt="Original CT" onerror="this.src='https://via.placeholder.com/400?text=Original+CT+Missing'">
+                        <div class="img-caption">電腦斷層原圖 (Original)</div>
+                    </div>
+                    <div class="image-container">
+                        <img id="rpt-ai-img" src="image/book_ct1_seg.svg" class="dicom-img" alt="AI Analysis" onerror="this.src='https://via.placeholder.com/400?text=AI+Analysis+Missing'">
+                        <div class="img-caption">助胰見分析圖 (AI Annotation)</div>
+                    </div>
+                </div>
+
+                <div class="report-footer">
+                    Ver.1.0.2024<br>
+                    電腦斷層影像並非診斷胰臟疾病的唯一依據，尚需參考其他臨床資訊。助胰見的判讀結果不能取代專業醫師之診斷。<br>
+                    製造業者: 仲智數位健康股份有限公司 PanCAD.ai Co., Ltd.
+                </div>
             </div>
-            <div style="text-align: right; margin-top: 20px;">
-                <button class="btn btn-outline" onclick="document.getElementById('reportModal').style.display='none'">關閉</button>
-                <button class="btn btn-primary">下載 PDF</button>
-            </div>
+
         </div>
     </div>
 
     <script>
         // --- Mock Data ---
+        // 模擬數據：第一筆為陽性(展示 book_ct1_seg)，第二筆為陰性
         const mockData = [
             { id: "P2026021401", name: "Wang, Da-Ming", date: "2026-02-14 09:30", status: "Completed", result: "Positive", sent: true },
             { id: "P2026021402", name: "Lee, Si-Min", date: "2026-02-14 10:15", status: "Completed", result: "Negative", sent: true },
@@ -545,21 +689,12 @@
 
         // --- Navigation Logic ---
         function switchPage(pageId) {
-            // Update Menu
             document.querySelectorAll('.nav-item').forEach(item => item.classList.remove('active'));
             event.currentTarget.classList.add('active');
-
-            // Update Content
             document.querySelectorAll('.section').forEach(sec => sec.classList.remove('active'));
             document.getElementById(pageId).classList.add('active');
             
-            // Update Title
-            const titles = {
-                'dashboard': 'Dashboard',
-                'worklist': 'Worklist Management',
-                'upload': 'Upload DICOM',
-                'settings': 'System Configuration'
-            };
+            const titles = { 'dashboard': 'Dashboard', 'worklist': 'Worklist Management', 'upload': 'Upload DICOM', 'settings': 'System Configuration' };
             document.getElementById('pageTitle').innerText = titles[pageId];
 
             if(pageId === 'dashboard' || pageId === 'worklist') {
@@ -571,7 +706,6 @@
         function switchSettingTab(btn, tabId) {
             document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
             btn.classList.add('active');
-            
             document.querySelectorAll('.setting-content').forEach(c => c.style.display = 'none');
             document.getElementById(tabId).style.display = 'block';
         }
@@ -580,51 +714,74 @@
         function renderTable() {
             const tbody = document.getElementById('worklist-body');
             const recentTbody = document.getElementById('recent-table');
-            
             let html = '';
             
             mockData.forEach(item => {
-                let statusBadge = '';
-                let resultBadge = '-';
-                let actionBtn = '';
-
+                let statusBadge = '', resultBadge = '-', actionBtn = '';
                 if(item.status === 'Completed') {
                     statusBadge = `<span class="badge badge-completed">Completed</span>`;
-                    if(item.result === 'Positive') {
-                        resultBadge = `<span class="badge badge-positive">Positive (89%)</span>`;
-                    } else {
-                        resultBadge = `<span class="badge badge-negative">Negative</span>`;
-                    }
-                    actionBtn = `<button class="btn btn-sm btn-outline" onclick="showReport('${item.name}', '${item.id}', '${item.result}')">報告</button>`;
+                    resultBadge = item.result === 'Positive' ? 
+                        `<span class="badge badge-positive">Positive (89%)</span>` : 
+                        `<span class="badge badge-negative">Negative</span>`;
+                    
+                    // Pass the index or ID to identify data
+                    actionBtn = `<button class="btn btn-sm btn-outline" onclick="showReport('${item.id}')">報告</button>`;
                 } else if (item.status === 'Processing') {
                     statusBadge = `<span class="badge badge-processing">Processing...</span>`;
                 } else {
                     statusBadge = `<span class="badge" style="background:#333;">Queued</span>`;
                 }
-
                 let sentIcon = item.sent ? `<span style="color:var(--success-color)">✔ Sent</span>` : `<span style="color:#666">Pending</span>`;
 
-                html += `
-                    <tr>
-                        <td>${statusBadge}</td>
-                        <td>${item.id}</td>
-                        <td>${item.name}</td>
-                        <td>${item.date}</td>
-                        <td>${resultBadge}</td>
-                        <td>${sentIcon}</td>
-                        <td>${actionBtn}</td>
-                    </tr>
-                `;
+                html += `<tr><td>${statusBadge}</td><td>${item.id}</td><td>${item.name}</td><td>${item.date}</td><td>${resultBadge}</td><td>${sentIcon}</td><td>${actionBtn}</td></tr>`;
             });
 
             if(tbody) tbody.innerHTML = html;
-            if(recentTbody) recentTbody.innerHTML = html; // Simple duplication for demo
+            if(recentTbody) recentTbody.innerHTML = html; 
+        }
+
+        // --- Report Logic (Enhanced) ---
+        function showReport(patientId) {
+            const data = mockData.find(d => d.id === patientId);
+            if(!data) return;
+
+            // Update Text Fields
+            document.getElementById('rpt-name').innerText = data.name;
+            document.getElementById('rpt-id').innerText = data.id;
+            document.getElementById('rpt-date').innerText = data.date.split(' ')[0];
+
+            // Toggle Result Box Style & Content
+            const box = document.getElementById('rpt-result-box');
+            const title = document.getElementById('rpt-result-title');
+            const desc = document.getElementById('rpt-result-desc');
+            const aiImg = document.getElementById('rpt-ai-img');
+
+            if (data.result === 'Positive') {
+                box.className = 'result-box positive';
+                title.innerText = '陽性 Positive';
+                desc.innerHTML = `The CAD-assisted analysis strongly suggests the presence of a malignant pancreatic neoplasm.<br>經電腦輔助分析強烈提示胰臟內可能存在惡性腫瘤，建議進一步檢查以確認診斷。`;
+                // Positive case: Show Segmented Image (book_ct1_seg.svg)
+                aiImg.src = "image/book_ct1_seg.svg";
+            } else {
+                box.className = 'result-box negative';
+                title.innerText = '陰性 Negative';
+                desc.innerHTML = `No suspicious pancreatic lesion was detected in the analysis.<br>經電腦輔助分析未發現明顯胰臟腫瘤特徵，但仍請依臨床症狀綜合判斷。`;
+                // Negative case: Show Original Image (book_ct1_org.svg) - assuming no markings for negative
+                aiImg.src = "image/book_ct1_org.svg"; 
+            }
+
+            document.getElementById('reportModal').style.display = 'flex';
+        }
+
+        function closeModal(e) {
+            if (e.target.classList.contains('modal-overlay')) {
+                document.getElementById('reportModal').style.display = 'none';
+            }
         }
 
         // --- Upload Simulation ---
         const dropZone = document.getElementById('dropZone');
         const progressBar = document.getElementById('progressBar');
-        const progressText = document.getElementById('progressText');
         const uploadProgress = document.getElementById('uploadProgress');
 
         dropZone.addEventListener('click', startUploadSim);
@@ -635,60 +792,36 @@
             const interval = setInterval(() => {
                 if (width >= 100) {
                     clearInterval(interval);
-                    // Add new Mock Data
                     const newId = "P202602140" + (mockData.length + 1);
-                    mockData.unshift({
-                        id: newId,
-                        name: "New Patient (Upload)",
-                        date: new Date().toLocaleString(),
-                        status: "Queued",
-                        result: null,
-                        sent: false
-                    });
+                    // Force new upload to be Positive to demo the SVG
+                    mockData.unshift({ id: newId, name: "New Patient (Upload)", date: new Date().toLocaleString(), status: "Queued", result: null, sent: false });
                     
-                    // Trigger Processing Simulation
                     setTimeout(() => { mockData[0].status = "Processing"; renderTable(); }, 1000);
                     setTimeout(() => { 
                         mockData[0].status = "Completed"; 
-                        mockData[0].result = Math.random() > 0.7 ? "Positive" : "Negative"; 
+                        mockData[0].result = "Positive"; 
                         mockData[0].sent = true;
                         renderTable();
-                        alert(`Analysis Complete for ${newId}: ${mockData[0].result}`);
-                    }, 4000);
+                        // alert(`Analysis Complete: Positive (Lesion Detected)`);
+                    }, 3000);
 
                     renderTable();
-                    alert("上傳成功！已加入分析佇列。");
                     uploadProgress.style.display = 'none';
-                    progressBar.style.width = '0%';
                     switchPage('worklist');
                 } else {
                     width += 5;
                     progressBar.style.width = width + '%';
-                    progressText.innerText = width + '%';
+                    document.getElementById('progressText').innerText = width + '%';
                 }
-            }, 100);
+            }, 80);
         }
 
-        // --- Report Modal ---
-        function showReport(name, id, result) {
-            document.getElementById('preview-name').innerText = name;
-            document.getElementById('preview-id').innerText = id;
-            document.getElementById('reportModal').style.display = 'flex';
-        }
-
-        function closeModal(e) {
-            if (e.target.classList.contains('modal-overlay')) {
-                document.getElementById('reportModal').style.display = 'none';
-            }
-        }
-
-        // --- Echo Test Simulation ---
+        // --- Echo Test ---
         function testEcho() {
             const btn = event.target;
             const originalText = btn.innerText;
             btn.innerText = "Testing...";
             btn.disabled = true;
-
             setTimeout(() => {
                 btn.innerText = "✔ Success";
                 btn.style.color = "var(--success-color)";
@@ -702,7 +835,7 @@
             }, 1000);
         }
 
-        // Initialize
+        // Init
         renderTable();
     </script>
 </body>
