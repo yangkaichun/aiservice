@@ -1,4 +1,4 @@
-// app.js V5.2 (Fix KPI Display & All Features)
+// app.js V5.3 (KOL Slider & Auto-Sync Refresh)
 
 let currentUser = null;
 let currentRole = null;
@@ -24,7 +24,6 @@ window.onload = function() {
     if(document.getElementById('dash-end')) document.getElementById('dash-end').value = `${y}-12`;
     if(document.getElementById('finance-month-picker')) document.getElementById('finance-month-picker').value = `${y}-${m}`;
 
-    // 自動登入檢查
     const savedUser = localStorage.getItem('pancad_user');
     if (savedUser) {
         currentUser = savedUser;
@@ -32,7 +31,6 @@ window.onload = function() {
     }
 };
 
-// Utils
 function getVal(id) { const el = document.getElementById(id); return el ? el.value : ''; }
 function setVal(id, value) { const el = document.getElementById(id); if (el) el.value = value || ''; }
 function showLoading(show) { document.getElementById('loading-overlay').classList.toggle('d-none', !show); }
@@ -43,7 +41,6 @@ function logout() {
 }
 function toggleSidebar() { document.getElementById('main-sidebar').classList.toggle('show'); }
 
-// Auth
 function handleCredentialResponse(r) { 
     const payload = decodeJwtResponse(r.credential);
     currentUser = payload.email; 
@@ -59,7 +56,6 @@ function handleCredentialResponse(r) {
 
 function decodeJwtResponse(token) { return JSON.parse(decodeURIComponent(window.atob(token.split('.')[1].replace(/-/g, '+').replace(/_/g, '/')).split('').map(c => '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2)).join(''))); }
 
-// 權限驗證
 async function verifyBackendAuth(email) {
     showLoading(true);
     try {
@@ -88,7 +84,6 @@ async function verifyBackendAuth(email) {
     } catch (e) { console.error(e); logout(); } finally { showLoading(false); }
 }
 
-// Config & Nav
 async function loadSystemConfig() {
     try {
         const res = await fetch(CONFIG.SCRIPT_URL, { method: "POST", body: JSON.stringify({ action: "getConfig", userEmail: currentUser }) });
@@ -118,7 +113,6 @@ function showPage(pageId) {
     if (pageId === 'dashboard') updateDashboardCharts(); 
 }
 
-// Loaders
 async function loadRadarData() { try { const r = await fetch(CONFIG.SCRIPT_URL, { method: "POST", body: JSON.stringify({ action: "getHospitals", userEmail: currentUser }) }); globalHospitals = (await r.json()).data; renderRadarTable(); renderHospitalList(); } catch(e){} }
 async function loadKOLData() { try { const r = await fetch(CONFIG.SCRIPT_URL, { method: "POST", body: JSON.stringify({ action: "getKOLs", userEmail: currentUser }) }); globalKOLs = (await r.json()).data; renderKOLList(); } catch(e){} }
 
@@ -141,19 +135,13 @@ async function loadFinanceData() {
 
 async function loadAdminData() { if(currentRole!=='Admin')return; showLoading(true); try{ const [u,l] = await Promise.all([fetch(CONFIG.SCRIPT_URL,{method:"POST",body:JSON.stringify({action:"getUsers",userEmail:currentUser})}), fetch(CONFIG.SCRIPT_URL,{method:"POST",body:JSON.stringify({action:"getLogs",userEmail:currentUser})})]); renderUserTable((await u.json()).data); renderLogTable((await l.json()).data); }catch(e){}finally{showLoading(false);} }
 
-// [核心修正] Dashboard 渲染
 function renderDashboard(data) {
     const kpi = data.kpi;
     
-    // 填入 4 個新指標
-    if(document.getElementById('kpi-kol-count')) 
-        document.getElementById('kpi-kol-count').innerText = (kpi.kolCount || 0).toLocaleString();
-    if(document.getElementById('kpi-dev-hospital-count')) 
-        document.getElementById('kpi-dev-hospital-count').innerText = (kpi.developingCount || 0).toLocaleString();
-    if(document.getElementById('kpi-intro-hospital-count')) 
-        document.getElementById('kpi-intro-hospital-count').innerText = (kpi.productIntroCount || 0).toLocaleString();
-    if(document.getElementById('kpi-signed-hospital-count')) 
-        document.getElementById('kpi-signed-hospital-count').innerText = (kpi.signedCount || 0).toLocaleString();
+    if(document.getElementById('kpi-kol-count')) document.getElementById('kpi-kol-count').innerText = (kpi.kolCount || 0).toLocaleString();
+    if(document.getElementById('kpi-dev-hospital-count')) document.getElementById('kpi-dev-hospital-count').innerText = (kpi.developingCount || 0).toLocaleString();
+    if(document.getElementById('kpi-intro-hospital-count')) document.getElementById('kpi-intro-hospital-count').innerText = (kpi.productIntroCount || 0).toLocaleString();
+    if(document.getElementById('kpi-signed-hospital-count')) document.getElementById('kpi-signed-hospital-count').innerText = (kpi.signedCount || 0).toLocaleString();
 
     const ctxRegion = document.getElementById('chart-region');
     if (ctxRegion) {
@@ -170,7 +158,6 @@ function renderDashboard(data) {
     updateDashboardCharts();
 }
 
-// [核心修正] 營收卡片連動計算 (使用新的 kpi-gross-display ID)
 function updateDashboardCharts() {
     const start = getVal('dash-start'), end = getVal('dash-end'), ctxTrend = document.getElementById('chart-trend');
     if (!ctxTrend || !globalMonthlyData) return;
@@ -192,10 +179,8 @@ function updateDashboardCharts() {
         }
     });
 
-    // [修正點] 正確寫入新的 UI 元素
     const grossEl = document.getElementById('kpi-gross-display');
     const netEl = document.getElementById('kpi-net-display');
-    
     if (grossEl && netEl) {
         grossEl.innerText = "$" + totalGross.toLocaleString();
         netEl.innerText = "$" + totalNet.toLocaleString();
@@ -266,17 +251,21 @@ function renderFinanceTable() {
 
 function renderRadarTable() { const reg = getVal('radar-filter-region'), lvl = getVal('radar-filter-level'), sts = getVal('radar-filter-status'); const tbody = document.getElementById('radar-table-body'); tbody.innerHTML = ''; globalHospitals.forEach(h => { if (reg!=='All' && h.Region!==reg) return; if (lvl!=='All' && h.Level!==lvl) return; if (sts!=='All' && h.Status!==sts) return; let badge = h.Status==='已簽約'?'bg-success':(h.Status==='開發中'?'bg-warning text-dark':'bg-secondary'); tbody.innerHTML += `<tr><td><strong>${h.Name}</strong></td><td>${h.Region||'-'}</td><td>${h.Level||'-'}</td><td><span class="badge ${badge}">${h.Status||''}</span></td><td>${h.Exclusivity==='Yes'?'<i class="fas fa-check text-success"></i>':'-'}</td><td><button class="btn btn-sm btn-outline-primary" onclick="openHospitalInput('${h.Hospital_ID}')">編輯</button></td></tr>`; }); }
 function renderHospitalList() { const tbody = document.getElementById('hospital-list-body'); tbody.innerHTML = ''; globalHospitals.forEach(h => { tbody.innerHTML += `<tr><td>${h.Name}</td><td>${h.Level}</td><td>$${(Number(h.Unit_Price)||0).toLocaleString()}</td><td>${h.Exclusivity}</td><td>${h.Contract_End_Date ? h.Contract_End_Date.split('T')[0] : '-'}</td><td><button class="btn btn-sm btn-outline-primary" onclick="openHospitalInput('${h.Hospital_ID}')">Edit</button></td></tr>`; }); }
-function renderKOLList() { const tbody = document.getElementById('kol-list-body'); tbody.innerHTML = ''; globalKOLs.forEach(k => { const hName = (globalHospitals.find(h=>h.Hospital_ID===k.Hospital_ID)||{}).Name || k.Hospital_ID; tbody.innerHTML += `<tr><td><strong>${k.Name}</strong></td><td>${hName}</td><td>${k.Title}</td><td>${k.Visit_Stage}</td><td>${k.Probability}</td><td><button class="btn btn-sm btn-outline-success" onclick="openKOLModal('${k.KOL_ID}')">Edit</button></td></tr>`; }); }
+function renderKOLList() { const tbody = document.getElementById('kol-list-body'); tbody.innerHTML = ''; globalKOLs.forEach(k => { const hName = (globalHospitals.find(h=>h.Hospital_ID===k.Hospital_ID)||{}).Name || k.Hospital_ID; tbody.innerHTML += `<tr><td><strong>${k.Name}</strong></td><td>${hName}</td><td>${k.Title}</td><td>${k.Visit_Stage}</td><td>${k.Probability}%</td><td><button class="btn btn-sm btn-outline-success" onclick="openKOLModal('${k.KOL_ID}')">Edit</button></td></tr>`; }); }
 function renderUserTable(u) { const t=document.getElementById('admin-users-body'); t.innerHTML=''; u.forEach(x=>t.innerHTML+=`<tr><td>${x.Email}</td><td>${x.Name}</td><td>${x.Role}</td><td>${x.Status}</td><td>${x.Last_Login?new Date(x.Last_Login).toLocaleDateString():'-'}</td><td><button class="btn btn-sm btn-light" onclick="openUserModal('${x.Email}','${x.Name}','${x.Role}','${x.Status}')">Edit</button></td></tr>`); }
 function renderLogTable(l) { const t=document.getElementById('admin-logs-body'); t.innerHTML=''; l.reverse().forEach(x=>t.innerHTML+=`<tr><td>${new Date(x.Timestamp).toLocaleString()}</td><td>${x.User}</td><td>${x.Action}</td><td class="text-muted small">${x.Details}</td></tr>`); }
 
-// Actions
 function openHospitalInput(id){ showPage('hospital-input'); document.getElementById('form-hospital').reset(); setVal('h-id',''); setVal('h-link',''); if(id){ const h=globalHospitals.find(x=>x.Hospital_ID===id); if(h){ setVal('h-id',h.Hospital_ID); setVal('h-name',h.Name); setVal('h-region',h.Region); setVal('h-level',h.Level); setVal('h-address',h.Address); setVal('h-status',h.Status); setVal('h-exclusivity',h.Exclusivity); setVal('h-unit-price',h.Unit_Price); setVal('h-ebm',h.EBM_Share_Ratio); setVal('h-amount',h.Contract_Amount); setVal('h-link',h.Contract_Link); if(h.Contract_Start_Date)setVal('h-start',h.Contract_Start_Date.split('T')[0]); if(h.Contract_End_Date)setVal('h-end',h.Contract_End_Date.split('T')[0]); } } }
 async function submitHospital(){ showLoading(true); let link=getVal('h-link'); const f=document.getElementById('h-file'); if(f.files.length){ link=(await uploadFile(f.files[0])).url; } const p={hospitalId:getVal('h-id'), name:getVal('h-name'), region:getVal('h-region'), level:getVal('h-level'), address:getVal('h-address'), status:getVal('h-status'), exclusivity:getVal('h-exclusivity'), unitPrice:getVal('h-unit-price'), ebmShare:getVal('h-ebm'), contractAmount:getVal('h-amount'), contractStart:getVal('h-start'), contractEnd:getVal('h-end'), contractLink:link, salesRep:document.getElementById('user-name').innerText}; await fetch(CONFIG.SCRIPT_URL,{method:'POST',body:JSON.stringify({action:'saveHospital',userEmail:currentUser,payload:p})}); await loadRadarData(); showPage('hospitals'); showLoading(false); }
 
+// [修改] 開啟 KOL 視窗，設定 Slider 初始值
 function openKOLModal(id){ 
     document.getElementById('form-kol').reset(); 
     setVal('k-id',''); 
+    
+    // 預設為 20%
+    document.getElementById('k-prob-val').innerText = '20%';
+    
     const s=document.getElementById('k-hospital-id'); 
     s.innerHTML='<option value="">選擇醫院</option>'; 
     globalHospitals.forEach(h=>s.innerHTML+=`<option value="${h.Hospital_ID}">${h.Name}</option>`); 
@@ -291,13 +280,19 @@ function openKOLModal(id){
             setVal('k-email',k.Email);
             setVal('k-phone',k.Phone); 
             setVal('k-stage',k.Visit_Stage);
-            setVal('k-prob',k.Probability);
+            
+            // 讀取機率，沒值就給 20
+            let prob = k.Probability || 20;
+            setVal('k-prob', prob);
+            document.getElementById('k-prob-val').innerText = prob + '%';
+            
             setVal('k-note',k.Visit_Note);
         }
     } 
     kolModal.show(); 
 }
 
+// [修改] 送出 KOL 後，強制刷新 Dashboard，以確保自動連動的結果顯示
 async function submitKOL(){ 
     const p={
         kolId:getVal('k-id'), 
@@ -314,7 +309,21 @@ async function submitKOL(){
     showLoading(true); 
     await fetch(CONFIG.SCRIPT_URL,{method:'POST',body:JSON.stringify({action:'saveKOL',userEmail:currentUser,payload:p})}); 
     kolModal.hide(); 
-    loadKOLData(); 
+    
+    // 重載 KOL 列表
+    await loadKOLData(); 
+    
+    // 重載醫院資料 (因為後端可能幫我們把醫院升級為已簽約了)
+    await loadRadarData(); 
+    
+    // 重載 Dashboard 數據 (更新卡片 KPI)
+    const dashRes = await fetch(CONFIG.SCRIPT_URL, { method: "POST", body: JSON.stringify({ action: "getDashboardData", userEmail: currentUser }) });
+    const dashJson = await dashRes.json();
+    if (dashJson.status === 'success') {
+        globalMonthlyData = dashJson.data.monthlyStats || []; 
+        renderDashboard(dashJson.data);
+    }
+    
     showLoading(false); 
 }
 
@@ -322,7 +331,6 @@ function openSettlementModal(id) {
     document.getElementById('form-settlement').reset();
     setVal('s-record-id', '');
     
-    // 預設為當天
     const now = new Date();
     const year = now.getFullYear();
     const month = String(now.getMonth() + 1).padStart(2, '0');
