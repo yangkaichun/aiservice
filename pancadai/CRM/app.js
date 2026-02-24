@@ -1,4 +1,4 @@
-// app.js V5.3 (KOL Slider & Auto-Sync Refresh)
+// app.js V5.4 (Add Email Link in KOL List)
 
 let currentUser = null;
 let currentRole = null;
@@ -251,21 +251,40 @@ function renderFinanceTable() {
 
 function renderRadarTable() { const reg = getVal('radar-filter-region'), lvl = getVal('radar-filter-level'), sts = getVal('radar-filter-status'); const tbody = document.getElementById('radar-table-body'); tbody.innerHTML = ''; globalHospitals.forEach(h => { if (reg!=='All' && h.Region!==reg) return; if (lvl!=='All' && h.Level!==lvl) return; if (sts!=='All' && h.Status!==sts) return; let badge = h.Status==='已簽約'?'bg-success':(h.Status==='開發中'?'bg-warning text-dark':'bg-secondary'); tbody.innerHTML += `<tr><td><strong>${h.Name}</strong></td><td>${h.Region||'-'}</td><td>${h.Level||'-'}</td><td><span class="badge ${badge}">${h.Status||''}</span></td><td>${h.Exclusivity==='Yes'?'<i class="fas fa-check text-success"></i>':'-'}</td><td><button class="btn btn-sm btn-outline-primary" onclick="openHospitalInput('${h.Hospital_ID}')">編輯</button></td></tr>`; }); }
 function renderHospitalList() { const tbody = document.getElementById('hospital-list-body'); tbody.innerHTML = ''; globalHospitals.forEach(h => { tbody.innerHTML += `<tr><td>${h.Name}</td><td>${h.Level}</td><td>$${(Number(h.Unit_Price)||0).toLocaleString()}</td><td>${h.Exclusivity}</td><td>${h.Contract_End_Date ? h.Contract_End_Date.split('T')[0] : '-'}</td><td><button class="btn btn-sm btn-outline-primary" onclick="openHospitalInput('${h.Hospital_ID}')">Edit</button></td></tr>`; }); }
-function renderKOLList() { const tbody = document.getElementById('kol-list-body'); tbody.innerHTML = ''; globalKOLs.forEach(k => { const hName = (globalHospitals.find(h=>h.Hospital_ID===k.Hospital_ID)||{}).Name || k.Hospital_ID; tbody.innerHTML += `<tr><td><strong>${k.Name}</strong></td><td>${hName}</td><td>${k.Title}</td><td>${k.Visit_Stage}</td><td>${k.Probability}%</td><td><button class="btn btn-sm btn-outline-success" onclick="openKOLModal('${k.KOL_ID}')">Edit</button></td></tr>`; }); }
+
+// [修改] 渲染 KOL 列表，加入 Email 欄位及超連結
+function renderKOLList() { 
+    const tbody = document.getElementById('kol-list-body'); 
+    tbody.innerHTML = ''; 
+    globalKOLs.forEach(k => { 
+        const hName = (globalHospitals.find(h=>h.Hospital_ID===k.Hospital_ID)||{}).Name || k.Hospital_ID; 
+        
+        // 判斷 Email 是否有值，有的話產生 mailto 連結
+        const emailLink = k.Email ? `<a href="mailto:${k.Email}" class="text-decoration-none text-primary fw-medium"><i class="fas fa-envelope me-1"></i>${k.Email}</a>` : '<span class="text-muted">-</span>';
+        
+        tbody.innerHTML += `
+            <tr>
+                <td><strong>${k.Name}</strong></td>
+                <td>${hName}</td>
+                <td>${k.Title}</td>
+                <td>${emailLink}</td>
+                <td>${k.Visit_Stage}</td>
+                <td>${k.Probability}%</td>
+                <td><button class="btn btn-sm btn-outline-success" onclick="openKOLModal('${k.KOL_ID}')">Edit</button></td>
+            </tr>`; 
+    }); 
+}
+
 function renderUserTable(u) { const t=document.getElementById('admin-users-body'); t.innerHTML=''; u.forEach(x=>t.innerHTML+=`<tr><td>${x.Email}</td><td>${x.Name}</td><td>${x.Role}</td><td>${x.Status}</td><td>${x.Last_Login?new Date(x.Last_Login).toLocaleDateString():'-'}</td><td><button class="btn btn-sm btn-light" onclick="openUserModal('${x.Email}','${x.Name}','${x.Role}','${x.Status}')">Edit</button></td></tr>`); }
 function renderLogTable(l) { const t=document.getElementById('admin-logs-body'); t.innerHTML=''; l.reverse().forEach(x=>t.innerHTML+=`<tr><td>${new Date(x.Timestamp).toLocaleString()}</td><td>${x.User}</td><td>${x.Action}</td><td class="text-muted small">${x.Details}</td></tr>`); }
 
 function openHospitalInput(id){ showPage('hospital-input'); document.getElementById('form-hospital').reset(); setVal('h-id',''); setVal('h-link',''); if(id){ const h=globalHospitals.find(x=>x.Hospital_ID===id); if(h){ setVal('h-id',h.Hospital_ID); setVal('h-name',h.Name); setVal('h-region',h.Region); setVal('h-level',h.Level); setVal('h-address',h.Address); setVal('h-status',h.Status); setVal('h-exclusivity',h.Exclusivity); setVal('h-unit-price',h.Unit_Price); setVal('h-ebm',h.EBM_Share_Ratio); setVal('h-amount',h.Contract_Amount); setVal('h-link',h.Contract_Link); if(h.Contract_Start_Date)setVal('h-start',h.Contract_Start_Date.split('T')[0]); if(h.Contract_End_Date)setVal('h-end',h.Contract_End_Date.split('T')[0]); } } }
 async function submitHospital(){ showLoading(true); let link=getVal('h-link'); const f=document.getElementById('h-file'); if(f.files.length){ link=(await uploadFile(f.files[0])).url; } const p={hospitalId:getVal('h-id'), name:getVal('h-name'), region:getVal('h-region'), level:getVal('h-level'), address:getVal('h-address'), status:getVal('h-status'), exclusivity:getVal('h-exclusivity'), unitPrice:getVal('h-unit-price'), ebmShare:getVal('h-ebm'), contractAmount:getVal('h-amount'), contractStart:getVal('h-start'), contractEnd:getVal('h-end'), contractLink:link, salesRep:document.getElementById('user-name').innerText}; await fetch(CONFIG.SCRIPT_URL,{method:'POST',body:JSON.stringify({action:'saveHospital',userEmail:currentUser,payload:p})}); await loadRadarData(); showPage('hospitals'); showLoading(false); }
 
-// [修改] 開啟 KOL 視窗，設定 Slider 初始值
 function openKOLModal(id){ 
     document.getElementById('form-kol').reset(); 
     setVal('k-id',''); 
-    
-    // 預設為 20%
     document.getElementById('k-prob-val').innerText = '20%';
-    
     const s=document.getElementById('k-hospital-id'); 
     s.innerHTML='<option value="">選擇醫院</option>'; 
     globalHospitals.forEach(h=>s.innerHTML+=`<option value="${h.Hospital_ID}">${h.Name}</option>`); 
@@ -280,19 +299,15 @@ function openKOLModal(id){
             setVal('k-email',k.Email);
             setVal('k-phone',k.Phone); 
             setVal('k-stage',k.Visit_Stage);
-            
-            // 讀取機率，沒值就給 20
             let prob = k.Probability || 20;
             setVal('k-prob', prob);
             document.getElementById('k-prob-val').innerText = prob + '%';
-            
             setVal('k-note',k.Visit_Note);
         }
     } 
     kolModal.show(); 
 }
 
-// [修改] 送出 KOL 後，強制刷新 Dashboard，以確保自動連動的結果顯示
 async function submitKOL(){ 
     const p={
         kolId:getVal('k-id'), 
@@ -309,21 +324,14 @@ async function submitKOL(){
     showLoading(true); 
     await fetch(CONFIG.SCRIPT_URL,{method:'POST',body:JSON.stringify({action:'saveKOL',userEmail:currentUser,payload:p})}); 
     kolModal.hide(); 
-    
-    // 重載 KOL 列表
     await loadKOLData(); 
-    
-    // 重載醫院資料 (因為後端可能幫我們把醫院升級為已簽約了)
     await loadRadarData(); 
-    
-    // 重載 Dashboard 數據 (更新卡片 KPI)
     const dashRes = await fetch(CONFIG.SCRIPT_URL, { method: "POST", body: JSON.stringify({ action: "getDashboardData", userEmail: currentUser }) });
     const dashJson = await dashRes.json();
     if (dashJson.status === 'success') {
         globalMonthlyData = dashJson.data.monthlyStats || []; 
         renderDashboard(dashJson.data);
     }
-    
     showLoading(false); 
 }
 
