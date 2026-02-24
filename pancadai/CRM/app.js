@@ -1,4 +1,4 @@
-// app.js V5.4 (Filter & Drilldown Modal)
+// app.js V6.0 (User Name Fix & Dev Region Chart)
 
 let currentUser = null;
 let currentRole = null;
@@ -16,8 +16,6 @@ window.onload = function() {
     if(document.getElementById('modalKOL')) kolModal = new bootstrap.Modal(document.getElementById('modalKOL'));
     if(document.getElementById('modalUser')) userModal = new bootstrap.Modal(document.getElementById('modalUser'));
     if(document.getElementById('modalSettlement')) settlementModal = new bootstrap.Modal(document.getElementById('modalSettlement'));
-    
-    // 初始化 Drilldown Modal
     if(document.getElementById('modalDrilldown')) drilldownModal = new bootstrap.Modal(document.getElementById('modalDrilldown'));
 
     const today = new Date();
@@ -44,7 +42,6 @@ function logout() {
 }
 function toggleSidebar() { document.getElementById('main-sidebar').classList.toggle('show'); }
 
-// 取得美化的標籤 Badge
 function getStageBadge(stage) {
     if(!stage) return '';
     if(stage.includes('初次接觸')) return '<span class="badge bg-secondary">1.初次接觸</span>';
@@ -70,6 +67,7 @@ function handleCredentialResponse(r) {
 
 function decodeJwtResponse(token) { return JSON.parse(decodeURIComponent(window.atob(token.split('.')[1].replace(/-/g, '+').replace(/_/g, '/')).split('').map(c => '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2)).join(''))); }
 
+// [修改] 處理後端回傳的 Name，強制覆寫 UI
 async function verifyBackendAuth(email) {
     showLoading(true);
     try {
@@ -83,7 +81,11 @@ async function verifyBackendAuth(email) {
             
             if (currentRole === 'Admin') document.getElementById('nav-admin').classList.remove('d-none');
             
-            if(!document.getElementById('user-name').innerText) {
+            // 強制覆寫名字：若後端有回傳真實姓名則使用，否則取 Email 前綴
+            if (json.name) {
+                document.getElementById('user-name').innerText = json.name;
+                document.getElementById('mobile-user-name').innerText = json.name;
+            } else if (document.getElementById('user-name').innerText === 'User') {
                  document.getElementById('user-name').innerText = email.split('@')[0];
             }
 
@@ -127,7 +129,6 @@ function showPage(pageId) {
     if (pageId === 'dashboard') updateDashboardCharts(); 
 }
 
-// [修改] 更新 KOL 的醫院篩選下拉選單
 function updateKOLFilterOptions() {
     const sel = document.getElementById('kol-filter-hospital');
     if(!sel) return;
@@ -145,7 +146,7 @@ async function loadRadarData() {
         globalHospitals = (await r.json()).data; 
         renderRadarTable(); 
         renderHospitalList(); 
-        updateKOLFilterOptions(); // 資料載入後更新下拉清單
+        updateKOLFilterOptions(); 
     } catch(e){} 
 }
 async function loadKOLData() { try { const r = await fetch(CONFIG.SCRIPT_URL, { method: "POST", body: JSON.stringify({ action: "getKOLs", userEmail: currentUser }) }); globalKOLs = (await r.json()).data; renderKOLList(); } catch(e){} }
@@ -169,6 +170,7 @@ async function loadFinanceData() {
 
 async function loadAdminData() { if(currentRole!=='Admin')return; showLoading(true); try{ const [u,l] = await Promise.all([fetch(CONFIG.SCRIPT_URL,{method:"POST",body:JSON.stringify({action:"getUsers",userEmail:currentUser})}), fetch(CONFIG.SCRIPT_URL,{method:"POST",body:JSON.stringify({action:"getLogs",userEmail:currentUser})})]); renderUserTable((await u.json()).data); renderLogTable((await l.json()).data); }catch(e){}finally{showLoading(false);} }
 
+// [修改] 繪製兩個圓餅圖
 function renderDashboard(data) {
     const kpi = data.kpi;
     
@@ -177,18 +179,55 @@ function renderDashboard(data) {
     if(document.getElementById('kpi-intro-hospital-count')) document.getElementById('kpi-intro-hospital-count').innerText = (kpi.productIntroCount || 0).toLocaleString();
     if(document.getElementById('kpi-signed-hospital-count')) document.getElementById('kpi-signed-hospital-count').innerText = (kpi.signedCount || 0).toLocaleString();
 
+    // 1. 已簽約醫院圓餅圖
     const ctxRegion = document.getElementById('chart-region');
     if (ctxRegion) {
         if(window.myRegionChart) window.myRegionChart.destroy();
         const rLabels = Object.keys(kpi.regionStats || {});
         const rData = Object.values(kpi.regionStats || {});
         if(rLabels.length === 0) { rLabels.push('無資料'); rData.push(1); }
-        window.myRegionChart = new Chart(ctxRegion.getContext('2d'), {
+        
+        const ctx1 = ctxRegion.getContext('2d');
+        const gradients1 = rLabels.map((_, i) => {
+            const colors = [['#4e73df', '#224abe'], ['#1cc88a', '#138e62'], ['#36b9cc', '#1cb5e0'], ['#f6c23e', '#f4a221'], ['#e74a3b', '#be2617']];
+            const colorPair = colors[i % colors.length];
+            let grad = ctx1.createLinearGradient(0, 0, 0, 250);
+            grad.addColorStop(0, colorPair[0]); grad.addColorStop(1, colorPair[1]);
+            return grad;
+        });
+
+        window.myRegionChart = new Chart(ctx1, {
             type: 'doughnut',
-            data: { labels: rLabels, datasets: [{ data: rData, backgroundColor: ['#4e73df', '#1cc88a', '#36b9cc', '#f6c23e', '#e74a3b'], borderWidth: 0 }] },
+            data: { labels: rLabels, datasets: [{ data: rData, backgroundColor: gradients1, borderWidth: 2, borderColor: '#ffffff' }] },
             options: { maintainAspectRatio: false, cutout: '70%', plugins: { legend: { position: 'right', labels: { boxWidth: 12 } } } }
         });
     }
+
+    // 2. 開發中醫院圓餅圖 (新增)
+    const ctxDevRegion = document.getElementById('chart-dev-region');
+    if (ctxDevRegion) {
+        if(window.myDevRegionChart) window.myDevRegionChart.destroy();
+        const devLabels = Object.keys(kpi.devRegionStats || {});
+        const devData = Object.values(kpi.devRegionStats || {});
+        if(devLabels.length === 0) { devLabels.push('無資料'); devData.push(1); }
+        
+        const ctx2 = ctxDevRegion.getContext('2d');
+        const gradients2 = devLabels.map((_, i) => {
+            // 刻意使用不同顏色順序
+            const colors = [['#36b9cc', '#1cb5e0'], ['#f6c23e', '#f4a221'], ['#4e73df', '#224abe'], ['#1cc88a', '#138e62'], ['#e74a3b', '#be2617']];
+            const colorPair = colors[i % colors.length];
+            let grad = ctx2.createLinearGradient(0, 0, 0, 250);
+            grad.addColorStop(0, colorPair[0]); grad.addColorStop(1, colorPair[1]);
+            return grad;
+        });
+
+        window.myDevRegionChart = new Chart(ctx2, {
+            type: 'doughnut',
+            data: { labels: devLabels, datasets: [{ data: devData, backgroundColor: gradients2, borderWidth: 2, borderColor: '#ffffff' }] },
+            options: { maintainAspectRatio: false, cutout: '70%', plugins: { legend: { position: 'right', labels: { boxWidth: 12 } } } }
+        });
+    }
+
     updateDashboardCharts();
 }
 
@@ -236,9 +275,8 @@ function updateDashboardCharts() {
     });
 }
 
-// [新增] 打開卡片預覽清單 (Drilldown)
 function openDrilldown(type) {
-    if (!globalHospitals.length || !globalKOLs.length) return; // 確保有資料
+    if (!globalHospitals.length || !globalKOLs.length) return; 
 
     const titleEl = document.getElementById('drilldown-title');
     const theadEl = document.getElementById('drilldown-thead');
@@ -323,24 +361,17 @@ function renderFinanceTable() {
     });
     
     if(!hasData) tbody.innerHTML = `<tr><td colspan="7" class="text-center text-muted py-4">本月尚無結算資料</td></tr>`;
-
-    document.getElementById('fin-kpi-gross').innerText="$"+kpiG.toLocaleString(); 
-    document.getElementById('fin-kpi-net').innerText="$"+kpiN.toLocaleString();
-    document.getElementById('fin-kpi-ar').innerText="$"+kpiA.toLocaleString(); 
-    document.getElementById('fin-kpi-ebm').innerText="$"+kpiE.toLocaleString();
 }
 
 function renderRadarTable() { const reg = getVal('radar-filter-region'), lvl = getVal('radar-filter-level'), sts = getVal('radar-filter-status'); const tbody = document.getElementById('radar-table-body'); tbody.innerHTML = ''; globalHospitals.forEach(h => { if (reg!=='All' && h.Region!==reg) return; if (lvl!=='All' && h.Level!==lvl) return; if (sts!=='All' && h.Status!==sts) return; let badge = h.Status==='已簽約'?'bg-success':(h.Status==='開發中'?'bg-warning text-dark':'bg-secondary'); tbody.innerHTML += `<tr><td><strong>${h.Name}</strong></td><td>${h.Region||'-'}</td><td>${h.Level||'-'}</td><td><span class="badge ${badge}">${h.Status||''}</span></td><td>${h.Exclusivity==='Yes'?'<i class="fas fa-check text-success"></i>':'-'}</td><td><button class="btn btn-sm btn-outline-primary" onclick="openHospitalInput('${h.Hospital_ID}')">編輯</button></td></tr>`; }); }
 function renderHospitalList() { const tbody = document.getElementById('hospital-list-body'); tbody.innerHTML = ''; globalHospitals.forEach(h => { tbody.innerHTML += `<tr><td>${h.Name}</td><td>${h.Level}</td><td>$${(Number(h.Unit_Price)||0).toLocaleString()}</td><td>${h.Exclusivity}</td><td>${h.Contract_End_Date ? h.Contract_End_Date.split('T')[0] : '-'}</td><td><button class="btn btn-sm btn-outline-primary" onclick="openHospitalInput('${h.Hospital_ID}')">Edit</button></td></tr>`; }); }
 
-// [修改] KOL 清單渲染，加入下拉選單過濾邏輯與彩色 Badge
 function renderKOLList() { 
     const tbody = document.getElementById('kol-list-body'); 
     const filterHosp = getVal('kol-filter-hospital');
     tbody.innerHTML = ''; 
     
     globalKOLs.forEach(k => { 
-        // 篩選邏輯
         if (filterHosp !== 'All' && k.Hospital_ID !== filterHosp) return;
 
         const hName = (globalHospitals.find(h=>h.Hospital_ID===k.Hospital_ID)||{}).Name || k.Hospital_ID; 
@@ -362,7 +393,6 @@ function renderKOLList() {
 function renderUserTable(u) { const t=document.getElementById('admin-users-body'); t.innerHTML=''; u.forEach(x=>t.innerHTML+=`<tr><td>${x.Email}</td><td>${x.Name}</td><td>${x.Role}</td><td>${x.Status}</td><td>${x.Last_Login?new Date(x.Last_Login).toLocaleDateString():'-'}</td><td><button class="btn btn-sm btn-light" onclick="openUserModal('${x.Email}','${x.Name}','${x.Role}','${x.Status}')">Edit</button></td></tr>`); }
 function renderLogTable(l) { const t=document.getElementById('admin-logs-body'); t.innerHTML=''; l.reverse().forEach(x=>t.innerHTML+=`<tr><td>${new Date(x.Timestamp).toLocaleString()}</td><td>${x.User}</td><td>${x.Action}</td><td class="text-muted small">${x.Details}</td></tr>`); }
 
-// Actions
 function openHospitalInput(id){ showPage('hospital-input'); document.getElementById('form-hospital').reset(); setVal('h-id',''); setVal('h-link',''); if(id){ const h=globalHospitals.find(x=>x.Hospital_ID===id); if(h){ setVal('h-id',h.Hospital_ID); setVal('h-name',h.Name); setVal('h-region',h.Region); setVal('h-level',h.Level); setVal('h-address',h.Address); setVal('h-status',h.Status); setVal('h-exclusivity',h.Exclusivity); setVal('h-unit-price',h.Unit_Price); setVal('h-ebm',h.EBM_Share_Ratio); setVal('h-amount',h.Contract_Amount); setVal('h-link',h.Contract_Link); if(h.Contract_Start_Date)setVal('h-start',h.Contract_Start_Date.split('T')[0]); if(h.Contract_End_Date)setVal('h-end',h.Contract_End_Date.split('T')[0]); } } }
 async function submitHospital(){ showLoading(true); let link=getVal('h-link'); const f=document.getElementById('h-file'); if(f.files.length){ link=(await uploadFile(f.files[0])).url; } const p={hospitalId:getVal('h-id'), name:getVal('h-name'), region:getVal('h-region'), level:getVal('h-level'), address:getVal('h-address'), status:getVal('h-status'), exclusivity:getVal('h-exclusivity'), unitPrice:getVal('h-unit-price'), ebmShare:getVal('h-ebm'), contractAmount:getVal('h-amount'), contractStart:getVal('h-start'), contractEnd:getVal('h-end'), contractLink:link, salesRep:document.getElementById('user-name').innerText}; await fetch(CONFIG.SCRIPT_URL,{method:'POST',body:JSON.stringify({action:'saveHospital',userEmail:currentUser,payload:p})}); await loadRadarData(); showPage('hospitals'); showLoading(false); }
 
