@@ -1,4 +1,4 @@
-// app.js V6.0 (User Name Fix & Dev Region Chart)
+// app.js V6.0 (User Name Fix & Dev Region Chart & Drilldown)
 
 let currentUser = null;
 let currentRole = null;
@@ -67,7 +67,7 @@ function handleCredentialResponse(r) {
 
 function decodeJwtResponse(token) { return JSON.parse(decodeURIComponent(window.atob(token.split('.')[1].replace(/-/g, '+').replace(/_/g, '/')).split('').map(c => '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2)).join(''))); }
 
-// [修改] 處理後端回傳的 Name，強制覆寫 UI
+// 處理後端回傳的 Name，強制覆寫 UI
 async function verifyBackendAuth(email) {
     showLoading(true);
     try {
@@ -170,7 +170,7 @@ async function loadFinanceData() {
 
 async function loadAdminData() { if(currentRole!=='Admin')return; showLoading(true); try{ const [u,l] = await Promise.all([fetch(CONFIG.SCRIPT_URL,{method:"POST",body:JSON.stringify({action:"getUsers",userEmail:currentUser})}), fetch(CONFIG.SCRIPT_URL,{method:"POST",body:JSON.stringify({action:"getLogs",userEmail:currentUser})})]); renderUserTable((await u.json()).data); renderLogTable((await l.json()).data); }catch(e){}finally{showLoading(false);} }
 
-// [修改] 繪製兩個圓餅圖
+// 繪製 Dashboard 圓餅圖
 function renderDashboard(data) {
     const kpi = data.kpi;
     
@@ -203,7 +203,7 @@ function renderDashboard(data) {
         });
     }
 
-    // 2. 開發中醫院圓餅圖 (新增)
+    // 2. 開發中醫院圓餅圖
     const ctxDevRegion = document.getElementById('chart-dev-region');
     if (ctxDevRegion) {
         if(window.myDevRegionChart) window.myDevRegionChart.destroy();
@@ -213,7 +213,6 @@ function renderDashboard(data) {
         
         const ctx2 = ctxDevRegion.getContext('2d');
         const gradients2 = devLabels.map((_, i) => {
-            // 刻意使用不同顏色順序
             const colors = [['#36b9cc', '#1cb5e0'], ['#f6c23e', '#f4a221'], ['#4e73df', '#224abe'], ['#1cc88a', '#138e62'], ['#e74a3b', '#be2617']];
             const colorPair = colors[i % colors.length];
             let grad = ctx2.createLinearGradient(0, 0, 0, 250);
@@ -361,6 +360,11 @@ function renderFinanceTable() {
     });
     
     if(!hasData) tbody.innerHTML = `<tr><td colspan="7" class="text-center text-muted py-4">本月尚無結算資料</td></tr>`;
+
+    document.getElementById('fin-kpi-gross').innerText="$"+kpiG.toLocaleString(); 
+    document.getElementById('fin-kpi-net').innerText="$"+kpiN.toLocaleString();
+    document.getElementById('fin-kpi-ar').innerText="$"+kpiA.toLocaleString(); 
+    document.getElementById('fin-kpi-ebm').innerText="$"+kpiE.toLocaleString();
 }
 
 function renderRadarTable() { const reg = getVal('radar-filter-region'), lvl = getVal('radar-filter-level'), sts = getVal('radar-filter-status'); const tbody = document.getElementById('radar-table-body'); tbody.innerHTML = ''; globalHospitals.forEach(h => { if (reg!=='All' && h.Region!==reg) return; if (lvl!=='All' && h.Level!==lvl) return; if (sts!=='All' && h.Status!==sts) return; let badge = h.Status==='已簽約'?'bg-success':(h.Status==='開發中'?'bg-warning text-dark':'bg-secondary'); tbody.innerHTML += `<tr><td><strong>${h.Name}</strong></td><td>${h.Region||'-'}</td><td>${h.Level||'-'}</td><td><span class="badge ${badge}">${h.Status||''}</span></td><td>${h.Exclusivity==='Yes'?'<i class="fas fa-check text-success"></i>':'-'}</td><td><button class="btn btn-sm btn-outline-primary" onclick="openHospitalInput('${h.Hospital_ID}')">編輯</button></td></tr>`; }); }
