@@ -1,4 +1,4 @@
-/* Code.gs - PancadAI CRM Backend V6.0 (User Name & Dev Region) */
+/* Code.gs - PancadAI CRM Backend V6.1 */
 
 const SPREADSHEET_ID = '1hID8Hi42qNFyA_13BqSJgfjIE4FguQRR5wMEsXBRl0I';
 const UPLOAD_FOLDER_ID = '1tmLX1lSEa_R26S5LAyIv7IPAhPuI67Db'; 
@@ -76,7 +76,7 @@ function getDashboardData() {
   
   let totalContractValue = 0, signedCount = 0, developingCount = 0;
   let regionStats = {};     // 已簽約區域統計
-  let devRegionStats = {};  // [新增] 開發中區域統計
+  let devRegionStats = {};  // 開發中區域統計
   let levelStats = {};
   
   hospitals.forEach(h => {
@@ -121,7 +121,6 @@ function getDashboardData() {
   };
 }
 
-// ... (以下維持不變) ...
 function deleteMonthlyStat(p, u) { const ss = SpreadsheetApp.openById(SPREADSHEET_ID); const sheet = ss.getSheetByName('Monthly_Stats'); const data = sheet.getDataRange().getValues(); for (let i = 1; i < data.length; i++) { if (String(data[i][0]) === String(p.recordId)) { sheet.deleteRow(i + 1); logAction(u, 'Delete Settlement', `ID: ${p.recordId}`); return { status: 'success' }; } } return { status: 'error', message: 'Record not found' }; }
 function saveMonthlyStat(p, u) { const ss = SpreadsheetApp.openById(SPREADSHEET_ID); const statsSheet = ss.getSheetByName('Monthly_Stats'); const hospitals = getSheetData('Hospitals'); const targetHosp = hospitals.find(h => String(h['Hospital_ID']) === String(p.hospitalId)); let unitPrice = targetHosp ? (Number(String(targetHosp['Unit_Price']).replace(/[^0-9.-]+/g,"")) || 0) : 0; let ebmRatio = targetHosp ? (Number(String(targetHosp['EBM_Share_Ratio']).replace(/[^0-9.-]+/g,"")) || 0) : 0; const usage = Number(p.usageCount) || 0; const gross = usage * unitPrice; const ebmFee = Math.round(gross * (ebmRatio / 100)); const net = gross - ebmFee; const rowData = [p.recordId || Utilities.getUuid(), p.yearMonth, p.hospitalId, usage, unitPrice, gross, ebmRatio, ebmFee, net, p.invoiceStatus || 'Unbilled', p.note || '', new Date()]; const data = statsSheet.getDataRange().getValues(); let rowIndex = -1; if (p.recordId) { for (let i = 1; i < data.length; i++) { if (String(data[i][0]) === String(p.recordId)) { rowIndex = i + 1; break; } } } if (rowIndex > 0) { statsSheet.getRange(rowIndex, 1, 1, rowData.length).setValues([rowData]); logAction(u, 'Update Settlement', `${p.yearMonth} - ${p.hospitalId}`); } else { statsSheet.appendRow(rowData); logAction(u, 'New Settlement', `${p.yearMonth} - ${p.hospitalId}`); } return { status: 'success' }; }
 function getSheetData(name) { const sheet = SpreadsheetApp.openById(SPREADSHEET_ID).getSheetByName(name); if (!sheet) return []; const data = sheet.getDataRange().getValues(); if (data.length < 2) return []; const headers = data[0]; return data.slice(1).map(row => { let obj={}; headers.forEach((h,i)=>{obj[h.toString().trim()]=row[i]}); return obj; }); }
