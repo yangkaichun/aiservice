@@ -1,4 +1,4 @@
-// app.js V6.0 (User Name Fix & Dev Region Chart & Drilldown)
+// app.js V6.1 (Pre-load Cache & Pie Percentages)
 
 let currentUser = null;
 let currentRole = null;
@@ -67,7 +67,34 @@ function handleCredentialResponse(r) {
 
 function decodeJwtResponse(token) { return JSON.parse(decodeURIComponent(window.atob(token.split('.')[1].replace(/-/g, '+').replace(/_/g, '/')).split('').map(c => '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2)).join(''))); }
 
-// 處理後端回傳的 Name，強制覆寫 UI
+// [新增] 核心快取預載功能：一次性取得所有資料庫，確保卡片點擊不需等待
+async function loadAllCache() {
+    try {
+        const [hRes, kRes, fRes] = await Promise.all([
+            fetch(CONFIG.SCRIPT_URL, { method: "POST", body: JSON.stringify({ action: "getHospitals", userEmail: currentUser }) }),
+            fetch(CONFIG.SCRIPT_URL, { method: "POST", body: JSON.stringify({ action: "getKOLs", userEmail: currentUser }) }),
+            fetch(CONFIG.SCRIPT_URL, { method: "POST", body: JSON.stringify({ action: "getMonthlyStats", userEmail: currentUser }) })
+        ]);
+        
+        globalHospitals = (await hRes.json()).data || [];
+        globalKOLs = (await kRes.json()).data || [];
+        
+        const fJson = await fRes.json();
+        if (fJson.status === 'success') globalStats = fJson.data || [];
+        
+        await loadSystemConfig(); // 載入系統設定檔
+        
+        // 預先渲染所有表格
+        renderRadarTable();
+        renderHospitalList();
+        updateKOLFilterOptions();
+        renderKOLList();
+        renderFinanceTable();
+    } catch(e) {
+        console.error("Cache load error:", e);
+    }
+}
+
 async function verifyBackendAuth(email) {
     showLoading(true);
     try {
@@ -81,7 +108,7 @@ async function verifyBackendAuth(email) {
             
             if (currentRole === 'Admin') document.getElementById('nav-admin').classList.remove('d-none');
             
-            // 強制覆寫名字：若後端有回傳真實姓名則使用，否則取 Email 前綴
+            // [修復] 強制覆寫正確的姓名
             if (json.name) {
                 document.getElementById('user-name').innerText = json.name;
                 document.getElementById('mobile-user-name').innerText = json.name;
@@ -90,14 +117,18 @@ async function verifyBackendAuth(email) {
             }
 
             globalMonthlyData = json.data.monthlyStats || []; 
-            await loadSystemConfig(); 
+            
+            // [執行快取預載]
+            await loadAllCache();
+            
+            // 最後再渲染 Dashboard
             renderDashboard(json.data);
-            loadRadarData(); 
+            
         } else { 
             alert("存取被拒：您的帳號不在允許清單中，或已被停用。"); 
             logout(); 
         }
-    } catch (e) { console.error(e); logout(); } finally { showLoading(false); }
+    } catch (e) { console.error(e); logout(); } finally { showLoading(false); } // 資料都載完才關閉動畫
 }
 
 async function loadSystemConfig() {
@@ -122,10 +153,11 @@ function showPage(pageId) {
     for(let l of links) if(l.getAttribute('onclick') && l.getAttribute('onclick').includes(pageId)) l.classList.add('active');
     if (window.innerWidth < 768) toggleSidebar();
 
-    if (pageId === 'kols') loadKOLData();
-    if (pageId === 'hospitals') loadRadarData();
+    // 已快取，不需強迫等待 API，點擊可瞬間切換。僅供後台靜默刷新，或依靠使用者主動重新整理
+    if (pageId === 'kols') renderKOLList();
+    if (pageId === 'hospitals') renderHospitalList();
     if (pageId === 'admin') loadAdminData();
-    if (pageId === 'finance') loadFinanceData();
+    if (pageId === 'finance') renderFinanceTable();
     if (pageId === 'dashboard') updateDashboardCharts(); 
 }
 
@@ -154,13 +186,8 @@ async function loadKOLData() { try { const r = await fetch(CONFIG.SCRIPT_URL, { 
 async function loadFinanceData() { 
     showLoading(true); 
     try { 
-        if(!globalHospitals.length) {
-            const hRes = await fetch(CONFIG.SCRIPT_URL, { method: "POST", body: JSON.stringify({ action: "getHospitals", userEmail: currentUser }) });
-            globalHospitals = (await hRes.json()).data;
-        }
         const r = await fetch(CONFIG.SCRIPT_URL, { method: "POST", body: JSON.stringify({ action: "getMonthlyStats", userEmail: currentUser }) }); 
         const json = await r.json();
-        
         if (json.status === 'success') {
             globalStats = json.data; 
             renderFinanceTable(); 
@@ -170,7 +197,29 @@ async function loadFinanceData() {
 
 async function loadAdminData() { if(currentRole!=='Admin')return; showLoading(true); try{ const [u,l] = await Promise.all([fetch(CONFIG.SCRIPT_URL,{method:"POST",body:JSON.stringify({action:"getUsers",userEmail:currentUser})}), fetch(CONFIG.SCRIPT_URL,{method:"POST",body:JSON.stringify({action:"getLogs",userEmail:currentUser})})]); renderUserTable((await u.json()).data); renderLogTable((await l.json()).data); }catch(e){}finally{showLoading(false);} }
 
-// 繪製 Dashboard 圓餅圖
+// [新增] 共用的圓餅圖設定 (包含百分比外掛)
+function getPieOptions() {
+    return {
+        maintainAspectRatio: false, 
+        cutout: '70%', 
+        plugins: { 
+            legend: { position: 'right', labels: { boxWidth: 12 } },
+            datalabels: {
+                color: '#fff',
+                font: { weight: 'bold', size: 12 },
+                formatter: (value, context) => {
+                    let label = context.chart.data.labels[context.dataIndex];
+                    if (label === '無資料' || value === 0) return '';
+                    let sum = context.chart.data.datasets[0].data.reduce((a, b) => a + b, 0);
+                    let percentage = Math.round(value * 100 / sum) + '%';
+                    // 為了美觀，太小的比例就不顯示字了
+                    return (value * 100 / sum) < 5 ? null : percentage;
+                }
+            }
+        }
+    };
+}
+
 function renderDashboard(data) {
     const kpi = data.kpi;
     
@@ -199,7 +248,8 @@ function renderDashboard(data) {
         window.myRegionChart = new Chart(ctx1, {
             type: 'doughnut',
             data: { labels: rLabels, datasets: [{ data: rData, backgroundColor: gradients1, borderWidth: 2, borderColor: '#ffffff' }] },
-            options: { maintainAspectRatio: false, cutout: '70%', plugins: { legend: { position: 'right', labels: { boxWidth: 12 } } } }
+            options: getPieOptions(),
+            plugins: [ChartDataLabels] // 載入百分比標籤插件
         });
     }
 
@@ -223,7 +273,8 @@ function renderDashboard(data) {
         window.myDevRegionChart = new Chart(ctx2, {
             type: 'doughnut',
             data: { labels: devLabels, datasets: [{ data: devData, backgroundColor: gradients2, borderWidth: 2, borderColor: '#ffffff' }] },
-            options: { maintainAspectRatio: false, cutout: '70%', plugins: { legend: { position: 'right', labels: { boxWidth: 12 } } } }
+            options: getPieOptions(),
+            plugins: [ChartDataLabels] // 載入百分比標籤插件
         });
     }
 
