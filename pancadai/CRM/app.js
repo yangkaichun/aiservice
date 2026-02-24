@@ -1,4 +1,4 @@
-// app.js V6.1 (Pre-load Cache & Pie Percentages)
+// app.js V6.2 (Pie Percentages & Gradients Update)
 
 let currentUser = null;
 let currentRole = null;
@@ -67,7 +67,6 @@ function handleCredentialResponse(r) {
 
 function decodeJwtResponse(token) { return JSON.parse(decodeURIComponent(window.atob(token.split('.')[1].replace(/-/g, '+').replace(/_/g, '/')).split('').map(c => '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2)).join(''))); }
 
-// [新增] 核心快取預載功能：一次性取得所有資料庫，確保卡片點擊不需等待
 async function loadAllCache() {
     try {
         const [hRes, kRes, fRes] = await Promise.all([
@@ -82,9 +81,8 @@ async function loadAllCache() {
         const fJson = await fRes.json();
         if (fJson.status === 'success') globalStats = fJson.data || [];
         
-        await loadSystemConfig(); // 載入系統設定檔
+        await loadSystemConfig(); 
         
-        // 預先渲染所有表格
         renderRadarTable();
         renderHospitalList();
         updateKOLFilterOptions();
@@ -108,7 +106,6 @@ async function verifyBackendAuth(email) {
             
             if (currentRole === 'Admin') document.getElementById('nav-admin').classList.remove('d-none');
             
-            // [修復] 強制覆寫正確的姓名
             if (json.name) {
                 document.getElementById('user-name').innerText = json.name;
                 document.getElementById('mobile-user-name').innerText = json.name;
@@ -117,18 +114,14 @@ async function verifyBackendAuth(email) {
             }
 
             globalMonthlyData = json.data.monthlyStats || []; 
-            
-            // [執行快取預載]
             await loadAllCache();
-            
-            // 最後再渲染 Dashboard
             renderDashboard(json.data);
             
         } else { 
             alert("存取被拒：您的帳號不在允許清單中，或已被停用。"); 
             logout(); 
         }
-    } catch (e) { console.error(e); logout(); } finally { showLoading(false); } // 資料都載完才關閉動畫
+    } catch (e) { console.error(e); logout(); } finally { showLoading(false); } 
 }
 
 async function loadSystemConfig() {
@@ -153,7 +146,6 @@ function showPage(pageId) {
     for(let l of links) if(l.getAttribute('onclick') && l.getAttribute('onclick').includes(pageId)) l.classList.add('active');
     if (window.innerWidth < 768) toggleSidebar();
 
-    // 已快取，不需強迫等待 API，點擊可瞬間切換。僅供後台靜默刷新，或依靠使用者主動重新整理
     if (pageId === 'kols') renderKOLList();
     if (pageId === 'hospitals') renderHospitalList();
     if (pageId === 'admin') loadAdminData();
@@ -197,22 +189,25 @@ async function loadFinanceData() {
 
 async function loadAdminData() { if(currentRole!=='Admin')return; showLoading(true); try{ const [u,l] = await Promise.all([fetch(CONFIG.SCRIPT_URL,{method:"POST",body:JSON.stringify({action:"getUsers",userEmail:currentUser})}), fetch(CONFIG.SCRIPT_URL,{method:"POST",body:JSON.stringify({action:"getLogs",userEmail:currentUser})})]); renderUserTable((await u.json()).data); renderLogTable((await l.json()).data); }catch(e){}finally{showLoading(false);} }
 
-// [新增] 共用的圓餅圖設定 (包含百分比外掛)
+// [修改] 統一的圓餅圖設定 (包含百分比外掛配置)
 function getPieOptions() {
     return {
         maintainAspectRatio: false, 
-        cutout: '70%', 
+        cutout: '65%', // 調整圓餅圖寬度，稍微厚一點更好看
         plugins: { 
-            legend: { position: 'right', labels: { boxWidth: 12 } },
+            legend: { 
+                position: 'right', 
+                labels: { boxWidth: 15, font: { size: 12, family: "'Segoe UI', sans-serif" }, padding: 15 } 
+            },
             datalabels: {
                 color: '#fff',
-                font: { weight: 'bold', size: 12 },
+                font: { weight: 'bold', size: 13, family: "'Segoe UI', sans-serif" },
                 formatter: (value, context) => {
                     let label = context.chart.data.labels[context.dataIndex];
-                    if (label === '無資料' || value === 0) return '';
+                    if (label.includes('無資料') || value === 0) return '';
                     let sum = context.chart.data.datasets[0].data.reduce((a, b) => a + b, 0);
                     let percentage = Math.round(value * 100 / sum) + '%';
-                    // 為了美觀，太小的比例就不顯示字了
+                    // 區塊太小則不顯示數字，避免擁擠
                     return (value * 100 / sum) < 5 ? null : percentage;
                 }
             }
@@ -232,24 +227,36 @@ function renderDashboard(data) {
     const ctxRegion = document.getElementById('chart-region');
     if (ctxRegion) {
         if(window.myRegionChart) window.myRegionChart.destroy();
-        const rLabels = Object.keys(kpi.regionStats || {});
+        const rLabelsRaw = Object.keys(kpi.regionStats || {});
         const rData = Object.values(kpi.regionStats || {});
-        if(rLabels.length === 0) { rLabels.push('無資料'); rData.push(1); }
+        let rLabels = [];
+        
+        if(rLabelsRaw.length === 0) { 
+            rLabels.push('無資料'); rData.push(1); 
+        } else {
+            // [修改] 將百分比寫入標籤，讓圖例(Legend)與提示框直接顯示
+            const rTotal = rData.reduce((a, b) => a + b, 0);
+            rLabels = rLabelsRaw.map((label, index) => {
+                let percent = Math.round((rData[index] / rTotal) * 100);
+                return `${label} (${percent}%)`;
+            });
+        }
         
         const ctx1 = ctxRegion.getContext('2d');
         const gradients1 = rLabels.map((_, i) => {
-            const colors = [['#4e73df', '#224abe'], ['#1cc88a', '#138e62'], ['#36b9cc', '#1cb5e0'], ['#f6c23e', '#f4a221'], ['#e74a3b', '#be2617']];
+            const colors = [['#4e73df', '#224abe'], ['#1cc88a', '#138e62'], ['#36b9cc', '#1cb5e0'], ['#f6c23e', '#f4a221'], ['#e74a3b', '#be2617'], ['#6f42c1', '#4e2d8b'], ['#fd7e14', '#c65f0b']];
             const colorPair = colors[i % colors.length];
-            let grad = ctx1.createLinearGradient(0, 0, 0, 250);
+            // [修改] 讓漸層方向從左上到右下
+            let grad = ctx1.createLinearGradient(0, 0, 0, 300);
             grad.addColorStop(0, colorPair[0]); grad.addColorStop(1, colorPair[1]);
             return grad;
         });
 
         window.myRegionChart = new Chart(ctx1, {
             type: 'doughnut',
-            data: { labels: rLabels, datasets: [{ data: rData, backgroundColor: gradients1, borderWidth: 2, borderColor: '#ffffff' }] },
+            data: { labels: rLabels, datasets: [{ data: rData, backgroundColor: gradients1, borderWidth: 2, borderColor: '#ffffff', hoverOffset: 4 }] },
             options: getPieOptions(),
-            plugins: [ChartDataLabels] // 載入百分比標籤插件
+            plugins: [ChartDataLabels]
         });
     }
 
@@ -257,24 +264,36 @@ function renderDashboard(data) {
     const ctxDevRegion = document.getElementById('chart-dev-region');
     if (ctxDevRegion) {
         if(window.myDevRegionChart) window.myDevRegionChart.destroy();
-        const devLabels = Object.keys(kpi.devRegionStats || {});
+        const devLabelsRaw = Object.keys(kpi.devRegionStats || {});
         const devData = Object.values(kpi.devRegionStats || {});
-        if(devLabels.length === 0) { devLabels.push('無資料'); devData.push(1); }
+        let devLabels = [];
+
+        if(devLabelsRaw.length === 0) { 
+            devLabels.push('無資料'); devData.push(1); 
+        } else {
+            // [修改] 將百分比寫入標籤
+            const devTotal = devData.reduce((a, b) => a + b, 0);
+            devLabels = devLabelsRaw.map((label, index) => {
+                let percent = Math.round((devData[index] / devTotal) * 100);
+                return `${label} (${percent}%)`;
+            });
+        }
         
         const ctx2 = ctxDevRegion.getContext('2d');
         const gradients2 = devLabels.map((_, i) => {
-            const colors = [['#36b9cc', '#1cb5e0'], ['#f6c23e', '#f4a221'], ['#4e73df', '#224abe'], ['#1cc88a', '#138e62'], ['#e74a3b', '#be2617']];
+            // [修改] 開發中圓餅圖刻意更換顏色順序，增加視覺區別度
+            const colors = [['#36b9cc', '#1cb5e0'], ['#f6c23e', '#f4a221'], ['#4e73df', '#224abe'], ['#1cc88a', '#138e62'], ['#e74a3b', '#be2617'], ['#6f42c1', '#4e2d8b']];
             const colorPair = colors[i % colors.length];
-            let grad = ctx2.createLinearGradient(0, 0, 0, 250);
+            let grad = ctx2.createLinearGradient(0, 0, 0, 300);
             grad.addColorStop(0, colorPair[0]); grad.addColorStop(1, colorPair[1]);
             return grad;
         });
 
         window.myDevRegionChart = new Chart(ctx2, {
             type: 'doughnut',
-            data: { labels: devLabels, datasets: [{ data: devData, backgroundColor: gradients2, borderWidth: 2, borderColor: '#ffffff' }] },
+            data: { labels: devLabels, datasets: [{ data: devData, backgroundColor: gradients2, borderWidth: 2, borderColor: '#ffffff', hoverOffset: 4 }] },
             options: getPieOptions(),
-            plugins: [ChartDataLabels] // 載入百分比標籤插件
+            plugins: [ChartDataLabels]
         });
     }
 
