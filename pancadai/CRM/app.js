@@ -1,4 +1,4 @@
-// app.js V5.4 (Add Email Link in KOL List)
+// app.js V5.4 (Filter & Drilldown Modal)
 
 let currentUser = null;
 let currentRole = null;
@@ -7,7 +7,7 @@ let globalKOLs = [];
 let globalStats = []; 
 let globalMonthlyData = []; 
 let globalConfig = { regions: [], levels: [] }; 
-let kolModal, userModal, settlementModal;
+let kolModal, userModal, settlementModal, drilldownModal;
 
 window.onload = function() {
     const client_id = CONFIG.GOOGLE_CLIENT_ID;
@@ -17,6 +17,9 @@ window.onload = function() {
     if(document.getElementById('modalUser')) userModal = new bootstrap.Modal(document.getElementById('modalUser'));
     if(document.getElementById('modalSettlement')) settlementModal = new bootstrap.Modal(document.getElementById('modalSettlement'));
     
+    // 初始化 Drilldown Modal
+    if(document.getElementById('modalDrilldown')) drilldownModal = new bootstrap.Modal(document.getElementById('modalDrilldown'));
+
     const today = new Date();
     const y = today.getFullYear();
     const m = String(today.getMonth() + 1).padStart(2, '0');
@@ -40,6 +43,17 @@ function logout() {
     location.reload(); 
 }
 function toggleSidebar() { document.getElementById('main-sidebar').classList.toggle('show'); }
+
+// 取得美化的標籤 Badge
+function getStageBadge(stage) {
+    if(!stage) return '';
+    if(stage.includes('初次接觸')) return '<span class="badge bg-secondary">1.初次接觸</span>';
+    if(stage.includes('產品展示')) return '<span class="badge bg-primary">2.產品展示</span>';
+    if(stage.includes('試用中')) return '<span class="badge bg-info text-dark">3.試用中</span>';
+    if(stage.includes('議價中')) return '<span class="badge bg-warning text-dark">4.議價中</span>';
+    if(stage.includes('已成交')) return '<span class="badge bg-success">5.已成交</span>';
+    return `<span class="badge bg-secondary">${stage}</span>`;
+}
 
 function handleCredentialResponse(r) { 
     const payload = decodeJwtResponse(r.credential);
@@ -113,7 +127,27 @@ function showPage(pageId) {
     if (pageId === 'dashboard') updateDashboardCharts(); 
 }
 
-async function loadRadarData() { try { const r = await fetch(CONFIG.SCRIPT_URL, { method: "POST", body: JSON.stringify({ action: "getHospitals", userEmail: currentUser }) }); globalHospitals = (await r.json()).data; renderRadarTable(); renderHospitalList(); } catch(e){} }
+// [修改] 更新 KOL 的醫院篩選下拉選單
+function updateKOLFilterOptions() {
+    const sel = document.getElementById('kol-filter-hospital');
+    if(!sel) return;
+    const currentVal = sel.value; 
+    sel.innerHTML = '<option value="All">篩選醫院：全部</option>';
+    globalHospitals.forEach(h => {
+        sel.innerHTML += `<option value="${h.Hospital_ID}">${h.Name}</option>`;
+    });
+    sel.value = currentVal || 'All';
+}
+
+async function loadRadarData() { 
+    try { 
+        const r = await fetch(CONFIG.SCRIPT_URL, { method: "POST", body: JSON.stringify({ action: "getHospitals", userEmail: currentUser }) }); 
+        globalHospitals = (await r.json()).data; 
+        renderRadarTable(); 
+        renderHospitalList(); 
+        updateKOLFilterOptions(); // 資料載入後更新下拉清單
+    } catch(e){} 
+}
 async function loadKOLData() { try { const r = await fetch(CONFIG.SCRIPT_URL, { method: "POST", body: JSON.stringify({ action: "getKOLs", userEmail: currentUser }) }); globalKOLs = (await r.json()).data; renderKOLList(); } catch(e){} }
 
 async function loadFinanceData() { 
@@ -202,6 +236,53 @@ function updateDashboardCharts() {
     });
 }
 
+// [新增] 打開卡片預覽清單 (Drilldown)
+function openDrilldown(type) {
+    if (!globalHospitals.length || !globalKOLs.length) return; // 確保有資料
+
+    const titleEl = document.getElementById('drilldown-title');
+    const theadEl = document.getElementById('drilldown-thead');
+    const tbodyEl = document.getElementById('drilldown-tbody');
+    
+    tbodyEl.innerHTML = '';
+    theadEl.innerHTML = '';
+
+    if (type === 'kols') {
+        titleEl.innerText = '已接觸 KOL 總覽';
+        theadEl.innerHTML = '<tr><th>姓名</th><th>醫院</th><th>職稱</th><th>目前階段</th><th>機率</th></tr>';
+        globalKOLs.forEach(k => {
+            const hName = (globalHospitals.find(h => h.Hospital_ID === k.Hospital_ID) || {}).Name || '-';
+            tbodyEl.innerHTML += `<tr><td><strong>${k.Name}</strong></td><td>${hName}</td><td>${k.Title}</td><td>${getStageBadge(k.Visit_Stage)}</td><td>${k.Probability}%</td></tr>`;
+        });
+    } else if (type === 'developing') {
+        titleEl.innerText = '開發中醫院清單';
+        theadEl.innerHTML = '<tr><th>醫院名稱</th><th>區域</th><th>規模等級</th></tr>';
+        globalHospitals.filter(h => h.Status === '開發中').forEach(h => {
+            tbodyEl.innerHTML += `<tr><td><strong>${h.Name}</strong></td><td>${h.Region}</td><td>${h.Level}</td></tr>`;
+        });
+    } else if (type === 'intro') {
+        titleEl.innerText = '產品介紹階段 - 重點推廣清單';
+        theadEl.innerHTML = '<tr><th>醫院名稱</th><th>KOL 姓名</th><th>職稱</th></tr>';
+        globalKOLs.filter(k => k.Visit_Stage && k.Visit_Stage.includes('產品展示')).forEach(k => {
+            const hName = (globalHospitals.find(h => h.Hospital_ID === k.Hospital_ID) || {}).Name || '-';
+            tbodyEl.innerHTML += `<tr><td><strong>${hName}</strong></td><td>${k.Name}</td><td>${k.Title}</td></tr>`;
+        });
+    } else if (type === 'signed') {
+        titleEl.innerText = '已簽約醫院清單';
+        theadEl.innerHTML = '<tr><th>醫院名稱</th><th>單價</th><th>合約迄日</th></tr>';
+        globalHospitals.filter(h => h.Status === '已簽約').forEach(h => {
+            let dateStr = h.Contract_End_Date ? String(h.Contract_End_Date).substring(0, 10) : '-';
+            tbodyEl.innerHTML += `<tr><td><strong>${h.Name}</strong></td><td>$${(Number(h.Unit_Price)||0).toLocaleString()}</td><td>${dateStr}</td></tr>`;
+        });
+    }
+
+    if(tbodyEl.innerHTML === '') {
+        tbodyEl.innerHTML = '<tr><td colspan="5" class="text-center text-muted py-4">目前尚無資料</td></tr>';
+    }
+
+    drilldownModal.show();
+}
+
 function renderFinanceTable() {
     const selMonth = getVal('finance-month-picker'); 
     const tbody = document.getElementById('finance-table-body'); 
@@ -252,14 +333,17 @@ function renderFinanceTable() {
 function renderRadarTable() { const reg = getVal('radar-filter-region'), lvl = getVal('radar-filter-level'), sts = getVal('radar-filter-status'); const tbody = document.getElementById('radar-table-body'); tbody.innerHTML = ''; globalHospitals.forEach(h => { if (reg!=='All' && h.Region!==reg) return; if (lvl!=='All' && h.Level!==lvl) return; if (sts!=='All' && h.Status!==sts) return; let badge = h.Status==='已簽約'?'bg-success':(h.Status==='開發中'?'bg-warning text-dark':'bg-secondary'); tbody.innerHTML += `<tr><td><strong>${h.Name}</strong></td><td>${h.Region||'-'}</td><td>${h.Level||'-'}</td><td><span class="badge ${badge}">${h.Status||''}</span></td><td>${h.Exclusivity==='Yes'?'<i class="fas fa-check text-success"></i>':'-'}</td><td><button class="btn btn-sm btn-outline-primary" onclick="openHospitalInput('${h.Hospital_ID}')">編輯</button></td></tr>`; }); }
 function renderHospitalList() { const tbody = document.getElementById('hospital-list-body'); tbody.innerHTML = ''; globalHospitals.forEach(h => { tbody.innerHTML += `<tr><td>${h.Name}</td><td>${h.Level}</td><td>$${(Number(h.Unit_Price)||0).toLocaleString()}</td><td>${h.Exclusivity}</td><td>${h.Contract_End_Date ? h.Contract_End_Date.split('T')[0] : '-'}</td><td><button class="btn btn-sm btn-outline-primary" onclick="openHospitalInput('${h.Hospital_ID}')">Edit</button></td></tr>`; }); }
 
-// [修改] 渲染 KOL 列表，加入 Email 欄位及超連結
+// [修改] KOL 清單渲染，加入下拉選單過濾邏輯與彩色 Badge
 function renderKOLList() { 
     const tbody = document.getElementById('kol-list-body'); 
+    const filterHosp = getVal('kol-filter-hospital');
     tbody.innerHTML = ''; 
+    
     globalKOLs.forEach(k => { 
+        // 篩選邏輯
+        if (filterHosp !== 'All' && k.Hospital_ID !== filterHosp) return;
+
         const hName = (globalHospitals.find(h=>h.Hospital_ID===k.Hospital_ID)||{}).Name || k.Hospital_ID; 
-        
-        // 判斷 Email 是否有值，有的話產生 mailto 連結
         const emailLink = k.Email ? `<a href="mailto:${k.Email}" class="text-decoration-none text-primary fw-medium"><i class="fas fa-envelope me-1"></i>${k.Email}</a>` : '<span class="text-muted">-</span>';
         
         tbody.innerHTML += `
@@ -268,7 +352,7 @@ function renderKOLList() {
                 <td>${hName}</td>
                 <td>${k.Title}</td>
                 <td>${emailLink}</td>
-                <td>${k.Visit_Stage}</td>
+                <td>${getStageBadge(k.Visit_Stage)}</td>
                 <td>${k.Probability}%</td>
                 <td><button class="btn btn-sm btn-outline-success" onclick="openKOLModal('${k.KOL_ID}')">Edit</button></td>
             </tr>`; 
@@ -278,6 +362,7 @@ function renderKOLList() {
 function renderUserTable(u) { const t=document.getElementById('admin-users-body'); t.innerHTML=''; u.forEach(x=>t.innerHTML+=`<tr><td>${x.Email}</td><td>${x.Name}</td><td>${x.Role}</td><td>${x.Status}</td><td>${x.Last_Login?new Date(x.Last_Login).toLocaleDateString():'-'}</td><td><button class="btn btn-sm btn-light" onclick="openUserModal('${x.Email}','${x.Name}','${x.Role}','${x.Status}')">Edit</button></td></tr>`); }
 function renderLogTable(l) { const t=document.getElementById('admin-logs-body'); t.innerHTML=''; l.reverse().forEach(x=>t.innerHTML+=`<tr><td>${new Date(x.Timestamp).toLocaleString()}</td><td>${x.User}</td><td>${x.Action}</td><td class="text-muted small">${x.Details}</td></tr>`); }
 
+// Actions
 function openHospitalInput(id){ showPage('hospital-input'); document.getElementById('form-hospital').reset(); setVal('h-id',''); setVal('h-link',''); if(id){ const h=globalHospitals.find(x=>x.Hospital_ID===id); if(h){ setVal('h-id',h.Hospital_ID); setVal('h-name',h.Name); setVal('h-region',h.Region); setVal('h-level',h.Level); setVal('h-address',h.Address); setVal('h-status',h.Status); setVal('h-exclusivity',h.Exclusivity); setVal('h-unit-price',h.Unit_Price); setVal('h-ebm',h.EBM_Share_Ratio); setVal('h-amount',h.Contract_Amount); setVal('h-link',h.Contract_Link); if(h.Contract_Start_Date)setVal('h-start',h.Contract_Start_Date.split('T')[0]); if(h.Contract_End_Date)setVal('h-end',h.Contract_End_Date.split('T')[0]); } } }
 async function submitHospital(){ showLoading(true); let link=getVal('h-link'); const f=document.getElementById('h-file'); if(f.files.length){ link=(await uploadFile(f.files[0])).url; } const p={hospitalId:getVal('h-id'), name:getVal('h-name'), region:getVal('h-region'), level:getVal('h-level'), address:getVal('h-address'), status:getVal('h-status'), exclusivity:getVal('h-exclusivity'), unitPrice:getVal('h-unit-price'), ebmShare:getVal('h-ebm'), contractAmount:getVal('h-amount'), contractStart:getVal('h-start'), contractEnd:getVal('h-end'), contractLink:link, salesRep:document.getElementById('user-name').innerText}; await fetch(CONFIG.SCRIPT_URL,{method:'POST',body:JSON.stringify({action:'saveHospital',userEmail:currentUser,payload:p})}); await loadRadarData(); showPage('hospitals'); showLoading(false); }
 
