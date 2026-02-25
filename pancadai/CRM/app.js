@@ -1,4 +1,4 @@
-// app.js V6.2 (Pie Percentages & Gradients Update)
+// app.js V6.3 (Added Usage Analytics in Finance)
 
 let currentUser = null;
 let currentRole = null;
@@ -21,9 +21,15 @@ window.onload = function() {
     const today = new Date();
     const y = today.getFullYear();
     const m = String(today.getMonth() + 1).padStart(2, '0');
+    
+    // 初始化 Dashboard 區間
     if(document.getElementById('dash-start')) document.getElementById('dash-start').value = `${y}-01`;
     if(document.getElementById('dash-end')) document.getElementById('dash-end').value = `${y}-12`;
+    // 初始化財務單月
     if(document.getElementById('finance-month-picker')) document.getElementById('finance-month-picker').value = `${y}-${m}`;
+    // 初始化財務使用量分析區間
+    if(document.getElementById('usage-start')) document.getElementById('usage-start').value = `${y}-01`;
+    if(document.getElementById('usage-end')) document.getElementById('usage-end').value = `${y}-12`;
 
     const savedUser = localStorage.getItem('pancad_user');
     if (savedUser) {
@@ -88,6 +94,7 @@ async function loadAllCache() {
         updateKOLFilterOptions();
         renderKOLList();
         renderFinanceTable();
+        renderUsageAnalytics(); // 載入後一併渲染使用量分析
     } catch(e) {
         console.error("Cache load error:", e);
     }
@@ -149,7 +156,10 @@ function showPage(pageId) {
     if (pageId === 'kols') renderKOLList();
     if (pageId === 'hospitals') renderHospitalList();
     if (pageId === 'admin') loadAdminData();
-    if (pageId === 'finance') renderFinanceTable();
+    if (pageId === 'finance') {
+        renderFinanceTable();
+        renderUsageAnalytics();
+    }
     if (pageId === 'dashboard') updateDashboardCharts(); 
 }
 
@@ -183,17 +193,17 @@ async function loadFinanceData() {
         if (json.status === 'success') {
             globalStats = json.data; 
             renderFinanceTable(); 
+            renderUsageAnalytics(); // 更新分析資料
         }
     } catch(e){ console.error(e); } finally{showLoading(false);} 
 }
 
 async function loadAdminData() { if(currentRole!=='Admin')return; showLoading(true); try{ const [u,l] = await Promise.all([fetch(CONFIG.SCRIPT_URL,{method:"POST",body:JSON.stringify({action:"getUsers",userEmail:currentUser})}), fetch(CONFIG.SCRIPT_URL,{method:"POST",body:JSON.stringify({action:"getLogs",userEmail:currentUser})})]); renderUserTable((await u.json()).data); renderLogTable((await l.json()).data); }catch(e){}finally{showLoading(false);} }
 
-// [修改] 統一的圓餅圖設定 (包含百分比外掛配置)
 function getPieOptions() {
     return {
         maintainAspectRatio: false, 
-        cutout: '65%', // 調整圓餅圖寬度，稍微厚一點更好看
+        cutout: '65%', 
         plugins: { 
             legend: { 
                 position: 'right', 
@@ -207,7 +217,6 @@ function getPieOptions() {
                     if (label.includes('無資料') || value === 0) return '';
                     let sum = context.chart.data.datasets[0].data.reduce((a, b) => a + b, 0);
                     let percentage = Math.round(value * 100 / sum) + '%';
-                    // 區塊太小則不顯示數字，避免擁擠
                     return (value * 100 / sum) < 5 ? null : percentage;
                 }
             }
@@ -223,7 +232,6 @@ function renderDashboard(data) {
     if(document.getElementById('kpi-intro-hospital-count')) document.getElementById('kpi-intro-hospital-count').innerText = (kpi.productIntroCount || 0).toLocaleString();
     if(document.getElementById('kpi-signed-hospital-count')) document.getElementById('kpi-signed-hospital-count').innerText = (kpi.signedCount || 0).toLocaleString();
 
-    // 1. 已簽約醫院圓餅圖
     const ctxRegion = document.getElementById('chart-region');
     if (ctxRegion) {
         if(window.myRegionChart) window.myRegionChart.destroy();
@@ -234,7 +242,6 @@ function renderDashboard(data) {
         if(rLabelsRaw.length === 0) { 
             rLabels.push('無資料'); rData.push(1); 
         } else {
-            // [修改] 將百分比寫入標籤，讓圖例(Legend)與提示框直接顯示
             const rTotal = rData.reduce((a, b) => a + b, 0);
             rLabels = rLabelsRaw.map((label, index) => {
                 let percent = Math.round((rData[index] / rTotal) * 100);
@@ -246,7 +253,6 @@ function renderDashboard(data) {
         const gradients1 = rLabels.map((_, i) => {
             const colors = [['#4e73df', '#224abe'], ['#1cc88a', '#138e62'], ['#36b9cc', '#1cb5e0'], ['#f6c23e', '#f4a221'], ['#e74a3b', '#be2617'], ['#6f42c1', '#4e2d8b'], ['#fd7e14', '#c65f0b']];
             const colorPair = colors[i % colors.length];
-            // [修改] 讓漸層方向從左上到右下
             let grad = ctx1.createLinearGradient(0, 0, 0, 300);
             grad.addColorStop(0, colorPair[0]); grad.addColorStop(1, colorPair[1]);
             return grad;
@@ -260,7 +266,6 @@ function renderDashboard(data) {
         });
     }
 
-    // 2. 開發中醫院圓餅圖
     const ctxDevRegion = document.getElementById('chart-dev-region');
     if (ctxDevRegion) {
         if(window.myDevRegionChart) window.myDevRegionChart.destroy();
@@ -271,7 +276,6 @@ function renderDashboard(data) {
         if(devLabelsRaw.length === 0) { 
             devLabels.push('無資料'); devData.push(1); 
         } else {
-            // [修改] 將百分比寫入標籤
             const devTotal = devData.reduce((a, b) => a + b, 0);
             devLabels = devLabelsRaw.map((label, index) => {
                 let percent = Math.round((devData[index] / devTotal) * 100);
@@ -281,7 +285,6 @@ function renderDashboard(data) {
         
         const ctx2 = ctxDevRegion.getContext('2d');
         const gradients2 = devLabels.map((_, i) => {
-            // [修改] 開發中圓餅圖刻意更換顏色順序，增加視覺區別度
             const colors = [['#36b9cc', '#1cb5e0'], ['#f6c23e', '#f4a221'], ['#4e73df', '#224abe'], ['#1cc88a', '#138e62'], ['#e74a3b', '#be2617'], ['#6f42c1', '#4e2d8b']];
             const colorPair = colors[i % colors.length];
             let grad = ctx2.createLinearGradient(0, 0, 0, 300);
@@ -334,13 +337,22 @@ function updateDashboardCharts() {
     if (window.myTrendChart) window.myTrendChart.destroy();
     const gradGross = ctx.createLinearGradient(0, 0, 0, 300); gradGross.addColorStop(0, 'rgba(78, 115, 223, 0.4)'); gradGross.addColorStop(1, 'rgba(78, 115, 223, 0.0)');
     const gradNet = ctx.createLinearGradient(0, 0, 0, 300); gradNet.addColorStop(0, 'rgba(28, 200, 138, 0.4)'); gradNet.addColorStop(1, 'rgba(28, 200, 138, 0.0)');
+    
     window.myTrendChart = new Chart(ctx, {
         type: 'line',
         data: {
             labels: labels,
             datasets: [{ label: 'Gross', data: grossData, borderColor: '#4e73df', backgroundColor: gradGross, fill: true, tension: 0.4 }, { label: 'Net', data: netData, borderColor: '#1cc88a', backgroundColor: gradNet, fill: true, tension: 0.4 }]
         },
-        options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'top', align: 'end' } }, scales: { x: { grid: { display: false } }, y: { grid: { borderDash: [2], color: '#f0f0f0' }, beginAtZero: true } } }
+        options: { 
+            responsive: true, 
+            maintainAspectRatio: false, 
+            plugins: { 
+                legend: { position: 'top', align: 'end' },
+                datalabels: { display: false } // 折線圖關閉數字標籤避免雜亂
+            }, 
+            scales: { x: { grid: { display: false } }, y: { grid: { borderDash: [2], color: '#f0f0f0' }, beginAtZero: true } } 
+        }
     });
 }
 
@@ -388,6 +400,107 @@ function openDrilldown(type) {
     }
 
     drilldownModal.show();
+}
+
+// [新增] 渲染使用量分析 (圖表與排行榜)
+function renderUsageAnalytics() {
+    const start = getVal('usage-start');
+    const end = getVal('usage-end');
+    if (!start || !end) return;
+
+    let monthlyUsage = {}; 
+    let hospitalUsage = {}; 
+
+    globalStats.forEach(s => {
+        let dataMonth = String(s.Year_Month).substring(0, 7);
+        if (dataMonth >= start && dataMonth <= end) {
+            let usage = Number(s.Usage_Count) || 0;
+            monthlyUsage[dataMonth] = (monthlyUsage[dataMonth] || 0) + usage;
+            hospitalUsage[s.Hospital_ID] = (hospitalUsage[s.Hospital_ID] || 0) + usage;
+        }
+    });
+
+    // 1. 繪製長條圖
+    const labels = Object.keys(monthlyUsage).sort();
+    const dataPoints = labels.map(m => monthlyUsage[m]);
+    
+    const ctxTrend = document.getElementById('chart-usage-trend');
+    if (ctxTrend) {
+        if (window.myUsageTrendChart) window.myUsageTrendChart.destroy();
+        const ctx = ctxTrend.getContext('2d');
+        
+        let gradBar = ctx.createLinearGradient(0, 0, 0, 300);
+        gradBar.addColorStop(0, 'rgba(54, 185, 204, 0.8)'); 
+        gradBar.addColorStop(1, 'rgba(78, 115, 223, 0.8)'); 
+
+        window.myUsageTrendChart = new Chart(ctx, {
+            type: 'bar',
+            data: {
+                labels: labels,
+                datasets: [{
+                    label: '總使用次數',
+                    data: dataPoints,
+                    backgroundColor: gradBar,
+                    borderRadius: 4,
+                    barPercentage: 0.5
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: { 
+                    legend: { display: false },
+                    datalabels: {
+                        anchor: 'end',
+                        align: 'top',
+                        color: '#5a5c69',
+                        font: { weight: 'bold', family: "'Segoe UI', sans-serif" },
+                        formatter: (val) => val > 0 ? val.toLocaleString() : ''
+                    }
+                },
+                scales: {
+                    x: { grid: { display: false } },
+                    y: { grid: { borderDash: [2], color: '#f0f0f0' }, beginAtZero: true }
+                }
+            },
+            plugins: [ChartDataLabels]
+        });
+    }
+
+    // 2. 渲染已簽約醫院排行榜
+    const tbody = document.getElementById('usage-ranking-body');
+    if (!tbody) return;
+    tbody.innerHTML = '';
+
+    const signedHospitals = globalHospitals.filter(h => h.Status === '已簽約');
+    let rankingData = signedHospitals.map(h => {
+        return { name: h.Name, usage: hospitalUsage[h.Hospital_ID] || 0 };
+    });
+    
+    // 依使用次數由大到小排序
+    rankingData.sort((a, b) => b.usage - a.usage);
+
+    if (rankingData.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="3" class="text-center text-muted py-4">目前尚無已簽約醫院</td></tr>';
+    } else {
+        rankingData.forEach((item, index) => {
+            let rankBadge = '';
+            if (index === 0) rankBadge = '<span class="badge bg-warning text-dark px-2 py-1 shadow-sm">1</span>'; // 金牌
+            else if (index === 1) rankBadge = '<span class="badge bg-secondary px-2 py-1 shadow-sm">2</span>'; // 銀牌
+            else if (index === 2) rankBadge = '<span class="badge px-2 py-1 shadow-sm" style="background-color: #cd7f32; color: white;">3</span>'; // 銅牌
+            else rankBadge = `<span class="text-muted fw-bold ms-2">${index + 1}</span>`;
+
+            let textClass = item.usage === 0 ? 'text-muted' : 'fw-bold text-dark';
+
+            tbody.innerHTML += `
+                <tr>
+                    <td style="width: 50px;">${rankBadge}</td>
+                    <td class="${textClass}">${item.name}</td>
+                    <td class="text-end ${textClass}">${item.usage.toLocaleString()}</td>
+                </tr>
+            `;
+        });
+    }
 }
 
 function renderFinanceTable() {
