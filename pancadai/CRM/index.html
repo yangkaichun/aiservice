@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>PancadAI CRM V6.3 - Manager</title>
+    <title>PancadAI CRM V6.4 - Manager</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
     <link rel="shortcut icon" href="https://www.pancad.ai/static/images/favicon.ico?v=20240229">
@@ -30,6 +30,9 @@
         .card:hover { transform: translateY(-5px); box-shadow: 0 12px 30px rgba(0,0,0,0.1); }
         
         .cursor-pointer { cursor: pointer; }
+        /* 醫院排行榜高亮樣式 */
+        .table-hover tbody tr.cursor-pointer:hover { background-color: rgba(78, 115, 223, 0.05); }
+        .table-hover tbody tr.active-row { background-color: rgba(78, 115, 223, 0.15) !important; }
 
         .card-revenue { background: linear-gradient(120deg, #2c3e50 0%, #4ca1af 100%); color: white; padding: 0; }
         .revenue-item { padding: 2rem; position: relative; }
@@ -242,7 +245,7 @@
 
                     <hr class="my-5" style="border-top: 2px dashed #e3e6f0; opacity: 1;">
                     <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center mb-4">
-                        <h4 class="mb-2 mb-md-0 fw-bold text-dark"><i class="fas fa-chart-bar me-2 text-primary"></i>歷史使用量分析</h4>
+                        <h4 class="mb-2 mb-md-0 fw-bold text-dark"><i class="fas fa-chart-bar me-2 text-primary"></i>歷史使用量與營收分析</h4>
                         <div class="d-flex gap-2 w-100 w-md-auto align-items-center">
                             <span class="fw-bold text-dark small d-none d-md-inline text-nowrap">區間：</span>
                             <input type="month" id="usage-start" class="form-control form-control-sm">
@@ -254,15 +257,19 @@
                     <div class="row g-3">
                         <div class="col-12 col-lg-8">
                             <div class="card p-4 h-100">
-                                <h5 class="fw-bold mb-4 text-dark">每月總使用次數趨勢</h5>
-                                <div style="height: 300px; position: relative;"><canvas id="chart-usage-trend"></canvas></div>
+                                <div class="d-flex justify-content-between align-items-center mb-4">
+                                    <h5 class="fw-bold text-dark m-0" id="usage-chart-title">所有醫院 - 每月趨勢分析</h5>
+                                    <button class="btn btn-sm btn-outline-secondary d-none" id="btn-usage-back" onclick="selectUsageHospital(null)"><i class="fas fa-arrow-left me-1"></i>查看所有醫院</button>
+                                </div>
+                                <div style="height: 250px; position: relative; margin-bottom: 20px;"><canvas id="chart-usage-trend"></canvas></div>
+                                <div style="height: 250px; position: relative;"><canvas id="chart-usage-revenue"></canvas></div>
                             </div>
                         </div>
                         <div class="col-12 col-lg-4">
                             <div class="card p-4 h-100">
-                                <h5 class="fw-bold mb-4 text-dark">已簽約醫院使用排行</h5>
-                                <div class="table-responsive" style="max-height: 300px; overflow-y: auto;">
-                                    <table class="table table-sm table-hover mb-0 align-middle table-custom">
+                                <h5 class="fw-bold mb-4 text-dark">已簽約醫院使用排行 <br><small class="text-muted fs-6 fw-normal">(點擊可看單一醫院趨勢)</small></h5>
+                                <div class="table-responsive" style="max-height: 550px; overflow-y: auto;">
+                                    <table class="table table-sm table-hover mb-0 align-middle table-custom" id="usage-ranking-table">
                                         <thead class="table-light sticky-top">
                                             <tr><th>排名</th><th>醫院</th><th class="text-end">總次數</th></tr>
                                         </thead>
