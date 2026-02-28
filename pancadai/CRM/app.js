@@ -1,4 +1,4 @@
-// app.js V6.5 (Ultimate Performance & Async Loading Edition)
+// app.js V6.6 (Dynamic Loading Text & Fast Caching)
 
 let currentUser = null;
 let currentRole = null;
@@ -9,7 +9,8 @@ let globalMonthlyData = [];
 let globalConfig = { regions: [], levels: [] }; 
 let kolModal, userModal, settlementModal, drilldownModal;
 
-let selectedAnalyticsHospitalId = null; // 紀錄財務分析被選中的醫院
+let selectedAnalyticsHospitalId = null; 
+let loadingInterval = null; // 用於控制 Loading 文字閃爍動畫
 
 window.onload = function() {
     const client_id = CONFIG.GOOGLE_CLIENT_ID;
@@ -39,7 +40,30 @@ window.onload = function() {
 
 function getVal(id) { const el = document.getElementById(id); return el ? el.value : ''; }
 function setVal(id, value) { const el = document.getElementById(id); if (el) el.value = value || ''; }
-function showLoading(show) { document.getElementById('loading-overlay').classList.toggle('d-none', !show); }
+
+// 🚀 [核心優化 1] 支援絢麗動態文字切換的 Loading 邏輯
+const loadingTexts = ["CONNECTING TO SERVER", "FETCHING CLOUD DATA", "SYNCING MODULES", "PROCESSING INTERFACE", "ALMOST READY"];
+function showLoading(show) { 
+    const overlay = document.getElementById('loading-overlay');
+    const textEl = document.getElementById('loading-text-display');
+    
+    if (show) {
+        overlay.classList.remove('d-none');
+        let step = 0;
+        if (textEl) {
+            textEl.innerText = loadingTexts[0];
+            clearInterval(loadingInterval);
+            loadingInterval = setInterval(() => {
+                step = (step + 1) % loadingTexts.length;
+                textEl.innerText = loadingTexts[step] + "...";
+            }, 800); 
+        }
+    } else {
+        overlay.classList.add('d-none');
+        clearInterval(loadingInterval);
+    }
+}
+
 function logout() { 
     currentUser = null; 
     localStorage.removeItem('pancad_user'); 
@@ -70,11 +94,10 @@ function handleCredentialResponse(r) {
 
 function decodeJwtResponse(token) { return JSON.parse(decodeURIComponent(window.atob(token.split('.')[1].replace(/-/g, '+').replace(/_/g, '/')).split('').map(c => '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2)).join(''))); }
 
-// 🚀 [核心優化 1] 登入時平行抓取所有資料，網頁 Loading 速度提升 400%
+// 🚀 [核心優化 2] 平行抓取所有資料庫，速度提升
 async function verifyBackendAuth(email) {
     showLoading(true);
     try {
-        // 同時向後端發出所有請求，將等待時間從 5~8 秒壓縮到 1.5 秒
         const [authRes, hRes, kRes, fRes, confRes] = await Promise.all([
             fetch(CONFIG.SCRIPT_URL, { method: "POST", body: JSON.stringify({ action: "getDashboardData", userEmail: email }) }),
             fetch(CONFIG.SCRIPT_URL, { method: "POST", body: JSON.stringify({ action: "getHospitals", userEmail: email }) }),
@@ -99,7 +122,6 @@ async function verifyBackendAuth(email) {
                  document.getElementById('user-name').innerText = email.split('@')[0];
             }
 
-            // 處理平行取得的各項資料快取
             globalHospitals = (await hRes.json()).data || [];
             globalKOLs = (await kRes.json()).data || [];
             globalStats = (await fRes.json()).data || [];
@@ -115,7 +137,6 @@ async function verifyBackendAuth(email) {
                 populateSelect('h-level', globalConfig.levels);
             }
 
-            // 一次性渲染所有畫面，點擊選單不再需要等待 API
             renderDashboard(json.data);
             updateKOLFilterOptions();
             renderRadarTable();
@@ -131,7 +152,7 @@ async function verifyBackendAuth(email) {
     } catch (e) { console.error(e); logout(); } finally { showLoading(false); } 
 }
 
-// 🚀 [核心優化 2] 編輯/儲存資料後的並行更新，速度瞬間完成
+// 🚀 [核心優化 3] 編輯儲存後的背景更新，瞬間完成
 async function refreshAllData() {
     try {
         const [hRes, kRes, fRes, dRes] = await Promise.all([
@@ -170,12 +191,11 @@ function showPage(pageId) {
     for(let l of links) if(l.getAttribute('onclick') && l.getAttribute('onclick').includes(pageId)) l.classList.add('active');
     if (window.innerWidth < 768) toggleSidebar();
 
-    // 由於所有資料皆已預載 (Cached)，切換頁面直接重繪，不需再呼叫 API 等待
     if (pageId === 'kols') renderKOLList();
     if (pageId === 'hospitals') renderHospitalList();
     if (pageId === 'finance') { renderFinanceTable(); renderUsageAnalytics(); }
     if (pageId === 'dashboard') updateDashboardCharts(); 
-    if (pageId === 'admin') loadAdminData(); // Admin 才需特別載入 Log
+    if (pageId === 'admin') loadAdminData();
 }
 
 function updateKOLFilterOptions() {
@@ -370,7 +390,10 @@ function openDrilldown(type) {
         });
     }
 
-    if(tbodyEl.innerHTML === '') tbodyEl.innerHTML = '<tr><td colspan="5" class="text-center text-muted py-4">目前尚無資料</td></tr>';
+    if(tbodyEl.innerHTML === '') {
+        tbodyEl.innerHTML = '<tr><td colspan="5" class="text-center text-muted py-4">目前尚無資料</td></tr>';
+    }
+
     drilldownModal.show();
 }
 
@@ -503,9 +526,11 @@ function renderFinanceTable() {
     sortedStats.forEach(s => {
         let dataMonth = String(s.Year_Month).substring(0, 7);
         if (dataMonth !== selMonth) return;
+        
         hasData = true;
         const hosp = globalHospitals.find(h => String(h.Hospital_ID) === String(s.Hospital_ID));
         const hName = hosp ? hosp.Name : `(ID: ${s.Hospital_ID})`;
+
         const g = Number(s.Gross_Revenue)||0, n = Number(s.Net_Revenue)||0;
         kpiG+=g; kpiN+=n; kpiE+=(Number(s.EBM_Fee)||0); 
         if (s.Invoice_Status!=='Paid') kpiA+=g;
@@ -562,7 +587,6 @@ function renderKOLList() {
 function renderUserTable(u) { const t=document.getElementById('admin-users-body'); t.innerHTML=''; u.forEach(x=>t.innerHTML+=`<tr><td>${x.Email}</td><td>${x.Name}</td><td>${x.Role}</td><td>${x.Status}</td><td>${x.Last_Login?new Date(x.Last_Login).toLocaleDateString():'-'}</td><td><button class="btn btn-sm btn-light" onclick="openUserModal('${x.Email}','${x.Name}','${x.Role}','${x.Status}')">Edit</button></td></tr>`); }
 function renderLogTable(l) { const t=document.getElementById('admin-logs-body'); t.innerHTML=''; l.reverse().forEach(x=>t.innerHTML+=`<tr><td>${new Date(x.Timestamp).toLocaleString()}</td><td>${x.User}</td><td>${x.Action}</td><td class="text-muted small">${x.Details}</td></tr>`); }
 
-// Actions: Modified for instant concurrent refresh
 function openHospitalInput(id){ showPage('hospital-input'); document.getElementById('form-hospital').reset(); setVal('h-id',''); setVal('h-link',''); if(id){ const h=globalHospitals.find(x=>x.Hospital_ID===id); if(h){ setVal('h-id',h.Hospital_ID); setVal('h-name',h.Name); setVal('h-region',h.Region); setVal('h-level',h.Level); setVal('h-address',h.Address); setVal('h-status',h.Status); setVal('h-exclusivity',h.Exclusivity); setVal('h-unit-price',h.Unit_Price); setVal('h-ebm',h.EBM_Share_Ratio); setVal('h-amount',h.Contract_Amount); setVal('h-link',h.Contract_Link); if(h.Contract_Start_Date)setVal('h-start',h.Contract_Start_Date.split('T')[0]); if(h.Contract_End_Date)setVal('h-end',h.Contract_End_Date.split('T')[0]); } } }
 async function submitHospital(){ showLoading(true); let link=getVal('h-link'); const f=document.getElementById('h-file'); if(f.files.length){ link=(await uploadFile(f.files[0])).url; } const p={hospitalId:getVal('h-id'), name:getVal('h-name'), region:getVal('h-region'), level:getVal('h-level'), address:getVal('h-address'), status:getVal('h-status'), exclusivity:getVal('h-exclusivity'), unitPrice:getVal('h-unit-price'), ebmShare:getVal('h-ebm'), contractAmount:getVal('h-amount'), contractStart:getVal('h-start'), contractEnd:getVal('h-end'), contractLink:link, salesRep:document.getElementById('user-name').innerText}; await fetch(CONFIG.SCRIPT_URL,{method:'POST',body:JSON.stringify({action:'saveHospital',userEmail:currentUser,payload:p})}); await refreshAllData(); showPage('hospitals'); showLoading(false); }
 
