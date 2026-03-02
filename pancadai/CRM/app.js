@@ -1,4 +1,4 @@
-// app.js V6.6 (Dynamic Loading Text & Fast Caching)
+// app.js V6.7 (Added Keyword Filter & Avatar Fix)
 
 let currentUser = null;
 let currentRole = null;
@@ -11,6 +11,9 @@ let kolModal, userModal, settlementModal, drilldownModal;
 
 let selectedAnalyticsHospitalId = null; 
 let loadingInterval = null;
+
+// [修正] 預設通用大頭貼 (Base64 SVG) 確保沒有白線破圖
+const DEFAULT_AVATAR = "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0iI2NjYyI+PHBhdGggZD0iTTEyIDJDMi40OCAyIDIgNi40OCAyIDEyczQuNDggMTAgMTAgMTAgMTAtNC40OCAxMC0xMFMyMS41MiAyIDEyIDJ6bTAgM2MzLjE5IDAgNS43OSAyLjU5IDUuNzkgNS43OVMxNS4xOSAxNi41OCAxMiAxNi41OHMtNS43OS0yLjU5LTUuNzktNS43OVM4LjgxIDUgMTIgNXptMCAxNC4yYy0yLjUgMC00LjcxLTEuMjgtNi4wMi0zLjIyLjA0LTEuOTkgNC0zLjA4IDYuMDItMy4wOHMyLjk4IDEuMDkgNi4wMiAzLjA4Yy0xLjMxIDEuOTQtMy41MiAzLjIyLTYuMDIgMy4yMnoiLz48L3N2Zz4=";
 
 window.onload = function() {
     const client_id = CONFIG.GOOGLE_CLIENT_ID;
@@ -32,6 +35,17 @@ window.onload = function() {
     if(document.getElementById('usage-end')) document.getElementById('usage-end').value = `${y}-12`;
 
     const savedUser = localStorage.getItem('pancad_user');
+    const savedUserPic = localStorage.getItem('pancad_user_pic'); // [修正] 讀取快取頭像
+    
+    // 如果有快取頭像則載入，否則用預設頭像
+    if (savedUserPic) {
+        document.getElementById('user-avatar').src = savedUserPic;
+        document.getElementById('mobile-user-avatar').src = savedUserPic;
+    } else {
+        document.getElementById('user-avatar').src = DEFAULT_AVATAR;
+        document.getElementById('mobile-user-avatar').src = DEFAULT_AVATAR;
+    }
+
     if (savedUser) {
         currentUser = savedUser;
         verifyBackendAuth(savedUser);
@@ -66,6 +80,7 @@ function showLoading(show) {
 function logout() { 
     currentUser = null; 
     localStorage.removeItem('pancad_user'); 
+    localStorage.removeItem('pancad_user_pic'); // 清除頭像快取
     location.reload(); 
 }
 function toggleSidebar() { document.getElementById('main-sidebar').classList.toggle('show'); }
@@ -84,10 +99,12 @@ function handleCredentialResponse(r) {
     const payload = decodeJwtResponse(r.credential);
     currentUser = payload.email; 
     localStorage.setItem('pancad_user', currentUser); 
+    localStorage.setItem('pancad_user_pic', payload.picture); // [修正] 儲存 Google 登入後給的大頭貼
+    
     document.getElementById('user-name').innerText = payload.name;
-    document.getElementById('user-avatar').src = payload.picture;
+    document.getElementById('user-avatar').src = payload.picture || DEFAULT_AVATAR;
     document.getElementById('mobile-user-name').innerText = payload.name;
-    document.getElementById('mobile-user-avatar').src = payload.picture;
+    document.getElementById('mobile-user-avatar').src = payload.picture || DEFAULT_AVATAR;
     verifyBackendAuth(currentUser); 
 }
 
@@ -208,8 +225,7 @@ async function loadAdminData() { if(currentRole!=='Admin')return; showLoading(tr
 
 function getPieOptions() {
     return {
-        maintainAspectRatio: false, 
-        cutout: '65%', 
+        maintainAspectRatio: false, cutout: '65%', 
         plugins: { 
             legend: { position: 'right', labels: { boxWidth: 15, font: { size: 12, family: "'Segoe UI', sans-serif" }, padding: 15 } },
             datalabels: {
@@ -522,7 +538,6 @@ function renderFinanceTable() {
 
     sortedStats.forEach(s => {
         let dataMonth = String(s.Year_Month).substring(0, 7);
-
         if (dataMonth !== selMonth) return;
         
         hasData = true;
@@ -559,15 +574,28 @@ function renderFinanceTable() {
 function renderRadarTable() { const reg = getVal('radar-filter-region'), lvl = getVal('radar-filter-level'), sts = getVal('radar-filter-status'); const tbody = document.getElementById('radar-table-body'); tbody.innerHTML = ''; globalHospitals.forEach(h => { if (reg!=='All' && h.Region!==reg) return; if (lvl!=='All' && h.Level!==lvl) return; if (sts!=='All' && h.Status!==sts) return; let badge = h.Status==='已簽約'?'bg-success':(h.Status==='開發中'?'bg-warning text-dark':'bg-secondary'); tbody.innerHTML += `<tr><td><strong>${h.Name}</strong></td><td>${h.Region||'-'}</td><td>${h.Level||'-'}</td><td><span class="badge ${badge}">${h.Status||''}</span></td><td>${h.Exclusivity==='Yes'?'<i class="fas fa-check text-success"></i>':'-'}</td><td><button class="btn btn-sm btn-outline-primary" onclick="openHospitalInput('${h.Hospital_ID}')">編輯</button></td></tr>`; }); }
 function renderHospitalList() { const tbody = document.getElementById('hospital-list-body'); tbody.innerHTML = ''; globalHospitals.forEach(h => { tbody.innerHTML += `<tr><td>${h.Name}</td><td>${h.Level}</td><td>$${(Number(h.Unit_Price)||0).toLocaleString()}</td><td>${h.Exclusivity}</td><td>${h.Contract_End_Date ? h.Contract_End_Date.split('T')[0] : '-'}</td><td><button class="btn btn-sm btn-outline-primary" onclick="openHospitalInput('${h.Hospital_ID}')">Edit</button></td></tr>`; }); }
 
+// [修正] 加入關鍵字搜尋邏輯 (過濾醫院名稱或KOL姓名)
 function renderKOLList() { 
     const tbody = document.getElementById('kol-list-body'); 
     const filterHosp = getVal('kol-filter-hospital');
+    const filterKeyword = getVal('kol-filter-keyword').toLowerCase(); 
+    
     tbody.innerHTML = ''; 
     
     globalKOLs.forEach(k => { 
         if (filterHosp !== 'All' && k.Hospital_ID !== filterHosp) return;
 
-        const hName = (globalHospitals.find(h=>h.Hospital_ID===k.Hospital_ID)||{}).Name || k.Hospital_ID; 
+        const hName = (globalHospitals.find(h=>h.Hospital_ID===k.Hospital_ID)||{}).Name || String(k.Hospital_ID); 
+        
+        // 關鍵字篩選
+        if (filterKeyword) {
+            const kolName = String(k.Name || '').toLowerCase();
+            const hospitalNameStr = String(hName || '').toLowerCase();
+            if (!kolName.includes(filterKeyword) && !hospitalNameStr.includes(filterKeyword)) {
+                return; // 不符合關鍵字則跳過
+            }
+        }
+
         const emailLink = k.Email ? `<a href="mailto:${k.Email}" class="text-decoration-none text-primary fw-medium"><i class="fas fa-envelope me-1"></i>${k.Email}</a>` : '<span class="text-muted">-</span>';
         
         tbody.innerHTML += `
