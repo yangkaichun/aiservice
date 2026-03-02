@@ -10,7 +10,7 @@ let globalConfig = { regions: [], levels: [] };
 let kolModal, userModal, settlementModal, drilldownModal;
 
 let selectedAnalyticsHospitalId = null; 
-let loadingInterval = null; // 用於控制 Loading 文字閃爍動畫
+let loadingInterval = null;
 
 window.onload = function() {
     const client_id = CONFIG.GOOGLE_CLIENT_ID;
@@ -41,7 +41,6 @@ window.onload = function() {
 function getVal(id) { const el = document.getElementById(id); return el ? el.value : ''; }
 function setVal(id, value) { const el = document.getElementById(id); if (el) el.value = value || ''; }
 
-// 🚀 [核心優化 1] 支援絢麗動態文字切換的 Loading 邏輯
 const loadingTexts = ["CONNECTING TO SERVER", "FETCHING CLOUD DATA", "SYNCING MODULES", "PROCESSING INTERFACE", "ALMOST READY"];
 function showLoading(show) { 
     const overlay = document.getElementById('loading-overlay');
@@ -94,7 +93,6 @@ function handleCredentialResponse(r) {
 
 function decodeJwtResponse(token) { return JSON.parse(decodeURIComponent(window.atob(token.split('.')[1].replace(/-/g, '+').replace(/_/g, '/')).split('').map(c => '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2)).join(''))); }
 
-// 🚀 [核心優化 2] 平行抓取所有資料庫，速度提升
 async function verifyBackendAuth(email) {
     showLoading(true);
     try {
@@ -152,7 +150,6 @@ async function verifyBackendAuth(email) {
     } catch (e) { console.error(e); logout(); } finally { showLoading(false); } 
 }
 
-// 🚀 [核心優化 3] 編輯儲存後的背景更新，瞬間完成
 async function refreshAllData() {
     try {
         const [hRes, kRes, fRes, dRes] = await Promise.all([
@@ -525,6 +522,7 @@ function renderFinanceTable() {
 
     sortedStats.forEach(s => {
         let dataMonth = String(s.Year_Month).substring(0, 7);
+
         if (dataMonth !== selMonth) return;
         
         hasData = true;
@@ -568,6 +566,7 @@ function renderKOLList() {
     
     globalKOLs.forEach(k => { 
         if (filterHosp !== 'All' && k.Hospital_ID !== filterHosp) return;
+
         const hName = (globalHospitals.find(h=>h.Hospital_ID===k.Hospital_ID)||{}).Name || k.Hospital_ID; 
         const emailLink = k.Email ? `<a href="mailto:${k.Email}" class="text-decoration-none text-primary fw-medium"><i class="fas fa-envelope me-1"></i>${k.Email}</a>` : '<span class="text-muted">-</span>';
         
