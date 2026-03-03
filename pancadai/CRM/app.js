@@ -1,4 +1,4 @@
-// app.js V6.8 (Status Update & Autocomplete Search Edition)
+// app.js V6.9.1 (Fixed Negotiating Count Bug)
 
 let currentUser = null;
 let currentRole = null;
@@ -146,6 +146,7 @@ async function verifyBackendAuth(email) {
                 globalConfig.levels = confJson.data.filter(r => r.Category === 'Hospital_Level').map(r => r.Option_Value);
                 populateSelect('radar-filter-region', globalConfig.regions, '全部區域');
                 populateSelect('radar-filter-level', globalConfig.levels, '全部規模');
+                populateSelect('hospital-filter-level', globalConfig.levels, '篩選等級：全部');
                 populateSelect('h-region', globalConfig.regions);
                 populateSelect('h-level', globalConfig.levels);
             }
@@ -243,12 +244,14 @@ function getPieOptions() {
 function renderDashboard(data) {
     const kpi = data.kpi;
     
+    // [修正] 從前端快取直接計算「議約中」的數量，避免因 GAS 未重新部署而抓不到後端資料的 Bug
+    const frontendNegCount = globalHospitals.filter(h => h.Status === '議約中').length;
+    
     if(document.getElementById('kpi-kol-count')) document.getElementById('kpi-kol-count').innerText = (kpi.kolCount || 0).toLocaleString();
     if(document.getElementById('kpi-dev-hospital-count')) document.getElementById('kpi-dev-hospital-count').innerText = (kpi.developingCount || 0).toLocaleString();
+    if(document.getElementById('kpi-neg-hospital-count')) document.getElementById('kpi-neg-hospital-count').innerText = frontendNegCount.toLocaleString(); // 改用前端即時計算結果
     if(document.getElementById('kpi-intro-hospital-count')) document.getElementById('kpi-intro-hospital-count').innerText = (kpi.productIntroCount || 0).toLocaleString();
     if(document.getElementById('kpi-signed-hospital-count')) document.getElementById('kpi-signed-hospital-count').innerText = (kpi.signedCount || 0).toLocaleString();
-    // [新增] 綁定議約中醫院數值
-    if(document.getElementById('kpi-neg-hospital-count')) document.getElementById('kpi-neg-hospital-count').innerText = (kpi.negotiatingCount || 0).toLocaleString();
 
     const ctxRegion = document.getElementById('chart-region');
     if (ctxRegion) {
@@ -388,7 +391,6 @@ function openDrilldown(type) {
             tbodyEl.innerHTML += `<tr><td><strong>${h.Name}</strong></td><td>${h.Region}</td><td>${h.Level}</td></tr>`;
         });
     } else if (type === 'negotiating') {
-        // [新增] 議約中醫院清單
         titleEl.innerText = '議約中醫院清單';
         theadEl.innerHTML = '<tr><th>醫院名稱</th><th>區域</th><th>規模等級</th></tr>';
         globalHospitals.filter(h => h.Status === '議約中').forEach(h => {
@@ -578,9 +580,25 @@ function renderFinanceTable() {
     document.getElementById('fin-kpi-ebm').innerText="$"+kpiE.toLocaleString();
 }
 
-// [修改] 雷達表格：為「議約中」加入對應顏色標籤
 function renderRadarTable() { const reg = getVal('radar-filter-region'), lvl = getVal('radar-filter-level'), sts = getVal('radar-filter-status'); const tbody = document.getElementById('radar-table-body'); tbody.innerHTML = ''; globalHospitals.forEach(h => { if (reg!=='All' && h.Region!==reg) return; if (lvl!=='All' && h.Level!==lvl) return; if (sts!=='All' && h.Status!==sts) return; let badge = h.Status==='已簽約'?'bg-success':(h.Status==='議約中'?'bg-info text-dark':(h.Status==='開發中'?'bg-warning text-dark':'bg-secondary')); tbody.innerHTML += `<tr><td><strong>${h.Name}</strong></td><td>${h.Region||'-'}</td><td>${h.Level||'-'}</td><td><span class="badge ${badge}">${h.Status||''}</span></td><td>${h.Exclusivity==='Yes'?'<i class="fas fa-check text-success"></i>':'-'}</td><td><button class="btn btn-sm btn-outline-primary" onclick="openHospitalInput('${h.Hospital_ID}')">編輯</button></td></tr>`; }); }
-function renderHospitalList() { const tbody = document.getElementById('hospital-list-body'); tbody.innerHTML = ''; globalHospitals.forEach(h => { tbody.innerHTML += `<tr><td>${h.Name}</td><td>${h.Level}</td><td>$${(Number(h.Unit_Price)||0).toLocaleString()}</td><td>${h.Exclusivity}</td><td>${h.Contract_End_Date ? h.Contract_End_Date.split('T')[0] : '-'}</td><td><button class="btn btn-sm btn-outline-primary" onclick="openHospitalInput('${h.Hospital_ID}')">Edit</button></td></tr>`; }); }
+
+function renderHospitalList() { 
+    const tbody = document.getElementById('hospital-list-body'); 
+    const filterLevel = getVal('hospital-filter-level');
+    const filterKeyword = getVal('hospital-filter-keyword').toLowerCase();
+
+    tbody.innerHTML = ''; 
+    globalHospitals.forEach(h => { 
+        if (filterLevel && filterLevel !== 'All' && h.Level !== filterLevel) return;
+
+        if (filterKeyword) {
+            const hName = String(h.Name || '').toLowerCase();
+            if (!hName.includes(filterKeyword)) return;
+        }
+
+        tbody.innerHTML += `<tr><td>${h.Name}</td><td>${h.Level}</td><td>$${(Number(h.Unit_Price)||0).toLocaleString()}</td><td>${h.Exclusivity}</td><td>${h.Contract_End_Date ? h.Contract_End_Date.split('T')[0] : '-'}</td><td><button class="btn btn-sm btn-outline-primary" onclick="openHospitalInput('${h.Hospital_ID}')">Edit</button></td></tr>`; 
+    }); 
+}
 
 function renderKOLList() { 
     const tbody = document.getElementById('kol-list-body'); 
@@ -623,13 +641,11 @@ function renderLogTable(l) { const t=document.getElementById('admin-logs-body');
 function openHospitalInput(id){ showPage('hospital-input'); document.getElementById('form-hospital').reset(); setVal('h-id',''); setVal('h-link',''); if(id){ const h=globalHospitals.find(x=>x.Hospital_ID===id); if(h){ setVal('h-id',h.Hospital_ID); setVal('h-name',h.Name); setVal('h-region',h.Region); setVal('h-level',h.Level); setVal('h-address',h.Address); setVal('h-status',h.Status); setVal('h-exclusivity',h.Exclusivity); setVal('h-unit-price',h.Unit_Price); setVal('h-ebm',h.EBM_Share_Ratio); setVal('h-amount',h.Contract_Amount); setVal('h-link',h.Contract_Link); if(h.Contract_Start_Date)setVal('h-start',h.Contract_Start_Date.split('T')[0]); if(h.Contract_End_Date)setVal('h-end',h.Contract_End_Date.split('T')[0]); } } }
 async function submitHospital(){ showLoading(true); let link=getVal('h-link'); const f=document.getElementById('h-file'); if(f.files.length){ link=(await uploadFile(f.files[0])).url; } const p={hospitalId:getVal('h-id'), name:getVal('h-name'), region:getVal('h-region'), level:getVal('h-level'), address:getVal('h-address'), status:getVal('h-status'), exclusivity:getVal('h-exclusivity'), unitPrice:getVal('h-unit-price'), ebmShare:getVal('h-ebm'), contractAmount:getVal('h-amount'), contractStart:getVal('h-start'), contractEnd:getVal('h-end'), contractLink:link, salesRep:document.getElementById('user-name').innerText}; await fetch(CONFIG.SCRIPT_URL,{method:'POST',body:JSON.stringify({action:'saveHospital',userEmail:currentUser,payload:p})}); await refreshAllData(); showPage('hospitals'); showLoading(false); }
 
-// [修改] KOL Modal 開啟時，產生 datalist 的醫院選項
 function openKOLModal(id){ 
     document.getElementById('form-kol').reset(); 
     setVal('k-id',''); 
     document.getElementById('k-prob-val').innerText = '20%';
     
-    // 生成可搜尋的 datalist
     const s = document.getElementById('k-hospital-datalist'); 
     s.innerHTML = ''; 
     globalHospitals.forEach(h => s.innerHTML += `<option value="${h.Name}"></option>`); 
@@ -638,7 +654,6 @@ function openKOLModal(id){
         const k=globalKOLs.find(x=>x.KOL_ID===id);
         if(k){
             setVal('k-id',k.KOL_ID);
-            // 透過 ID 找到名稱填入輸入框
             const hosp = globalHospitals.find(h => h.Hospital_ID === k.Hospital_ID);
             setVal('k-hospital-input', hosp ? hosp.Name : '');
 
@@ -653,17 +668,15 @@ function openKOLModal(id){
             setVal('k-note',k.Visit_Note);
         }
     } else {
-        setVal('k-hospital-input', ''); // 清空
+        setVal('k-hospital-input', ''); 
     }
     kolModal.show(); 
 }
 
-// [修改] 儲存 KOL 時，從打字的名稱反查醫院 ID
 async function submitKOL(){ 
     const hospInputName = getVal('k-hospital-input');
     const hospObj = globalHospitals.find(h => h.Name === hospInputName);
     
-    // 簡單的防呆，若使用者亂打醫院名稱
     if(!hospObj && hospInputName !== '') {
         alert('找不到該醫院，請從下拉選單中點選正確的醫院名稱！');
         return;
