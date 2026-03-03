@@ -1,4 +1,4 @@
-// app.js V6.7 (Added Keyword Filter & Avatar Fix)
+// app.js V6.8 (Status Update & Autocomplete Search Edition)
 
 let currentUser = null;
 let currentRole = null;
@@ -12,7 +12,6 @@ let kolModal, userModal, settlementModal, drilldownModal;
 let selectedAnalyticsHospitalId = null; 
 let loadingInterval = null;
 
-// [修正] 預設通用大頭貼 (Base64 SVG) 確保沒有白線破圖
 const DEFAULT_AVATAR = "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0iI2NjYyI+PHBhdGggZD0iTTEyIDJDMi40OCAyIDIgNi40OCAyIDEyczQuNDggMTAgMTAgMTAgMTAtNC40OCAxMC0xMFMyMS41MiAyIDEyIDJ6bTAgM2MzLjE5IDAgNS43OSAyLjU5IDUuNzkgNS43OVMxNS4xOSAxNi41OCAxMiAxNi41OHMtNS43OS0yLjU5LTUuNzktNS43OVM4LjgxIDUgMTIgNXptMCAxNC4yYy0yLjUgMC00LjcxLTEuMjgtNi4wMi0zLjIyLjA0LTEuOTkgNC0zLjA4IDYuMDItMy4wOHMyLjk4IDEuMDkgNi4wMiAzLjA4Yy0xLjMxIDEuOTQtMy41MiAzLjIyLTYuMDIgMy4yMnoiLz48L3N2Zz4=";
 
 window.onload = function() {
@@ -35,9 +34,8 @@ window.onload = function() {
     if(document.getElementById('usage-end')) document.getElementById('usage-end').value = `${y}-12`;
 
     const savedUser = localStorage.getItem('pancad_user');
-    const savedUserPic = localStorage.getItem('pancad_user_pic'); // [修正] 讀取快取頭像
+    const savedUserPic = localStorage.getItem('pancad_user_pic');
     
-    // 如果有快取頭像則載入，否則用預設頭像
     if (savedUserPic) {
         document.getElementById('user-avatar').src = savedUserPic;
         document.getElementById('mobile-user-avatar').src = savedUserPic;
@@ -80,7 +78,7 @@ function showLoading(show) {
 function logout() { 
     currentUser = null; 
     localStorage.removeItem('pancad_user'); 
-    localStorage.removeItem('pancad_user_pic'); // 清除頭像快取
+    localStorage.removeItem('pancad_user_pic');
     location.reload(); 
 }
 function toggleSidebar() { document.getElementById('main-sidebar').classList.toggle('show'); }
@@ -99,7 +97,7 @@ function handleCredentialResponse(r) {
     const payload = decodeJwtResponse(r.credential);
     currentUser = payload.email; 
     localStorage.setItem('pancad_user', currentUser); 
-    localStorage.setItem('pancad_user_pic', payload.picture); // [修正] 儲存 Google 登入後給的大頭貼
+    localStorage.setItem('pancad_user_pic', payload.picture); 
     
     document.getElementById('user-name').innerText = payload.name;
     document.getElementById('user-avatar').src = payload.picture || DEFAULT_AVATAR;
@@ -249,6 +247,8 @@ function renderDashboard(data) {
     if(document.getElementById('kpi-dev-hospital-count')) document.getElementById('kpi-dev-hospital-count').innerText = (kpi.developingCount || 0).toLocaleString();
     if(document.getElementById('kpi-intro-hospital-count')) document.getElementById('kpi-intro-hospital-count').innerText = (kpi.productIntroCount || 0).toLocaleString();
     if(document.getElementById('kpi-signed-hospital-count')) document.getElementById('kpi-signed-hospital-count').innerText = (kpi.signedCount || 0).toLocaleString();
+    // [新增] 綁定議約中醫院數值
+    if(document.getElementById('kpi-neg-hospital-count')) document.getElementById('kpi-neg-hospital-count').innerText = (kpi.negotiatingCount || 0).toLocaleString();
 
     const ctxRegion = document.getElementById('chart-region');
     if (ctxRegion) {
@@ -385,6 +385,13 @@ function openDrilldown(type) {
         titleEl.innerText = '開發中醫院清單';
         theadEl.innerHTML = '<tr><th>醫院名稱</th><th>區域</th><th>規模等級</th></tr>';
         globalHospitals.filter(h => h.Status === '開發中').forEach(h => {
+            tbodyEl.innerHTML += `<tr><td><strong>${h.Name}</strong></td><td>${h.Region}</td><td>${h.Level}</td></tr>`;
+        });
+    } else if (type === 'negotiating') {
+        // [新增] 議約中醫院清單
+        titleEl.innerText = '議約中醫院清單';
+        theadEl.innerHTML = '<tr><th>醫院名稱</th><th>區域</th><th>規模等級</th></tr>';
+        globalHospitals.filter(h => h.Status === '議約中').forEach(h => {
             tbodyEl.innerHTML += `<tr><td><strong>${h.Name}</strong></td><td>${h.Region}</td><td>${h.Level}</td></tr>`;
         });
     } else if (type === 'intro') {
@@ -571,10 +578,10 @@ function renderFinanceTable() {
     document.getElementById('fin-kpi-ebm').innerText="$"+kpiE.toLocaleString();
 }
 
-function renderRadarTable() { const reg = getVal('radar-filter-region'), lvl = getVal('radar-filter-level'), sts = getVal('radar-filter-status'); const tbody = document.getElementById('radar-table-body'); tbody.innerHTML = ''; globalHospitals.forEach(h => { if (reg!=='All' && h.Region!==reg) return; if (lvl!=='All' && h.Level!==lvl) return; if (sts!=='All' && h.Status!==sts) return; let badge = h.Status==='已簽約'?'bg-success':(h.Status==='開發中'?'bg-warning text-dark':'bg-secondary'); tbody.innerHTML += `<tr><td><strong>${h.Name}</strong></td><td>${h.Region||'-'}</td><td>${h.Level||'-'}</td><td><span class="badge ${badge}">${h.Status||''}</span></td><td>${h.Exclusivity==='Yes'?'<i class="fas fa-check text-success"></i>':'-'}</td><td><button class="btn btn-sm btn-outline-primary" onclick="openHospitalInput('${h.Hospital_ID}')">編輯</button></td></tr>`; }); }
+// [修改] 雷達表格：為「議約中」加入對應顏色標籤
+function renderRadarTable() { const reg = getVal('radar-filter-region'), lvl = getVal('radar-filter-level'), sts = getVal('radar-filter-status'); const tbody = document.getElementById('radar-table-body'); tbody.innerHTML = ''; globalHospitals.forEach(h => { if (reg!=='All' && h.Region!==reg) return; if (lvl!=='All' && h.Level!==lvl) return; if (sts!=='All' && h.Status!==sts) return; let badge = h.Status==='已簽約'?'bg-success':(h.Status==='議約中'?'bg-info text-dark':(h.Status==='開發中'?'bg-warning text-dark':'bg-secondary')); tbody.innerHTML += `<tr><td><strong>${h.Name}</strong></td><td>${h.Region||'-'}</td><td>${h.Level||'-'}</td><td><span class="badge ${badge}">${h.Status||''}</span></td><td>${h.Exclusivity==='Yes'?'<i class="fas fa-check text-success"></i>':'-'}</td><td><button class="btn btn-sm btn-outline-primary" onclick="openHospitalInput('${h.Hospital_ID}')">編輯</button></td></tr>`; }); }
 function renderHospitalList() { const tbody = document.getElementById('hospital-list-body'); tbody.innerHTML = ''; globalHospitals.forEach(h => { tbody.innerHTML += `<tr><td>${h.Name}</td><td>${h.Level}</td><td>$${(Number(h.Unit_Price)||0).toLocaleString()}</td><td>${h.Exclusivity}</td><td>${h.Contract_End_Date ? h.Contract_End_Date.split('T')[0] : '-'}</td><td><button class="btn btn-sm btn-outline-primary" onclick="openHospitalInput('${h.Hospital_ID}')">Edit</button></td></tr>`; }); }
 
-// [修正] 加入關鍵字搜尋邏輯 (過濾醫院名稱或KOL姓名)
 function renderKOLList() { 
     const tbody = document.getElementById('kol-list-body'); 
     const filterHosp = getVal('kol-filter-hospital');
@@ -587,12 +594,11 @@ function renderKOLList() {
 
         const hName = (globalHospitals.find(h=>h.Hospital_ID===k.Hospital_ID)||{}).Name || String(k.Hospital_ID); 
         
-        // 關鍵字篩選
         if (filterKeyword) {
             const kolName = String(k.Name || '').toLowerCase();
             const hospitalNameStr = String(hName || '').toLowerCase();
             if (!kolName.includes(filterKeyword) && !hospitalNameStr.includes(filterKeyword)) {
-                return; // 不符合關鍵字則跳過
+                return;
             }
         }
 
@@ -617,19 +623,25 @@ function renderLogTable(l) { const t=document.getElementById('admin-logs-body');
 function openHospitalInput(id){ showPage('hospital-input'); document.getElementById('form-hospital').reset(); setVal('h-id',''); setVal('h-link',''); if(id){ const h=globalHospitals.find(x=>x.Hospital_ID===id); if(h){ setVal('h-id',h.Hospital_ID); setVal('h-name',h.Name); setVal('h-region',h.Region); setVal('h-level',h.Level); setVal('h-address',h.Address); setVal('h-status',h.Status); setVal('h-exclusivity',h.Exclusivity); setVal('h-unit-price',h.Unit_Price); setVal('h-ebm',h.EBM_Share_Ratio); setVal('h-amount',h.Contract_Amount); setVal('h-link',h.Contract_Link); if(h.Contract_Start_Date)setVal('h-start',h.Contract_Start_Date.split('T')[0]); if(h.Contract_End_Date)setVal('h-end',h.Contract_End_Date.split('T')[0]); } } }
 async function submitHospital(){ showLoading(true); let link=getVal('h-link'); const f=document.getElementById('h-file'); if(f.files.length){ link=(await uploadFile(f.files[0])).url; } const p={hospitalId:getVal('h-id'), name:getVal('h-name'), region:getVal('h-region'), level:getVal('h-level'), address:getVal('h-address'), status:getVal('h-status'), exclusivity:getVal('h-exclusivity'), unitPrice:getVal('h-unit-price'), ebmShare:getVal('h-ebm'), contractAmount:getVal('h-amount'), contractStart:getVal('h-start'), contractEnd:getVal('h-end'), contractLink:link, salesRep:document.getElementById('user-name').innerText}; await fetch(CONFIG.SCRIPT_URL,{method:'POST',body:JSON.stringify({action:'saveHospital',userEmail:currentUser,payload:p})}); await refreshAllData(); showPage('hospitals'); showLoading(false); }
 
+// [修改] KOL Modal 開啟時，產生 datalist 的醫院選項
 function openKOLModal(id){ 
     document.getElementById('form-kol').reset(); 
     setVal('k-id',''); 
     document.getElementById('k-prob-val').innerText = '20%';
-    const s=document.getElementById('k-hospital-id'); 
-    s.innerHTML='<option value="">選擇醫院</option>'; 
-    globalHospitals.forEach(h=>s.innerHTML+=`<option value="${h.Hospital_ID}">${h.Name}</option>`); 
+    
+    // 生成可搜尋的 datalist
+    const s = document.getElementById('k-hospital-datalist'); 
+    s.innerHTML = ''; 
+    globalHospitals.forEach(h => s.innerHTML += `<option value="${h.Name}"></option>`); 
     
     if(id){
         const k=globalKOLs.find(x=>x.KOL_ID===id);
         if(k){
             setVal('k-id',k.KOL_ID);
-            setVal('k-hospital-id',k.Hospital_ID);
+            // 透過 ID 找到名稱填入輸入框
+            const hosp = globalHospitals.find(h => h.Hospital_ID === k.Hospital_ID);
+            setVal('k-hospital-input', hosp ? hosp.Name : '');
+
             setVal('k-name',k.Name);
             setVal('k-title',k.Title);
             setVal('k-email',k.Email);
@@ -640,15 +652,37 @@ function openKOLModal(id){
             document.getElementById('k-prob-val').innerText = prob + '%';
             setVal('k-note',k.Visit_Note);
         }
-    } 
+    } else {
+        setVal('k-hospital-input', ''); // 清空
+    }
     kolModal.show(); 
 }
 
+// [修改] 儲存 KOL 時，從打字的名稱反查醫院 ID
 async function submitKOL(){ 
+    const hospInputName = getVal('k-hospital-input');
+    const hospObj = globalHospitals.find(h => h.Name === hospInputName);
+    
+    // 簡單的防呆，若使用者亂打醫院名稱
+    if(!hospObj && hospInputName !== '') {
+        alert('找不到該醫院，請從下拉選單中點選正確的醫院名稱！');
+        return;
+    }
+    const targetHospId = hospObj ? hospObj.Hospital_ID : '';
+
     const p={
-        kolId:getVal('k-id'), hospitalId:getVal('k-hospital-id'), name:getVal('k-name'), title:getVal('k-title'), phone:getVal('k-phone'), email:getVal('k-email'), visitStage:getVal('k-stage'), probability:getVal('k-prob'), visitNote:getVal('k-note')
+        kolId:getVal('k-id'), 
+        hospitalId: targetHospId, 
+        name:getVal('k-name'), 
+        title:getVal('k-title'), 
+        phone:getVal('k-phone'), 
+        email:getVal('k-email'), 
+        visitStage:getVal('k-stage'), 
+        probability:getVal('k-prob'), 
+        visitNote:getVal('k-note')
     }; 
-    if(!p.name)return; 
+    if(!p.name) return; 
+    
     showLoading(true); 
     await fetch(CONFIG.SCRIPT_URL,{method:'POST',body:JSON.stringify({action:'saveKOL',userEmail:currentUser,payload:p})}); 
     kolModal.hide(); 
