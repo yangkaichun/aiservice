@@ -1,4 +1,4 @@
-/* Code.gs - PancadAI CRM Backend V6.1 */
+/* Code.gs - PancadAI CRM Backend V6.8 (Negotiating Status Add-on) */
 
 const SPREADSHEET_ID = '1hID8Hi42qNFyA_13BqSJgfjIE4FguQRR5wMEsXBRl0I';
 const UPLOAD_FOLDER_ID = '1tmLX1lSEa_R26S5LAyIv7IPAhPuI67Db'; 
@@ -14,7 +14,6 @@ function doPost(e) {
     const action = data.action;
     const userEmail = data.userEmail;
     
-    // 權限驗證：現在會回傳 role 與 name
     const authInfo = checkUserAuth(userEmail);
     if (!authInfo) {
       return responseJSON({ status: 'error', message: 'Access Denied: User not authorized or suspended.' });
@@ -42,15 +41,11 @@ function doPost(e) {
       case 'getLogs': if (userRole !== 'Admin') throw new Error("Permission Denied"); result = getSheetData('Logs'); break;
       default: result = { status: 'error', message: 'Unknown Action' };
     }
-    // 將 name 也傳回前端
     return responseJSON({ status: 'success', data: result, role: userRole, name: userName });
   } catch (error) { return responseJSON({ status: 'error', message: error.toString() }); } 
   finally { lock.releaseLock(); }
 }
 
-// --- 核心邏輯 ---
-
-// 比對 Users Sheet，回傳包含 Role 與 Name 的物件
 function checkUserAuth(email) { 
   const users = getSheetData('Users'); 
   const user = users.find(u => String(u.Email).trim().toLowerCase() === String(email).trim().toLowerCase() && u.Status === 'Active'); 
@@ -74,9 +69,10 @@ function getDashboardData() {
     return item;
   });
   
-  let totalContractValue = 0, signedCount = 0, developingCount = 0;
-  let regionStats = {};     // 已簽約區域統計
-  let devRegionStats = {};  // 開發中區域統計
+  // [新增] negotiatingCount 議約中數量統計
+  let totalContractValue = 0, signedCount = 0, developingCount = 0, negotiatingCount = 0;
+  let regionStats = {};     
+  let devRegionStats = {};  
   let levelStats = {};
   
   hospitals.forEach(h => {
@@ -91,8 +87,9 @@ function getDashboardData() {
       levelStats[l] = (levelStats[l] || 0) + 1;
     } else if (status === '開發中') {
       developingCount++;
-      // 統計開發中醫院的區域
       devRegionStats[r] = (devRegionStats[r] || 0) + 1;
+    } else if (status === '議約中') {
+      negotiatingCount++; // 新增：統計議約中醫院
     }
   });
 
@@ -110,10 +107,11 @@ function getDashboardData() {
       totalContractValue: totalContractValue,
       signedCount: signedCount,
       developingCount: developingCount,
+      negotiatingCount: negotiatingCount, // 新增：傳遞給前端
       productIntroCount: productIntroCount,
       kolCount: kolCount,
       regionStats: regionStats,
-      devRegionStats: devRegionStats, // 回傳開發中區域資料
+      devRegionStats: devRegionStats, 
       levelStats: levelStats,
       hospitalCount: signedCount
     },
@@ -135,7 +133,6 @@ function saveKOL(p, u) {
     if(r>0) { sheet.getRange(r,1,1,row.length).setValues([row]); logAction(u, 'Update KOL', `${p.name}`); } 
     else { sheet.appendRow(row); logAction(u, 'New KOL', `${p.name}`); }
     
-    // 自動連動醫院
     if (p.visitStage && p.visitStage.includes('已成交')) {
         const hospSheet = SpreadsheetApp.openById(SPREADSHEET_ID).getSheetByName('Hospitals');
         const hospData = hospSheet.getDataRange().getValues();
