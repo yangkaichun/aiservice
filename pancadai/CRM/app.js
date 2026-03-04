@@ -1,4 +1,4 @@
-// app.js V6.9.1 (Fixed Negotiating Count Bug)
+// app.js V6.9.2 (Fixed Negotiating Count Bug & Added KOL Delete)
 
 let currentUser = null;
 let currentRole = null;
@@ -244,12 +244,11 @@ function getPieOptions() {
 function renderDashboard(data) {
     const kpi = data.kpi;
     
-    // [修正] 從前端快取直接計算「議約中」的數量，避免因 GAS 未重新部署而抓不到後端資料的 Bug
     const frontendNegCount = globalHospitals.filter(h => h.Status === '議約中').length;
     
     if(document.getElementById('kpi-kol-count')) document.getElementById('kpi-kol-count').innerText = (kpi.kolCount || 0).toLocaleString();
     if(document.getElementById('kpi-dev-hospital-count')) document.getElementById('kpi-dev-hospital-count').innerText = (kpi.developingCount || 0).toLocaleString();
-    if(document.getElementById('kpi-neg-hospital-count')) document.getElementById('kpi-neg-hospital-count').innerText = frontendNegCount.toLocaleString(); // 改用前端即時計算結果
+    if(document.getElementById('kpi-neg-hospital-count')) document.getElementById('kpi-neg-hospital-count').innerText = frontendNegCount.toLocaleString(); 
     if(document.getElementById('kpi-intro-hospital-count')) document.getElementById('kpi-intro-hospital-count').innerText = (kpi.productIntroCount || 0).toLocaleString();
     if(document.getElementById('kpi-signed-hospital-count')) document.getElementById('kpi-signed-hospital-count').innerText = (kpi.signedCount || 0).toLocaleString();
 
@@ -650,6 +649,10 @@ function openKOLModal(id){
     s.innerHTML = ''; 
     globalHospitals.forEach(h => s.innerHTML += `<option value="${h.Name}"></option>`); 
     
+    // [修改] 根據是否傳入 ID 來決定是否顯示「刪除」按鈕
+    const delBtn = document.getElementById('btn-delete-kol');
+    if(delBtn) delBtn.style.display = id ? 'block' : 'none';
+    
     if(id){
         const k=globalKOLs.find(x=>x.KOL_ID===id);
         if(k){
@@ -701,6 +704,33 @@ async function submitKOL(){
     kolModal.hide(); 
     await refreshAllData();
     showLoading(false); 
+}
+
+// [新增] 刪除 KOL 的異步執行邏輯
+async function deleteKOL() {
+    const id = getVal('k-id');
+    if(!id) return;
+    if(!confirm("確定要刪除此筆 KOL 資料嗎？此動作無法復原。")) return;
+    
+    showLoading(true);
+    try {
+        const res = await fetch(CONFIG.SCRIPT_URL, { 
+            method: 'POST', 
+            body: JSON.stringify({ action: 'deleteKOL', userEmail: currentUser, payload: { kolId: id } }) 
+        });
+        const json = await res.json();
+        if(json.status === 'success') {
+            kolModal.hide();
+            await refreshAllData(); // 瞬間重載所有資料並刷新畫面
+        } else { 
+            alert("刪除失敗：" + json.message); 
+        }
+    } catch(e) { 
+        console.error(e); 
+        alert("連線錯誤"); 
+    } finally { 
+        showLoading(false); 
+    }
 }
 
 function openSettlementModal(id) { 
