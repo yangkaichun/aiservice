@@ -1,4 +1,4 @@
-// app.js V6.9.2 (Fixed Negotiating Count Bug & Added KOL Delete)
+// app.js V7.0 (Dark Neon UI Theme Edition)
 
 let currentUser = null;
 let currentRole = null;
@@ -44,6 +44,10 @@ window.onload = function() {
         document.getElementById('mobile-user-avatar').src = DEFAULT_AVATAR;
     }
 
+    // [深色主題] Chart.js 全域文字預設顏色
+    Chart.defaults.color = '#94a3b8';
+    Chart.defaults.font.family = "'Segoe UI', 'Microsoft JhengHei', sans-serif";
+
     if (savedUser) {
         currentUser = savedUser;
         verifyBackendAuth(savedUser);
@@ -53,7 +57,7 @@ window.onload = function() {
 function getVal(id) { const el = document.getElementById(id); return el ? el.value : ''; }
 function setVal(id, value) { const el = document.getElementById(id); if (el) el.value = value || ''; }
 
-const loadingTexts = ["CONNECTING TO SERVER", "FETCHING CLOUD DATA", "SYNCING MODULES", "PROCESSING INTERFACE", "ALMOST READY"];
+const loadingTexts = ["ESTABLISHING UPLINK", "FETCHING CLOUD DATA", "SYNCING MODULES", "PROCESSING INTERFACE", "ALMOST READY"];
 function showLoading(show) { 
     const overlay = document.getElementById('loading-overlay');
     const textEl = document.getElementById('loading-text-display');
@@ -222,13 +226,14 @@ function updateKOLFilterOptions() {
 
 async function loadAdminData() { if(currentRole!=='Admin')return; showLoading(true); try{ const [u,l] = await Promise.all([fetch(CONFIG.SCRIPT_URL,{method:"POST",body:JSON.stringify({action:"getUsers",userEmail:currentUser})}), fetch(CONFIG.SCRIPT_URL,{method:"POST",body:JSON.stringify({action:"getLogs",userEmail:currentUser})})]); renderUserTable((await u.json()).data); renderLogTable((await l.json()).data); }catch(e){}finally{showLoading(false);} }
 
+// [設定] 深色模式圓餅圖共用屬性
 function getPieOptions() {
     return {
-        maintainAspectRatio: false, cutout: '65%', 
+        maintainAspectRatio: false, cutout: '70%', 
         plugins: { 
-            legend: { position: 'right', labels: { boxWidth: 15, font: { size: 12, family: "'Segoe UI', sans-serif" }, padding: 15 } },
+            legend: { position: 'right', labels: { boxWidth: 15, font: { size: 12 }, padding: 15, color: '#f8fafc' } },
             datalabels: {
-                color: '#fff', font: { weight: 'bold', size: 13, family: "'Segoe UI', sans-serif" },
+                color: '#fff', font: { weight: 'bold', size: 13 },
                 formatter: (value, context) => {
                     let label = context.chart.data.labels[context.dataIndex];
                     if (label.includes('無資料') || value === 0) return '';
@@ -237,13 +242,13 @@ function getPieOptions() {
                     return (value * 100 / sum) < 5 ? null : percentage;
                 }
             }
-        }
+        },
+        elements: { arc: { borderWidth: 2, borderColor: '#1e1e32' } } // 搭配卡片背景色
     };
 }
 
 function renderDashboard(data) {
     const kpi = data.kpi;
-    
     const frontendNegCount = globalHospitals.filter(h => h.Status === '議約中').length;
     
     if(document.getElementById('kpi-kol-count')) document.getElementById('kpi-kol-count').innerText = (kpi.kolCount || 0).toLocaleString();
@@ -252,6 +257,7 @@ function renderDashboard(data) {
     if(document.getElementById('kpi-intro-hospital-count')) document.getElementById('kpi-intro-hospital-count').innerText = (kpi.productIntroCount || 0).toLocaleString();
     if(document.getElementById('kpi-signed-hospital-count')) document.getElementById('kpi-signed-hospital-count').innerText = (kpi.signedCount || 0).toLocaleString();
 
+    // 1. 已簽約醫院圓餅圖 (霓虹藍/紫/粉色系)
     const ctxRegion = document.getElementById('chart-region');
     if (ctxRegion) {
         if(window.myRegionChart) window.myRegionChart.destroy();
@@ -259,16 +265,21 @@ function renderDashboard(data) {
         const rData = Object.values(kpi.regionStats || {});
         let rLabels = [];
         
-        if(rLabelsRaw.length === 0) { 
-            rLabels.push('無資料'); rData.push(1); 
-        } else {
+        if(rLabelsRaw.length === 0) { rLabels.push('無資料'); rData.push(1); } 
+        else {
             const rTotal = rData.reduce((a, b) => a + b, 0);
             rLabels = rLabelsRaw.map((label, index) => `${label} (${Math.round((rData[index] / rTotal) * 100)}%)`);
         }
         
         const ctx1 = ctxRegion.getContext('2d');
         const gradients1 = rLabels.map((_, i) => {
-            const colors = [['#4e73df', '#224abe'], ['#1cc88a', '#138e62'], ['#36b9cc', '#1cb5e0'], ['#f6c23e', '#f4a221'], ['#e74a3b', '#be2617'], ['#6f42c1', '#4e2d8b'], ['#fd7e14', '#c65f0b']];
+            const colors = [
+                ['#06b6d4', '#3b82f6'], // Cyan to Blue
+                ['#ec4899', '#8b5cf6'], // Pink to Purple
+                ['#f97316', '#eab308'], // Orange to Yellow
+                ['#10b981', '#14b8a6'], // Emerald to Teal
+                ['#3b82f6', '#4f46e5']  // Blue to Indigo
+            ];
             const colorPair = colors[i % colors.length];
             let grad = ctx1.createLinearGradient(0, 0, 0, 300);
             grad.addColorStop(0, colorPair[0]); grad.addColorStop(1, colorPair[1]);
@@ -277,12 +288,13 @@ function renderDashboard(data) {
 
         window.myRegionChart = new Chart(ctx1, {
             type: 'doughnut',
-            data: { labels: rLabels, datasets: [{ data: rData, backgroundColor: gradients1, borderWidth: 2, borderColor: '#ffffff', hoverOffset: 4 }] },
+            data: { labels: rLabels, datasets: [{ data: rData, backgroundColor: gradients1, hoverOffset: 5 }] },
             options: getPieOptions(),
             plugins: [ChartDataLabels]
         });
     }
 
+    // 2. 開發中醫院圓餅圖 (霓虹色系，順序錯開)
     const ctxDevRegion = document.getElementById('chart-dev-region');
     if (ctxDevRegion) {
         if(window.myDevRegionChart) window.myDevRegionChart.destroy();
@@ -290,16 +302,21 @@ function renderDashboard(data) {
         const devData = Object.values(kpi.devRegionStats || {});
         let devLabels = [];
 
-        if(devLabelsRaw.length === 0) { 
-            devLabels.push('無資料'); devData.push(1); 
-        } else {
+        if(devLabelsRaw.length === 0) { devLabels.push('無資料'); devData.push(1); } 
+        else {
             const devTotal = devData.reduce((a, b) => a + b, 0);
             devLabels = devLabelsRaw.map((label, index) => `${label} (${Math.round((devData[index] / devTotal) * 100)}%)`);
         }
         
         const ctx2 = ctxDevRegion.getContext('2d');
         const gradients2 = devLabels.map((_, i) => {
-            const colors = [['#36b9cc', '#1cb5e0'], ['#f6c23e', '#f4a221'], ['#4e73df', '#224abe'], ['#1cc88a', '#138e62'], ['#e74a3b', '#be2617'], ['#6f42c1', '#4e2d8b']];
+            const colors = [
+                ['#ec4899', '#8b5cf6'], 
+                ['#06b6d4', '#3b82f6'], 
+                ['#10b981', '#14b8a6'], 
+                ['#f97316', '#eab308'], 
+                ['#3b82f6', '#4f46e5']
+            ];
             const colorPair = colors[i % colors.length];
             let grad = ctx2.createLinearGradient(0, 0, 0, 300);
             grad.addColorStop(0, colorPair[0]); grad.addColorStop(1, colorPair[1]);
@@ -308,7 +325,7 @@ function renderDashboard(data) {
 
         window.myDevRegionChart = new Chart(ctx2, {
             type: 'doughnut',
-            data: { labels: devLabels, datasets: [{ data: devData, backgroundColor: gradients2, borderWidth: 2, borderColor: '#ffffff', hoverOffset: 4 }] },
+            data: { labels: devLabels, datasets: [{ data: devData, backgroundColor: gradients2, hoverOffset: 5 }] },
             options: getPieOptions(),
             plugins: [ChartDataLabels]
         });
@@ -349,19 +366,32 @@ function updateDashboardCharts() {
     const grossData = labels.map(m => aggData[m].gross), netData = labels.map(m => aggData[m].net);
     const ctx = ctxTrend.getContext('2d');
     if (window.myTrendChart) window.myTrendChart.destroy();
-    const gradGross = ctx.createLinearGradient(0, 0, 0, 300); gradGross.addColorStop(0, 'rgba(78, 115, 223, 0.4)'); gradGross.addColorStop(1, 'rgba(78, 115, 223, 0.0)');
-    const gradNet = ctx.createLinearGradient(0, 0, 0, 300); gradNet.addColorStop(0, 'rgba(28, 200, 138, 0.4)'); gradNet.addColorStop(1, 'rgba(28, 200, 138, 0.0)');
+    
+    // 折線圖 - Neon Pink & Neon Cyan
+    const gradGross = ctx.createLinearGradient(0, 0, 0, 300); 
+    gradGross.addColorStop(0, 'rgba(236, 72, 153, 0.4)'); 
+    gradGross.addColorStop(1, 'rgba(236, 72, 153, 0.01)');
+    
+    const gradNet = ctx.createLinearGradient(0, 0, 0, 300); 
+    gradNet.addColorStop(0, 'rgba(6, 182, 212, 0.4)'); 
+    gradNet.addColorStop(1, 'rgba(6, 182, 212, 0.01)');
     
     window.myTrendChart = new Chart(ctx, {
         type: 'line',
         data: {
             labels: labels,
-            datasets: [{ label: 'Gross', data: grossData, borderColor: '#4e73df', backgroundColor: gradGross, fill: true, tension: 0.4 }, { label: 'Net', data: netData, borderColor: '#1cc88a', backgroundColor: gradNet, fill: true, tension: 0.4 }]
+            datasets: [
+                { label: 'Gross', data: grossData, borderColor: '#ec4899', backgroundColor: gradGross, fill: true, tension: 0.4, pointBackgroundColor: '#ec4899', pointBorderColor: '#1e1e32', borderWidth: 3 }, 
+                { label: 'Net', data: netData, borderColor: '#06b6d4', backgroundColor: gradNet, fill: true, tension: 0.4, pointBackgroundColor: '#06b6d4', pointBorderColor: '#1e1e32', borderWidth: 3 }
+            ]
         },
         options: { 
             responsive: true, maintainAspectRatio: false, 
-            plugins: { legend: { position: 'top', align: 'end' }, datalabels: { display: false } }, 
-            scales: { x: { grid: { display: false } }, y: { grid: { borderDash: [2], color: '#f0f0f0' }, beginAtZero: true } } 
+            plugins: { legend: { position: 'top', align: 'end', labels: {color: '#f8fafc'} }, datalabels: { display: false } }, 
+            scales: { 
+                x: { grid: { display: false }, ticks: {color: '#94a3b8'} }, 
+                y: { grid: { borderDash: [3], color: 'rgba(255,255,255,0.05)' }, beginAtZero: true, ticks: {color: '#94a3b8'} } 
+            } 
         }
     });
 }
@@ -472,16 +502,19 @@ function renderUsageAnalytics() {
         if (window.myUsageTrendChart) window.myUsageTrendChart.destroy();
         const ctx = ctxUsage.getContext('2d');
         let gradBar = ctx.createLinearGradient(0, 0, 0, 300);
-        gradBar.addColorStop(0, 'rgba(54, 185, 204, 0.8)'); 
-        gradBar.addColorStop(1, 'rgba(78, 115, 223, 0.8)'); 
+        gradBar.addColorStop(0, '#8b5cf6'); // Purple
+        gradBar.addColorStop(1, '#3b82f6'); // Blue
 
         window.myUsageTrendChart = new Chart(ctx, {
             type: 'bar',
-            data: { labels: labels, datasets: [{ label: '總使用次數', data: usageData, backgroundColor: gradBar, borderRadius: 4, barPercentage: 0.5 }] },
+            data: { labels: labels, datasets: [{ label: '總使用次數', data: usageData, backgroundColor: gradBar, borderRadius: 6, barPercentage: 0.6 }] },
             options: {
                 responsive: true, maintainAspectRatio: false,
-                plugins: { legend: { display: false }, datalabels: { anchor: 'end', align: 'top', color: '#5a5c69', font: { weight: 'bold', family: "'Segoe UI', sans-serif" }, formatter: (val) => val > 0 ? val.toLocaleString() : '' } },
-                scales: { x: { grid: { display: false } }, y: { grid: { borderDash: [2], color: '#f0f0f0' }, beginAtZero: true } }
+                plugins: { legend: { display: false }, datalabels: { anchor: 'end', align: 'top', color: '#e2e8f0', font: { weight: 'bold' }, formatter: (val) => val > 0 ? val.toLocaleString() : '' } },
+                scales: { 
+                    x: { grid: { display: false }, ticks: {color: '#94a3b8'} }, 
+                    y: { grid: { borderDash: [3], color: 'rgba(255,255,255,0.05)' }, beginAtZero: true, ticks: {color: '#94a3b8'} } 
+                }
             },
             plugins: [ChartDataLabels]
         });
@@ -491,13 +524,17 @@ function renderUsageAnalytics() {
     if (ctxRev) {
         if (window.myUsageRevChart) window.myUsageRevChart.destroy();
         const ctx = ctxRev.getContext('2d');
-        let gradGross = ctx.createLinearGradient(0, 0, 0, 300); gradGross.addColorStop(0, 'rgba(78, 115, 223, 0.4)'); gradGross.addColorStop(1, 'rgba(78, 115, 223, 0.0)');
-        let gradNet = ctx.createLinearGradient(0, 0, 0, 300); gradNet.addColorStop(0, 'rgba(28, 200, 138, 0.4)'); gradNet.addColorStop(1, 'rgba(28, 200, 138, 0.0)');
+        let gradGross = ctx.createLinearGradient(0, 0, 0, 300); gradGross.addColorStop(0, 'rgba(236, 72, 153, 0.4)'); gradGross.addColorStop(1, 'rgba(236, 72, 153, 0.01)');
+        let gradNet = ctx.createLinearGradient(0, 0, 0, 300); gradNet.addColorStop(0, 'rgba(6, 182, 212, 0.4)'); gradNet.addColorStop(1, 'rgba(6, 182, 212, 0.01)');
 
         window.myUsageRevChart = new Chart(ctx, {
             type: 'line',
-            data: { labels: labels, datasets: [ { label: 'Gross', data: grossData, borderColor: '#4e73df', backgroundColor: gradGross, fill: true, tension: 0.4 }, { label: 'Net', data: netData, borderColor: '#1cc88a', backgroundColor: gradNet, fill: true, tension: 0.4 } ] },
-            options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'top', align: 'end' }, datalabels: { display: false } }, scales: { x: { grid: { display: false } }, y: { grid: { borderDash: [2], color: '#f0f0f0' }, beginAtZero: true } } }
+            data: { labels: labels, datasets: [ { label: 'Gross', data: grossData, borderColor: '#ec4899', backgroundColor: gradGross, fill: true, tension: 0.4, borderWidth: 3 }, { label: 'Net', data: netData, borderColor: '#06b6d4', backgroundColor: gradNet, fill: true, tension: 0.4, borderWidth: 3 } ] },
+            options: { 
+                responsive: true, maintainAspectRatio: false, 
+                plugins: { legend: { position: 'top', align: 'end', labels: {color: '#f8fafc'} }, datalabels: { display: false } }, 
+                scales: { x: { grid: { display: false }, ticks:{color:'#94a3b8'} }, y: { grid: { borderDash: [3], color: 'rgba(255,255,255,0.05)' }, beginAtZero: true, ticks:{color:'#94a3b8'} } } 
+            }
         });
     }
 
@@ -519,14 +556,14 @@ function renderUsageAnalytics() {
             else if (index === 2) rankBadge = '<span class="badge px-2 py-1 shadow-sm" style="background-color: #cd7f32; color: white;">3</span>'; 
             else rankBadge = `<span class="text-muted fw-bold ms-2">${index + 1}</span>`;
 
-            let textClass = item.usage === 0 ? 'text-muted' : 'fw-bold text-dark';
+            let textClass = item.usage === 0 ? 'text-muted' : 'fw-bold text-white';
             let rowClass = String(item.id) === String(selectedAnalyticsHospitalId) ? 'active-row' : '';
 
             tbody.innerHTML += `
                 <tr class="cursor-pointer ${rowClass}" onclick="selectUsageHospital('${item.id}')">
-                    <td style="width: 50px;">${rankBadge}</td>
-                    <td class="${textClass}">${item.name}</td>
-                    <td class="text-end ${textClass}">${item.usage.toLocaleString()}</td>
+                    <td style="width: 50px; border-bottom-color: var(--border-color);">${rankBadge}</td>
+                    <td class="${textClass}" style="border-bottom-color: var(--border-color);">${item.name}</td>
+                    <td class="text-end ${textClass}" style="border-bottom-color: var(--border-color);">${item.usage.toLocaleString()}</td>
                 </tr>
             `;
         });
@@ -561,13 +598,13 @@ function renderFinanceTable() {
 
         tbody.innerHTML += `
             <tr>
-                <td><strong>${hName}</strong><br><small class="text-muted">${displayDate}</small></td>
+                <td><strong class="text-white">${hName}</strong><br><small class="text-muted">${displayDate}</small></td>
                 <td>${s.Usage_Count}</td>
                 <td>$${s.Unit_Price_Snapshot}</td>
                 <td>$${g.toLocaleString()}</td>
                 <td class="fw-bold text-success">$${n.toLocaleString()}</td>
                 <td><span class="badge ${badge} status-badge" onclick="toggleInvoiceStatus('${s.Record_ID}', '${s.Invoice_Status}')">${s.Invoice_Status}</span></td>
-                <td><button class="btn btn-sm btn-light" onclick="openSettlementModal('${s.Record_ID}')"><i class="fas fa-edit"></i></button></td>
+                <td><button class="btn btn-sm btn-outline-info" onclick="openSettlementModal('${s.Record_ID}')"><i class="fas fa-edit"></i></button></td>
             </tr>`;
     });
     
@@ -579,7 +616,7 @@ function renderFinanceTable() {
     document.getElementById('fin-kpi-ebm').innerText="$"+kpiE.toLocaleString();
 }
 
-function renderRadarTable() { const reg = getVal('radar-filter-region'), lvl = getVal('radar-filter-level'), sts = getVal('radar-filter-status'); const tbody = document.getElementById('radar-table-body'); tbody.innerHTML = ''; globalHospitals.forEach(h => { if (reg!=='All' && h.Region!==reg) return; if (lvl!=='All' && h.Level!==lvl) return; if (sts!=='All' && h.Status!==sts) return; let badge = h.Status==='已簽約'?'bg-success':(h.Status==='議約中'?'bg-info text-dark':(h.Status==='開發中'?'bg-warning text-dark':'bg-secondary')); tbody.innerHTML += `<tr><td><strong>${h.Name}</strong></td><td>${h.Region||'-'}</td><td>${h.Level||'-'}</td><td><span class="badge ${badge}">${h.Status||''}</span></td><td>${h.Exclusivity==='Yes'?'<i class="fas fa-check text-success"></i>':'-'}</td><td><button class="btn btn-sm btn-outline-primary" onclick="openHospitalInput('${h.Hospital_ID}')">編輯</button></td></tr>`; }); }
+function renderRadarTable() { const reg = getVal('radar-filter-region'), lvl = getVal('radar-filter-level'), sts = getVal('radar-filter-status'); const tbody = document.getElementById('radar-table-body'); tbody.innerHTML = ''; globalHospitals.forEach(h => { if (reg!=='All' && h.Region!==reg) return; if (lvl!=='All' && h.Level!==lvl) return; if (sts!=='All' && h.Status!==sts) return; let badge = h.Status==='已簽約'?'bg-success':(h.Status==='議約中'?'bg-info text-dark':(h.Status==='開發中'?'bg-warning text-dark':'bg-secondary')); tbody.innerHTML += `<tr><td><strong class="text-white">${h.Name}</strong></td><td>${h.Region||'-'}</td><td>${h.Level||'-'}</td><td><span class="badge ${badge}">${h.Status||''}</span></td><td>${h.Exclusivity==='Yes'?'<i class="fas fa-check text-success"></i>':'-'}</td><td><button class="btn btn-sm btn-outline-primary" onclick="openHospitalInput('${h.Hospital_ID}')">編輯</button></td></tr>`; }); }
 
 function renderHospitalList() { 
     const tbody = document.getElementById('hospital-list-body'); 
@@ -595,7 +632,7 @@ function renderHospitalList() {
             if (!hName.includes(filterKeyword)) return;
         }
 
-        tbody.innerHTML += `<tr><td>${h.Name}</td><td>${h.Level}</td><td>$${(Number(h.Unit_Price)||0).toLocaleString()}</td><td>${h.Exclusivity}</td><td>${h.Contract_End_Date ? h.Contract_End_Date.split('T')[0] : '-'}</td><td><button class="btn btn-sm btn-outline-primary" onclick="openHospitalInput('${h.Hospital_ID}')">Edit</button></td></tr>`; 
+        tbody.innerHTML += `<tr><td class="text-white">${h.Name}</td><td>${h.Level}</td><td>$${(Number(h.Unit_Price)||0).toLocaleString()}</td><td>${h.Exclusivity}</td><td>${h.Contract_End_Date ? h.Contract_End_Date.split('T')[0] : '-'}</td><td><button class="btn btn-sm btn-outline-primary" onclick="openHospitalInput('${h.Hospital_ID}')">Edit</button></td></tr>`; 
     }); 
 }
 
@@ -619,23 +656,23 @@ function renderKOLList() {
             }
         }
 
-        const emailLink = k.Email ? `<a href="mailto:${k.Email}" class="text-decoration-none text-primary fw-medium"><i class="fas fa-envelope me-1"></i>${k.Email}</a>` : '<span class="text-muted">-</span>';
+        const emailLink = k.Email ? `<a href="mailto:${k.Email}" class="text-decoration-none text-info fw-medium"><i class="fas fa-envelope me-1"></i>${k.Email}</a>` : '<span class="text-muted">-</span>';
         
         tbody.innerHTML += `
             <tr>
-                <td><strong>${k.Name}</strong></td>
+                <td><strong class="text-white">${k.Name}</strong></td>
                 <td>${hName}</td>
                 <td>${k.Title}</td>
                 <td>${emailLink}</td>
                 <td>${getStageBadge(k.Visit_Stage)}</td>
-                <td>${k.Probability}%</td>
+                <td class="text-white fw-bold">${k.Probability}%</td>
                 <td><button class="btn btn-sm btn-outline-success" onclick="openKOLModal('${k.KOL_ID}')">Edit</button></td>
             </tr>`; 
     }); 
 }
 
-function renderUserTable(u) { const t=document.getElementById('admin-users-body'); t.innerHTML=''; u.forEach(x=>t.innerHTML+=`<tr><td>${x.Email}</td><td>${x.Name}</td><td>${x.Role}</td><td>${x.Status}</td><td>${x.Last_Login?new Date(x.Last_Login).toLocaleDateString():'-'}</td><td><button class="btn btn-sm btn-light" onclick="openUserModal('${x.Email}','${x.Name}','${x.Role}','${x.Status}')">Edit</button></td></tr>`); }
-function renderLogTable(l) { const t=document.getElementById('admin-logs-body'); t.innerHTML=''; l.reverse().forEach(x=>t.innerHTML+=`<tr><td>${new Date(x.Timestamp).toLocaleString()}</td><td>${x.User}</td><td>${x.Action}</td><td class="text-muted small">${x.Details}</td></tr>`); }
+function renderUserTable(u) { const t=document.getElementById('admin-users-body'); t.innerHTML=''; u.forEach(x=>t.innerHTML+=`<tr><td class="text-white">${x.Email}</td><td>${x.Name}</td><td>${x.Role}</td><td>${x.Status}</td><td>${x.Last_Login?new Date(x.Last_Login).toLocaleDateString():'-'}</td><td><button class="btn btn-sm btn-outline-info" onclick="openUserModal('${x.Email}','${x.Name}','${x.Role}','${x.Status}')">Edit</button></td></tr>`); }
+function renderLogTable(l) { const t=document.getElementById('admin-logs-body'); t.innerHTML=''; l.reverse().forEach(x=>t.innerHTML+=`<tr><td class="text-muted">${new Date(x.Timestamp).toLocaleString()}</td><td class="text-white">${x.User}</td><td><span class="badge bg-primary bg-opacity-25 text-primary border border-primary">${x.Action}</span></td><td class="text-muted small">${x.Details}</td></tr>`); }
 
 function openHospitalInput(id){ showPage('hospital-input'); document.getElementById('form-hospital').reset(); setVal('h-id',''); setVal('h-link',''); if(id){ const h=globalHospitals.find(x=>x.Hospital_ID===id); if(h){ setVal('h-id',h.Hospital_ID); setVal('h-name',h.Name); setVal('h-region',h.Region); setVal('h-level',h.Level); setVal('h-address',h.Address); setVal('h-status',h.Status); setVal('h-exclusivity',h.Exclusivity); setVal('h-unit-price',h.Unit_Price); setVal('h-ebm',h.EBM_Share_Ratio); setVal('h-amount',h.Contract_Amount); setVal('h-link',h.Contract_Link); if(h.Contract_Start_Date)setVal('h-start',h.Contract_Start_Date.split('T')[0]); if(h.Contract_End_Date)setVal('h-end',h.Contract_End_Date.split('T')[0]); } } }
 async function submitHospital(){ showLoading(true); let link=getVal('h-link'); const f=document.getElementById('h-file'); if(f.files.length){ link=(await uploadFile(f.files[0])).url; } const p={hospitalId:getVal('h-id'), name:getVal('h-name'), region:getVal('h-region'), level:getVal('h-level'), address:getVal('h-address'), status:getVal('h-status'), exclusivity:getVal('h-exclusivity'), unitPrice:getVal('h-unit-price'), ebmShare:getVal('h-ebm'), contractAmount:getVal('h-amount'), contractStart:getVal('h-start'), contractEnd:getVal('h-end'), contractLink:link, salesRep:document.getElementById('user-name').innerText}; await fetch(CONFIG.SCRIPT_URL,{method:'POST',body:JSON.stringify({action:'saveHospital',userEmail:currentUser,payload:p})}); await refreshAllData(); showPage('hospitals'); showLoading(false); }
@@ -649,7 +686,6 @@ function openKOLModal(id){
     s.innerHTML = ''; 
     globalHospitals.forEach(h => s.innerHTML += `<option value="${h.Name}"></option>`); 
     
-    // [修改] 根據是否傳入 ID 來決定是否顯示「刪除」按鈕
     const delBtn = document.getElementById('btn-delete-kol');
     if(delBtn) delBtn.style.display = id ? 'block' : 'none';
     
@@ -706,7 +742,6 @@ async function submitKOL(){
     showLoading(false); 
 }
 
-// [新增] 刪除 KOL 的異步執行邏輯
 async function deleteKOL() {
     const id = getVal('k-id');
     if(!id) return;
@@ -721,7 +756,7 @@ async function deleteKOL() {
         const json = await res.json();
         if(json.status === 'success') {
             kolModal.hide();
-            await refreshAllData(); // 瞬間重載所有資料並刷新畫面
+            await refreshAllData(); 
         } else { 
             alert("刪除失敗：" + json.message); 
         }
