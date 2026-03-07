@@ -1,4 +1,4 @@
-// app.js V7.0 (Dark Neon UI Theme Edition)
+// app.js V7.0 (Dark Neon UI Theme Edition + KOL Delete + Caching)
 
 let currentUser = null;
 let currentRole = null;
@@ -44,7 +44,6 @@ window.onload = function() {
         document.getElementById('mobile-user-avatar').src = DEFAULT_AVATAR;
     }
 
-    // [深色主題] Chart.js 全域文字預設顏色
     Chart.defaults.color = '#94a3b8';
     Chart.defaults.font.family = "'Segoe UI', 'Microsoft JhengHei', sans-serif";
 
@@ -226,7 +225,6 @@ function updateKOLFilterOptions() {
 
 async function loadAdminData() { if(currentRole!=='Admin')return; showLoading(true); try{ const [u,l] = await Promise.all([fetch(CONFIG.SCRIPT_URL,{method:"POST",body:JSON.stringify({action:"getUsers",userEmail:currentUser})}), fetch(CONFIG.SCRIPT_URL,{method:"POST",body:JSON.stringify({action:"getLogs",userEmail:currentUser})})]); renderUserTable((await u.json()).data); renderLogTable((await l.json()).data); }catch(e){}finally{showLoading(false);} }
 
-// [設定] 深色模式圓餅圖共用屬性
 function getPieOptions() {
     return {
         maintainAspectRatio: false, cutout: '70%', 
@@ -243,7 +241,7 @@ function getPieOptions() {
                 }
             }
         },
-        elements: { arc: { borderWidth: 2, borderColor: '#1e1e32' } } // 搭配卡片背景色
+        elements: { arc: { borderWidth: 2, borderColor: '#1e1e32' } }
     };
 }
 
@@ -257,7 +255,6 @@ function renderDashboard(data) {
     if(document.getElementById('kpi-intro-hospital-count')) document.getElementById('kpi-intro-hospital-count').innerText = (kpi.productIntroCount || 0).toLocaleString();
     if(document.getElementById('kpi-signed-hospital-count')) document.getElementById('kpi-signed-hospital-count').innerText = (kpi.signedCount || 0).toLocaleString();
 
-    // 1. 已簽約醫院圓餅圖 (霓虹藍/紫/粉色系)
     const ctxRegion = document.getElementById('chart-region');
     if (ctxRegion) {
         if(window.myRegionChart) window.myRegionChart.destroy();
@@ -274,11 +271,11 @@ function renderDashboard(data) {
         const ctx1 = ctxRegion.getContext('2d');
         const gradients1 = rLabels.map((_, i) => {
             const colors = [
-                ['#06b6d4', '#3b82f6'], // Cyan to Blue
-                ['#ec4899', '#8b5cf6'], // Pink to Purple
-                ['#f97316', '#eab308'], // Orange to Yellow
-                ['#10b981', '#14b8a6'], // Emerald to Teal
-                ['#3b82f6', '#4f46e5']  // Blue to Indigo
+                ['#06b6d4', '#3b82f6'], 
+                ['#ec4899', '#8b5cf6'], 
+                ['#f97316', '#eab308'], 
+                ['#10b981', '#14b8a6'], 
+                ['#3b82f6', '#4f46e5']  
             ];
             const colorPair = colors[i % colors.length];
             let grad = ctx1.createLinearGradient(0, 0, 0, 300);
@@ -294,7 +291,6 @@ function renderDashboard(data) {
         });
     }
 
-    // 2. 開發中醫院圓餅圖 (霓虹色系，順序錯開)
     const ctxDevRegion = document.getElementById('chart-dev-region');
     if (ctxDevRegion) {
         if(window.myDevRegionChart) window.myDevRegionChart.destroy();
@@ -367,30 +363,32 @@ function updateDashboardCharts() {
     const ctx = ctxTrend.getContext('2d');
     if (window.myTrendChart) window.myTrendChart.destroy();
     
-    // 折線圖 - Neon Pink & Neon Cyan
     const gradGross = ctx.createLinearGradient(0, 0, 0, 300); 
-    gradGross.addColorStop(0, 'rgba(236, 72, 153, 0.4)'); 
-    gradGross.addColorStop(1, 'rgba(236, 72, 153, 0.01)');
+    gradGross.addColorStop(0, 'rgba(59, 130, 246, 0.5)'); 
+    gradGross.addColorStop(1, 'rgba(59, 130, 246, 0.0)');
     
     const gradNet = ctx.createLinearGradient(0, 0, 0, 300); 
-    gradNet.addColorStop(0, 'rgba(6, 182, 212, 0.4)'); 
-    gradNet.addColorStop(1, 'rgba(6, 182, 212, 0.01)');
+    gradNet.addColorStop(0, 'rgba(16, 185, 129, 0.5)'); 
+    gradNet.addColorStop(1, 'rgba(16, 185, 129, 0.0)');
     
     window.myTrendChart = new Chart(ctx, {
         type: 'line',
         data: {
             labels: labels,
             datasets: [
-                { label: 'Gross', data: grossData, borderColor: '#ec4899', backgroundColor: gradGross, fill: true, tension: 0.4, pointBackgroundColor: '#ec4899', pointBorderColor: '#1e1e32', borderWidth: 3 }, 
-                { label: 'Net', data: netData, borderColor: '#06b6d4', backgroundColor: gradNet, fill: true, tension: 0.4, pointBackgroundColor: '#06b6d4', pointBorderColor: '#1e1e32', borderWidth: 3 }
+                { label: 'Gross', data: grossData, borderColor: '#3b82f6', backgroundColor: gradGross, fill: true, tension: 0.4, pointBackgroundColor: '#1e1e2d', pointBorderColor: '#3b82f6', borderWidth: 2 }, 
+                { label: 'Net', data: netData, borderColor: '#10b981', backgroundColor: gradNet, fill: true, tension: 0.4, pointBackgroundColor: '#1e1e2d', pointBorderColor: '#10b981', borderWidth: 2 }
             ]
         },
         options: { 
             responsive: true, maintainAspectRatio: false, 
-            plugins: { legend: { position: 'top', align: 'end', labels: {color: '#f8fafc'} }, datalabels: { display: false } }, 
+            plugins: { 
+                legend: { position: 'top', align: 'end', labels: {color: '#a1a5b7', boxWidth: 12} }, 
+                datalabels: { display: false } 
+            }, 
             scales: { 
-                x: { grid: { display: false }, ticks: {color: '#94a3b8'} }, 
-                y: { grid: { borderDash: [3], color: 'rgba(255,255,255,0.05)' }, beginAtZero: true, ticks: {color: '#94a3b8'} } 
+                x: { grid: { display: false }, ticks: {color: '#a1a5b7'} }, 
+                y: { grid: { borderDash: [4, 4], color: 'rgba(255,255,255,0.05)', drawBorder: false }, beginAtZero: true, ticks: {color: '#a1a5b7'} } 
             } 
         }
     });
@@ -502,18 +500,21 @@ function renderUsageAnalytics() {
         if (window.myUsageTrendChart) window.myUsageTrendChart.destroy();
         const ctx = ctxUsage.getContext('2d');
         let gradBar = ctx.createLinearGradient(0, 0, 0, 300);
-        gradBar.addColorStop(0, '#8b5cf6'); // Purple
-        gradBar.addColorStop(1, '#3b82f6'); // Blue
+        gradBar.addColorStop(0, '#8b5cf6'); 
+        gradBar.addColorStop(1, '#06b6d4'); 
 
         window.myUsageTrendChart = new Chart(ctx, {
             type: 'bar',
-            data: { labels: labels, datasets: [{ label: '總使用次數', data: usageData, backgroundColor: gradBar, borderRadius: 6, barPercentage: 0.6 }] },
+            data: { labels: labels, datasets: [{ label: '總使用次數', data: usageData, backgroundColor: gradBar, borderRadius: 4, barPercentage: 0.4 }] },
             options: {
                 responsive: true, maintainAspectRatio: false,
-                plugins: { legend: { display: false }, datalabels: { anchor: 'end', align: 'top', color: '#e2e8f0', font: { weight: 'bold' }, formatter: (val) => val > 0 ? val.toLocaleString() : '' } },
+                plugins: { 
+                    legend: { display: false }, 
+                    datalabels: { anchor: 'end', align: 'top', color: '#a1a5b7', font: { weight: 'bold' }, formatter: (val) => val > 0 ? val.toLocaleString() : '' } 
+                },
                 scales: { 
-                    x: { grid: { display: false }, ticks: {color: '#94a3b8'} }, 
-                    y: { grid: { borderDash: [3], color: 'rgba(255,255,255,0.05)' }, beginAtZero: true, ticks: {color: '#94a3b8'} } 
+                    x: { grid: { display: false }, ticks: {color: '#a1a5b7'} }, 
+                    y: { grid: { borderDash: [4, 4], color: 'rgba(255,255,255,0.05)', drawBorder: false }, beginAtZero: true, ticks: {color: '#a1a5b7', stepSize: 10} } 
                 }
             },
             plugins: [ChartDataLabels]
@@ -524,16 +525,22 @@ function renderUsageAnalytics() {
     if (ctxRev) {
         if (window.myUsageRevChart) window.myUsageRevChart.destroy();
         const ctx = ctxRev.getContext('2d');
-        let gradGross = ctx.createLinearGradient(0, 0, 0, 300); gradGross.addColorStop(0, 'rgba(236, 72, 153, 0.4)'); gradGross.addColorStop(1, 'rgba(236, 72, 153, 0.01)');
-        let gradNet = ctx.createLinearGradient(0, 0, 0, 300); gradNet.addColorStop(0, 'rgba(6, 182, 212, 0.4)'); gradNet.addColorStop(1, 'rgba(6, 182, 212, 0.01)');
+        let gradGross = ctx.createLinearGradient(0, 0, 0, 300); gradGross.addColorStop(0, 'rgba(59, 130, 246, 0.4)'); gradGross.addColorStop(1, 'rgba(59, 130, 246, 0.0)');
+        let gradNet = ctx.createLinearGradient(0, 0, 0, 300); gradNet.addColorStop(0, 'rgba(16, 185, 129, 0.4)'); gradNet.addColorStop(1, 'rgba(16, 185, 129, 0.0)');
 
         window.myUsageRevChart = new Chart(ctx, {
             type: 'line',
-            data: { labels: labels, datasets: [ { label: 'Gross', data: grossData, borderColor: '#ec4899', backgroundColor: gradGross, fill: true, tension: 0.4, borderWidth: 3 }, { label: 'Net', data: netData, borderColor: '#06b6d4', backgroundColor: gradNet, fill: true, tension: 0.4, borderWidth: 3 } ] },
+            data: { labels: labels, datasets: [ 
+                { label: 'Gross', data: grossData, borderColor: '#3b82f6', backgroundColor: gradGross, fill: true, tension: 0.4, borderWidth: 2, pointBackgroundColor: '#1e1e2d' }, 
+                { label: 'Net', data: netData, borderColor: '#10b981', backgroundColor: gradNet, fill: true, tension: 0.4, borderWidth: 2, pointBackgroundColor: '#1e1e2d' } 
+            ] },
             options: { 
                 responsive: true, maintainAspectRatio: false, 
-                plugins: { legend: { position: 'top', align: 'end', labels: {color: '#f8fafc'} }, datalabels: { display: false } }, 
-                scales: { x: { grid: { display: false }, ticks:{color:'#94a3b8'} }, y: { grid: { borderDash: [3], color: 'rgba(255,255,255,0.05)' }, beginAtZero: true, ticks:{color:'#94a3b8'} } } 
+                plugins: { legend: { position: 'top', align: 'end', labels: {color: '#a1a5b7', boxWidth: 12} }, datalabels: { display: false } }, 
+                scales: { 
+                    x: { grid: { display: false }, ticks:{color:'#a1a5b7'} }, 
+                    y: { grid: { borderDash: [4, 4], color: 'rgba(255,255,255,0.05)', drawBorder: false }, beginAtZero: true, ticks:{color:'#a1a5b7'} } 
+                } 
             }
         });
     }
@@ -552,8 +559,8 @@ function renderUsageAnalytics() {
         rankingData.forEach((item, index) => {
             let rankBadge = '';
             if (index === 0) rankBadge = '<span class="badge bg-warning text-dark px-2 py-1 shadow-sm">1</span>'; 
-            else if (index === 1) rankBadge = '<span class="badge bg-secondary px-2 py-1 shadow-sm">2</span>'; 
-            else if (index === 2) rankBadge = '<span class="badge px-2 py-1 shadow-sm" style="background-color: #cd7f32; color: white;">3</span>'; 
+            else if (index === 1) rankBadge = '<span class="badge bg-secondary px-2 py-1 shadow-sm" style="color: #475569 !important;">2</span>'; 
+            else if (index === 2) rankBadge = '<span class="badge px-2 py-1 shadow-sm" style="background-color: #b45309; color: white;">3</span>'; 
             else rankBadge = `<span class="text-muted fw-bold ms-2">${index + 1}</span>`;
 
             let textClass = item.usage === 0 ? 'text-muted' : 'fw-bold text-white';
