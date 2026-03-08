@@ -1,4 +1,4 @@
-// app.js V7.0 (Dark Neon UI Theme Edition + KOL Delete + Caching)
+// app.js V7.1 (Hospital Visit Note + Dark Theme + KOL Delete)
 
 let currentUser = null;
 let currentRole = null;
@@ -681,8 +681,40 @@ function renderKOLList() {
 function renderUserTable(u) { const t=document.getElementById('admin-users-body'); t.innerHTML=''; u.forEach(x=>t.innerHTML+=`<tr><td class="text-white">${x.Email}</td><td>${x.Name}</td><td>${x.Role}</td><td>${x.Status}</td><td>${x.Last_Login?new Date(x.Last_Login).toLocaleDateString():'-'}</td><td><button class="btn btn-sm btn-outline-info" onclick="openUserModal('${x.Email}','${x.Name}','${x.Role}','${x.Status}')">Edit</button></td></tr>`); }
 function renderLogTable(l) { const t=document.getElementById('admin-logs-body'); t.innerHTML=''; l.reverse().forEach(x=>t.innerHTML+=`<tr><td class="text-muted">${new Date(x.Timestamp).toLocaleString()}</td><td class="text-white">${x.User}</td><td><span class="badge bg-primary bg-opacity-25 text-primary border border-primary">${x.Action}</span></td><td class="text-muted small">${x.Details}</td></tr>`); }
 
-function openHospitalInput(id){ showPage('hospital-input'); document.getElementById('form-hospital').reset(); setVal('h-id',''); setVal('h-link',''); if(id){ const h=globalHospitals.find(x=>x.Hospital_ID===id); if(h){ setVal('h-id',h.Hospital_ID); setVal('h-name',h.Name); setVal('h-region',h.Region); setVal('h-level',h.Level); setVal('h-address',h.Address); setVal('h-status',h.Status); setVal('h-exclusivity',h.Exclusivity); setVal('h-unit-price',h.Unit_Price); setVal('h-ebm',h.EBM_Share_Ratio); setVal('h-amount',h.Contract_Amount); setVal('h-link',h.Contract_Link); if(h.Contract_Start_Date)setVal('h-start',h.Contract_Start_Date.split('T')[0]); if(h.Contract_End_Date)setVal('h-end',h.Contract_End_Date.split('T')[0]); } } }
-async function submitHospital(){ showLoading(true); let link=getVal('h-link'); const f=document.getElementById('h-file'); if(f.files.length){ link=(await uploadFile(f.files[0])).url; } const p={hospitalId:getVal('h-id'), name:getVal('h-name'), region:getVal('h-region'), level:getVal('h-level'), address:getVal('h-address'), status:getVal('h-status'), exclusivity:getVal('h-exclusivity'), unitPrice:getVal('h-unit-price'), ebmShare:getVal('h-ebm'), contractAmount:getVal('h-amount'), contractStart:getVal('h-start'), contractEnd:getVal('h-end'), contractLink:link, salesRep:document.getElementById('user-name').innerText}; await fetch(CONFIG.SCRIPT_URL,{method:'POST',body:JSON.stringify({action:'saveHospital',userEmail:currentUser,payload:p})}); await refreshAllData(); showPage('hospitals'); showLoading(false); }
+// [修改] 醫院編輯：加入 Visit Note 讀取與清空
+function openHospitalInput(id){ 
+    showPage('hospital-input'); 
+    document.getElementById('form-hospital').reset(); 
+    setVal('h-id',''); 
+    setVal('h-link',''); 
+    setVal('h-note',''); // 清空筆記
+    if(id){ 
+        const h=globalHospitals.find(x=>x.Hospital_ID===id); 
+        if(h){ 
+            setVal('h-id',h.Hospital_ID); setVal('h-name',h.Name); setVal('h-region',h.Region); setVal('h-level',h.Level); setVal('h-address',h.Address); setVal('h-status',h.Status); setVal('h-exclusivity',h.Exclusivity); setVal('h-unit-price',h.Unit_Price); setVal('h-ebm',h.EBM_Share_Ratio); setVal('h-amount',h.Contract_Amount); setVal('h-link',h.Contract_Link); 
+            if(h.Contract_Start_Date)setVal('h-start',h.Contract_Start_Date.split('T')[0]); 
+            if(h.Contract_End_Date)setVal('h-end',h.Contract_End_Date.split('T')[0]); 
+            setVal('h-note', h.Visit_Note); // 載入筆記
+        } 
+    } 
+}
+
+// [修改] 醫院編輯：加入 Visit Note 儲存
+async function submitHospital(){ 
+    showLoading(true); 
+    let link=getVal('h-link'); 
+    const f=document.getElementById('h-file'); 
+    if(f.files.length){ link=(await uploadFile(f.files[0])).url; } 
+    const p={
+        hospitalId:getVal('h-id'), name:getVal('h-name'), region:getVal('h-region'), level:getVal('h-level'), address:getVal('h-address'), status:getVal('h-status'), exclusivity:getVal('h-exclusivity'), unitPrice:getVal('h-unit-price'), ebmShare:getVal('h-ebm'), contractAmount:getVal('h-amount'), contractStart:getVal('h-start'), contractEnd:getVal('h-end'), contractLink:link, 
+        salesRep:document.getElementById('user-name').innerText,
+        visitNote: getVal('h-note') // 儲存筆記
+    }; 
+    await fetch(CONFIG.SCRIPT_URL,{method:'POST',body:JSON.stringify({action:'saveHospital',userEmail:currentUser,payload:p})}); 
+    await refreshAllData(); 
+    showPage('hospitals'); 
+    showLoading(false); 
+}
 
 function openKOLModal(id){ 
     document.getElementById('form-kol').reset(); 
