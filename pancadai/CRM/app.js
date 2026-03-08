@@ -1,4 +1,4 @@
-// app.js V7.1 (Hospital Visit Note + Dark Theme + KOL Delete)
+// app.js V7.2 (Theme Toggle + Delete KOL + Complete Implementation)
 
 let currentUser = null;
 let currentRole = null;
@@ -44,14 +44,54 @@ window.onload = function() {
         document.getElementById('mobile-user-avatar').src = DEFAULT_AVATAR;
     }
 
-    Chart.defaults.color = '#94a3b8';
-    Chart.defaults.font.family = "'Segoe UI', 'Microsoft JhengHei', sans-serif";
+    // 根據主題設定按鈕初始狀態
+    const currentTheme = document.documentElement.getAttribute('data-theme') || 'dark';
+    const btn = document.getElementById('theme-toggle-btn');
+    if (btn) {
+        btn.innerHTML = currentTheme === 'light' ? '<i class="fas fa-moon"></i> 切換深色' : '<i class="fas fa-sun"></i> 切換淺色';
+    }
 
     if (savedUser) {
         currentUser = savedUser;
         verifyBackendAuth(savedUser);
     }
 };
+
+// --- 🚀 新增：主題切換邏輯 (Light/Dark Toggle) ---
+function toggleTheme() {
+    const body = document.documentElement;
+    const currentTheme = body.getAttribute('data-theme');
+    const newTheme = currentTheme === 'light' ? 'dark' : 'light';
+    
+    body.setAttribute('data-theme', newTheme);
+    localStorage.setItem('pancad_theme', newTheme);
+
+    const btn = document.getElementById('theme-toggle-btn');
+    if (btn) {
+        btn.innerHTML = newTheme === 'light' ? '<i class="fas fa-moon"></i> 切換深色' : '<i class="fas fa-sun"></i> 切換淺色';
+    }
+
+    // 動態重繪圖表以適應新主題的顏色
+    updateDashboardCharts();
+    renderUsageAnalytics();
+    
+    // 重新渲染 Dashboard 圓餅圖的邊框顏色
+    const dashDataRes = { kpi: { 
+        regionStats: {}, devRegionStats: {}, 
+        kolCount: parseInt(document.getElementById('kpi-kol-count').innerText.replace(/,/g, '') || 0),
+        developingCount: parseInt(document.getElementById('kpi-dev-hospital-count').innerText.replace(/,/g, '') || 0),
+        negotiatingCount: parseInt(document.getElementById('kpi-neg-hospital-count').innerText.replace(/,/g, '') || 0),
+        productIntroCount: parseInt(document.getElementById('kpi-intro-hospital-count').innerText.replace(/,/g, '') || 0),
+        signedCount: parseInt(document.getElementById('kpi-signed-hospital-count').innerText.replace(/,/g, '') || 0)
+    }};
+    
+    // 重新計算圓餅圖的數據
+    globalHospitals.forEach(h => {
+        if (h.Status === '已簽約') dashDataRes.kpi.regionStats[h.Region||'Unknown'] = (dashDataRes.kpi.regionStats[h.Region||'Unknown'] || 0) + 1;
+        if (h.Status === '開發中') dashDataRes.kpi.devRegionStats[h.Region||'Unknown'] = (dashDataRes.kpi.devRegionStats[h.Region||'Unknown'] || 0) + 1;
+    });
+    renderDashboard(dashDataRes);
+}
 
 function getVal(id) { const el = document.getElementById(id); return el ? el.value : ''; }
 function setVal(id, value) { const el = document.getElementById(id); if (el) el.value = value || ''; }
@@ -225,13 +265,18 @@ function updateKOLFilterOptions() {
 
 async function loadAdminData() { if(currentRole!=='Admin')return; showLoading(true); try{ const [u,l] = await Promise.all([fetch(CONFIG.SCRIPT_URL,{method:"POST",body:JSON.stringify({action:"getUsers",userEmail:currentUser})}), fetch(CONFIG.SCRIPT_URL,{method:"POST",body:JSON.stringify({action:"getLogs",userEmail:currentUser})})]); renderUserTable((await u.json()).data); renderLogTable((await l.json()).data); }catch(e){}finally{showLoading(false);} }
 
+// [動態支援] 依據當前主題返回圓餅圖設定
 function getPieOptions() {
+    const isLight = document.documentElement.getAttribute('data-theme') === 'light';
+    const panelColor = isLight ? '#ffffff' : '#1e1e32';
+    const textColor = isLight ? '#858796' : '#f8fafc';
+    
     return {
         maintainAspectRatio: false, cutout: '70%', 
         plugins: { 
-            legend: { position: 'right', labels: { boxWidth: 15, font: { size: 12 }, padding: 15, color: '#f8fafc' } },
+            legend: { position: 'right', labels: { boxWidth: 15, font: { size: 12, family: "'Segoe UI', sans-serif" }, padding: 15, color: textColor } },
             datalabels: {
-                color: '#fff', font: { weight: 'bold', size: 13 },
+                color: '#fff', font: { weight: 'bold', size: 13, family: "'Segoe UI', sans-serif" },
                 formatter: (value, context) => {
                     let label = context.chart.data.labels[context.dataIndex];
                     if (label.includes('無資料') || value === 0) return '';
@@ -241,7 +286,7 @@ function getPieOptions() {
                 }
             }
         },
-        elements: { arc: { borderWidth: 2, borderColor: '#1e1e32' } }
+        elements: { arc: { borderWidth: 2, borderColor: panelColor } }
     };
 }
 
@@ -270,13 +315,7 @@ function renderDashboard(data) {
         
         const ctx1 = ctxRegion.getContext('2d');
         const gradients1 = rLabels.map((_, i) => {
-            const colors = [
-                ['#06b6d4', '#3b82f6'], 
-                ['#ec4899', '#8b5cf6'], 
-                ['#f97316', '#eab308'], 
-                ['#10b981', '#14b8a6'], 
-                ['#3b82f6', '#4f46e5']  
-            ];
+            const colors = [ ['#06b6d4', '#3b82f6'], ['#ec4899', '#8b5cf6'], ['#f97316', '#eab308'], ['#10b981', '#14b8a6'], ['#3b82f6', '#4f46e5'] ];
             const colorPair = colors[i % colors.length];
             let grad = ctx1.createLinearGradient(0, 0, 0, 300);
             grad.addColorStop(0, colorPair[0]); grad.addColorStop(1, colorPair[1]);
@@ -306,13 +345,7 @@ function renderDashboard(data) {
         
         const ctx2 = ctxDevRegion.getContext('2d');
         const gradients2 = devLabels.map((_, i) => {
-            const colors = [
-                ['#ec4899', '#8b5cf6'], 
-                ['#06b6d4', '#3b82f6'], 
-                ['#10b981', '#14b8a6'], 
-                ['#f97316', '#eab308'], 
-                ['#3b82f6', '#4f46e5']
-            ];
+            const colors = [ ['#ec4899', '#8b5cf6'], ['#06b6d4', '#3b82f6'], ['#10b981', '#14b8a6'], ['#f97316', '#eab308'], ['#3b82f6', '#4f46e5'] ];
             const colorPair = colors[i % colors.length];
             let grad = ctx2.createLinearGradient(0, 0, 0, 300);
             grad.addColorStop(0, colorPair[0]); grad.addColorStop(1, colorPair[1]);
@@ -363,12 +396,17 @@ function updateDashboardCharts() {
     const ctx = ctxTrend.getContext('2d');
     if (window.myTrendChart) window.myTrendChart.destroy();
     
+    const isLight = document.documentElement.getAttribute('data-theme') === 'light';
+    const gridColorY = isLight ? 'rgba(0,0,0,0.05)' : 'rgba(255,255,255,0.05)';
+    const textColor = isLight ? '#858796' : '#a1a5b7';
+    const pointColor = isLight ? '#ffffff' : '#1e1e2d';
+
     const gradGross = ctx.createLinearGradient(0, 0, 0, 300); 
-    gradGross.addColorStop(0, 'rgba(59, 130, 246, 0.5)'); 
+    gradGross.addColorStop(0, 'rgba(59, 130, 246, 0.4)'); 
     gradGross.addColorStop(1, 'rgba(59, 130, 246, 0.0)');
     
     const gradNet = ctx.createLinearGradient(0, 0, 0, 300); 
-    gradNet.addColorStop(0, 'rgba(16, 185, 129, 0.5)'); 
+    gradNet.addColorStop(0, 'rgba(16, 185, 129, 0.4)'); 
     gradNet.addColorStop(1, 'rgba(16, 185, 129, 0.0)');
     
     window.myTrendChart = new Chart(ctx, {
@@ -376,19 +414,19 @@ function updateDashboardCharts() {
         data: {
             labels: labels,
             datasets: [
-                { label: 'Gross', data: grossData, borderColor: '#3b82f6', backgroundColor: gradGross, fill: true, tension: 0.4, pointBackgroundColor: '#1e1e2d', pointBorderColor: '#3b82f6', borderWidth: 2 }, 
-                { label: 'Net', data: netData, borderColor: '#10b981', backgroundColor: gradNet, fill: true, tension: 0.4, pointBackgroundColor: '#1e1e2d', pointBorderColor: '#10b981', borderWidth: 2 }
+                { label: 'Gross', data: grossData, borderColor: '#3b82f6', backgroundColor: gradGross, fill: true, tension: 0.4, pointBackgroundColor: pointColor, pointBorderColor: '#3b82f6', borderWidth: 2 }, 
+                { label: 'Net', data: netData, borderColor: '#10b981', backgroundColor: gradNet, fill: true, tension: 0.4, pointBackgroundColor: pointColor, pointBorderColor: '#10b981', borderWidth: 2 }
             ]
         },
         options: { 
             responsive: true, maintainAspectRatio: false, 
             plugins: { 
-                legend: { position: 'top', align: 'end', labels: {color: '#a1a5b7', boxWidth: 12} }, 
+                legend: { position: 'top', align: 'end', labels: {color: textColor, boxWidth: 12, font: {family: "'Segoe UI', sans-serif"}} }, 
                 datalabels: { display: false } 
             }, 
             scales: { 
-                x: { grid: { display: false }, ticks: {color: '#a1a5b7'} }, 
-                y: { grid: { borderDash: [4, 4], color: 'rgba(255,255,255,0.05)', drawBorder: false }, beginAtZero: true, ticks: {color: '#a1a5b7'} } 
+                x: { grid: { display: false }, ticks: {color: textColor, font: {family: "'Segoe UI', sans-serif"}} }, 
+                y: { grid: { borderDash: [4, 4], color: gridColorY, drawBorder: false }, beginAtZero: true, ticks: {color: textColor, font: {family: "'Segoe UI', sans-serif"}} } 
             } 
         }
     });
@@ -495,6 +533,11 @@ function renderUsageAnalytics() {
     const grossData = labels.map(m => monthlyRevenue[m].gross);
     const netData = labels.map(m => monthlyRevenue[m].net);
 
+    const isLight = document.documentElement.getAttribute('data-theme') === 'light';
+    const gridColorY = isLight ? 'rgba(0,0,0,0.05)' : 'rgba(255,255,255,0.05)';
+    const textColor = isLight ? '#858796' : '#a1a5b7';
+    const pointColor = isLight ? '#ffffff' : '#1e1e2d';
+
     const ctxUsage = document.getElementById('chart-usage-trend');
     if (ctxUsage) {
         if (window.myUsageTrendChart) window.myUsageTrendChart.destroy();
@@ -510,11 +553,11 @@ function renderUsageAnalytics() {
                 responsive: true, maintainAspectRatio: false,
                 plugins: { 
                     legend: { display: false }, 
-                    datalabels: { anchor: 'end', align: 'top', color: '#a1a5b7', font: { weight: 'bold' }, formatter: (val) => val > 0 ? val.toLocaleString() : '' } 
+                    datalabels: { anchor: 'end', align: 'top', color: textColor, font: { weight: 'bold', family: "'Segoe UI', sans-serif" }, formatter: (val) => val > 0 ? val.toLocaleString() : '' } 
                 },
                 scales: { 
-                    x: { grid: { display: false }, ticks: {color: '#a1a5b7'} }, 
-                    y: { grid: { borderDash: [4, 4], color: 'rgba(255,255,255,0.05)', drawBorder: false }, beginAtZero: true, ticks: {color: '#a1a5b7', stepSize: 10} } 
+                    x: { grid: { display: false }, ticks: {color: textColor, font: {family: "'Segoe UI', sans-serif"}} }, 
+                    y: { grid: { borderDash: [4, 4], color: gridColorY, drawBorder: false }, beginAtZero: true, ticks: {color: textColor, stepSize: 10, font: {family: "'Segoe UI', sans-serif"}} } 
                 }
             },
             plugins: [ChartDataLabels]
@@ -531,15 +574,15 @@ function renderUsageAnalytics() {
         window.myUsageRevChart = new Chart(ctx, {
             type: 'line',
             data: { labels: labels, datasets: [ 
-                { label: 'Gross', data: grossData, borderColor: '#3b82f6', backgroundColor: gradGross, fill: true, tension: 0.4, borderWidth: 2, pointBackgroundColor: '#1e1e2d' }, 
-                { label: 'Net', data: netData, borderColor: '#10b981', backgroundColor: gradNet, fill: true, tension: 0.4, borderWidth: 2, pointBackgroundColor: '#1e1e2d' } 
+                { label: 'Gross', data: grossData, borderColor: '#3b82f6', backgroundColor: gradGross, fill: true, tension: 0.4, borderWidth: 2, pointBackgroundColor: pointColor }, 
+                { label: 'Net', data: netData, borderColor: '#10b981', backgroundColor: gradNet, fill: true, tension: 0.4, borderWidth: 2, pointBackgroundColor: pointColor } 
             ] },
             options: { 
                 responsive: true, maintainAspectRatio: false, 
-                plugins: { legend: { position: 'top', align: 'end', labels: {color: '#a1a5b7', boxWidth: 12} }, datalabels: { display: false } }, 
+                plugins: { legend: { position: 'top', align: 'end', labels: {color: textColor, boxWidth: 12, font: {family: "'Segoe UI', sans-serif"}} }, datalabels: { display: false } }, 
                 scales: { 
-                    x: { grid: { display: false }, ticks:{color:'#a1a5b7'} }, 
-                    y: { grid: { borderDash: [4, 4], color: 'rgba(255,255,255,0.05)', drawBorder: false }, beginAtZero: true, ticks:{color:'#a1a5b7'} } 
+                    x: { grid: { display: false }, ticks:{color: textColor, font: {family: "'Segoe UI', sans-serif"}} }, 
+                    y: { grid: { borderDash: [4, 4], color: gridColorY, drawBorder: false }, beginAtZero: true, ticks:{color: textColor, font: {family: "'Segoe UI', sans-serif"}} } 
                 } 
             }
         });
@@ -563,14 +606,14 @@ function renderUsageAnalytics() {
             else if (index === 2) rankBadge = '<span class="badge px-2 py-1 shadow-sm" style="background-color: #b45309; color: white;">3</span>'; 
             else rankBadge = `<span class="text-muted fw-bold ms-2">${index + 1}</span>`;
 
-            let textClass = item.usage === 0 ? 'text-muted' : 'fw-bold text-white';
+            let textClass = item.usage === 0 ? 'text-muted' : (isLight ? 'fw-bold text-dark' : 'fw-bold text-white');
             let rowClass = String(item.id) === String(selectedAnalyticsHospitalId) ? 'active-row' : '';
 
             tbody.innerHTML += `
                 <tr class="cursor-pointer ${rowClass}" onclick="selectUsageHospital('${item.id}')">
-                    <td style="width: 50px; border-bottom-color: var(--border-color);">${rankBadge}</td>
-                    <td class="${textClass}" style="border-bottom-color: var(--border-color);">${item.name}</td>
-                    <td class="text-end ${textClass}" style="border-bottom-color: var(--border-color);">${item.usage.toLocaleString()}</td>
+                    <td style="width: 50px;">${rankBadge}</td>
+                    <td class="${textClass}">${item.name}</td>
+                    <td class="text-end ${textClass}">${item.usage.toLocaleString()}</td>
                 </tr>
             `;
         });
@@ -585,6 +628,7 @@ function renderFinanceTable() {
     
     let kpiG=0, kpiN=0, kpiA=0, kpiE=0;
     let hasData = false;
+    const isLight = document.documentElement.getAttribute('data-theme') === 'light';
 
     const sortedStats = [...globalStats].sort((a, b) => new Date(b.Created_At) - new Date(a.Created_At));
 
@@ -602,10 +646,11 @@ function renderFinanceTable() {
         
         let badge = s.Invoice_Status==='Billed'?'bg-primary':(s.Invoice_Status==='Paid'?'bg-success':'bg-secondary');
         let displayDate = String(s.Year_Month).substring(0, 10);
+        let nameColorClass = isLight ? 'text-dark' : 'text-white';
 
         tbody.innerHTML += `
             <tr>
-                <td><strong class="text-white">${hName}</strong><br><small class="text-muted">${displayDate}</small></td>
+                <td><strong class="${nameColorClass}">${hName}</strong><br><small class="text-muted">${displayDate}</small></td>
                 <td>${s.Usage_Count}</td>
                 <td>$${s.Unit_Price_Snapshot}</td>
                 <td>$${g.toLocaleString()}</td>
@@ -623,12 +668,28 @@ function renderFinanceTable() {
     document.getElementById('fin-kpi-ebm').innerText="$"+kpiE.toLocaleString();
 }
 
-function renderRadarTable() { const reg = getVal('radar-filter-region'), lvl = getVal('radar-filter-level'), sts = getVal('radar-filter-status'); const tbody = document.getElementById('radar-table-body'); tbody.innerHTML = ''; globalHospitals.forEach(h => { if (reg!=='All' && h.Region!==reg) return; if (lvl!=='All' && h.Level!==lvl) return; if (sts!=='All' && h.Status!==sts) return; let badge = h.Status==='已簽約'?'bg-success':(h.Status==='議約中'?'bg-info text-dark':(h.Status==='開發中'?'bg-warning text-dark':'bg-secondary')); tbody.innerHTML += `<tr><td><strong class="text-white">${h.Name}</strong></td><td>${h.Region||'-'}</td><td>${h.Level||'-'}</td><td><span class="badge ${badge}">${h.Status||''}</span></td><td>${h.Exclusivity==='Yes'?'<i class="fas fa-check text-success"></i>':'-'}</td><td><button class="btn btn-sm btn-outline-primary" onclick="openHospitalInput('${h.Hospital_ID}')">編輯</button></td></tr>`; }); }
+function renderRadarTable() { 
+    const reg = getVal('radar-filter-region'), lvl = getVal('radar-filter-level'), sts = getVal('radar-filter-status'); 
+    const tbody = document.getElementById('radar-table-body'); tbody.innerHTML = ''; 
+    const isLight = document.documentElement.getAttribute('data-theme') === 'light';
+
+    globalHospitals.forEach(h => { 
+        if (reg!=='All' && h.Region!==reg) return; 
+        if (lvl!=='All' && h.Level!==lvl) return; 
+        if (sts!=='All' && h.Status!==sts) return; 
+        
+        let badge = h.Status==='已簽約'?'bg-success':(h.Status==='議約中'?'bg-info text-dark':(h.Status==='開發中'?'bg-warning text-dark':'bg-secondary')); 
+        let nameColorClass = isLight ? 'text-dark' : 'text-white';
+        
+        tbody.innerHTML += `<tr><td><strong class="${nameColorClass}">${h.Name}</strong></td><td>${h.Region||'-'}</td><td>${h.Level||'-'}</td><td><span class="badge ${badge}">${h.Status||''}</span></td><td>${h.Exclusivity==='Yes'?'<i class="fas fa-check text-success"></i>':'-'}</td><td><button class="btn btn-sm btn-outline-primary" onclick="openHospitalInput('${h.Hospital_ID}')">編輯</button></td></tr>`; 
+    }); 
+}
 
 function renderHospitalList() { 
     const tbody = document.getElementById('hospital-list-body'); 
     const filterLevel = getVal('hospital-filter-level');
     const filterKeyword = getVal('hospital-filter-keyword').toLowerCase();
+    const isLight = document.documentElement.getAttribute('data-theme') === 'light';
 
     tbody.innerHTML = ''; 
     globalHospitals.forEach(h => { 
@@ -639,7 +700,8 @@ function renderHospitalList() {
             if (!hName.includes(filterKeyword)) return;
         }
 
-        tbody.innerHTML += `<tr><td class="text-white">${h.Name}</td><td>${h.Level}</td><td>$${(Number(h.Unit_Price)||0).toLocaleString()}</td><td>${h.Exclusivity}</td><td>${h.Contract_End_Date ? h.Contract_End_Date.split('T')[0] : '-'}</td><td><button class="btn btn-sm btn-outline-primary" onclick="openHospitalInput('${h.Hospital_ID}')">Edit</button></td></tr>`; 
+        let nameColorClass = isLight ? 'text-dark' : 'text-white';
+        tbody.innerHTML += `<tr><td class="${nameColorClass}">${h.Name}</td><td>${h.Level}</td><td>$${(Number(h.Unit_Price)||0).toLocaleString()}</td><td>${h.Exclusivity}</td><td>${h.Contract_End_Date ? h.Contract_End_Date.split('T')[0] : '-'}</td><td><button class="btn btn-sm btn-outline-primary" onclick="openHospitalInput('${h.Hospital_ID}')">Edit</button></td></tr>`; 
     }); 
 }
 
@@ -647,6 +709,7 @@ function renderKOLList() {
     const tbody = document.getElementById('kol-list-body'); 
     const filterHosp = getVal('kol-filter-hospital');
     const filterKeyword = getVal('kol-filter-keyword').toLowerCase(); 
+    const isLight = document.documentElement.getAttribute('data-theme') === 'light';
     
     tbody.innerHTML = ''; 
     
@@ -664,42 +727,41 @@ function renderKOLList() {
         }
 
         const emailLink = k.Email ? `<a href="mailto:${k.Email}" class="text-decoration-none text-info fw-medium"><i class="fas fa-envelope me-1"></i>${k.Email}</a>` : '<span class="text-muted">-</span>';
-        
+        let nameColorClass = isLight ? 'text-dark' : 'text-white';
+
         tbody.innerHTML += `
             <tr>
-                <td><strong class="text-white">${k.Name}</strong></td>
+                <td><strong class="${nameColorClass}">${k.Name}</strong></td>
                 <td>${hName}</td>
                 <td>${k.Title}</td>
                 <td>${emailLink}</td>
                 <td>${getStageBadge(k.Visit_Stage)}</td>
-                <td class="text-white fw-bold">${k.Probability}%</td>
+                <td class="${nameColorClass} fw-bold">${k.Probability}%</td>
                 <td><button class="btn btn-sm btn-outline-success" onclick="openKOLModal('${k.KOL_ID}')">Edit</button></td>
             </tr>`; 
     }); 
 }
 
-function renderUserTable(u) { const t=document.getElementById('admin-users-body'); t.innerHTML=''; u.forEach(x=>t.innerHTML+=`<tr><td class="text-white">${x.Email}</td><td>${x.Name}</td><td>${x.Role}</td><td>${x.Status}</td><td>${x.Last_Login?new Date(x.Last_Login).toLocaleDateString():'-'}</td><td><button class="btn btn-sm btn-outline-info" onclick="openUserModal('${x.Email}','${x.Name}','${x.Role}','${x.Status}')">Edit</button></td></tr>`); }
-function renderLogTable(l) { const t=document.getElementById('admin-logs-body'); t.innerHTML=''; l.reverse().forEach(x=>t.innerHTML+=`<tr><td class="text-muted">${new Date(x.Timestamp).toLocaleString()}</td><td class="text-white">${x.User}</td><td><span class="badge bg-primary bg-opacity-25 text-primary border border-primary">${x.Action}</span></td><td class="text-muted small">${x.Details}</td></tr>`); }
+function renderUserTable(u) { const t=document.getElementById('admin-users-body'); t.innerHTML=''; const isLight = document.documentElement.getAttribute('data-theme') === 'light'; const c=isLight?'text-dark':'text-white'; u.forEach(x=>t.innerHTML+=`<tr><td class="${c}">${x.Email}</td><td>${x.Name}</td><td>${x.Role}</td><td>${x.Status}</td><td>${x.Last_Login?new Date(x.Last_Login).toLocaleDateString():'-'}</td><td><button class="btn btn-sm btn-outline-info" onclick="openUserModal('${x.Email}','${x.Name}','${x.Role}','${x.Status}')">Edit</button></td></tr>`); }
+function renderLogTable(l) { const t=document.getElementById('admin-logs-body'); t.innerHTML=''; const isLight = document.documentElement.getAttribute('data-theme') === 'light'; const c=isLight?'text-dark':'text-white'; l.reverse().forEach(x=>t.innerHTML+=`<tr><td class="text-muted">${new Date(x.Timestamp).toLocaleString()}</td><td class="${c}">${x.User}</td><td><span class="badge bg-primary bg-opacity-25 text-primary border border-primary">${x.Action}</span></td><td class="text-muted small">${x.Details}</td></tr>`); }
 
-// [修改] 醫院編輯：加入 Visit Note 讀取與清空
 function openHospitalInput(id){ 
     showPage('hospital-input'); 
     document.getElementById('form-hospital').reset(); 
     setVal('h-id',''); 
     setVal('h-link',''); 
-    setVal('h-note',''); // 清空筆記
+    setVal('h-note',''); 
     if(id){ 
         const h=globalHospitals.find(x=>x.Hospital_ID===id); 
         if(h){ 
             setVal('h-id',h.Hospital_ID); setVal('h-name',h.Name); setVal('h-region',h.Region); setVal('h-level',h.Level); setVal('h-address',h.Address); setVal('h-status',h.Status); setVal('h-exclusivity',h.Exclusivity); setVal('h-unit-price',h.Unit_Price); setVal('h-ebm',h.EBM_Share_Ratio); setVal('h-amount',h.Contract_Amount); setVal('h-link',h.Contract_Link); 
             if(h.Contract_Start_Date)setVal('h-start',h.Contract_Start_Date.split('T')[0]); 
             if(h.Contract_End_Date)setVal('h-end',h.Contract_End_Date.split('T')[0]); 
-            setVal('h-note', h.Visit_Note); // 載入筆記
+            setVal('h-note', h.Visit_Note); 
         } 
     } 
 }
 
-// [修改] 醫院編輯：加入 Visit Note 儲存
 async function submitHospital(){ 
     showLoading(true); 
     let link=getVal('h-link'); 
@@ -708,7 +770,7 @@ async function submitHospital(){
     const p={
         hospitalId:getVal('h-id'), name:getVal('h-name'), region:getVal('h-region'), level:getVal('h-level'), address:getVal('h-address'), status:getVal('h-status'), exclusivity:getVal('h-exclusivity'), unitPrice:getVal('h-unit-price'), ebmShare:getVal('h-ebm'), contractAmount:getVal('h-amount'), contractStart:getVal('h-start'), contractEnd:getVal('h-end'), contractLink:link, 
         salesRep:document.getElementById('user-name').innerText,
-        visitNote: getVal('h-note') // 儲存筆記
+        visitNote: getVal('h-note') 
     }; 
     await fetch(CONFIG.SCRIPT_URL,{method:'POST',body:JSON.stringify({action:'saveHospital',userEmail:currentUser,payload:p})}); 
     await refreshAllData(); 
