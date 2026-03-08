@@ -1,4 +1,4 @@
-/* Code.gs - PancadAI CRM Backend V6.9.2 (KOL Delete Edition) */
+/* Code.gs - PancadAI CRM Backend V7.1 (Hospital Visit Note Edition) */
 
 const SPREADSHEET_ID = '1hID8Hi42qNFyA_13BqSJgfjIE4FguQRR5wMEsXBRl0I';
 const UPLOAD_FOLDER_ID = '1tmLX1lSEa_R26S5LAyIv7IPAhPuI67Db'; 
@@ -31,7 +31,7 @@ function doPost(e) {
       case 'saveHospital': result = saveHospital(data.payload, userEmail); break;
       case 'getKOLs': result = getKOLs(); break;
       case 'saveKOL': result = saveKOL(data.payload, userEmail); break;
-      case 'deleteKOL': result = deleteKOL(data.payload, userEmail); break; // [新增] 刪除 KOL
+      case 'deleteKOL': result = deleteKOL(data.payload, userEmail); break;
       case 'getMonthlyStats': result = getSheetData('Monthly_Stats'); break;
       case 'saveMonthlyStat': result = saveMonthlyStat(data.payload, userEmail); break;
       case 'deleteMonthlyStat': result = deleteMonthlyStat(data.payload, userEmail); break;
@@ -122,7 +122,43 @@ function getDashboardData() {
 function deleteMonthlyStat(p, u) { const ss = SpreadsheetApp.openById(SPREADSHEET_ID); const sheet = ss.getSheetByName('Monthly_Stats'); const data = sheet.getDataRange().getValues(); for (let i = 1; i < data.length; i++) { if (String(data[i][0]) === String(p.recordId)) { sheet.deleteRow(i + 1); logAction(u, 'Delete Settlement', `ID: ${p.recordId}`); return { status: 'success' }; } } return { status: 'error', message: 'Record not found' }; }
 function saveMonthlyStat(p, u) { const ss = SpreadsheetApp.openById(SPREADSHEET_ID); const statsSheet = ss.getSheetByName('Monthly_Stats'); const hospitals = getSheetData('Hospitals'); const targetHosp = hospitals.find(h => String(h['Hospital_ID']) === String(p.hospitalId)); let unitPrice = targetHosp ? (Number(String(targetHosp['Unit_Price']).replace(/[^0-9.-]+/g,"")) || 0) : 0; let ebmRatio = targetHosp ? (Number(String(targetHosp['EBM_Share_Ratio']).replace(/[^0-9.-]+/g,"")) || 0) : 0; const usage = Number(p.usageCount) || 0; const gross = usage * unitPrice; const ebmFee = Math.round(gross * (ebmRatio / 100)); const net = gross - ebmFee; const rowData = [p.recordId || Utilities.getUuid(), p.yearMonth, p.hospitalId, usage, unitPrice, gross, ebmRatio, ebmFee, net, p.invoiceStatus || 'Unbilled', p.note || '', new Date()]; const data = statsSheet.getDataRange().getValues(); let rowIndex = -1; if (p.recordId) { for (let i = 1; i < data.length; i++) { if (String(data[i][0]) === String(p.recordId)) { rowIndex = i + 1; break; } } } if (rowIndex > 0) { statsSheet.getRange(rowIndex, 1, 1, rowData.length).setValues([rowData]); logAction(u, 'Update Settlement', `${p.yearMonth} - ${p.hospitalId}`); } else { statsSheet.appendRow(rowData); logAction(u, 'New Settlement', `${p.yearMonth} - ${p.hospitalId}`); } return { status: 'success' }; }
 function getSheetData(name) { const sheet = SpreadsheetApp.openById(SPREADSHEET_ID).getSheetByName(name); if (!sheet) return []; const data = sheet.getDataRange().getValues(); if (data.length < 2) return []; const headers = data[0]; return data.slice(1).map(row => { let obj={}; headers.forEach((h,i)=>{obj[h.toString().trim()]=row[i]}); return obj; }); }
-function saveHospital(p, u) { const sheet = SpreadsheetApp.openById(SPREADSHEET_ID).getSheetByName('Hospitals'); const headers = sheet.getRange(1, 1, 1, sheet.getLastColumn()).getValues()[0]; const rowObj = { 'Hospital_ID': p.hospitalId || Utilities.getUuid(), 'Name': p.name, 'Region': p.region, 'Address': p.address, 'Level': p.level, 'Status': p.status, 'Exclusivity': p.exclusivity, 'Unit_Price': p.unitPrice, 'Contract_Start_Date': p.contractStart, 'Contract_End_Date': p.contractEnd, 'Contract_Amount': p.contractAmount, 'Contract_Link': p.contractLink, 'EBM_Share_Ratio': p.ebmShare, 'Sales_Rep': p.salesRep, 'Updated_At': new Date() }; const data = sheet.getDataRange().getValues(); let rowIndex = -1; const idIdx = headers.indexOf('Hospital_ID'); if (p.hospitalId && idIdx !== -1) { for (let i = 1; i < data.length; i++) { if (String(data[i][idIdx]) === String(p.hospitalId)) { rowIndex = i + 1; break; } } } const rowArray = headers.map(h => rowObj[h] || ''); if (rowIndex > 0) sheet.getRange(rowIndex, 1, 1, rowArray.length).setValues([rowArray]); else sheet.appendRow(rowArray); return { id: rowObj.Hospital_ID }; }
+
+function saveHospital(p, u) { 
+  const sheet = SpreadsheetApp.openById(SPREADSHEET_ID).getSheetByName('Hospitals'); 
+  const headers = sheet.getRange(1, 1, 1, sheet.getLastColumn()).getValues()[0]; 
+  const rowObj = { 
+    'Hospital_ID': p.hospitalId || Utilities.getUuid(), 
+    'Name': p.name, 
+    'Region': p.region, 
+    'Address': p.address, 
+    'Level': p.level, 
+    'Status': p.status, 
+    'Exclusivity': p.exclusivity, 
+    'Unit_Price': p.unitPrice, 
+    'Contract_Start_Date': p.contractStart, 
+    'Contract_End_Date': p.contractEnd, 
+    'Contract_Amount': p.contractAmount, 
+    'Contract_Link': p.contractLink, 
+    'EBM_Share_Ratio': p.ebmShare, 
+    'Sales_Rep': p.salesRep,
+    'Visit_Note': p.visitNote, // [新增] 將前端傳來的筆記寫入 Visit_Note 欄位
+    'Updated_At': new Date() 
+  }; 
+  const data = sheet.getDataRange().getValues(); 
+  let rowIndex = -1; 
+  const idIdx = headers.indexOf('Hospital_ID'); 
+  if (p.hospitalId && idIdx !== -1) { 
+    for (let i = 1; i < data.length; i++) { 
+      if (String(data[i][idIdx]) === String(p.hospitalId)) { 
+        rowIndex = i + 1; break; 
+      } 
+    } 
+  } 
+  const rowArray = headers.map(h => rowObj[h] || ''); 
+  if (rowIndex > 0) sheet.getRange(rowIndex, 1, 1, rowArray.length).setValues([rowArray]); 
+  else sheet.appendRow(rowArray); 
+  return { id: rowObj.Hospital_ID }; 
+}
 
 function getKOLs() { return getSheetData('KOLs'); }
 function saveKOL(p, u) { 
@@ -157,7 +193,6 @@ function saveKOL(p, u) {
     return {id:id};
 }
 
-// [新增] 刪除 KOL 邏輯
 function deleteKOL(p, u) { 
     const ss = SpreadsheetApp.openById(SPREADSHEET_ID); 
     const sheet = ss.getSheetByName('KOLs'); 
