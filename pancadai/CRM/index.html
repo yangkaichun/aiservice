@@ -3,15 +3,21 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>PancadAI CRM V7.1 - Hospital Notes Edition</title>
+    <title>PancadAI CRM V7.2 - Light/Dark Theme Edition</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
     <link rel="shortcut icon" href="https://www.pancad.ai/static/images/favicon.ico?v=20240229">
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2.0.0"></script>
+    
+    <script>
+        const savedTheme = localStorage.getItem('pancad_theme') || 'dark';
+        document.documentElement.setAttribute('data-theme', savedTheme);
+    </script>
+
     <style>
         :root {
-            /* 全新深色科技感主題變數 */
+            /* 預設深色科技感主題變數 */
             --bg-body: #111222;
             --bg-panel: #1e1e32;
             --bg-sidebar: #16172b;
@@ -28,13 +34,24 @@
             --grad-danger: linear-gradient(135deg, #ef4444, #f43f5e);
         }
 
-        body { background-color: var(--bg-body); color: var(--text-main); font-family: 'Segoe UI', 'Microsoft JhengHei', sans-serif; overflow-x: hidden; }
+        /* 🌞 亮色主題覆寫變數 (白底科技感) */
+        [data-theme="light"] {
+            --bg-body: #f4f6f9;
+            --bg-panel: #ffffff;
+            --bg-sidebar: #ffffff;
+            --border-color: #e3e6f0;
+            --text-main: #2b2b2b;
+            --text-muted: #858796;
+        }
+
+        body { background-color: var(--bg-body); color: var(--text-main); font-family: 'Segoe UI', 'Microsoft JhengHei', sans-serif; overflow-x: hidden; transition: background-color 0.3s ease, color 0.3s ease; }
         
         /* 捲軸美化 */
         ::-webkit-scrollbar { width: 8px; height: 8px; }
         ::-webkit-scrollbar-track { background: var(--bg-body); }
         ::-webkit-scrollbar-thumb { background: #3a3d60; border-radius: 4px; }
         ::-webkit-scrollbar-thumb:hover { background: #4f46e5; }
+        [data-theme="light"] ::-webkit-scrollbar-thumb { background: #c5c7d0; }
 
         /* 覆寫 Bootstrap 預設文字顏色 */
         .text-dark { color: var(--text-main) !important; }
@@ -44,37 +61,57 @@
         .text-warning { color: #f59e0b !important; }
         .text-info { color: #06b6d4 !important; }
 
-        .login-container { min-height: 100vh; display: flex; align-items: center; justify-content: center; background: var(--bg-body); position: relative; overflow: hidden; padding: 20px; }
-        .login-card { width: 100%; max-width: 400px; padding: 2rem; border-radius: 20px; background: var(--bg-panel); box-shadow: 0 15px 35px rgba(0,0,0,0.5); border: 1px solid var(--border-color); text-align: center; }
+        /* 亮色模式文字特化 */
+        [data-theme="light"] .text-white { color: var(--text-main) !important; }
+        [data-theme="light"] .sidebar .text-white { color: var(--text-main) !important; }
+        [data-theme="light"] .sidebar .text-info { color: #4e73df !important; }
+        [data-theme="light"] .bg-black.bg-opacity-25 { background-color: #f8f9fc !important; border-color: #e3e6f0 !important; }
+        [data-theme="light"] hr.border-secondary { border-color: #e3e6f0 !important; }
 
-        .sidebar { min-height: 100vh; background-color: var(--bg-sidebar); color: var(--text-main); border-right: 1px solid var(--border-color); }
+        .login-container { min-height: 100vh; display: flex; align-items: center; justify-content: center; background: var(--bg-body); position: relative; overflow: hidden; padding: 20px; transition: 0.3s ease; }
+        .login-card { width: 100%; max-width: 400px; padding: 2rem; border-radius: 20px; background: var(--bg-panel); box-shadow: 0 15px 35px rgba(0,0,0,0.5); border: 1px solid var(--border-color); text-align: center; }
+        [data-theme="light"] .login-card { box-shadow: 0 10px 30px rgba(0,0,0,0.1); }
+
+        .sidebar { min-height: 100vh; background-color: var(--bg-sidebar); color: var(--text-main); border-right: 1px solid var(--border-color); transition: 0.3s ease; }
         .mobile-navbar { background: var(--bg-sidebar); padding: 10px 20px; color: var(--text-main); display: none; align-items: center; justify-content: space-between; border-bottom: 1px solid var(--border-color); }
         .nav-link { color: var(--text-muted); margin: 8px 0; border-radius: 8px; transition: all 0.3s ease; padding: 10px 15px; font-weight: 500; }
         .nav-link:hover, .nav-link.active { color: #fff; background: rgba(255,255,255,0.05); transform: translateX(5px); }
         .nav-link.active { background: var(--grad-primary); box-shadow: 0 4px 15px rgba(236, 72, 153, 0.3); }
+        [data-theme="light"] .nav-link:hover { color: #4e73df; background: rgba(78, 115, 223, 0.1); }
+        [data-theme="light"] .nav-link.active { color: #fff !important; }
 
         /* 面板卡片 */
-        .card { border: 1px solid var(--border-color); border-radius: 16px; background: var(--bg-panel); margin-bottom: 1.5rem; overflow: hidden; box-shadow: 0 4px 20px rgba(0,0,0,0.2); transition: transform 0.3s ease, box-shadow 0.3s ease; }
+        .card { border: 1px solid var(--border-color); border-radius: 16px; background: var(--bg-panel); margin-bottom: 1.5rem; overflow: hidden; box-shadow: 0 4px 20px rgba(0,0,0,0.2); transition: transform 0.3s ease, box-shadow 0.3s ease, background-color 0.3s ease; }
         .card:hover { transform: translateY(-5px); box-shadow: 0 8px 30px rgba(0,0,0,0.4); }
+        [data-theme="light"] .card { box-shadow: 0 0.15rem 1.75rem 0 rgba(58, 59, 69, 0.15); }
+        [data-theme="light"] .card:hover { box-shadow: 0 .5rem 2rem rgba(58,59,69,.2); }
         
         .cursor-pointer { cursor: pointer; }
         .table-hover tbody tr.cursor-pointer:hover { background-color: rgba(78, 115, 223, 0.05); }
         .table-hover tbody tr.active-row { background-color: rgba(78, 115, 223, 0.15) !important; }
 
+        /* 總營收卡片 */
         .card-revenue { background: linear-gradient(135deg, #1e1b4b, #312e81, #1e1b4b); border: 1px solid #4f46e5; }
+        [data-theme="light"] .card-revenue { background: linear-gradient(135deg, #4e73df 0%, #224abe 100%); border: none; }
         .revenue-item { padding: 2rem; position: relative; }
         .revenue-item:first-child { border-right: 1px solid rgba(255,255,255,0.1); }
         .revenue-title { font-size: 0.9rem; color: #a5b4fc; letter-spacing: 1px; text-transform: uppercase; margin-bottom: 5px; font-weight: 600; }
+        [data-theme="light"] .card-revenue .revenue-title { color: rgba(255,255,255,0.8); }
         .revenue-value { font-size: 2.5rem; font-weight: 800; letter-spacing: 1px; text-shadow: 0 0 10px rgba(255,255,255,0.2); }
+        [data-theme="light"] .card-revenue .revenue-value { color: #fff; text-shadow: none; }
         .revenue-icon { position: absolute; right: 20px; top: 50%; transform: translateY(-50%); font-size: 3rem; opacity: 0.1; color: #fff; }
+        
         .text-gross { background: var(--grad-cyan); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
         .text-net { background: var(--grad-green); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+        [data-theme="light"] .text-gross, [data-theme="light"] .text-net { background: none; -webkit-text-fill-color: #fff !important; color: #fff !important; }
 
-        /* KPI 小卡片 - 下方發光線條 */
+        /* KPI 小卡片 */
         .card-kpi { padding: 1.5rem; position: relative; border-top: none; border-bottom: 4px solid transparent; background: linear-gradient(180deg, var(--bg-panel) 0%, rgba(30,30,50,0.5) 100%); }
+        [data-theme="light"] .card-kpi { background: #fff; border-bottom: none; border-left: 4px solid transparent; }
         .kpi-content { position: relative; z-index: 2; }
         .kpi-title { font-size: 0.85rem; font-weight: 700; text-transform: uppercase; color: var(--text-muted); margin-bottom: 0.5rem; }
         .kpi-number { font-size: 2.5rem; font-weight: 800; color: #fff; line-height: 1; }
+        [data-theme="light"] .kpi-number { color: #5a5c69 !important; }
         .kpi-bg-icon { position: absolute; right: 15px; bottom: 10px; font-size: 4.5rem; opacity: 0.08; transform: rotate(-15deg); z-index: 1; transition: transform 0.3s ease; }
         .card-kpi:hover .kpi-bg-icon { transform: rotate(0deg) scale(1.1); opacity: 0.2; }
         
@@ -83,21 +120,33 @@
         .kpi-purple { border-bottom-color: #a855f7; } .kpi-purple .kpi-bg-icon { color: #a855f7; } .kpi-purple:hover { box-shadow: 0 10px 20px -5px rgba(168, 85, 247, 0.3); }
         .kpi-blue { border-bottom-color: #3b82f6; } .kpi-blue .kpi-bg-icon { color: #3b82f6; } .kpi-blue:hover { box-shadow: 0 10px 20px -5px rgba(59, 130, 246, 0.3); }
         .kpi-green { border-bottom-color: #10b981; } .kpi-green .kpi-bg-icon { color: #10b981; } .kpi-green:hover { box-shadow: 0 10px 20px -5px rgba(16, 185, 129, 0.3); }
+        /* 亮色模式 KPI 邊框調整為左側 */
+        [data-theme="light"] .kpi-orange { border-left-color: #f6c23e; }
+        [data-theme="light"] .kpi-teal { border-left-color: #36b9cc; }
+        [data-theme="light"] .kpi-purple { border-left-color: #6f42c1; }
+        [data-theme="light"] .kpi-blue { border-left-color: #4e73df; }
+        [data-theme="light"] .kpi-green { border-left-color: #1cc88a; }
 
-        /* 控制列與輸入框 (暗黑化) */
+        /* 控制列與輸入框 */
         .chart-controls { background: var(--bg-panel); padding: 15px; border-radius: 12px; margin-bottom: 20px; display: flex; align-items: center; gap: 10px; flex-wrap: wrap; border: 1px solid var(--border-color); }
         .date-input, .form-control, .form-select { background-color: var(--bg-body) !important; border: 1px solid var(--border-color) !important; color: var(--text-main) !important; border-radius: 8px; padding: 6px 12px; outline: none; }
         .date-input:focus, .form-control:focus, .form-select:focus { border-color: #4f46e5 !important; box-shadow: 0 0 0 0.25rem rgba(79, 70, 229, 0.25) !important; }
         ::-webkit-calendar-picker-indicator { filter: invert(1); opacity: 0.6; cursor: pointer; }
+        [data-theme="light"] ::-webkit-calendar-picker-indicator { filter: none; }
+        [data-theme="light"] .form-control, [data-theme="light"] .form-select, [data-theme="light"] .date-input { background-color: #fff !important; border-color: #d1d3e2 !important; color: #6e707e !important; }
 
-        /* 表格暗黑化 */
+        /* 表格暗黑化與亮色化切換 */
         .table-responsive { overflow-x: auto; -webkit-overflow-scrolling: touch; }
         .table-custom { min-width: 600px; color: var(--text-main); margin-bottom: 0; } 
         .table-custom thead { background-color: rgba(0,0,0,0.3) !important; }
+        [data-theme="light"] .table-custom thead { background-color: #f8f9fc !important; border-bottom: 2px solid #e3e6f0; }
         .table-light { background-color: rgba(0,0,0,0.3) !important; color: var(--text-muted); }
         .table-custom th { font-weight: 600; text-transform: uppercase; font-size: 0.8rem; border-bottom: 2px solid var(--border-color); white-space: nowrap; color: var(--text-muted); background: transparent !important; }
         .table-custom td { vertical-align: middle; font-size: 0.9rem; border-bottom: 1px solid var(--border-color); white-space: nowrap; background: transparent !important; color: var(--text-main); }
+        [data-theme="light"] .table-custom th { color: #4e73df; }
+        [data-theme="light"] .table-custom td { color: #5a5c69; }
         .table-hover tbody tr:hover td { background-color: rgba(255,255,255,0.03) !important; }
+        [data-theme="light"] .table-hover tbody tr:hover td { background-color: rgba(0,0,0,0.03) !important; }
         .table-hover tbody tr.cursor-pointer:hover td { background-color: rgba(79, 70, 229, 0.1) !important; }
         .table-hover tbody tr.active-row td { background-color: rgba(79, 70, 229, 0.2) !important; font-weight: bold; border-left: 3px solid #3b82f6; }
         
@@ -118,6 +167,8 @@
         .btn-outline-primary:hover { background-color: #38bdf8; color: #fff; }
         .btn-outline-success { color: #34d399; border-color: #34d399; }
         .btn-outline-success:hover { background-color: #34d399; color: #fff; }
+        [data-theme="light"] .btn-outline-primary { color: #4e73df; border-color: #4e73df; }
+        [data-theme="light"] .btn-outline-primary:hover { background-color: #4e73df; color: #fff; }
 
         /* Modals 暗黑化 */
         .modal-content { background-color: var(--bg-panel); color: var(--text-main); border: 1px solid var(--border-color); box-shadow: 0 10px 40px rgba(0,0,0,0.5); }
@@ -125,8 +176,11 @@
         .modal-footer { border-top: 1px solid var(--border-color); background: rgba(0,0,0,0.2) !important; }
         .btn-close { filter: invert(1) grayscale(100%) brightness(200%); opacity: 0.6; }
         .btn-close:hover { opacity: 1; }
+        [data-theme="light"] .modal-content { background: #fff; border-color: #e3e6f0; }
+        [data-theme="light"] .modal-header, [data-theme="light"] .modal-footer { background: #f8f9fc !important; border-color: #e3e6f0; }
+        [data-theme="light"] .btn-close { filter: none; opacity: 0.5; }
 
-        /* Loading 動畫 */
+        /* Loading 動畫保持高科技發光 */
         #loading-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(15, 23, 42, 0.9); z-index: 9999; display: flex; flex-direction: column; justify-content: center; align-items: center; backdrop-filter: blur(10px); }
         .loader-wrapper { position: relative; width: 120px; height: 120px; display: flex; justify-content: center; align-items: center; }
         .ring-outer { position: absolute; width: 100%; height: 100%; border-radius: 50%; border: 4px solid transparent; border-top-color: #00f2fe; border-bottom-color: #4facfe; animation: spin 1.5s cubic-bezier(0.68, -0.55, 0.265, 1.55) infinite; box-shadow: 0 0 25px rgba(0, 242, 254, 0.4); }
@@ -151,6 +205,10 @@
     </style>
 </head>
 <body>
+    <button id="theme-toggle-btn" onclick="toggleTheme()" class="btn btn-sm btn-outline-secondary shadow-sm" style="position: fixed; top: 15px; right: 20px; z-index: 1050; border-radius: 30px; font-weight: bold;">
+        <i class="fas fa-sun"></i> 切換淺色
+    </button>
+
     <div id="loading-overlay" class="d-none">
         <div class="loader-wrapper"><div class="ring-outer"></div><div class="ring-inner"></div><div class="loader-core"></div></div>
         <div class="loading-text" id="loading-text-display">SYNCING DATA...</div>
@@ -159,7 +217,7 @@
     <section id="login-view" class="login-container">
         <div class="login-card">
             <div class="mb-4"><i class="fas fa-chart-network fa-3x text-info"></i></div>
-            <h2 class="mb-2 fw-bold text-white">PancadAI CRM</h2>
+            <h2 class="mb-2 fw-bold text-dark">PancadAI CRM</h2>
             <p class="text-muted mb-4">Market & Sales Management</p>
             <div id="g_id_onload" data-client_id="469731622214-uiqtuprq4293g3j09nfq5c43uvldadfj.apps.googleusercontent.com" data-callback="handleCredentialResponse" data-auto_prompt="false"></div>
             <div class="g_id_signin" data-type="standard" data-size="large" data-theme="filled_blue" data-text="sign_in_with" data-shape="rectangular" data-logo_alignment="center" data-width="280"></div>
@@ -174,7 +232,7 @@
                     <img id="mobile-user-avatar" src="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0iI2NjYyI+PHBhdGggZD0iTTEyIDJDMi40OCAyIDIgNi40OCAyIDEyczQuNDggMTAgMTAgMTAgMTAtNC40OCAxMC0xMFMyMS41MiAyIDEyIDJ6bTAgM2MzLjE5IDAgNS43OSAyLjU5IDUuNzkgNS43OVMxNS4xOSAxNi41OCAxMiAxNi41OHMtNS43OS0yLjU5LTUuNzktNS43OVM4LjgxIDUgMTIgNXptMCAxNC4yYy0yLjUgMC00LjcxLTEuMjgtNi4wMi0zLjIyLjA0LTEuOTkgNC0zLjA4IDYuMDItMy4wOHMyLjk4IDEuMDkgNi4wMiAzLjA4Yy0xLjMxIDEuOTQtMy41MiAzLjIyLTYuMDIgMy4yMnoiLz48L3N2Zz4=" class="rounded-circle me-2 border border-secondary" style="width:30px">
                     <span id="mobile-user-name">User</span>
                 </div></div>
-                <div class="text-center mb-4 mt-3 d-none d-md-block"><h5 class="fw-bold mb-0 text-white">PancadAI</h5><small class="text-info" style="font-size: 0.7rem; letter-spacing: 1px;">MANAGER CONSOLE</small></div>
+                <div class="text-center mb-4 mt-3 d-none d-md-block"><h5 class="fw-bold mb-0 text-dark">PancadAI</h5><small class="text-info fw-bold" style="font-size: 0.7rem; letter-spacing: 1px;">MANAGER CONSOLE</small></div>
                 <div class="d-flex align-items-center mb-4 px-3 py-2 bg-black bg-opacity-25 rounded-3 d-none d-md-flex border" style="border-color: var(--border-color) !important;">
                     <img id="user-avatar" src="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0iI2NjYyI+PHBhdGggZD0iTTEyIDJDMi40OCAyIDIgNi40OCAyIDEyczQuNDggMTAgMTAgMTAgMTAtNC40OCAxMC0xMFMyMS41MiAyIDEyIDJ6bTAgM2MzLjE5IDAgNS43OSAyLjU5IDUuNzkgNS43OVMxNS4xOSAxNi41OCAxMiAxNi41OHMtNS43OS0yLjU5LTUuNzktNS43OVM4LjgxIDUgMTIgNXptMCAxNC4yYy0yLjUgMC00LjcxLTEuMjgtNi4wMi0zLjIyLjA0LTEuOTkgNC0zLjA4IDYuMDItMy4wOHMyLjk4IDEuMDkgNi4wMiAzLjA4Yy0xLjMxIDEuOTQtMy41MiAzLjIyLTYuMDIgMy4yMnoiLz48L3N2Zz4=" class="rounded-circle me-2 border border-2 border-secondary" style="width:32px">
                     <span id="user-name" class="text-truncate" style="font-size:0.85rem; font-weight:500; max-width: 100px;">User</span>
@@ -186,8 +244,8 @@
                     <li class="nav-item"><a class="nav-link" onclick="openHospitalInput()"><i class="fas fa-plus-circle me-2"></i> 新增醫院</a></li>
                     <li class="nav-item"><a class="nav-link" onclick="showPage('kols')"><i class="fas fa-user-md me-2"></i> KOL 拜訪</a></li>
                     <li class="nav-item"><a class="nav-link" onclick="showPage('finance')"><i class="fas fa-file-invoice-dollar me-2"></i> 財務結算</a></li>
-                    <li class="nav-item d-none" id="nav-admin"><hr style="border-color: var(--border-color);"><a class="nav-link text-warning" onclick="showPage('admin')"><i class="fas fa-user-shield me-2"></i> 管理後台</a></li>
-                    <hr style="border-color: var(--border-color);"><li class="nav-item"><a class="nav-link text-danger" onclick="logout()"><i class="fas fa-sign-out-alt me-2"></i> 登出系統</a></li>
+                    <li class="nav-item d-none" id="nav-admin"><hr class="border-secondary"><a class="nav-link text-warning" onclick="showPage('admin')"><i class="fas fa-user-shield me-2"></i> 管理後台</a></li>
+                    <hr class="border-secondary"><li class="nav-item"><a class="nav-link text-danger" onclick="logout()"><i class="fas fa-sign-out-alt me-2"></i> 登出系統</a></li>
                 </ul>
             </div>
             
@@ -195,7 +253,7 @@
                 
                 <div id="page-dashboard" class="page-content">
                     <div class="d-flex justify-content-between align-items-center mb-4">
-                        <h3 class="fw-bold m-0 text-nowrap flex-shrink-0 text-white">Director Dashboard</h3>
+                        <h3 class="fw-bold m-0 text-nowrap flex-shrink-0 text-dark">Director Dashboard</h3>
                     </div>
                     
                     <div class="card card-revenue mb-4 shadow-lg">
@@ -258,19 +316,19 @@
                     <div class="row g-3">
                         <div class="col-12">
                             <div class="card p-4 h-100">
-                                <div class="d-flex justify-content-between align-items-center mb-4"><h5 class="fw-bold m-0 text-nowrap flex-shrink-0"><i class="fas fa-chart-line me-2 text-primary"></i>營收趨勢</h5></div>
+                                <div class="d-flex justify-content-between align-items-center mb-4"><h5 class="fw-bold m-0 text-nowrap flex-shrink-0 text-dark"><i class="fas fa-chart-line me-2 text-primary"></i>營收趨勢</h5></div>
                                 <div style="height: 300px; position: relative;"><canvas id="chart-trend"></canvas></div>
                             </div>
                         </div>
                         <div class="col-12 col-lg-6">
                             <div class="card p-4 h-100">
-                                <h5 class="fw-bold mb-4 text-nowrap flex-shrink-0"><i class="fas fa-chart-pie me-2 text-success"></i>已簽約醫院 - 區域佔比</h5>
+                                <h5 class="fw-bold mb-4 text-nowrap flex-shrink-0 text-dark"><i class="fas fa-chart-pie me-2 text-success"></i>已簽約醫院 - 區域佔比</h5>
                                 <div style="height: 250px; display: flex; justify-content: center;"><canvas id="chart-region"></canvas></div>
                             </div>
                         </div>
                         <div class="col-12 col-lg-6">
                             <div class="card p-4 h-100">
-                                <h5 class="fw-bold mb-4 text-nowrap flex-shrink-0"><i class="fas fa-chart-pie me-2 text-info"></i>開發中醫院 - 區域佔比</h5>
+                                <h5 class="fw-bold mb-4 text-nowrap flex-shrink-0 text-dark"><i class="fas fa-chart-pie me-2 text-info"></i>開發中醫院 - 區域佔比</h5>
                                 <div style="height: 250px; display: flex; justify-content: center;"><canvas id="chart-dev-region"></canvas></div>
                             </div>
                         </div>
@@ -278,7 +336,7 @@
                 </div>
 
                 <div id="page-radar" class="page-content d-none">
-                    <h3 class="mb-3 text-nowrap flex-shrink-0 text-white">戰術雷達</h3>
+                    <h3 class="mb-3 text-nowrap flex-shrink-0 text-dark">戰術雷達</h3>
                     <div class="card p-4 mb-4"><div class="row g-3"><div class="col-6 col-md-3"><label class="form-label small text-muted">行政區</label><select class="form-select" id="radar-filter-region" onchange="renderRadarTable()"></select></div><div class="col-6 col-md-3"><label class="form-label small text-muted">規模</label><select class="form-select" id="radar-filter-level" onchange="renderRadarTable()"></select></div><div class="col-12 col-md-3"><label class="form-label small text-muted">狀態</label><select class="form-select" id="radar-filter-status" onchange="renderRadarTable()"><option value="All">全部</option><option value="已簽約">已簽約</option><option value="議約中">議約中</option><option value="開發中">開發中</option></select></div><div class="col-12 col-md-3 d-flex align-items-end"><button class="btn btn-primary w-100 text-nowrap" onclick="renderRadarTable()"><i class="fas fa-sync-alt me-1"></i>重新整理</button></div></div></div>
                     <div class="card border-0 shadow-sm overflow-hidden"><div class="table-responsive"><table class="table table-custom table-hover mb-0 align-middle"><tbody id="radar-table-body"></tbody></table></div></div>
                 </div>
@@ -286,7 +344,7 @@
                 <div id="page-hospitals" class="page-content d-none">
                     <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center mb-3 gap-2">
                         <div class="d-flex flex-wrap align-items-center gap-2 w-100">
-                            <h3 class="m-0 text-nowrap flex-shrink-0 me-2 text-white">醫院合約</h3>
+                            <h3 class="m-0 text-nowrap flex-shrink-0 me-2 text-dark">醫院合約</h3>
                             <select class="form-select form-select-sm flex-grow-1" id="hospital-filter-level" onchange="renderHospitalList()" style="max-width: 200px; min-width: 140px;">
                                 <option value="All">篩選等級：全部</option>
                             </select>
@@ -298,7 +356,7 @@
                 </div>
 
                 <div id="page-hospital-input" class="page-content d-none">
-                    <h3 class="mb-3 text-nowrap flex-shrink-0 text-white">新增/編輯醫院資料</h3>
+                    <h3 class="mb-3 text-nowrap flex-shrink-0 text-dark">新增/編輯醫院資料</h3>
                     <div class="card p-3 p-md-4 shadow-sm" style="max-width: 900px;">
                         <form id="form-hospital"><input type="hidden" id="h-id"><div class="row g-3"><div class="col-12 col-md-6"><label class="form-label text-muted">醫院名稱</label><input type="text" class="form-control" id="h-name" required></div><div class="col-6 col-md-3"><label class="form-label text-muted">區域</label><select class="form-select" id="h-region"></select></div><div class="col-6 col-md-3"><label class="form-label text-muted">規模</label><select class="form-select" id="h-level"></select></div><div class="col-12"><label class="form-label text-muted">地址</label><input type="text" class="form-control" id="h-address"></div><div class="col-6 col-md-4"><label class="form-label text-muted">狀態</label><select class="form-select" id="h-status"><option>未接觸</option><option>開發中</option><option>議約中</option><option>已簽約</option></select></div><div class="col-6 col-md-4"><label class="form-label text-muted">排他條款</label><select class="form-select" id="h-exclusivity"><option value="No">No</option><option value="Yes">Yes</option></select></div><div class="col-12 col-md-4"><label class="form-label text-muted">單次單價</label><input type="number" class="form-control" id="h-unit-price"></div><hr class="my-4" style="border-color: var(--border-color);"><div class="col-12 col-md-4"><label class="form-label text-muted">EBM分潤(%)</label><input type="number" class="form-control" id="h-ebm" value="0"></div><div class="col-6 col-md-4"><label class="form-label text-muted">合約開始</label><input type="date" class="form-control" id="h-start"></div><div class="col-6 col-md-4"><label class="form-label text-muted">合約結束</label><input type="date" class="form-control" id="h-end"></div>
                         
@@ -316,7 +374,7 @@
                 <div id="page-kols" class="page-content d-none">
                     <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center mb-3 gap-2">
                         <div class="d-flex flex-wrap align-items-center gap-2 w-100">
-                            <h3 class="m-0 text-nowrap flex-shrink-0 me-2 text-white">KOL 拜訪</h3>
+                            <h3 class="m-0 text-nowrap flex-shrink-0 me-2 text-dark">KOL 拜訪</h3>
                             <select class="form-select form-select-sm flex-grow-1" id="kol-filter-hospital" onchange="renderKOLList()" style="max-width: 200px; min-width: 140px;">
                                 <option value="All">篩選醫院：全部</option>
                             </select>
@@ -333,7 +391,7 @@
 
                 <div id="page-finance" class="page-content d-none">
                     <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center mb-4">
-                        <h3 class="mb-2 mb-md-0 text-nowrap flex-shrink-0 me-3 text-white">財務結算</h3>
+                        <h3 class="mb-2 mb-md-0 text-nowrap flex-shrink-0 me-3 text-dark">財務結算</h3>
                         <div class="d-flex gap-2 w-100 w-md-auto">
                             <input type="month" id="finance-month-picker" class="form-control flex-grow-1" onchange="renderFinanceTable()">
                             <button class="btn btn-success text-nowrap" onclick="openSettlementModal()">新增結算</button>
@@ -349,9 +407,9 @@
 
                     <hr class="my-5" style="border-top: 2px dashed #e3e6f0; opacity: 0.1;">
                     <div class="d-flex flex-column flex-lg-row justify-content-between align-items-lg-center mb-4 gap-3">
-                        <h4 class="mb-0 fw-bold text-nowrap flex-shrink-0 text-white"><i class="fas fa-chart-bar me-2 text-info"></i>歷史使用量與營收分析</h4>
+                        <h4 class="mb-0 fw-bold text-nowrap flex-shrink-0 text-dark"><i class="fas fa-chart-bar me-2 text-info"></i>歷史使用量與營收分析</h4>
                         <div class="d-flex gap-2 w-100 w-lg-auto align-items-center">
-                            <span class="fw-bold small d-none d-md-inline text-nowrap">區間：</span>
+                            <span class="fw-bold small d-none d-md-inline text-nowrap text-dark">區間：</span>
                             <input type="month" id="usage-start" class="form-control form-control-sm" onchange="renderUsageAnalytics()">
                             <span class="text-muted fw-bold">~</span>
                             <input type="month" id="usage-end" class="form-control form-control-sm" onchange="renderUsageAnalytics()">
@@ -362,7 +420,7 @@
                         <div class="col-12 col-lg-8">
                             <div class="card p-4 h-100">
                                 <div class="d-flex justify-content-between align-items-center mb-4">
-                                    <h5 class="fw-bold m-0 text-nowrap flex-shrink-0" id="usage-chart-title">所有醫院 - 每月趨勢分析</h5>
+                                    <h5 class="fw-bold m-0 text-nowrap flex-shrink-0 text-dark" id="usage-chart-title">所有醫院 - 每月趨勢分析</h5>
                                     <button class="btn btn-sm btn-outline-info d-none text-nowrap flex-shrink-0" id="btn-usage-back" onclick="selectUsageHospital(null)"><i class="fas fa-arrow-left me-1"></i>查看所有醫院</button>
                                 </div>
                                 <div style="height: 250px; position: relative; margin-bottom: 20px;"><canvas id="chart-usage-trend"></canvas></div>
@@ -371,7 +429,7 @@
                         </div>
                         <div class="col-12 col-lg-4">
                             <div class="card p-4 h-100">
-                                <h5 class="fw-bold mb-4 text-nowrap flex-shrink-0">已簽約醫院使用排行 <br><small class="text-muted fs-6 fw-normal">(點擊可看單一醫院趨勢)</small></h5>
+                                <h5 class="fw-bold mb-4 text-nowrap flex-shrink-0 text-dark">已簽約醫院使用排行 <br><small class="text-muted fs-6 fw-normal">(點擊可看單一醫院趨勢)</small></h5>
                                 <div class="table-responsive" style="max-height: 550px; overflow-y: auto;">
                                     <table class="table table-sm table-hover mb-0 align-middle table-custom" id="usage-ranking-table">
                                         <thead class="table-light sticky-top">
@@ -386,7 +444,7 @@
                 </div>
 
                 <div id="page-admin" class="page-content d-none">
-                     <h3 class="mb-4 text-nowrap flex-shrink-0 text-white">管理者後台</h3>
+                     <h3 class="mb-4 text-nowrap flex-shrink-0 text-dark">管理者後台</h3>
                      <ul class="nav nav-tabs mb-3 border-secondary"><li class="nav-item"><button class="nav-link active border-secondary bg-transparent text-info" data-bs-toggle="tab" data-bs-target="#content-users">使用者</button></li><li class="nav-item"><button class="nav-link border-transparent text-muted" data-bs-toggle="tab" data-bs-target="#content-logs">日誌</button></li></ul>
                      <div class="tab-content">
                         <div class="tab-pane fade show active" id="content-users"><button class="btn btn-warning btn-sm mb-3" onclick="openUserModal()">新增</button>
