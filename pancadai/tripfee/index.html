@@ -5,17 +5,41 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>支出憑證黏存單申請</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <script src="https://accounts.google.com/gsi/client" async defer></script>
+    
     <style>
         body { background-color: #f8f9fa; }
         .form-container { background-color: white; border-radius: 10px; padding: 30px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
         .detail-row { background-color: #f1f3f5; padding: 15px; border-radius: 8px; margin-bottom: 10px; }
+        #loginScreen { min-height: 100vh; display: flex; flex-direction: column; justify-content: center; align-items: center; }
     </style>
 </head>
 <body>
-    <div class="container mt-4 mb-5 max-w-md">
+
+    <div id="loginScreen">
+        <div class="form-container text-center" style="max-width: 400px; width: 100%;">
+            <h4 class="mb-4">仲智數位健康<br>差旅申請系統</h4>
+            <p class="text-muted mb-4">請使用公司授權的 Google 帳號登入</p>
+            
+            <div id="g_id_onload"
+                 data-context="signin"
+                 data-ux_mode="popup"
+                 data-callback="handleCredentialResponse"
+                 data-auto_prompt="false">
+            </div>
+            <div class="g_id_signin d-flex justify-content-center" data-type="standard" data-size="large" data-theme="outline" data-text="sign_in_with" data-shape="rectangular" data-logo_alignment="left"></div>
+            
+            <div id="loginStatus" class="mt-3 text-danger fw-bold"></div>
+        </div>
+    </div>
+
+    <div class="container mt-4 mb-5 max-w-md d-none" id="mainFormScreen">
         <div class="row justify-content-center">
             <div class="col-md-10 col-lg-8 form-container">
-                <h3 class="text-center mb-4">仲智數位健康股份有限公司<br>支出憑證黏存單申請</h3>
+                <div class="d-flex justify-content-between align-items-center mb-4">
+                    <h3 class="mb-0">仲智數位健康股份有限公司<br>支出憑證黏存單申請</h3>
+                    <button class="btn btn-sm btn-outline-secondary" onclick="logout()">登出</button>
+                </div>
                 
                 <form id="expenseForm">
                     <div class="row mb-3">
@@ -25,7 +49,8 @@
                         </div>
                         <div class="col-md-4">
                             <label class="form-label">申請人姓名</label>
-                            <input type="text" class="form-control" id="applicantName" placeholder="例如: 楊凱鈞" required>
+                            <input type="text" class="form-control" id="applicantName" readonly required>
+                            <small class="text-muted">由系統自動帶入</small>
                         </div>
                         <div class="col-md-4">
                             <label class="form-label">聯絡電話</label>
@@ -45,8 +70,7 @@
                         <button type="button" class="btn btn-sm btn-outline-primary" id="addDetailBtn">+ 新增一筆</button>
                     </div>
                     
-                    <div id="detailsContainer">
-                        </div>
+                    <div id="detailsContainer"></div>
 
                     <hr>
 
@@ -78,12 +102,217 @@
                     <hr>
                     <p class="mb-0"><a href="#" id="pdfDownloadLink" target="_blank" class="alert-link">👉 點此查看產出的 PDF 黏存單</a></p>
                 </div>
-
             </div>
         </div>
     </div>
 
     <script src="config.js"></script>
-    <script src="app.js"></script>
+
+    <script>
+        // 設定 Google Client ID (從 config.js 讀取)
+        document.getElementById('g_id_onload').setAttribute('data-client_id', CONFIG.GOOGLE_CLIENT_ID);
+
+        // --- 登入驗證相關 ---
+        
+        // 解析 Google 回傳的 JWT Token 取得 Email
+        function parseJwt(token) {
+            var base64Url = token.split('.')[1];
+            var base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
+            var jsonPayload = decodeURIComponent(window.atob(base64).split('').map(function(c) {
+                return '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2);
+            }).join(''));
+            return JSON.parse(jsonPayload);
+        }
+
+        // Google 登入成功後的回呼函數
+        async function handleCredentialResponse(response) {
+            const statusDiv = document.getElementById('loginStatus');
+            statusDiv.innerText = "驗證權限中，請稍候...";
+            
+            try {
+                const payload = parseJwt(response.credential);
+                const userEmail = payload.email;
+
+                // 呼叫 GAS 確認此 Email 是否在資料庫 Users 表中
+                const res = await fetch(CONFIG.GAS_API_URL, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+                    body: JSON.stringify({ action: 'login', email: userEmail })
+                });
+                const result = await res.json();
+
+                if (result.status === 'success') {
+                    // 登入成功，顯示表單並帶入姓名
+                    document.getElementById('loginScreen').classList.add('d-none');
+                    document.getElementById('mainFormScreen').classList.remove('d-none');
+                    document.getElementById('applicantName').value = result.name;
+                } else {
+                    statusDiv.innerText = result.message; // 顯示無權限
+                }
+            } catch (error) {
+                statusDiv.innerText = "系統連線錯誤，請檢查 config.js 中的 GAS 網址是否正確。";
+            }
+        }
+
+        function logout() {
+            location.reload(); 
+        }
+
+        // --- 表單邏輯相關 (新增明細、計算、送出) ---
+        
+        document.addEventListener('DOMContentLoaded', function() {
+            const detailsContainer = document.getElementById('detailsContainer');
+            const addDetailBtn = document.getElementById('addDetailBtn');
+            const totalAmountInput = document.getElementById('totalAmount');
+            const expenseForm = document.getElementById('expenseForm');
+            
+            let detailCount = 0;
+            const MAX_DETAILS = 5;
+
+            // 預先加入一筆
+            addDetailRow();
+
+            addDetailBtn.addEventListener('click', function() {
+                if (detailCount < MAX_DETAILS) addDetailRow();
+                else alert('依照版型規定，每張黏存單最多只能填寫 5 筆明細喔！');
+            });
+
+            function addDetailRow() {
+                detailCount++;
+                const rowId = `detail_${Date.now()}`;
+                const rowHtml = `
+                    <div class="detail-row row g-2" id="${rowId}">
+                        <div class="col-md-2">
+                            <label class="form-label fs-6 mb-1">日期</label>
+                            <input type="text" class="form-control form-control-sm detail-date" placeholder="例如: 115.02.25" required>
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label fs-6 mb-1">採購說明</label>
+                            <input type="text" class="form-control form-control-sm detail-desc" placeholder="說明" required>
+                        </div>
+                        <div class="col-md-2">
+                            <label class="form-label fs-6 mb-1">單價</label>
+                            <input type="number" class="form-control form-control-sm detail-price" value="0" min="0" required>
+                        </div>
+                        <div class="col-md-2">
+                            <label class="form-label fs-6 mb-1">數量</label>
+                            <input type="number" class="form-control form-control-sm detail-qty" value="1" min="1" required>
+                        </div>
+                        <div class="col-md-2">
+                            <label class="form-label fs-6 mb-1">小計</label>
+                            <div class="d-flex align-items-center">
+                                <input type="number" class="form-control form-control-sm detail-subtotal me-2" value="0" readonly>
+                                ${detailCount > 1 ? `<button type="button" class="btn btn-sm btn-outline-danger" onclick="removeRow('${rowId}')">X</button>` : ''}
+                            </div>
+                        </div>
+                    </div>
+                `;
+                detailsContainer.insertAdjacentHTML('beforeend', rowHtml);
+                attachCalculationListeners();
+            }
+
+            window.removeRow = function(rowId) {
+                document.getElementById(rowId).remove();
+                detailCount--;
+                calculateTotal();
+            }
+
+            function attachCalculationListeners() {
+                document.querySelectorAll('.detail-row').forEach(row => {
+                    const priceInput = row.querySelector('.detail-price');
+                    const qtyInput = row.querySelector('.detail-qty');
+                    priceInput.removeEventListener('input', calculateRow);
+                    qtyInput.removeEventListener('input', calculateRow);
+                    priceInput.addEventListener('input', calculateRow);
+                    qtyInput.addEventListener('input', calculateRow);
+                });
+            }
+
+            function calculateRow(e) {
+                const row = e.target.closest('.detail-row');
+                const price = parseFloat(row.querySelector('.detail-price').value) || 0;
+                const qty = parseFloat(row.querySelector('.detail-qty').value) || 0;
+                row.querySelector('.detail-subtotal').value = price * qty;
+                calculateTotal();
+            }
+
+            function calculateTotal() {
+                let total = 0;
+                document.querySelectorAll('.detail-subtotal').forEach(input => total += parseFloat(input.value) || 0);
+                totalAmountInput.value = total;
+            }
+
+            // 表單送出
+            expenseForm.addEventListener('submit', async function(e) {
+                e.preventDefault();
+                
+                const submitBtn = document.getElementById('submitBtn');
+                submitBtn.disabled = true;
+                document.getElementById('submitText').innerText = "處理中，請稍候...";
+                document.getElementById('loadingSpinner').classList.remove('d-none');
+
+                try {
+                    const payload = {
+                        action: 'submit',
+                        department: document.getElementById('department').value,
+                        applicantName: document.getElementById('applicantName').value,
+                        phone: document.getElementById('phone').value,
+                        summary: document.getElementById('summary').value,
+                        totalAmount: document.getElementById('totalAmount').value,
+                        details: []
+                    };
+
+                    document.querySelectorAll('.detail-row').forEach(row => {
+                        payload.details.push({
+                            date: row.querySelector('.detail-date').value,
+                            description: row.querySelector('.detail-desc').value,
+                            price: row.querySelector('.detail-price').value,
+                            quantity: row.querySelector('.detail-qty').value,
+                            subtotal: row.querySelector('.detail-subtotal').value
+                        });
+                    });
+
+                    const fileInput = document.getElementById('attachment');
+                    if (fileInput.files.length > 0) {
+                        const file = fileInput.files[0];
+                        payload.attachmentName = file.name;
+                        payload.attachmentMimeType = file.type;
+                        payload.attachmentBase64 = await toBase64(file);
+                    }
+
+                    const response = await fetch(CONFIG.GAS_API_URL, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'text/plain;charset=utf-8' }, 
+                        body: JSON.stringify(payload)
+                    });
+
+                    const result = await response.json();
+
+                    if (result.status === 'success') {
+                        expenseForm.classList.add('d-none');
+                        document.getElementById('successMessage').classList.remove('d-none');
+                        document.getElementById('pdfDownloadLink').href = result.pdfUrl;
+                    } else {
+                        alert("發生錯誤：" + result.message);
+                    }
+                } catch (error) {
+                    alert("系統連線發生錯誤！");
+                } finally {
+                    submitBtn.disabled = false;
+                    document.getElementById('submitText').innerText = "送出申請";
+                    document.getElementById('loadingSpinner').classList.add('d-none');
+                }
+            });
+
+            function toBase64(file) {
+                return new Promise((resolve, reject) => {
+                    const reader = new FileReader();
+                    reader.readAsDataURL(file);
+                    reader.onload = () => resolve(reader.result);
+                    reader.onerror = error => reject(error);
+                });
+            }
+        });
+    </script>
 </body>
 </html>
