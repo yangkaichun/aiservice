@@ -44,12 +44,14 @@ window.onload = function() {
         document.getElementById('mobile-user-avatar').src = DEFAULT_AVATAR;
     }
 
-    // 根據主題設定按鈕初始狀態
     const currentTheme = document.documentElement.getAttribute('data-theme') || 'dark';
     const btn = document.getElementById('theme-toggle-btn');
     if (btn) {
-        btn.innerHTML = currentTheme === 'light' ? '<i class="fas fa-moon"></i> 切換深色' : '<i class="fas fa-sun"></i> 切換淺色';
+        btn.innerHTML = currentTheme === 'light' ? '<i class="fas fa-moon me-2"></i> 切換深色' : '<i class="fas fa-sun me-2"></i> 切換淺色';
     }
+
+    Chart.defaults.color = '#94a3b8';
+    Chart.defaults.font.family = "'Segoe UI', 'Microsoft JhengHei', sans-serif";
 
     if (savedUser) {
         currentUser = savedUser;
@@ -57,7 +59,7 @@ window.onload = function() {
     }
 };
 
-// --- 🚀 新增：主題切換邏輯 (Light/Dark Toggle) ---
+// 🚀 主題切換邏輯
 function toggleTheme() {
     const body = document.documentElement;
     const currentTheme = body.getAttribute('data-theme');
@@ -68,14 +70,13 @@ function toggleTheme() {
 
     const btn = document.getElementById('theme-toggle-btn');
     if (btn) {
-        btn.innerHTML = newTheme === 'light' ? '<i class="fas fa-moon"></i> 切換深色' : '<i class="fas fa-sun"></i> 切換淺色';
+        btn.innerHTML = newTheme === 'light' ? '<i class="fas fa-moon me-2"></i> 切換深色' : '<i class="fas fa-sun me-2"></i> 切換淺色';
     }
 
-    // 動態重繪圖表以適應新主題的顏色
+    // 重繪圖表
     updateDashboardCharts();
     renderUsageAnalytics();
     
-    // 重新渲染 Dashboard 圓餅圖的邊框顏色
     const dashDataRes = { kpi: { 
         regionStats: {}, devRegionStats: {}, 
         kolCount: parseInt(document.getElementById('kpi-kol-count').innerText.replace(/,/g, '') || 0),
@@ -85,7 +86,6 @@ function toggleTheme() {
         signedCount: parseInt(document.getElementById('kpi-signed-hospital-count').innerText.replace(/,/g, '') || 0)
     }};
     
-    // 重新計算圓餅圖的數據
     globalHospitals.forEach(h => {
         if (h.Status === '已簽約') dashDataRes.kpi.regionStats[h.Region||'Unknown'] = (dashDataRes.kpi.regionStats[h.Region||'Unknown'] || 0) + 1;
         if (h.Status === '開發中') dashDataRes.kpi.devRegionStats[h.Region||'Unknown'] = (dashDataRes.kpi.devRegionStats[h.Region||'Unknown'] || 0) + 1;
@@ -265,7 +265,6 @@ function updateKOLFilterOptions() {
 
 async function loadAdminData() { if(currentRole!=='Admin')return; showLoading(true); try{ const [u,l] = await Promise.all([fetch(CONFIG.SCRIPT_URL,{method:"POST",body:JSON.stringify({action:"getUsers",userEmail:currentUser})}), fetch(CONFIG.SCRIPT_URL,{method:"POST",body:JSON.stringify({action:"getLogs",userEmail:currentUser})})]); renderUserTable((await u.json()).data); renderLogTable((await l.json()).data); }catch(e){}finally{showLoading(false);} }
 
-// [動態支援] 依據當前主題返回圓餅圖設定
 function getPieOptions() {
     const isLight = document.documentElement.getAttribute('data-theme') === 'light';
     const panelColor = isLight ? '#ffffff' : '#1e1e32';
@@ -420,10 +419,7 @@ function updateDashboardCharts() {
         },
         options: { 
             responsive: true, maintainAspectRatio: false, 
-            plugins: { 
-                legend: { position: 'top', align: 'end', labels: {color: textColor, boxWidth: 12, font: {family: "'Segoe UI', sans-serif"}} }, 
-                datalabels: { display: false } 
-            }, 
+            plugins: { legend: { position: 'top', align: 'end', labels: {color: textColor, boxWidth: 12, font: {family: "'Segoe UI', sans-serif"}} }, datalabels: { display: false } }, 
             scales: { 
                 x: { grid: { display: false }, ticks: {color: textColor, font: {family: "'Segoe UI', sans-serif"}} }, 
                 y: { grid: { borderDash: [4, 4], color: gridColorY, drawBorder: false }, beginAtZero: true, ticks: {color: textColor, font: {family: "'Segoe UI', sans-serif"}} } 
@@ -611,9 +607,9 @@ function renderUsageAnalytics() {
 
             tbody.innerHTML += `
                 <tr class="cursor-pointer ${rowClass}" onclick="selectUsageHospital('${item.id}')">
-                    <td style="width: 50px;">${rankBadge}</td>
-                    <td class="${textClass}">${item.name}</td>
-                    <td class="text-end ${textClass}">${item.usage.toLocaleString()}</td>
+                    <td style="width: 50px; border-bottom-color: var(--border-color);">${rankBadge}</td>
+                    <td class="${textClass}" style="border-bottom-color: var(--border-color);">${item.name}</td>
+                    <td class="text-end ${textClass}" style="border-bottom-color: var(--border-color);">${item.usage.toLocaleString()}</td>
                 </tr>
             `;
         });
