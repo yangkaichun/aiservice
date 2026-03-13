@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>差旅申請管理後台</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        body { background-color: #f8f9fa; }
+        .container-box { background-color: white; border-radius: 10px; padding: 30px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); margin-top: 50px; }
+        .table-responsive { margin-top: 20px; }
+    </style>
+</head>
+<body>
+
+    <div class="container" id="loginSection">
+        <div class="row justify-content-center">
+            <div class="col-md-6 container-box">
+                <h3 class="text-center mb-4">系統登入</h3>
+                <div class="mb-3">
+                    <label class="form-label">請輸入您的授權 Email</label>
+                    <input type="email" class="form-control" id="loginEmail" required>
+                </div>
+                <button class="btn btn-primary w-100" id="loginBtn">登入</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="container d-none" id="dashboardSection">
+        <div class="container-box">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h3 id="welcomeMsg">歡迎</h3>
+                <div>
+                    <a href="index.html" class="btn btn-outline-primary me-2">填寫新申請</a>
+                    <button class="btn btn-outline-secondary" id="logoutBtn">登出</button>
+                </div>
+            </div>
+            
+            <div class="table-responsive">
+                <table class="table table-hover align-middle">
+                    <thead class="table-light">
+                        <tr>
+                            <th>單號</th>
+                            <th>申請日期</th>
+                            <th>申請人</th>
+                            <th>用途摘要</th>
+                            <th>總金額</th>
+                            <th>狀態</th>
+                            <th>操作</th>
+                        </tr>
+                    </thead>
+                    <tbody id="recordsTableBody">
+                        <tr><td colspan="7" class="text-center">載入中...</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <script src="config.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const loginSection = document.getElementById('loginSection');
+            const dashboardSection = document.getElementById('dashboardSection');
+            const loginBtn = document.getElementById('loginBtn');
+            const logoutBtn = document.getElementById('logoutBtn');
+            
+            // 檢查是否已登入 (暫存於 localStorage)
+            const currentUser = JSON.parse(localStorage.getItem('pancad_user'));
+            if (currentUser) {
+                showDashboard(currentUser);
+            }
+
+            // 登入功能
+            loginBtn.addEventListener('click', async () => {
+                const email = document.getElementById('loginEmail').value;
+                if (!email) return alert('請輸入 Email');
+                
+                loginBtn.innerText = '驗證中...';
+                loginBtn.disabled = true;
+
+                try {
+                    const response = await fetch(CONFIG.GAS_API_URL, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+                        body: JSON.stringify({ action: 'login', email: email })
+                    });
+                    const result = await response.json();
+                    
+                    if (result.status === 'success') {
+                        const user = { name: result.name, role: result.role, email: email };
+                        localStorage.setItem('pancad_user', JSON.stringify(user));
+                        showDashboard(user);
+                    } else {
+                        alert(result.message);
+                    }
+                } catch (error) {
+                    alert('連線失敗');
+                } finally {
+                    loginBtn.innerText = '登入';
+                    loginBtn.disabled = false;
+                }
+            });
+
+            // 登出功能
+            logoutBtn.addEventListener('click', () => {
+                localStorage.removeItem('pancad_user');
+                dashboardSection.classList.add('d-none');
+                loginSection.classList.remove('d-none');
+                document.getElementById('loginEmail').value = '';
+            });
+
+            // 顯示儀表板並載入資料
+            async function showDashboard(user) {
+                loginSection.classList.add('d-none');
+                dashboardSection.classList.remove('d-none');
+                
+                document.getElementById('welcomeMsg').innerText = `歡迎, ${user.name} (${user.role === 'Admin' ? '管理員' : '一般用戶'})`;
+                
+                try {
+                    const response = await fetch(CONFIG.GAS_API_URL, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+                        body: JSON.stringify({ action: 'getRecords', name: user.name, role: user.role })
+                    });
+                    const result = await response.json();
+                    
+                    const tbody = document.getElementById('recordsTableBody');
+                    tbody.innerHTML = ''; // 清空載入中訊息
+
+                    if (result.status === 'success' && result.data.length > 0) {
+                        result.data.forEach(record => {
+                            // 判斷狀態給予不同顏色的標籤
+                            let statusBadge = `<span class="badge bg-warning text-dark">${record.status}</span>`;
+                            if(record.status === '已核准') statusBadge = `<span class="badge bg-success">${record.status}</span>`;
+                            
+                            let tr = document.createElement('tr');
+                            tr.innerHTML = `
+                                <td><small class="text-muted">${record.formId}</small></td>
+                                <td>${record.date.split(' ')[0]}</td>
+                                <td>${record.applicant}</td>
+                                <td>${record.summary}</td>
+                                <td class="text-danger fw-bold">$${record.amount}</td>
+                                <td>${statusBadge}</td>
+                                <td>
+                                    <a href="${record.pdfUrl}" target="_blank" class="btn btn-sm btn-primary">看單據</a>
+                                    ${record.attachment !== '無附件' ? `<a href="${record.attachment}" target="_blank" class="btn btn-sm btn-secondary">看附件</a>` : ''}
+                                </td>
+                            `;
+                            tbody.appendChild(tr);
+                        });
+                    } else {
+                        tbody.innerHTML = '<tr><td colspan="7" class="text-center">尚無任何申請紀錄</td></tr>';
+                    }
+                } catch (error) {
+                    console.error(error);
+                }
+            }
+        });
+    </script>
+</body>
+</html>
