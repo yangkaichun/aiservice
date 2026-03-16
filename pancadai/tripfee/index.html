@@ -12,6 +12,12 @@
         .form-container { background-color: white; border-radius: 10px; padding: 30px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
         .detail-row { background-color: #f1f3f5; padding: 15px; border-radius: 8px; margin-bottom: 10px; }
         #loginScreen { min-height: 100vh; display: flex; flex-direction: column; justify-content: center; align-items: center; }
+        
+        /* 附件預覽相關的 CSS */
+        .preview-wrapper { position: relative; display: inline-block; width: 80px; text-align: center; }
+        .preview-item { width: 80px; height: 80px; object-fit: cover; border-radius: 5px; border: 1px solid #ddd; }
+        .preview-doc { width: 80px; height: 80px; border-radius: 5px; border: 1px solid #ddd; background-color: #f1f3f5; display: flex; flex-direction: column; align-items: center; justify-content: center; overflow: hidden; }
+        .remove-btn { position: absolute; top: -6px; right: -6px; width: 20px; height: 20px; border-radius: 50%; background: #dc3545; color: white; border: none; font-size: 14px; line-height: 1; cursor: pointer; z-index: 10; padding: 0; display: flex; align-items: center; justify-content: center; }
     </style>
 </head>
 <body>
@@ -76,9 +82,11 @@
                             </div>
                         </div>
                         <div class="col-md-6 mt-3 mt-md-0">
-                            <label class="form-label">上傳附件 (可多選照片或 PDF)</label>
+                            <label class="form-label">上傳附件 (可依序多選照片或 PDF)</label>
                             <input class="form-control" type="file" id="attachments" accept="image/*,.pdf" multiple>
                             <small class="text-muted">圖片將自動合併至 PDF 中</small>
+                            
+                            <div id="previewContainer" class="d-flex flex-wrap gap-2 mt-2"></div>
                         </div>
                     </div>
 
@@ -131,7 +139,6 @@
                 if (result.status === 'success') {
                     document.getElementById('loginScreen').classList.add('d-none');
                     document.getElementById('mainFormScreen').classList.remove('d-none');
-                    // 自動填寫姓名與電話
                     document.getElementById('applicantName').value = result.name;
                     document.getElementById('phone').value = result.phone || ""; 
                 } else {
@@ -150,8 +157,56 @@
             const totalAmountInput = document.getElementById('totalAmount');
             const expenseForm = document.getElementById('expenseForm');
             
+            // --- 新增：維護附件的陣列與預覽邏輯 ---
+            let selectedFilesArray = []; 
+            const fileInput = document.getElementById('attachments');
+            const previewContainer = document.getElementById('previewContainer');
+
+            fileInput.addEventListener('change', function(e) {
+                const files = Array.from(e.target.files);
+                files.forEach(file => {
+                    selectedFilesArray.push(file); // 將新選的檔案推入陣列
+                });
+                renderPreviews();
+                fileInput.value = ''; // 清空 input，這樣下次選同一個檔案也能觸發 change 事件
+            });
+
+            function renderPreviews() {
+                previewContainer.innerHTML = '';
+                selectedFilesArray.forEach((file, index) => {
+                    const wrapper = document.createElement('div');
+                    wrapper.className = 'preview-wrapper';
+
+                    // 刪除按鈕
+                    const removeBtn = document.createElement('button');
+                    removeBtn.type = 'button';
+                    removeBtn.className = 'remove-btn';
+                    removeBtn.innerHTML = '&times;';
+                    removeBtn.onclick = () => {
+                        selectedFilesArray.splice(index, 1); // 從陣列中移除
+                        renderPreviews(); // 重新渲染
+                    };
+                    wrapper.appendChild(removeBtn);
+
+                    // 判斷是圖片還是 PDF 以顯示不同預覽
+                    if (file.type.startsWith('image/')) {
+                        const img = document.createElement('img');
+                        img.className = 'preview-item';
+                        img.src = URL.createObjectURL(file);
+                        wrapper.appendChild(img);
+                    } else {
+                        const docDiv = document.createElement('div');
+                        docDiv.className = 'preview-doc';
+                        docDiv.innerHTML = '<span style="font-size: 20px; margin-bottom: 2px;">📄</span><small class="text-truncate w-100 px-1" style="font-size: 10px;" title="'+file.name+'">'+file.name+'</small>';
+                        wrapper.appendChild(docDiv);
+                    }
+                    previewContainer.appendChild(wrapper);
+                });
+            }
+            // -------------------------------------
+
             let detailCount = 0;
-            const MAX_DETAILS = 10; // 上限改為 10
+            const MAX_DETAILS = 10; 
 
             addDetailRow();
 
@@ -242,7 +297,7 @@
                         summary: document.getElementById('summary').value,
                         totalAmount: document.getElementById('totalAmount').value,
                         details: [],
-                        attachments: [] // 改為陣列
+                        attachments: [] 
                     };
 
                     document.querySelectorAll('.detail-row').forEach(row => {
@@ -255,11 +310,10 @@
                         });
                     });
 
-                    // 處理多個附件轉 Base64
-                    const fileInput = document.getElementById('attachments');
-                    if (fileInput.files.length > 0) {
-                        for(let i = 0; i < fileInput.files.length; i++) {
-                            let file = fileInput.files[i];
+                    // --- 修改：改由陣列讀取檔案，而非 input.files ---
+                    if (selectedFilesArray.length > 0) {
+                        for(let i = 0; i < selectedFilesArray.length; i++) {
+                            let file = selectedFilesArray[i];
                             let base64 = await toBase64(file);
                             payload.attachments.push({
                                 name: file.name,
