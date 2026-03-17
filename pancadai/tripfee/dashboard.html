@@ -3,54 +3,59 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>差旅申請管理後台</title>
+    <title>差旅歷史紀錄 - 仲智數位健康</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
+    <script src="https://accounts.google.com/gsi/client" async defer></script>
     <style>
-        body { background-color: #f8f9fa; }
-        .container-box { background-color: white; border-radius: 10px; padding: 30px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); margin-top: 50px; }
-        .table-responsive { margin-top: 20px; }
+        body { background-color: #f4f6f9; font-family: 'Segoe UI', sans-serif; }
+        .dashboard-container { background-color: white; border-radius: 12px; padding: 25px; box-shadow: 0 8px 24px rgba(0,0,0,0.05); }
+        .table-responsive { border-radius: 8px; border: 1px solid #e9ecef; }
+        .table th { background-color: #f8f9fa; font-weight: 600; color: #495057; }
+        .table td { vertical-align: middle; }
+        #loginScreen { min-height: 100vh; display: flex; flex-direction: column; justify-content: center; align-items: center; }
     </style>
 </head>
 <body>
 
-    <div class="container" id="loginSection">
-        <div class="row justify-content-center">
-            <div class="col-md-6 container-box">
-                <h3 class="text-center mb-4">系統登入</h3>
-                <div class="mb-3">
-                    <label class="form-label">請輸入您的授權 Email</label>
-                    <input type="email" class="form-control" id="loginEmail" required>
-                </div>
-                <button class="btn btn-primary w-100" id="loginBtn">登入</button>
-            </div>
+    <div id="loginScreen">
+        <div class="dashboard-container text-center shadow" style="max-width: 400px; width: 90%;">
+            <div class="mb-3 text-primary"><i class="bi bi-shield-lock" style="font-size: 3rem;"></i></div>
+            <h4 class="mb-4 fw-bold">系統驗證</h4>
+            <p class="text-muted mb-4 small">查看歷史紀錄需先登入授權帳號</p>
+            <div id="g_id_onload" data-context="signin" data-ux_mode="popup" data-callback="handleCredentialResponse" data-auto_prompt="false" data-itp_support="true"></div>
+            <div class="g_id_signin d-flex justify-content-center" data-type="standard" data-size="large" data-theme="outline" data-text="sign_in_with" data-shape="rectangular" data-logo_alignment="left"></div>
+            <div id="loginStatus" class="mt-3 text-danger fw-bold small"></div>
+            <a href="index.html" class="btn btn-link mt-3 small text-decoration-none">回填寫表單</a>
         </div>
     </div>
 
-    <div class="container d-none" id="dashboardSection">
-        <div class="container-box">
-            <div class="d-flex justify-content-between align-items-center mb-4">
-                <h3 id="welcomeMsg">歡迎</h3>
-                <div>
-                    <a href="index.html" class="btn btn-outline-primary me-2">填寫新申請</a>
-                    <button class="btn btn-outline-secondary" id="logoutBtn">登出</button>
+    <div class="container mt-4 mb-5 d-none" id="dashboardScreen">
+        <div class="dashboard-container">
+            <div class="d-flex flex-wrap justify-content-between align-items-center mb-4 border-bottom pb-3">
+                <h4 class="mb-2 mb-md-0 fw-bold text-dark"><i class="bi bi-clock-history text-primary me-2"></i>差旅申請歷史紀錄</h4>
+                <div class="d-flex gap-2 align-items-center">
+                    <span class="badge bg-light text-dark border px-3 py-2" id="userInfoBadge">載入中...</span>
+                    <a href="index.html" class="btn btn-sm btn-primary"><i class="bi bi-pencil-square me-1"></i>新申請</a>
+                    <button class="btn btn-sm btn-outline-secondary" onclick="logout()"><i class="bi bi-box-arrow-right"></i></button>
                 </div>
             </div>
             
             <div class="table-responsive">
-                <table class="table table-hover align-middle">
-                    <thead class="table-light">
+                <table class="table table-hover table-borderless align-middle mb-0">
+                    <thead>
                         <tr>
-                            <th>單號</th>
+                            <th class="ps-3">申請單號</th>
                             <th>申請日期</th>
                             <th>申請人</th>
                             <th>用途摘要</th>
-                            <th>總金額</th>
-                            <th>狀態</th>
-                            <th>操作</th>
+                            <th class="text-end">總金額</th>
+                            <th class="text-center">狀態</th>
+                            <th class="text-end pe-3">檔案操作</th>
                         </tr>
                     </thead>
                     <tbody id="recordsTableBody">
-                        <tr><td colspan="7" class="text-center">載入中...</td></tr>
+                        <tr><td colspan="7" class="text-center py-5 text-muted"><div class="spinner-border spinner-border-sm me-2"></div>資料載入中...</td></tr>
                     </tbody>
                 </table>
             </div>
@@ -59,104 +64,97 @@
 
     <script src="config.js"></script>
     <script>
+        document.getElementById('g_id_onload').setAttribute('data-client_id', CONFIG.GOOGLE_CLIENT_ID);
+
+        function parseJwt(token) {
+            var base64Url = token.split('.')[1];
+            var base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
+            return JSON.parse(decodeURIComponent(window.atob(base64).split('').map(c => '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2)).join('')));
+        }
+
         document.addEventListener('DOMContentLoaded', () => {
-            const loginSection = document.getElementById('loginSection');
-            const dashboardSection = document.getElementById('dashboardSection');
-            const loginBtn = document.getElementById('loginBtn');
-            const logoutBtn = document.getElementById('logoutBtn');
-            
-            // 檢查是否已登入 (暫存於 localStorage)
-            const currentUser = JSON.parse(localStorage.getItem('pancad_user'));
-            if (currentUser) {
-                showDashboard(currentUser);
-            }
-
-            // 登入功能
-            loginBtn.addEventListener('click', async () => {
-                const email = document.getElementById('loginEmail').value;
-                if (!email) return alert('請輸入 Email');
-                
-                loginBtn.innerText = '驗證中...';
-                loginBtn.disabled = true;
-
-                try {
-                    const response = await fetch(CONFIG.GAS_API_URL, {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-                        body: JSON.stringify({ action: 'login', email: email })
-                    });
-                    const result = await response.json();
-                    
-                    if (result.status === 'success') {
-                        const user = { name: result.name, role: result.role, email: email };
-                        localStorage.setItem('pancad_user', JSON.stringify(user));
-                        showDashboard(user);
-                    } else {
-                        alert(result.message);
-                    }
-                } catch (error) {
-                    alert('連線失敗');
-                } finally {
-                    loginBtn.innerText = '登入';
-                    loginBtn.disabled = false;
-                }
-            });
-
-            // 登出功能
-            logoutBtn.addEventListener('click', () => {
-                localStorage.removeItem('pancad_user');
-                dashboardSection.classList.add('d-none');
-                loginSection.classList.remove('d-none');
-                document.getElementById('loginEmail').value = '';
-            });
-
-            // 顯示儀表板並載入資料
-            async function showDashboard(user) {
-                loginSection.classList.add('d-none');
-                dashboardSection.classList.remove('d-none');
-                
-                document.getElementById('welcomeMsg').innerText = `歡迎, ${user.name} (${user.role === 'Admin' ? '管理員' : '一般用戶'})`;
-                
-                try {
-                    const response = await fetch(CONFIG.GAS_API_URL, {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-                        body: JSON.stringify({ action: 'getRecords', name: user.name, role: user.role })
-                    });
-                    const result = await response.json();
-                    
-                    const tbody = document.getElementById('recordsTableBody');
-                    tbody.innerHTML = ''; // 清空載入中訊息
-
-                    if (result.status === 'success' && result.data.length > 0) {
-                        result.data.forEach(record => {
-                            // 判斷狀態給予不同顏色的標籤
-                            let statusBadge = `<span class="badge bg-warning text-dark">${record.status}</span>`;
-                            if(record.status === '已核准') statusBadge = `<span class="badge bg-success">${record.status}</span>`;
-                            
-                            let tr = document.createElement('tr');
-                            tr.innerHTML = `
-                                <td><small class="text-muted">${record.formId}</small></td>
-                                <td>${record.date.split(' ')[0]}</td>
-                                <td>${record.applicant}</td>
-                                <td>${record.summary}</td>
-                                <td class="text-danger fw-bold">$${record.amount}</td>
-                                <td>${statusBadge}</td>
-                                <td>
-                                    <a href="${record.pdfUrl}" target="_blank" class="btn btn-sm btn-primary">看單據</a>
-                                    ${record.attachment !== '無附件' ? `<a href="${record.attachment}" target="_blank" class="btn btn-sm btn-secondary">看附件</a>` : ''}
-                                </td>
-                            `;
-                            tbody.appendChild(tr);
-                        });
-                    } else {
-                        tbody.innerHTML = '<tr><td colspan="7" class="text-center">尚無任何申請紀錄</td></tr>';
-                    }
-                } catch (error) {
-                    console.error(error);
-                }
+            // 檢查是否已經有登入紀錄
+            const savedUser = localStorage.getItem('pancad_user');
+            if (savedUser) {
+                const user = JSON.parse(savedUser);
+                showDashboard(user);
             }
         });
+
+        async function handleCredentialResponse(response) {
+            const statusDiv = document.getElementById('loginStatus');
+            statusDiv.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span>驗證中...';
+            try {
+                const payload = parseJwt(response.credential);
+                const res = await fetch(CONFIG.GAS_API_URL, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+                    body: JSON.stringify({ action: 'login', email: payload.email })
+                });
+                const result = await res.json();
+
+                if (result.status === 'success') {
+                    const user = { name: result.name, role: result.role, email: payload.email };
+                    localStorage.setItem('pancad_user', JSON.stringify(user));
+                    showDashboard(user);
+                } else {
+                    statusDiv.innerText = result.message; 
+                }
+            } catch (error) {
+                statusDiv.innerText = "連線錯誤，請檢查 config.js";
+            }
+        }
+
+        function logout() { 
+            localStorage.removeItem('pancad_user');
+            localStorage.removeItem('pancad_email');
+            location.reload(); 
+        }
+
+        async function showDashboard(user) {
+            document.getElementById('loginScreen').classList.add('d-none');
+            document.getElementById('dashboardScreen').classList.remove('d-none');
+            
+            const roleText = user.role === 'Admin' ? '管理員' : '一般用戶';
+            document.getElementById('userInfoBadge').innerHTML = `<i class="bi bi-person-circle me-1"></i>${user.name} (${roleText})`;
+            
+            try {
+                const response = await fetch(CONFIG.GAS_API_URL, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+                    body: JSON.stringify({ action: 'getRecords', name: user.name, role: user.role })
+                });
+                const result = await response.json();
+                const tbody = document.getElementById('recordsTableBody');
+                tbody.innerHTML = ''; 
+
+                if (result.status === 'success' && result.data.length > 0) {
+                    result.data.forEach(record => {
+                        let statusColor = record.status.includes('核准') ? 'success' : (record.status.includes('拒絕') ? 'danger' : 'warning');
+                        
+                        let tr = document.createElement('tr');
+                        // RWD: 手機版隱藏部份不重要的直欄，保留核心資訊
+                        tr.innerHTML = `
+                            <td class="ps-3"><span class="badge bg-secondary bg-opacity-10 text-secondary border border-secondary border-opacity-25">${record.formId}</span></td>
+                            <td>${record.date.split(' ')[0]}</td>
+                            <td class="d-none d-md-table-cell fw-bold">${record.applicant}</td>
+                            <td class="text-truncate" style="max-width: 150px;" title="${record.summary}">${record.summary}</td>
+                            <td class="text-end fw-bold text-danger">$${record.amount}</td>
+                            <td class="text-center"><span class="badge bg-${statusColor}">${record.status}</span></td>
+                            <td class="text-end pe-3">
+                                <a href="${record.pdfUrl}" target="_blank" class="btn btn-sm btn-primary rounded-pill px-3 shadow-sm"><i class="bi bi-download me-1 d-none d-md-inline"></i>下載 PDF</a>
+                            </td>
+                        `;
+                        tbody.appendChild(tr);
+                    });
+                } else {
+                    tbody.innerHTML = '<tr><td colspan="7" class="text-center py-5 text-muted"><i class="bi bi-inbox fs-2 d-block mb-2"></i>尚無任何申請紀錄</td></tr>';
+                }
+            } catch (error) {
+                console.error(error);
+                document.getElementById('recordsTableBody').innerHTML = '<tr><td colspan="7" class="text-center py-5 text-danger"><i class="bi bi-exclamation-triangle-fill me-2"></i>載入資料失敗，請重新整理頁面</td></tr>';
+            }
+        }
     </script>
 </body>
 </html>
