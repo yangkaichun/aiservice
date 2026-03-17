@@ -6,14 +6,13 @@
     <title>支出憑證黏存單申請</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <script src="https://accounts.google.com/gsi/client" async defer></script>
+    <script src="https://unpkg.com/pdf-lib@1.17.1/dist/pdf-lib.min.js"></script>
     
     <style>
         body { background-color: #f8f9fa; }
         .form-container { background-color: white; border-radius: 10px; padding: 30px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
         .detail-row { background-color: #f1f3f5; padding: 15px; border-radius: 8px; margin-bottom: 10px; }
         #loginScreen { min-height: 100vh; display: flex; flex-direction: column; justify-content: center; align-items: center; }
-        
-        /* 附件預覽相關的 CSS */
         .preview-wrapper { position: relative; display: inline-block; width: 80px; text-align: center; }
         .preview-item { width: 80px; height: 80px; object-fit: cover; border-radius: 5px; border: 1px solid #ddd; }
         .preview-doc { width: 80px; height: 80px; border-radius: 5px; border: 1px solid #ddd; background-color: #f1f3f5; display: flex; flex-direction: column; align-items: center; justify-content: center; overflow: hidden; }
@@ -25,9 +24,21 @@
     <div id="loginScreen">
         <div class="form-container text-center" style="max-width: 400px; width: 100%;">
             <h4 class="mb-4">仲智數位健康<br>差旅申請系統</h4>
+            
+            <div class="alert alert-warning py-2 text-start" style="font-size: 14px;">
+                <strong>📱 手機用戶請注意：</strong><br>若您在 LINE 內無法登入，請點擊右上角選單，選擇<strong>「以 Safari 或 Chrome 瀏覽器開啟」</strong>。
+            </div>
+
             <p class="text-muted mb-4">請使用公司授權的 Google 帳號登入</p>
-            <div id="g_id_onload" data-context="signin" data-ux_mode="popup" data-callback="handleCredentialResponse" data-auto_prompt="false"></div>
+            
+            <div id="g_id_onload" 
+                 data-context="signin" 
+                 data-ux_mode="popup" 
+                 data-callback="handleCredentialResponse" 
+                 data-auto_prompt="false"
+                 data-itp_support="true"></div>
             <div class="g_id_signin d-flex justify-content-center" data-type="standard" data-size="large" data-theme="outline" data-text="sign_in_with" data-shape="rectangular" data-logo_alignment="left"></div>
+            
             <div id="loginStatus" class="mt-3 text-danger fw-bold"></div>
         </div>
     </div>
@@ -44,7 +55,7 @@
                     <div class="row mb-3">
                         <div class="col-md-4">
                             <label class="form-label">申請單位</label>
-                            <input type="text" class="form-control" id="department" placeholder="例如: MS" required>
+                            <input type="text" class="form-control" id="department" required>
                         </div>
                         <div class="col-md-4">
                             <label class="form-label">申請人姓名</label>
@@ -82,10 +93,8 @@
                             </div>
                         </div>
                         <div class="col-md-6 mt-3 mt-md-0">
-                            <label class="form-label">上傳附件 (可依序多選照片或 PDF)</label>
-                            <input class="form-control" type="file" id="attachments" accept="image/*,.pdf" multiple>
-                            <small class="text-muted">圖片將自動合併至 PDF 中</small>
-                            
+                            <label class="form-label">上傳附件 (可多選，將合併為單一 PDF)</label>
+                            <input class="form-control" type="file" id="attachments" accept=".jpg,.jpeg,.png,.pdf" multiple>
                             <div id="previewContainer" class="d-flex flex-wrap gap-2 mt-2"></div>
                         </div>
                     </div>
@@ -100,9 +109,9 @@
 
                 <div id="successMessage" class="alert alert-success mt-4 d-none" role="alert">
                     <h4 class="alert-heading">申請成功！</h4>
-                    <p>您的表單已成功送出並記錄。</p>
+                    <p>您的所有附件已成功合併為單一份 PDF 黏存單。</p>
                     <hr>
-                    <p class="mb-0"><a href="#" id="pdfDownloadLink" target="_blank" class="alert-link">👉 點此查看產出的 PDF 黏存單</a></p>
+                    <p class="mb-0"><a href="#" id="pdfDownloadLink" target="_blank" class="alert-link">👉 點此查看最終產出的 PDF</a></p>
                 </div>
             </div>
         </div>
@@ -124,11 +133,9 @@
         async function handleCredentialResponse(response) {
             const statusDiv = document.getElementById('loginStatus');
             statusDiv.innerText = "驗證權限中，請稍候...";
-            
             try {
                 const payload = parseJwt(response.credential);
                 const userEmail = payload.email;
-
                 const res = await fetch(CONFIG.GAS_API_URL, {
                     method: 'POST',
                     headers: { 'Content-Type': 'text/plain;charset=utf-8' },
@@ -145,11 +152,22 @@
                     statusDiv.innerText = result.message; 
                 }
             } catch (error) {
-                statusDiv.innerText = "系統連線錯誤，請檢查 config.js 中的 GAS 網址是否正確。";
+                statusDiv.innerText = "系統連線錯誤，請檢查 config.js。";
             }
         }
 
         function logout() { location.reload(); }
+
+        // ArrayBuffer 轉 Base64 工具函數
+        function arrayBufferToBase64(buffer) {
+            let binary = '';
+            let bytes = new Uint8Array(buffer);
+            let len = bytes.byteLength;
+            for (let i = 0; i < len; i++) {
+                binary += String.fromCharCode(bytes[i]);
+            }
+            return window.btoa(binary);
+        }
 
         document.addEventListener('DOMContentLoaded', function() {
             const detailsContainer = document.getElementById('detailsContainer');
@@ -157,7 +175,6 @@
             const totalAmountInput = document.getElementById('totalAmount');
             const expenseForm = document.getElementById('expenseForm');
             
-            // --- 新增：維護附件的陣列與預覽邏輯 ---
             let selectedFilesArray = []; 
             const fileInput = document.getElementById('attachments');
             const previewContainer = document.getElementById('previewContainer');
@@ -165,10 +182,15 @@
             fileInput.addEventListener('change', function(e) {
                 const files = Array.from(e.target.files);
                 files.forEach(file => {
-                    selectedFilesArray.push(file); // 將新選的檔案推入陣列
+                    // 只允許 jpg, png, pdf
+                    if (file.type === 'application/pdf' || file.type === 'image/jpeg' || file.type === 'image/png') {
+                        selectedFilesArray.push(file);
+                    } else {
+                        alert(`檔案 ${file.name} 格式不支援，僅限 JPG, PNG, PDF。`);
+                    }
                 });
                 renderPreviews();
-                fileInput.value = ''; // 清空 input，這樣下次選同一個檔案也能觸發 change 事件
+                fileInput.value = ''; 
             });
 
             function renderPreviews() {
@@ -176,19 +198,16 @@
                 selectedFilesArray.forEach((file, index) => {
                     const wrapper = document.createElement('div');
                     wrapper.className = 'preview-wrapper';
-
-                    // 刪除按鈕
                     const removeBtn = document.createElement('button');
                     removeBtn.type = 'button';
                     removeBtn.className = 'remove-btn';
                     removeBtn.innerHTML = '&times;';
                     removeBtn.onclick = () => {
-                        selectedFilesArray.splice(index, 1); // 從陣列中移除
-                        renderPreviews(); // 重新渲染
+                        selectedFilesArray.splice(index, 1);
+                        renderPreviews();
                     };
                     wrapper.appendChild(removeBtn);
 
-                    // 判斷是圖片還是 PDF 以顯示不同預覽
                     if (file.type.startsWith('image/')) {
                         const img = document.createElement('img');
                         img.className = 'preview-item';
@@ -197,19 +216,17 @@
                     } else {
                         const docDiv = document.createElement('div');
                         docDiv.className = 'preview-doc';
-                        docDiv.innerHTML = '<span style="font-size: 20px; margin-bottom: 2px;">📄</span><small class="text-truncate w-100 px-1" style="font-size: 10px;" title="'+file.name+'">'+file.name+'</small>';
+                        docDiv.innerHTML = '<span style="font-size: 20px;">📄</span><small class="text-truncate w-100 px-1" style="font-size: 10px;" title="'+file.name+'">'+file.name+'</small>';
                         wrapper.appendChild(docDiv);
                     }
                     previewContainer.appendChild(wrapper);
                 });
             }
-            // -------------------------------------
 
             let detailCount = 0;
             const MAX_DETAILS = 10; 
 
             addDetailRow();
-
             addDetailBtn.addEventListener('click', function() {
                 if (detailCount < MAX_DETAILS) addDetailRow();
                 else alert('最多只能填寫 10 筆明細喔！');
@@ -284,20 +301,18 @@
                 e.preventDefault();
                 
                 const submitBtn = document.getElementById('submitBtn');
+                const submitText = document.getElementById('submitText');
                 submitBtn.disabled = true;
-                document.getElementById('submitText').innerText = "上傳並產出PDF中，請稍候...";
                 document.getElementById('loadingSpinner').classList.remove('d-none');
 
                 try {
                     const payload = {
-                        action: 'submit',
                         department: document.getElementById('department').value,
                         applicantName: document.getElementById('applicantName').value,
                         phone: document.getElementById('phone').value,
                         summary: document.getElementById('summary').value,
                         totalAmount: document.getElementById('totalAmount').value,
-                        details: [],
-                        attachments: [] 
+                        details: []
                     };
 
                     document.querySelectorAll('.detail-row').forEach(row => {
@@ -310,51 +325,88 @@
                         });
                     });
 
-                    // --- 修改：改由陣列讀取檔案，而非 input.files ---
-                    if (selectedFilesArray.length > 0) {
-                        for(let i = 0; i < selectedFilesArray.length; i++) {
-                            let file = selectedFilesArray[i];
-                            let base64 = await toBase64(file);
-                            payload.attachments.push({
-                                name: file.name,
-                                mimeType: file.type,
-                                base64: base64
+                    // 步驟 1：請 GAS 產出有表格的主 PDF 
+                    submitText.innerText = "生成表單中 (1/3)...";
+                    const res1 = await fetch(CONFIG.GAS_API_URL, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'text/plain;charset=utf-8' }, 
+                        body: JSON.stringify({ action: 'generateTemplate', ...payload })
+                    });
+                    const result1 = await res1.json();
+                    if(result1.status !== 'success') throw new Error(result1.message);
+
+                    const formId = result1.formId;
+                    const templateBase64 = result1.pdfBase64;
+
+                    // 步驟 2：在前端使用 pdf-lib 合併所有附件
+                    submitText.innerText = "合併附件中 (2/3)...";
+                    const { PDFDocument } = PDFLib;
+                    const mergedPdf = await PDFDocument.create();
+
+                    // 載入剛才產生的主表單 PDF
+                    const templatePdf = await PDFDocument.load(templateBase64);
+                    const copiedPages = await mergedPdf.copyPages(templatePdf, templatePdf.getPageIndices());
+                    copiedPages.forEach((page) => mergedPdf.addPage(page));
+
+                    // 逐一處理使用者選取的附件
+                    for (let file of selectedFilesArray) {
+                        const fileBuffer = await file.arrayBuffer();
+                        if (file.type === 'application/pdf') {
+                            // 如果是 PDF，直接複製頁面過來
+                            const attachedPdf = await PDFDocument.load(fileBuffer);
+                            const pages = await mergedPdf.copyPages(attachedPdf, attachedPdf.getPageIndices());
+                            pages.forEach((page) => mergedPdf.addPage(page));
+                        } else if (file.type === 'image/jpeg' || file.type === 'image/png') {
+                            // 如果是圖片，開新的一頁貼上去
+                            let image;
+                            if (file.type === 'image/jpeg') {
+                                image = await mergedPdf.embedJpg(fileBuffer);
+                            } else {
+                                image = await mergedPdf.embedPng(fileBuffer);
+                            }
+
+                            const page = mergedPdf.addPage();
+                            const { width, height } = page.getSize();
+                            // 縮放圖片以適應 A4 頁面 (留邊界 40)
+                            const scaled = image.scaleToFit(width - 40, height - 40);
+                            page.drawImage(image, {
+                                x: width / 2 - scaled.width / 2,
+                                y: height / 2 - scaled.height / 2,
+                                width: scaled.width,
+                                height: scaled.height,
                             });
                         }
                     }
 
-                    const response = await fetch(CONFIG.GAS_API_URL, {
+                    // 輸出最終合併的 PDF 檔案 (Base64)
+                    const finalPdfBytes = await mergedPdf.save();
+                    const finalPdfBase64 = arrayBufferToBase64(finalPdfBytes);
+
+                    // 步驟 3：將最終 PDF 傳回 GAS 存檔
+                    submitText.innerText = "上傳存檔中 (3/3)...";
+                    const res2 = await fetch(CONFIG.GAS_API_URL, {
                         method: 'POST',
                         headers: { 'Content-Type': 'text/plain;charset=utf-8' }, 
-                        body: JSON.stringify(payload)
+                        body: JSON.stringify({ action: 'saveRecord', formId: formId, finalPdfBase64: finalPdfBase64, ...payload })
                     });
+                    const result2 = await res2.json();
 
-                    const result = await response.json();
-
-                    if (result.status === 'success') {
+                    if (result2.status === 'success') {
                         expenseForm.classList.add('d-none');
                         document.getElementById('successMessage').classList.remove('d-none');
-                        document.getElementById('pdfDownloadLink').href = result.pdfUrl;
+                        document.getElementById('pdfDownloadLink').href = result2.pdfUrl;
                     } else {
-                        alert("發生錯誤：" + result.message);
+                        alert("儲存發生錯誤：" + result2.message);
                     }
                 } catch (error) {
-                    alert("系統連線發生錯誤！");
+                    alert("處理發生錯誤，請確認網路連線或附件格式。");
+                    console.error(error);
                 } finally {
                     submitBtn.disabled = false;
-                    document.getElementById('submitText').innerText = "送出申請";
+                    submitText.innerText = "送出申請";
                     document.getElementById('loadingSpinner').classList.add('d-none');
                 }
             });
-
-            function toBase64(file) {
-                return new Promise((resolve, reject) => {
-                    const reader = new FileReader();
-                    reader.readAsDataURL(file);
-                    reader.onload = () => resolve(reader.result);
-                    reader.onerror = error => reject(error);
-                });
-            }
         });
     </script>
 </body>
