@@ -158,7 +158,7 @@
 
         function logout() { location.reload(); }
 
-        // ArrayBuffer 轉 Base64 工具函數
+        // ArrayBuffer 轉 Base64 
         function arrayBufferToBase64(buffer) {
             let binary = '';
             let bytes = new Uint8Array(buffer);
@@ -167,6 +167,15 @@
                 binary += String.fromCharCode(bytes[i]);
             }
             return window.btoa(binary);
+        }
+
+        // 強化的檔案類型判斷 (避免瀏覽器遺失 MIME type)
+        function getFileType(file) {
+            const name = file.name.toLowerCase();
+            if (file.type === 'application/pdf' || name.endsWith('.pdf')) return 'pdf';
+            if (file.type === 'image/jpeg' || name.endsWith('.jpg') || name.endsWith('.jpeg')) return 'jpg';
+            if (file.type === 'image/png' || name.endsWith('.png')) return 'png';
+            return 'unknown';
         }
 
         document.addEventListener('DOMContentLoaded', function() {
@@ -182,8 +191,8 @@
             fileInput.addEventListener('change', function(e) {
                 const files = Array.from(e.target.files);
                 files.forEach(file => {
-                    // 只允許 jpg, png, pdf
-                    if (file.type === 'application/pdf' || file.type === 'image/jpeg' || file.type === 'image/png') {
+                    const fType = getFileType(file);
+                    if (fType !== 'unknown') {
                         selectedFilesArray.push(file);
                     } else {
                         alert(`檔案 ${file.name} 格式不支援，僅限 JPG, PNG, PDF。`);
@@ -196,6 +205,7 @@
             function renderPreviews() {
                 previewContainer.innerHTML = '';
                 selectedFilesArray.forEach((file, index) => {
+                    const fType = getFileType(file);
                     const wrapper = document.createElement('div');
                     wrapper.className = 'preview-wrapper';
                     const removeBtn = document.createElement('button');
@@ -208,7 +218,7 @@
                     };
                     wrapper.appendChild(removeBtn);
 
-                    if (file.type.startsWith('image/')) {
+                    if (fType === 'jpg' || fType === 'png') {
                         const img = document.createElement('img');
                         img.className = 'preview-item';
                         img.src = URL.createObjectURL(file);
@@ -325,7 +335,7 @@
                         });
                     });
 
-                    // 步驟 1：請 GAS 產出有表格的主 PDF 
+                    // 步驟 1：產出主 PDF 
                     submitText.innerText = "生成表單中 (1/3)...";
                     const res1 = await fetch(CONFIG.GAS_API_URL, {
                         method: 'POST',
@@ -338,51 +348,59 @@
                     const formId = result1.formId;
                     const templateBase64 = result1.pdfBase64;
 
-                    // 步驟 2：在前端使用 pdf-lib 合併所有附件
+                    // 步驟 2：合併所有附件
                     submitText.innerText = "合併附件中 (2/3)...";
                     const { PDFDocument } = PDFLib;
                     const mergedPdf = await PDFDocument.create();
 
-                    // 載入剛才產生的主表單 PDF
                     const templatePdf = await PDFDocument.load(templateBase64);
                     const copiedPages = await mergedPdf.copyPages(templatePdf, templatePdf.getPageIndices());
                     copiedPages.forEach((page) => mergedPdf.addPage(page));
 
-                    // 逐一處理使用者選取的附件
                     for (let file of selectedFilesArray) {
-                        const fileBuffer = await file.arrayBuffer();
-                        if (file.type === 'application/pdf') {
-                            // 如果是 PDF，直接複製頁面過來
-                            const attachedPdf = await PDFDocument.load(fileBuffer);
-                            const pages = await mergedPdf.copyPages(attachedPdf, attachedPdf.getPageIndices());
-                            pages.forEach((page) => mergedPdf.addPage(page));
-                        } else if (file.type === 'image/jpeg' || file.type === 'image/png') {
-                            // 如果是圖片，開新的一頁貼上去
-                            let image;
-                            if (file.type === 'image/jpeg') {
-                                image = await mergedPdf.embedJpg(fileBuffer);
-                            } else {
-                                image = await mergedPdf.embedPng(fileBuffer);
-                            }
+                        // 使用 FileReader 確保相容性
+                        const fileBuffer = await new Promise((resolve, reject) => {
+                            const reader = new FileReader();
+                            reader.onload = () => resolve(reader.result);
+                            reader.onerror = () => reject(new Error("無法讀取檔案"));
+                            reader.readAsArrayBuffer(file);
+                        });
+                        
+                        const fType = getFileType(file);
 
-                            const page = mergedPdf.addPage();
-                            const { width, height } = page.getSize();
-                            // 縮放圖片以適應 A4 頁面 (留邊界 40)
-                            const scaled = image.scaleToFit(width - 40, height - 40);
-                            page.drawImage(image, {
-                                x: width / 2 - scaled.width / 2,
-                                y: height / 2 - scaled.height / 2,
-                                width: scaled.width,
-                                height: scaled.height,
-                            });
+                        try {
+                            if (fType === 'pdf') {
+                                const attachedPdf = await PDFDocument.load(fileBuffer);
+                                const pages = await mergedPdf.copyPages(attachedPdf, attachedPdf.getPageIndices());
+                                pages.forEach((page) => mergedPdf.addPage(page));
+                            } else if (fType === 'jpg' || fType === 'png') {
+                                let image;
+                                if (fType === 'jpg') {
+                                    image = await mergedPdf.embedJpg(fileBuffer);
+                                } else {
+                                    image = await mergedPdf.embedPng(fileBuffer);
+                                }
+
+                                const page = mergedPdf.addPage();
+                                const { width, height } = page.getSize();
+                                const scaled = image.scaleToFit(width - 40, height - 40);
+                                page.drawImage(image, {
+                                    x: width / 2 - scaled.width / 2,
+                                    y: height / 2 - scaled.height / 2,
+                                    width: scaled.width,
+                                    height: scaled.height,
+                                });
+                            }
+                        } catch (err) {
+                            console.error("合併失敗:", file.name, err);
+                            alert(`檔案【${file.name}】合併失敗！可能是檔案損毀或被密碼保護，系統已略過此檔案並繼續處理。`);
                         }
                     }
 
-                    // 輸出最終合併的 PDF 檔案 (Base64)
                     const finalPdfBytes = await mergedPdf.save();
                     const finalPdfBase64 = arrayBufferToBase64(finalPdfBytes);
 
-                    // 步驟 3：將最終 PDF 傳回 GAS 存檔
+                    // 步驟 3：存檔
                     submitText.innerText = "上傳存檔中 (3/3)...";
                     const res2 = await fetch(CONFIG.GAS_API_URL, {
                         method: 'POST',
@@ -399,7 +417,7 @@
                         alert("儲存發生錯誤：" + result2.message);
                     }
                 } catch (error) {
-                    alert("處理發生錯誤，請確認網路連線或附件格式。");
+                    alert("處理發生錯誤，請確認網路連線。");
                     console.error(error);
                 } finally {
                     submitBtn.disabled = false;
