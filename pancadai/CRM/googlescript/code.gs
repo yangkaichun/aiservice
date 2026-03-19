@@ -1,4 +1,4 @@
-/* Code.gs - PancadAI CRM Backend V7.1 (Hospital Visit Note Edition) */
+/* Code.gs - PancadAI CRM Backend V7.3 (Prescribing KOL Edition) */
 
 const SPREADSHEET_ID = '1hID8Hi42qNFyA_13BqSJgfjIE4FguQRR5wMEsXBRl0I';
 const UPLOAD_FOLDER_ID = '1tmLX1lSEa_R26S5LAyIv7IPAhPuI67Db'; 
@@ -141,7 +141,7 @@ function saveHospital(p, u) {
     'Contract_Link': p.contractLink, 
     'EBM_Share_Ratio': p.ebmShare, 
     'Sales_Rep': p.salesRep,
-    'Visit_Note': p.visitNote, // [新增] 將前端傳來的筆記寫入 Visit_Note 欄位
+    'Visit_Note': p.visitNote, 
     'Updated_At': new Date() 
   }; 
   const data = sheet.getDataRange().getValues(); 
@@ -166,7 +166,8 @@ function saveKOL(p, u) {
     const data = sheet.getDataRange().getValues(); let r = -1;
     if(p.kolId) { for(let i=1;i<data.length;i++) if(data[i][0]===p.kolId){r=i+1;break;} }
     const id = p.kolId||Utilities.getUuid();
-    const row = [id, p.name, p.hospitalId, p.title, p.phone||'', p.email, p.visitStage, p.visitNote, p.probability, '', '', new Date()];
+    // [修改] 將 isPrescribing 狀態存入陣列第10個元素 (對應 J 欄)
+    const row = [id, p.name, p.hospitalId, p.title, p.phone||'', p.email, p.visitStage, p.visitNote, p.probability, p.isPrescribing || 'No', '', new Date()];
     if(r>0) { sheet.getRange(r,1,1,row.length).setValues([row]); logAction(u, 'Update KOL', `${p.name}`); } 
     else { sheet.appendRow(row); logAction(u, 'New KOL', `${p.name}`); }
     
