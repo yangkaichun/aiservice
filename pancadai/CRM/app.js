@@ -12,7 +12,7 @@ let kolModal, userModal, settlementModal, drilldownModal;
 let selectedAnalyticsHospitalId = null; 
 let loadingInterval = null;
 
-const DEFAULT_AVATAR = "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0iI2NjYyI+PHBhdGggZD0iTTEyIDJDMi40OCAyIDIgNi40OCAyIDEyczQuNDggMTAgMTAgMTAgMTAtNC40OCAxMC0xMFMyMS41MiAyIDEyIDJ6bTAgM2MzLjE5IDAgNS43OSAyLjU5IDUuNzkgNS43OVMxNS4xOSAxNi41OCAxMiAxNi41OHMtNS43OS0yLjU5LTUuNzktNS43OVM4LjgxIDUgMTIgNXptMCAxNC4yYy0yLjUgMC00LjcxLTEuMjgtNi4wMi0zLjIyLjA0LTEuOTkgNC0zLjA4IDYuMDItMy4wOHMyLjk4IDEuMDkgNi4wMiAzLjA4Yy0xLjMxIDEuOTQtMy41MiAzLjIyLTYuMDIgMy4yMnoiLz48L3N2Zz4=";
+const DEFAULT_AVATAR = "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0iI2NjYyI+PHBhdGggZD0iTTEyIDJDMi40OCAyIDIgNi40OCAyIDEyczQuNDggMTAgMTAgMTAgMTAtNC40OCAxMC0xMFMyMS41MiAy IDEyIDJ6bTAgM2MzLjE5IDAgNS43OSAyLjU5IDUuNzkgNS43OVMxNS4xOSAxNi41OCAxMiAxNi41OHMtNS43OS0yLjU5LTUuNzktNS43OVM4LjgxIDUgMTIgNXptMCAxNC4yYy0yLjUgMC00LjcxLTEuMjgtNi4wMi0zLjIyLjA0LTEuOTkgNC0zLjA4IDYuMDItMy4wOHMyLjk4IDEu0OSA2LjAyIDMuMDhjLTEuMzEgMS45NC0zLjUyIDMuMjItNi4wMiAzLjIyeiIvPjwvc3ZnPg==";
 
 window.onload = function() {
     const client_id = CONFIG.GOOGLE_CLIENT_ID;
@@ -44,6 +44,13 @@ window.onload = function() {
         document.getElementById('mobile-user-avatar').src = DEFAULT_AVATAR;
     }
 
+    const currentTheme = document.documentElement.getAttribute('data-theme') || 'dark';
+    const btn = document.getElementById('theme-toggle-btn');
+    if (btn) {
+        // 🚀 修改初始 HTML 結構
+        btn.innerHTML = currentTheme === 'light' ? '<i class="fas fa-moon me-2"></i> 切換深色' : '<i class="fas fa-sun me-2"></i> 切換淺色';
+    }
+
     Chart.defaults.color = '#94a3b8';
     Chart.defaults.font.family = "'Segoe UI', 'Microsoft JhengHei', sans-serif";
 
@@ -60,6 +67,12 @@ function toggleTheme() {
     
     body.setAttribute('data-theme', newTheme);
     localStorage.setItem('pancad_theme', newTheme);
+
+    const btn = document.getElementById('theme-toggle-btn');
+    if (btn) {
+        // 🚀 修改切換後的 HTML 結構
+        btn.innerHTML = newTheme === 'light' ? '<i class="fas fa-moon me-2"></i> 切換深色' : '<i class="fas fa-sun me-2"></i> 切換淺色';
+    }
 
     updateDashboardCharts();
     renderUsageAnalytics();
@@ -406,10 +419,7 @@ function updateDashboardCharts() {
         },
         options: { 
             responsive: true, maintainAspectRatio: false, 
-            plugins: { 
-                legend: { position: 'top', align: 'end', labels: {color: textColor, boxWidth: 12, font: {family: "'Segoe UI', sans-serif"}} }, 
-                datalabels: { display: false } 
-            }, 
+            plugins: { legend: { position: 'top', align: 'end', labels: {color: textColor, boxWidth: 12, font: {family: "'Segoe UI', sans-serif"}} }, datalabels: { display: false } }, 
             scales: { 
                 x: { grid: { display: false }, ticks: {color: textColor, font: {family: "'Segoe UI', sans-serif"}} }, 
                 y: { grid: { borderDash: [4, 4], color: gridColorY, drawBorder: false }, beginAtZero: true, ticks: {color: textColor, font: {family: "'Segoe UI', sans-serif"}} } 
@@ -691,12 +701,11 @@ function renderHospitalList() {
     }); 
 }
 
-// [修改] 支援「開單醫師」過濾條件
 function renderKOLList() { 
     const tbody = document.getElementById('kol-list-body'); 
     const filterHosp = getVal('kol-filter-hospital');
+    const filterPrescribing = getVal('kol-filter-prescribing'); 
     const filterKeyword = getVal('kol-filter-keyword').toLowerCase(); 
-    const filterPrescribing = getVal('kol-filter-prescribing'); // 取得開單醫師過濾器狀態
     const isLight = document.documentElement.getAttribute('data-theme') === 'light';
     
     tbody.innerHTML = ''; 
@@ -704,7 +713,6 @@ function renderKOLList() {
     globalKOLs.forEach(k => { 
         if (filterHosp !== 'All' && k.Hospital_ID !== filterHosp) return;
 
-        // 開單醫師篩選邏輯
         const isPrescribing = (k.Is_Prescribing === 'Yes');
         if (filterPrescribing === 'Yes' && !isPrescribing) return;
         if (filterPrescribing === 'No' && isPrescribing) return;
@@ -714,16 +722,15 @@ function renderKOLList() {
         if (filterKeyword) {
             const kolName = String(k.Name || '').toLowerCase();
             const hospitalNameStr = String(hName || '').toLowerCase();
-            if (!kolName.includes(filterKeyword) && !hospitalNameStr.includes(filterKeyword)) {
+            const titleStr = String(k.Title || '').toLowerCase();
+            if (!kolName.includes(filterKeyword) && !hospitalNameStr.includes(filterKeyword) && !titleStr.includes(filterKeyword)) {
                 return;
             }
         }
 
         const emailLink = k.Email ? `<a href="mailto:${k.Email}" class="text-decoration-none text-info fw-medium"><i class="fas fa-envelope me-1"></i>${k.Email}</a>` : '<span class="text-muted">-</span>';
         let nameColorClass = isLight ? 'text-dark' : 'text-white';
-        
-        // 若為開單醫師，在名字旁加入紅底小 Badge 識別
-        let preBadge = isPrescribing ? `<span class="badge bg-danger ms-2" style="font-size: 0.6rem; vertical-align: middle;">開單</span>` : '';
+        let preBadge = isPrescribing ? `<span class="badge bg-danger ms-2 status-badge">開單</span>` : '';
 
         tbody.innerHTML += `
             <tr>
@@ -747,6 +754,7 @@ function openHospitalInput(id){
     setVal('h-id',''); 
     setVal('h-link',''); 
     setVal('h-note',''); 
+    document.getElementById('btn-view-contract').classList.add('d-none');
     if(id){ 
         const h=globalHospitals.find(x=>x.Hospital_ID===id); 
         if(h){ 
@@ -754,6 +762,11 @@ function openHospitalInput(id){
             if(h.Contract_Start_Date)setVal('h-start',h.Contract_Start_Date.split('T')[0]); 
             if(h.Contract_End_Date)setVal('h-end',h.Contract_End_Date.split('T')[0]); 
             setVal('h-note', h.Visit_Note); 
+            if(h.Contract_Link) {
+                const viewBtn = document.getElementById('btn-view-contract');
+                viewBtn.href = h.Contract_Link;
+                viewBtn.classList.remove('d-none');
+            }
         } 
     } 
 }
@@ -762,7 +775,7 @@ async function submitHospital(){
     showLoading(true); 
     let link=getVal('h-link'); 
     const f=document.getElementById('h-file'); 
-    if(f.files.length){ link=(await uploadFile(f.files[0])).url; } 
+    if(f.files.length){ try{link=(await uploadFile(f.files[0])).url;}catch(e){console.error("File upload failed", e);} } 
     const p={
         hospitalId:getVal('h-id'), name:getVal('h-name'), region:getVal('h-region'), level:getVal('h-level'), address:getVal('h-address'), status:getVal('h-status'), exclusivity:getVal('h-exclusivity'), unitPrice:getVal('h-unit-price'), ebmShare:getVal('h-ebm'), contractAmount:getVal('h-amount'), contractStart:getVal('h-start'), contractEnd:getVal('h-end'), contractLink:link, 
         salesRep:document.getElementById('user-name').innerText,
@@ -774,12 +787,11 @@ async function submitHospital(){
     showLoading(false); 
 }
 
-// [修改] KOL Modal 載入時將開單醫師勾選狀態復原
 function openKOLModal(id){ 
     document.getElementById('form-kol').reset(); 
     setVal('k-id',''); 
     document.getElementById('k-prob-val').innerText = '20%';
-    document.getElementById('k-is-prescribing').checked = false; // 預設取消勾選
+    document.getElementById('k-is-prescribing').checked = false; 
     
     const s = document.getElementById('k-hospital-datalist'); 
     s.innerHTML = ''; 
@@ -794,7 +806,6 @@ function openKOLModal(id){
             setVal('k-id',k.KOL_ID);
             const hosp = globalHospitals.find(h => h.Hospital_ID === k.Hospital_ID);
             setVal('k-hospital-input', hosp ? hosp.Name : '');
-
             setVal('k-name',k.Name);
             setVal('k-title',k.Title);
             setVal('k-email',k.Email);
@@ -804,8 +815,6 @@ function openKOLModal(id){
             setVal('k-prob', prob);
             document.getElementById('k-prob-val').innerText = prob + '%';
             setVal('k-note',k.Visit_Note);
-            
-            // 讀取開單醫師狀態
             if(k.Is_Prescribing === 'Yes') {
                 document.getElementById('k-is-prescribing').checked = true;
             }
@@ -816,7 +825,6 @@ function openKOLModal(id){
     kolModal.show(); 
 }
 
-// [修改] 將 Checkbox 狀態打包進 Payload 送至後端
 async function submitKOL(){ 
     const hospInputName = getVal('k-hospital-input');
     const hospObj = globalHospitals.find(h => h.Name === hospInputName);
@@ -828,20 +836,8 @@ async function submitKOL(){
     const targetHospId = hospObj ? hospObj.Hospital_ID : '';
     const isPrescribing = document.getElementById('k-is-prescribing').checked ? 'Yes' : 'No';
 
-    const p={
-        kolId:getVal('k-id'), 
-        hospitalId: targetHospId, 
-        name:getVal('k-name'), 
-        title:getVal('k-title'), 
-        phone:getVal('k-phone'), 
-        email:getVal('k-email'), 
-        visitStage:getVal('k-stage'), 
-        probability:getVal('k-prob'), 
-        visitNote:getVal('k-note'),
-        isPrescribing: isPrescribing // 新增參數
-    }; 
+    const p={kolId:getVal('k-id'), hospitalId:targetHospId, name:getVal('k-name'), title:getVal('k-title'), phone:getVal('k-phone'), email:getVal('k-email'), visitStage:getVal('k-stage'), probability:getVal('k-prob'), visitNote:getVal('k-note'), isPrescribing:isPrescribing}; 
     if(!p.name) return; 
-    
     showLoading(true); 
     await fetch(CONFIG.SCRIPT_URL,{method:'POST',body:JSON.stringify({action:'saveKOL',userEmail:currentUser,payload:p})}); 
     kolModal.hide(); 
@@ -853,50 +849,30 @@ async function deleteKOL() {
     const id = getVal('k-id');
     if(!id) return;
     if(!confirm("確定要刪除此筆 KOL 資料嗎？此動作無法復原。")) return;
-    
     showLoading(true);
     try {
-        const res = await fetch(CONFIG.SCRIPT_URL, { 
-            method: 'POST', 
-            body: JSON.stringify({ action: 'deleteKOL', userEmail: currentUser, payload: { kolId: id } }) 
-        });
+        const res = await fetch(CONFIG.SCRIPT_URL, {method:'POST', body:JSON.stringify({action:'deleteKOL', userEmail:currentUser, payload:{kolId:id}})});
         const json = await res.json();
-        if(json.status === 'success') {
-            kolModal.hide();
-            await refreshAllData(); 
-        } else { 
-            alert("刪除失敗：" + json.message); 
-        }
-    } catch(e) { 
-        console.error(e); 
-        alert("連線錯誤"); 
-    } finally { 
-        showLoading(false); 
-    }
+        if(json.status === 'success') {kolModal.hide(); await refreshAllData();} 
+        else {alert("刪除失敗：" + json.message);}
+    } catch(e) {console.error(e); alert("連線錯誤");} finally {showLoading(false);}
 }
 
 function openSettlementModal(id) { 
     document.getElementById('form-settlement').reset();
     setVal('s-record-id', '');
     const now = new Date();
-    const year = now.getFullYear();
-    const month = String(now.getMonth() + 1).padStart(2, '0');
-    const day = String(now.getDate()).padStart(2, '0');
-    setVal('s-date', `${year}-${month}-${day}`);
-    
+    setVal('s-date', `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}-${String(now.getDate()).padStart(2,'0')}`);
     const delBtn = document.getElementById('btn-delete-settlement');
     if(delBtn) delBtn.style.display = id ? 'block' : 'none';
-
     const sel = document.getElementById('s-hospital');
     sel.innerHTML = '<option value="">請選擇醫院...</option>';
     globalHospitals.filter(h => h.Status==='已簽約').forEach(h => sel.innerHTML+=`<option value="${h.Hospital_ID}">${h.Name}</option>`);
-    
     if(id) {
         const r = globalStats.find(x => String(x.Record_ID) === String(id));
         if(r) {
             setVal('s-record-id', r.Record_ID);
-            let dateVal = String(r.Year_Month).substring(0, 10);
-            setVal('s-date', dateVal);
+            setVal('s-date', String(r.Year_Month).substring(0, 10));
             setVal('s-hospital', r.Hospital_ID);
             setVal('s-usage', r.Usage_Count);
             setVal('s-note', r.Note);
@@ -912,18 +888,16 @@ async function deleteSettlement() {
     if(!confirm("確定要刪除此筆資料嗎？此動作無法復原。")) return;
     showLoading(true);
     try {
-        const res = await fetch(CONFIG.SCRIPT_URL, { method: 'POST', body: JSON.stringify({ action: 'deleteMonthlyStat', userEmail: currentUser, payload: { recordId: id } }) });
+        const res = await fetch(CONFIG.SCRIPT_URL, {method:'POST', body:JSON.stringify({action:'deleteMonthlyStat', userEmail:currentUser, payload:{recordId:id}})});
         const json = await res.json();
-        if(json.status === 'success') {
-            settlementModal.hide();
-            await refreshAllData();
-        } else { alert("刪除失敗"); }
-    } catch(e) { console.error(e); alert("連線錯誤"); } finally { showLoading(false); }
+        if(json.status === 'success') {settlementModal.hide(); await refreshAllData();} 
+        else {alert("刪除失敗");}
+    } catch(e) {console.error(e); alert("連線錯誤");} finally {showLoading(false);}
 }
 
-function calcPreview(){ const h=globalHospitals.find(x=>String(x.Hospital_ID)===String(getVal('s-hospital'))); if(h){ const u=Number(getVal('s-usage'))||0, p=Number(h.Unit_Price)||0, s=Number(h.EBM_Share_Ratio)||0; document.getElementById('s-hosp-info').innerText=`單價:${p} | 分潤:${s}%`; document.getElementById('s-prev-gross').innerText="$"+(u*p).toLocaleString(); document.getElementById('s-prev-net').innerText="$"+Math.round(u*p*(1-s/100)).toLocaleString(); } }
-async function submitSettlement() { const p={recordId:getVal('s-record-id'), yearMonth:getVal('s-date'), hospitalId:getVal('s-hospital'), usageCount:getVal('s-usage'), note:getVal('s-note')}; if(!p.hospitalId)return; showLoading(true); await fetch(CONFIG.SCRIPT_URL,{method:'POST',body:JSON.stringify({action:'saveMonthlyStat',userEmail:currentUser,payload:p})}); settlementModal.hide(); await refreshAllData(); showLoading(false); }
-async function toggleInvoiceStatus(id,s){ const m={'Unbilled':'Billed','Billed':'Paid','Paid':'Unbilled'}; if(confirm('變更狀態?')){showLoading(true); await fetch(CONFIG.SCRIPT_URL,{method:'POST',body:JSON.stringify({action:'updateInvoiceStatus',userEmail:currentUser,payload:{recordId:id,status:m[s]}})}); await refreshAllData(); showLoading(false);} }
+function calcPreview(){ const h=globalHospitals.find(x=>String(x.Hospital_ID)===String(getVal('s-hospital'))); if(h){ const u=Number(getVal('s-usage'))||0, p=Number(String(h.Unit_Price).replace(/[^0-9.-]+/g,""))||0, s=Number(String(h.EBM_Share_Ratio).replace(/[^0-9.-]+/g,""))||0; document.getElementById('s-hosp-info').innerText=`單價:${p} | 分潤:${s}%`; document.getElementById('s-prev-gross').innerText="$"+(u*p).toLocaleString(); document.getElementById('s-prev-net').innerText="$"+Math.round(u*p*(1-s/100)).toLocaleString(); } }
+async function submitSettlement() { const p={recordId:getVal('s-record-id'), yearMonth:getVal('s-date'), hospitalId:getVal('s-hospital'), usageCount:getVal('s-usage'), note:getVal('s-note'), invoiceStatus:'Unbilled'}; if(!p.hospitalId)return; showLoading(true); await fetch(CONFIG.SCRIPT_URL,{method:'POST',body:JSON.stringify({action:'saveMonthlyStat',userEmail:currentUser,payload:p})}); settlementModal.hide(); await refreshAllData(); showLoading(false); }
+async function toggleInvoiceStatus(id,s){ const m={'Unbilled':'Billed','Billed':'Paid','Paid':'Unbilled'}; if(confirm(`變更狀態為 ${m[s]}?`)){showLoading(true); await fetch(CONFIG.SCRIPT_URL,{method:'POST',body:JSON.stringify({action:'updateInvoiceStatus',userEmail:currentUser,payload:{recordId:id,status:m[s]}})}); await refreshAllData(); showLoading(false);} }
 function openUserModal(e='',n='',r='User',s='Active'){ setVal('u-email',e); setVal('u-name',n); setVal('u-role',r); setVal('u-status',s); userModal.show(); }
 async function submitUser(){ const p={email:getVal('u-email'),name:getVal('u-name'),role:getVal('u-role'),status:getVal('u-status')}; if(!p.email)return; showLoading(true); await fetch(CONFIG.SCRIPT_URL,{method:'POST',body:JSON.stringify({action:'saveUser',userEmail:currentUser,payload:p})}); userModal.hide(); loadAdminData(); showLoading(false); }
-async function uploadFile(f){ return new Promise((resolve, reject) => { const r = new FileReader(); r.onload=async()=>{ const b=r.result.split(',')[1]; const res=await fetch(CONFIG.SCRIPT_URL,{method:'POST',body:JSON.stringify({action:'uploadFile',userEmail:currentUser,fileData:b,fileName:f.name,mimeType:f.type})}); resolve(await res.json()); }; r.readAsDataURL(f); }); }
+async function uploadFile(f){ return new Promise((resolve, reject) => { const r = new FileReader(); r.onload=async()=>{ try{const b=r.result.split(',')[1]; const res=await fetch(CONFIG.SCRIPT_URL,{method:'POST',body:JSON.stringify({action:'uploadFile',userEmail:currentUser,fileData:b,fileName:f.name,mimeType:f.type})}); resolve(await res.json());}catch(e){reject(e);}}; r.onerror=reject; r.readAsDataURL(f); }); }
