@@ -1,4 +1,4 @@
-// app.js V7.2 (Theme Toggle + Delete KOL + Complete Implementation)
+// app.js V7.3 (Prescribing Doctor Edition)
 
 let currentUser = null;
 let currentRole = null;
@@ -44,12 +44,6 @@ window.onload = function() {
         document.getElementById('mobile-user-avatar').src = DEFAULT_AVATAR;
     }
 
-    const currentTheme = document.documentElement.getAttribute('data-theme') || 'dark';
-    const btn = document.getElementById('theme-toggle-btn');
-    if (btn) {
-        btn.innerHTML = currentTheme === 'light' ? '<i class="fas fa-moon me-2"></i> 切換深色' : '<i class="fas fa-sun me-2"></i> 切換淺色';
-    }
-
     Chart.defaults.color = '#94a3b8';
     Chart.defaults.font.family = "'Segoe UI', 'Microsoft JhengHei', sans-serif";
 
@@ -59,7 +53,6 @@ window.onload = function() {
     }
 };
 
-// 🚀 主題切換邏輯
 function toggleTheme() {
     const body = document.documentElement;
     const currentTheme = body.getAttribute('data-theme');
@@ -68,12 +61,6 @@ function toggleTheme() {
     body.setAttribute('data-theme', newTheme);
     localStorage.setItem('pancad_theme', newTheme);
 
-    const btn = document.getElementById('theme-toggle-btn');
-    if (btn) {
-        btn.innerHTML = newTheme === 'light' ? '<i class="fas fa-moon me-2"></i> 切換深色' : '<i class="fas fa-sun me-2"></i> 切換淺色';
-    }
-
-    // 重繪圖表
     updateDashboardCharts();
     renderUsageAnalytics();
     
@@ -419,7 +406,10 @@ function updateDashboardCharts() {
         },
         options: { 
             responsive: true, maintainAspectRatio: false, 
-            plugins: { legend: { position: 'top', align: 'end', labels: {color: textColor, boxWidth: 12, font: {family: "'Segoe UI', sans-serif"}} }, datalabels: { display: false } }, 
+            plugins: { 
+                legend: { position: 'top', align: 'end', labels: {color: textColor, boxWidth: 12, font: {family: "'Segoe UI', sans-serif"}} }, 
+                datalabels: { display: false } 
+            }, 
             scales: { 
                 x: { grid: { display: false }, ticks: {color: textColor, font: {family: "'Segoe UI', sans-serif"}} }, 
                 y: { grid: { borderDash: [4, 4], color: gridColorY, drawBorder: false }, beginAtZero: true, ticks: {color: textColor, font: {family: "'Segoe UI', sans-serif"}} } 
@@ -701,16 +691,23 @@ function renderHospitalList() {
     }); 
 }
 
+// [修改] 支援「開單醫師」過濾條件
 function renderKOLList() { 
     const tbody = document.getElementById('kol-list-body'); 
     const filterHosp = getVal('kol-filter-hospital');
     const filterKeyword = getVal('kol-filter-keyword').toLowerCase(); 
+    const filterPrescribing = getVal('kol-filter-prescribing'); // 取得開單醫師過濾器狀態
     const isLight = document.documentElement.getAttribute('data-theme') === 'light';
     
     tbody.innerHTML = ''; 
     
     globalKOLs.forEach(k => { 
         if (filterHosp !== 'All' && k.Hospital_ID !== filterHosp) return;
+
+        // 開單醫師篩選邏輯
+        const isPrescribing = (k.Is_Prescribing === 'Yes');
+        if (filterPrescribing === 'Yes' && !isPrescribing) return;
+        if (filterPrescribing === 'No' && isPrescribing) return;
 
         const hName = (globalHospitals.find(h=>h.Hospital_ID===k.Hospital_ID)||{}).Name || String(k.Hospital_ID); 
         
@@ -724,10 +721,13 @@ function renderKOLList() {
 
         const emailLink = k.Email ? `<a href="mailto:${k.Email}" class="text-decoration-none text-info fw-medium"><i class="fas fa-envelope me-1"></i>${k.Email}</a>` : '<span class="text-muted">-</span>';
         let nameColorClass = isLight ? 'text-dark' : 'text-white';
+        
+        // 若為開單醫師，在名字旁加入紅底小 Badge 識別
+        let preBadge = isPrescribing ? `<span class="badge bg-danger ms-2" style="font-size: 0.6rem; vertical-align: middle;">開單</span>` : '';
 
         tbody.innerHTML += `
             <tr>
-                <td><strong class="${nameColorClass}">${k.Name}</strong></td>
+                <td><strong class="${nameColorClass}">${k.Name}</strong>${preBadge}</td>
                 <td>${hName}</td>
                 <td>${k.Title}</td>
                 <td>${emailLink}</td>
@@ -774,10 +774,12 @@ async function submitHospital(){
     showLoading(false); 
 }
 
+// [修改] KOL Modal 載入時將開單醫師勾選狀態復原
 function openKOLModal(id){ 
     document.getElementById('form-kol').reset(); 
     setVal('k-id',''); 
     document.getElementById('k-prob-val').innerText = '20%';
+    document.getElementById('k-is-prescribing').checked = false; // 預設取消勾選
     
     const s = document.getElementById('k-hospital-datalist'); 
     s.innerHTML = ''; 
@@ -802,6 +804,11 @@ function openKOLModal(id){
             setVal('k-prob', prob);
             document.getElementById('k-prob-val').innerText = prob + '%';
             setVal('k-note',k.Visit_Note);
+            
+            // 讀取開單醫師狀態
+            if(k.Is_Prescribing === 'Yes') {
+                document.getElementById('k-is-prescribing').checked = true;
+            }
         }
     } else {
         setVal('k-hospital-input', ''); 
@@ -809,6 +816,7 @@ function openKOLModal(id){
     kolModal.show(); 
 }
 
+// [修改] 將 Checkbox 狀態打包進 Payload 送至後端
 async function submitKOL(){ 
     const hospInputName = getVal('k-hospital-input');
     const hospObj = globalHospitals.find(h => h.Name === hospInputName);
@@ -818,6 +826,7 @@ async function submitKOL(){
         return;
     }
     const targetHospId = hospObj ? hospObj.Hospital_ID : '';
+    const isPrescribing = document.getElementById('k-is-prescribing').checked ? 'Yes' : 'No';
 
     const p={
         kolId:getVal('k-id'), 
@@ -828,7 +837,8 @@ async function submitKOL(){
         email:getVal('k-email'), 
         visitStage:getVal('k-stage'), 
         probability:getVal('k-prob'), 
-        visitNote:getVal('k-note')
+        visitNote:getVal('k-note'),
+        isPrescribing: isPrescribing // 新增參數
     }; 
     if(!p.name) return; 
     
