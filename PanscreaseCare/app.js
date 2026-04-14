@@ -1,8 +1,5 @@
 // app.js
 
-// ==========================================
-// YouTube 網址轉換工具
-// ==========================================
 function getYouTubeId(url) {
     if (!url) return null;
     const regExp = /^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|&v=)([^#&?]*).*/;
@@ -10,14 +7,10 @@ function getYouTubeId(url) {
     return (match && match[2].length === 11) ? match[2] : null;
 }
 
-// 防當機安全賦值函式 (確保 HTML 就算缺了某個 ID 也不會 Crash)
 const safeSetText = (id, text) => { const el = document.getElementById(id); if (el) el.innerText = text; };
 const safeSetHref = (id, url) => { const el = document.getElementById(id); if (el) el.href = url; };
 const safeSetSrc = (id, url) => { const el = document.getElementById(id); if (el) el.src = url; };
 
-// ==========================================
-// 1. 網頁載入時去 Google Sheets 抓取最新內容 (CMS)
-// ==========================================
 document.addEventListener('DOMContentLoaded', async () => {
     try {
         const fetchUrl = CONFIG.GAS_URL + "?action=getContent";
@@ -25,14 +18,11 @@ document.addEventListener('DOMContentLoaded', async () => {
         const result = await res.json();
         
         if (result.status === 'success' && result.data) {
-            
-            // --- 更新 News (方格子) ---
+            // 更新 News
             if (result.data.news.title) {
                 safeSetText('display-news-title', result.data.news.title);
                 safeSetText('display-news-summary', result.data.news.summary);
                 safeSetHref('display-news-url', result.data.news.url);
-                
-                // 動態顯示您在後台輸入的圖片網址
                 if (result.data.news.image) {
                     const imgEl = document.getElementById('display-news-img');
                     const placeholder = document.getElementById('news-placeholder-text');
@@ -43,13 +33,11 @@ document.addEventListener('DOMContentLoaded', async () => {
                     }
                 }
             }
-            
-            // --- 更新 Video (YouTube) ---
+            // 更新 Video
             if (result.data.video.title) {
                 safeSetText('display-video-title', result.data.video.title);
                 safeSetText('display-video-summary', result.data.video.summary);
                 safeSetHref('display-video-url', result.data.video.url); 
-                
                 const videoId = getYouTubeId(result.data.video.url);
                 if (videoId) {
                     safeSetSrc('display-video-iframe', `https://www.youtube.com/embed/${videoId}?rel=0`);
@@ -58,7 +46,6 @@ document.addEventListener('DOMContentLoaded', async () => {
         }
     } catch (e) {
         console.error("無法讀取動態內容，顯示預設值。", e);
-        // 防呆預設值：使用您截圖中的真實文章標題
         safeSetText('display-news-title', "別讓胰臟癌輕易宣判死刑！AI 如何在早期攔截這個無聲殺手？");
         safeSetText('display-news-summary', "在醫療圈，只要聽到「胰臟癌」，許多人的第一反應往往是絕望。高居不下的致死率、極低的早期發現率...");
         safeSetText('display-video-title', "介紹「助胰見」 | Introducing PANCREASaver");
@@ -67,21 +54,23 @@ document.addEventListener('DOMContentLoaded', async () => {
 });
 
 // ==========================================
-// 2. 自我風險評估邏輯與互動
+// 2. 自我風險評估邏輯 (全新 5 題醫學維度)
 // ==========================================
 const questions = [
-    { question: "您的家族中（一等親）是否有胰臟癌病史？", options: [{ text: "是", score: 3 }, { text: "否", score: 0 }, { text: "不確定", score: 0 }] },
-    { question: "您是否患有糖尿病，且為近期（50歲後）才初次確診？", options: [{ text: "是", score: 3 }, { text: "否，或已罹患多年", score: 0 }] },
-    { question: "您是否有抽菸或過量飲酒的習慣？", options: [{ text: "兩者皆有", score: 2 }, { text: "其中一項", score: 1 }, { text: "皆無", score: 0 }] },
-    { question: "近期是否出現：無痛性黃疸、不明原因上腹痛或背痛、體重無故驟降？", options: [{ text: "有出現上述症狀", score: 5 }, { text: "無", score: 0 }] }
+    { question: "1. 請問您的年齡是否大於 50 歲？", options: [{ text: "是", score: 1 }, { text: "否", score: 0 }] },
+    { question: "2. 您的直系親屬（父母、手足）中，是否有人曾罹患胰臟癌？", options: [{ text: "是，有家族病史", score: 3 }, { text: "否，或不確定", score: 0 }] },
+    { question: "3. 您是否有長期抽菸或過量飲酒的習慣？", options: [{ text: "兩者皆有", score: 2 }, { text: "僅有其中一項", score: 1 }, { text: "皆無", score: 0 }] },
+    { question: "4. 您是否患有「慢性胰臟炎」，或是「50歲後才新確診為糖尿病」？", options: [{ text: "是，有上述病史", score: 3 }, { text: "否", score: 0 }] },
+    { question: "5. 回顧最近三個月，您是否有出現以下任一症狀？\n(無痛性黃疸、不明原因體重驟降、持續上腹痛且蔓延至背部)", options: [{ text: "有出現上述疑似症狀", score: 5 }, { text: "無上述症狀", score: 0 }] }
 ];
 
 let currentQ = 0, totalScore = 0, userAnswers = [];
 
+// 替換原本的 lead-screen 為 processing-screen
 const screens = { 
     intro: document.getElementById('intro-screen'), 
     question: document.getElementById('question-screen'), 
-    lead: document.getElementById('lead-screen'), 
+    processing: document.getElementById('processing-screen'), 
     result: document.getElementById('result-screen') 
 };
 
@@ -101,15 +90,10 @@ if (btnStart) btnStart.onclick = () => { switchScreen(screens.intro, screens.que
 const btnRestart = document.getElementById('btn-restart');
 if (btnRestart) btnRestart.onclick = () => { 
     currentQ = 0; totalScore = 0; userAnswers = []; 
-    const emailInput = document.getElementById('user-email');
-    if (emailInput) emailInput.value = ''; 
     switchScreen(screens.result, screens.intro); 
     const progBar = document.getElementById('progress-bar');
     if (progBar) progBar.style.width = '0%'; 
 };
-
-const btnSubmit = document.getElementById('btn-submit');
-if (btnSubmit) btnSubmit.onclick = submitData;
 
 function renderQ() {
     const q = questions[currentQ];
@@ -140,7 +124,11 @@ function renderQ() {
                     renderQ(); 
                 } else {
                     if (progBar) progBar.style.width = '100%';
-                    setTimeout(() => switchScreen(screens.question, screens.lead), 600);
+                    // 答題完畢，直接進入「分析中」畫面
+                    setTimeout(() => {
+                        switchScreen(screens.question, screens.processing);
+                        processAndShowResult();
+                    }, 600);
                 }
             };
             opts.appendChild(btn);
@@ -148,38 +136,26 @@ function renderQ() {
     }
 }
 
-async function submitData() {
-    const emailInput = document.getElementById('user-email');
-    const email = emailInput ? emailInput.value : '';
-    if (!email || !email.includes('@')) return alert("請輸入有效的 Email 以接收報告");
-    
-    const btnSub = document.getElementById('btn-submit');
-    const loadingState = document.getElementById('loading-state');
-    
-    if (btnSub) btnSub.classList.add('hidden');
-    if (loadingState) loadingState.classList.remove('hidden');
-    
+// 無須點擊按鈕，背景自動發送資料並在 1.5 秒後顯示結果
+function processAndShowResult() {
     const riskLevel = totalScore >= 5 ? "高風險" : (totalScore >= 3 ? "中風險" : "低風險");
-    const payload = { action: 'submitForm', email: email, score: totalScore, risk: riskLevel, answers: JSON.stringify(userAnswers) };
-
-    try { 
-        // 使用 text/plain 避免瀏覽器在 POST 時攔截 CORS preflight
-        await fetch(CONFIG.GAS_URL, { 
-            method: 'POST', 
-            headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-            body: JSON.stringify(payload) 
-        }); 
-    } catch (e) { console.log(e); } 
     
+    // 背景發送給 Google Sheets 統計 (Email 註記為未提供)
+    const payload = { action: 'submitForm', email: '未提供 (匿名檢測)', score: totalScore, risk: riskLevel, answers: JSON.stringify(userAnswers) };
+    fetch(CONFIG.GAS_URL, { 
+        method: 'POST', 
+        headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+        body: JSON.stringify(payload) 
+    }).catch(e => console.log("背景統計送出完畢")); 
+    
+    // 營造運算感，1.5秒後跳轉至結果頁
     setTimeout(() => {
-        if (btnSub) btnSub.classList.remove('hidden'); 
-        if (loadingState) loadingState.classList.add('hidden');
         showResult(riskLevel);
-    }, 800);
+    }, 1500);
 }
 
 function showResult(riskLevel) {
-    switchScreen(screens.lead, screens.result);
+    switchScreen(screens.processing, screens.result);
     const resultBox = document.getElementById('result-desc');
     const rTitle = document.getElementById('result-title');
     
@@ -189,26 +165,26 @@ function showResult(riskLevel) {
         if (rTitle) rTitle.style.color = "var(--danger)"; 
         if (resultBox) {
             resultBox.style.borderColor = "var(--danger)";
-            resultBox.innerHTML = "具備多項高風險因子或疑似症狀。<br><br><strong>強烈建議儘速安排專業的腹部影像排查。</strong>";
+            resultBox.innerHTML = "根據評估，您具備高度風險因子或疑似症狀。<br><br><strong>強烈建議您儘速前往『胃腸肝膽科』進行專業影像排查。</strong>";
         }
-        safeSetText('result-cta', "就診時可主動詢問醫師是否備有「助胰見 (PANCREASaver)」等 AI 輔助系統協助判讀。");
+        safeSetText('result-cta', "就診時可主動向醫師詢問是否備有「助胰見 (PANCREASaver)」等 AI 輔助系統，協助在電腦斷層中揪出微小病灶。");
     } else if (riskLevel === "中風險") {
         safeSetText('result-icon', "⚠️"); 
         safeSetText('result-title', "留意：屬於中風險族群"); 
         if (rTitle) rTitle.style.color = "var(--warning)"; 
         if (resultBox) {
             resultBox.style.borderColor = "var(--warning)";
-            resultBox.innerHTML = "具備部分風險因子。改善習慣與定期健檢能降低威脅。"; 
+            resultBox.innerHTML = "您具備部分風險因子。胰臟癌雖然隱密，但透過定期健檢能有效掌握健康。"; 
         }
-        safeSetText('result-cta', "已將相關衛教資訊發送至信箱。");
+        safeSetText('result-cta', "建議安排健檢時，可考慮將腹部電腦斷層 (CT) 列入檢查項目，並多留意我們的衛教專欄文章。");
     } else {
         safeSetText('result-icon', "✅"); 
         safeSetText('result-title', "安心：屬於低風險族群"); 
         if (rTitle) rTitle.style.color = "var(--success)"; 
         if (resultBox) {
             resultBox.style.borderColor = "var(--success)";
-            resultBox.innerHTML = "目前未發現明顯風險因子，請保持良好的生活習慣！"; 
+            resultBox.innerHTML = "目前未發現明顯風險因子，請繼續保持良好的生活習慣！"; 
         }
-        safeSetText('result-cta', "衛教資訊已寄至您的信箱。");
+        safeSetText('result-cta', "預防勝於治療，建議您將本評估工具分享給身邊滿 50 歲的親友，一同守護健康。");
     }
 }
