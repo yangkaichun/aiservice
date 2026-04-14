@@ -1,6 +1,27 @@
 // app.js
 
 // ==========================================
+// 0. 網頁捲動動畫引擎 (Scroll Reveal Animation)
+// ==========================================
+const initAnimations = () => {
+    // 設定觀察器，當元素進入畫面 10% 時觸發動畫
+    const observerOptions = { threshold: 0.1, rootMargin: "0px 0px -50px 0px" };
+    const observer = new IntersectionObserver((entries) => {
+        entries.forEach(entry => {
+            if (entry.isIntersecting) {
+                entry.target.classList.add('active');
+                observer.unobserve(entry.target); // 確保每個區塊只會播放一次動畫
+            }
+        });
+    }, observerOptions);
+
+    // 抓取所有帶有動畫 class 的元素並開始觀察
+    document.querySelectorAll('.reveal, .reveal-left, .reveal-right, .reveal-down, .reveal-scale').forEach(el => {
+        observer.observe(el);
+    });
+};
+
+// ==========================================
 // YouTube 網址轉換工具
 // ==========================================
 function getYouTubeId(url) {
@@ -10,7 +31,6 @@ function getYouTubeId(url) {
     return (match && match[2].length === 11) ? match[2] : null;
 }
 
-// 防當機安全賦值函式
 const safeSetText = (id, text) => { const el = document.getElementById(id); if (el) el.innerText = text; };
 const safeSetHref = (id, url) => { const el = document.getElementById(id); if (el) el.href = url; };
 const safeSetSrc = (id, url) => { const el = document.getElementById(id); if (el) el.src = url; };
@@ -19,6 +39,10 @@ const safeSetSrc = (id, url) => { const el = document.getElementById(id); if (el
 // 1. 網頁載入時去 Google Sheets 抓取最新內容 (CMS)
 // ==========================================
 document.addEventListener('DOMContentLoaded', async () => {
+    
+    // 啟動進場動畫
+    initAnimations();
+
     try {
         const fetchUrl = CONFIG.GAS_URL + "?action=getContent";
         const res = await fetch(fetchUrl, { method: 'GET' });
@@ -73,11 +97,10 @@ const questions = [
 
 let currentQ = 0, totalScore = 0, userAnswers = [];
 
-// 對應 index.html 的 ID
 const screens = { 
     intro: document.getElementById('intro-screen'), 
     question: document.getElementById('question-screen'), 
-    processing: document.getElementById('processing-screen'), // 免 Email 處理中畫面
+    processing: document.getElementById('processing-screen'),
     result: document.getElementById('result-screen') 
 };
 
@@ -131,7 +154,6 @@ function renderQ() {
                     renderQ(); 
                 } else {
                     if (progBar) progBar.style.width = '100%';
-                    // 答題完畢，跳轉到分析中畫面，並觸發運算
                     setTimeout(() => {
                         switchScreen(screens.question, screens.processing);
                         processAndShowResult();
@@ -143,11 +165,9 @@ function renderQ() {
     }
 }
 
-// 處理結果並傳送給後端
 function processAndShowResult() {
     const riskLevel = totalScore >= 5 ? "高風險" : (totalScore >= 3 ? "中風險" : "低風險");
     
-    // 背景發送給 Google Sheets 統計 (不影響前端流暢度)
     const payload = { action: 'submitForm', email: '未提供 (匿名檢測)', score: totalScore, risk: riskLevel, answers: JSON.stringify(userAnswers) };
     fetch(CONFIG.GAS_URL, { 
         method: 'POST', 
@@ -155,7 +175,6 @@ function processAndShowResult() {
         body: JSON.stringify(payload) 
     }).catch(e => console.log(e)); 
     
-    // 營造運算感，1.5 秒後跳轉至結果頁
     setTimeout(() => {
         showResult(riskLevel);
     }, 1500);
