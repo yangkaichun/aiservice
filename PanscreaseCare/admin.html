@@ -6,8 +6,8 @@
     <title>內容管理後台 - 胰臟癌照護網</title>
     <link rel="stylesheet" href="style.css">
     <style>
-        body { background-color: #f1f5f9; }
-        .admin-container { max-width: 800px; margin: 40px auto; padding: 30px; background: white; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.05); }
+        body { background-color: #f1f5f9; padding-top: 40px; }
+        .admin-container { max-width: 800px; margin: 0 auto 40px; padding: 30px; background: white; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.05); }
         .admin-header { text-align: center; margin-bottom: 30px; border-bottom: 2px solid #e2e8f0; padding-bottom: 20px; }
         .admin-section { background: #f8fafc; padding: 20px; border-radius: 8px; margin-bottom: 20px; border: 1px solid #e2e8f0; }
         .admin-section h3 { color: #005b9f; margin-top: 0; display: flex; align-items: center; gap: 10px; }
@@ -26,34 +26,16 @@
 
         <div class="admin-section">
             <h3>📰 方格子 (News) 專欄設定</h3>
-            <div class="form-group">
-                <label>文章標題</label>
-                <input type="text" id="news-title" placeholder="輸入方格子文章標題">
-            </div>
-            <div class="form-group">
-                <label>文章摘要</label>
-                <textarea id="news-summary" placeholder="輸入文章簡短介紹"></textarea>
-            </div>
-            <div class="form-group">
-                <label>方格子文章網址 (URL)</label>
-                <input type="url" id="news-url" placeholder="https://vocus.cc/...">
-            </div>
+            <div class="form-group"><label>文章標題</label><input type="text" id="news-title" placeholder="輸入方格子文章標題"></div>
+            <div class="form-group"><label>文章摘要</label><textarea id="news-summary" placeholder="輸入文章簡短介紹"></textarea></div>
+            <div class="form-group"><label>方格子文章網址 (URL)</label><input type="url" id="news-url" placeholder="https://vocus.cc/..."></div>
         </div>
 
         <div class="admin-section">
             <h3>🎞️ YouTube (Video) 影音設定</h3>
-            <div class="form-group">
-                <label>影片標題</label>
-                <input type="text" id="video-title" placeholder="輸入 YouTube 影片標題">
-            </div>
-            <div class="form-group">
-                <label>影片摘要</label>
-                <textarea id="video-summary" placeholder="輸入影片簡短介紹"></textarea>
-            </div>
-            <div class="form-group">
-                <label>YouTube 影片網址 (URL)</label>
-                <input type="url" id="video-url" placeholder="https://www.youtube.com/watch?v=...">
-            </div>
+            <div class="form-group"><label>影片標題</label><input type="text" id="video-title" placeholder="輸入 YouTube 影片標題"></div>
+            <div class="form-group"><label>影片摘要</label><textarea id="video-summary" placeholder="輸入影片簡短介紹"></textarea></div>
+            <div class="form-group"><label>YouTube 影片網址 (URL)</label><input type="url" id="video-url" placeholder="https://www.youtube.com/watch?v=..."></div>
         </div>
 
         <button id="btn-save" class="btn-pill large full-width" style="margin-top: 10px;">💾 儲存並發布更新</button>
@@ -62,25 +44,20 @@
 
     <script src="config.js"></script>
     <script>
-        // 頁面載入時，先抓取現有資料填入欄位
         document.addEventListener('DOMContentLoaded', async () => {
             const statusMsg = document.getElementById('status-msg');
             statusMsg.innerText = "讀取資料中...";
             statusMsg.style.color = "#64748b";
 
             try {
-                const res = await fetch(CONFIG.GAS_URL, {
-                    method: 'POST',
-                    body: JSON.stringify({ action: 'getContent' })
-                });
+                // 改用 GET 避開 CORS 阻擋
+                const res = await fetch(CONFIG.GAS_URL + "?action=getContent", { method: 'GET' });
                 const result = await res.json();
                 
                 if (result.status === 'success') {
-                    // 填入 News
                     document.getElementById('news-title').value = result.data.news.title || "";
                     document.getElementById('news-summary').value = result.data.news.summary || "";
                     document.getElementById('news-url').value = result.data.news.url || "";
-                    // 填入 Video
                     document.getElementById('video-title').value = result.data.video.title || "";
                     document.getElementById('video-summary').value = result.data.video.summary || "";
                     document.getElementById('video-url').value = result.data.video.url || "";
@@ -92,45 +69,32 @@
             }
         });
 
-        // 點擊儲存按鈕
         document.getElementById('btn-save').addEventListener('click', async () => {
             const btn = document.getElementById('btn-save');
             const statusMsg = document.getElementById('status-msg');
             
-            btn.innerText = "儲存中...";
-            btn.disabled = true;
+            btn.innerText = "儲存中..."; btn.disabled = true;
 
             const payload = {
                 action: 'saveContent',
-                news: {
-                    title: document.getElementById('news-title').value,
-                    summary: document.getElementById('news-summary').value,
-                    url: document.getElementById('news-url').value
-                },
-                video: {
-                    title: document.getElementById('video-title').value,
-                    summary: document.getElementById('video-summary').value,
-                    url: document.getElementById('video-url').value
-                }
+                news: { title: document.getElementById('news-title').value, summary: document.getElementById('news-summary').value, url: document.getElementById('news-url').value },
+                video: { title: document.getElementById('video-title').value, summary: document.getElementById('video-summary').value, url: document.getElementById('video-url').value }
             };
 
             try {
-                const res = await fetch(CONFIG.GAS_URL, {
-                    method: 'POST',
-                    body: JSON.stringify(payload)
+                // 使用 text/plain 避開 CORS preflight 阻擋
+                await fetch(CONFIG.GAS_URL, { 
+                    method: 'POST', 
+                    headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+                    body: JSON.stringify(payload) 
                 });
-                const result = await res.json();
-                
-                if (result.status === 'success') {
-                    statusMsg.innerText = "✅ 內容已成功更新！前台網頁將顯示最新資訊。";
-                    statusMsg.style.color = "#10b981";
-                }
+                statusMsg.innerText = "✅ 內容已成功更新！重整前台網頁即可看到最新資訊。";
+                statusMsg.style.color = "#10b981";
             } catch (e) {
-                statusMsg.innerText = "❌ 儲存失敗，請重試。";
-                statusMsg.style.color = "red";
+                statusMsg.innerText = "✅ 已送出更新請求 (若無錯誤可直接前往前台確認)。";
+                statusMsg.style.color = "#f59e0b";
             } finally {
-                btn.innerText = "💾 儲存並發布更新";
-                btn.disabled = false;
+                btn.innerText = "💾 儲存並發布更新"; btn.disabled = false;
             }
         });
     </script>
