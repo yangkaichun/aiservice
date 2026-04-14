@@ -1,5 +1,8 @@
 // app.js
 
+// ==========================================
+// YouTube 網址轉換工具
+// ==========================================
 function getYouTubeId(url) {
     if (!url) return null;
     const regExp = /^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|&v=)([^#&?]*).*/;
@@ -7,10 +10,14 @@ function getYouTubeId(url) {
     return (match && match[2].length === 11) ? match[2] : null;
 }
 
+// 防當機安全賦值函式
 const safeSetText = (id, text) => { const el = document.getElementById(id); if (el) el.innerText = text; };
 const safeSetHref = (id, url) => { const el = document.getElementById(id); if (el) el.href = url; };
 const safeSetSrc = (id, url) => { const el = document.getElementById(id); if (el) el.src = url; };
 
+// ==========================================
+// 1. 網頁載入時去 Google Sheets 抓取最新內容 (CMS)
+// ==========================================
 document.addEventListener('DOMContentLoaded', async () => {
     try {
         const fetchUrl = CONFIG.GAS_URL + "?action=getContent";
@@ -18,11 +25,11 @@ document.addEventListener('DOMContentLoaded', async () => {
         const result = await res.json();
         
         if (result.status === 'success' && result.data) {
-            // 更新 News
             if (result.data.news.title) {
                 safeSetText('display-news-title', result.data.news.title);
                 safeSetText('display-news-summary', result.data.news.summary);
                 safeSetHref('display-news-url', result.data.news.url);
+                
                 if (result.data.news.image) {
                     const imgEl = document.getElementById('display-news-img');
                     const placeholder = document.getElementById('news-placeholder-text');
@@ -33,11 +40,11 @@ document.addEventListener('DOMContentLoaded', async () => {
                     }
                 }
             }
-            // 更新 Video
             if (result.data.video.title) {
                 safeSetText('display-video-title', result.data.video.title);
                 safeSetText('display-video-summary', result.data.video.summary);
                 safeSetHref('display-video-url', result.data.video.url); 
+                
                 const videoId = getYouTubeId(result.data.video.url);
                 if (videoId) {
                     safeSetSrc('display-video-iframe', `https://www.youtube.com/embed/${videoId}?rel=0`);
@@ -54,7 +61,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 });
 
 // ==========================================
-// 2. 自我風險評估邏輯 (全新 5 題醫學維度)
+// 2. 自我風險評估邏輯 (5 題) 與轉場控制
 // ==========================================
 const questions = [
     { question: "1. 請問您的年齡是否大於 50 歲？", options: [{ text: "是", score: 1 }, { text: "否", score: 0 }] },
@@ -66,11 +73,11 @@ const questions = [
 
 let currentQ = 0, totalScore = 0, userAnswers = [];
 
-// 替換原本的 lead-screen 為 processing-screen
+// 對應 index.html 的 ID
 const screens = { 
     intro: document.getElementById('intro-screen'), 
     question: document.getElementById('question-screen'), 
-    processing: document.getElementById('processing-screen'), 
+    processing: document.getElementById('processing-screen'), // 免 Email 處理中畫面
     result: document.getElementById('result-screen') 
 };
 
@@ -124,7 +131,7 @@ function renderQ() {
                     renderQ(); 
                 } else {
                     if (progBar) progBar.style.width = '100%';
-                    // 答題完畢，直接進入「分析中」畫面
+                    // 答題完畢，跳轉到分析中畫面，並觸發運算
                     setTimeout(() => {
                         switchScreen(screens.question, screens.processing);
                         processAndShowResult();
@@ -136,19 +143,19 @@ function renderQ() {
     }
 }
 
-// 無須點擊按鈕，背景自動發送資料並在 1.5 秒後顯示結果
+// 處理結果並傳送給後端
 function processAndShowResult() {
     const riskLevel = totalScore >= 5 ? "高風險" : (totalScore >= 3 ? "中風險" : "低風險");
     
-    // 背景發送給 Google Sheets 統計 (Email 註記為未提供)
+    // 背景發送給 Google Sheets 統計 (不影響前端流暢度)
     const payload = { action: 'submitForm', email: '未提供 (匿名檢測)', score: totalScore, risk: riskLevel, answers: JSON.stringify(userAnswers) };
     fetch(CONFIG.GAS_URL, { 
         method: 'POST', 
         headers: { 'Content-Type': 'text/plain;charset=utf-8' },
         body: JSON.stringify(payload) 
-    }).catch(e => console.log("背景統計送出完畢")); 
+    }).catch(e => console.log(e)); 
     
-    // 營造運算感，1.5秒後跳轉至結果頁
+    // 營造運算感，1.5 秒後跳轉至結果頁
     setTimeout(() => {
         showResult(riskLevel);
     }, 1500);
