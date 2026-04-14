@@ -15,7 +15,6 @@ const screens = {
     result: document.getElementById('result-screen')
 };
 
-// 為了讓 CSS 動畫生效的切換函式
 function switchScreen(hide, show) {
     hide.style.opacity = '0';
     setTimeout(() => {
@@ -23,9 +22,8 @@ function switchScreen(hide, show) {
         hide.classList.remove('active');
         show.classList.remove('hidden');
         show.classList.add('active');
-        // 延遲一點點讓 display:block 生效後再加 opacity
         setTimeout(() => { show.style.opacity = '1'; }, 50);
-    }, 300); // 對應 CSS 的 transition 時間
+    }, 300); 
 }
 
 document.getElementById('btn-start').onclick = () => { 
@@ -47,13 +45,12 @@ function renderQ() {
     document.getElementById('question-counter').innerText = `問題 ${currentQ + 1} / ${questions.length}`;
     
     const qText = document.getElementById('question-text');
-    qText.style.opacity = 0; // 題目文字淡入特效
+    qText.style.opacity = 0; 
     setTimeout(() => {
         qText.innerText = q.question;
         qText.style.opacity = 1;
     }, 200);
 
-    // 更新進度條
     setTimeout(() => {
         document.getElementById('progress-bar').style.width = `${(currentQ / questions.length) * 100}%`;
     }, 100);
@@ -89,7 +86,6 @@ async function submitData() {
         return;
     }
     
-    // UI 狀態切換為 Loading
     document.getElementById('btn-submit').classList.add('hidden');
     document.getElementById('loading-state').classList.remove('hidden');
 
@@ -102,7 +98,6 @@ async function submitData() {
         console.log("CORS/Network Notice: ", e); 
     } 
     
-    // 模擬一點網路延遲感，讓 Loading 轉一下體驗更好
     setTimeout(() => {
         document.getElementById('btn-submit').classList.remove('hidden');
         document.getElementById('loading-state').classList.add('hidden');
@@ -131,7 +126,7 @@ function showResult(riskLevel) {
         title.style.color = "var(--warning)";
         resultBox.style.borderColor = "var(--warning)";
         desc.innerHTML = "您具備部分風險因子。胰臟癌雖然隱密，但透過改善生活習慣與定期健檢，能有效降低威脅。";
-        cta.innerHTML = "我們已將專題發送至您的信箱，也歡迎前往我們的方格子專欄閱讀更多預防醫學的分析文章。";
+        cta.innerHTML = "我們已將相關專題發送至您的信箱，也歡迎前往我們的方格子專欄閱讀更多預防醫學的文章。";
     } else {
         icon.innerText = "✅";
         title.innerText = "安心：屬於低風險族群"; 
