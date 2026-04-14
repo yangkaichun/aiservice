@@ -5,13 +5,12 @@
 // ==========================================
 document.addEventListener('DOMContentLoaded', async () => {
     try {
-        const res = await fetch(CONFIG.GAS_URL, {
-            method: 'POST',
-            body: JSON.stringify({ action: 'getContent' })
-        });
+        // 改用 GET 請求，並在網址後方帶上參數，避開 CORS 與轉址阻擋問題
+        const fetchUrl = CONFIG.GAS_URL + "?action=getContent";
+        const res = await fetch(fetchUrl, { method: 'GET' });
         const result = await res.json();
         
-        if (result.status === 'success') {
+        if (result.status === 'success' && result.data) {
             // 更新 News (方格子) 區塊
             if (result.data.news.title) {
                 document.getElementById('display-news-title').innerText = result.data.news.title;
@@ -27,8 +26,8 @@ document.addEventListener('DOMContentLoaded', async () => {
             }
         }
     } catch (e) {
-        console.log("無法讀取動態內容，將顯示預設值。", e);
-        // 若抓取失敗或資料庫未設定，顯示的預設文案
+        console.error("無法讀取動態內容，顯示預設值。", e);
+        // 防呆機制：如果 API 尚未設定好或抓取失敗，確保畫面不會一直卡在「載入中」
         document.getElementById('display-news-title').innerText = "台灣胰臟癌發生率攀升！AI「助胰見」有助早期揪出病灶";
         document.getElementById('display-news-summary').innerText = "胰臟癌被稱為無聲殺手，近年來發病率有年輕化趨勢。透過最新的 AI 輔助軟體，能顯著提升微小病灶檢出率...";
         document.getElementById('display-news-url').href = "#";
@@ -58,7 +57,7 @@ const screens = {
     result: document.getElementById('result-screen')
 };
 
-// 切換畫面的動畫函式
+// 切換畫面的平滑動畫函式
 function switchScreen(hide, show) {
     hide.style.opacity = '0';
     setTimeout(() => {
@@ -84,10 +83,10 @@ document.getElementById('btn-restart').onclick = () => {
     document.getElementById('progress-bar').style.width = '0%';
 };
 
-// 點擊提交表單
+// 點擊提交 Email 名單
 document.getElementById('btn-submit').onclick = submitData;
 
-// 渲染題目
+// 渲染當前題目
 function renderQ() {
     const q = questions[currentQ];
     document.getElementById('question-counter').innerText = `問題 ${currentQ + 1} / ${questions.length}`;
@@ -114,7 +113,7 @@ function renderQ() {
     });
 }
 
-// 處理選擇答案
+// 處理選擇答案並計分
 function handleAnswer(questionText, option) {
     totalScore += option.score; 
     userAnswers.push({q: questionText, a: option.text}); 
@@ -128,7 +127,7 @@ function handleAnswer(questionText, option) {
     }
 }
 
-// 送出資料至 Google Apps Script
+// 送出名單資料至 Google Apps Script
 async function submitData() {
     const email = document.getElementById('user-email').value;
     if (!email || !email.includes('@')) {
@@ -136,12 +135,13 @@ async function submitData() {
         return;
     }
     
+    // UI 狀態切換為處理中 (顯示 Spinner)
     document.getElementById('btn-submit').classList.add('hidden');
     document.getElementById('loading-state').classList.remove('hidden');
 
     const riskLevel = totalScore >= 5 ? "高風險" : (totalScore >= 3 ? "中風險" : "低風險");
     
-    // 定義傳送給後端的資料 (加入 action: 'submitForm' 配合新版 GAS)
+    // 傳送給後端的資料格式，加入 action: 'submitForm' 呼叫新版 GAS 邏輯
     const payload = { 
         action: 'submitForm',
         email: email, 
@@ -157,9 +157,10 @@ async function submitData() {
         });
     } catch (e) { 
         console.log("CORS/Network Notice: ", e); 
-        // GAS 遇到 CORS 問題依然會成功寫入，所以讓流程繼續走
+        // 註：Google 表單透過 POST 送出時常會有 CORS 報錯，但底層通常有成功寫入，所以讓流程繼續執行
     } 
     
+    // 稍微延遲一下，營造處理中的視覺體驗，隨後顯示結果頁面
     setTimeout(() => {
         document.getElementById('btn-submit').classList.remove('hidden');
         document.getElementById('loading-state').classList.add('hidden');
@@ -167,7 +168,7 @@ async function submitData() {
     }, 800);
 }
 
-// 顯示結果畫面
+// 根據風險分數顯示對應的結果畫面
 function showResult(riskLevel) {
     switchScreen(screens.lead, screens.result);
     const title = document.getElementById('result-title');
