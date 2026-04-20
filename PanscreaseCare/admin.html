@@ -13,28 +13,40 @@
         .admin-section h3 { color: #6b8ead; margin-top: 0; display: flex; align-items: center; gap: 10px; font-size: 22px; border-bottom: 2px dashed #e2e8f0; padding-bottom: 15px; margin-bottom: 20px; }
         .form-group { margin-bottom: 18px; }
         .form-group label { display: block; font-weight: bold; margin-bottom: 8px; color: #334155; }
-        .form-group input[type="text"], .form-group input[type="url"], .form-group textarea, .form-group select { width: 100%; padding: 14px; border: 1px solid #cbd5e1; border-radius: 8px; box-sizing: border-box; font-family: inherit; font-size: 15px; transition: all 0.3s; }
-        .form-group input:focus, .form-group textarea:focus, .form-group select:focus { outline: none; border-color: #6b8ead; box-shadow: 0 0 0 3px rgba(107, 142, 173, 0.1); }
+        .form-group input[type="text"], .form-group input[type="url"], .form-group textarea, .form-group select { width: 100%; padding: 14px; border: 1px solid #cbd5e1; border-radius: 8px; box-sizing: border-box; font-family: inherit; font-size: 15px; }
         .form-group input[type="file"] { padding: 10px; background: #fff; border: 1px dashed #cbd5e1; border-radius: 8px; width: 100%; cursor: pointer; }
         .form-group textarea { resize: vertical; height: 120px; }
         .form-group textarea.large-editor { height: 300px; line-height: 1.6; }
         .status-msg { text-align: center; font-weight: bold; margin-top: 15px; font-size: 15px; }
         .image-preview-box { margin-top: 10px; text-align: center; background: #e2e8f0; padding: 10px; border-radius: 8px; display: none; }
         .image-preview-box img { max-width: 100%; max-height: 200px; border-radius: 4px; object-fit: cover; }
+        
+        /* 文章列表樣式 */
+        .article-table { width: 100%; border-collapse: collapse; margin-top: 10px; background: #fff; border-radius: 8px; overflow: hidden; }
+        .article-table th, .article-table td { padding: 12px 15px; text-align: left; border-bottom: 1px solid #e2e8f0; }
+        .article-table th { background-color: #6b8ead; color: white; font-weight: bold; }
+        .article-table tr:hover { background-color: #f1f5f9; }
+        .action-btn { padding: 6px 12px; border: none; border-radius: 4px; cursor: pointer; font-weight: bold; font-size: 13px; margin-right: 5px; }
+        .btn-edit { background-color: #e2b96b; color: white; }
+        .btn-delete { background-color: #e08787; color: white; }
+        .edit-mode-banner { background-color: #fef08a; color: #b45309; padding: 15px; border-radius: 8px; margin-bottom: 20px; font-weight: bold; display: none; justify-content: space-between; align-items: center; }
     </style>
 </head>
 <body>
     <div class="admin-container">
         <div class="admin-header">
             <h2 style="color: #4a5568; font-size: 28px; margin-bottom: 10px;">⚙️ 胰臟癌照護網 - 內容管理系統 (CMS)</h2>
-            <p style="color: #829ab1;">您可以在此管理首頁精選區塊，或發布各醫學子目錄的衛教文章。</p>
         </div>
 
         <div class="admin-section" style="border-color: #f6d6b8; background-color: #fffaf5;">
-            <h3 style="color: #d08c5c;">📚 子目錄文章發布系統</h3>
-            <p style="color: #829ab1; font-size: 14px; margin-top: -10px; margin-bottom: 20px;">發布的文章將自動儲存於 Google Sheets 的「Articles」資料庫中。</p>
+            <h3 style="color: #d08c5c;">📚 子目錄文章發布與編輯</h3>
             
-            <div style="display: flex; gap: 20px;">
+            <div id="edit-mode-banner" class="edit-mode-banner">
+                <span>⚠️ 目前為「編輯模式」，儲存將會覆寫原本的內容。</span>
+                <button id="btn-cancel-edit" class="action-btn" style="background:#b45309; color:white;">取消編輯</button>
+            </div>
+            
+            <input type="hidden" id="edit-article-id" value=""> <div style="display: flex; gap: 20px;">
                 <div class="form-group" style="flex: 1;">
                     <label>📌 選擇主分類</label>
                     <select id="article-category">
@@ -59,53 +71,49 @@
             </div>
             
             <div class="form-group">
-                <label>🖼️ 文章縮圖上傳 (支援 PNG / JPEG)</label>
+                <label>🖼️ 文章縮圖上傳 (系統會自動壓縮以符合限制)</label>
                 <input type="file" id="article-image-file" accept="image/png, image/jpeg">
-                <input type="hidden" id="article-image-base64"> <div id="image-preview" class="image-preview-box"></div>
+                <input type="hidden" id="article-image-base64"> 
+                <div id="image-preview" class="image-preview-box"></div>
             </div>
             
             <div class="form-group">
                 <label>📝 文章內文 (支援多段落)</label>
-                <textarea id="article-content" class="large-editor" placeholder="在此輸入完整的文章內容... (可直接貼上文字，換行會自動保留)"></textarea>
+                <textarea id="article-content" class="large-editor" placeholder="在此輸入完整的文章內容..."></textarea>
             </div>
 
             <div class="form-group">
-                <label>🔗 參考資料來源</label>
+                <label>🔗 參考資料來源 (可貼網址)</label>
                 <input type="text" id="article-reference" placeholder="例如：台灣消化系醫學會、期刊連結或醫師名稱等...">
             </div>
 
-            <button id="btn-save-article" class="btn-pill large full-width" style="background-color: #d08c5c;">📤 發布文章至資料庫</button>
+            <button id="btn-save-article" class="btn-pill large full-width" style="background-color: #d08c5c;">📤 發布/儲存文章</button>
             <div id="article-status-msg" class="status-msg"></div>
         </div>
 
         <div class="admin-section">
-            <h3>🏠 首頁精選版位設定 (News & Video)</h3>
-            
-            <div class="form-group" style="background: #fff; padding: 15px; border-radius: 8px; border: 1px solid #e2e8f0;">
-                <label style="color: #6b8ead;">📰 方格子 (News) 版位</label>
-                <input type="text" id="news-title" placeholder="文章標題" style="margin-bottom: 10px;">
-                <textarea id="news-summary" placeholder="文章摘要" style="margin-bottom: 10px; height: 80px;"></textarea>
-                <input type="url" id="news-url" placeholder="方格子文章連結 (https://vocus.cc/...)" style="margin-bottom: 10px;">
-                <input type="url" id="news-image" placeholder="文章縮圖網址 (https://...)">
+            <h3>📋 管理已發布文章</h3>
+            <p style="color: #829ab1; font-size: 14px; margin-top: -10px; margin-bottom: 15px;">點擊編輯可修改內容，修改後請按上方「儲存文章」。</p>
+            <div style="overflow-x: auto;">
+                <table class="article-table">
+                    <thead>
+                        <tr>
+                            <th style="width: 25%">主分類</th>
+                            <th style="width: 45%">標題</th>
+                            <th style="width: 30%">操作</th>
+                        </tr>
+                    </thead>
+                    <tbody id="article-list-body">
+                        <tr><td colspan="3" style="text-align:center; color:#829ab1;">載入中...</td></tr>
+                    </tbody>
+                </table>
             </div>
-
-            <div class="form-group" style="background: #fff; padding: 15px; border-radius: 8px; border: 1px solid #e2e8f0; margin-top: 20px;">
-                <label style="color: #6b8ead;">🎞️ YouTube (Video) 版位</label>
-                <input type="text" id="video-title" placeholder="影片標題" style="margin-bottom: 10px;">
-                <textarea id="video-summary" placeholder="影片摘要" style="margin-bottom: 10px; height: 80px;"></textarea>
-                <input type="url" id="video-url" placeholder="YouTube 影片連結 (https://youtu.be/...)">
-            </div>
-
-            <button id="btn-save-home" class="btn-pill large full-width">💾 儲存首頁版位更新</button>
-            <div id="home-status-msg" class="status-msg"></div>
         </div>
+
     </div>
 
     <script src="config.js"></script>
     <script>
-        // ==========================================
-        // 子分類連動邏輯
-        // ==========================================
         const subcategoryMap = {
             'about-pancreas': ['解剖與機能', '症狀與病徵', '各類胰臟疾病'],
             'cancer-analysis': ['歷史與概說', '流行病學與危險因子'],
@@ -113,24 +121,26 @@
             'treatment': ['外科手術與移植', '內科精準治療', '醫病共享決策']
         };
 
+        // 主分類連動子分類
         document.getElementById('article-category').addEventListener('change', function() {
+            populateSubcategory(this.value, '');
+        });
+
+        function populateSubcategory(category, selectedSub) {
             const subSelect = document.getElementById('article-subcategory');
-            const category = this.value;
             subSelect.innerHTML = '<option value="">請選擇子分類...</option>';
-            
             if (subcategoryMap[category]) {
                 subcategoryMap[category].forEach(sub => {
                     const option = document.createElement('option');
                     option.value = sub;
                     option.textContent = sub;
+                    if (sub === selectedSub) option.selected = true;
                     subSelect.appendChild(option);
                 });
             }
-        });
+        }
 
-        // ==========================================
-        // 圖片上傳預覽與前端壓縮 (轉 Base64)
-        // ==========================================
+        // 圖片上傳壓縮防呆機制 (強制縮小至寬度 400px，降低品質至 0.5)
         document.getElementById('article-image-file').addEventListener('change', function(e) {
             const file = e.target.files[0];
             if (!file) return;
@@ -139,14 +149,13 @@
             reader.onload = function(event) {
                 const img = new Image();
                 img.onload = function() {
-                    // 使用 Canvas 將圖片自動壓縮 (避免 Base64 檔案過大撐爆 Google Sheets)
                     const canvas = document.createElement('canvas');
-                    const MAX_WIDTH = 800; // 壓縮後的最大寬度
+                    const MAX_WIDTH = 400; // 強制壓縮尺寸避免超過 Google Sheets 限制
                     let width = img.width;
                     let height = img.height;
 
                     if (width > MAX_WIDTH) {
-                        height *= MAX_WIDTH / width;
+                        height = Math.round(height * MAX_WIDTH / width);
                         width = MAX_WIDTH;
                     }
                     canvas.width = width;
@@ -155,10 +164,14 @@
                     const ctx = canvas.getContext('2d');
                     ctx.drawImage(img, 0, 0, width, height);
                     
-                    // 轉出壓縮後的 JPEG Base64 (品質 0.7)
-                    const base64String = canvas.toDataURL('image/jpeg', 0.7);
+                    const base64String = canvas.toDataURL('image/jpeg', 0.5); // 品質降至 0.5
                     
-                    // 填入隱藏欄位並顯示預覽
+                    // 防呆：如果還是大於 45000 字元，擋下
+                    if(base64String.length > 45000) {
+                        alert("您的圖片太複雜，壓縮後仍超過資料庫限制。請換一張更簡單的圖片。");
+                        return;
+                    }
+
                     document.getElementById('article-image-base64').value = base64String;
                     const previewBox = document.getElementById('image-preview');
                     previewBox.innerHTML = `<img src="${base64String}" alt="圖片預覽">`;
@@ -169,112 +182,139 @@
             reader.readAsDataURL(file);
         });
 
-        // ==========================================
-        // 1. 載入首頁現有設定
-        // ==========================================
-        document.addEventListener('DOMContentLoaded', async () => {
-            const statusMsg = document.getElementById('home-status-msg');
-            statusMsg.innerText = "讀取首頁資料中..."; statusMsg.style.color = "#829ab1";
+        // 載入所有文章列表
+        async function loadArticlesList() {
+            const tbody = document.getElementById('article-list-body');
             try {
-                const res = await fetch(CONFIG.GAS_URL + "?action=getContent", { method: 'GET' });
+                const res = await fetch(CONFIG.GAS_URL + "?action=getArticles", { method: 'GET' });
                 const result = await res.json();
-                if (result.status === 'success') {
-                    document.getElementById('news-title').value = result.data.news.title || "";
-                    document.getElementById('news-summary').value = result.data.news.summary || "";
-                    document.getElementById('news-url').value = result.data.news.url || "";
-                    document.getElementById('news-image').value = result.data.news.image || "";
-                    
-                    document.getElementById('video-title').value = result.data.video.title || "";
-                    document.getElementById('video-summary').value = result.data.video.summary || "";
-                    document.getElementById('video-url').value = result.data.video.url || "";
-                    statusMsg.innerText = "";
+                tbody.innerHTML = '';
+                
+                if (result.status === 'success' && result.data.length > 0) {
+                    window.allArticles = result.data; // 存入全域變數供編輯使用
+                    result.data.forEach(article => {
+                        const tr = document.createElement('tr');
+                        tr.innerHTML = `
+                            <td>${document.querySelector(`#article-category option[value="${article.category}"]`)?.text || article.category}</td>
+                            <td>${article.title}</td>
+                            <td>
+                                <button class="action-btn btn-edit" onclick="editArticle(${article.id})">編輯</button>
+                                <button class="action-btn btn-delete" onclick="deleteArticle(${article.id})">刪除</button>
+                            </td>
+                        `;
+                        tbody.appendChild(tr);
+                    });
+                } else {
+                    tbody.innerHTML = '<tr><td colspan="3" style="text-align:center; color:#829ab1;">尚無發布的文章</td></tr>';
                 }
             } catch (e) {
-                statusMsg.innerText = "讀取失敗，請確認 API 設定。"; statusMsg.style.color = "#e08787";
+                tbody.innerHTML = '<tr><td colspan="3" style="text-align:center; color:#e08787;">載入失敗，請確認 API</td></tr>';
             }
-        });
+        }
 
-        // ==========================================
-        // 2. 儲存首頁 News & Video 設定
-        // ==========================================
-        document.getElementById('btn-save-home').addEventListener('click', async () => {
-            const btn = document.getElementById('btn-save-home');
-            const statusMsg = document.getElementById('home-status-msg');
-            btn.innerText = "儲存中..."; btn.disabled = true;
+        // 進入編輯模式
+        window.editArticle = function(id) {
+            const article = window.allArticles.find(a => a.id === id);
+            if (!article) return;
 
-            const payload = {
-                action: 'saveContent',
-                news: { 
-                    title: document.getElementById('news-title').value, 
-                    summary: document.getElementById('news-summary').value, 
-                    url: document.getElementById('news-url').value,
-                    image: document.getElementById('news-image').value 
-                },
-                video: { 
-                    title: document.getElementById('video-title').value, 
-                    summary: document.getElementById('video-summary').value, 
-                    url: document.getElementById('video-url').value 
-                }
-            };
+            document.getElementById('edit-mode-banner').style.display = 'flex';
+            document.getElementById('edit-article-id').value = article.id;
+            
+            document.getElementById('article-category').value = article.category;
+            populateSubcategory(article.category, article.subcategory);
+            
+            document.getElementById('article-title').value = article.title;
+            document.getElementById('article-content').value = article.content;
+            document.getElementById('article-reference').value = article.reference || '';
+            
+            if (article.image) {
+                document.getElementById('article-image-base64').value = article.image;
+                document.getElementById('image-preview').innerHTML = `<img src="${article.image}">`;
+                document.getElementById('image-preview').style.display = 'block';
+            } else {
+                document.getElementById('article-image-base64').value = '';
+                document.getElementById('image-preview').style.display = 'none';
+            }
+            
+            document.getElementById('btn-save-article').innerText = "💾 儲存修改";
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        };
 
+        // 取消編輯模式
+        document.getElementById('btn-cancel-edit').addEventListener('click', resetForm);
+
+        function resetForm() {
+            document.getElementById('edit-mode-banner').style.display = 'none';
+            document.getElementById('edit-article-id').value = '';
+            document.getElementById('article-category').value = '';
+            document.getElementById('article-subcategory').innerHTML = '<option value="">請先選擇主分類...</option>';
+            document.getElementById('article-title').value = '';
+            document.getElementById('article-content').value = '';
+            document.getElementById('article-reference').value = '';
+            document.getElementById('article-image-file').value = '';
+            document.getElementById('article-image-base64').value = '';
+            document.getElementById('image-preview').style.display = 'none';
+            document.getElementById('btn-save-article').innerText = "📤 發布文章至資料庫";
+        }
+
+        // 刪除文章
+        window.deleteArticle = async function(id) {
+            if (!confirm("確定要刪除這篇文章嗎？刪除後無法復原。")) return;
+            
             try {
-                await fetch(CONFIG.GAS_URL, { method: 'POST', headers: { 'Content-Type': 'text/plain;charset=utf-8' }, body: JSON.stringify(payload) });
-                statusMsg.innerText = "✅ 首頁版位已成功更新！"; statusMsg.style.color = "#78b595";
+                await fetch(CONFIG.GAS_URL, { method: 'POST', headers: { 'Content-Type': 'text/plain;charset=utf-8' }, 
+                    body: JSON.stringify({ action: 'deleteArticle', id: id }) 
+                });
+                alert("文章已刪除！");
+                loadArticlesList();
             } catch (e) {
-                statusMsg.innerText = "✅ 已送出更新請求。"; statusMsg.style.color = "#e2b96b";
-            } finally {
-                btn.innerText = "💾 儲存首頁版位更新"; btn.disabled = false;
+                alert("刪除請求已送出。");
             }
-        });
+        };
 
-        // ==========================================
-        // 3. 發布子目錄文章
-        // ==========================================
+        // 儲存/發布文章
         document.getElementById('btn-save-article').addEventListener('click', async () => {
             const btn = document.getElementById('btn-save-article');
             const statusMsg = document.getElementById('article-status-msg');
             
+            const editId = document.getElementById('edit-article-id').value;
             const category = document.getElementById('article-category').value;
             const subcategory = document.getElementById('article-subcategory').value;
             const title = document.getElementById('article-title').value;
             const content = document.getElementById('article-content').value;
             
             if (!category || !subcategory || !title || !content) {
-                alert("主分類、子分類、標題與內文為必填欄位！");
-                return;
+                alert("主分類、子分類、標題與內文為必填欄位！"); return;
             }
 
-            btn.innerText = "發布中..."; btn.disabled = true;
+            btn.innerText = "處理中..."; btn.disabled = true;
 
             const payload = {
-                action: 'saveArticle',
+                action: editId ? 'updateArticle' : 'saveArticle',
+                id: editId,
                 category: category,
                 subcategory: subcategory,
                 title: title,
-                image: document.getElementById('article-image-base64').value, // 傳送轉換好的 Base64 圖片
+                image: document.getElementById('article-image-base64').value,
                 content: content,
-                reference: document.getElementById('article-reference').value // 傳送參考來源
+                reference: document.getElementById('article-reference').value
             };
 
             try {
                 await fetch(CONFIG.GAS_URL, { method: 'POST', headers: { 'Content-Type': 'text/plain;charset=utf-8' }, body: JSON.stringify(payload) });
-                statusMsg.innerText = "🎉 文章已成功發布至資料庫！"; 
+                statusMsg.innerText = editId ? "🎉 文章已成功更新！" : "🎉 文章已成功發布！"; 
                 statusMsg.style.color = "#78b595";
-                
-                // 發布成功後清空欄位
-                document.getElementById('article-title').value = '';
-                document.getElementById('article-content').value = '';
-                document.getElementById('article-reference').value = '';
-                document.getElementById('article-image-file').value = '';
-                document.getElementById('article-image-base64').value = '';
-                document.getElementById('image-preview').style.display = 'none';
+                resetForm();
+                loadArticlesList();
             } catch (e) {
-                statusMsg.innerText = "🎉 已送出發布請求，請至 Google Sheets 確認。"; 
-                statusMsg.style.color = "#e2b96b";
+                statusMsg.innerText = "請求已送出，請確認資料庫。"; statusMsg.style.color = "#e2b96b";
             } finally {
-                btn.innerText = "📤 發布文章至資料庫"; btn.disabled = false;
+                btn.disabled = false;
             }
         });
+
+        // 網頁載入時啟動
+        document.addEventListener('DOMContentLoaded', loadArticlesList);
     </script>
 </body>
 </html>
