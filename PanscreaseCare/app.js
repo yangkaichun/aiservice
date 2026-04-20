@@ -4,26 +4,21 @@
 // 0. 網頁捲動動畫引擎 (Scroll Reveal Animation)
 // ==========================================
 const initAnimations = () => {
-    // 設定觀察器，當元素進入畫面 10% 時觸發動畫
     const observerOptions = { threshold: 0.1, rootMargin: "0px 0px -50px 0px" };
     const observer = new IntersectionObserver((entries) => {
         entries.forEach(entry => {
             if (entry.isIntersecting) {
                 entry.target.classList.add('active');
-                observer.unobserve(entry.target); // 確保每個區塊只會播放一次動畫
+                observer.unobserve(entry.target); 
             }
         });
     }, observerOptions);
 
-    // 抓取所有帶有動畫 class 的元素並開始觀察
     document.querySelectorAll('.reveal, .reveal-left, .reveal-right, .reveal-down, .reveal-scale').forEach(el => {
         observer.observe(el);
     });
 };
 
-// ==========================================
-// YouTube 網址轉換工具
-// ==========================================
 function getYouTubeId(url) {
     if (!url) return null;
     const regExp = /^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|&v=)([^#&?]*).*/;
@@ -35,12 +30,7 @@ const safeSetText = (id, text) => { const el = document.getElementById(id); if (
 const safeSetHref = (id, url) => { const el = document.getElementById(id); if (el) el.href = url; };
 const safeSetSrc = (id, url) => { const el = document.getElementById(id); if (el) el.src = url; };
 
-// ==========================================
-// 1. 網頁載入時去 Google Sheets 抓取最新內容 (CMS)
-// ==========================================
 document.addEventListener('DOMContentLoaded', async () => {
-    
-    // 啟動進場動畫
     initAnimations();
 
     try {
@@ -84,9 +74,6 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
 });
 
-// ==========================================
-// 2. 自我風險評估邏輯 (5 題) 與轉場控制
-// ==========================================
 const questions = [
     { question: "1. 請問您的年齡是否大於 50 歲？", options: [{ text: "是", score: 1 }, { text: "否", score: 0 }] },
     { question: "2. 您的直系親屬（父母、手足）中，是否有人曾罹患胰臟癌？", options: [{ text: "是，有家族病史", score: 3 }, { text: "否，或不確定", score: 0 }] },
@@ -167,8 +154,8 @@ function renderQ() {
 
 function processAndShowResult() {
     const riskLevel = totalScore >= 5 ? "高風險" : (totalScore >= 3 ? "中風險" : "低風險");
-    
     const payload = { action: 'submitForm', email: '未提供 (匿名檢測)', score: totalScore, risk: riskLevel, answers: JSON.stringify(userAnswers) };
+    
     fetch(CONFIG.GAS_URL, { 
         method: 'POST', 
         headers: { 'Content-Type': 'text/plain;charset=utf-8' },
