@@ -13,11 +13,14 @@
         .admin-section h3 { color: #6b8ead; margin-top: 0; display: flex; align-items: center; gap: 10px; font-size: 22px; border-bottom: 2px dashed #e2e8f0; padding-bottom: 15px; margin-bottom: 20px; }
         .form-group { margin-bottom: 18px; }
         .form-group label { display: block; font-weight: bold; margin-bottom: 8px; color: #334155; }
-        .form-group input, .form-group textarea, .form-group select { width: 100%; padding: 14px; border: 1px solid #cbd5e1; border-radius: 8px; box-sizing: border-box; font-family: inherit; font-size: 15px; transition: all 0.3s; }
+        .form-group input[type="text"], .form-group input[type="url"], .form-group textarea, .form-group select { width: 100%; padding: 14px; border: 1px solid #cbd5e1; border-radius: 8px; box-sizing: border-box; font-family: inherit; font-size: 15px; transition: all 0.3s; }
         .form-group input:focus, .form-group textarea:focus, .form-group select:focus { outline: none; border-color: #6b8ead; box-shadow: 0 0 0 3px rgba(107, 142, 173, 0.1); }
+        .form-group input[type="file"] { padding: 10px; background: #fff; border: 1px dashed #cbd5e1; border-radius: 8px; width: 100%; cursor: pointer; }
         .form-group textarea { resize: vertical; height: 120px; }
         .form-group textarea.large-editor { height: 300px; line-height: 1.6; }
         .status-msg { text-align: center; font-weight: bold; margin-top: 15px; font-size: 15px; }
+        .image-preview-box { margin-top: 10px; text-align: center; background: #e2e8f0; padding: 10px; border-radius: 8px; display: none; }
+        .image-preview-box img { max-width: 100%; max-height: 200px; border-radius: 4px; object-fit: cover; }
     </style>
 </head>
 <body>
@@ -31,14 +34,23 @@
             <h3 style="color: #d08c5c;">📚 子目錄文章發布系統</h3>
             <p style="color: #829ab1; font-size: 14px; margin-top: -10px; margin-bottom: 20px;">發布的文章將自動儲存於 Google Sheets 的「Articles」資料庫中。</p>
             
-            <div class="form-group">
-                <label>📌 選擇發布分類</label>
-                <select id="article-category">
-                    <option value="about-pancreas">認識胰臟 (解剖/機能/疾病)</option>
-                    <option value="cancer-analysis">胰臟癌解析 (歷史/危險因子)</option>
-                    <option value="diagnosis">精準診斷 (抽血/影像/AI)</option>
-                    <option value="treatment">治療與照護 (內外科/SDM)</option>
-                </select>
+            <div style="display: flex; gap: 20px;">
+                <div class="form-group" style="flex: 1;">
+                    <label>📌 選擇主分類</label>
+                    <select id="article-category">
+                        <option value="">請選擇主分類...</option>
+                        <option value="about-pancreas">認識胰臟</option>
+                        <option value="cancer-analysis">胰臟癌解析</option>
+                        <option value="diagnosis">精準診斷</option>
+                        <option value="treatment">治療與照護</option>
+                    </select>
+                </div>
+                <div class="form-group" style="flex: 1;">
+                    <label>📂 選擇子分類</label>
+                    <select id="article-subcategory">
+                        <option value="">請先選擇主分類...</option>
+                    </select>
+                </div>
             </div>
             
             <div class="form-group">
@@ -47,13 +59,19 @@
             </div>
             
             <div class="form-group">
-                <label>🖼️ 文章附圖網址 (Image URL)</label>
-                <input type="url" id="article-image" placeholder="貼上圖片網址 (https://...)">
+                <label>🖼️ 文章縮圖上傳 (支援 PNG / JPEG)</label>
+                <input type="file" id="article-image-file" accept="image/png, image/jpeg">
+                <input type="hidden" id="article-image-base64"> <div id="image-preview" class="image-preview-box"></div>
             </div>
             
             <div class="form-group">
                 <label>📝 文章內文 (支援多段落)</label>
                 <textarea id="article-content" class="large-editor" placeholder="在此輸入完整的文章內容... (可直接貼上文字，換行會自動保留)"></textarea>
+            </div>
+
+            <div class="form-group">
+                <label>🔗 參考資料來源</label>
+                <input type="text" id="article-reference" placeholder="例如：台灣消化系醫學會、期刊連結或醫師名稱等...">
             </div>
 
             <button id="btn-save-article" class="btn-pill large full-width" style="background-color: #d08c5c;">📤 發布文章至資料庫</button>
@@ -81,11 +99,76 @@
             <button id="btn-save-home" class="btn-pill large full-width">💾 儲存首頁版位更新</button>
             <div id="home-status-msg" class="status-msg"></div>
         </div>
-
     </div>
 
     <script src="config.js"></script>
     <script>
+        // ==========================================
+        // 子分類連動邏輯
+        // ==========================================
+        const subcategoryMap = {
+            'about-pancreas': ['解剖與機能', '症狀與病徵', '各類胰臟疾病'],
+            'cancer-analysis': ['歷史與概說', '流行病學與危險因子'],
+            'diagnosis': ['實驗室抽血檢查', '影像學與進階檢查', '早期發現與 AI 突破'],
+            'treatment': ['外科手術與移植', '內科精準治療', '醫病共享決策']
+        };
+
+        document.getElementById('article-category').addEventListener('change', function() {
+            const subSelect = document.getElementById('article-subcategory');
+            const category = this.value;
+            subSelect.innerHTML = '<option value="">請選擇子分類...</option>';
+            
+            if (subcategoryMap[category]) {
+                subcategoryMap[category].forEach(sub => {
+                    const option = document.createElement('option');
+                    option.value = sub;
+                    option.textContent = sub;
+                    subSelect.appendChild(option);
+                });
+            }
+        });
+
+        // ==========================================
+        // 圖片上傳預覽與前端壓縮 (轉 Base64)
+        // ==========================================
+        document.getElementById('article-image-file').addEventListener('change', function(e) {
+            const file = e.target.files[0];
+            if (!file) return;
+
+            const reader = new FileReader();
+            reader.onload = function(event) {
+                const img = new Image();
+                img.onload = function() {
+                    // 使用 Canvas 將圖片自動壓縮 (避免 Base64 檔案過大撐爆 Google Sheets)
+                    const canvas = document.createElement('canvas');
+                    const MAX_WIDTH = 800; // 壓縮後的最大寬度
+                    let width = img.width;
+                    let height = img.height;
+
+                    if (width > MAX_WIDTH) {
+                        height *= MAX_WIDTH / width;
+                        width = MAX_WIDTH;
+                    }
+                    canvas.width = width;
+                    canvas.height = height;
+                    
+                    const ctx = canvas.getContext('2d');
+                    ctx.drawImage(img, 0, 0, width, height);
+                    
+                    // 轉出壓縮後的 JPEG Base64 (品質 0.7)
+                    const base64String = canvas.toDataURL('image/jpeg', 0.7);
+                    
+                    // 填入隱藏欄位並顯示預覽
+                    document.getElementById('article-image-base64').value = base64String;
+                    const previewBox = document.getElementById('image-preview');
+                    previewBox.innerHTML = `<img src="${base64String}" alt="圖片預覽">`;
+                    previewBox.style.display = 'block';
+                };
+                img.src = event.target.result;
+            };
+            reader.readAsDataURL(file);
+        });
+
         // ==========================================
         // 1. 載入首頁現有設定
         // ==========================================
@@ -145,17 +228,19 @@
         });
 
         // ==========================================
-        // 3. 發布子目錄文章 (New Feature)
+        // 3. 發布子目錄文章
         // ==========================================
         document.getElementById('btn-save-article').addEventListener('click', async () => {
             const btn = document.getElementById('btn-save-article');
             const statusMsg = document.getElementById('article-status-msg');
             
+            const category = document.getElementById('article-category').value;
+            const subcategory = document.getElementById('article-subcategory').value;
             const title = document.getElementById('article-title').value;
             const content = document.getElementById('article-content').value;
             
-            if (!title || !content) {
-                alert("標題與內文為必填欄位！");
+            if (!category || !subcategory || !title || !content) {
+                alert("主分類、子分類、標題與內文為必填欄位！");
                 return;
             }
 
@@ -163,21 +248,26 @@
 
             const payload = {
                 action: 'saveArticle',
-                category: document.getElementById('article-category').value,
+                category: category,
+                subcategory: subcategory,
                 title: title,
-                image: document.getElementById('article-image').value,
-                content: content
+                image: document.getElementById('article-image-base64').value, // 傳送轉換好的 Base64 圖片
+                content: content,
+                reference: document.getElementById('article-reference').value // 傳送參考來源
             };
 
             try {
                 await fetch(CONFIG.GAS_URL, { method: 'POST', headers: { 'Content-Type': 'text/plain;charset=utf-8' }, body: JSON.stringify(payload) });
-                statusMsg.innerText = "🎉 文章已成功發布至資料庫 (Articles)！"; 
+                statusMsg.innerText = "🎉 文章已成功發布至資料庫！"; 
                 statusMsg.style.color = "#78b595";
                 
-                // 發布成功後清空欄位，方便寫下一篇
+                // 發布成功後清空欄位
                 document.getElementById('article-title').value = '';
-                document.getElementById('article-image').value = '';
                 document.getElementById('article-content').value = '';
+                document.getElementById('article-reference').value = '';
+                document.getElementById('article-image-file').value = '';
+                document.getElementById('article-image-base64').value = '';
+                document.getElementById('image-preview').style.display = 'none';
             } catch (e) {
                 statusMsg.innerText = "🎉 已送出發布請求，請至 Google Sheets 確認。"; 
                 statusMsg.style.color = "#e2b96b";
