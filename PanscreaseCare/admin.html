@@ -16,7 +16,6 @@
         .form-group input[type="text"], .form-group input[type="url"], .form-group textarea, .form-group select { width: 100%; padding: 14px; border: 1px solid #cbd5e1; border-radius: 8px; box-sizing: border-box; font-family: inherit; font-size: 15px; }
         .form-group input[type="file"] { padding: 10px; background: #fff; border: 1px dashed #cbd5e1; border-radius: 8px; width: 100%; cursor: pointer; margin-bottom: 10px; }
         .form-group textarea { resize: vertical; height: 120px; }
-        .form-group textarea.large-editor { height: 300px; line-height: 1.6; }
         .status-msg { text-align: center; font-weight: bold; margin-top: 15px; font-size: 15px; }
         .image-preview-box { margin-top: 10px; text-align: center; background: #e2e8f0; padding: 10px; border-radius: 8px; display: none; }
         .image-preview-box img { max-width: 100%; max-height: 200px; border-radius: 4px; object-fit: cover; }
@@ -27,6 +26,30 @@
         .action-btn { padding: 6px 12px; border: none; border-radius: 4px; cursor: pointer; font-weight: bold; font-size: 13px; margin-right: 5px; }
         .btn-edit { background-color: #e2b96b; color: white; } .btn-delete { background-color: #e08787; color: white; }
         .edit-mode-banner { background-color: #fef08a; color: #b45309; padding: 15px; border-radius: 8px; margin-bottom: 20px; font-weight: bold; display: none; justify-content: space-between; align-items: center; }
+
+        /* ======== 富文本編輯器專屬樣式 ======== */
+        .editor-toolbar {
+            display: flex; flex-wrap: wrap; gap: 8px; padding: 10px 15px; background: #f8fafc; 
+            border: 1px solid #cbd5e1; border-bottom: none; border-radius: 8px 8px 0 0; align-items: center;
+        }
+        .editor-toolbar button {
+            background: #fff; border: 1px solid #cbd5e1; border-radius: 6px; padding: 6px 12px; 
+            cursor: pointer; color: #4a5568; font-weight: bold; transition: 0.2s; font-size: 14px;
+        }
+        .editor-toolbar button:hover { background: #e2e8f0; color: #6b8ead; }
+        .editor-toolbar select {
+            padding: 6px; border: 1px solid #cbd5e1; border-radius: 6px; color: #4a5568; outline: none; cursor: pointer;
+        }
+        .editor-toolbar input[type="color"] {
+            border: none; width: 32px; height: 32px; padding: 0; background: none; cursor: pointer; border-radius: 4px;
+        }
+        .rich-editor {
+            border: 1px solid #cbd5e1; border-radius: 0 0 8px 8px; padding: 15px; min-height: 280px; 
+            background: #fff; overflow-y: auto; color: #334155; font-size: 16px; line-height: 1.7;
+        }
+        .rich-editor:focus { outline: none; border-color: #6b8ead; box-shadow: inset 0 0 0 2px rgba(107, 142, 173, 0.1); }
+        .rich-editor[placeholder]:empty:before { content: attr(placeholder); color: #94a3b8; pointer-events: none; }
+        .rich-editor a { color: #005b9f; text-decoration: underline; }
     </style>
 </head>
 <body>
@@ -36,7 +59,7 @@
         </div>
 
         <div class="admin-section" style="background-color: #f0f7ff; border-color: #7aa1c2;">
-            <h3 style="color: #52728f;">🏠 首頁精選版位設定 (保留原本貼文與影片編輯)</h3>
+            <h3 style="color: #52728f;">🏠 首頁精選版位設定</h3>
             
             <div class="form-group" style="background: #fff; padding: 20px; border-radius: 8px; border: 1px solid #e2e8f0;">
                 <label style="color: #6b8ead; font-size: 18px; border-bottom: 1px solid #e2e8f0; padding-bottom: 10px;">📰 方格子 (News) 版位</label>
@@ -116,8 +139,31 @@
             </div>
             
             <div class="form-group">
-                <label>📝 文章內文 (支援多段落)</label>
-                <textarea id="article-content" class="large-editor" placeholder="在此輸入完整的文章內容..."></textarea>
+                <label>📝 文章內文 (支援排版與超連結)</label>
+                <div class="editor-toolbar">
+                    <button type="button" onclick="execCmd('bold')" title="粗體"><b>B</b></button>
+                    <button type="button" onclick="execCmd('italic')" title="斜體"><i>I</i></button>
+                    <button type="button" onclick="execCmd('underline')" title="底線"><u>U</u></button>
+                    <div style="width: 1px; height: 20px; background: #cbd5e1; margin: 0 5px;"></div>
+                    
+                    <select onchange="execCmd('fontSize', this.value); this.selectedIndex=0;" title="文字大小">
+                        <option value="">選擇大小</option>
+                        <option value="3">正常 (Normal)</option>
+                        <option value="4">中大 (Large)</option>
+                        <option value="5">大標 (X-Large)</option>
+                        <option value="6">特大 (XX-Large)</option>
+                    </select>
+                    
+                    <div style="display: flex; align-items: center; gap: 5px;">
+                        <span style="font-size: 14px; color: #64748b;">文字顏色:</span>
+                        <input type="color" onchange="execCmd('foreColor', this.value)" title="文字顏色">
+                    </div>
+                    
+                    <div style="width: 1px; height: 20px; background: #cbd5e1; margin: 0 5px;"></div>
+                    <button type="button" onclick="insertLink()" title="插入超連結">🔗 連結</button>
+                    <button type="button" onclick="execCmd('unlink')" title="移除連結">🚫 移除連結</button>
+                </div>
+                <div id="article-content-editor" class="rich-editor" contenteditable="true" placeholder="在此輸入完整的文章內容..."></div>
             </div>
 
             <div class="form-group">
@@ -143,7 +189,23 @@
     <script src="config.js"></script>
     <script>
         // ==========================================
-        // 共用：圖片上傳壓縮轉 Base64 引擎 (防透明黑底)
+        // 富文本編輯器指令邏輯
+        // ==========================================
+        function execCmd(command, value = null) {
+            document.execCommand(command, false, value);
+            document.getElementById('article-content-editor').focus();
+        }
+
+        function insertLink() {
+            const url = prompt("請輸入超連結網址 (需包含 http:// 或 https://):");
+            if (url) {
+                document.execCommand("createLink", false, url);
+            }
+            document.getElementById('article-content-editor').focus();
+        }
+
+        // ==========================================
+        // 圖片上傳壓縮轉 Base64 引擎
         // ==========================================
         function setupImageUploader(fileInputId, urlInputId, base64InputId, previewBoxId) {
             document.getElementById(fileInputId).addEventListener('change', function(e) {
@@ -197,9 +259,7 @@
             });
         }
 
-        // 綁定首頁 News 圖片上傳
         setupImageUploader('news-image-file', 'news-image-url', 'news-image-base64', 'news-image-preview');
-        // 綁定子目錄文章圖片上傳
         setupImageUploader('article-image-file', 'article-image-url', 'article-image-base64', 'image-preview');
 
 
@@ -217,7 +277,6 @@
                     document.getElementById('news-summary').value = result.data.news.summary || "";
                     document.getElementById('news-url').value = result.data.news.url || "";
                     
-                    // 判斷 News 圖片是網址還是 Base64
                     const newsImg = result.data.news.image || "";
                     if(newsImg.startsWith('data:image')) {
                         document.getElementById('news-image-base64').value = newsImg;
@@ -329,8 +388,10 @@
             document.getElementById('article-category').value = article.category;
             populateSubcategory(article.category, article.subcategory);
             document.getElementById('article-title').value = article.title;
-            document.getElementById('article-content').value = article.content;
             document.getElementById('article-reference').value = article.reference || '';
+            
+            // 讀取內容到富文本編輯器
+            document.getElementById('article-content-editor').innerHTML = article.content || '';
             
             if (article.image) {
                 if(article.image.startsWith('data:image')) {
@@ -359,12 +420,15 @@
             document.getElementById('article-category').value = '';
             document.getElementById('article-subcategory').innerHTML = '<option value="">請先選擇主分類...</option>';
             document.getElementById('article-title').value = '';
-            document.getElementById('article-content').value = '';
             document.getElementById('article-reference').value = '';
             document.getElementById('article-image-file').value = '';
             document.getElementById('article-image-url').value = '';
             document.getElementById('article-image-base64').value = '';
             document.getElementById('image-preview').style.display = 'none';
+            
+            // 清空富文本編輯器
+            document.getElementById('article-content-editor').innerHTML = '';
+            
             document.getElementById('btn-save-article').innerText = "📤 發布/儲存子目錄文章";
         }
 
@@ -384,10 +448,15 @@
             const category = document.getElementById('article-category').value;
             const subcategory = document.getElementById('article-subcategory').value;
             const title = document.getElementById('article-title').value;
-            const content = document.getElementById('article-content').value;
+            
+            // 取得富文本編輯器內的 HTML 內容
+            const content = document.getElementById('article-content-editor').innerHTML;
+            
             const finalImage = document.getElementById('article-image-base64').value || document.getElementById('article-image-url').value;
             
-            if (!category || !subcategory || !title || !content) { alert("主分類、子分類、標題與內文為必填欄位！"); return; }
+            if (!category || !subcategory || !title || !content || content === '<br>') { 
+                alert("主分類、子分類、標題與內文為必填欄位！"); return; 
+            }
 
             btn.innerText = "處理中..."; btn.disabled = true;
 
