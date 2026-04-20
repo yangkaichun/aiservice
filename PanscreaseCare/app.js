@@ -1,7 +1,7 @@
 // app.js
 
 // ==========================================
-// 0. 網頁捲動動畫引擎 (Scroll Reveal Animation)
+// 0. 網頁捲動動畫引擎 
 // ==========================================
 let scrollObserver;
 const initAnimations = () => {
@@ -31,19 +31,13 @@ const safeSetText = (id, text) => { const el = document.getElementById(id); if (
 const safeSetHref = (id, url) => { const el = document.getElementById(id); if (el) el.href = url; };
 const safeSetSrc = (id, url) => { const el = document.getElementById(id); if (el) el.src = url; };
 
-// ==========================================
-// 1. 網頁載入時去 Google Sheets 抓取所有動態資料
-// ==========================================
 document.addEventListener('DOMContentLoaded', async () => {
     initAnimations();
-
-    // 抓取首頁 News & Video
     fetchContent();
-    // 抓取子目錄動態文章
     fetchArticles();
 });
 
-// 抓取首頁方格子與 YT
+// 抓取首頁 News & Video
 async function fetchContent() {
     try {
         const res = await fetch(CONFIG.GAS_URL + "?action=getContent", { method: 'GET' });
@@ -73,8 +67,6 @@ async function fetchContent() {
         }
     } catch (e) {
         console.error("無法讀取首頁內容", e);
-        safeSetText('display-news-title', "別讓胰臟癌輕易宣判死刑！AI 如何在早期攔截這個無聲殺手？");
-        safeSetText('display-video-title', "介紹「助胰見」 | Introducing PANCREASaver");
     }
 }
 
@@ -83,7 +75,6 @@ async function fetchArticles() {
     try {
         const res = await fetch(CONFIG.GAS_URL + "?action=getArticles", { method: 'GET' });
         const result = await res.json();
-        
         if (result.status === 'success' && result.data && result.data.length > 0) {
             renderArticles(result.data);
         }
@@ -92,9 +83,7 @@ async function fetchArticles() {
     }
 }
 
-// 動態渲染文章卡片
 function renderArticles(articles) {
-    // 定義各分類對應的容器 ID
     const categoryContainers = {
         'about-pancreas': document.getElementById('cat-about-pancreas'),
         'cancer-analysis': document.getElementById('cat-cancer-analysis'),
@@ -102,16 +91,12 @@ function renderArticles(articles) {
         'treatment': document.getElementById('cat-treatment')
     };
 
-    // 檢查資料庫有哪些分類有資料，有的話就先清空預設的靜態卡片
     const hasData = {};
     articles.forEach(a => hasData[a.category] = true);
     for (let cat in hasData) {
-        if (categoryContainers[cat]) {
-            categoryContainers[cat].innerHTML = ''; 
-        }
+        if (categoryContainers[cat]) categoryContainers[cat].innerHTML = ''; 
     }
 
-    // 逐一將文章生成卡片並塞入容器
     articles.forEach((article, index) => {
         const container = categoryContainers[article.category];
         if (!container) return;
@@ -119,19 +104,89 @@ function renderArticles(articles) {
         const card = document.createElement('div');
         card.className = `info-card reveal d-${(index % 3) + 1}`; 
         
-        const imgHtml = article.image ? `<img src="${article.image}" class="card-img" alt="${article.title}" referrerpolicy="no-referrer">` : '';
-        const summary = article.content.length > 70 ? article.content.substring(0, 70) + '...' : article.content;
+        // 點擊卡片開啟文章彈窗
+        card.onclick = () => openArticleModal(article);
+        
+        // onerror 圖片防呆：若圖片失效自動隱藏
+        const imgHtml = article.image ? `<img src="${article.image}" class="card-img" alt="${article.title}" onerror="this.style.display='none'">` : '';
+        const summary = article.content.length > 60 ? article.content.substring(0, 60) + '...' : article.content;
 
         card.innerHTML = `
             ${imgHtml}
             <h4>${article.title}</h4>
             <p>${summary}</p>
+            <p style="color: var(--accent); font-weight: bold; margin-top: 15px; font-size: 13px;">閱讀全文 ➔</p>
         `;
         
         container.appendChild(card);
         if (scrollObserver) scrollObserver.observe(card);
     });
 }
+
+// ==========================================
+// 1.5 文章閱讀彈窗邏輯 (Article Modal)
+// ==========================================
+function openArticleModal(article) {
+    // 填入資料
+    safeSetText('modal-category', article.subcategory || article.category);
+    safeSetText('modal-title', article.title);
+    
+    // 格式化日期
+    const dateObj = new Date(article.date);
+    const dateString = isNaN(dateObj.getTime()) ? '' : `發布時間：${dateObj.toLocaleDateString('zh-TW')}`;
+    safeSetText('modal-date', dateString);
+
+    // 圖片處理
+    const imgEl = document.getElementById('modal-image');
+    if (article.image) {
+        imgEl.src = article.image;
+        imgEl.classList.remove('hidden');
+    } else {
+        imgEl.classList.add('hidden');
+    }
+
+    // 內文處理：將換行符號 \n 轉換為 HTML 的 <br> 讓排版正常
+    const contentFormatted = article.content.replace(/\n/g, '<br>');
+    document.getElementById('modal-body').innerHTML = contentFormatted;
+
+    // 參考來源處理
+    const refBox = document.getElementById('modal-reference');
+    if (article.reference && article.reference.trim() !== '') {
+        // 若來源為網址，自動轉換為超連結
+        const refText = article.reference.startsWith('http') 
+            ? `<a href="${article.reference}" target="_blank" style="color:var(--primary);">${article.reference}</a>` 
+            : article.reference;
+        refBox.innerHTML = `<strong>參考來源：</strong> ${refText}`;
+        refBox.classList.remove('hidden');
+    } else {
+        refBox.classList.add('hidden');
+    }
+
+    // 顯示彈窗並禁止背景滾動
+    const modal = document.getElementById('article-modal');
+    modal.classList.add('show');
+    document.body.style.overflow = 'hidden'; 
+}
+
+function closeArticleModal() {
+    const modal = document.getElementById('article-modal');
+    if (modal) {
+        modal.classList.remove('show');
+        document.body.style.overflow = 'auto'; // 恢復背景滾動
+    }
+}
+
+// 綁定關閉事件 (點擊 X 或點擊背景)
+const closeBtn = document.getElementById('close-modal');
+const modalOverlay = document.getElementById('article-modal');
+if (closeBtn) closeBtn.onclick = closeArticleModal;
+if (modalOverlay) {
+    modalOverlay.onclick = (e) => {
+        // 確保只有點擊到半透明背景(overlay)時才關閉，點擊內部白卡不關閉
+        if (e.target === modalOverlay) closeArticleModal();
+    };
+}
+
 
 // ==========================================
 // 2. 自我風險評估邏輯與轉場控制
