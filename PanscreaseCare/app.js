@@ -109,13 +109,14 @@ function renderArticles(articles) {
         
         const imgHtml = article.image ? `<img src="${article.image}" class="card-img" alt="${article.title}" onerror="this.style.display='none'">` : '';
         
-        // 🚨 核心修復：因為現在是富文本 (HTML)，所以預覽摘要時必須安全地過濾掉所有 HTML 標籤
-        const plainText = (article.content || '').replace(/<[^>]*>?/gm, '');
+        // 🚨 修復關鍵：去除 HTML 標籤後，強制擷取前 70 個字元作為摘要，超出的補上省略號
+        const rawText = (article.content || '').replace(/<[^>]*>?/gm, '').replace(/&nbsp;/g, ' ').trim();
+        const summary = rawText.length > 70 ? rawText.substring(0, 70) + '...' : rawText;
         
         card.innerHTML = `
             ${imgHtml}
             <h4>${article.title}</h4>
-            <div class="card-desc">${plainText}</div>
+            <div class="card-desc">${summary}</div>
             <div class="read-more-link">閱讀全文 ➔</div>
         `;
         
@@ -151,7 +152,6 @@ function openArticleModal(article) {
         imgEl.classList.add('hidden');
     }
 
-    // 內文直接塞入 HTML (因為已經是富文本)
     const modalBody = document.getElementById('modal-body');
     if(modalBody) modalBody.innerHTML = article.content || '';
 
