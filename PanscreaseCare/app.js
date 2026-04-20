@@ -28,7 +28,6 @@ const safeSetText = (id, text) => { const el = document.getElementById(id); if (
 const safeSetHref = (id, url) => { const el = document.getElementById(id); if (el) el.href = url; };
 const safeSetSrc = (id, url) => { const el = document.getElementById(id); if (el) el.src = url; };
 
-// 存儲所有歷史文章以供列表使用
 window.allArticlesData = [];
 
 document.addEventListener('DOMContentLoaded', async () => {
@@ -36,6 +35,23 @@ document.addEventListener('DOMContentLoaded', async () => {
     fetchContent();
     fetchArticles();
 });
+
+// ==========================================
+// 🌟 社群分享共用函式 (防止冒泡開啟彈窗)
+// ==========================================
+window.shareToFB = function(title, event) {
+    if(event) event.stopPropagation(); // 阻止卡片的點擊事件 (避免開啟彈窗)
+    const url = encodeURIComponent(window.location.origin + window.location.pathname);
+    window.open(`https://www.facebook.com/sharer/sharer.php?u=${url}`, '_blank');
+};
+
+window.shareToLine = function(title, event) {
+    if(event) event.stopPropagation();
+    const url = encodeURIComponent(window.location.origin + window.location.pathname);
+    const text = encodeURIComponent(`分享一篇好文章給你：【${title}】\n`);
+    window.open(`https://line.me/R/msg/text/?${text}${url}`, '_blank');
+};
+
 
 async function fetchContent() {
     try {
@@ -74,7 +90,7 @@ async function fetchArticles() {
         const res = await fetch(CONFIG.GAS_URL + "?action=getArticles", { method: 'GET' });
         const result = await res.json();
         if (result.status === 'success' && result.data && result.data.length > 0) {
-            window.allArticlesData = result.data; // 存入全域供列表彈窗使用
+            window.allArticlesData = result.data; 
             renderArticles(result.data);
         }
     } catch (e) {
@@ -102,17 +118,27 @@ function renderArticles(articles) {
 
         const card = document.createElement('div');
         card.className = `info-card reveal d-${(index % 3) + 1}`; 
-        card.onclick = () => { try { openArticleModal(article); } catch (err) {} };
+        
+        card.onclick = () => {
+            try { openArticleModal(article); } catch (err) { console.error(err); }
+        };
         
         const imgHtml = article.image ? `<img src="${article.image}" class="card-img" alt="${article.title}" onerror="this.style.display='none'">` : '';
         const rawText = (article.content || '').replace(/<[^>]*>?/gm, '').replace(/&nbsp;/g, ' ').trim();
         const summary = rawText.length > 70 ? rawText.substring(0, 70) + '...' : rawText;
         
+        // 🌟 卡片底部加入 FB 與 LINE 分享按鈕
         card.innerHTML = `
             ${imgHtml}
             <h4>${article.title}</h4>
             <div class="card-desc">${summary}</div>
-            <div class="read-more-link">閱讀全文 ➔</div>
+            <div class="card-footer">
+                <div class="read-more-link">閱讀全文 ➔</div>
+                <div class="share-actions">
+                    <button class="share-btn fb" onclick="shareToFB('${article.title}', event)">FB</button>
+                    <button class="share-btn line" onclick="shareToLine('${article.title}', event)">LINE</button>
+                </div>
+            </div>
         `;
         
         container.appendChild(card);
@@ -135,7 +161,6 @@ window.openListModal = function(type) {
     if (items.length === 0) {
         bodyEl.innerHTML = '<p style="text-align:center; color: var(--text-muted); padding: 20px;">目前尚無歷史資料。</p>';
     } else {
-        // 依日期排序並渲染卡片
         items.sort((a, b) => new Date(b.date) - new Date(a.date)).forEach(item => {
             const rawText = (item.content || '').replace(/<[^>]*>?/gm, '').replace(/&nbsp;/g, ' ').trim();
             const summary = rawText.length > 60 ? rawText.substring(0, 60) + '...' : rawText;
@@ -186,14 +211,12 @@ window.closeListModal = function() {
     }
 }
 
-// 綁定列表彈窗點擊背景關閉
 const listModalOverlay = document.getElementById('list-modal');
 if (listModalOverlay) {
     listModalOverlay.addEventListener('click', (e) => {
         if (e.target === listModalOverlay) closeListModal();
     });
 }
-
 
 // ==========================================
 // 1.6 文章閱讀彈窗邏輯
@@ -243,7 +266,6 @@ function closeArticleModal() {
     if (modal) {
         modal.classList.remove('show');
         setTimeout(() => { modal.classList.add('hidden'); }, 300);
-        // 如果列表彈窗沒開著，才恢復滾動
         if (!document.getElementById('list-modal').classList.contains('show')) {
             document.body.style.overflow = 'auto';
         }
