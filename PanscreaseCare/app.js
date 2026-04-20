@@ -28,6 +28,9 @@ const safeSetText = (id, text) => { const el = document.getElementById(id); if (
 const safeSetHref = (id, url) => { const el = document.getElementById(id); if (el) el.href = url; };
 const safeSetSrc = (id, url) => { const el = document.getElementById(id); if (el) el.src = url; };
 
+// 存儲所有歷史文章以供列表使用
+window.allArticlesData = [];
+
 document.addEventListener('DOMContentLoaded', async () => {
     initAnimations();
     fetchContent();
@@ -71,6 +74,7 @@ async function fetchArticles() {
         const res = await fetch(CONFIG.GAS_URL + "?action=getArticles", { method: 'GET' });
         const result = await res.json();
         if (result.status === 'success' && result.data && result.data.length > 0) {
+            window.allArticlesData = result.data; // 存入全域供列表彈窗使用
             renderArticles(result.data);
         }
     } catch (e) {
@@ -98,18 +102,9 @@ function renderArticles(articles) {
 
         const card = document.createElement('div');
         card.className = `info-card reveal d-${(index % 3) + 1}`; 
-        
-        card.onclick = () => {
-            try {
-                openArticleModal(article);
-            } catch (err) {
-                console.error("開啟文章失敗", err);
-            }
-        };
+        card.onclick = () => { try { openArticleModal(article); } catch (err) {} };
         
         const imgHtml = article.image ? `<img src="${article.image}" class="card-img" alt="${article.title}" onerror="this.style.display='none'">` : '';
-        
-        // 🚨 修復關鍵：去除 HTML 標籤後，強制擷取前 70 個字元作為摘要，超出的補上省略號
         const rawText = (article.content || '').replace(/<[^>]*>?/gm, '').replace(/&nbsp;/g, ' ').trim();
         const summary = rawText.length > 70 ? rawText.substring(0, 70) + '...' : rawText;
         
@@ -126,20 +121,92 @@ function renderArticles(articles) {
 }
 
 // ==========================================
-// 1.5 文章閱讀彈窗邏輯
+// 1.5 歷史列表彈窗 (List Modal)
+// ==========================================
+window.openListModal = function(type) {
+    const titleEl = document.getElementById('list-modal-title');
+    const bodyEl = document.getElementById('list-modal-body');
+    
+    titleEl.innerText = type === 'news' ? '📰 所有熱門新知' : '🎞️ 所有影音專區';
+    bodyEl.innerHTML = '';
+
+    const items = window.allArticlesData.filter(a => a.category === type);
+    
+    if (items.length === 0) {
+        bodyEl.innerHTML = '<p style="text-align:center; color: var(--text-muted); padding: 20px;">目前尚無歷史資料。</p>';
+    } else {
+        // 依日期排序並渲染卡片
+        items.sort((a, b) => new Date(b.date) - new Date(a.date)).forEach(item => {
+            const rawText = (item.content || '').replace(/<[^>]*>?/gm, '').replace(/&nbsp;/g, ' ').trim();
+            const summary = rawText.length > 60 ? rawText.substring(0, 60) + '...' : rawText;
+            
+            let imgHtml = '';
+            if (type === 'video') {
+                const videoId = getYouTubeId(item.reference);
+                const thumbUrl = videoId ? `https://img.youtube.com/vi/${videoId}/mqdefault.jpg` : 'images/indeximage.jpg';
+                imgHtml = `<div style="position:relative; width: 140px; height: 90px; flex-shrink: 0;"><img src="${thumbUrl}" style="width:100%; height:100%; object-fit:cover; border-radius:8px;"><div style="position:absolute; top:50%; left:50%; transform:translate(-50%, -50%); color:white; background:rgba(0,0,0,0.6); border-radius:50%; width:30px; height:30px; display:flex; align-items:center; justify-content:center; font-size:12px;">▶</div></div>`;
+            } else {
+                const thumbUrl = item.image || 'images/indeximage.jpg';
+                imgHtml = `<img src="${thumbUrl}" style="width: 140px; height: 90px; object-fit: cover; border-radius: 8px; flex-shrink: 0;" onerror="this.style.display='none'">`;
+            }
+
+            const card = document.createElement('div');
+            card.className = "list-item-card";
+            card.onclick = () => { if (item.reference) window.open(item.reference, '_blank'); };
+
+            const dateObj = new Date(item.date);
+            const dateStr = isNaN(dateObj.getTime()) ? '' : `<span style="font-size: 12px; color: var(--text-muted); margin-bottom: 5px; display:block;">${dateObj.toLocaleDateString('zh-TW')}</span>`;
+
+            card.innerHTML = `
+                ${imgHtml}
+                <div style="flex: 1; overflow: hidden;">
+                    ${dateStr}
+                    <h4 style="margin: 0 0 5px 0; color: var(--primary-dark); font-size: 16px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${item.title}</h4>
+                    <p style="margin: 0; font-size: 13px; color: var(--text-muted); line-height: 1.4;">${summary}</p>
+                </div>
+            `;
+            bodyEl.appendChild(card);
+        });
+    }
+
+    const modal = document.getElementById('list-modal');
+    modal.classList.remove('hidden');
+    setTimeout(() => { modal.classList.add('show'); }, 10);
+    document.body.style.overflow = 'hidden';
+}
+
+window.closeListModal = function() {
+    const modal = document.getElementById('list-modal');
+    if (modal) {
+        modal.classList.remove('show');
+        setTimeout(() => { modal.classList.add('hidden'); }, 300);
+        if (!document.getElementById('article-modal').classList.contains('show')) {
+            document.body.style.overflow = 'auto';
+        }
+    }
+}
+
+// 綁定列表彈窗點擊背景關閉
+const listModalOverlay = document.getElementById('list-modal');
+if (listModalOverlay) {
+    listModalOverlay.addEventListener('click', (e) => {
+        if (e.target === listModalOverlay) closeListModal();
+    });
+}
+
+
+// ==========================================
+// 1.6 文章閱讀彈窗邏輯
 // ==========================================
 function openArticleModal(article) {
     if (!article) return;
-
     safeSetText('modal-category', article.subcategory || article.category || '');
     safeSetText('modal-title', article.title || '無標題');
     
     let dateString = '';
     if (article.date) {
         const dateObj = new Date(article.date);
-        if (!isNaN(dateObj.getTime())) {
-            dateString = `發布時間：${dateObj.toLocaleDateString('zh-TW')}`;
-        }
+        if (!isNaN(dateObj.getTime())) dateString = `發布時間：${dateObj.toLocaleDateString('zh-TW')}`;
     }
     safeSetText('modal-date', dateString);
 
@@ -148,9 +215,7 @@ function openArticleModal(article) {
         imgEl.src = article.image;
         imgEl.classList.remove('hidden');
         imgEl.style.display = 'block';
-    } else {
-        imgEl.classList.add('hidden');
-    }
+    } else { imgEl.classList.add('hidden'); }
 
     const modalBody = document.getElementById('modal-body');
     if(modalBody) modalBody.innerHTML = article.content || '';
@@ -159,13 +224,10 @@ function openArticleModal(article) {
     if (refBox) {
         if (article.reference && article.reference.trim() !== '') {
             const refText = article.reference.startsWith('http') 
-                ? `<a href="${article.reference}" target="_blank" style="color:var(--primary);">${article.reference}</a>` 
-                : article.reference;
+                ? `<a href="${article.reference}" target="_blank" style="color:var(--primary);">${article.reference}</a>` : article.reference;
             refBox.innerHTML = `<strong>參考來源：</strong> ${refText}`;
             refBox.classList.remove('hidden');
-        } else {
-            refBox.classList.add('hidden');
-        }
+        } else { refBox.classList.add('hidden'); }
     }
 
     const modal = document.getElementById('article-modal');
@@ -181,7 +243,10 @@ function closeArticleModal() {
     if (modal) {
         modal.classList.remove('show');
         setTimeout(() => { modal.classList.add('hidden'); }, 300);
-        document.body.style.overflow = 'auto';
+        // 如果列表彈窗沒開著，才恢復滾動
+        if (!document.getElementById('list-modal').classList.contains('show')) {
+            document.body.style.overflow = 'auto';
+        }
     }
 }
 
@@ -189,9 +254,9 @@ const closeBtn = document.getElementById('close-modal');
 const modalOverlay = document.getElementById('article-modal');
 if (closeBtn) closeBtn.onclick = closeArticleModal;
 if (modalOverlay) {
-    modalOverlay.onclick = (e) => {
+    modalOverlay.addEventListener('click', (e) => {
         if (e.target === modalOverlay) closeArticleModal();
-    };
+    });
 }
 
 // ==========================================
@@ -208,42 +273,27 @@ const questions = [
 let currentQ = 0, totalScore = 0, userAnswers = [];
 
 const screens = { 
-    intro: document.getElementById('intro-screen'), 
-    question: document.getElementById('question-screen'), 
-    processing: document.getElementById('processing-screen'),
-    result: document.getElementById('result-screen') 
+    intro: document.getElementById('intro-screen'), question: document.getElementById('question-screen'), 
+    processing: document.getElementById('processing-screen'), result: document.getElementById('result-screen') 
 };
 
 function switchScreen(hide, show) {
     if (!hide || !show) return;
     hide.style.opacity = '0';
-    setTimeout(() => {
-        hide.classList.add('hidden'); hide.classList.remove('active');
-        show.classList.remove('hidden'); show.classList.add('active');
-        setTimeout(() => { show.style.opacity = '1'; }, 50);
-    }, 300); 
+    setTimeout(() => { hide.classList.add('hidden'); hide.classList.remove('active'); show.classList.remove('hidden'); show.classList.add('active'); setTimeout(() => { show.style.opacity = '1'; }, 50); }, 300); 
 }
 
 const btnStart = document.getElementById('btn-start');
 if (btnStart) btnStart.onclick = () => { switchScreen(screens.intro, screens.question); renderQ(); };
 
 const btnRestart = document.getElementById('btn-restart');
-if (btnRestart) btnRestart.onclick = () => { 
-    currentQ = 0; totalScore = 0; userAnswers = []; 
-    switchScreen(screens.result, screens.intro); 
-    const progBar = document.getElementById('progress-bar');
-    if (progBar) progBar.style.width = '0%'; 
-};
+if (btnRestart) btnRestart.onclick = () => { currentQ = 0; totalScore = 0; userAnswers = []; switchScreen(screens.result, screens.intro); const progBar = document.getElementById('progress-bar'); if (progBar) progBar.style.width = '0%'; };
 
 function renderQ() {
     const q = questions[currentQ];
     safeSetText('question-counter', `問題 ${currentQ + 1} / ${questions.length}`);
     const qText = document.getElementById('question-text');
-    if (qText) {
-        qText.style.opacity = 0; 
-        setTimeout(() => { qText.innerText = q.question; qText.style.opacity = 1; }, 200);
-    }
-    
+    if (qText) { qText.style.opacity = 0; setTimeout(() => { qText.innerText = q.question; qText.style.opacity = 1; }, 200); }
     const progBar = document.getElementById('progress-bar');
     if (progBar) setTimeout(() => { progBar.style.width = `${(currentQ / questions.length) * 100}%`; }, 100);
 
@@ -251,18 +301,11 @@ function renderQ() {
     if (opts) {
         opts.innerHTML = '';
         q.options.forEach(o => {
-            const btn = document.createElement('button');
-            btn.className = 'option-btn'; 
-            btn.innerText = o.text;
+            const btn = document.createElement('button'); btn.className = 'option-btn'; btn.innerText = o.text;
             btn.onclick = () => {
-                totalScore += o.score; 
-                userAnswers.push({q: q.question, a: o.text}); 
-                currentQ++; 
+                totalScore += o.score; userAnswers.push({q: q.question, a: o.text}); currentQ++; 
                 if (currentQ < questions.length) renderQ(); 
-                else {
-                    if (progBar) progBar.style.width = '100%';
-                    setTimeout(() => { switchScreen(screens.question, screens.processing); processAndShowResult(); }, 600);
-                }
+                else { if (progBar) progBar.style.width = '100%'; setTimeout(() => { switchScreen(screens.question, screens.processing); processAndShowResult(); }, 600); }
             };
             opts.appendChild(btn);
         });
@@ -278,21 +321,17 @@ function processAndShowResult() {
 
 function showResult(riskLevel) {
     switchScreen(screens.processing, screens.result);
-    const resultBox = document.getElementById('result-desc');
-    const rTitle = document.getElementById('result-title');
+    const resultBox = document.getElementById('result-desc'); const rTitle = document.getElementById('result-title');
     if (riskLevel === "高風險") {
-        safeSetText('result-icon', "🚨"); safeSetText('result-title', "警示：屬於高風險族群"); 
-        if (rTitle) rTitle.style.color = "var(--danger)"; 
+        safeSetText('result-icon', "🚨"); safeSetText('result-title', "警示：屬於高風險族群"); if (rTitle) rTitle.style.color = "var(--danger)"; 
         if (resultBox) { resultBox.style.borderColor = "var(--danger)"; resultBox.innerHTML = "根據評估，您具備高度風險因子或疑似症狀。<br><br><strong>強烈建議您儘速前往『胃腸肝膽科』進行專業影像排查。</strong>"; }
         safeSetText('result-cta', "就診時可主動向醫師詢問是否備有「助胰見 (PANCREASaver)」等 AI 輔助系統，協助在電腦斷層中揪出微小病灶。");
     } else if (riskLevel === "中風險") {
-        safeSetText('result-icon', "⚠️"); safeSetText('result-title', "留意：屬於中風險族群"); 
-        if (rTitle) rTitle.style.color = "var(--warning)"; 
+        safeSetText('result-icon', "⚠️"); safeSetText('result-title', "留意：屬於中風險族群"); if (rTitle) rTitle.style.color = "var(--warning)"; 
         if (resultBox) { resultBox.style.borderColor = "var(--warning)"; resultBox.innerHTML = "您具備部分風險因子。胰臟癌雖然隱密，但透過定期健檢能有效掌握健康。"; }
         safeSetText('result-cta', "建議安排健檢時，可考慮將腹部電腦斷層 (CT) 列入檢查項目，並多留意我們的衛教專欄文章。");
     } else {
-        safeSetText('result-icon', "✅"); safeSetText('result-title', "安心：屬於低風險族群"); 
-        if (rTitle) rTitle.style.color = "var(--success)"; 
+        safeSetText('result-icon', "✅"); safeSetText('result-title', "安心：屬於低風險族群"); if (rTitle) rTitle.style.color = "var(--success)"; 
         if (resultBox) { resultBox.style.borderColor = "var(--success)"; resultBox.innerHTML = "目前未發現明顯風險因子，請繼續保持良好的生活習慣！"; }
         safeSetText('result-cta', "預防勝於治療，建議您將本評估工具分享給身邊滿 50 歲的親友，一同守護健康。");
     }
