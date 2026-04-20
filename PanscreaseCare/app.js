@@ -99,6 +99,7 @@ function renderArticles(articles) {
         const card = document.createElement('div');
         card.className = `info-card reveal d-${(index % 3) + 1}`; 
         
+        // 綁定點擊事件，開啟彈窗
         card.onclick = () => {
             try {
                 openArticleModal(article);
@@ -107,6 +108,7 @@ function renderArticles(articles) {
             }
         };
         
+        // onerror 圖片防呆：若圖片失效自動隱藏
         const imgHtml = article.image ? `<img src="${article.image}" class="card-img" alt="${article.title}" onerror="this.style.display='none'">` : '';
         const summary = article.content ? (article.content.length > 60 ? article.content.substring(0, 60) + '...' : article.content) : '';
 
@@ -122,6 +124,9 @@ function renderArticles(articles) {
     });
 }
 
+// ==========================================
+// 1.5 文章閱讀彈窗邏輯 (Article Modal)
+// ==========================================
 function openArticleModal(article) {
     if (!article) return;
 
@@ -140,16 +145,20 @@ function openArticleModal(article) {
     const imgEl = document.getElementById('modal-image');
     if (article.image && article.image.trim() !== '') {
         imgEl.src = article.image;
+        // 若圖片沒問題，確保不被隱藏
         imgEl.classList.remove('hidden');
+        imgEl.style.display = 'block';
     } else {
         imgEl.classList.add('hidden');
     }
 
+    // 換行轉段落
     const content = article.content || '';
     const contentFormatted = content.replace(/\n/g, '<br>');
     const modalBody = document.getElementById('modal-body');
     if(modalBody) modalBody.innerHTML = contentFormatted;
 
+    // 參考來源處理
     const refBox = document.getElementById('modal-reference');
     if (refBox) {
         if (article.reference && article.reference.trim() !== '') {
@@ -163,12 +172,15 @@ function openArticleModal(article) {
         }
     }
 
+    // 🚨 修復關鍵：除了加上 show，也要拔除 hidden，不然會被 display: none 壓住
     const modal = document.getElementById('article-modal');
     if (modal) {
-        modal.classList.add('show');
+        modal.classList.remove('hidden'); 
+        // 延遲一下加 show 以便觸發 CSS 過渡動畫
+        setTimeout(() => {
+            modal.classList.add('show');
+        }, 10);
         document.body.style.overflow = 'hidden'; 
-    } else {
-        console.error("找不到 modal 元素！請確認 index.html 底部是否有 <div id='article-modal'>...</div>");
     }
 }
 
@@ -176,15 +188,21 @@ function closeArticleModal() {
     const modal = document.getElementById('article-modal');
     if (modal) {
         modal.classList.remove('show');
+        // 加上一點延遲，讓它先播完淡出動畫，再完全隱藏
+        setTimeout(() => {
+            modal.classList.add('hidden');
+        }, 300);
         document.body.style.overflow = 'auto';
     }
 }
 
+// 綁定關閉事件
 const closeBtn = document.getElementById('close-modal');
 const modalOverlay = document.getElementById('article-modal');
 if (closeBtn) closeBtn.onclick = closeArticleModal;
 if (modalOverlay) {
     modalOverlay.onclick = (e) => {
+        // 確保只有點擊到半透明背景時才關閉，點到白色卡片內容不會關
         if (e.target === modalOverlay) closeArticleModal();
     };
 }
