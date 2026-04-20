@@ -1,8 +1,5 @@
 // app.js
 
-// ==========================================
-// 0. 網頁捲動動畫引擎 
-// ==========================================
 let scrollObserver;
 const initAnimations = () => {
     const observerOptions = { threshold: 0.1, rootMargin: "0px 0px -50px 0px" };
@@ -37,7 +34,6 @@ document.addEventListener('DOMContentLoaded', async () => {
     fetchArticles();
 });
 
-// 抓取首頁 News & Video
 async function fetchContent() {
     try {
         const res = await fetch(CONFIG.GAS_URL + "?action=getContent", { method: 'GET' });
@@ -70,7 +66,6 @@ async function fetchContent() {
     }
 }
 
-// 抓取子目錄文章並動態渲染
 async function fetchArticles() {
     try {
         const res = await fetch(CONFIG.GAS_URL + "?action=getArticles", { method: 'GET' });
@@ -104,10 +99,16 @@ function renderArticles(articles) {
         const card = document.createElement('div');
         card.className = `info-card reveal d-${(index % 3) + 1}`; 
         
-        // 點擊卡片開啟文章彈窗
-        card.onclick = () => openArticleModal(article);
+        // 綁定點擊事件，開啟彈窗
+        card.addEventListener('click', () => {
+            try {
+                openArticleModal(article);
+            } catch (err) {
+                console.error("開啟文章失敗", err);
+            }
+        });
         
-        // onerror 圖片防呆：若圖片失效自動隱藏
+        // 圖片若損壞則隱藏
         const imgHtml = article.image ? `<img src="${article.image}" class="card-img" alt="${article.title}" onerror="this.style.display='none'">` : '';
         const summary = article.content.length > 60 ? article.content.substring(0, 60) + '...' : article.content;
 
@@ -115,7 +116,7 @@ function renderArticles(articles) {
             ${imgHtml}
             <h4>${article.title}</h4>
             <p>${summary}</p>
-            <p style="color: var(--accent); font-weight: bold; margin-top: 15px; font-size: 13px;">閱讀全文 ➔</p>
+            <p style="color: var(--accent); font-weight: bold; margin-top: auto; padding-top: 15px; font-size: 13px;">閱讀全文 ➔</p>
         `;
         
         container.appendChild(card);
@@ -124,19 +125,16 @@ function renderArticles(articles) {
 }
 
 // ==========================================
-// 1.5 文章閱讀彈窗邏輯 (Article Modal)
+// 1.5 文章閱讀彈窗邏輯
 // ==========================================
 function openArticleModal(article) {
-    // 填入資料
     safeSetText('modal-category', article.subcategory || article.category);
     safeSetText('modal-title', article.title);
     
-    // 格式化日期
     const dateObj = new Date(article.date);
     const dateString = isNaN(dateObj.getTime()) ? '' : `發布時間：${dateObj.toLocaleDateString('zh-TW')}`;
     safeSetText('modal-date', dateString);
 
-    // 圖片處理
     const imgEl = document.getElementById('modal-image');
     if (article.image) {
         imgEl.src = article.image;
@@ -145,14 +143,13 @@ function openArticleModal(article) {
         imgEl.classList.add('hidden');
     }
 
-    // 內文處理：將換行符號 \n 轉換為 HTML 的 <br> 讓排版正常
+    // 換行轉段落
     const contentFormatted = article.content.replace(/\n/g, '<br>');
     document.getElementById('modal-body').innerHTML = contentFormatted;
 
-    // 參考來源處理
+    // 參考來源
     const refBox = document.getElementById('modal-reference');
     if (article.reference && article.reference.trim() !== '') {
-        // 若來源為網址，自動轉換為超連結
         const refText = article.reference.startsWith('http') 
             ? `<a href="${article.reference}" target="_blank" style="color:var(--primary);">${article.reference}</a>` 
             : article.reference;
@@ -162,7 +159,6 @@ function openArticleModal(article) {
         refBox.classList.add('hidden');
     }
 
-    // 顯示彈窗並禁止背景滾動
     const modal = document.getElementById('article-modal');
     modal.classList.add('show');
     document.body.style.overflow = 'hidden'; 
@@ -172,24 +168,21 @@ function closeArticleModal() {
     const modal = document.getElementById('article-modal');
     if (modal) {
         modal.classList.remove('show');
-        document.body.style.overflow = 'auto'; // 恢復背景滾動
+        document.body.style.overflow = 'auto';
     }
 }
 
-// 綁定關閉事件 (點擊 X 或點擊背景)
 const closeBtn = document.getElementById('close-modal');
 const modalOverlay = document.getElementById('article-modal');
 if (closeBtn) closeBtn.onclick = closeArticleModal;
 if (modalOverlay) {
     modalOverlay.onclick = (e) => {
-        // 確保只有點擊到半透明背景(overlay)時才關閉，點擊內部白卡不關閉
         if (e.target === modalOverlay) closeArticleModal();
     };
 }
 
-
 // ==========================================
-// 2. 自我風險評估邏輯與轉場控制
+// 2. 自我風險評估邏輯
 // ==========================================
 const questions = [
     { question: "1. 請問您的年齡是否大於 50 歲？", options: [{ text: "是", score: 1 }, { text: "否", score: 0 }] },
