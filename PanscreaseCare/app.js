@@ -99,18 +99,16 @@ function renderArticles(articles) {
         const card = document.createElement('div');
         card.className = `info-card reveal d-${(index % 3) + 1}`; 
         
-        // 綁定點擊事件，開啟彈窗
-        card.addEventListener('click', () => {
+        card.onclick = () => {
             try {
                 openArticleModal(article);
             } catch (err) {
                 console.error("開啟文章失敗", err);
             }
-        });
+        };
         
-        // 圖片若損壞則隱藏
         const imgHtml = article.image ? `<img src="${article.image}" class="card-img" alt="${article.title}" onerror="this.style.display='none'">` : '';
-        const summary = article.content.length > 60 ? article.content.substring(0, 60) + '...' : article.content;
+        const summary = article.content ? (article.content.length > 60 ? article.content.substring(0, 60) + '...' : article.content) : '';
 
         card.innerHTML = `
             ${imgHtml}
@@ -124,44 +122,54 @@ function renderArticles(articles) {
     });
 }
 
-// ==========================================
-// 1.5 文章閱讀彈窗邏輯
-// ==========================================
 function openArticleModal(article) {
-    safeSetText('modal-category', article.subcategory || article.category);
-    safeSetText('modal-title', article.title);
+    if (!article) return;
+
+    safeSetText('modal-category', article.subcategory || article.category || '');
+    safeSetText('modal-title', article.title || '無標題');
     
-    const dateObj = new Date(article.date);
-    const dateString = isNaN(dateObj.getTime()) ? '' : `發布時間：${dateObj.toLocaleDateString('zh-TW')}`;
+    let dateString = '';
+    if (article.date) {
+        const dateObj = new Date(article.date);
+        if (!isNaN(dateObj.getTime())) {
+            dateString = `發布時間：${dateObj.toLocaleDateString('zh-TW')}`;
+        }
+    }
     safeSetText('modal-date', dateString);
 
     const imgEl = document.getElementById('modal-image');
-    if (article.image) {
+    if (article.image && article.image.trim() !== '') {
         imgEl.src = article.image;
         imgEl.classList.remove('hidden');
     } else {
         imgEl.classList.add('hidden');
     }
 
-    // 換行轉段落
-    const contentFormatted = article.content.replace(/\n/g, '<br>');
-    document.getElementById('modal-body').innerHTML = contentFormatted;
+    const content = article.content || '';
+    const contentFormatted = content.replace(/\n/g, '<br>');
+    const modalBody = document.getElementById('modal-body');
+    if(modalBody) modalBody.innerHTML = contentFormatted;
 
-    // 參考來源
     const refBox = document.getElementById('modal-reference');
-    if (article.reference && article.reference.trim() !== '') {
-        const refText = article.reference.startsWith('http') 
-            ? `<a href="${article.reference}" target="_blank" style="color:var(--primary);">${article.reference}</a>` 
-            : article.reference;
-        refBox.innerHTML = `<strong>參考來源：</strong> ${refText}`;
-        refBox.classList.remove('hidden');
-    } else {
-        refBox.classList.add('hidden');
+    if (refBox) {
+        if (article.reference && article.reference.trim() !== '') {
+            const refText = article.reference.startsWith('http') 
+                ? `<a href="${article.reference}" target="_blank" style="color:var(--primary);">${article.reference}</a>` 
+                : article.reference;
+            refBox.innerHTML = `<strong>參考來源：</strong> ${refText}`;
+            refBox.classList.remove('hidden');
+        } else {
+            refBox.classList.add('hidden');
+        }
     }
 
     const modal = document.getElementById('article-modal');
-    modal.classList.add('show');
-    document.body.style.overflow = 'hidden'; 
+    if (modal) {
+        modal.classList.add('show');
+        document.body.style.overflow = 'hidden'; 
+    } else {
+        console.error("找不到 modal 元素！請確認 index.html 底部是否有 <div id='article-modal'>...</div>");
+    }
 }
 
 function closeArticleModal() {
