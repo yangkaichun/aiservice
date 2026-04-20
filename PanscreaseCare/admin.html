@@ -14,21 +14,18 @@
         .form-group { margin-bottom: 18px; }
         .form-group label { display: block; font-weight: bold; margin-bottom: 8px; color: #334155; }
         .form-group input[type="text"], .form-group input[type="url"], .form-group textarea, .form-group select { width: 100%; padding: 14px; border: 1px solid #cbd5e1; border-radius: 8px; box-sizing: border-box; font-family: inherit; font-size: 15px; }
-        .form-group input[type="file"] { padding: 10px; background: #fff; border: 1px dashed #cbd5e1; border-radius: 8px; width: 100%; cursor: pointer; }
+        .form-group input[type="file"] { padding: 10px; background: #fff; border: 1px dashed #cbd5e1; border-radius: 8px; width: 100%; cursor: pointer; margin-bottom: 10px; }
         .form-group textarea { resize: vertical; height: 120px; }
         .form-group textarea.large-editor { height: 300px; line-height: 1.6; }
         .status-msg { text-align: center; font-weight: bold; margin-top: 15px; font-size: 15px; }
         .image-preview-box { margin-top: 10px; text-align: center; background: #e2e8f0; padding: 10px; border-radius: 8px; display: none; }
         .image-preview-box img { max-width: 100%; max-height: 200px; border-radius: 4px; object-fit: cover; }
-        
-        /* 文章列表樣式 */
         .article-table { width: 100%; border-collapse: collapse; margin-top: 10px; background: #fff; border-radius: 8px; overflow: hidden; }
         .article-table th, .article-table td { padding: 12px 15px; text-align: left; border-bottom: 1px solid #e2e8f0; }
         .article-table th { background-color: #6b8ead; color: white; font-weight: bold; }
         .article-table tr:hover { background-color: #f1f5f9; }
         .action-btn { padding: 6px 12px; border: none; border-radius: 4px; cursor: pointer; font-weight: bold; font-size: 13px; margin-right: 5px; }
-        .btn-edit { background-color: #e2b96b; color: white; }
-        .btn-delete { background-color: #e08787; color: white; }
+        .btn-edit { background-color: #e2b96b; color: white; } .btn-delete { background-color: #e08787; color: white; }
         .edit-mode-banner { background-color: #fef08a; color: #b45309; padding: 15px; border-radius: 8px; margin-bottom: 20px; font-weight: bold; display: none; justify-content: space-between; align-items: center; }
     </style>
 </head>
@@ -46,7 +43,9 @@
                 <button id="btn-cancel-edit" class="action-btn" style="background:#b45309; color:white;">取消編輯</button>
             </div>
             
-            <input type="hidden" id="edit-article-id" value=""> <div style="display: flex; gap: 20px;">
+            <input type="hidden" id="edit-article-id" value="">
+
+            <div style="display: flex; gap: 20px;">
                 <div class="form-group" style="flex: 1;">
                     <label>📌 選擇主分類</label>
                     <select id="article-category">
@@ -71,8 +70,9 @@
             </div>
             
             <div class="form-group">
-                <label>🖼️ 文章縮圖上傳 (系統會自動壓縮以符合限制)</label>
+                <label>🖼️ 文章縮圖 (二選一：上傳圖片 或 貼上網址)</label>
                 <input type="file" id="article-image-file" accept="image/png, image/jpeg">
+                <input type="url" id="article-image-url" placeholder="或直接貼上圖片網址 (https://...)">
                 <input type="hidden" id="article-image-base64"> 
                 <div id="image-preview" class="image-preview-box"></div>
             </div>
@@ -93,23 +93,13 @@
 
         <div class="admin-section">
             <h3>📋 管理已發布文章</h3>
-            <p style="color: #829ab1; font-size: 14px; margin-top: -10px; margin-bottom: 15px;">點擊編輯可修改內容，修改後請按上方「儲存文章」。</p>
             <div style="overflow-x: auto;">
                 <table class="article-table">
-                    <thead>
-                        <tr>
-                            <th style="width: 25%">主分類</th>
-                            <th style="width: 45%">標題</th>
-                            <th style="width: 30%">操作</th>
-                        </tr>
-                    </thead>
-                    <tbody id="article-list-body">
-                        <tr><td colspan="3" style="text-align:center; color:#829ab1;">載入中...</td></tr>
-                    </tbody>
+                    <thead><tr><th style="width: 25%">主分類</th><th style="width: 45%">標題</th><th style="width: 30%">操作</th></tr></thead>
+                    <tbody id="article-list-body"><tr><td colspan="3" style="text-align:center; color:#829ab1;">載入中...</td></tr></tbody>
                 </table>
             </div>
         </div>
-
     </div>
 
     <script src="config.js"></script>
@@ -121,10 +111,7 @@
             'treatment': ['外科手術與移植', '內科精準治療', '醫病共享決策']
         };
 
-        // 主分類連動子分類
-        document.getElementById('article-category').addEventListener('change', function() {
-            populateSubcategory(this.value, '');
-        });
+        document.getElementById('article-category').addEventListener('change', function() { populateSubcategory(this.value, ''); });
 
         function populateSubcategory(category, selectedSub) {
             const subSelect = document.getElementById('article-subcategory');
@@ -132,43 +119,51 @@
             if (subcategoryMap[category]) {
                 subcategoryMap[category].forEach(sub => {
                     const option = document.createElement('option');
-                    option.value = sub;
-                    option.textContent = sub;
+                    option.value = sub; option.textContent = sub;
                     if (sub === selectedSub) option.selected = true;
                     subSelect.appendChild(option);
                 });
             }
         }
 
-        // 圖片上傳壓縮防呆機制 (強制縮小至寬度 400px，降低品質至 0.5)
+        // 圖片上傳壓縮 (修復透明 PNG 變黑的問題)
         document.getElementById('article-image-file').addEventListener('change', function(e) {
             const file = e.target.files[0];
             if (!file) return;
+
+            // 清空網址欄位
+            document.getElementById('article-image-url').value = '';
 
             const reader = new FileReader();
             reader.onload = function(event) {
                 const img = new Image();
                 img.onload = function() {
                     const canvas = document.createElement('canvas');
-                    const MAX_WIDTH = 400; // 強制壓縮尺寸避免超過 Google Sheets 限制
+                    const MAX_WIDTH = 600; 
                     let width = img.width;
                     let height = img.height;
 
-                    if (width > MAX_WIDTH) {
-                        height = Math.round(height * MAX_WIDTH / width);
-                        width = MAX_WIDTH;
-                    }
-                    canvas.width = width;
-                    canvas.height = height;
+                    if (width > MAX_WIDTH) { height = Math.round(height * MAX_WIDTH / width); width = MAX_WIDTH; }
+                    canvas.width = width; canvas.height = height;
                     
                     const ctx = canvas.getContext('2d');
+                    // 填滿白底，避免 PNG 透明背景變黑
+                    ctx.fillStyle = '#FFFFFF';
+                    ctx.fillRect(0, 0, width, height);
                     ctx.drawImage(img, 0, 0, width, height);
                     
-                    const base64String = canvas.toDataURL('image/jpeg', 0.5); // 品質降至 0.5
+                    let quality = 0.7;
+                    let base64String = canvas.toDataURL('image/jpeg', quality);
                     
-                    // 防呆：如果還是大於 45000 字元，擋下
-                    if(base64String.length > 45000) {
-                        alert("您的圖片太複雜，壓縮後仍超過資料庫限制。請換一張更簡單的圖片。");
+                    // 動態極致壓縮
+                    while(base64String.length > 45000 && quality > 0.1) {
+                        quality -= 0.1;
+                        base64String = canvas.toDataURL('image/jpeg', quality);
+                    }
+
+                    if(base64String.length > 48000) {
+                        alert("圖片太複雜無法壓縮至安全大小。請直接將圖片網址貼在下方的「圖片網址」欄位！");
+                        document.getElementById('article-image-file').value = '';
                         return;
                     }
 
@@ -182,16 +177,23 @@
             reader.readAsDataURL(file);
         });
 
-        // 載入所有文章列表
+        // 若輸入網址則清空上傳的圖
+        document.getElementById('article-image-url').addEventListener('input', function() {
+            if(this.value) {
+                document.getElementById('article-image-file').value = '';
+                document.getElementById('article-image-base64').value = '';
+                document.getElementById('image-preview').style.display = 'none';
+            }
+        });
+
         async function loadArticlesList() {
             const tbody = document.getElementById('article-list-body');
             try {
                 const res = await fetch(CONFIG.GAS_URL + "?action=getArticles", { method: 'GET' });
                 const result = await res.json();
                 tbody.innerHTML = '';
-                
                 if (result.status === 'success' && result.data.length > 0) {
-                    window.allArticles = result.data; // 存入全域變數供編輯使用
+                    window.allArticles = result.data; 
                     result.data.forEach(article => {
                         const tr = document.createElement('tr');
                         tr.innerHTML = `
@@ -204,35 +206,36 @@
                         `;
                         tbody.appendChild(tr);
                     });
-                } else {
-                    tbody.innerHTML = '<tr><td colspan="3" style="text-align:center; color:#829ab1;">尚無發布的文章</td></tr>';
-                }
-            } catch (e) {
-                tbody.innerHTML = '<tr><td colspan="3" style="text-align:center; color:#e08787;">載入失敗，請確認 API</td></tr>';
-            }
+                } else { tbody.innerHTML = '<tr><td colspan="3" style="text-align:center; color:#829ab1;">尚無發布的文章</td></tr>'; }
+            } catch (e) { tbody.innerHTML = '<tr><td colspan="3" style="text-align:center; color:#e08787;">載入失敗，請確認 API</td></tr>'; }
         }
 
-        // 進入編輯模式
         window.editArticle = function(id) {
             const article = window.allArticles.find(a => a.id === id);
             if (!article) return;
 
             document.getElementById('edit-mode-banner').style.display = 'flex';
             document.getElementById('edit-article-id').value = article.id;
-            
             document.getElementById('article-category').value = article.category;
             populateSubcategory(article.category, article.subcategory);
-            
             document.getElementById('article-title').value = article.title;
             document.getElementById('article-content').value = article.content;
             document.getElementById('article-reference').value = article.reference || '';
             
+            // 判斷是 Base64 還是 URL
             if (article.image) {
-                document.getElementById('article-image-base64').value = article.image;
+                if(article.image.startsWith('data:image')) {
+                    document.getElementById('article-image-base64').value = article.image;
+                    document.getElementById('article-image-url').value = '';
+                } else {
+                    document.getElementById('article-image-url').value = article.image;
+                    document.getElementById('article-image-base64').value = '';
+                }
                 document.getElementById('image-preview').innerHTML = `<img src="${article.image}">`;
                 document.getElementById('image-preview').style.display = 'block';
             } else {
                 document.getElementById('article-image-base64').value = '';
+                document.getElementById('article-image-url').value = '';
                 document.getElementById('image-preview').style.display = 'none';
             }
             
@@ -240,7 +243,6 @@
             window.scrollTo({ top: 0, behavior: 'smooth' });
         };
 
-        // 取消編輯模式
         document.getElementById('btn-cancel-edit').addEventListener('click', resetForm);
 
         function resetForm() {
@@ -252,27 +254,20 @@
             document.getElementById('article-content').value = '';
             document.getElementById('article-reference').value = '';
             document.getElementById('article-image-file').value = '';
+            document.getElementById('article-image-url').value = '';
             document.getElementById('article-image-base64').value = '';
             document.getElementById('image-preview').style.display = 'none';
             document.getElementById('btn-save-article').innerText = "📤 發布文章至資料庫";
         }
 
-        // 刪除文章
         window.deleteArticle = async function(id) {
             if (!confirm("確定要刪除這篇文章嗎？刪除後無法復原。")) return;
-            
             try {
-                await fetch(CONFIG.GAS_URL, { method: 'POST', headers: { 'Content-Type': 'text/plain;charset=utf-8' }, 
-                    body: JSON.stringify({ action: 'deleteArticle', id: id }) 
-                });
-                alert("文章已刪除！");
-                loadArticlesList();
-            } catch (e) {
-                alert("刪除請求已送出。");
-            }
+                await fetch(CONFIG.GAS_URL, { method: 'POST', headers: { 'Content-Type': 'text/plain;charset=utf-8' }, body: JSON.stringify({ action: 'deleteArticle', id: id }) });
+                alert("文章已刪除！"); loadArticlesList();
+            } catch (e) { alert("刪除請求已送出。"); }
         };
 
-        // 儲存/發布文章
         document.getElementById('btn-save-article').addEventListener('click', async () => {
             const btn = document.getElementById('btn-save-article');
             const statusMsg = document.getElementById('article-status-msg');
@@ -282,6 +277,9 @@
             const subcategory = document.getElementById('article-subcategory').value;
             const title = document.getElementById('article-title').value;
             const content = document.getElementById('article-content').value;
+            
+            // 決定最終圖片來源：優先使用上傳的 base64，若無則使用網址
+            const finalImage = document.getElementById('article-image-base64').value || document.getElementById('article-image-url').value;
             
             if (!category || !subcategory || !title || !content) {
                 alert("主分類、子分類、標題與內文為必填欄位！"); return;
@@ -295,7 +293,7 @@
                 category: category,
                 subcategory: subcategory,
                 title: title,
-                image: document.getElementById('article-image-base64').value,
+                image: finalImage,
                 content: content,
                 reference: document.getElementById('article-reference').value
             };
@@ -313,7 +311,6 @@
             }
         });
 
-        // 網頁載入時啟動
         document.addEventListener('DOMContentLoaded', loadArticlesList);
     </script>
 </body>
