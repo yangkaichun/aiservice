@@ -42,10 +42,12 @@
         .rich-editor:focus { outline: none; border-color: #6b8ead; box-shadow: inset 0 0 0 2px rgba(107, 142, 173, 0.1); }
         .rich-editor[placeholder]:empty:before { content: attr(placeholder); color: #94a3b8; pointer-events: none; }
         .rich-editor a { color: #005b9f; text-decoration: underline; }
-        .rich-editor img { max-width: 100%; height: auto; border-radius: 8px; margin: 10px 0; display: block; } /* 確保插圖不會撐破編輯器 */
+        .rich-editor img { max-width: 100%; height: auto; border-radius: 8px; margin: 10px 0; display: block; }
 
-        /* 標示置頂文章的特效標籤 */
         .badge-featured { background-color: #e08787; color: white; padding: 3px 8px; border-radius: 12px; font-size: 12px; font-weight: bold; margin-right: 8px; vertical-align: text-top; box-shadow: 0 2px 4px rgba(224, 135, 135, 0.3); }
+        
+        /* 上傳提示 */
+        .upload-status { font-size: 13px; color: #e2b96b; margin-left: 5px; font-weight: bold; display: none; }
     </style>
 </head>
 <body>
@@ -152,7 +154,7 @@
             </div>
             
             <div class="form-group">
-                <label>🖼️ 文章縮圖 (二選一：上傳圖片 或 貼上網址)</label>
+                <label>🖼️ 文章封面縮圖 (將顯示在卡片上)</label>
                 <input type="file" id="article-image-file" accept="image/png, image/jpeg">
                 <input type="url" id="article-image-url" placeholder="或直接貼上圖片網址 (https://...)">
                 <input type="hidden" id="article-image-base64"> 
@@ -160,7 +162,7 @@
             </div>
             
             <div class="form-group">
-                <label>📝 文章內文 (支援排版與超連結)</label>
+                <label>📝 文章內文 (支援排版與上傳插圖)</label>
                 <div class="editor-toolbar">
                     <button type="button" onclick="execCmd('bold')" title="粗體"><b>B</b></button>
                     <button type="button" onclick="execCmd('italic')" title="斜體"><i>I</i></button>
@@ -190,7 +192,10 @@
                     <button type="button" onclick="insertLink()" title="插入超連結">🔗 連結</button>
                     <button type="button" onclick="execCmd('unlink')" title="移除連結">🚫 移除連結</button>
                     
-                    <button type="button" onclick="insertContentImage()" title="在內文中插入圖片">🖼️ 插入圖片</button>
+                    <div style="width: 1px; height: 20px; background: #cbd5e1; margin: 0 5px;"></div>
+                    <input type="file" id="editor-image-upload" accept="image/png, image/jpeg" style="display:none;">
+                    <button type="button" id="btn-editor-upload" title="上傳圖片到文章中">🖼️ 上傳插圖</button>
+                    <span id="editor-upload-status" class="upload-status">上傳中...</span>
                 </div>
                 <div id="article-content-editor" class="rich-editor" contenteditable="true" placeholder="在此輸入完整的文章內容..."></div>
             </div>
@@ -216,12 +221,73 @@
     <script src="config.js"></script>
     <script>
         // ==========================================
-        // 基礎功能設定 (包含插入圖片)
+        // 基礎富文本功能
         // ==========================================
         function execCmd(command, value = null) { document.execCommand(command, false, value); document.getElementById('article-content-editor').focus(); }
         function insertLink() { const url = prompt("請輸入超連結網址 (需包含 http:// 或 https://):"); if (url) document.execCommand("createLink", false, url); document.getElementById('article-content-editor').focus(); }
-        function insertContentImage() { const url = prompt("請輸入圖片網址 (URL):"); if (url) document.execCommand("insertImage", false, url); document.getElementById('article-content-editor').focus(); }
+        
+        // 🌟 觸發上傳內文圖片
+        document.getElementById('btn-editor-upload').addEventListener('click', () => {
+            document.getElementById('editor-image-upload').click();
+        });
 
+        // 🌟 處理內文圖片壓縮與傳送至 Google Drive
+        document.getElementById('editor-image-upload').addEventListener('change', function(e) {
+            const file = e.target.files[0];
+            if (!file) return;
+            
+            const statusEl = document.getElementById('editor-upload-status');
+            statusEl.style.display = 'inline';
+            statusEl.innerText = "圖片處理中...";
+
+            const reader = new FileReader();
+            reader.onload = function(event) {
+                const img = new Image();
+                img.onload = async function() {
+                    const canvas = document.createElement('canvas');
+                    const MAX_WIDTH = 800; // 內文圖片寬度限制 800px 以適應版面
+                    let width = img.width, height = img.height;
+                    if (width > MAX_WIDTH) { height = Math.round(height * MAX_WIDTH / width); width = MAX_WIDTH; }
+                    canvas.width = width; canvas.height = height;
+                    const ctx = canvas.getContext('2d');
+                    ctx.fillStyle = '#FFFFFF'; ctx.fillRect(0, 0, width, height); 
+                    ctx.drawImage(img, 0, 0, width, height);
+                    
+                    const base64String = canvas.toDataURL('image/jpeg', 0.85); // 上傳雲端，畫質可保留高一點
+                    
+                    statusEl.innerText = "上傳雲端中...";
+                    
+                    try {
+                        const payload = {
+                            action: 'uploadImage',
+                            filename: file.name,
+                            mimeType: 'image/jpeg',
+                            base64Data: base64String
+                        };
+                        const res = await fetch(CONFIG.GAS_URL, { method: 'POST', body: JSON.stringify(payload) });
+                        const result = await res.json();
+                        
+                        if (result.status === 'success') {
+                            document.getElementById('article-content-editor').focus();
+                            document.execCommand("insertImage", false, result.url);
+                        } else {
+                            alert("圖片上傳失敗，請檢查資料夾 ID 設定。");
+                        }
+                    } catch (error) {
+                        alert("上傳失敗，請確認網路連線。");
+                    } finally {
+                        statusEl.style.display = 'none';
+                        document.getElementById('editor-image-upload').value = ''; 
+                    }
+                };
+                img.src = event.target.result;
+            };
+            reader.readAsDataURL(file);
+        });
+
+        // ==========================================
+        // 分類邏輯與縮圖壓縮
+        // ==========================================
         const subcategoryMap = {
             'about-pancreas': ['解剖與機能', '症狀與病徵', '各類胰臟疾病'],
             'cancer-analysis': ['歷史與概說', '流行病學與危險因子'],
@@ -243,7 +309,6 @@
             }
         }
 
-        // 圖片上傳壓縮引擎
         function setupImageUploader(fileInputId, urlInputId, base64InputId, previewBoxId) {
             document.getElementById(fileInputId).addEventListener('change', function(e) {
                 const file = e.target.files[0];
@@ -264,7 +329,7 @@
                         let quality = 0.7;
                         let base64String = canvas.toDataURL('image/jpeg', quality);
                         while(base64String.length > 45000 && quality > 0.1) { quality -= 0.1; base64String = canvas.toDataURL('image/jpeg', quality); }
-                        if(base64String.length > 48000) { alert("圖片太複雜無法壓縮，請直接貼上網址！"); document.getElementById(fileInputId).value = ''; return; }
+                        if(base64String.length > 48000) { alert("圖片太複雜無法壓縮，請改用內文上傳圖表或直接貼網址！"); document.getElementById(fileInputId).value = ''; return; }
                         document.getElementById(base64InputId).value = base64String;
                         const previewBox = document.getElementById(previewBoxId);
                         previewBox.innerHTML = `<img src="${base64String}">`;
@@ -281,15 +346,13 @@
         setupImageUploader('nv-image-file', 'nv-image-url', 'nv-image-base64', 'nv-image-preview');
         setupImageUploader('article-image-file', 'article-image-url', 'article-image-base64', 'image-preview');
 
-
         // ==========================================
-        // 全域變數：記錄首頁展示的文章標題
+        // 讀取資料與渲染列表
         // ==========================================
         window.currentNewsTitle = "";
         window.currentVideoTitle = "";
 
         document.addEventListener('DOMContentLoaded', async () => { 
-            // 必須先取得首頁狀態，再載入列表，這樣才能正確標示「置頂」
             await fetchHomepageContent(); 
             await loadArticlesList(); 
         });
@@ -329,30 +392,17 @@
                             hasNv = true;
                             const typeLabel = catCode === 'news' ? '📰 News' : '🎞️ Video';
                             
-                            // 判斷是否為首頁置頂，並加上 Badge
                             let isFeatured = false;
                             if (catCode === 'news' && article.title === window.currentNewsTitle) isFeatured = true;
                             if (catCode === 'video' && article.title === window.currentVideoTitle) isFeatured = true;
                             
-                            const titleDisplay = isFeatured 
-                                ? `<span class="badge-featured">📍 首頁展示中</span>${article.title}` 
-                                : article.title;
-
-                            // 按鈕狀態切換
+                            const titleDisplay = isFeatured ? `<span class="badge-featured">📍 首頁展示中</span>${article.title}` : article.title;
                             const featureBtnHTML = isFeatured
                                 ? `<button class="action-btn" style="background-color:#94a3b8; color:white; margin-top:8px; width: 100%; padding: 8px; cursor: not-allowed;" disabled>✅ 已在首頁</button>`
                                 : `<button class="action-btn" style="background-color:#0ea5e9; color:white; margin-top:8px; width: 100%; padding: 8px;" onclick="setFeatured(${article.id})">🌟 設為首頁</button>`;
 
                             const tr = document.createElement('tr');
-                            tr.innerHTML = `
-                                <td>${typeLabel}</td>
-                                <td>${titleDisplay}</td>
-                                <td>
-                                    <button class="action-btn btn-edit" onclick="editNV(${article.id})">編輯</button>
-                                    <button class="action-btn btn-delete" onclick="deleteArticle(${article.id})">刪除</button>
-                                    <br>${featureBtnHTML}
-                                </td>
-                            `;
+                            tr.innerHTML = `<td>${typeLabel}</td><td>${titleDisplay}</td><td><button class="action-btn btn-edit" onclick="editNV(${article.id})">編輯</button><button class="action-btn btn-delete" onclick="deleteArticle(${article.id})">刪除</button><br>${featureBtnHTML}</td>`;
                             nvTbody.appendChild(tr);
                         } else {
                             hasArt = true;
@@ -361,18 +411,10 @@
                             const categoryDisplay = matchOpt ? matchOpt.text : article.category;
                             
                             const tr = document.createElement('tr');
-                            tr.innerHTML = `
-                                <td>${categoryDisplay}</td>
-                                <td>${article.title}</td>
-                                <td>
-                                    <button class="action-btn btn-edit" onclick="editArticle(${article.id})">編輯</button>
-                                    <button class="action-btn btn-delete" onclick="deleteArticle(${article.id})">刪除</button>
-                                </td>
-                            `;
+                            tr.innerHTML = `<td>${categoryDisplay}</td><td>${article.title}</td><td><button class="action-btn btn-edit" onclick="editArticle(${article.id})">編輯</button><button class="action-btn btn-delete" onclick="deleteArticle(${article.id})">刪除</button></td>`;
                             artTbody.appendChild(tr);
                         }
                     });
-                    
                     if(!hasNv) nvTbody.innerHTML = '<tr><td colspan="3" style="text-align:center; color:#829ab1;">尚無資料</td></tr>';
                     if(!hasArt) artTbody.innerHTML = '<tr><td colspan="3" style="text-align:center; color:#829ab1;">尚無資料</td></tr>';
                 } else { 
@@ -386,26 +428,7 @@
         }
 
         // ==========================================
-        // 設為首頁與刪除共用邏輯
-        // ==========================================
-        window.setFeatured = async function(id) {
-            if (!confirm("確定要將此篇設為首頁精選嗎？這會直接替換前台顯示的版位。")) return;
-            try {
-                await fetch(CONFIG.GAS_URL, { method: 'POST', body: JSON.stringify({ action: 'setFeatured', id: id }) });
-                alert("已成功更新首頁精選版位！"); 
-                await fetchHomepageContent(); // 重新取得最新首頁狀態
-                loadArticlesList(); // 重新載入列表以更新置頂標籤
-            } catch (e) { alert("設定請求已送出。"); }
-        };
-
-        window.deleteArticle = async function(id) {
-            if (!confirm("確定要刪除這筆資料嗎？刪除後無法復原。")) return;
-            try { await fetch(CONFIG.GAS_URL, { method: 'POST', body: JSON.stringify({ action: 'deleteArticle', id: id }) }); alert("已刪除！"); loadArticlesList(); } catch (e) {}
-        };
-
-
-        // ==========================================
-        // NV (News & Video) 表單操作邏輯
+        // NV (News & Video) 表單操作
         // ==========================================
         function toggleNvFields() {
             const type = document.getElementById('nv-type').value;
@@ -416,10 +439,8 @@
             const article = window.allArticles.find(a => a.id === id); if (!article) return;
             document.getElementById('btn-cancel-nv').style.display = 'block';
             document.getElementById('edit-nv-id').value = article.id;
-            
             document.getElementById('nv-type').value = String(article.category).toLowerCase().trim();
             toggleNvFields();
-            
             document.getElementById('nv-title').value = article.title;
             document.getElementById('nv-summary').value = article.content || '';
             document.getElementById('nv-url').value = article.reference || '';
@@ -429,11 +450,10 @@
                 else { document.getElementById('nv-image-url').value = article.image; document.getElementById('nv-image-base64').value = ''; }
                 document.getElementById('nv-image-preview').innerHTML = `<img src="${article.image}">`; document.getElementById('nv-image-preview').style.display = 'block';
             } else { document.getElementById('nv-image-base64').value = ''; document.getElementById('nv-image-url').value = ''; document.getElementById('nv-image-preview').style.display = 'none'; }
-            
             document.getElementById('btn-save-nv').innerText = "💾 儲存修改至列表"; window.scrollTo({ top: 0, behavior: 'smooth' });
         };
 
-        function resetNvForm() {
+        window.resetNvForm = function() {
             document.getElementById('btn-cancel-nv').style.display = 'none'; document.getElementById('edit-nv-id').value = '';
             document.getElementById('nv-title').value = ''; document.getElementById('nv-summary').value = ''; document.getElementById('nv-url').value = '';
             document.getElementById('nv-image-file').value = ''; document.getElementById('nv-image-url').value = ''; document.getElementById('nv-image-base64').value = ''; document.getElementById('nv-image-preview').style.display = 'none';
@@ -456,9 +476,8 @@
             try { await fetch(CONFIG.GAS_URL, { method: 'POST', body: JSON.stringify(payload) }); statusMsg.innerText = editId ? "🎉 修改成功！" : "🎉 儲存成功！"; statusMsg.style.color = "#78b595"; resetNvForm(); loadArticlesList(); } catch (e) { } finally { btn.disabled = false; }
         });
 
-
         // ==========================================
-        // 醫學文章 (Articles) 表單操作邏輯
+        // 醫學文章 (Articles) 表單操作
         // ==========================================
         window.editArticle = function(id) {
             const article = window.allArticles.find(a => a.id === id); if (!article) return;
@@ -504,8 +523,24 @@
             btn.innerText = "處理中..."; btn.disabled = true;
 
             const payload = { action: editId ? 'updateArticle' : 'saveArticle', id: editId, category: category, subcategory: subcategory, title: title, image: finalImage, content: content, reference: document.getElementById('article-reference').value };
-            try { await fetch(CONFIG.GAS_URL, { method: 'POST', body: JSON.stringify(payload) }); statusMsg.innerText = editId ? "🎉 文章已更新！" : "🎉 文章已發布！"; statusMsg.style.color = "#78b595"; window.resetArticleForm(); loadArticlesList(); } catch (e) { } finally { btn.disabled = false; }
+            try { await fetch(CONFIG.GAS_URL, { method: 'POST', body: JSON.stringify(payload) }); statusMsg.innerText = editId ? "🎉 文章已更新！" : "🎉 文章已發布！"; statusMsg.style.color = "#78b595"; resetArticleForm(); loadArticlesList(); } catch (e) { } finally { btn.disabled = false; }
         });
+
+        // ==========================================
+        // 全局：設為首頁與刪除功能
+        // ==========================================
+        window.setFeatured = async function(id) {
+            if (!confirm("確定要將此篇設為首頁精選嗎？這會直接替換前台顯示的版位。")) return;
+            try {
+                await fetch(CONFIG.GAS_URL, { method: 'POST', body: JSON.stringify({ action: 'setFeatured', id: id }) });
+                alert("已成功更新首頁精選版位！"); await fetchHomepageContent(); loadArticlesList();
+            } catch (e) { alert("設定請求已送出。"); }
+        };
+
+        window.deleteArticle = async function(id) {
+            if (!confirm("確定要刪除這筆資料嗎？刪除後無法復原。")) return;
+            try { await fetch(CONFIG.GAS_URL, { method: 'POST', body: JSON.stringify({ action: 'deleteArticle', id: id }) }); alert("已刪除！"); loadArticlesList(); } catch (e) {}
+        };
     </script>
 </body>
 </html>
