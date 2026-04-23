@@ -40,7 +40,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 // 🌟 社群分享共用函式 (防止冒泡開啟彈窗)
 // ==========================================
 window.shareToFB = function(title, event) {
-    if(event) event.stopPropagation(); // 阻止卡片的點擊事件 (避免開啟彈窗)
+    if(event) event.stopPropagation(); 
     const url = encodeURIComponent(window.location.origin + window.location.pathname);
     window.open(`https://www.facebook.com/sharer/sharer.php?u=${url}`, '_blank');
 };
@@ -127,7 +127,7 @@ function renderArticles(articles) {
         const rawText = (article.content || '').replace(/<[^>]*>?/gm, '').replace(/&nbsp;/g, ' ').trim();
         const summary = rawText.length > 70 ? rawText.substring(0, 70) + '...' : rawText;
         
-        // 🌟 卡片底部加入 FB 與 LINE 分享按鈕
+        // 🌟 卡片底部加入專屬圖片 FB 與 LINE 分享按鈕
         card.innerHTML = `
             ${imgHtml}
             <h4>${article.title}</h4>
@@ -135,8 +135,8 @@ function renderArticles(articles) {
             <div class="card-footer">
                 <div class="read-more-link">閱讀全文 ➔</div>
                 <div class="share-actions">
-                    <button class="share-btn fb" onclick="shareToFB('${article.title}', event)">FB</button>
-                    <button class="share-btn line" onclick="shareToLine('${article.title}', event)">LINE</button>
+                    <button class="share-btn" onclick="shareToFB('${article.title}', event)"><img src="images/fblogo.jpg" alt="FB" class="share-icon-img"></button>
+                    <button class="share-btn" onclick="shareToLine('${article.title}', event)"><img src="images/linglogo.jpg" alt="LINE" class="share-icon-img"></button>
                 </div>
             </div>
         `;
