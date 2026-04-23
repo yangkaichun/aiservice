@@ -31,7 +31,6 @@
         
         .edit-mode-banner { background-color: #fef08a; color: #b45309; padding: 15px; border-radius: 8px; margin-bottom: 20px; font-weight: bold; display: none; justify-content: space-between; align-items: center; }
         
-        /* 富文本編輯器專屬樣式 */
         .editor-toolbar { display: flex; flex-wrap: wrap; gap: 8px; padding: 10px 15px; background: #f8fafc; border: 1px solid #cbd5e1; border-bottom: none; border-radius: 8px 8px 0 0; align-items: center; }
         .editor-toolbar button { background: #fff; border: 1px solid #cbd5e1; border-radius: 6px; padding: 6px 12px; cursor: pointer; color: #4a5568; font-weight: bold; transition: 0.2s; font-size: 14px; }
         .editor-toolbar button:hover { background: #e2e8f0; color: #6b8ead; }
@@ -44,7 +43,6 @@
         .rich-editor a { color: #005b9f; text-decoration: underline; }
         .rich-editor img { max-width: 100%; height: auto; border-radius: 8px; margin: 10px 0; display: block; } 
 
-        /* 標示置頂文章的特效標籤 */
         .badge-featured { background-color: #e08787; color: white; padding: 3px 8px; border-radius: 12px; font-size: 12px; font-weight: bold; margin-right: 8px; vertical-align: text-top; box-shadow: 0 2px 4px rgba(224, 135, 135, 0.3); }
         .upload-status { font-size: 13px; color: #e2b96b; margin-left: 5px; font-weight: bold; display: none; }
     </style>
@@ -226,7 +224,7 @@
             document.getElementById('editor-image-upload').click();
         });
 
-        // 🌟 核心修復：所有 fetch 加入 headers 確保格式無誤
+        // 🌟 核心修復：加入精準錯誤捕獲，幫助我們除錯
         document.getElementById('editor-image-upload').addEventListener('change', function(e) {
             const file = e.target.files[0];
             if (!file) return;
@@ -249,12 +247,10 @@
                     ctx.drawImage(img, 0, 0, width, height);
                     
                     const base64String = canvas.toDataURL('image/jpeg', 0.85); 
-                    
                     statusEl.innerText = "上傳雲端中...";
                     
                     try {
                         const payload = { action: 'uploadImage', filename: file.name, mimeType: 'image/jpeg', base64Data: base64String };
-                        // 🌟 這裡加上 headers
                         const res = await fetch(CONFIG.GAS_URL, { 
                             method: 'POST', 
                             headers: { 'Content-Type': 'text/plain;charset=utf-8' },
@@ -266,10 +262,11 @@
                             document.getElementById('article-content-editor').focus();
                             document.execCommand("insertImage", false, result.url);
                         } else {
-                            alert("圖片上傳失敗，請確認是否已重新授權並發布新版本！");
+                            // 🌟 這裡會吐出 Google 的真實錯誤訊息
+                            alert("圖片上傳被拒絕！\nGoogle回傳原因：" + (result.message || "未知錯誤") + "\n\n💡 請依照步驟回 Apps Script 點擊『執行』重新授權！");
                         }
                     } catch (error) {
-                        alert("上傳失敗，請確認網路連線。");
+                        alert("網路連線錯誤或 CORS 被擋！詳細原因：" + error.message);
                     } finally {
                         statusEl.style.display = 'none';
                         document.getElementById('editor-image-upload').value = ''; 
@@ -417,7 +414,6 @@
             }
         }
 
-        // 🌟 確保其他 POST 也有 headers
         window.setFeatured = async function(id) {
             if (!confirm("確定要將此篇設為首頁精選嗎？這會直接替換前台顯示的版位。")) return;
             try {
