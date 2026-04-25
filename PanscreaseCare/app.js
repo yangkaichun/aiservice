@@ -52,26 +52,42 @@ window.shareToLine = function(title, event) {
     window.open(`https://line.me/R/msg/text/?${text}${url}`, '_blank');
 };
 
-
+// ==========================================
+// 讀取首頁精選內容 (News & Video)
+// ==========================================
 async function fetchContent() {
     try {
         const res = await fetch(CONFIG.GAS_URL + "?action=getContent", { method: 'GET' });
         const result = await res.json();
         if (result.status === 'success' && result.data) {
+            
+            // 處理 News 區塊
             if (result.data.news.title) {
                 safeSetText('display-news-title', result.data.news.title);
                 safeSetText('display-news-summary', result.data.news.summary);
                 safeSetHref('display-news-url', result.data.news.url);
-                if (result.data.news.image) {
-                    const imgEl = document.getElementById('display-news-img');
-                    const placeholder = document.getElementById('news-placeholder-text');
-                    if (imgEl && placeholder) {
+                
+                const imgEl = document.getElementById('display-news-img');
+                const placeholder = document.getElementById('news-placeholder-text');
+                
+                if (imgEl && placeholder) {
+                    // 🌟 防呆修復：如果有圖片就顯示，沒有圖片就隱藏，但無論如何都要關掉「載入中」文字
+                    if (result.data.news.image && result.data.news.image.trim() !== '') {
                         imgEl.src = result.data.news.image;
                         imgEl.style.display = 'block';
-                        placeholder.style.display = 'none';
+                        
+                        // 萬一圖片網址失效破圖，自動隱藏圖片顯示漸層底色
+                        imgEl.onerror = function() {
+                            this.style.display = 'none';
+                        };
+                    } else {
+                        imgEl.style.display = 'none';
                     }
+                    placeholder.style.display = 'none'; // 強制隱藏 [ 內容載入中... ]
                 }
             }
+            
+            // 處理 Video 區塊
             if (result.data.video.title) {
                 safeSetText('display-video-title', result.data.video.title);
                 safeSetText('display-video-summary', result.data.video.summary);
@@ -127,7 +143,6 @@ function renderArticles(articles) {
         const rawText = (article.content || '').replace(/<[^>]*>?/gm, '').replace(/&nbsp;/g, ' ').trim();
         const summary = rawText.length > 70 ? rawText.substring(0, 70) + '...' : rawText;
         
-        // 🌟 卡片底部加入專屬圖片 FB 與 LINE 分享按鈕
         card.innerHTML = `
             ${imgHtml}
             <h4>${article.title}</h4>
@@ -147,7 +162,7 @@ function renderArticles(articles) {
 }
 
 // ==========================================
-// 1.5 歷史列表彈窗 (List Modal)
+// 歷史列表彈窗 (List Modal)
 // ==========================================
 window.openListModal = function(type) {
     const titleEl = document.getElementById('list-modal-title');
@@ -219,7 +234,7 @@ if (listModalOverlay) {
 }
 
 // ==========================================
-// 1.6 文章閱讀彈窗邏輯
+// 文章閱讀彈窗邏輯
 // ==========================================
 function openArticleModal(article) {
     if (!article) return;
@@ -282,7 +297,7 @@ if (modalOverlay) {
 }
 
 // ==========================================
-// 2. 自我風險評估邏輯
+// 自我風險評估邏輯
 // ==========================================
 const questions = [
     { question: "1. 請問您的年齡是否大於 50 歲？", options: [{ text: "是", score: 1 }, { text: "否", score: 0 }] },
