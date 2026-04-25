@@ -31,6 +31,7 @@
         
         .edit-mode-banner { background-color: #fef08a; color: #b45309; padding: 15px; border-radius: 8px; margin-bottom: 20px; font-weight: bold; display: none; justify-content: space-between; align-items: center; }
         
+        /* 富文本編輯器專屬樣式 */
         .editor-toolbar { display: flex; flex-wrap: wrap; gap: 8px; padding: 10px 15px; background: #f8fafc; border: 1px solid #cbd5e1; border-bottom: none; border-radius: 8px 8px 0 0; align-items: center; }
         .editor-toolbar button { background: #fff; border: 1px solid #cbd5e1; border-radius: 6px; padding: 6px 12px; cursor: pointer; color: #4a5568; font-weight: bold; transition: 0.2s; font-size: 14px; }
         .editor-toolbar button:hover { background: #e2e8f0; color: #6b8ead; }
@@ -66,6 +67,7 @@
 
             <div style="background: #fff; padding: 25px; border-radius: 8px; border: 1px solid #e2e8f0; margin-bottom: 20px;">
                 <h4 style="margin-top: 0; color: #52728f; border-bottom: 1px solid #e2e8f0; padding-bottom: 10px;">➕ 新增 / 編輯 貼文與影片</h4>
+                <p style="color: #829ab1; font-size: 13px; margin-bottom: 15px;">在此輸入資料後點擊「儲存至列表」，接著在下方列表點擊「🌟 設為首頁」即可完成版位切換。</p>
                 
                 <input type="hidden" id="edit-nv-id">
                 
@@ -80,10 +82,11 @@
                 <div class="form-group"><label>標題</label><input type="text" id="nv-title" placeholder="輸入貼文或影片標題..."></div>
                 <div class="form-group"><label>簡短摘要</label><textarea id="nv-summary" placeholder="輸入顯示在首頁卡片上的摘要..." style="height: 80px;"></textarea></div>
                 <div class="form-group"><label>對外連結 (方格子 或 YouTube 網址)</label><input type="url" id="nv-url" placeholder="https://..."></div>
+                
                 <div class="form-group" id="nv-image-group">
                     <label>🖼️ 縮圖 (僅 News 需設定，Video 會自動抓取封面)</label>
                     <input type="file" id="nv-image-file" accept="image/png, image/jpeg">
-                    <input type="url" id="nv-image-url" placeholder="或直接貼上圖片網址 (https://...)">
+                    <input type="url" id="nv-image-url" placeholder="圖片上傳後會自動產生網址在此，您也可手動貼上網址 (https://...)">
                     <input type="hidden" id="nv-image-base64">
                     <div id="nv-image-preview" class="image-preview-box"></div>
                 </div>
@@ -124,7 +127,12 @@
                         <option value="treatment">治療與照護</option>
                     </select>
                 </div>
-                <div class="form-group" style="flex: 1;"><label>📂 選擇子分類</label><select id="article-subcategory"><option value="">請先選擇主分類...</option></select></div>
+                <div class="form-group" style="flex: 1;">
+                    <label>📂 選擇子分類</label>
+                    <select id="article-subcategory">
+                        <option value="">請先選擇主分類...</option>
+                    </select>
+                </div>
             </div>
             
             <div class="form-group"><label>✏️ 文章標題</label><input type="text" id="article-title" placeholder="例如：為什麼電腦斷層容易漏看早期胰臟癌？"></div>
@@ -132,7 +140,7 @@
             <div class="form-group">
                 <label>🖼️ 文章封面縮圖 (將顯示在卡片上)</label>
                 <input type="file" id="article-image-file" accept="image/png, image/jpeg">
-                <input type="url" id="article-image-url" placeholder="或直接貼上圖片網址 (https://...)">
+                <input type="url" id="article-image-url" placeholder="圖片上傳後會自動產生網址在此，您也可手動貼上網址 (https://...)">
                 <input type="hidden" id="article-image-base64"> 
                 <div id="image-preview" class="image-preview-box"></div>
             </div>
@@ -192,10 +200,14 @@
         function execCmd(command, value = null) { document.execCommand(command, false, value); document.getElementById('article-content-editor').focus(); }
         function insertLink() { const url = prompt("請輸入超連結網址 (需包含 http:// 或 https://):"); if (url) document.execCommand("createLink", false, url); document.getElementById('article-content-editor').focus(); }
         
+        // 內文插圖觸發按鈕
         document.getElementById('btn-editor-upload').addEventListener('click', () => {
             document.getElementById('editor-image-upload').click();
         });
 
+        // ==========================================
+        // 🌟 核心升級 1：內文插圖上傳至 Google Drive
+        // ==========================================
         document.getElementById('editor-image-upload').addEventListener('change', function(e) {
             const file = e.target.files[0];
             if (!file) return;
@@ -221,7 +233,7 @@
                     statusEl.innerText = "上傳雲端中...";
                     
                     try {
-                        const payload = { action: 'uploadImage', filename: file.name, mimeType: 'image/jpeg', base64Data: base64String };
+                        const payload = { action: 'uploadImage', filename: "editor_" + file.name, mimeType: 'image/jpeg', base64Data: base64String };
                         const res = await fetch(CONFIG.GAS_URL, { 
                             method: 'POST', 
                             headers: { 'Content-Type': 'text/plain;charset=utf-8' },
@@ -233,10 +245,10 @@
                             document.getElementById('article-content-editor').focus();
                             document.execCommand("insertImage", false, result.url);
                         } else {
-                            alert("圖片上傳被拒絕！\nGoogle回傳原因：" + (result.message || "未知錯誤") + "\n\n💡 記得重新在 Apps Script 執行 setupPermissions 並建立新版本！");
+                            alert("圖片上傳被拒絕！\nGoogle回傳原因：" + (result.message || "未知錯誤"));
                         }
                     } catch (error) {
-                        alert("網路連線錯誤！詳細原因：" + error.message);
+                        alert("網路連線錯誤或擴充功能阻擋！詳細原因：" + error.message);
                     } finally {
                         statusEl.style.display = 'none';
                         document.getElementById('editor-image-upload').value = ''; 
@@ -247,6 +259,83 @@
             reader.readAsDataURL(file);
         });
 
+        // ==========================================
+        // 🌟 核心升級 2：縮圖與封面全面改用 Google Drive API (拋棄舊版壓縮迴圈)
+        // ==========================================
+        function setupDriveImageUploader(fileInputId, urlInputId, base64InputId, previewBoxId) {
+            document.getElementById(fileInputId).addEventListener('change', function(e) {
+                const file = e.target.files[0];
+                if (!file) return;
+                
+                document.getElementById(urlInputId).value = '⏳ 圖片上傳雲端中，請稍候...'; 
+                document.getElementById(base64InputId).value = '';
+                
+                const reader = new FileReader();
+                reader.onload = function(event) {
+                    const img = new Image();
+                    img.onload = async function() {
+                        const canvas = document.createElement('canvas');
+                        const MAX_WIDTH = 800; // 縮圖解析度設定 800px 即可
+                        let width = img.width, height = img.height;
+                        if (width > MAX_WIDTH) { height = Math.round(height * MAX_WIDTH / width); width = MAX_WIDTH; }
+                        canvas.width = width; canvas.height = height;
+                        const ctx = canvas.getContext('2d');
+                        ctx.fillStyle = '#FFFFFF'; ctx.fillRect(0, 0, width, height); 
+                        ctx.drawImage(img, 0, 0, width, height);
+                        
+                        const base64String = canvas.toDataURL('image/jpeg', 0.85); 
+                        
+                        try {
+                            const payload = { action: 'uploadImage', filename: "thumb_" + file.name, mimeType: 'image/jpeg', base64Data: base64String };
+                            const res = await fetch(CONFIG.GAS_URL, { 
+                                method: 'POST', 
+                                headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+                                body: JSON.stringify(payload) 
+                            });
+                            const result = await res.json();
+                            
+                            if (result.status === 'success') {
+                                document.getElementById(urlInputId).value = result.url; // 直接把網址塞給輸入框
+                                const previewBox = document.getElementById(previewBoxId);
+                                previewBox.innerHTML = `<img src="${result.url}">`;
+                                previewBox.style.display = 'block';
+                            } else {
+                                alert("縮圖上傳失敗！\nGoogle回傳原因：" + (result.message || "未知錯誤"));
+                                document.getElementById(urlInputId).value = '';
+                            }
+                        } catch (error) {
+                            alert("網路連線錯誤！詳細原因：" + error.message);
+                            document.getElementById(urlInputId).value = '';
+                        } finally {
+                            document.getElementById(fileInputId).value = ''; 
+                        }
+                    };
+                    img.src = event.target.result;
+                };
+                reader.readAsDataURL(file);
+            });
+
+            // 手動輸入網址時的預覽邏輯
+            document.getElementById(urlInputId).addEventListener('input', function() {
+                const previewBox = document.getElementById(previewBoxId);
+                if(this.value && !this.value.includes('上傳雲端中')) { 
+                    document.getElementById(fileInputId).value = ''; 
+                    document.getElementById(base64InputId).value = ''; 
+                    previewBox.innerHTML = `<img src="${this.value}">`;
+                    previewBox.style.display = 'block';
+                } else {
+                    previewBox.style.display = 'none';
+                }
+            });
+        }
+        
+        // 綁定兩個縮圖欄位
+        setupDriveImageUploader('nv-image-file', 'nv-image-url', 'nv-image-base64', 'nv-image-preview');
+        setupDriveImageUploader('article-image-file', 'article-image-url', 'article-image-base64', 'image-preview');
+
+        // ==========================================
+        // 下拉選單邏輯
+        // ==========================================
         const subcategoryMap = {
             'about-pancreas': ['解剖與機能', '症狀與病徵', '各類胰臟疾病'],
             'cancer-analysis': ['歷史與概說', '流行病學與危險因子'],
@@ -268,44 +357,9 @@
             }
         }
 
-        function setupImageUploader(fileInputId, urlInputId, base64InputId, previewBoxId) {
-            document.getElementById(fileInputId).addEventListener('change', function(e) {
-                const file = e.target.files[0];
-                if (!file) return;
-                document.getElementById(urlInputId).value = ''; 
-                const reader = new FileReader();
-                reader.onload = function(event) {
-                    const img = new Image();
-                    img.onload = function() {
-                        const canvas = document.createElement('canvas');
-                        const MAX_WIDTH = 600; 
-                        let width = img.width, height = img.height;
-                        if (width > MAX_WIDTH) { height = Math.round(height * MAX_WIDTH / width); width = MAX_WIDTH; }
-                        canvas.width = width; canvas.height = height;
-                        const ctx = canvas.getContext('2d');
-                        ctx.fillStyle = '#FFFFFF'; ctx.fillRect(0, 0, width, height); 
-                        ctx.drawImage(img, 0, 0, width, height);
-                        let quality = 0.7;
-                        let base64String = canvas.toDataURL('image/jpeg', quality);
-                        while(base64String.length > 45000 && quality > 0.1) { quality -= 0.1; base64String = canvas.toDataURL('image/jpeg', quality); }
-                        if(base64String.length > 48000) { alert("圖片太複雜無法壓縮，請改用內文上傳圖表或直接貼網址！"); document.getElementById(fileInputId).value = ''; return; }
-                        document.getElementById(base64InputId).value = base64String;
-                        const previewBox = document.getElementById(previewBoxId);
-                        previewBox.innerHTML = `<img src="${base64String}">`;
-                        previewBox.style.display = 'block';
-                    };
-                    img.src = event.target.result;
-                };
-                reader.readAsDataURL(file);
-            });
-            document.getElementById(urlInputId).addEventListener('input', function() {
-                if(this.value) { document.getElementById(fileInputId).value = ''; document.getElementById(base64InputId).value = ''; document.getElementById(previewBoxId).style.display = 'none'; }
-            });
-        }
-        setupImageUploader('nv-image-file', 'nv-image-url', 'nv-image-base64', 'nv-image-preview');
-        setupImageUploader('article-image-file', 'article-image-url', 'article-image-base64', 'image-preview');
-
-
+        // ==========================================
+        // 讀取資料與渲染列表
+        // ==========================================
         window.currentNewsTitle = "";
         window.currentVideoTitle = "";
 
@@ -399,6 +453,9 @@
             try { await fetch(CONFIG.GAS_URL, { method: 'POST', headers: { 'Content-Type': 'text/plain;charset=utf-8' }, body: JSON.stringify({ action: 'deleteArticle', id: id }) }); alert("已刪除！"); loadArticlesList(); } catch (e) {}
         };
 
+        // ==========================================
+        // NV 表單操作
+        // ==========================================
         function toggleNvFields() {
             const type = document.getElementById('nv-type').value;
             document.getElementById('nv-image-group').style.display = type === 'news' ? 'block' : 'none';
@@ -436,7 +493,8 @@
             const title = document.getElementById('nv-title').value;
             const summary = document.getElementById('nv-summary').value;
             const url = document.getElementById('nv-url').value;
-            const finalImage = document.getElementById('nv-image-base64').value || document.getElementById('nv-image-url').value;
+            // 讀取網址欄位 (不論是手動填的還是上傳後產生的)
+            const finalImage = document.getElementById('nv-image-url').value || document.getElementById('nv-image-base64').value;
             
             if (!title || !summary || !url) { alert("標題、摘要與連結為必填欄位！"); return; }
             btn.innerText = "處理中..."; btn.disabled = true;
@@ -445,6 +503,9 @@
             try { await fetch(CONFIG.GAS_URL, { method: 'POST', headers: { 'Content-Type': 'text/plain;charset=utf-8' }, body: JSON.stringify(payload) }); statusMsg.innerText = editId ? "🎉 修改成功！" : "🎉 儲存成功！"; statusMsg.style.color = "#78b595"; window.resetNvForm(); loadArticlesList(); } catch (e) { } finally { btn.disabled = false; }
         });
 
+        // ==========================================
+        // 醫學文章表單操作
+        // ==========================================
         window.editArticle = function(id) {
             const article = window.allArticles.find(a => a.id === id); if (!article) return;
             document.getElementById('edit-mode-banner').style.display = 'flex';
@@ -483,7 +544,7 @@
             const subcategory = document.getElementById('article-subcategory').value;
             const title = document.getElementById('article-title').value;
             const content = document.getElementById('article-content-editor').innerHTML;
-            const finalImage = document.getElementById('article-image-base64').value || document.getElementById('article-image-url').value;
+            const finalImage = document.getElementById('article-image-url').value || document.getElementById('article-image-base64').value;
             
             if (!category || !title || !content || content === '<br>') { alert("主分類、標題與內文為必填欄位！"); return; }
             btn.innerText = "處理中..."; btn.disabled = true;
