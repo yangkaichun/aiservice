@@ -1,5 +1,5 @@
 // config.js
 const CONFIG = {
-    // 替換為您的 Apps Script 網頁應用程式網址
-    GAS_URL: "https://script.google.com/macros/s/AKfycbz9kqYKDoMc1okNFC_w2_qvSurSYf9hJBC0IiyxO2hgr3o5hrYRj3EKZstweP9BgyFJVA/exec"    
+    // 這是您最新發布、擁有完整 Google Drive 讀寫權限的 API 網址
+    GAS_URL: "https://script.google.com/macros/s/AKfycbxnPSUKBa4O2y7lCSJAi7j6VWjb8-s3SZq5wzHjl2dNw4zy7SpyYc8hStjcly7DD7y2wA/exec"
 };
