@@ -1,5 +1,20 @@
 // app.js
 
+// ==========================================
+// 🌟 Google Drive 圖片防破圖轉換器
+// ==========================================
+function getSafeImageUrl(url) {
+    if (!url) return '';
+    // 將舊版或會被擋的網址自動轉為安全的 thumbnail API 網址
+    if (url.includes('drive.google.com')) {
+        const match = url.match(/id=([^&]+)/) || url.match(/d\/([^/]+)/);
+        if (match && match[1]) {
+            return `https://drive.google.com/thumbnail?id=${match[1]}&sz=w1000`;
+        }
+    }
+    return url;
+}
+
 let scrollObserver;
 const initAnimations = () => {
     const observerOptions = { threshold: 0.1, rootMargin: "0px 0px -50px 0px" };
@@ -36,9 +51,6 @@ document.addEventListener('DOMContentLoaded', async () => {
     fetchArticles();
 });
 
-// ==========================================
-// 🌟 社群分享共用函式 (防止冒泡開啟彈窗)
-// ==========================================
 window.shareToFB = function(title, event) {
     if(event) event.stopPropagation(); 
     const url = encodeURIComponent(window.location.origin + window.location.pathname);
@@ -52,16 +64,12 @@ window.shareToLine = function(title, event) {
     window.open(`https://line.me/R/msg/text/?${text}${url}`, '_blank');
 };
 
-// ==========================================
-// 讀取首頁精選內容 (News & Video)
-// ==========================================
+// 讀取首頁精選
 async function fetchContent() {
     try {
         const res = await fetch(CONFIG.GAS_URL + "?action=getContent", { method: 'GET' });
         const result = await res.json();
         if (result.status === 'success' && result.data) {
-            
-            // 處理 News 區塊
             if (result.data.news.title) {
                 safeSetText('display-news-title', result.data.news.title);
                 safeSetText('display-news-summary', result.data.news.summary);
@@ -71,23 +79,21 @@ async function fetchContent() {
                 const placeholder = document.getElementById('news-placeholder-text');
                 
                 if (imgEl && placeholder) {
-                    // 🌟 防呆修復：如果有圖片就顯示，沒有圖片就隱藏，但無論如何都要關掉「載入中」文字
                     if (result.data.news.image && result.data.news.image.trim() !== '') {
-                        imgEl.src = result.data.news.image;
+                        // 🌟 套用防破圖轉換與繞過 Referrer 阻擋
+                        imgEl.src = getSafeImageUrl(result.data.news.image);
+                        imgEl.setAttribute('referrerpolicy', 'no-referrer');
                         imgEl.style.display = 'block';
                         
-                        // 萬一圖片網址失效破圖，自動隱藏圖片顯示漸層底色
                         imgEl.onerror = function() {
                             this.style.display = 'none';
                         };
                     } else {
                         imgEl.style.display = 'none';
                     }
-                    placeholder.style.display = 'none'; // 強制隱藏 [ 內容載入中... ]
+                    placeholder.style.display = 'none';
                 }
             }
-            
-            // 處理 Video 區塊
             if (result.data.video.title) {
                 safeSetText('display-video-title', result.data.video.title);
                 safeSetText('display-video-summary', result.data.video.summary);
@@ -96,11 +102,10 @@ async function fetchContent() {
                 if (videoId) safeSetSrc('display-video-iframe', `https://www.youtube.com/embed/${videoId}?rel=0`);
             }
         }
-    } catch (e) {
-        console.error("無法讀取首頁內容", e);
-    }
+    } catch (e) { console.error("無法讀取首頁內容", e); }
 }
 
+// 讀取分類文章
 async function fetchArticles() {
     try {
         const res = await fetch(CONFIG.GAS_URL + "?action=getArticles", { method: 'GET' });
@@ -109,9 +114,7 @@ async function fetchArticles() {
             window.allArticlesData = result.data; 
             renderArticles(result.data);
         }
-    } catch (e) {
-        console.error("無法讀取子目錄文章", e);
-    }
+    } catch (e) { console.error("無法讀取子目錄文章", e); }
 }
 
 function renderArticles(articles) {
@@ -134,12 +137,11 @@ function renderArticles(articles) {
 
         const card = document.createElement('div');
         card.className = `info-card reveal d-${(index % 3) + 1}`; 
+        card.onclick = () => { try { openArticleModal(article); } catch (err) {} };
         
-        card.onclick = () => {
-            try { openArticleModal(article); } catch (err) { console.error(err); }
-        };
-        
-        const imgHtml = article.image ? `<img src="${article.image}" class="card-img" alt="${article.title}" onerror="this.style.display='none'">` : '';
+        // 🌟 套用防破圖轉換與 referrerpolicy
+        const safeImgUrl = getSafeImageUrl(article.image);
+        const imgHtml = safeImgUrl ? `<img src="${safeImgUrl}" class="card-img" alt="${article.title}" referrerpolicy="no-referrer" onerror="this.style.display='none'">` : '';
         const rawText = (article.content || '').replace(/<[^>]*>?/gm, '').replace(/&nbsp;/g, ' ').trim();
         const summary = rawText.length > 70 ? rawText.substring(0, 70) + '...' : rawText;
         
@@ -155,24 +157,19 @@ function renderArticles(articles) {
                 </div>
             </div>
         `;
-        
         container.appendChild(card);
         if (scrollObserver) scrollObserver.observe(card);
     });
 }
 
-// ==========================================
-// 歷史列表彈窗 (List Modal)
-// ==========================================
+// 歷史列表彈窗
 window.openListModal = function(type) {
     const titleEl = document.getElementById('list-modal-title');
     const bodyEl = document.getElementById('list-modal-body');
-    
     titleEl.innerText = type === 'news' ? '📰 所有熱門新知' : '🎞️ 所有影音專區';
     bodyEl.innerHTML = '';
 
     const items = window.allArticlesData.filter(a => a.category === type);
-    
     if (items.length === 0) {
         bodyEl.innerHTML = '<p style="text-align:center; color: var(--text-muted); padding: 20px;">目前尚無歷史資料。</p>';
     } else {
@@ -186,8 +183,9 @@ window.openListModal = function(type) {
                 const thumbUrl = videoId ? `https://img.youtube.com/vi/${videoId}/mqdefault.jpg` : 'images/indeximage.jpg';
                 imgHtml = `<div style="position:relative; width: 140px; height: 90px; flex-shrink: 0;"><img src="${thumbUrl}" style="width:100%; height:100%; object-fit:cover; border-radius:8px;"><div style="position:absolute; top:50%; left:50%; transform:translate(-50%, -50%); color:white; background:rgba(0,0,0,0.6); border-radius:50%; width:30px; height:30px; display:flex; align-items:center; justify-content:center; font-size:12px;">▶</div></div>`;
             } else {
-                const thumbUrl = item.image || 'images/indeximage.jpg';
-                imgHtml = `<img src="${thumbUrl}" style="width: 140px; height: 90px; object-fit: cover; border-radius: 8px; flex-shrink: 0;" onerror="this.style.display='none'">`;
+                // 🌟 套用防破圖轉換
+                const safeImgUrl = getSafeImageUrl(item.image) || 'images/indeximage.jpg';
+                imgHtml = `<img src="${safeImgUrl}" style="width: 140px; height: 90px; object-fit: cover; border-radius: 8px; flex-shrink: 0;" referrerpolicy="no-referrer" onerror="this.style.display='none'">`;
             }
 
             const card = document.createElement('div');
@@ -220,22 +218,13 @@ window.closeListModal = function() {
     if (modal) {
         modal.classList.remove('show');
         setTimeout(() => { modal.classList.add('hidden'); }, 300);
-        if (!document.getElementById('article-modal').classList.contains('show')) {
-            document.body.style.overflow = 'auto';
-        }
+        if (!document.getElementById('article-modal').classList.contains('show')) { document.body.style.overflow = 'auto'; }
     }
 }
 
 const listModalOverlay = document.getElementById('list-modal');
-if (listModalOverlay) {
-    listModalOverlay.addEventListener('click', (e) => {
-        if (e.target === listModalOverlay) closeListModal();
-    });
-}
+if (listModalOverlay) { listModalOverlay.addEventListener('click', (e) => { if (e.target === listModalOverlay) closeListModal(); }); }
 
-// ==========================================
-// 文章閱讀彈窗邏輯
-// ==========================================
 function openArticleModal(article) {
     if (!article) return;
     safeSetText('modal-category', article.subcategory || article.category || '');
@@ -250,7 +239,9 @@ function openArticleModal(article) {
 
     const imgEl = document.getElementById('modal-image');
     if (article.image && article.image.trim() !== '') {
-        imgEl.src = article.image;
+        // 🌟 套用防破圖轉換
+        imgEl.src = getSafeImageUrl(article.image);
+        imgEl.setAttribute('referrerpolicy', 'no-referrer');
         imgEl.classList.remove('hidden');
         imgEl.style.display = 'block';
     } else { imgEl.classList.add('hidden'); }
@@ -261,19 +252,14 @@ function openArticleModal(article) {
     const refBox = document.getElementById('modal-reference');
     if (refBox) {
         if (article.reference && article.reference.trim() !== '') {
-            const refText = article.reference.startsWith('http') 
-                ? `<a href="${article.reference}" target="_blank" style="color:var(--primary);">${article.reference}</a>` : article.reference;
+            const refText = article.reference.startsWith('http') ? `<a href="${article.reference}" target="_blank" style="color:var(--primary);">${article.reference}</a>` : article.reference;
             refBox.innerHTML = `<strong>參考來源：</strong> ${refText}`;
             refBox.classList.remove('hidden');
         } else { refBox.classList.add('hidden'); }
     }
 
     const modal = document.getElementById('article-modal');
-    if (modal) {
-        modal.classList.remove('hidden'); 
-        setTimeout(() => { modal.classList.add('show'); }, 10);
-        document.body.style.overflow = 'hidden'; 
-    }
+    if (modal) { modal.classList.remove('hidden'); setTimeout(() => { modal.classList.add('show'); }, 10); document.body.style.overflow = 'hidden'; }
 }
 
 function closeArticleModal() {
@@ -281,20 +267,14 @@ function closeArticleModal() {
     if (modal) {
         modal.classList.remove('show');
         setTimeout(() => { modal.classList.add('hidden'); }, 300);
-        if (!document.getElementById('list-modal').classList.contains('show')) {
-            document.body.style.overflow = 'auto';
-        }
+        if (!document.getElementById('list-modal').classList.contains('show')) { document.body.style.overflow = 'auto'; }
     }
 }
 
 const closeBtn = document.getElementById('close-modal');
 const modalOverlay = document.getElementById('article-modal');
 if (closeBtn) closeBtn.onclick = closeArticleModal;
-if (modalOverlay) {
-    modalOverlay.addEventListener('click', (e) => {
-        if (e.target === modalOverlay) closeArticleModal();
-    });
-}
+if (modalOverlay) { modalOverlay.addEventListener('click', (e) => { if (e.target === modalOverlay) closeArticleModal(); }); }
 
 // ==========================================
 // 自我風險評估邏輯
@@ -308,11 +288,7 @@ const questions = [
 ];
 
 let currentQ = 0, totalScore = 0, userAnswers = [];
-
-const screens = { 
-    intro: document.getElementById('intro-screen'), question: document.getElementById('question-screen'), 
-    processing: document.getElementById('processing-screen'), result: document.getElementById('result-screen') 
-};
+const screens = { intro: document.getElementById('intro-screen'), question: document.getElementById('question-screen'), processing: document.getElementById('processing-screen'), result: document.getElementById('result-screen') };
 
 function switchScreen(hide, show) {
     if (!hide || !show) return;
