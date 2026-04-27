@@ -1,11 +1,10 @@
 // app.js
 
 // ==========================================
-// 🌟 Google Drive 圖片防破圖轉換器
+// 🌟 Google Drive 圖片防破圖與防呆轉換器
 // ==========================================
 function getSafeImageUrl(url) {
-    if (!url) return '';
-    // 將舊版或會被擋的網址自動轉為安全的 thumbnail API 網址
+    if (!url || typeof url !== 'string' || url.trim() === '') return null;
     if (url.includes('drive.google.com')) {
         const match = url.match(/id=([^&]+)/) || url.match(/d\/([^/]+)/);
         if (match && match[1]) {
@@ -33,7 +32,7 @@ const initAnimations = () => {
 };
 
 function getYouTubeId(url) {
-    if (!url) return null;
+    if (!url || typeof url !== 'string') return null;
     const regExp = /^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|&v=)([^#&?]*).*/;
     const match = url.match(regExp);
     return (match && match[2].length === 11) ? match[2] : null;
@@ -41,7 +40,7 @@ function getYouTubeId(url) {
 
 const safeSetText = (id, text) => { const el = document.getElementById(id); if (el) el.innerText = text; };
 const safeSetHref = (id, url) => { const el = document.getElementById(id); if (el) el.href = url; };
-const safeSetSrc = (id, url) => { const el = document.getElementById(id); if (el) el.src = url; };
+const safeSetSrc = (id, url) => { const el = document.getElementById(id); if (el && url) el.src = url; };
 
 window.allArticlesData = [];
 
@@ -70,7 +69,7 @@ async function fetchContent() {
         const res = await fetch(CONFIG.GAS_URL + "?action=getContent", { method: 'GET' });
         const result = await res.json();
         if (result.status === 'success' && result.data) {
-            if (result.data.news.title) {
+            if (result.data.news && result.data.news.title) {
                 safeSetText('display-news-title', result.data.news.title);
                 safeSetText('display-news-summary', result.data.news.summary);
                 safeSetHref('display-news-url', result.data.news.url);
@@ -79,22 +78,19 @@ async function fetchContent() {
                 const placeholder = document.getElementById('news-placeholder-text');
                 
                 if (imgEl && placeholder) {
-                    if (result.data.news.image && result.data.news.image.trim() !== '') {
-                        // 🌟 套用防破圖轉換與繞過 Referrer 阻擋
-                        imgEl.src = getSafeImageUrl(result.data.news.image);
+                    const safeUrl = getSafeImageUrl(result.data.news.image);
+                    if (safeUrl) {
+                        imgEl.src = safeUrl;
                         imgEl.setAttribute('referrerpolicy', 'no-referrer');
                         imgEl.style.display = 'block';
-                        
-                        imgEl.onerror = function() {
-                            this.style.display = 'none';
-                        };
+                        imgEl.onerror = function() { this.style.display = 'none'; };
                     } else {
                         imgEl.style.display = 'none';
                     }
                     placeholder.style.display = 'none';
                 }
             }
-            if (result.data.video.title) {
+            if (result.data.video && result.data.video.title) {
                 safeSetText('display-video-title', result.data.video.title);
                 safeSetText('display-video-summary', result.data.video.summary);
                 safeSetHref('display-video-url', result.data.video.url); 
@@ -102,7 +98,7 @@ async function fetchContent() {
                 if (videoId) safeSetSrc('display-video-iframe', `https://www.youtube.com/embed/${videoId}?rel=0`);
             }
         }
-    } catch (e) { console.error("無法讀取首頁內容", e); }
+    } catch (e) { console.warn("首頁內容載入中遇到阻擋或延遲", e); }
 }
 
 // 讀取分類文章
@@ -114,7 +110,7 @@ async function fetchArticles() {
             window.allArticlesData = result.data; 
             renderArticles(result.data);
         }
-    } catch (e) { console.error("無法讀取子目錄文章", e); }
+    } catch (e) { console.warn("分類文章載入中遇到阻擋或延遲", e); }
 }
 
 function renderArticles(articles) {
@@ -139,7 +135,6 @@ function renderArticles(articles) {
         card.className = `info-card reveal d-${(index % 3) + 1}`; 
         card.onclick = () => { try { openArticleModal(article); } catch (err) {} };
         
-        // 🌟 套用防破圖轉換與 referrerpolicy
         const safeImgUrl = getSafeImageUrl(article.image);
         const imgHtml = safeImgUrl ? `<img src="${safeImgUrl}" class="card-img" alt="${article.title}" referrerpolicy="no-referrer" onerror="this.style.display='none'">` : '';
         const rawText = (article.content || '').replace(/<[^>]*>?/gm, '').replace(/&nbsp;/g, ' ').trim();
@@ -183,7 +178,6 @@ window.openListModal = function(type) {
                 const thumbUrl = videoId ? `https://img.youtube.com/vi/${videoId}/mqdefault.jpg` : 'images/indeximage.jpg';
                 imgHtml = `<div style="position:relative; width: 140px; height: 90px; flex-shrink: 0;"><img src="${thumbUrl}" style="width:100%; height:100%; object-fit:cover; border-radius:8px;"><div style="position:absolute; top:50%; left:50%; transform:translate(-50%, -50%); color:white; background:rgba(0,0,0,0.6); border-radius:50%; width:30px; height:30px; display:flex; align-items:center; justify-content:center; font-size:12px;">▶</div></div>`;
             } else {
-                // 🌟 套用防破圖轉換
                 const safeImgUrl = getSafeImageUrl(item.image) || 'images/indeximage.jpg';
                 imgHtml = `<img src="${safeImgUrl}" style="width: 140px; height: 90px; object-fit: cover; border-radius: 8px; flex-shrink: 0;" referrerpolicy="no-referrer" onerror="this.style.display='none'">`;
             }
@@ -238,13 +232,17 @@ function openArticleModal(article) {
     safeSetText('modal-date', dateString);
 
     const imgEl = document.getElementById('modal-image');
-    if (article.image && article.image.trim() !== '') {
-        // 🌟 套用防破圖轉換
-        imgEl.src = getSafeImageUrl(article.image);
+    const safeUrl = getSafeImageUrl(article.image);
+    
+    if (safeUrl) {
+        imgEl.src = safeUrl;
         imgEl.setAttribute('referrerpolicy', 'no-referrer');
         imgEl.classList.remove('hidden');
         imgEl.style.display = 'block';
-    } else { imgEl.classList.add('hidden'); }
+    } else { 
+        imgEl.classList.add('hidden'); 
+        imgEl.style.display = 'none';
+    }
 
     const modalBody = document.getElementById('modal-body');
     if(modalBody) modalBody.innerHTML = article.content || '';
