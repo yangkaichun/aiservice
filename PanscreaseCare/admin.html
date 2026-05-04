@@ -88,6 +88,10 @@
             <li class="nav-item">
                 <a class="nav-link" data-bs-toggle="tab" href="#articlesTab">醫學衛教文章</a>
             </li>
+            <!-- 新增知識庫 Tab 標籤 -->
+            <li class="nav-item">
+                <a class="nav-link text-primary" data-bs-toggle="tab" href="#kmTab">🤖 LineBOT 知識庫</a>
+            </li>
             <li class="nav-item">
                 <a class="nav-link" data-bs-toggle="tab" href="#adminsTab">權限管理</a>
             </li>
@@ -236,6 +240,31 @@
                 </div>
             </div>
 
+            <!-- 🤖 LineBOT 知識庫 Tab -->
+            <div class="tab-pane fade" id="kmTab">
+                <div class="card shadow-sm mb-4 border-top border-info border-4 bg-light">
+                    <div class="card-body">
+                        <h5 class="text-info text-dark fw-bold border-bottom pb-2">➕ 上傳衛教 PDF 檔案</h5>
+                        <p class="text-muted small mb-3">此處上傳的檔案會直接進入 `KM_Documents` 雲端資料夾，供 AI 知識庫（Qdrant）抓取與學習，作為 LineBOT 回答的依據。</p>
+                        
+                        <div class="input-group">
+                            <input type="file" id="km-file-upload" class="form-control" accept="application/pdf">
+                            <button class="btn btn-info text-white fw-bold" onclick="uploadKmFile()" id="btn-upload-km">📤 餵給 AI 大腦</button>
+                        </div>
+                    </div>
+                </div>
+                
+                <h5 class="text-info text-dark mt-4 fw-bold">🧠 知識庫檔案列表</h5>
+                <div class="table-responsive bg-white rounded shadow-sm">
+                    <table class="table table-hover align-middle mb-0">
+                        <thead class="table-dark">
+                            <tr><th style="width: 60%;">檔案名稱</th><th style="width: 25%;">上傳時間</th><th style="width: 15%;">操作</th></tr>
+                        </thead>
+                        <tbody id="km-list-body"><tr><td colspan="3" class="text-center">載入中...</td></tr></tbody>
+                    </table>
+                </div>
+            </div>
+
             <!-- 權限管理 Tab -->
             <div class="tab-pane fade" id="adminsTab">
                 <div class="card shadow-sm mb-4 border-top border-secondary border-4">
@@ -289,7 +318,6 @@
             }
         };
 
-        // 🌟 修正：加上 text/plain header 以避免跨域錯誤
         async function postData(action, payload) {
             const response = await fetch(CONFIG.GAS_URL, {
                 method: "POST",
@@ -339,11 +367,94 @@
         function loadAllData() {
             fetchHomepageContent(); 
             loadArticlesList(); 
+            loadKmFiles();  // 載入 AI 知識庫檔案
             loadAdminsList();
         }
 
         // ==========================================
-        // 圖片上傳通用處理 (Thumbnail API)
+        // 🤖 LineBOT AI 知識庫管理邏輯
+        // ==========================================
+        async function loadKmFiles() {
+            const tbody = document.getElementById('km-list-body');
+            tbody.innerHTML = '<tr><td colspan="3" class="text-center text-muted">🔄 讀取中，請稍候...</td></tr>';
+            try {
+                const res = await postData("getKmFiles", {});
+                tbody.innerHTML = '';
+                if (res.status === 'success') {
+                    if (res.data.length === 0) {
+                        tbody.innerHTML = '<tr><td colspan="3" class="text-center text-muted">雲端資料夾目前無任何檔案</td></tr>';
+                        return;
+                    }
+                    res.data.forEach(file => {
+                        // 增加 PDF 小圖示讓介面更豐富
+                        tbody.innerHTML += `
+                            <tr>
+                                <td><a href="${file.url}" target="_blank" class="text-decoration-none fw-bold">📄 ${file.name}</a></td>
+                                <td class="text-muted small">${file.date}</td>
+                                <td><button class="btn btn-sm btn-outline-danger" onclick="deleteKmFile('${file.id}', '${file.name}')">刪除</button></td>
+                            </tr>
+                        `;
+                    });
+                } else {
+                    tbody.innerHTML = '<tr><td colspan="3" class="text-center text-danger">讀取失敗：' + res.message + '</td></tr>';
+                }
+            } catch (e) {
+                tbody.innerHTML = '<tr><td colspan="3" class="text-center text-danger">網路錯誤，無法連線。</td></tr>';
+            }
+        }
+
+        async function uploadKmFile() {
+            const fileInput = document.getElementById('km-file-upload');
+            const file = fileInput.files[0];
+            if (!file) return alert("⚠️ 請先選擇要上傳的 PDF 檔案！");
+            
+            const btn = document.getElementById('btn-upload-km');
+            btn.disabled = true; 
+            btn.innerHTML = '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> 上傳中...';
+            
+            const reader = new FileReader();
+            reader.onload = async function(event) {
+                try {
+                    const res = await postData("uploadKmFile", {
+                        base64Data: event.target.result,
+                        mimeType: file.type,
+                        filename: file.name
+                    });
+                    if (res.status === 'success') {
+                        alert("✅ 上傳成功！檔案已經存入 KM_Documents 資料夾，等待 AI 學習。");
+                        fileInput.value = '';
+                        loadKmFiles(); // 重新整理列表
+                    } else {
+                        alert("❌ 上傳失敗：" + res.message);
+                    }
+                } catch(e) {
+                    alert("網路連線發生錯誤。");
+                } finally {
+                    btn.disabled = false; 
+                    btn.innerText = "📤 餵給 AI 大腦";
+                }
+            };
+            reader.readAsDataURL(file);
+        }
+
+        async function deleteKmFile(id, name) {
+            if (!confirm(`確定要刪除「${name}」嗎？\n注意：這會將檔案移至雲端硬碟的垃圾桶，AI 知識庫將無法再讀取到此文件。`)) return;
+            
+            try {
+                const res = await postData("deleteKmFile", { id: id });
+                if (res.status === 'success') {
+                    alert("🗑️ 檔案已刪除！");
+                    loadKmFiles(); // 重新整理列表
+                } else {
+                    alert("刪除失敗：" + res.message);
+                }
+            } catch (e) {
+                alert("網路連線發生錯誤。");
+            }
+        }
+
+        // ==========================================
+        // 圖片上傳通用處理 (前台文章用)
         // ==========================================
         function setupImageUploader(fileInputId, urlHiddenId, previewImgId) {
             document.getElementById(fileInputId).addEventListener('change', async function(e) {
