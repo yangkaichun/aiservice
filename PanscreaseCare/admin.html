@@ -19,7 +19,6 @@
         
         body { background-color: #f8f9fa; font-family: 'Noto Sans TC', sans-serif; }
         
-        /* 🌟 登入畫面 */
         #login-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100vh; background: linear-gradient(135deg, var(--brand-blue), var(--brand-green)); z-index: 9999; display: flex; align-items: center; justify-content: center; }
         .login-box { background: white; padding: 50px 40px; border-radius: 16px; box-shadow: 0 10px 30px rgba(0,0,0,0.2); width: 100%; max-width: 450px; text-align: center; }
         .login-logo-img { width: 70px; height: 70px; margin-bottom: 15px; object-fit: contain; }
@@ -27,7 +26,6 @@
         .login-box .login-subtitle { font-weight: 700; color: var(--brand-blue); margin: 0 0 25px 0; font-size: 13px; letter-spacing: 1px; }
         .login-box p.hint { color: #829ab1; font-size: 14px; margin-bottom: 25px; line-height: 1.5; }
         
-        /* 🌟 主介面 */
         #main-admin-ui { display: none; padding-top: 40px; padding-bottom: 50px; }
         .admin-header-title { color: var(--brand-blue); font-weight: 900; letter-spacing: 2px; margin: 0; }
         .admin-header-subtitle { color: var(--brand-green); font-size: 13px; font-weight: 700; letter-spacing: 1px; margin-top: 4px; }
@@ -37,7 +35,6 @@
         
         .image-preview { max-width: 200px; max-height: 200px; margin-top: 10px; border-radius: 8px; border: 1px solid #dee2e6; display: none;}
         
-        /* 編輯器工具列 */
         .editor-toolbar { display: flex; flex-wrap: wrap; gap: 8px; padding: 10px 15px; background: #f8fafc; border: 1px solid #ced4da; border-bottom: none; border-radius: .375rem .375rem 0 0; align-items: center; }
         .editor-toolbar button { background: #fff; border: 1px solid #ced4da; border-radius: 4px; padding: 4px 10px; cursor: pointer; color: #4a5568; font-weight: bold; transition: 0.2s; font-size: 14px; }
         .editor-toolbar button:hover { background: var(--brand-light-green); color: var(--brand-green); border-color: var(--brand-green); }
@@ -49,7 +46,6 @@
         
         .badge-featured { background-color: var(--brand-gold); color: white; padding: 3px 8px; border-radius: 12px; font-size: 12px; font-weight: bold; box-shadow: 0 2px 4px rgba(212, 184, 114, 0.3); }
 
-        /* 🤖 提問分析 Markdown 排版 */
         .ai-analysis-output { font-size: 15px; line-height: 1.8; color: #333; white-space: pre-wrap; }
         .ai-analysis-output strong { color: var(--brand-blue); }
     </style>
@@ -348,12 +344,8 @@
 
     <script src="config.js"></script>
     <script>
-        // 用於存放取回來的問題清單，供 Gemini 分析使用
         window.analyticsQuestionsList = [];
 
-        // ==========================================
-        // 🌟 初始化與登入
-        // ==========================================
         window.onload = function () {
             const savedEmail = sessionStorage.getItem('adminEmail');
             if (savedEmail) {
@@ -370,7 +362,6 @@
             }
         };
 
-        // 確保 POST 帶有 text/plain 避免 CORS 報錯
         async function postData(action, payload) {
             const response = await fetch(CONFIG.GAS_URL, {
                 method: "POST",
@@ -415,7 +406,7 @@
             document.getElementById('user-display').innerText = "👤 " + email;
             document.getElementById('user-display').classList.remove('d-none');
             
-            initAnalyticsDates(); // 初始化提問分析的日期預設值
+            initAnalyticsDates();
             loadAllData();
         }
 
@@ -424,16 +415,13 @@
             loadArticlesList(); 
             loadKmFiles();
             loadAdminsList();
-            loadAnalyticsData(); // 一進來就先載入一次提問數據
+            loadAnalyticsData(); 
         }
 
-        // ==========================================
-        // 📊 提問分析管理邏輯 (✨ 本次新增)
-        // ==========================================
         function initAnalyticsDates() {
             const end = new Date();
             const start = new Date();
-            start.setDate(end.getDate() - 30); // 預設撈取 30 天
+            start.setDate(end.getDate() - 30); 
 
             document.getElementById('analytics-start-date').value = start.toISOString().split('T')[0];
             document.getElementById('analytics-end-date').value = end.toISOString().split('T')[0];
@@ -445,7 +433,7 @@
             
             btn.disabled = true; 
             btn.innerText = "讀取數據中...";
-            geminiBtn.disabled = true; // 資料載入中不允許分析
+            geminiBtn.disabled = true;
 
             const payload = {
                 startDate: document.getElementById('analytics-start-date').value,
@@ -459,7 +447,6 @@
                     document.getElementById('stat-questions').innerText = res.data.totalQuestions;
                     window.analyticsQuestionsList = res.data.questions;
 
-                    // 如果這段時間有問題，就解鎖 Gemini 按鈕
                     if (res.data.totalQuestions > 0) {
                         geminiBtn.disabled = false;
                     }
@@ -482,12 +469,11 @@
             btn.disabled = true;
             btn.innerHTML = '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> AI 思考中，請稍候...';
             card.classList.remove('d-none');
-            contentBox.innerHTML = '<span class="text-muted">正在把問題交給 Gemini 1.5 進行摘要，大約需要 5~15 秒...</span>';
+            contentBox.innerHTML = '<span class="text-muted">正在把問題交給 Gemini 進行摘要，大約需要 5~15 秒...</span>';
 
             try {
                 const res = await postData("analyzeWithGemini", { questions: window.analyticsQuestionsList });
                 if (res.status === 'success') {
-                    // 把 Markdown 裡的 **粗體** 轉換成 html 標籤讓畫面更好看
                     let formattedText = res.text.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
                     contentBox.innerHTML = formattedText;
                 } else {
@@ -501,9 +487,6 @@
             }
         }
 
-        // ==========================================
-        // 🤖 LineBOT AI 知識庫管理邏輯
-        // ==========================================
         async function loadKmFiles() {
             const tbody = document.getElementById('km-list-body');
             tbody.innerHTML = '<tr><td colspan="3" class="text-center text-muted">🔄 讀取中，請稍候...</td></tr>';
@@ -516,7 +499,6 @@
                         return;
                     }
                     res.data.forEach(file => {
-                        // 增加 PDF 小圖示讓介面更豐富
                         tbody.innerHTML += `
                             <tr>
                                 <td><a href="${file.url}" target="_blank" class="text-decoration-none fw-bold">📄 ${file.name}</a></td>
@@ -553,7 +535,7 @@
                     if (res.status === 'success') {
                         alert("✅ 上傳成功！檔案已經存入 KM_Documents 資料夾，等待 AI 學習。");
                         fileInput.value = '';
-                        loadKmFiles(); // 重新整理列表
+                        loadKmFiles(); 
                     } else {
                         alert("❌ 上傳失敗：" + res.message);
                     }
@@ -574,7 +556,7 @@
                 const res = await postData("deleteKmFile", { id: id });
                 if (res.status === 'success') {
                     alert("🗑️ 檔案已刪除！");
-                    loadKmFiles(); // 重新整理列表
+                    loadKmFiles();
                 } else {
                     alert("刪除失敗：" + res.message);
                 }
@@ -583,9 +565,6 @@
             }
         }
 
-        // ==========================================
-        // 圖片上傳通用處理 (前台文章用)
-        // ==========================================
         function setupImageUploader(fileInputId, urlHiddenId, previewImgId) {
             document.getElementById(fileInputId).addEventListener('change', async function(e) {
                 const file = e.target.files[0];
@@ -622,7 +601,6 @@
         setupImageUploader('nv-image-file', 'nv-image-url', 'nv-image-preview');
         setupImageUploader('article-image-file', 'article-image-url', 'article-image-preview');
 
-        // 富文本編輯器圖片上傳
         document.getElementById('btn-editor-upload').addEventListener('click', () => { document.getElementById('editor-image-upload').click(); });
         document.getElementById('editor-image-upload').addEventListener('change', function(e) {
             const file = e.target.files[0]; if (!file) return;
@@ -647,9 +625,6 @@
             reader.readAsDataURL(file);
         });
 
-        // ==========================================
-        // 內容管理邏輯
-        // ==========================================
         const subcategoryMap = {
             'about-pancreas': ['解剖與機能', '症狀與病徵', '各類胰臟疾病'],
             'cancer-analysis': ['歷史與概說', '流行病學與危險因子'],
@@ -736,7 +711,6 @@
             } catch (e) {}
         }
 
-        /* --- 儲存 NV (News/Video) --- */
         function toggleNvFields() { 
             document.getElementById('nv-image-group').style.display = document.getElementById('nv-type').value === 'news' ? 'block' : 'none'; 
         }
@@ -795,7 +769,6 @@
             toggleNvFields();
         }
 
-        /* --- 儲存醫學文章 --- */
         async function saveArticle() {
             const editId = document.getElementById('edit-article-id').value;
             const payload = {
@@ -855,7 +828,6 @@
             populateSubcategory('', '');
         }
 
-        /* --- 通用操作 --- */
         async function deleteArticle(id) {
             if (!confirm("確定要刪除嗎？")) return;
             const res = await postData("deleteArticle", { id });
@@ -868,15 +840,9 @@
             if(res.status === 'success') { alert("同步成功！"); fetchHomepageContent(); loadArticlesList(); }
         }
 
-        // ==========================================
-        // 富文本功能
-        // ==========================================
         function execCmd(command, value = null) { document.execCommand(command, false, value); document.getElementById('article-content-editor').focus(); }
         function insertLink() { const url = prompt("請輸入超連結網址 (需包含 http:// 或 https://):"); if (url) document.execCommand("createLink", false, url); document.getElementById('article-content-editor').focus(); }
 
-        // ==========================================
-        // 權限管理
-        // ==========================================
         async function loadAdminsList() {
             const res = await postData("getAdmins", {});
             const tbody = document.getElementById('admin-list-body');
