@@ -6,7 +6,6 @@
     <title>內容管理後台 - 護胰大聯盟</title>
     <link rel="icon" href="images/logopng.png" type="image/png">
     <link rel="shortcut icon" href="images/logopng.png" type="image/png">
-    <!-- 引入 Bootstrap 5 CSS -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <script src="https://accounts.google.com/gsi/client" async defer></script>
     
@@ -49,11 +48,14 @@
         .rich-editor img { max-width: 100%; height: auto; border-radius: 8px; margin: 10px 0; display: block; }
         
         .badge-featured { background-color: var(--brand-gold); color: white; padding: 3px 8px; border-radius: 12px; font-size: 12px; font-weight: bold; box-shadow: 0 2px 4px rgba(212, 184, 114, 0.3); }
+
+        /* 🤖 提問分析 Markdown 排版 */
+        .ai-analysis-output { font-size: 15px; line-height: 1.8; color: #333; white-space: pre-wrap; }
+        .ai-analysis-output strong { color: var(--brand-blue); }
     </style>
 </head>
 <body>
 
-    <!-- 登入區塊 -->
     <div id="login-overlay">
         <div class="login-box">
             <img src="images/logopng.png" alt="logo" class="login-logo-img" onerror="this.src='https://via.placeholder.com/70?text=Logo'">
@@ -65,7 +67,6 @@
         </div>
     </div>
 
-    <!-- 管理儀表板區塊 -->
     <div class="container" id="main-admin-ui">
         <div class="d-flex justify-content-between align-items-center border-bottom pb-3 mb-4">
             <div class="d-flex align-items-center gap-3">
@@ -88,9 +89,11 @@
             <li class="nav-item">
                 <a class="nav-link" data-bs-toggle="tab" href="#articlesTab">醫學衛教文章</a>
             </li>
-            <!-- 新增知識庫 Tab 標籤 -->
             <li class="nav-item">
                 <a class="nav-link text-primary" data-bs-toggle="tab" href="#kmTab">🤖 LineBOT 知識庫</a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link text-warning fw-bold" data-bs-toggle="tab" href="#analyticsTab">📊 提問分析</a>
             </li>
             <li class="nav-item">
                 <a class="nav-link" data-bs-toggle="tab" href="#adminsTab">權限管理</a>
@@ -99,7 +102,6 @@
 
         <div class="tab-content">
             
-            <!-- 首頁精選 Tab -->
             <div class="tab-pane fade show active" id="homeTab">
                 <div class="card shadow-sm mb-4 border-top border-primary border-4">
                     <div class="card-body bg-light">
@@ -157,7 +159,6 @@
                 </div>
             </div>
 
-            <!-- 醫學衛教文章 Tab -->
             <div class="tab-pane fade" id="articlesTab">
                 <div class="card shadow-sm mb-4 border-top border-success border-4 bg-light">
                     <div class="card-body">
@@ -240,7 +241,6 @@
                 </div>
             </div>
 
-            <!-- 🤖 LineBOT 知識庫 Tab -->
             <div class="tab-pane fade" id="kmTab">
                 <div class="card shadow-sm mb-4 border-top border-info border-4 bg-light">
                     <div class="card-body">
@@ -265,7 +265,57 @@
                 </div>
             </div>
 
-            <!-- 權限管理 Tab -->
+            <div class="tab-pane fade" id="analyticsTab">
+                <div class="card shadow-sm mb-4 border-top border-warning border-4 bg-light">
+                    <div class="card-body">
+                        <h5 class="text-warning text-dark fw-bold border-bottom pb-2">📅 選擇資料庫撈取區間</h5>
+                        <p class="text-muted small mb-3">系統將從 Google Sheet 撈取該區間內收集到的民眾提問，作為 AI 分析的基礎（預設近 30 天）。</p>
+                        
+                        <div class="row align-items-end mb-4">
+                            <div class="col-md-4 mb-2">
+                                <label class="form-label fw-bold">開始日期</label>
+                                <input type="date" id="analytics-start-date" class="form-control">
+                            </div>
+                            <div class="col-md-4 mb-2">
+                                <label class="form-label fw-bold">結束日期</label>
+                                <input type="date" id="analytics-end-date" class="form-control">
+                            </div>
+                            <div class="col-md-4 mb-2">
+                                <button class="btn btn-warning fw-bold w-100" onclick="loadAnalyticsData()" id="btn-load-analytics">🔍 載入提問數據</button>
+                            </div>
+                        </div>
+
+                        <div class="row text-center mb-4">
+                            <div class="col-md-6 mb-2">
+                                <div class="card bg-white shadow-sm border-0 py-3">
+                                    <h6 class="text-muted fw-bold mb-1">👨‍👩‍👧‍👦 提問總人數 (不重複)</h6>
+                                    <h2 class="text-primary mb-0 fw-bold" id="stat-users">0</h2>
+                                </div>
+                            </div>
+                            <div class="col-md-6 mb-2">
+                                <div class="card bg-white shadow-sm border-0 py-3">
+                                    <h6 class="text-muted fw-bold mb-1">💬 累積提問總數</h6>
+                                    <h2 class="text-success mb-0 fw-bold" id="stat-questions">0</h2>
+                                </div>
+                            </div>
+                        </div>
+
+                        <h5 class="text-warning text-dark fw-bold border-bottom pb-2">🤖 Gemini 智慧痛點分析</h5>
+                        <p class="text-muted small mb-3">點擊下方按鈕，AI 將自動歸納這段期間內民眾最常問的主題、常見迷思，並給出撰文建議。</p>
+                        
+                        <button class="btn btn-dark w-100 fw-bold mb-4" id="btn-run-gemini" onclick="runGeminiAnalysis()" disabled>
+                            ✨ 產生 AI 洞察報告
+                        </button>
+
+                        <div class="card border-0 shadow-sm d-none" id="gemini-result-card">
+                            <div class="card-body bg-white rounded">
+                                <div id="gemini-result-content" class="ai-analysis-output">分析中，請稍候...</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
             <div class="tab-pane fade" id="adminsTab">
                 <div class="card shadow-sm mb-4 border-top border-secondary border-4">
                     <div class="card-body">
@@ -296,9 +346,11 @@
         </div>
     </div>
 
-    <!-- 🌟 重新啟用 config.js -->
     <script src="config.js"></script>
     <script>
+        // 用於存放取回來的問題清單，供 Gemini 分析使用
+        window.analyticsQuestionsList = [];
+
         // ==========================================
         // 🌟 初始化與登入
         // ==========================================
@@ -318,6 +370,7 @@
             }
         };
 
+        // 確保 POST 帶有 text/plain 避免 CORS 報錯
         async function postData(action, payload) {
             const response = await fetch(CONFIG.GAS_URL, {
                 method: "POST",
@@ -361,14 +414,91 @@
             document.getElementById('main-admin-ui').style.display = 'block';
             document.getElementById('user-display').innerText = "👤 " + email;
             document.getElementById('user-display').classList.remove('d-none');
+            
+            initAnalyticsDates(); // 初始化提問分析的日期預設值
             loadAllData();
         }
 
         function loadAllData() {
             fetchHomepageContent(); 
             loadArticlesList(); 
-            loadKmFiles();  // 載入 AI 知識庫檔案
+            loadKmFiles();
             loadAdminsList();
+            loadAnalyticsData(); // 一進來就先載入一次提問數據
+        }
+
+        // ==========================================
+        // 📊 提問分析管理邏輯 (✨ 本次新增)
+        // ==========================================
+        function initAnalyticsDates() {
+            const end = new Date();
+            const start = new Date();
+            start.setDate(end.getDate() - 30); // 預設撈取 30 天
+
+            document.getElementById('analytics-start-date').value = start.toISOString().split('T')[0];
+            document.getElementById('analytics-end-date').value = end.toISOString().split('T')[0];
+        }
+
+        async function loadAnalyticsData() {
+            const btn = document.getElementById('btn-load-analytics');
+            const geminiBtn = document.getElementById('btn-run-gemini');
+            
+            btn.disabled = true; 
+            btn.innerText = "讀取數據中...";
+            geminiBtn.disabled = true; // 資料載入中不允許分析
+
+            const payload = {
+                startDate: document.getElementById('analytics-start-date').value,
+                endDate: document.getElementById('analytics-end-date').value
+            };
+
+            try {
+                const res = await postData("getAnalyticsData", payload);
+                if (res.status === 'success') {
+                    document.getElementById('stat-users').innerText = res.data.uniqueUsers;
+                    document.getElementById('stat-questions').innerText = res.data.totalQuestions;
+                    window.analyticsQuestionsList = res.data.questions;
+
+                    // 如果這段時間有問題，就解鎖 Gemini 按鈕
+                    if (res.data.totalQuestions > 0) {
+                        geminiBtn.disabled = false;
+                    }
+                } else {
+                    alert("讀取數據失敗：" + res.message);
+                }
+            } catch (e) {
+                alert("網路連線發生錯誤。");
+            } finally {
+                btn.disabled = false; 
+                btn.innerText = "🔍 載入提問數據";
+            }
+        }
+
+        async function runGeminiAnalysis() {
+            const btn = document.getElementById('btn-run-gemini');
+            const card = document.getElementById('gemini-result-card');
+            const contentBox = document.getElementById('gemini-result-content');
+
+            btn.disabled = true;
+            btn.innerHTML = '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> AI 思考中，請稍候...';
+            card.classList.remove('d-none');
+            contentBox.innerHTML = '<span class="text-muted">正在把問題交給 Gemini 1.5 進行摘要，大約需要 5~15 秒...</span>';
+
+            try {
+                const res = await postData("analyzeWithGemini", { questions: window.analyticsQuestionsList });
+                if (res.status === 'success') {
+                    // 把 Markdown 裡的 **粗體** 轉換成 html 標籤讓畫面更好看
+                    let formattedText = res.text.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
+                    contentBox.innerHTML = formattedText;
+                } else {
+                    contentBox.innerHTML = `<span class="text-danger fw-bold">分析失敗：</span> ${res.message}`;
+                }
+            } catch (e) {
+                contentBox.innerHTML = `<span class="text-danger fw-bold">網路連線發生錯誤。</span>`;
+            } finally {
+                btn.disabled = false;
+                btn.innerText = "✨ 重新產生 AI 洞察報告";
+            }
         }
 
         // ==========================================
