@@ -117,6 +117,9 @@
         .sdm-section { background: linear-gradient(135deg, var(--primary), var(--primary-dark)) !important; }
         .progress-bar { background-color: var(--primary) !important; }
 
+        /* 影片縮圖 Hover 效果 */
+        .video-thumbnail-container:hover #display-video-img { filter: brightness(0.8); }
+
         @media (max-width: 768px) {
             .logo { gap: 10px; }
             .logo-icon img { width: 38px; height: 38px; }
@@ -201,9 +204,17 @@
                         <span class="view-all-badge">查看全部影片 ➔</span>
                     </div>
                     <div class="media-content">
-                        <div class="media-img-placeholder video-bg" style="padding: 0; background: #000; position: relative;">
-                            <img id="display-video-img" src="" alt="YouTube 縮圖替代" style="width: 100%; height: 100%; object-fit: cover; display: none; position: absolute; top: 0; left: 0; z-index: 2; cursor: pointer;">
-                            <div id="video-play-overlay" style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); z-index: 3; display: none; pointer-events: none; font-size: 50px; text-shadow: 0 2px 10px rgba(0,0,0,0.5);">▶️</div>
+                        <div class="media-img-placeholder video-bg video-thumbnail-container" style="padding: 0; background: #000; position: relative;">
+                            
+                            <img id="display-video-img" src="" alt="YouTube 縮圖替代" style="width: 100%; height: 100%; object-fit: cover; display: none; position: absolute; top: 0; left: 0; cursor: pointer; transition: filter 0.3s;">
+                            
+                            <div id="video-play-overlay" style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); display: none; pointer-events: none; z-index: 11;">
+                                <svg height="100%" version="1.1" viewBox="0 0 68 48" width="100%" style="width: 68px; height: 48px;">
+                                    <path d="M66.52,7.74c-0.78-2.93-2.49-5.41-5.42-6.19C55.79,.13,34,0,34,0S12.21,.13,6.9,1.55 C3.97,2.33,2.27,4.81,1.48,7.74C0.06,13.05,0,24,0,24s0.06,10.95,1.48,16.26c0.78,2.93,2.49,5.41,5.42,6.19 C12.21,47.87,34,48,34,48s21.79-0.13,27.1-1.55c2.93-0.78,4.64-3.26,5.42-6.19C67.94,34.95,68,24,68,24S67.94,13.05,66.52,7.74z" fill="#ff0000"></path>
+                                    <path d="M 45,24 27,14 27,34" fill="#fff"></path>
+                                </svg>
+                            </div>
+                            
                             <iframe id="display-video-iframe" title="YouTube 影片" style="width: 100%; height: 100%; border: none; position: relative; z-index: 1;" src="" allowfullscreen></iframe>
                         </div>
                         <h4 id="display-video-title" class="media-title">內容載入中...</h4>
@@ -347,31 +358,60 @@
     <script>
         document.addEventListener("DOMContentLoaded", function() {
             if (typeof CONFIG !== 'undefined' && CONFIG.GAS_URL) {
+                // 第一步：先找出首頁目前的 Video 標題與網址
                 fetch(CONFIG.GAS_URL + "?action=getContent")
                     .then(res => res.json())
-                    .then(res => {
-                        if (res.status === 'success' && res.data && res.data.video) {
-                            const videoImg = document.getElementById('display-video-img');
-                            const videoIframe = document.getElementById('display-video-iframe');
-                            const playOverlay = document.getElementById('video-play-overlay');
-                            
-                            // 若後台有上傳 Video 圖片，則啟動強制覆蓋邏輯
-                            if (res.data.video.image && res.data.video.image.trim() !== '') {
-                                // 採用間歇性檢查，以防原本的 app.js 後續覆寫了樣式
-                                setInterval(() => {
-                                    if(videoIframe) videoIframe.style.display = 'none';
-                                    if(videoImg) {
-                                        videoImg.src = res.data.video.image;
-                                        videoImg.style.display = 'block';
-                                        // 點擊圖片時直接開啟 YouTube 連結
-                                        videoImg.onclick = () => window.open(res.data.video.url, '_blank');
+                    .then(resContent => {
+                        if (resContent.status === 'success' && resContent.data && resContent.data.video) {
+                            const featuredVideoTitle = resContent.data.video.title;
+                            const featuredVideoUrl = resContent.data.video.url;
+
+                            // 第二步：去「所有文章庫」撈資料，找出這部影片在資料庫裡儲存的圖片
+                            fetch(CONFIG.GAS_URL + "?action=getArticles")
+                                .then(res => res.json())
+                                .then(resArticles => {
+                                    if (resArticles.status === 'success' && resArticles.data) {
+                                        // 對比標題找出對應的那一筆影片文章
+                                        const videoArticle = resArticles.data.find(a => 
+                                            String(a.category).toLowerCase() === 'video' && 
+                                            a.title === featuredVideoTitle
+                                        );
+
+                                        // 如果有找到，而且您真的有上傳圖片，就啟動覆蓋機制
+                                        if (videoArticle && videoArticle.image && videoArticle.image.trim() !== '') {
+                                            const videoImg = document.getElementById('display-video-img');
+                                            const videoIframe = document.getElementById('display-video-iframe');
+                                            const playOverlay = document.getElementById('video-play-overlay');
+                                            
+                                            // 利用 setInterval 強制覆寫原本 app.js 渲染的結果
+                                            setInterval(() => {
+                                                if(videoIframe) {
+                                                    // 讓 iframe 隱形且無法被點擊，避免版權黑畫面干擾
+                                                    videoIframe.style.opacity = '0';
+                                                    videoIframe.style.pointerEvents = 'none';
+                                                    videoIframe.style.position = 'absolute';
+                                                    videoIframe.style.zIndex = '-1';
+                                                }
+                                                if(videoImg) {
+                                                    // 放上您在後台上傳的縮圖
+                                                    videoImg.src = videoArticle.image;
+                                                    videoImg.style.display = 'block';
+                                                    videoImg.style.zIndex = '10';
+                                                    // 點擊圖片時直接開啟 YouTube 連結
+                                                    videoImg.onclick = () => window.open(featuredVideoUrl, '_blank');
+                                                }
+                                                if(playOverlay) {
+                                                    // 顯示紅色的 YouTube 播放按鈕
+                                                    playOverlay.style.display = 'block';
+                                                    playOverlay.style.zIndex = '11';
+                                                }
+                                            }, 300);
+                                        }
                                     }
-                                    if(playOverlay) playOverlay.style.display = 'block';
-                                }, 500);
-                            }
+                                });
                         }
                     })
-                    .catch(err => console.error("Error fetching video thumbnail fallback:", err));
+                    .catch(err => console.error("Error bypassing iframe:", err));
             }
         });
     </script>
