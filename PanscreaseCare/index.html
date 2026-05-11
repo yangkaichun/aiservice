@@ -190,8 +190,8 @@
                         <div class="card-footer" style="border-top: none; padding-top: 5px;">
                             <a id="display-news-url" href="#" target="_blank" class="btn-pill small" style="margin-top: 0;">閱讀全文 <span class="icon-circle">▶</span></a>
                             <div class="share-actions">
-                                <button class="share-btn" aria-label="分享至 Facebook" onclick="shareToFB(document.getElementById('display-news-title').innerText, event)"><img src="images/fblogo.jpg" alt="FB" class="share-icon-img"></button>
-                                <button class="share-btn" aria-label="分享至 LINE" onclick="shareToLine(document.getElementById('display-news-title').innerText, event)"><img src="images/linglogo.jpg" alt="LINE" class="share-icon-img"></button>
+                                <button class="share-btn" aria-label="分享至 Facebook" onclick="shareToFB(document.getElementById('display-news-title').innerText, event, document.getElementById('display-news-url').href)"><img src="images/fblogo.jpg" alt="FB" class="share-icon-img"></button>
+                                <button class="share-btn" aria-label="分享至 LINE" onclick="shareToLine(document.getElementById('display-news-title').innerText, event, document.getElementById('display-news-url').href)"><img src="images/linglogo.jpg" alt="LINE" class="share-icon-img"></button>
                             </div>
                         </div>
                     </div>
@@ -223,8 +223,8 @@
                         <div class="card-footer" style="border-top: none; padding-top: 5px;">
                             <a id="display-video-url" href="#" target="_blank" class="btn-pill small" style="margin-top: 0;">前往 YouTube <span class="icon-circle">▶</span></a>
                             <div class="share-actions">
-                                <button class="share-btn" aria-label="分享至 Facebook" onclick="shareToFB(document.getElementById('display-video-title').innerText, event)"><img src="images/fblogo.jpg" alt="FB" class="share-icon-img"></button>
-                                <button class="share-btn" aria-label="分享至 LINE" onclick="shareToLine(document.getElementById('display-video-title').innerText, event)"><img src="images/linglogo.jpg" alt="LINE" class="share-icon-img"></button>
+                                <button class="share-btn" aria-label="分享至 Facebook" onclick="shareToFB(document.getElementById('display-video-title').innerText, event, document.getElementById('display-video-url').href)"><img src="images/fblogo.jpg" alt="FB" class="share-icon-img"></button>
+                                <button class="share-btn" aria-label="分享至 LINE" onclick="shareToLine(document.getElementById('display-video-title').innerText, event, document.getElementById('display-video-url').href)"><img src="images/linglogo.jpg" alt="LINE" class="share-icon-img"></button>
                             </div>
                         </div>
                     </div>
@@ -358,7 +358,6 @@
     <script>
         document.addEventListener("DOMContentLoaded", function() {
             if (typeof CONFIG !== 'undefined' && CONFIG.GAS_URL) {
-                // 第一步：先找出首頁目前的 Video 標題與網址
                 fetch(CONFIG.GAS_URL + "?action=getContent")
                     .then(res => res.json())
                     .then(resContent => {
@@ -366,42 +365,34 @@
                             const featuredVideoTitle = resContent.data.video.title;
                             const featuredVideoUrl = resContent.data.video.url;
 
-                            // 第二步：去「所有文章庫」撈資料，找出這部影片在資料庫裡儲存的圖片
                             fetch(CONFIG.GAS_URL + "?action=getArticles")
                                 .then(res => res.json())
                                 .then(resArticles => {
                                     if (resArticles.status === 'success' && resArticles.data) {
-                                        // 對比標題找出對應的那一筆影片文章
                                         const videoArticle = resArticles.data.find(a => 
                                             String(a.category).toLowerCase() === 'video' && 
                                             a.title === featuredVideoTitle
                                         );
 
-                                        // 如果有找到，而且您真的有上傳圖片，就啟動覆蓋機制
                                         if (videoArticle && videoArticle.image && videoArticle.image.trim() !== '') {
                                             const videoImg = document.getElementById('display-video-img');
                                             const videoIframe = document.getElementById('display-video-iframe');
                                             const playOverlay = document.getElementById('video-play-overlay');
                                             
-                                            // 利用 setInterval 強制覆寫原本 app.js 渲染的結果
                                             setInterval(() => {
                                                 if(videoIframe) {
-                                                    // 讓 iframe 隱形且無法被點擊，避免版權黑畫面干擾
                                                     videoIframe.style.opacity = '0';
                                                     videoIframe.style.pointerEvents = 'none';
                                                     videoIframe.style.position = 'absolute';
                                                     videoIframe.style.zIndex = '-1';
                                                 }
                                                 if(videoImg) {
-                                                    // 放上您在後台上傳的縮圖
                                                     videoImg.src = videoArticle.image;
                                                     videoImg.style.display = 'block';
                                                     videoImg.style.zIndex = '10';
-                                                    // 點擊圖片時直接開啟 YouTube 連結
                                                     videoImg.onclick = () => window.open(featuredVideoUrl, '_blank');
                                                 }
                                                 if(playOverlay) {
-                                                    // 顯示紅色的 YouTube 播放按鈕
                                                     playOverlay.style.display = 'block';
                                                     playOverlay.style.zIndex = '11';
                                                 }
@@ -414,6 +405,43 @@
                     .catch(err => console.error("Error bypassing iframe:", err));
             }
         });
+    </script>
+
+    <script>
+        window.shareToFB = function(title, event, customUrl) {
+            if(event) { event.preventDefault(); event.stopPropagation(); }
+            let targetUrl = customUrl;
+
+            // 如果沒有明確傳入網址，試著從點擊的卡片中尋找外部連結
+            if (!targetUrl && event && event.target) {
+                let card = event.target.closest('.media-card, .feature-card, .modal-content, .card');
+                if (card) {
+                    let link = card.querySelector('a[href^="http"]');
+                    if (link) targetUrl = link.href;
+                }
+            }
+            
+            targetUrl = targetUrl || window.location.href;
+            let fbUrl = `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(targetUrl)}`;
+            window.open(fbUrl, 'fbShare', 'width=600,height=400');
+        };
+
+        window.shareToLine = function(title, event, customUrl) {
+            if(event) { event.preventDefault(); event.stopPropagation(); }
+            let targetUrl = customUrl;
+
+            if (!targetUrl && event && event.target) {
+                let card = event.target.closest('.media-card, .feature-card, .modal-content, .card');
+                if (card) {
+                    let link = card.querySelector('a[href^="http"]');
+                    if (link) targetUrl = link.href;
+                }
+            }
+
+            targetUrl = targetUrl || window.location.href;
+            let lineUrl = `https://social-plugins.line.me/lineit/share?url=${encodeURIComponent(targetUrl)}&text=${encodeURIComponent(title)}`;
+            window.open(lineUrl, 'lineShare', 'width=600,height=400');
+        };
     </script>
 </body>
 </html>
