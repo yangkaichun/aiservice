@@ -565,14 +565,25 @@
             }
         }
 
+        // 🌟 修改區塊：加入等待動畫邏輯
         function setupImageUploader(fileInputId, urlHiddenId, previewImgId) {
             document.getElementById(fileInputId).addEventListener('change', async function(e) {
                 const file = e.target.files[0];
                 if (!file) return;
                 
                 const preview = document.getElementById(previewImgId);
-                preview.style.display = 'block';
-                preview.src = "https://via.placeholder.com/200x100?text=Uploading...";
+                preview.style.display = 'none'; // 先隱藏圖片避免出現破圖
+                
+                // 動態加入上傳中的提示字樣
+                let loadingText = document.getElementById(previewImgId + '-loading');
+                if (!loadingText) {
+                    loadingText = document.createElement('div');
+                    loadingText.id = previewImgId + '-loading';
+                    loadingText.className = 'text-primary fw-bold mt-2 mb-2';
+                    preview.parentNode.insertBefore(loadingText, preview);
+                }
+                loadingText.innerHTML = '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> 圖片上傳雲端中，請稍候...';
+                loadingText.style.display = 'block';
                 
                 const reader = new FileReader();
                 reader.onload = async function(event) {
@@ -586,13 +597,14 @@
                         if (res.status === "success") {
                             document.getElementById(urlHiddenId).value = res.url;
                             preview.src = res.url;
+                            preview.style.display = 'block'; // 成功後顯示圖片
                         } else {
                             alert("圖片上傳失敗: " + res.message);
-                            preview.style.display = 'none';
                         }
                     } catch (err) {
                         alert("網路錯誤");
-                        preview.style.display = 'none';
+                    } finally {
+                        if (loadingText) loadingText.style.display = 'none'; // 隱藏上傳中字樣
                     }
                 };
                 reader.readAsDataURL(file);
@@ -711,7 +723,6 @@
             } catch (e) {}
         }
 
-        // 🌟 移除隱藏邏輯，確保 Video 也能上傳縮圖
         function toggleNvFields() { 
             document.getElementById('nv-image-group').style.display = 'block'; 
         }
