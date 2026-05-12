@@ -121,55 +121,45 @@
         .video-thumbnail-container:hover #display-video-img { filter: brightness(0.8); }
 
         /* =========================================
-           📱 手機與平板 RWD 自動排版優化 (全新加入)
+           📱 手機與平板 RWD 自動排版優化
            ========================================= */
         @media (max-width: 992px) {
-            /* 導覽列：改為彈性按鈕排列，避免選單破版 */
             .nav-container { flex-direction: column; padding: 15px; gap: 15px; }
             .nav-links { flex-wrap: wrap; justify-content: center; gap: 8px; width: 100%; }
-            .nav-links .dropdown { flex: 1 1 45%; } /* 平板/手機變成兩欄式按鈕 */
+            .nav-links .dropdown { flex: 1 1 45%; } 
             .nav-links a.dropbtn { display: block; padding: 10px 5px; text-align: center; background-color: #f8fafc; border-radius: 8px; border: 1px solid #e2e8f0; font-size: 15px; }
-            /* 下拉選單改為區塊內展開，避免浮動遮擋住其他按鈕 */
             .dropdown-content { position: static; min-width: 100%; box-shadow: none; background: transparent; padding-left: 0; border-top: 2px solid var(--primary); margin-top: 5px; }
             .dropdown-content a { text-align: center; padding: 10px; border-bottom: 1px dashed #e2e8f0; }
             .btn-nav { width: 100%; text-align: center; margin-top: 5px; padding: 12px !important; font-size: 16px; }
         }
 
         @media (max-width: 768px) {
-            /* Header 與 Logo 調整 */
             .logo-icon img { width: 42px; height: 42px; }
             .logo-title { font-size: 22px !important; }
             .logo-subtitle { font-size: 9px !important; }
             
-            /* Hero 主視覺：圖文垂直排列 */
             .hero-container { flex-direction: column; padding: 160px 20px 40px; text-align: center; gap: 30px; }
             .hero-title { font-size: 32px !important; line-height: 1.4; }
             .hero-actions { flex-direction: column; gap: 12px; width: 100%; }
             .hero-actions .btn-pill { width: 100%; justify-content: center; }
             .hero-image-right { width: 100%; margin-top: 10px; }
             
-            /* 網格系統強制單欄，避免圖文擠壓 */
             .grid-2, .grid-3, .sdm-steps { display: flex !important; flex-direction: column !important; gap: 25px; }
             
-            /* 卡片與圖片高度修正 */
             .media-card { width: 100%; margin: 0; }
             .video-bg { min-height: 240px; border-radius: 12px; overflow: hidden; }
             .main-hero-img { border-radius: 16px; width: 100%; }
             
-            /* 各區塊內距縮小 */
             .section-container { padding: 40px 20px !important; }
             
-            /* 風險檢測區塊：優化觸控面積 */
             .assessment-container { margin: 0 5px; padding: 25px 15px !important; }
             .question-text { font-size: 18px !important; line-height: 1.5; }
             .options button { padding: 14px !important; font-size: 16px !important; margin-bottom: 10px; }
             
-            /* 文章彈窗 (Modal) 自動縮放滿版 */
             .modal-content { width: 92% !important; margin: 10% auto !important; padding: 25px 20px !important; max-height: 85vh; }
             .modal-header h2 { font-size: 20px !important; line-height: 1.5; }
             .modal-share-actions { flex-direction: column; align-items: flex-start !important; gap: 15px; }
             
-            /* 浮動側邊欄：縮放避免遮擋內文 */
             .floating-sidebar { transform: scale(0.85); right: 5px; bottom: 10px; transform-origin: bottom right; }
         }
     </style>
@@ -414,28 +404,36 @@
     <script>
         document.addEventListener("DOMContentLoaded", function() {
             if (typeof CONFIG !== 'undefined' && CONFIG.GAS_URL) {
-                fetch(CONFIG.GAS_URL + "?action=getContent")
+                
+                // 背景抓取所有文章供輪播使用
+                fetch(CONFIG.GAS_URL + "?action=getArticles")
                     .then(res => res.json())
-                    .then(resContent => {
-                        if (resContent.status === 'success' && resContent.data && resContent.data.video) {
-                            const featuredVideoTitle = resContent.data.video.title;
-                            const featuredVideoUrl = resContent.data.video.url;
+                    .then(resArticles => {
+                        if (resArticles.status === 'success' && resArticles.data) {
+                            const allNews = resArticles.data.filter(a => String(a.category).toLowerCase() === 'news');
+                            const allVideos = resArticles.data.filter(a => String(a.category).toLowerCase() === 'video');
+                            
+                            let activeVideo = null; // 用來追蹤當前應該顯示的影片
 
-                            fetch(CONFIG.GAS_URL + "?action=getArticles")
+                            // 先取得首頁「預設」的內容 (即管理員設定的首頁精選)
+                            fetch(CONFIG.GAS_URL + "?action=getContent")
                                 .then(res => res.json())
-                                .then(resArticles => {
-                                    if (resArticles.status === 'success' && resArticles.data) {
-                                        const videoArticle = resArticles.data.find(a => 
-                                            String(a.category).toLowerCase() === 'video' && 
-                                            a.title === featuredVideoTitle
-                                        );
+                                .then(resContent => {
+                                    // 設定初始 Active Video
+                                    if (resContent.status === 'success' && resContent.data && resContent.data.video) {
+                                        activeVideo = allVideos.find(a => a.title === resContent.data.video.title) || allVideos[0];
+                                    } else {
+                                        activeVideo = allVideos[0];
+                                    }
 
-                                        if (videoArticle && videoArticle.image && videoArticle.image.trim() !== '') {
+                                    // 啟動保護機制：每 300ms 檢查並套用 YouTube 縮圖遮罩 (防止 app.js 覆寫)
+                                    setInterval(() => {
+                                        if (activeVideo) {
                                             const videoImg = document.getElementById('display-video-img');
                                             const videoIframe = document.getElementById('display-video-iframe');
                                             const playOverlay = document.getElementById('video-play-overlay');
                                             
-                                            setInterval(() => {
+                                            if (activeVideo.image && activeVideo.image.trim() !== '') {
                                                 if(videoIframe) {
                                                     videoIframe.style.opacity = '0';
                                                     videoIframe.style.pointerEvents = 'none';
@@ -443,22 +441,87 @@
                                                     videoIframe.style.zIndex = '-1';
                                                 }
                                                 if(videoImg) {
-                                                    videoImg.src = videoArticle.image;
+                                                    if (videoImg.src !== activeVideo.image) videoImg.src = activeVideo.image;
                                                     videoImg.style.display = 'block';
                                                     videoImg.style.zIndex = '10';
-                                                    videoImg.onclick = () => window.open(featuredVideoUrl, '_blank');
+                                                    videoImg.onclick = () => window.open(activeVideo.reference, '_blank');
                                                 }
                                                 if(playOverlay) {
                                                     playOverlay.style.display = 'block';
                                                     playOverlay.style.zIndex = '11';
                                                 }
-                                            }, 300);
+                                            } else {
+                                                // 沒有縮圖時，顯示原生的 iframe
+                                                if(videoIframe) {
+                                                    let embedUrl = activeVideo.reference.replace('watch?v=', 'embed/');
+                                                    if(videoIframe.src !== embedUrl) videoIframe.src = embedUrl;
+                                                    videoIframe.style.opacity = '1';
+                                                    videoIframe.style.pointerEvents = 'auto';
+                                                    videoIframe.style.position = 'relative';
+                                                    videoIframe.style.zIndex = '1';
+                                                }
+                                                if(videoImg) videoImg.style.display = 'none';
+                                                if(playOverlay) playOverlay.style.display = 'none';
+                                            }
                                         }
-                                    }
+                                    }, 300);
+
+                                    // 啟動輪播機制：每 20 秒隨機切換一次
+                                    setInterval(() => {
+                                        // --- 輪播 News ---
+                                        if (allNews.length > 1) {
+                                            const currentNewsTitle = document.getElementById('display-news-title').innerText;
+                                            const otherNews = allNews.filter(n => n.title !== currentNewsTitle);
+                                            const randomNews = otherNews.length > 0 ? otherNews[Math.floor(Math.random() * otherNews.length)] : allNews[0];
+                                            
+                                            // 加上淡入淡出動畫
+                                            const newsContentDiv = document.querySelector('.media-card.d-1 .media-content');
+                                            if (newsContentDiv) {
+                                                newsContentDiv.style.transition = 'opacity 0.4s ease';
+                                                newsContentDiv.style.opacity = '0';
+                                                
+                                                setTimeout(() => {
+                                                    document.getElementById('display-news-title').innerText = randomNews.title;
+                                                    document.getElementById('display-news-summary').innerText = randomNews.content;
+                                                    document.getElementById('display-news-url').href = randomNews.reference;
+                                                    const newsImg = document.getElementById('display-news-img');
+                                                    if (newsImg && randomNews.image) {
+                                                        newsImg.src = randomNews.image;
+                                                        newsImg.style.display = 'block';
+                                                    }
+                                                    newsContentDiv.style.opacity = '1';
+                                                }, 400);
+                                            }
+                                        }
+
+                                        // --- 輪播 Video ---
+                                        if (allVideos.length > 1) {
+                                            const currentVideoTitle = document.getElementById('display-video-title').innerText;
+                                            const otherVideos = allVideos.filter(v => v.title !== currentVideoTitle);
+                                            const randomVideo = otherVideos.length > 0 ? otherVideos[Math.floor(Math.random() * otherVideos.length)] : allVideos[0];
+                                            
+                                            // 加上淡入淡出動畫
+                                            const videoContentDiv = document.querySelector('.media-card.d-2 .media-content');
+                                            if (videoContentDiv) {
+                                                videoContentDiv.style.transition = 'opacity 0.4s ease';
+                                                videoContentDiv.style.opacity = '0';
+                                                
+                                                setTimeout(() => {
+                                                    // 設定新的 activeVideo，前面的 300ms 保護機制會自動幫我們套用圖片/iframe
+                                                    activeVideo = randomVideo; 
+                                                    document.getElementById('display-video-title').innerText = randomVideo.title;
+                                                    document.getElementById('display-video-summary').innerText = randomVideo.content;
+                                                    document.getElementById('display-video-url').href = randomVideo.reference;
+                                                    
+                                                    videoContentDiv.style.opacity = '1';
+                                                }, 400);
+                                            }
+                                        }
+                                    }, 20000); // 20000 毫秒 = 20 秒
                                 });
                         }
                     })
-                    .catch(err => console.error("Error bypassing iframe:", err));
+                    .catch(err => console.error("Error setting up carousel:", err));
             }
         });
     </script>
