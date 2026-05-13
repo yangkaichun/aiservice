@@ -1,0 +1,887 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>內容管理後台 - 護胰大聯盟</title>
+    <link rel="icon" href="images/logopng.png" type="image/png">
+    <link rel="shortcut icon" href="images/logopng.png" type="image/png">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <script src="https://accounts.google.com/gsi/client" async defer></script>
+    
+    <style>
+        :root {
+            --brand-blue: #004C74;
+            --brand-green: #3E9F8F;
+            --brand-gold: #D4B872;
+            --brand-light-green: #eef7f5;
+        }
+        
+        body { background-color: #f8f9fa; font-family: 'Noto Sans TC', sans-serif; }
+        
+        #login-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100vh; background: linear-gradient(135deg, var(--brand-blue), var(--brand-green)); z-index: 9999; display: flex; align-items: center; justify-content: center; }
+        .login-box { background: white; padding: 50px 40px; border-radius: 16px; box-shadow: 0 10px 30px rgba(0,0,0,0.2); width: 100%; max-width: 450px; text-align: center; }
+        .login-logo-img { width: 70px; height: 70px; margin-bottom: 15px; object-fit: contain; }
+        .login-box h2 { color: var(--brand-blue); margin: 0 0 5px 0; font-weight: 900; font-size: 32px; letter-spacing: 2px; }
+        .login-box .login-subtitle { font-weight: 700; color: var(--brand-blue); margin: 0 0 25px 0; font-size: 13px; letter-spacing: 1px; }
+        .login-box p.hint { color: #829ab1; font-size: 14px; margin-bottom: 25px; line-height: 1.5; }
+        
+        #main-admin-ui { display: none; padding-top: 40px; padding-bottom: 50px; }
+        .admin-header-title { color: var(--brand-blue); font-weight: 900; letter-spacing: 2px; margin: 0; }
+        .admin-header-subtitle { color: var(--brand-green); font-size: 13px; font-weight: 700; letter-spacing: 1px; margin-top: 4px; }
+        
+        .nav-tabs .nav-link { color: #4a5568; font-weight: bold; }
+        .nav-tabs .nav-link.active { color: var(--brand-blue); border-bottom: 3px solid var(--brand-blue); font-weight: 900; }
+        
+        .image-preview { max-width: 200px; max-height: 200px; margin-top: 10px; border-radius: 8px; border: 1px solid #dee2e6; display: none;}
+        
+        .editor-toolbar { display: flex; flex-wrap: wrap; gap: 8px; padding: 10px 15px; background: #f8fafc; border: 1px solid #ced4da; border-bottom: none; border-radius: .375rem .375rem 0 0; align-items: center; }
+        .editor-toolbar button { background: #fff; border: 1px solid #ced4da; border-radius: 4px; padding: 4px 10px; cursor: pointer; color: #4a5568; font-weight: bold; transition: 0.2s; font-size: 14px; }
+        .editor-toolbar button:hover { background: var(--brand-light-green); color: var(--brand-green); border-color: var(--brand-green); }
+        .editor-toolbar select { padding: 4px 8px; border: 1px solid #ced4da; border-radius: 4px; outline: none; cursor: pointer; }
+        .editor-toolbar input[type="color"] { border: none; width: 28px; height: 28px; padding: 0; background: none; cursor: pointer; border-radius: 4px; }
+        .rich-editor { border: 1px solid #ced4da; border-radius: 0 0 .375rem .375rem; padding: 15px; min-height: 280px; background: #fff; overflow-y: auto; line-height: 1.7; }
+        .rich-editor:focus { outline: none; border-color: #86b7fe; box-shadow: 0 0 0 0.25rem rgba(13,110,253,.25); }
+        .rich-editor img { max-width: 100%; height: auto; border-radius: 8px; margin: 10px 0; display: block; }
+        
+        .badge-featured { background-color: var(--brand-gold); color: white; padding: 3px 8px; border-radius: 12px; font-size: 12px; font-weight: bold; box-shadow: 0 2px 4px rgba(212, 184, 114, 0.3); }
+
+        .ai-analysis-output { font-size: 15px; line-height: 1.8; color: #333; white-space: pre-wrap; }
+        .ai-analysis-output strong { color: var(--brand-blue); }
+    </style>
+</head>
+<body>
+
+    <div id="login-overlay">
+        <div class="login-box">
+            <img src="images/logopng.png" alt="logo" class="login-logo-img" onerror="this.src='https://via.placeholder.com/70?text=Logo'">
+            <h2>護胰大聯盟</h2>
+            <p class="login-subtitle">PANCREAS PROTECTION ALLIANCE</p>
+            <p class="hint">請使用經過授權的 Google 帳號登入系統</p>
+            <div id="google-login-btn" style="display: flex; justify-content: center; margin-top: 20px;"></div>
+            <div id="login-msg" class="text-danger mt-3 fw-bold"></div>
+        </div>
+    </div>
+
+    <div class="container" id="main-admin-ui">
+        <div class="d-flex justify-content-between align-items-center border-bottom pb-3 mb-4">
+            <div class="d-flex align-items-center gap-3">
+                <img src="images/logopng.png" alt="logo" width="60" onerror="this.src='https://via.placeholder.com/60?text=Logo'">
+                <div>
+                    <h2 class="admin-header-title">護胰大聯盟</h2>
+                    <p class="admin-header-subtitle mb-0">PANCREAS PROTECTION ALLIANCE CMS</p>
+                </div>
+            </div>
+            <div class="text-end">
+                <span id="user-display" class="text-muted fw-bold me-3 d-none d-md-inline"></span>
+                <button class="btn btn-outline-secondary" onclick="logout()">登出系統</button>
+            </div>
+        </div>
+
+        <ul class="nav nav-tabs mb-4" id="adminTabs">
+            <li class="nav-item">
+                <a class="nav-link active" data-bs-toggle="tab" href="#homeTab">首頁精選</a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link" data-bs-toggle="tab" href="#articlesTab">醫學衛教文章</a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link text-primary" data-bs-toggle="tab" href="#kmTab">🤖 LineBOT 知識庫</a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link text-warning fw-bold" data-bs-toggle="tab" href="#analyticsTab">📊 提問分析</a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link" data-bs-toggle="tab" href="#adminsTab">權限管理</a>
+            </li>
+        </ul>
+
+        <div class="tab-content">
+            
+            <div class="tab-pane fade show active" id="homeTab">
+                <div class="card shadow-sm mb-4 border-top border-primary border-4">
+                    <div class="card-body bg-light">
+                        <div class="alert alert-info">
+                            <p class="mb-1"><strong>📍 目前首頁展示 News：</strong> <span id="current-news-title" class="text-primary fw-bold">載入中...</span></p>
+                            <p class="mb-0"><strong>📍 目前首頁展示 Video：</strong> <span id="current-video-title" class="text-primary fw-bold">載入中...</span></p>
+                        </div>
+                        
+                        <h5 class="text-primary border-bottom pb-2">➕ 新增 / 編輯 貼文與影片</h5>
+                        <form id="nvForm" class="mt-3">
+                            <input type="hidden" id="edit-nv-id">
+                            <div class="row">
+                                <div class="col-md-4 mb-3">
+                                    <label class="form-label fw-bold">版位類型</label>
+                                    <select id="nv-type" class="form-select" onchange="toggleNvFields()">
+                                        <option value="news">📰 方格子 (News)</option>
+                                        <option value="video">🎞️ YouTube (Video)</option>
+                                    </select>
+                                </div>
+                                <div class="col-md-8 mb-3">
+                                    <label class="form-label fw-bold">標題</label>
+                                    <input type="text" id="nv-title" class="form-control" placeholder="輸入貼文或影片標題...">
+                                </div>
+                                <div class="col-12 mb-3">
+                                    <label class="form-label fw-bold">簡短摘要</label>
+                                    <textarea id="nv-summary" class="form-control" rows="3" placeholder="輸入顯示在首頁卡片上的摘要..."></textarea>
+                                </div>
+                                <div class="col-12 mb-3">
+                                    <label class="form-label fw-bold">對外連結 (網址)</label>
+                                    <input type="url" id="nv-url" class="form-control" placeholder="https://...">
+                                </div>
+                                <div class="col-12 mb-3" id="nv-image-group">
+                                    <label class="form-label fw-bold">🖼️ 縮圖 (News 必填 / YouTube 若無法嵌入請上傳縮圖替代)</label>
+                                    <input type="file" id="nv-image-file" class="form-control" accept="image/*">
+                                    <input type="hidden" id="nv-image-url">
+                                    <img id="nv-image-preview" class="image-preview mt-2">
+                                </div>
+                            </div>
+                            <div class="d-flex gap-2">
+                                <button type="button" id="btn-save-nv" class="btn btn-primary w-100 fw-bold" onclick="saveNV()">💾 儲存至下方列表</button>
+                                <button type="button" id="btn-cancel-nv" class="btn btn-secondary w-50 d-none" onclick="resetNvForm()">取消編輯</button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+                
+                <h5 class="text-primary mt-4">📋 貼文與影片資料庫</h5>
+                <div class="table-responsive bg-white rounded shadow-sm">
+                    <table class="table table-hover align-middle mb-0">
+                        <thead class="table-dark">
+                            <tr><th style="width: 15%">類型</th><th style="width: 55%">標題</th><th style="width: 30%">操作</th></tr>
+                        </thead>
+                        <tbody id="nv-list-body"><tr><td colspan="3" class="text-center">載入中...</td></tr></tbody>
+                    </table>
+                </div>
+            </div>
+
+            <div class="tab-pane fade" id="articlesTab">
+                <div class="card shadow-sm mb-4 border-top border-success border-4 bg-light">
+                    <div class="card-body">
+                        <div id="edit-mode-banner" class="alert alert-warning d-none d-flex justify-content-between align-items-center">
+                            <span>⚠️ 目前為「編輯模式」，儲存將會覆寫原本的內容。</span>
+                            <button class="btn btn-sm btn-dark" onclick="resetArticleForm()">取消編輯</button>
+                        </div>
+                        
+                        <form id="articleForm">
+                            <input type="hidden" id="edit-article-id">
+                            <div class="row">
+                                <div class="col-md-6 mb-3">
+                                    <label class="form-label fw-bold">📌 選擇主分類</label>
+                                    <select id="article-category" class="form-select">
+                                        <option value="">請選擇主分類...</option>
+                                        <option value="about-pancreas">認識胰臟</option>
+                                        <option value="cancer-analysis">胰臟癌解析</option>
+                                        <option value="diagnosis">精準診斷</option>
+                                        <option value="treatment">治療與照護</option>
+                                    </select>
+                                </div>
+                                <div class="col-md-6 mb-3">
+                                    <label class="form-label fw-bold">📂 選擇子分類</label>
+                                    <select id="article-subcategory" class="form-select">
+                                        <option value="">請先選擇主分類...</option>
+                                    </select>
+                                </div>
+                                <div class="col-12 mb-3">
+                                    <label class="form-label fw-bold">✏️ 文章標題</label>
+                                    <input type="text" id="article-title" class="form-control" placeholder="例如：為什麼電腦斷層容易漏看早期胰臟癌？">
+                                </div>
+                                <div class="col-12 mb-3">
+                                    <label class="form-label fw-bold">🖼️ 文章封面縮圖</label>
+                                    <input type="file" id="article-image-file" class="form-control" accept="image/*">
+                                    <input type="hidden" id="article-image-url">
+                                    <img id="article-image-preview" class="image-preview mt-2">
+                                </div>
+                                <div class="col-12 mb-3">
+                                    <label class="form-label fw-bold">📝 文章內文</label>
+                                    <div class="editor-toolbar">
+                                        <button type="button" onclick="execCmd('bold')" title="粗體"><b>B</b></button>
+                                        <button type="button" onclick="execCmd('italic')" title="斜體"><i>I</i></button>
+                                        <button type="button" onclick="execCmd('underline')" title="底線"><u>U</u></button>
+                                        <div class="border-start border-secondary mx-1 h-50"></div>
+                                        <select onchange="execCmd('fontSize', this.value); this.selectedIndex=0;" title="文字大小">
+                                            <option value="">大小</option><option value="3">正常</option><option value="4">中大</option><option value="5">大標</option>
+                                        </select>
+                                        <select onchange="execCmd('foreColor', this.value); this.selectedIndex=0;" title="文字顏色">
+                                            <option value="">顏色</option>
+                                            <option value="#004C74">品牌藍</option><option value="#3E9F8F">品牌綠</option><option value="#D4B872">品牌金</option>
+                                        </select>
+                                        <div class="border-start border-secondary mx-1 h-50"></div>
+                                        <button type="button" onclick="insertLink()" title="插入超連結">🔗 連結</button>
+                                        <button type="button" onclick="execCmd('unlink')" title="移除連結">🚫 移除</button>
+                                        <div class="border-start border-secondary mx-1 h-50"></div>
+                                        <input type="file" id="editor-image-upload" accept="image/*" class="d-none">
+                                        <button type="button" id="btn-editor-upload" title="上傳圖片到文章中">🖼️ 插入圖片</button>
+                                        <span id="editor-upload-status" class="text-success ms-2 fw-bold d-none" style="font-size:12px;">上傳中...</span>
+                                    </div>
+                                    <div id="article-content-editor" class="rich-editor" contenteditable="true" placeholder="在此輸入完整的文章內容..."></div>
+                                </div>
+                                <div class="col-12 mb-4">
+                                    <label class="form-label fw-bold">🔗 參考資料來源 (可貼網址)</label>
+                                    <input type="text" id="article-reference" class="form-control" placeholder="例如：台灣消化系醫學會...">
+                                </div>
+                            </div>
+                            <button type="button" id="btn-save-article" class="btn btn-success w-100 fw-bold" onclick="saveArticle()">📤 發布/儲存 醫學文章</button>
+                        </form>
+                    </div>
+                </div>
+
+                <h5 class="text-success mt-4">📋 醫學文章資料庫</h5>
+                <div class="table-responsive bg-white rounded shadow-sm">
+                    <table class="table table-hover align-middle mb-0">
+                        <thead class="table-dark">
+                            <tr><th style="width: 25%;">主分類</th><th style="width: 45%;">標題</th><th style="width: 30%;">操作</th></tr>
+                        </thead>
+                        <tbody id="article-list-body"><tr><td colspan="3" class="text-center">載入中...</td></tr></tbody>
+                    </table>
+                </div>
+            </div>
+
+            <div class="tab-pane fade" id="kmTab">
+                <div class="card shadow-sm mb-4 border-top border-info border-4 bg-light">
+                    <div class="card-body">
+                        <h5 class="text-info text-dark fw-bold border-bottom pb-2">➕ 上傳衛教 PDF 檔案</h5>
+                        <p class="text-muted small mb-3">此處上傳的檔案會直接進入 `KM_Documents` 雲端資料夾，供 AI 知識庫（Qdrant）抓取與學習，作為 LineBOT 回答的依據。</p>
+                        
+                        <div class="input-group">
+                            <input type="file" id="km-file-upload" class="form-control" accept="application/pdf">
+                            <button class="btn btn-info text-white fw-bold" onclick="uploadKmFile()" id="btn-upload-km">📤 餵給 AI 大腦</button>
+                        </div>
+                    </div>
+                </div>
+                
+                <h5 class="text-info text-dark mt-4 fw-bold">🧠 知識庫檔案列表</h5>
+                <div class="table-responsive bg-white rounded shadow-sm">
+                    <table class="table table-hover align-middle mb-0">
+                        <thead class="table-dark">
+                            <tr><th style="width: 60%;">檔案名稱</th><th style="width: 25%;">上傳時間</th><th style="width: 15%;">操作</th></tr>
+                        </thead>
+                        <tbody id="km-list-body"><tr><td colspan="3" class="text-center">載入中...</td></tr></tbody>
+                    </table>
+                </div>
+            </div>
+
+            <div class="tab-pane fade" id="analyticsTab">
+                <div class="card shadow-sm mb-4 border-top border-warning border-4 bg-light">
+                    <div class="card-body">
+                        <h5 class="text-warning text-dark fw-bold border-bottom pb-2">📅 選擇資料庫撈取區間</h5>
+                        <p class="text-muted small mb-3">系統將從 Google Sheet 撈取該區間內收集到的民眾提問，作為 AI 分析的基礎（預設近 30 天）。</p>
+                        
+                        <div class="row align-items-end mb-4">
+                            <div class="col-md-4 mb-2">
+                                <label class="form-label fw-bold">開始日期</label>
+                                <input type="date" id="analytics-start-date" class="form-control">
+                            </div>
+                            <div class="col-md-4 mb-2">
+                                <label class="form-label fw-bold">結束日期</label>
+                                <input type="date" id="analytics-end-date" class="form-control">
+                            </div>
+                            <div class="col-md-4 mb-2">
+                                <button class="btn btn-warning fw-bold w-100" onclick="loadAnalyticsData()" id="btn-load-analytics">🔍 載入提問數據</button>
+                            </div>
+                        </div>
+
+                        <div class="row text-center mb-4">
+                            <div class="col-md-6 mb-2">
+                                <div class="card bg-white shadow-sm border-0 py-3">
+                                    <h6 class="text-muted fw-bold mb-1">👨‍👩‍👧‍👦 提問總人數 (不重複)</h6>
+                                    <h2 class="text-primary mb-0 fw-bold" id="stat-users">0</h2>
+                                </div>
+                            </div>
+                            <div class="col-md-6 mb-2">
+                                <div class="card bg-white shadow-sm border-0 py-3">
+                                    <h6 class="text-muted fw-bold mb-1">💬 累積提問總數</h6>
+                                    <h2 class="text-success mb-0 fw-bold" id="stat-questions">0</h2>
+                                </div>
+                            </div>
+                        </div>
+
+                        <h5 class="text-warning text-dark fw-bold border-bottom pb-2">🤖 Gemini 智慧痛點分析</h5>
+                        <p class="text-muted small mb-3">點擊下方按鈕，AI 將自動歸納這段期間內民眾最常問的主題、常見迷思，並給出撰文建議。</p>
+                        
+                        <button class="btn btn-dark w-100 fw-bold mb-4" id="btn-run-gemini" onclick="runGeminiAnalysis()" disabled>
+                            ✨ 產生 AI 洞察報告
+                        </button>
+
+                        <div class="card border-0 shadow-sm d-none" id="gemini-result-card">
+                            <div class="card-body bg-white rounded">
+                                <div id="gemini-result-content" class="ai-analysis-output">分析中，請稍候...</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="tab-pane fade" id="adminsTab">
+                <div class="card shadow-sm mb-4 border-top border-secondary border-4">
+                    <div class="card-body">
+                        <h5 class="card-title text-secondary">👥 系統管理員權限設定</h5>
+                        <p class="text-muted small">新增同事的 Google 信箱，讓他們使用 Google 帳號登入後台。</p>
+                        
+                        <div class="input-group mb-3">
+                            <input type="email" id="new-admin-email" class="form-control" placeholder="輸入 Google 帳號 Email">
+                            <select id="new-admin-role" class="form-select" style="max-width: 150px;">
+                                <option value="Admin">Admin</option>
+                                <option value="SuperAdmin">SuperAdmin</option>
+                            </select>
+                            <button class="btn btn-secondary" onclick="addAdmin()">➕ 新增管理員</button>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="table-responsive bg-white rounded shadow-sm">
+                    <table class="table table-hover align-middle mb-0">
+                        <thead class="table-secondary">
+                            <tr><th>Google Account (Email)</th><th>角色</th><th>操作</th></tr>
+                        </thead>
+                        <tbody id="admin-list-body"><tr><td colspan="3" class="text-center">載入中...</td></tr></tbody>
+                    </table>
+                </div>
+            </div>
+
+        </div>
+    </div>
+
+    <script src="config.js"></script>
+    <script>
+        window.analyticsQuestionsList = [];
+
+        window.onload = function () {
+            const savedEmail = sessionStorage.getItem('adminEmail');
+            if (savedEmail) {
+                showMainUI(savedEmail);
+            } else {
+                google.accounts.id.initialize({
+                    client_id: CONFIG.CLIENT_ID, 
+                    callback: handleGoogleCredentialResponse
+                });
+                google.accounts.id.renderButton(
+                    document.getElementById("google-login-btn"),
+                    { theme: "outline", size: "large", text: "signin_with", shape: "rectangular" }
+                );
+            }
+        };
+
+        async function postData(action, payload) {
+            const response = await fetch(CONFIG.GAS_URL, {
+                method: "POST",
+                headers: { "Content-Type": "text/plain;charset=utf-8" },
+                body: JSON.stringify({ action, ...payload })
+            });
+            return await response.json();
+        }
+
+        async function handleGoogleCredentialResponse(response) {
+            const msgEl = document.getElementById('login-msg');
+            msgEl.innerText = '正在驗證系統權限...';
+            try {
+                const base64Url = response.credential.split('.')[1];
+                const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
+                const jsonPayload = decodeURIComponent(atob(base64).split('').map(function(c) {
+                    return '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2);
+                }).join(''));
+                const userEmail = JSON.parse(jsonPayload).email;
+
+                const result = await postData("verifyGoogleLogin", { email: userEmail });
+                if (result.status === 'success') {
+                    sessionStorage.setItem('adminEmail', result.email);
+                    showMainUI(result.email);
+                } else {
+                    msgEl.innerText = '⚠️ ' + result.message;
+                    google.accounts.id.disableAutoSelect();
+                }
+            } catch (error) {
+                msgEl.innerText = '⚠️ 系統連線錯誤，請確認 config.js 中的 GAS_URL 是否正確。';
+            }
+        }
+
+        function logout() {
+            sessionStorage.removeItem('adminEmail');
+            location.reload();
+        }
+
+        function showMainUI(email) {
+            document.getElementById('login-overlay').classList.add('d-none');
+            document.getElementById('main-admin-ui').style.display = 'block';
+            document.getElementById('user-display').innerText = "👤 " + email;
+            document.getElementById('user-display').classList.remove('d-none');
+            
+            initAnalyticsDates();
+            loadAllData();
+        }
+
+        function loadAllData() {
+            fetchHomepageContent(); 
+            loadArticlesList(); 
+            loadKmFiles();
+            loadAdminsList();
+            loadAnalyticsData(); 
+        }
+
+        function initAnalyticsDates() {
+            const end = new Date();
+            const start = new Date();
+            start.setDate(end.getDate() - 30); 
+
+            document.getElementById('analytics-start-date').value = start.toISOString().split('T')[0];
+            document.getElementById('analytics-end-date').value = end.toISOString().split('T')[0];
+        }
+
+        async function loadAnalyticsData() {
+            const btn = document.getElementById('btn-load-analytics');
+            const geminiBtn = document.getElementById('btn-run-gemini');
+            
+            btn.disabled = true; 
+            btn.innerText = "讀取數據中...";
+            geminiBtn.disabled = true;
+
+            const payload = {
+                startDate: document.getElementById('analytics-start-date').value,
+                endDate: document.getElementById('analytics-end-date').value
+            };
+
+            try {
+                const res = await postData("getAnalyticsData", payload);
+                if (res.status === 'success') {
+                    document.getElementById('stat-users').innerText = res.data.uniqueUsers;
+                    document.getElementById('stat-questions').innerText = res.data.totalQuestions;
+                    window.analyticsQuestionsList = res.data.questions;
+
+                    if (res.data.totalQuestions > 0) {
+                        geminiBtn.disabled = false;
+                    }
+                } else {
+                    alert("讀取數據失敗：" + res.message);
+                }
+            } catch (e) {
+                alert("網路連線發生錯誤。");
+            } finally {
+                btn.disabled = false; 
+                btn.innerText = "🔍 載入提問數據";
+            }
+        }
+
+        async function runGeminiAnalysis() {
+            const btn = document.getElementById('btn-run-gemini');
+            const card = document.getElementById('gemini-result-card');
+            const contentBox = document.getElementById('gemini-result-content');
+
+            btn.disabled = true;
+            btn.innerHTML = '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> AI 思考中，請稍候...';
+            card.classList.remove('d-none');
+            contentBox.innerHTML = '<span class="text-muted">正在把問題交給 Gemini 進行摘要，大約需要 5~15 秒...</span>';
+
+            try {
+                const res = await postData("analyzeWithGemini", { questions: window.analyticsQuestionsList });
+                if (res.status === 'success') {
+                    let formattedText = res.text.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
+                    contentBox.innerHTML = formattedText;
+                } else {
+                    contentBox.innerHTML = `<span class="text-danger fw-bold">分析失敗：</span> ${res.message}`;
+                }
+            } catch (e) {
+                contentBox.innerHTML = `<span class="text-danger fw-bold">網路連線發生錯誤。</span>`;
+            } finally {
+                btn.disabled = false;
+                btn.innerText = "✨ 重新產生 AI 洞察報告";
+            }
+        }
+
+        async function loadKmFiles() {
+            const tbody = document.getElementById('km-list-body');
+            tbody.innerHTML = '<tr><td colspan="3" class="text-center text-muted">🔄 讀取中，請稍候...</td></tr>';
+            try {
+                const res = await postData("getKmFiles", {});
+                tbody.innerHTML = '';
+                if (res.status === 'success') {
+                    if (res.data.length === 0) {
+                        tbody.innerHTML = '<tr><td colspan="3" class="text-center text-muted">雲端資料夾目前無任何檔案</td></tr>';
+                        return;
+                    }
+                    res.data.forEach(file => {
+                        tbody.innerHTML += `
+                            <tr>
+                                <td><a href="${file.url}" target="_blank" class="text-decoration-none fw-bold">📄 ${file.name}</a></td>
+                                <td class="text-muted small">${file.date}</td>
+                                <td><button class="btn btn-sm btn-outline-danger" onclick="deleteKmFile('${file.id}', '${file.name}')">刪除</button></td>
+                            </tr>
+                        `;
+                    });
+                } else {
+                    tbody.innerHTML = '<tr><td colspan="3" class="text-center text-danger">讀取失敗：' + res.message + '</td></tr>';
+                }
+            } catch (e) {
+                tbody.innerHTML = '<tr><td colspan="3" class="text-center text-danger">網路錯誤，無法連線。</td></tr>';
+            }
+        }
+
+        async function uploadKmFile() {
+            const fileInput = document.getElementById('km-file-upload');
+            const file = fileInput.files[0];
+            if (!file) return alert("⚠️ 請先選擇要上傳的 PDF 檔案！");
+            
+            const btn = document.getElementById('btn-upload-km');
+            btn.disabled = true; 
+            btn.innerHTML = '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> 上傳中...';
+            
+            const reader = new FileReader();
+            reader.onload = async function(event) {
+                try {
+                    const res = await postData("uploadKmFile", {
+                        base64Data: event.target.result,
+                        mimeType: file.type,
+                        filename: file.name
+                    });
+                    if (res.status === 'success') {
+                        alert("✅ 上傳成功！檔案已經存入 KM_Documents 資料夾，等待 AI 學習。");
+                        fileInput.value = '';
+                        loadKmFiles(); 
+                    } else {
+                        alert("❌ 上傳失敗：" + res.message);
+                    }
+                } catch(e) {
+                    alert("網路連線發生錯誤。");
+                } finally {
+                    btn.disabled = false; 
+                    btn.innerText = "📤 餵給 AI 大腦";
+                }
+            };
+            reader.readAsDataURL(file);
+        }
+
+        async function deleteKmFile(id, name) {
+            if (!confirm(`確定要刪除「${name}」嗎？\n注意：這會將檔案移至雲端硬碟的垃圾桶，AI 知識庫將無法再讀取到此文件。`)) return;
+            
+            try {
+                const res = await postData("deleteKmFile", { id: id });
+                if (res.status === 'success') {
+                    alert("🗑️ 檔案已刪除！");
+                    loadKmFiles();
+                } else {
+                    alert("刪除失敗：" + res.message);
+                }
+            } catch (e) {
+                alert("網路連線發生錯誤。");
+            }
+        }
+
+        // 🌟 修改區塊：加入等待動畫邏輯
+        function setupImageUploader(fileInputId, urlHiddenId, previewImgId) {
+            document.getElementById(fileInputId).addEventListener('change', async function(e) {
+                const file = e.target.files[0];
+                if (!file) return;
+                
+                const preview = document.getElementById(previewImgId);
+                preview.style.display = 'none'; // 先隱藏圖片避免出現破圖
+                
+                // 動態加入上傳中的提示字樣
+                let loadingText = document.getElementById(previewImgId + '-loading');
+                if (!loadingText) {
+                    loadingText = document.createElement('div');
+                    loadingText.id = previewImgId + '-loading';
+                    loadingText.className = 'text-primary fw-bold mt-2 mb-2';
+                    preview.parentNode.insertBefore(loadingText, preview);
+                }
+                loadingText.innerHTML = '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> 圖片上傳雲端中，請稍候...';
+                loadingText.style.display = 'block';
+                
+                const reader = new FileReader();
+                reader.onload = async function(event) {
+                    const base64Data = event.target.result;
+                    try {
+                        const res = await postData("uploadImage", { 
+                            base64Data: base64Data, 
+                            mimeType: file.type, 
+                            filename: file.name 
+                        });
+                        if (res.status === "success") {
+                            document.getElementById(urlHiddenId).value = res.url;
+                            preview.src = res.url;
+                            preview.style.display = 'block'; // 成功後顯示圖片
+                        } else {
+                            alert("圖片上傳失敗: " + res.message);
+                        }
+                    } catch (err) {
+                        alert("網路錯誤");
+                    } finally {
+                        if (loadingText) loadingText.style.display = 'none'; // 隱藏上傳中字樣
+                    }
+                };
+                reader.readAsDataURL(file);
+            });
+        }
+        setupImageUploader('nv-image-file', 'nv-image-url', 'nv-image-preview');
+        setupImageUploader('article-image-file', 'article-image-url', 'article-image-preview');
+
+        document.getElementById('btn-editor-upload').addEventListener('click', () => { document.getElementById('editor-image-upload').click(); });
+        document.getElementById('editor-image-upload').addEventListener('change', function(e) {
+            const file = e.target.files[0]; if (!file) return;
+            const statusEl = document.getElementById('editor-upload-status'); 
+            statusEl.classList.remove('d-none');
+            
+            const reader = new FileReader();
+            reader.onload = async function(event) {
+                try {
+                    const res = await postData("uploadImage", { 
+                        base64Data: event.target.result, 
+                        mimeType: file.type, 
+                        filename: "editor_" + file.name 
+                    });
+                    if (res.status === 'success') { 
+                        document.getElementById('article-content-editor').focus(); 
+                        document.execCommand("insertImage", false, res.url); 
+                    } else { alert("上傳失敗"); }
+                } catch (error) { alert("網路連線錯誤"); } 
+                finally { statusEl.classList.add('d-none'); document.getElementById('editor-image-upload').value = ''; }
+            }; 
+            reader.readAsDataURL(file);
+        });
+
+        const subcategoryMap = {
+            'about-pancreas': ['解剖與機能', '症狀與病徵', '各類胰臟疾病'],
+            'cancer-analysis': ['歷史與概說', '流行病學與危險因子'],
+            'diagnosis': ['實驗室抽血檢查', '影像學與進階檢查', '早期發現與 AI 突破'],
+            'treatment': ['外科手術與移植', '內科精準治療', '醫病共享決策']
+        };
+        
+        document.getElementById('article-category').addEventListener('change', function() { populateSubcategory(this.value, ''); });
+        function populateSubcategory(category, selectedSub) {
+            const subSelect = document.getElementById('article-subcategory'); 
+            subSelect.innerHTML = '<option value="">請選擇子分類...</option>';
+            if (subcategoryMap[category]) { 
+                subcategoryMap[category].forEach(sub => { 
+                    const option = document.createElement('option'); 
+                    option.value = sub; option.textContent = sub; 
+                    if (sub === selectedSub) option.selected = true; 
+                    subSelect.appendChild(option); 
+                }); 
+            }
+        }
+
+        async function fetchHomepageContent() {
+            try {
+                const res = await fetch(CONFIG.GAS_URL + "?action=getContent").then(r => r.json());
+                if (res.status === 'success') {
+                    window.currentNewsTitle = res.data.news.title || ""; 
+                    window.currentVideoTitle = res.data.video.title || "";
+                    document.getElementById('current-news-title').innerText = window.currentNewsTitle || "無資料";
+                    document.getElementById('current-video-title').innerText = window.currentVideoTitle || "無資料";
+                }
+            } catch (e) { }
+        }
+
+        async function loadArticlesList() {
+            const nvTbody = document.getElementById('nv-list-body'); 
+            const artTbody = document.getElementById('article-list-body');
+            try {
+                const res = await fetch(CONFIG.GAS_URL + "?action=getArticles").then(r => r.json());
+                nvTbody.innerHTML = ''; artTbody.innerHTML = '';
+                
+                if (res.status === 'success' && res.data.length > 0) {
+                    window.allArticles = res.data; 
+                    let hasNv = false, hasArt = false;
+                    
+                    res.data.forEach(article => {
+                        const catCode = String(article.category || '').toLowerCase().trim();
+                        if (catCode === 'news' || catCode === 'video') {
+                            hasNv = true; 
+                            const typeLabel = catCode === 'news' ? '<span class="badge bg-info text-dark">News</span>' : '<span class="badge bg-danger">Video</span>';
+                            let isFeatured = (catCode === 'news' && article.title === window.currentNewsTitle) || (catCode === 'video' && article.title === window.currentVideoTitle);
+                            
+                            const titleDisplay = isFeatured ? `<span class="badge-featured me-2">📍 首頁</span>${article.title}` : article.title;
+                            
+                            nvTbody.innerHTML += `
+                                <tr>
+                                    <td>${typeLabel}</td>
+                                    <td>${titleDisplay}</td>
+                                    <td>
+                                        <button class="btn btn-sm btn-outline-primary" onclick="editNV(${article.id})">編輯</button>
+                                        <button class="btn btn-sm btn-outline-danger" onclick="deleteArticle(${article.id})">刪除</button>
+                                        ${!isFeatured ? `<button class="btn btn-sm btn-success mt-1 d-block" onclick="setFeatured(${article.id})">🌟 設為首頁</button>` : ''}
+                                    </td>
+                                </tr>`;
+                        } else {
+                            hasArt = true;
+                            const categoryOptions = Array.from(document.querySelectorAll('#article-category option'));
+                            const matchOpt = categoryOptions.find(opt => opt.value === catCode);
+                            const categoryDisplay = matchOpt ? matchOpt.text : article.category;
+                            
+                            artTbody.innerHTML += `
+                                <tr>
+                                    <td><span class="badge bg-secondary">${categoryDisplay}</span><br><small class="text-muted">${article.subcategory}</small></td>
+                                    <td>${article.title}</td>
+                                    <td>
+                                        <button class="btn btn-sm btn-outline-primary" onclick="editArticle(${article.id})">編輯</button>
+                                        <button class="btn btn-sm btn-outline-danger" onclick="deleteArticle(${article.id})">刪除</button>
+                                    </td>
+                                </tr>`;
+                        }
+                    });
+                    if(!hasNv) nvTbody.innerHTML = '<tr><td colspan="3" class="text-center">尚無資料</td></tr>';
+                    if(!hasArt) artTbody.innerHTML = '<tr><td colspan="3" class="text-center">尚無資料</td></tr>';
+                }
+            } catch (e) {}
+        }
+
+        function toggleNvFields() { 
+            document.getElementById('nv-image-group').style.display = 'block'; 
+        }
+        
+        async function saveNV() {
+            const editId = document.getElementById('edit-nv-id').value;
+            const payload = {
+                category: document.getElementById('nv-type').value,
+                subcategory: '',
+                title: document.getElementById('nv-title').value,
+                image: document.getElementById('nv-image-url').value,
+                content: document.getElementById('nv-summary').value,
+                reference: document.getElementById('nv-url').value
+            };
+            
+            if (!payload.title || !payload.content || !payload.reference) return alert("標題、摘要與連結必填！");
+            
+            const btn = document.getElementById('btn-save-nv');
+            btn.disabled = true; btn.innerText = "處理中...";
+            
+            const action = editId ? 'updateArticle' : 'saveArticle';
+            if(editId) payload.id = editId;
+
+            const res = await postData(action, payload);
+            if (res.status === 'success') {
+                alert("儲存成功！");
+                resetNvForm();
+                loadArticlesList();
+            }
+            btn.disabled = false; btn.innerText = "💾 儲存至下方列表";
+        }
+        
+        function editNV(id) {
+            const art = window.allArticles.find(a => a.id === id); if (!art) return;
+            document.getElementById('edit-nv-id').value = art.id;
+            document.getElementById('nv-type').value = art.category; toggleNvFields();
+            document.getElementById('nv-title').value = art.title;
+            document.getElementById('nv-summary').value = art.content;
+            document.getElementById('nv-url').value = art.reference;
+            document.getElementById('nv-image-url').value = art.image;
+            
+            const preview = document.getElementById('nv-image-preview');
+            if (art.image) { preview.src = art.image; preview.style.display = 'block'; } 
+            else { preview.style.display = 'none'; }
+            
+            document.getElementById('btn-cancel-nv').classList.remove('d-none');
+            document.getElementById('homeTab').scrollIntoView();
+        }
+
+        function resetNvForm() {
+            document.getElementById('nvForm').reset();
+            document.getElementById('edit-nv-id').value = '';
+            document.getElementById('nv-image-url').value = '';
+            document.getElementById('nv-image-preview').style.display = 'none';
+            document.getElementById('btn-cancel-nv').classList.add('d-none');
+            toggleNvFields();
+        }
+
+        async function saveArticle() {
+            const editId = document.getElementById('edit-article-id').value;
+            const payload = {
+                category: document.getElementById('article-category').value,
+                subcategory: document.getElementById('article-subcategory').value,
+                title: document.getElementById('article-title').value,
+                image: document.getElementById('article-image-url').value,
+                content: document.getElementById('article-content-editor').innerHTML,
+                reference: document.getElementById('article-reference').value
+            };
+            
+            if (!payload.category || !payload.title || !payload.content) return alert("分類、標題、內文必填！");
+            
+            const btn = document.getElementById('btn-save-article');
+            btn.disabled = true; btn.innerText = "處理中...";
+            
+            const action = editId ? 'updateArticle' : 'saveArticle';
+            if(editId) payload.id = editId;
+
+            const res = await postData(action, payload);
+            if (res.status === 'success') {
+                alert("文章儲存成功！");
+                resetArticleForm();
+                loadArticlesList();
+            }
+            btn.disabled = false; btn.innerText = "📤 發布/儲存 醫學文章";
+        }
+
+        function editArticle(id) {
+            const art = window.allArticles.find(a => a.id === id); if (!art) return;
+            
+            document.getElementById('edit-mode-banner').classList.remove('d-none');
+            document.getElementById('edit-article-id').value = art.id;
+            
+            document.getElementById('article-category').value = art.category; 
+            populateSubcategory(art.category, art.subcategory);
+            
+            document.getElementById('article-title').value = art.title;
+            document.getElementById('article-content-editor').innerHTML = art.content;
+            document.getElementById('article-reference').value = art.reference;
+            document.getElementById('article-image-url').value = art.image;
+            
+            const preview = document.getElementById('article-image-preview');
+            if (art.image) { preview.src = art.image; preview.style.display = 'block'; } 
+            else { preview.style.display = 'none'; }
+            
+            document.getElementById('articlesTab').scrollIntoView();
+        }
+
+        function resetArticleForm() {
+            document.getElementById('articleForm').reset();
+            document.getElementById('edit-mode-banner').classList.add('d-none');
+            document.getElementById('edit-article-id').value = '';
+            document.getElementById('article-image-url').value = '';
+            document.getElementById('article-image-preview').style.display = 'none';
+            document.getElementById('article-content-editor').innerHTML = '';
+            populateSubcategory('', '');
+        }
+
+        async function deleteArticle(id) {
+            if (!confirm("確定要刪除嗎？")) return;
+            const res = await postData("deleteArticle", { id });
+            if(res.status === 'success') loadArticlesList();
+        }
+        
+        async function setFeatured(id) {
+            if (!confirm("確定要將這篇內容同步到首頁展示嗎？")) return;
+            const res = await postData("setFeatured", { id });
+            if(res.status === 'success') { alert("同步成功！"); fetchHomepageContent(); loadArticlesList(); }
+        }
+
+        function execCmd(command, value = null) { document.execCommand(command, false, value); document.getElementById('article-content-editor').focus(); }
+        function insertLink() { const url = prompt("請輸入超連結網址 (需包含 http:// 或 https://):"); if (url) document.execCommand("createLink", false, url); document.getElementById('article-content-editor').focus(); }
+
+        async function loadAdminsList() {
+            const res = await postData("getAdmins", {});
+            const tbody = document.getElementById('admin-list-body');
+            tbody.innerHTML = '';
+            if (res.status === 'success' && res.data) {
+                res.data.forEach(admin => {
+                    const deleteBtn = admin.role === 'SuperAdmin' ? '<span class="text-muted small">系統預設</span>' : `<button class="btn btn-sm btn-danger" onclick="deleteAdmin(${admin.id})">移除</button>`;
+                    tbody.innerHTML += `<tr><td>${admin.email}</td><td><span class="badge bg-secondary">${admin.role}</span></td><td>${deleteBtn}</td></tr>`;
+                });
+            }
+        }
+        
+        async function addAdmin() {
+            const email = document.getElementById('new-admin-email').value;
+            const role = document.getElementById('new-admin-role').value;
+            if(!email) return alert("請填寫 Email");
+            const res = await postData("addAdmin", { email, role });
+            if(res.status === 'success') { document.getElementById('new-admin-email').value = ''; loadAdminsList(); }
+        }
+        
+        async function deleteAdmin(id) {
+            if(!confirm("確定移除此帳號？")) return;
+            const res = await postData("deleteAdmin", { id });
+            if(res.status === 'success') loadAdminsList();
+        }
+
+    </script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>
