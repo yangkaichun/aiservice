@@ -30,7 +30,7 @@
         <h2 class="mb-4 text-primary"><i class="bi bi-briefcase-fill"></i> 出差旅費報銷系統</h2>
         <p class="text-muted mb-4">請使用 Google 帳號登入 (請允許彈出視窗)</p>
         
-        <!-- 💡 這裡已經將您的 Client ID 寫死，解決 400 Error 問題 -->
+        <!-- 💡 直接寫死 Client ID，避免時間差造成的 invalid_request 錯誤 -->
         <div id="g_id_onload" 
              data-client_id="470505739418-tdi7edodl65q0hpr9272kd4uof3d7l9v.apps.googleusercontent.com" 
              data-callback="handleCredentialResponse" 
@@ -92,30 +92,54 @@
         let currentUser = null;
         let selectedFiles = [];
 
-        // Google 登入驗證處理
+        // 登入驗證處理 (已修復解碼崩潰問題，並加入順利解除遮罩的邏輯)
         function handleCredentialResponse(response) {
-            const token = response.credential;
-            const payload = JSON.parse(atob(token.split('.')));
-            document.getElementById('submitBtn').innerHTML = '<span class="spinner-border spinner-border-sm"></span> 驗證權限中...';
-            
-            fetch(CONFIG.GAS_API_URL, {
-                method: 'POST',
-                body: JSON.stringify({ action: 'login', email: payload.email })
-            }).then(res => res.json()).then(data => {
-                if(data.success) {
-                    currentUser = data.user;
-                    localStorage.setItem('userEmail', currentUser.email);
-                    document.getElementById('loginOverlay').style.display = 'none';
-                    document.getElementById('mainApp').style.display = 'block';
-                    document.getElementById('applicant').value = currentUser.name;
-                    document.getElementById('phone').value = currentUser.phone || '';
-                    document.getElementById('submitBtn').innerHTML = '<i class="bi bi-cloud-arrow-up"></i> 送出申請並產生PDF';
-                    addDetailRow(); 
-                } else {
-                    alert('登入失敗：無系統存取權限！');
-                    document.getElementById('submitBtn').innerHTML = '無權限';
-                }
-            }).catch(() => alert('連線失敗，請檢查網路。'));
+            try {
+                const token = response.credential;
+                
+                // 修正：採用安全且標準的 JWT 解碼方式，精準擷取 Payload 區段 ([2])
+                const base64Url = token.split('.')[2];
+                const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
+                const jsonPayload = decodeURIComponent(atob(base64).split('').map(function(c) {
+                    return '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2);
+                }).join(''));
+                const payload = JSON.parse(jsonPayload);
+                
+                document.getElementById('submitBtn').innerHTML = '<span class="spinner-border spinner-border-sm"></span> 驗證權限中...';
+                
+                // 透過 fetch 向 GAS 後端驗證信箱是否有權限
+                fetch(CONFIG.GAS_API_URL, {
+                    method: 'POST',
+                    body: JSON.stringify({ action: 'login', email: payload.email })
+                }).then(res => res.json()).then(data => {
+                    if(data.success) {
+                        currentUser = data.user;
+                        localStorage.setItem('userEmail', currentUser.email);
+                        
+                        // 驗證成功：隱藏遮罩，顯示主程式介面
+                        document.getElementById('loginOverlay').style.display = 'none';
+                        document.getElementById('mainApp').style.display = 'block';
+                        document.getElementById('applicant').value = currentUser.name;
+                        document.getElementById('phone').value = currentUser.phone || '';
+                        document.getElementById('submitBtn').innerHTML = '<i class="bi bi-cloud-arrow-up"></i> 送出申請並產生PDF';
+                        
+                        // 確保載入時至少有一列明細
+                        if(document.getElementById('detailsContainer').children.length === 0) {
+                            addDetailRow(); 
+                        }
+                    } else {
+                        // 權限失敗提示
+                        alert(`登入失敗：您的帳號 (${payload.email}) 未登記在系統權限名單中！`);
+                        document.getElementById('submitBtn').innerHTML = '無權限';
+                    }
+                }).catch(err => {
+                    alert('連線失敗：請確認 config.js 中的 GAS 網址是否正確且已重新部署。');
+                    console.error('Fetch Error:', err);
+                });
+            } catch (error) {
+                alert('系統解析登入資料時發生錯誤，請清除快取重新整理網頁後再試。');
+                console.error('JWT Decode Error:', error);
+            }
         }
 
         // 天數計算
