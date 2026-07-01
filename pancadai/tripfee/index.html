@@ -4,11 +4,19 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>出差旅費報銷系統</title>
+    <!-- 引入 Bootstrap 5 與 Icons -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css">
+    
+    <!-- Google 登入模組 (GIS) -->
     <script src="https://accounts.google.com/gsi/client" async defer data-itp_support="true"></script>
+    
+    <!-- 前端 PDF 合併套件 -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf-lib/1.17.1/pdf-lib.min.js"></script>
+    
+    <!-- 讀取您的全域設定 (GAS API URL) -->
     <script src="config.js"></script>
+    
     <style>
         .detail-card { background-color: #f8f9fa; border: 1px solid #dee2e6; border-radius: 8px; padding: 15px; margin-bottom: 15px; }
         .preview-img { width: 60px; height: 60px; object-fit: cover; border-radius: 4px; margin-right: 10px; }
@@ -17,13 +25,21 @@
 </head>
 <body class="bg-light">
 
+    <!-- 登入遮罩 (已修正 Client ID 無法載入問題) -->
     <div id="loginOverlay">
         <h2 class="mb-4 text-primary"><i class="bi bi-briefcase-fill"></i> 出差旅費報銷系統</h2>
         <p class="text-muted mb-4">請使用 Google 帳號登入 (請允許彈出視窗)</p>
-        <div id="g_id_onload" data-callback="handleCredentialResponse" data-auto_prompt="false"></div>
+        
+        <!-- 💡 這裡已經將您的 Client ID 寫死，解決 400 Error 問題 -->
+        <div id="g_id_onload" 
+             data-client_id="470505739418-tdi7edodl65q0hpr9272kd4uof3d7l9v.apps.googleusercontent.com" 
+             data-callback="handleCredentialResponse" 
+             data-auto_prompt="false">
+        </div>
         <div class="g_id_signin" data-type="standard" data-size="large" data-theme="outline" data-text="sign_in_with" data-shape="rectangular" data-logo_alignment="left"></div>
     </div>
 
+    <!-- 系統主介面 -->
     <div class="container py-4" id="mainApp" style="display:none; max-width: 900px;">
         <div class="d-flex justify-content-between align-items-center mb-4">
             <h3 class="text-primary mb-0"><i class="bi bi-airplane-engines"></i> 仲智數位健康 - 出差旅費報銷單</h3>
@@ -61,7 +77,7 @@
 
             <!-- 附件上傳 -->
             <div class="card shadow-sm mb-4">
-                <div class="card-header bg-secondary text-white">上傳憑證 (支援照片與PDF)</div>
+                <div class="card-header bg-secondary text-white">上傳憑證 (支援照片與PDF依序添加)</div>
                 <div class="card-body">
                     <input type="file" id="fileInput" class="form-control mb-3" multiple accept="image/*,application/pdf" onchange="handleFiles(event)">
                     <div id="previewArea" class="d-flex flex-wrap gap-2"></div>
@@ -76,14 +92,11 @@
         let currentUser = null;
         let selectedFiles = [];
 
-        window.onload = function() {
-            document.getElementById('g_id_onload').setAttribute('data-client_id', CONFIG.GOOGLE_CLIENT_ID);
-        }
-
+        // Google 登入驗證處理
         function handleCredentialResponse(response) {
             const token = response.credential;
             const payload = JSON.parse(atob(token.split('.')));
-            document.getElementById('submitBtn').innerHTML = '<span class="spinner-border spinner-border-sm"></span> 驗證中...';
+            document.getElementById('submitBtn').innerHTML = '<span class="spinner-border spinner-border-sm"></span> 驗證權限中...';
             
             fetch(CONFIG.GAS_API_URL, {
                 method: 'POST',
@@ -95,28 +108,32 @@
                     document.getElementById('loginOverlay').style.display = 'none';
                     document.getElementById('mainApp').style.display = 'block';
                     document.getElementById('applicant').value = currentUser.name;
-                    document.getElementById('phone').value = currentUser.phone;
+                    document.getElementById('phone').value = currentUser.phone || '';
                     document.getElementById('submitBtn').innerHTML = '<i class="bi bi-cloud-arrow-up"></i> 送出申請並產生PDF';
                     addDetailRow(); 
                 } else {
-                    alert('登入失敗：無權限！');
+                    alert('登入失敗：無系統存取權限！');
                     document.getElementById('submitBtn').innerHTML = '無權限';
                 }
-            }).catch(() => alert('連線失敗'));
+            }).catch(() => alert('連線失敗，請檢查網路。'));
         }
 
+        // 天數計算
         function calcDays() {
             const start = new Date(document.getElementById('startDate').value);
             const end = new Date(document.getElementById('endDate').value);
             if(start && end && end >= start) {
                 const diffTime = Math.abs(end - start);
                 document.getElementById('totalDays').value = Math.ceil(diffTime / (1000 * 60 * 60 * 24)) + 1; 
+            } else {
+                document.getElementById('totalDays').value = '';
             }
         }
 
+        // 動態新增一筆明細 (包含月份與日期分離)
         function addDetailRow() {
             const container = document.getElementById('detailsContainer');
-            if(container.children.length >= 10) return alert('最多 10 筆明細');
+            if(container.children.length >= 10) return alert('最多只能新增 10 筆明細');
             
             const rowDiv = document.createElement('div');
             rowDiv.className = 'detail-card detail-row';
@@ -125,17 +142,18 @@
                     <span class="badge bg-secondary">明細</span>
                     <button type="button" class="btn-close" onclick="this.parentElement.parentElement.remove(); calculateTotal();"></button>
                 </div>
-                <!-- 日期與地點分割 -->
+                <!-- 日期與起迄點 -->
                 <div class="row g-2 mb-2">
                     <div class="col-md-2 col-3"><label class="small">月</label><input type="number" class="form-control form-control-sm i-month" placeholder="月" min="1" max="12" required></div>
                     <div class="col-md-2 col-3"><label class="small">日</label><input type="number" class="form-control form-control-sm i-day" placeholder="日" min="1" max="31" required></div>
                     <div class="col-md-4 col-6"><label class="small">起點</label><input type="text" class="form-control form-control-sm i-start"></div>
                     <div class="col-md-4 col-12"><label class="small">迄點</label><input type="text" class="form-control form-control-sm i-end"></div>
                 </div>
+                <!-- 工作紀要 -->
                 <div class="row g-2 mb-2">
                     <div class="col-12"><label class="small">訪洽對象及工作紀要</label><input type="text" class="form-control form-control-sm i-desc" required></div>
                 </div>
-                <!-- 費用細項 -->
+                <!-- 各項費用加總 -->
                 <div class="row g-2">
                     <div class="col-md-2 col-4"><label class="small text-muted">飛機/高鐵</label><input type="number" class="form-control form-control-sm i-plane fee-input" oninput="calculateTotal()"></div>
                     <div class="col-md-2 col-4"><label class="small text-muted">開車/計程車</label><input type="number" class="form-control form-control-sm i-taxi fee-input" oninput="calculateTotal()"></div>
@@ -149,6 +167,7 @@
             container.appendChild(rowDiv);
         }
 
+        // 金額自動加總計算
         function calculateTotal() {
             let grandTotal = 0;
             document.querySelectorAll('.detail-row').forEach(row => {
@@ -158,6 +177,7 @@
                 const hotel = parseInt(row.querySelector('.i-hotel').value) || 0;
                 const meal = parseInt(row.querySelector('.i-meal').value) || 0;
                 const other = parseInt(row.querySelector('.i-other').value) || 0;
+                
                 const subtotal = plane + taxi + train + hotel + meal + other;
                 row.querySelector('.i-subtotal').innerText = subtotal;
                 grandTotal += subtotal;
@@ -165,6 +185,7 @@
             document.getElementById('totalAmount').value = grandTotal;
         }
 
+        // 附件處理 (支援疊加上傳、PDF判定與預覽)
         async function handleFiles(event) {
             const files = event.target.files;
             const previewArea = document.getElementById('previewArea');
@@ -173,34 +194,43 @@
                 let reader = new FileReader();
                 reader.onload = function(e) {
                     let base64String = e.target.result;
-                    selectedFiles.push({ name: file.name, mimeType: file.type || (file.name.toLowerCase().endsWith('.pdf') ? 'application/pdf' : ''), base64: base64String });
+                    // 強制檢查如果檔名是 pdf，卻沒有被瀏覽器賦予正確 mimeType 的狀況
+                    let mimeType = file.type || (file.name.toLowerCase().endsWith('.pdf') ? 'application/pdf' : '');
+                    
+                    selectedFiles.push({ name: file.name, mimeType: mimeType, base64: base64String });
                     let div = document.createElement('div');
                     div.className = 'border p-1 position-relative bg-white';
-                    let content = file.type.startsWith('image') ? `<img src="${base64String}" class="preview-img">` : `<div class="preview-img d-flex align-items-center justify-content-center bg-light"><i class="bi bi-file-earmark-pdf text-danger fs-3"></i></div>`;
+                    
+                    let content = mimeType.startsWith('image') ? 
+                        `<img src="${base64String}" class="preview-img">` : 
+                        `<div class="preview-img d-flex align-items-center justify-content-center bg-light"><i class="bi bi-file-earmark-pdf text-danger fs-3"></i></div>`;
+                    
                     div.innerHTML = `${content}<button type="button" class="btn-close position-absolute top-0 start-100 translate-middle" onclick="removeFile(${selectedFiles.length - 1}, this)"></button><div class="small text-truncate" style="width:60px;">${file.name}</div>`;
                     previewArea.appendChild(div);
                 };
                 reader.readAsDataURL(file);
             }
-            event.target.value = ''; 
+            event.target.value = ''; // 清空 input 讓下次可以選同樣的檔案
         }
 
+        // 刪除個別附件
         function removeFile(index, btnElement) {
             selectedFiles[index] = null; 
             btnElement.parentElement.remove();
         }
 
+        // 送出表單
         document.getElementById('expenseForm').addEventListener('submit', async function(e) {
             e.preventDefault();
             const btn = document.getElementById('submitBtn');
             btn.disabled = true;
-            btn.innerHTML = '<span class="spinner-border spinner-border-sm"></span> 處理中...';
+            btn.innerHTML = '<span class="spinner-border spinner-border-sm"></span> 處理中，請勿關閉網頁...';
 
             let details = [];
             document.querySelectorAll('.detail-row').forEach(row => {
                 details.push({
-                    month: row.querySelector('.i-month').value, // 分離的月份
-                    day: row.querySelector('.i-day').value,     // 分離的日期
+                    month: row.querySelector('.i-month').value,
+                    day: row.querySelector('.i-day').value,
                     startLoc: row.querySelector('.i-start').value,
                     endLoc: row.querySelector('.i-end').value,
                     desc: row.querySelector('.i-desc').value,
@@ -229,11 +259,14 @@
             };
 
             try {
+                // 1. 先將資料拋給 GAS 生成主檔與產生套表 PDF
                 const response = await fetch(CONFIG.GAS_API_URL, { method: 'POST', body: JSON.stringify(payload) });
                 const result = await response.json();
                 
                 if(result.success) {
-                    btn.innerHTML = '<span class="spinner-border spinner-border-sm"></span> 正在合併附件...';
+                    btn.innerHTML = '<span class="spinner-border spinner-border-sm"></span> 正在合併憑證，請稍候...';
+                    
+                    // 2. 前端合併附件 PDF (照片或PDF檔)
                     const { PDFDocument } = PDFLib;
                     const mainPdfBytes = Uint8Array.from(atob(result.base64Pdf), c => c.charCodeAt(0));
                     const mergedPdf = await PDFDocument.load(mainPdfBytes);
@@ -241,21 +274,22 @@
                     for (let file of selectedFiles.filter(f => f !== null)) {
                         try {
                             if (file.mimeType.includes('pdf')) {
-                                const attachBytes = Uint8Array.from(atob(file.base64.split(',')[2]), c => c.charCodeAt(0));
+                                const attachBytes = Uint8Array.from(atob(file.base64.split(',')), c => c.charCodeAt(0));
                                 const attachDoc = await PDFDocument.load(attachBytes);
                                 const copiedPages = await mergedPdf.copyPages(attachDoc, attachDoc.getPageIndices());
                                 copiedPages.forEach(page => mergedPdf.addPage(page));
                             } else if (file.mimeType.startsWith('image')) {
-                                const imgBytes = Uint8Array.from(atob(file.base64.split(',')[2]), c => c.charCodeAt(0));
+                                const imgBytes = Uint8Array.from(atob(file.base64.split(',')), c => c.charCodeAt(0));
                                 let pdfImage = file.mimeType.includes('png') ? await mergedPdf.embedPng(imgBytes) : await mergedPdf.embedJpg(imgBytes);
                                 const page = mergedPdf.addPage();
                                 const { width, height } = page.getSize();
                                 const scaled = pdfImage.scaleToFit(width - 40, height - 40);
                                 page.drawImage(pdfImage, { x: width/2 - scaled.width/2, y: height/2 - scaled.height/2, width: scaled.width, height: scaled.height });
                             }
-                        } catch(e) { console.log('附件合併錯誤', e); }
+                        } catch(e) { console.log('附件合併發生錯誤 (可能為密碼保護)：', e); }
                     }
                     
+                    // 3. 儲存並觸發下載
                     const finalPdfBytes = await mergedPdf.save();
                     const blob = new Blob([finalPdfBytes], { type: 'application/pdf' });
                     const a = document.createElement('a');
@@ -263,12 +297,17 @@
                     a.download = `${result.formId}_出差旅費報銷單.pdf`;
                     a.click();
                     
-                    alert('申請成功！PDF 已下載。');
+                    alert('申請成功！合併完成的 PDF 已下載。');
                     window.location.reload();
-                } else alert('錯誤: ' + result.message);
-            } catch (e) { alert('傳送失敗'); }
-            btn.disabled = false;
-            btn.innerHTML = '<i class="bi bi-cloud-arrow-up"></i> 送出申請並產生PDF';
+                } else {
+                    alert('伺服器錯誤: ' + result.message);
+                }
+            } catch (error) { 
+                alert('傳送或合併失敗，請檢查網路連線。' + error); 
+            } finally {
+                btn.disabled = false;
+                btn.innerHTML = '<i class="bi bi-cloud-arrow-up"></i> 送出申請並產生PDF';
+            }
         });
     </script>
 </body>
