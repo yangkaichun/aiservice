@@ -3,371 +3,272 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>支出憑證黏存單申請</title>
+    <title>出差旅費報銷系統</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
-    <script src="https://accounts.google.com/gsi/client" async defer></script>
-    <script src="https://unpkg.com/pdf-lib@1.17.1/dist/pdf-lib.min.js"></script>
-    
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css">
+    <script src="https://accounts.google.com/gsi/client" async defer data-itp_support="true"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf-lib/1.17.1/pdf-lib.min.js"></script>
+    <script src="config.js"></script>
     <style>
-        body { background-color: #f4f6f9; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
-        .form-container { background-color: white; border-radius: 12px; padding: 30px; box-shadow: 0 8px 24px rgba(0,0,0,0.05); }
-        .detail-row { background-color: #f8f9fa; padding: 15px; border-radius: 8px; margin-bottom: 12px; border: 1px solid #e9ecef; transition: all 0.3s ease; }
-        .detail-row:hover { box-shadow: 0 4px 12px rgba(0,0,0,0.05); }
-        #loginScreen { min-height: 100vh; display: flex; flex-direction: column; justify-content: center; align-items: center; }
-        .preview-wrapper { position: relative; display: inline-block; width: 70px; text-align: center; }
-        .preview-item { width: 70px; height: 70px; object-fit: cover; border-radius: 8px; border: 1px solid #ddd; }
-        .preview-doc { width: 70px; height: 70px; border-radius: 8px; border: 1px solid #ddd; background-color: #e9ecef; display: flex; flex-direction: column; align-items: center; justify-content: center; overflow: hidden; }
-        .remove-btn { position: absolute; top: -8px; right: -8px; width: 22px; height: 22px; border-radius: 50%; background: #dc3545; color: white; border: none; font-size: 16px; line-height: 1; cursor: pointer; z-index: 10; display: flex; align-items: center; justify-content: center; padding-bottom: 2px; }
-        /* 手機版優化輸入框 */
-        @media (max-width: 768px) { .form-container { padding: 20px 15px; } }
+        .detail-card { background-color: #f8f9fa; border: 1px solid #dee2e6; border-radius: 8px; padding: 15px; margin-bottom: 15px; }
+        .preview-img { width: 60px; height: 60px; object-fit: cover; border-radius: 4px; margin-right: 10px; }
+        #loginOverlay { position: fixed; top:0; left:0; width: 100%; height: 100%; background: rgba(255,255,255,0.95); z-index: 9999; display: flex; flex-direction: column; justify-content: center; align-items: center; }
     </style>
 </head>
-<body>
+<body class="bg-light">
 
-    <div id="loginScreen">
-        <div class="form-container text-center" style="max-width: 400px; width: 90%;">
-            <div class="mb-3 text-primary"><i class="bi bi-wallet2" style="font-size: 3rem;"></i></div>
-            <h4 class="mb-4 fw-bold">仲智數位健康<br>差旅申請系統</h4>
-            
-            <div class="alert alert-warning py-2 text-start shadow-sm" style="font-size: 13px;">
-                <i class="bi bi-info-circle-fill me-1"></i> <strong>手機用戶：</strong>若在 LINE 內無法登入，請以 Safari 或 Chrome 開啟此網頁。
-            </div>
-
-            <p class="text-muted mb-4 small">請使用公司 Google 帳號登入</p>
-            
-            <div id="g_id_onload" data-context="signin" data-ux_mode="popup" data-callback="handleCredentialResponse" data-auto_prompt="false" data-itp_support="true"></div>
-            <div class="g_id_signin d-flex justify-content-center" data-type="standard" data-size="large" data-theme="outline" data-text="sign_in_with" data-shape="rectangular" data-logo_alignment="left"></div>
-            <div id="loginStatus" class="mt-3 text-danger fw-bold small"></div>
-        </div>
+    <div id="loginOverlay">
+        <h2 class="mb-4 text-primary"><i class="bi bi-briefcase-fill"></i> 出差旅費報銷系統</h2>
+        <p class="text-muted mb-4">請使用 Google 帳號登入 (請允許彈出視窗)</p>
+        <div id="g_id_onload" data-callback="handleCredentialResponse" data-auto_prompt="false"></div>
+        <div class="g_id_signin" data-type="standard" data-size="large" data-theme="outline" data-text="sign_in_with" data-shape="rectangular" data-logo_alignment="left"></div>
     </div>
 
-    <div class="container mt-4 mb-5 max-w-md d-none" id="mainFormScreen">
-        <div class="row justify-content-center">
-            <div class="col-md-10 col-lg-8 form-container">
-                
-                <div class="d-flex flex-wrap justify-content-between align-items-center mb-4 border-bottom pb-3">
-                    <h4 class="mb-2 mb-md-0 fw-bold text-dark"><i class="bi bi-file-earmark-text text-primary me-2"></i>支出憑證黏存單</h4>
-                    <div class="d-flex gap-2">
-                        <a href="dashboard.html" class="btn btn-sm btn-outline-primary"><i class="bi bi-clock-history me-1"></i>歷史紀錄</a>
-                        <button class="btn btn-sm btn-outline-secondary" onclick="logout()"><i class="bi bi-box-arrow-right"></i></button>
-                    </div>
-                </div>
-                
-                <form id="expenseForm">
-                    <div class="row g-3 mb-4">
-                        <div class="col-md-4">
-                            <label class="form-label text-muted small fw-bold">申請單位 <span class="text-danger">*</span></label>
-                            <input type="text" class="form-control" id="department" placeholder="如: MS" required>
-                        </div>
-                        <div class="col-md-4">
-                            <label class="form-label text-muted small fw-bold">申請人姓名</label>
-                            <input type="text" class="form-control bg-light" id="applicantName" readonly required>
-                        </div>
-                        <div class="col-md-4">
-                            <label class="form-label text-muted small fw-bold">聯絡電話 <span class="text-danger">*</span></label>
-                            <input type="tel" class="form-control" id="phone" placeholder="09XX..." required>
-                        </div>
-                        <div class="col-12">
-                            <label class="form-label text-muted small fw-bold">用途摘要 <span class="text-danger">*</span></label>
-                            <input type="text" class="form-control" id="summary" placeholder="如: 客戶拜訪/議價/簡報之差旅" required>
-                        </div>
-                    </div>
-
-                    <div class="d-flex justify-content-between align-items-center mb-2 mt-4">
-                        <h6 class="mb-0 fw-bold text-dark"><i class="bi bi-list-check me-2"></i>費用明細 <span class="text-muted fw-normal small">(最多 10 筆)</span></h6>
-                        <button type="button" class="btn btn-sm btn-primary rounded-pill px-3" id="addDetailBtn"><i class="bi bi-plus-lg me-1"></i>新增</button>
-                    </div>
-                    
-                    <div id="detailsContainer"></div>
-
-                    <div class="row g-3 mt-3 align-items-start bg-light p-3 rounded-3 border">
-                        <div class="col-md-6">
-                            <label class="form-label fw-bold text-dark">總金額 (自動計算)</label>
-                            <div class="input-group input-group-lg">
-                                <span class="input-group-text bg-white border-end-0 text-muted">$</span>
-                                <input type="number" class="form-control border-start-0 fw-bold text-danger bg-white" id="totalAmount" readonly value="0">
-                            </div>
-                        </div>
-                        <div class="col-md-6">
-                            <label class="form-label fw-bold text-dark">上傳附件 <span class="text-muted fw-normal small">(選填，可多選)</span></label>
-                            <input class="form-control" type="file" id="attachments" accept=".jpg,.jpeg,.png,.pdf" multiple>
-                            <small class="text-muted d-block mt-1" style="font-size: 11px;"><i class="bi bi-info-circle me-1"></i>系統將自動把圖片與 PDF 釘在表單後方。</small>
-                            <div id="previewContainer" class="d-flex flex-wrap gap-2 mt-2"></div>
-                        </div>
-                    </div>
-
-                    <div class="d-grid mt-4 pt-2">
-                        <button type="submit" class="btn btn-primary btn-lg shadow-sm" id="submitBtn">
-                            <i class="bi bi-send-fill me-2" id="submitIcon"></i><span id="submitText">確認送出申請</span>
-                            <span id="loadingSpinner" class="spinner-border spinner-border-sm d-none ms-2" role="status" aria-hidden="true"></span>
-                        </button>
-                    </div>
-                </form>
-
-                <div id="successMessage" class="alert alert-success mt-4 d-none shadow-sm" role="alert">
-                    <h5 class="alert-heading fw-bold"><i class="bi bi-check-circle-fill me-2"></i>申請成功！</h5>
-                    <p class="mb-2">您的所有附件已成功合併為單一份 PDF 黏存單並儲存至資料庫。</p>
-                    <hr>
-                    <div class="d-flex gap-2">
-                        <a href="#" id="pdfDownloadLink" target="_blank" class="btn btn-success btn-sm"><i class="bi bi-file-pdf-fill me-1"></i>查看/下載 PDF</a>
-                        <button onclick="location.reload()" class="btn btn-outline-success btn-sm"><i class="bi bi-arrow-clockwise me-1"></i>填寫下一筆</button>
+    <div class="container py-4" id="mainApp" style="display:none; max-width: 900px;">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h3 class="text-primary mb-0"><i class="bi bi-airplane-engines"></i> 仲智數位健康 - 出差旅費報銷單</h3>
+            <a href="dashboard.html" class="btn btn-outline-primary btn-sm"><i class="bi bi-clock-history"></i> 歷史紀錄</a>
+        </div>
+        
+        <form id="expenseForm">
+            <!-- 基本資料與期間 -->
+            <div class="card shadow-sm mb-4">
+                <div class="card-header bg-primary text-white">基本資料與出差期間</div>
+                <div class="card-body">
+                    <div class="row g-3">
+                        <div class="col-md-3"><label>申請單位</label><input type="text" id="department" class="form-control" required></div>
+                        <div class="col-md-3"><label>申請人</label><input type="text" id="applicant" class="form-control" readonly required></div>
+                        <div class="col-md-3"><label>聯絡電話</label><input type="text" id="phone" class="form-control" required></div>
+                        <div class="col-md-3"><label>總金額 (自動計算)</label><input type="number" id="totalAmount" class="form-control bg-warning text-dark fw-bold" readonly></div>
+                        
+                        <div class="col-md-4"><label>出差開始日期</label><input type="date" id="startDate" class="form-control" required onchange="calcDays()"></div>
+                        <div class="col-md-4"><label>出差結束日期</label><input type="date" id="endDate" class="form-control" required onchange="calcDays()"></div>
+                        <div class="col-md-4"><label>共計天數</label><input type="number" id="totalDays" class="form-control bg-light" readonly></div>
+                        
+                        <div class="col-12"><label>出差事由 (用途摘要)</label><input type="text" id="summary" class="form-control" required></div>
                     </div>
                 </div>
             </div>
-        </div>
+
+            <!-- 出差明細 -->
+            <div class="card shadow-sm mb-4">
+                <div class="card-header bg-success text-white d-flex justify-content-between align-items-center">
+                    <span>費用明細 (最多 10 筆)</span>
+                    <button type="button" class="btn btn-sm btn-light" onclick="addDetailRow()"><i class="bi bi-plus-lg"></i> 新增一筆</button>
+                </div>
+                <div class="card-body" id="detailsContainer"></div>
+            </div>
+
+            <!-- 附件上傳 -->
+            <div class="card shadow-sm mb-4">
+                <div class="card-header bg-secondary text-white">上傳憑證 (支援照片與PDF)</div>
+                <div class="card-body">
+                    <input type="file" id="fileInput" class="form-control mb-3" multiple accept="image/*,application/pdf" onchange="handleFiles(event)">
+                    <div id="previewArea" class="d-flex flex-wrap gap-2"></div>
+                </div>
+            </div>
+
+            <button type="submit" class="btn btn-primary w-100 py-2 fs-5" id="submitBtn"><i class="bi bi-cloud-arrow-up"></i> 送出申請並產生PDF</button>
+        </form>
     </div>
 
-    <script src="config.js"></script>
     <script>
-        document.getElementById('g_id_onload').setAttribute('data-client_id', CONFIG.GOOGLE_CLIENT_ID);
+        let currentUser = null;
+        let selectedFiles = [];
 
-        function parseJwt(token) {
-            var base64Url = token.split('.')[1];
-            var base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
-            return JSON.parse(decodeURIComponent(window.atob(base64).split('').map(c => '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2)).join('')));
+        window.onload = function() {
+            document.getElementById('g_id_onload').setAttribute('data-client_id', CONFIG.GOOGLE_CLIENT_ID);
         }
 
-        async function handleCredentialResponse(response) {
-            const statusDiv = document.getElementById('loginStatus');
-            statusDiv.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span>驗證中...';
-            try {
-                const payload = parseJwt(response.credential);
-                // 儲存目前使用者資訊供跨頁面使用
-                localStorage.setItem('pancad_email', payload.email); 
-
-                const res = await fetch(CONFIG.GAS_API_URL, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-                    body: JSON.stringify({ action: 'login', email: payload.email })
-                });
-                const result = await res.json();
-
-                if (result.status === 'success') {
-                    // 儲存完整資訊供 Dashboard 讀取
-                    localStorage.setItem('pancad_user', JSON.stringify({name: result.name, role: result.role, email: payload.email}));
-                    
-                    document.getElementById('loginScreen').classList.add('d-none');
-                    document.getElementById('mainFormScreen').classList.remove('d-none');
-                    document.getElementById('applicantName').value = result.name;
-                    // 自動帶入電話，但使用者可以自行修改 input
-                    document.getElementById('phone').value = result.phone || ""; 
-                } else {
-                    statusDiv.innerText = result.message; 
-                }
-            } catch (error) {
-                statusDiv.innerText = "連線錯誤，請檢查 config.js";
-            }
-        }
-
-        function logout() { 
-            localStorage.removeItem('pancad_user');
-            localStorage.removeItem('pancad_email');
-            location.reload(); 
-        }
-
-        function arrayBufferToBase64(buffer) {
-            let binary = ''; let bytes = new Uint8Array(buffer);
-            for (let i = 0; i < bytes.byteLength; i++) binary += String.fromCharCode(bytes[i]);
-            return window.btoa(binary);
-        }
-
-        function getFileType(file) {
-            const name = file.name.toLowerCase();
-            if (file.type === 'application/pdf' || name.endsWith('.pdf')) return 'pdf';
-            if (file.type === 'image/jpeg' || name.endsWith('.jpg') || name.endsWith('.jpeg')) return 'jpg';
-            if (file.type === 'image/png' || name.endsWith('.png')) return 'png';
-            return 'unknown';
-        }
-
-        document.addEventListener('DOMContentLoaded', function() {
-            const detailsContainer = document.getElementById('detailsContainer');
-            const addDetailBtn = document.getElementById('addDetailBtn');
-            const totalAmountInput = document.getElementById('totalAmount');
-            const expenseForm = document.getElementById('expenseForm');
+        function handleCredentialResponse(response) {
+            const token = response.credential;
+            const payload = JSON.parse(atob(token.split('.')));
+            document.getElementById('submitBtn').innerHTML = '<span class="spinner-border spinner-border-sm"></span> 驗證中...';
             
-            let selectedFilesArray = []; 
-            const fileInput = document.getElementById('attachments');
-            const previewContainer = document.getElementById('previewContainer');
-
-            fileInput.addEventListener('change', function(e) {
-                Array.from(e.target.files).forEach(file => {
-                    if (getFileType(file) !== 'unknown') selectedFilesArray.push(file);
-                    else alert(`檔案 ${file.name} 格式不支援。`);
-                });
-                renderPreviews();
-                fileInput.value = ''; 
-            });
-
-            function renderPreviews() {
-                previewContainer.innerHTML = '';
-                selectedFilesArray.forEach((file, index) => {
-                    const fType = getFileType(file);
-                    const wrapper = document.createElement('div');
-                    wrapper.className = 'preview-wrapper shadow-sm rounded-3';
-                    
-                    const removeBtn = document.createElement('button');
-                    removeBtn.className = 'remove-btn shadow';
-                    removeBtn.innerHTML = '<i class="bi bi-x"></i>';
-                    removeBtn.onclick = () => { selectedFilesArray.splice(index, 1); renderPreviews(); };
-                    wrapper.appendChild(removeBtn);
-
-                    if (fType === 'jpg' || fType === 'png') {
-                        const img = document.createElement('img');
-                        img.className = 'preview-item';
-                        img.src = URL.createObjectURL(file);
-                        wrapper.appendChild(img);
-                    } else {
-                        const docDiv = document.createElement('div');
-                        docDiv.className = 'preview-doc text-primary';
-                        docDiv.innerHTML = '<i class="bi bi-file-earmark-pdf-fill fs-3"></i><small class="text-truncate w-100 px-1 mt-1 text-dark" style="font-size: 10px;">'+file.name+'</small>';
-                        wrapper.appendChild(docDiv);
-                    }
-                    previewContainer.appendChild(wrapper);
-                });
-            }
-
-            let detailCount = 0;
-            const MAX_DETAILS = 10; 
-
-            addDetailRow();
-            addDetailBtn.addEventListener('click', () => {
-                if (detailCount < MAX_DETAILS) addDetailRow(); else alert('最多 10 筆明細');
-            });
-
-            function addDetailRow() {
-                detailCount++;
-                const rowId = `detail_${Date.now()}`;
-                // RWD 優化：桌面版排一行，手機版自動折行
-                const rowHtml = `
-                    <div class="detail-row position-relative" id="${rowId}">
-                        <div class="row g-2 align-items-end">
-                            <div class="col-6 col-md-2">
-                                <label class="form-label text-muted small mb-1">日期</label>
-                                <input type="text" class="form-control form-control-sm detail-date" placeholder="115.02.25" required>
-                            </div>
-                            <div class="col-6 col-md-4">
-                                <label class="form-label text-muted small mb-1">採購說明</label>
-                                <input type="text" class="form-control form-control-sm detail-desc" placeholder="說明" required>
-                            </div>
-                            <div class="col-4 col-md-2 mt-2 mt-md-0">
-                                <label class="form-label text-muted small mb-1">單價</label>
-                                <input type="number" class="form-control form-control-sm detail-price" value="0" min="0" required>
-                            </div>
-                            <div class="col-4 col-md-2 mt-2 mt-md-0">
-                                <label class="form-label text-muted small mb-1">數量</label>
-                                <input type="number" class="form-control form-control-sm detail-qty" value="1" min="1" required>
-                            </div>
-                            <div class="col-4 col-md-2 mt-2 mt-md-0">
-                                <label class="form-label text-muted small mb-1">小計</label>
-                                <div class="d-flex align-items-center">
-                                    <input type="number" class="form-control form-control-sm detail-subtotal fw-bold text-primary" value="0" readonly>
-                                    ${detailCount > 1 ? `<button type="button" class="btn btn-sm btn-outline-danger ms-1 px-2 border-0" onclick="removeRow('${rowId}')"><i class="bi bi-trash3"></i></button>` : ''}
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                `;
-                detailsContainer.insertAdjacentHTML('beforeend', rowHtml);
-                attachCalculationListeners();
-            }
-
-            window.removeRow = function(rowId) { document.getElementById(rowId).remove(); detailCount--; calculateTotal(); }
-
-            function attachCalculationListeners() {
-                document.querySelectorAll('.detail-row').forEach(row => {
-                    const priceInput = row.querySelector('.detail-price');
-                    const qtyInput = row.querySelector('.detail-qty');
-                    ['input'].forEach(evt => {
-                        priceInput.removeEventListener(evt, calculateRow); qtyInput.removeEventListener(evt, calculateRow);
-                        priceInput.addEventListener(evt, calculateRow); qtyInput.addEventListener(evt, calculateRow);
-                    });
-                });
-            }
-
-            function calculateRow(e) {
-                const row = e.target.closest('.detail-row');
-                row.querySelector('.detail-subtotal').value = (parseFloat(row.querySelector('.detail-price').value) || 0) * (parseFloat(row.querySelector('.detail-qty').value) || 0);
-                calculateTotal();
-            }
-
-            function calculateTotal() {
-                let total = 0;
-                document.querySelectorAll('.detail-subtotal').forEach(input => total += parseFloat(input.value) || 0);
-                totalAmountInput.value = total;
-            }
-
-            expenseForm.addEventListener('submit', async function(e) {
-                e.preventDefault();
-                const submitBtn = document.getElementById('submitBtn');
-                const submitText = document.getElementById('submitText');
-                const submitIcon = document.getElementById('submitIcon');
-                
-                submitBtn.disabled = true;
-                submitIcon.classList.add('d-none');
-                document.getElementById('loadingSpinner').classList.remove('d-none');
-
-                try {
-                    const payload = {
-                        department: document.getElementById('department').value,
-                        applicantName: document.getElementById('applicantName').value,
-                        phone: document.getElementById('phone').value,
-                        summary: document.getElementById('summary').value,
-                        totalAmount: document.getElementById('totalAmount').value,
-                        details: []
-                    };
-                    document.querySelectorAll('.detail-row').forEach(row => {
-                        payload.details.push({
-                            date: row.querySelector('.detail-date').value, description: row.querySelector('.detail-desc').value,
-                            price: row.querySelector('.detail-price').value, quantity: row.querySelector('.detail-qty').value, subtotal: row.querySelector('.detail-subtotal').value
-                        });
-                    });
-
-                    submitText.innerText = "生成表單中 (1/3)...";
-                    const res1 = await fetch(CONFIG.GAS_API_URL, { method: 'POST', headers: { 'Content-Type': 'text/plain;charset=utf-8' }, body: JSON.stringify({ action: 'generateTemplate', ...payload }) });
-                    const result1 = await res1.json();
-                    if(result1.status !== 'success') throw new Error(result1.message);
-
-                    submitText.innerText = "合併附件中 (2/3)...";
-                    const { PDFDocument } = PDFLib;
-                    const mergedPdf = await PDFDocument.create();
-                    const templatePdf = await PDFDocument.load(result1.pdfBase64);
-                    const copiedPages = await mergedPdf.copyPages(templatePdf, templatePdf.getPageIndices());
-                    copiedPages.forEach((page) => mergedPdf.addPage(page));
-
-                    for (let file of selectedFilesArray) {
-                        const fileBuffer = await new Promise((res, rej) => { const r = new FileReader(); r.onload = () => res(r.result); r.onerror = () => rej(new Error("讀取失敗")); r.readAsArrayBuffer(file); });
-                        const fType = getFileType(file);
-                        try {
-                            if (fType === 'pdf') {
-                                const attachedPdf = await PDFDocument.load(fileBuffer);
-                                const pages = await mergedPdf.copyPages(attachedPdf, attachedPdf.getPageIndices());
-                                pages.forEach((page) => mergedPdf.addPage(page));
-                            } else if (fType === 'jpg' || fType === 'png') {
-                                let image = fType === 'jpg' ? await mergedPdf.embedJpg(fileBuffer) : await mergedPdf.embedPng(fileBuffer);
-                                const page = mergedPdf.addPage(); const { width, height } = page.getSize();
-                                const scaled = image.scaleToFit(width - 40, height - 40);
-                                page.drawImage(image, { x: width / 2 - scaled.width / 2, y: height / 2 - scaled.height / 2, width: scaled.width, height: scaled.height });
-                            }
-                        } catch (err) { alert(`檔案【${file.name}】合併失敗！`); }
-                    }
-
-                    submitText.innerText = "上傳存檔中 (3/3)...";
-                    const res2 = await fetch(CONFIG.GAS_API_URL, { method: 'POST', headers: { 'Content-Type': 'text/plain;charset=utf-8' }, body: JSON.stringify({ action: 'saveRecord', formId: result1.formId, finalPdfBase64: arrayBufferToBase64(await mergedPdf.save()), ...payload }) });
-                    const result2 = await res2.json();
-
-                    if (result2.status === 'success') {
-                        expenseForm.classList.add('d-none');
-                        document.getElementById('successMessage').classList.remove('d-none');
-                        document.getElementById('pdfDownloadLink').href = result2.pdfUrl;
-                    } else alert("儲存發生錯誤：" + result2.message);
-                } catch (error) {
-                    alert("處理發生錯誤，請確認網路。");
-                } finally {
-                    submitBtn.disabled = false; submitIcon.classList.remove('d-none');
-                    submitText.innerText = "確認送出申請"; document.getElementById('loadingSpinner').classList.add('d-none');
+            fetch(CONFIG.GAS_API_URL, {
+                method: 'POST',
+                body: JSON.stringify({ action: 'login', email: payload.email })
+            }).then(res => res.json()).then(data => {
+                if(data.success) {
+                    currentUser = data.user;
+                    localStorage.setItem('userEmail', currentUser.email);
+                    document.getElementById('loginOverlay').style.display = 'none';
+                    document.getElementById('mainApp').style.display = 'block';
+                    document.getElementById('applicant').value = currentUser.name;
+                    document.getElementById('phone').value = currentUser.phone;
+                    document.getElementById('submitBtn').innerHTML = '<i class="bi bi-cloud-arrow-up"></i> 送出申請並產生PDF';
+                    addDetailRow(); 
+                } else {
+                    alert('登入失敗：無權限！');
+                    document.getElementById('submitBtn').innerHTML = '無權限';
                 }
+            }).catch(() => alert('連線失敗'));
+        }
+
+        function calcDays() {
+            const start = new Date(document.getElementById('startDate').value);
+            const end = new Date(document.getElementById('endDate').value);
+            if(start && end && end >= start) {
+                const diffTime = Math.abs(end - start);
+                document.getElementById('totalDays').value = Math.ceil(diffTime / (1000 * 60 * 60 * 24)) + 1; 
+            }
+        }
+
+        function addDetailRow() {
+            const container = document.getElementById('detailsContainer');
+            if(container.children.length >= 10) return alert('最多 10 筆明細');
+            
+            const rowDiv = document.createElement('div');
+            rowDiv.className = 'detail-card detail-row';
+            rowDiv.innerHTML = `
+                <div class="d-flex justify-content-between mb-2">
+                    <span class="badge bg-secondary">明細</span>
+                    <button type="button" class="btn-close" onclick="this.parentElement.parentElement.remove(); calculateTotal();"></button>
+                </div>
+                <!-- 日期與地點分割 -->
+                <div class="row g-2 mb-2">
+                    <div class="col-md-2 col-3"><label class="small">月</label><input type="number" class="form-control form-control-sm i-month" placeholder="月" min="1" max="12" required></div>
+                    <div class="col-md-2 col-3"><label class="small">日</label><input type="number" class="form-control form-control-sm i-day" placeholder="日" min="1" max="31" required></div>
+                    <div class="col-md-4 col-6"><label class="small">起點</label><input type="text" class="form-control form-control-sm i-start"></div>
+                    <div class="col-md-4 col-12"><label class="small">迄點</label><input type="text" class="form-control form-control-sm i-end"></div>
+                </div>
+                <div class="row g-2 mb-2">
+                    <div class="col-12"><label class="small">訪洽對象及工作紀要</label><input type="text" class="form-control form-control-sm i-desc" required></div>
+                </div>
+                <!-- 費用細項 -->
+                <div class="row g-2">
+                    <div class="col-md-2 col-4"><label class="small text-muted">飛機/高鐵</label><input type="number" class="form-control form-control-sm i-plane fee-input" oninput="calculateTotal()"></div>
+                    <div class="col-md-2 col-4"><label class="small text-muted">開車/計程車</label><input type="number" class="form-control form-control-sm i-taxi fee-input" oninput="calculateTotal()"></div>
+                    <div class="col-md-2 col-4"><label class="small text-muted">火車/捷運</label><input type="number" class="form-control form-control-sm i-train fee-input" oninput="calculateTotal()"></div>
+                    <div class="col-md-2 col-4"><label class="small text-muted">住宿費</label><input type="number" class="form-control form-control-sm i-hotel fee-input" oninput="calculateTotal()"></div>
+                    <div class="col-md-2 col-4"><label class="small text-muted">膳雜費</label><input type="number" class="form-control form-control-sm i-meal fee-input" oninput="calculateTotal()"></div>
+                    <div class="col-md-2 col-4"><label class="small text-muted">其他費用</label><input type="number" class="form-control form-control-sm i-other fee-input" oninput="calculateTotal()"></div>
+                </div>
+                <div class="row mt-2"><div class="col-12 text-end text-danger fw-bold small">單筆小計: $<span class="i-subtotal">0</span></div></div>
+            `;
+            container.appendChild(rowDiv);
+        }
+
+        function calculateTotal() {
+            let grandTotal = 0;
+            document.querySelectorAll('.detail-row').forEach(row => {
+                const plane = parseInt(row.querySelector('.i-plane').value) || 0;
+                const taxi = parseInt(row.querySelector('.i-taxi').value) || 0;
+                const train = parseInt(row.querySelector('.i-train').value) || 0;
+                const hotel = parseInt(row.querySelector('.i-hotel').value) || 0;
+                const meal = parseInt(row.querySelector('.i-meal').value) || 0;
+                const other = parseInt(row.querySelector('.i-other').value) || 0;
+                const subtotal = plane + taxi + train + hotel + meal + other;
+                row.querySelector('.i-subtotal').innerText = subtotal;
+                grandTotal += subtotal;
             });
+            document.getElementById('totalAmount').value = grandTotal;
+        }
+
+        async function handleFiles(event) {
+            const files = event.target.files;
+            const previewArea = document.getElementById('previewArea');
+            for(let i=0; i<files.length; i++) {
+                let file = files[i];
+                let reader = new FileReader();
+                reader.onload = function(e) {
+                    let base64String = e.target.result;
+                    selectedFiles.push({ name: file.name, mimeType: file.type || (file.name.toLowerCase().endsWith('.pdf') ? 'application/pdf' : ''), base64: base64String });
+                    let div = document.createElement('div');
+                    div.className = 'border p-1 position-relative bg-white';
+                    let content = file.type.startsWith('image') ? `<img src="${base64String}" class="preview-img">` : `<div class="preview-img d-flex align-items-center justify-content-center bg-light"><i class="bi bi-file-earmark-pdf text-danger fs-3"></i></div>`;
+                    div.innerHTML = `${content}<button type="button" class="btn-close position-absolute top-0 start-100 translate-middle" onclick="removeFile(${selectedFiles.length - 1}, this)"></button><div class="small text-truncate" style="width:60px;">${file.name}</div>`;
+                    previewArea.appendChild(div);
+                };
+                reader.readAsDataURL(file);
+            }
+            event.target.value = ''; 
+        }
+
+        function removeFile(index, btnElement) {
+            selectedFiles[index] = null; 
+            btnElement.parentElement.remove();
+        }
+
+        document.getElementById('expenseForm').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            const btn = document.getElementById('submitBtn');
+            btn.disabled = true;
+            btn.innerHTML = '<span class="spinner-border spinner-border-sm"></span> 處理中...';
+
+            let details = [];
+            document.querySelectorAll('.detail-row').forEach(row => {
+                details.push({
+                    month: row.querySelector('.i-month').value, // 分離的月份
+                    day: row.querySelector('.i-day').value,     // 分離的日期
+                    startLoc: row.querySelector('.i-start').value,
+                    endLoc: row.querySelector('.i-end').value,
+                    desc: row.querySelector('.i-desc').value,
+                    plane: row.querySelector('.i-plane').value,
+                    taxi: row.querySelector('.i-taxi').value,
+                    train: row.querySelector('.i-train').value,
+                    hotel: row.querySelector('.i-hotel').value,
+                    meal: row.querySelector('.i-meal').value,
+                    other: row.querySelector('.i-other').value,
+                    subtotal: row.querySelector('.i-subtotal').innerText
+                });
+            });
+
+            const payload = {
+                action: 'submit',
+                startDate: document.getElementById('startDate').value,
+                endDate: document.getElementById('endDate').value,
+                totalDays: document.getElementById('totalDays').value,
+                department: document.getElementById('department').value,
+                applicant: document.getElementById('applicant').value,
+                phone: document.getElementById('phone').value,
+                summary: document.getElementById('summary').value,
+                totalAmount: document.getElementById('totalAmount').value,
+                details: details,
+                files: selectedFiles.filter(f => f !== null)
+            };
+
+            try {
+                const response = await fetch(CONFIG.GAS_API_URL, { method: 'POST', body: JSON.stringify(payload) });
+                const result = await response.json();
+                
+                if(result.success) {
+                    btn.innerHTML = '<span class="spinner-border spinner-border-sm"></span> 正在合併附件...';
+                    const { PDFDocument } = PDFLib;
+                    const mainPdfBytes = Uint8Array.from(atob(result.base64Pdf), c => c.charCodeAt(0));
+                    const mergedPdf = await PDFDocument.load(mainPdfBytes);
+                    
+                    for (let file of selectedFiles.filter(f => f !== null)) {
+                        try {
+                            if (file.mimeType.includes('pdf')) {
+                                const attachBytes = Uint8Array.from(atob(file.base64.split(',')[2]), c => c.charCodeAt(0));
+                                const attachDoc = await PDFDocument.load(attachBytes);
+                                const copiedPages = await mergedPdf.copyPages(attachDoc, attachDoc.getPageIndices());
+                                copiedPages.forEach(page => mergedPdf.addPage(page));
+                            } else if (file.mimeType.startsWith('image')) {
+                                const imgBytes = Uint8Array.from(atob(file.base64.split(',')[2]), c => c.charCodeAt(0));
+                                let pdfImage = file.mimeType.includes('png') ? await mergedPdf.embedPng(imgBytes) : await mergedPdf.embedJpg(imgBytes);
+                                const page = mergedPdf.addPage();
+                                const { width, height } = page.getSize();
+                                const scaled = pdfImage.scaleToFit(width - 40, height - 40);
+                                page.drawImage(pdfImage, { x: width/2 - scaled.width/2, y: height/2 - scaled.height/2, width: scaled.width, height: scaled.height });
+                            }
+                        } catch(e) { console.log('附件合併錯誤', e); }
+                    }
+                    
+                    const finalPdfBytes = await mergedPdf.save();
+                    const blob = new Blob([finalPdfBytes], { type: 'application/pdf' });
+                    const a = document.createElement('a');
+                    a.href = window.URL.createObjectURL(blob);
+                    a.download = `${result.formId}_出差旅費報銷單.pdf`;
+                    a.click();
+                    
+                    alert('申請成功！PDF 已下載。');
+                    window.location.reload();
+                } else alert('錯誤: ' + result.message);
+            } catch (e) { alert('傳送失敗'); }
+            btn.disabled = false;
+            btn.innerHTML = '<i class="bi bi-cloud-arrow-up"></i> 送出申請並產生PDF';
         });
     </script>
 </body>
