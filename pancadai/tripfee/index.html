@@ -93,48 +93,79 @@
 
         // 登入驗證處理 (已修正 JWT 解碼的 Bug)
         function handleCredentialResponse(response) {
+            // 🛡️ 第一步：檢查 CONFIG 是否存在（避免 config.js 載入失敗時噴 ReferenceError）
+            if (typeof CONFIG === 'undefined') {
+                alert('系統錯誤：config.js 未正確載入！請按 Ctrl+Shift+R (Windows) 或 Cmd+Shift+R (Mac) 強制重新整理清除快取後再試。');
+                console.error('CONFIG is undefined — config.js 可能未正確載入或含有語法錯誤');
+                return;
+            }
+            
+            // 🛡️ 第二步：提取並驗證 JWT
+            let payload;
             try {
                 const token = response.credential;
+                if (!token || typeof token !== 'string') {
+                    throw new Error('無效的登入憑證 (response.credential)');
+                }
                 
                 // 💡 修正：加上了 [1] 來精確抓取 Payload，避免 replace 出錯
-                const base64Url = token.split('.')[1];
+                const parts = token.split('.');
+                if (parts.length !== 3) {
+                    throw new Error('JWT 格式錯誤：非標準的 3 段式 token');
+                }
+                const base64Url = parts[1];
                 const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
-                const jsonPayload = decodeURIComponent(atob(base64).split('').map(function(c) {
+                // 補齊 base64 padding（JWT 可能省略 =）
+                const padded = base64.padEnd(base64.length + (4 - base64.length % 4) % 4, '=');
+                const jsonPayload = decodeURIComponent(atob(padded).split('').map(function(c) {
                     return '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2);
                 }).join(''));
-                const payload = JSON.parse(jsonPayload);
+                payload = JSON.parse(jsonPayload);
                 
-                document.getElementById('submitBtn').innerHTML = '<span class="spinner-border spinner-border-sm"></span> 驗證權限中...';
-                
-                fetch(CONFIG.GAS_API_URL, {
-                    method: 'POST',
-                    body: JSON.stringify({ action: 'login', email: payload.email })
-                }).then(res => res.json()).then(data => {
-                    if(data.success) {
-                        currentUser = data.user;
-                        localStorage.setItem('userEmail', currentUser.email);
-                        
-                        document.getElementById('loginOverlay').style.display = 'none';
-                        document.getElementById('mainApp').style.display = 'block';
-                        document.getElementById('applicant').value = currentUser.name;
-                        document.getElementById('phone').value = currentUser.phone || '';
-                        document.getElementById('submitBtn').innerHTML = '<i class="bi bi-cloud-arrow-up"></i> 送出申請並產生PDF';
-                        
-                        if(document.getElementById('detailsContainer').children.length === 0) {
-                            addDetailRow(); 
-                        }
-                    } else {
-                        alert(`登入失敗：您的帳號 (${payload.email}) 未登記在系統權限名單中！`);
-                        document.getElementById('submitBtn').innerHTML = '無權限';
-                    }
-                }).catch(err => {
-                    alert('連線失敗：請確認 config.js 中的 GAS 網址是否正確且已重新部署。');
-                    console.error('Fetch Error:', err);
-                });
-            } catch (error) {
-                alert('系統解析登入資料時發生錯誤，請清除快取重新整理網頁後再試。');
-                console.error('JWT Decode Error:', error);
+                if (!payload.email) {
+                    throw new Error('JWT payload 缺少 email 欄位');
+                }
+            } catch (jwtErr) {
+                alert('登入資料解析失敗，請按 Ctrl+Shift+R (Windows) 或 Cmd+Shift+R (Mac) 強制重新整理後再試。');
+                console.error('JWT Decode Error:', jwtErr);
+                return;
             }
+            
+            document.getElementById('submitBtn').innerHTML = '<span class="spinner-border spinner-border-sm"></span> 驗證權限中...';
+            
+            // 🛡️ 第三步：發送驗證請求到 GAS
+            fetch(CONFIG.GAS_API_URL, {
+                method: 'POST',
+                mode: 'cors',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ action: 'login', email: payload.email })
+            }).then(res => {
+                // GAS 的回應可能是 text/html（exec 回傳）需要先轉 JSON
+                return res.json().catch(() => {
+                    throw new Error('GAS 回應不是 JSON，請確認 GAS 專案已重新部署為「網路應用程式」');
+                });
+            }).then(data => {
+                if(data.success) {
+                    currentUser = data.user;
+                    localStorage.setItem('userEmail', currentUser.email);
+                    
+                    document.getElementById('loginOverlay').style.display = 'none';
+                    document.getElementById('mainApp').style.display = 'block';
+                    document.getElementById('applicant').value = currentUser.name;
+                    document.getElementById('phone').value = currentUser.phone || '';
+                    document.getElementById('submitBtn').innerHTML = '<i class="bi bi-cloud-arrow-up"></i> 送出申請並產生PDF';
+                    
+                    if(document.getElementById('detailsContainer').children.length === 0) {
+                        addDetailRow(); 
+                    }
+                } else {
+                    alert(`登入失敗：您的帳號 (${payload.email}) 未登記在系統權限名單中！`);
+                    document.getElementById('submitBtn').innerHTML = '無權限';
+                }
+            }).catch(err => {
+                alert('連線失敗：請確認 config.js 中的 GAS 網址是否正確且已重新部署。\n\n詳細錯誤：' + err.message);
+                console.error('Fetch Error:', err);
+            });
         }
 
         // 天數計算
