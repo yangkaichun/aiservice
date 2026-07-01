@@ -5,5 +5,6 @@ const CONFIG = {
     GAS_API_URL: "https://script.google.com/macros/s/AKfycbzUMSM9BIZy86PKSAKVxb1eX5vSDw1i__UA4lUTP2lH8sr8_t-rUxG8qIcNJFjuCwY8/exec", 
     
     // 您申請的 Google Client ID
-    GOOGLE_CLIENT_ID: "470505739418-tdi7edodl65q0hpr9272kd4uof3d7l9v.apps.googleusercontent.com" 
+    GOOGLE_CLIENT_ID: "470505739418-tdi7edodl65q0hpr9272kd4uof3d7l9v.apps.googleusercontent.com”
+     
 };
