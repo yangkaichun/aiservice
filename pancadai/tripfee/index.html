@@ -3,88 +3,651 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>出差旅費報銷系統</title>
-    <!-- 引入 Bootstrap 5 與 Icons -->
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <title>仲智數位健康 · PanCAD.ai · 出差旅費報銷系統</title>
+
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Noto+Sans+TC:wght@400;500;700&display=swap" rel="stylesheet">
+
+    <!-- Bootstrap 5 Icons only (no CSS framework for full control) -->
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css">
-    
-    <!-- Google 登入模組 (GIS) -->
+
+    <!-- Google 登入 (GIS) -->
     <script src="https://accounts.google.com/gsi/client" async defer data-itp_support="true"></script>
-    
-    <!-- 前端 PDF 合併套件 -->
+
+    <!-- PDF 合併 -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf-lib/1.17.1/pdf-lib.min.js"></script>
-    
-    <!-- 讀取您的全域設定 (GAS API URL) -->
+
+    <!-- 設定檔 -->
     <script src="config.js"></script>
-    
+
     <style>
-        .detail-card { background-color: #f8f9fa; border: 1px solid #dee2e6; border-radius: 8px; padding: 15px; margin-bottom: 15px; }
-        .preview-img { width: 60px; height: 60px; object-fit: cover; border-radius: 4px; margin-right: 10px; }
-        #loginOverlay { position: fixed; top:0; left:0; width: 100%; height: 100%; background: rgba(255,255,255,0.95); z-index: 9999; display: flex; flex-direction: column; justify-content: center; align-items: center; }
+        /* ===== Pancad.ai Design System ===== */
+        :root {
+            --brand-blue: #295daa;
+            --brand-blue-dark: #001a33;
+            --brand-blue-mid: #1a3a6b;
+            --brand-orange: #ec7000;
+            --brand-orange-light: #fef0e0;
+            --brand-orange-hover: #d46200;
+            --bg-white: #ffffff;
+            --bg-light: #f6f8fc;
+            --bg-surface: #f0f4f9;
+            --border-light: #dee2e8;
+            --text-primary: #0f172a;
+            --text-secondary: #475569;
+            --text-muted: #94a3b8;
+            --shadow-sm: 0 1px 2px rgba(0,0,0,0.04);
+            --shadow-md: 0 4px 12px rgba(0,0,0,0.06);
+            --shadow-lg: 0 8px 24px rgba(0,0,0,0.08);
+            --shadow-orange: 0 4px 14px rgba(236,112,0,0.25);
+            --radius-sm: 6px;
+            --radius-md: 10px;
+            --radius-lg: 14px;
+            --font-sans: 'Inter', -apple-system, 'Segoe UI', sans-serif;
+            --font-zh: 'Noto Sans TC', 'PingFang TC', 'Microsoft JhengHei', sans-serif;
+        }
+
+        * { box-sizing: border-box; }
+
+        body {
+            font-family: var(--font-zh);
+            background: var(--bg-white);
+            color: var(--text-primary);
+            -webkit-font-smoothing: antialiased;
+            line-height: 1.6;
+            margin: 0;
+        }
+
+        /* ===== LOGIN OVERLAY ===== */
+        #loginOverlay {
+            position: fixed; inset: 0;
+            background: linear-gradient(160deg, #f0f4f9 0%, #ffffff 60%);
+            z-index: 9999;
+            display: flex; flex-direction: column;
+            justify-content: center; align-items: center;
+            padding: 24px;
+        }
+
+        .login-card {
+            background: var(--bg-white);
+            border: 1px solid var(--border-light);
+            border-radius: var(--radius-lg);
+            box-shadow: var(--shadow-lg);
+            padding: 48px 44px 40px;
+            max-width: 420px;
+            width: 100%;
+            text-align: center;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .login-card::before {
+            content: '';
+            position: absolute;
+            top: 0; left: 0; right: 0;
+            height: 4px;
+            background: linear-gradient(90deg, var(--brand-blue), var(--brand-orange));
+        }
+
+        .login-card .brand-logo {
+            height: 36px;
+            width: auto;
+            margin-bottom: 24px;
+        }
+
+        .login-card h2 {
+            font-family: var(--font-zh);
+            font-weight: 700;
+            font-size: 21px;
+            color: var(--text-primary);
+            margin: 0 0 4px;
+        }
+
+        .login-card .brand-sub {
+            font-size: 13px;
+            color: var(--text-muted);
+            margin-bottom: 28px;
+        }
+
+        .login-card .divider {
+            display: flex; align-items: center; gap: 12px;
+            margin-bottom: 24px;
+            color: var(--text-muted);
+            font-size: 12px;
+        }
+        .login-card .divider::before,
+        .login-card .divider::after {
+            content: ''; flex: 1; height: 1px; background: var(--border-light);
+        }
+
+        .login-card .g_id_signin > div {
+            margin: 0 auto !important;
+        }
+
+        .login-card .login-footer {
+            margin-top: 24px;
+            font-size: 12px;
+            color: var(--text-muted);
+        }
+
+        /* The Google button container fix */
+        .login-card .abcRioButton {
+            border-radius: 8px !important;
+        }
+
+        /* ===== MAIN APP ===== */
+        #mainApp {
+            max-width: 960px;
+            margin: 0 auto;
+            padding: 0 24px 48px;
+        }
+
+        /* ----- Top Navigation Bar (pancad.ai style) ----- */
+        .top-bar {
+            background: var(--bg-white);
+            border-bottom: 1px solid var(--border-light);
+            padding: 12px 0;
+        }
+
+        .top-bar .top-bar-inner {
+            max-width: 960px;
+            margin: 0 auto;
+            padding: 0 24px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .top-bar .brand-group {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .top-bar .brand-logo-sm {
+            height: 30px;
+            width: auto;
+        }
+
+        .top-bar .brand-name {
+            font-family: var(--font-zh);
+            font-weight: 700;
+            font-size: 14px;
+            color: var(--brand-blue-dark);
+            line-height: 1.2;
+        }
+        .top-bar .brand-name small {
+            display: block;
+            font-weight: 400;
+            font-size: 11px;
+            color: var(--text-muted);
+        }
+
+        /* ----- Main Nav (pancad.ai style) ----- */
+        .nav-bar {
+            background: var(--brand-blue);
+            padding: 0 24px;
+            border-radius: var(--radius-md);
+            margin-bottom: 28px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            min-height: 48px;
+        }
+
+        .nav-bar .nav-title {
+            color: #fff;
+            font-family: var(--font-zh);
+            font-weight: 500;
+            font-size: 15px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .nav-bar .nav-actions {
+            display: flex;
+            gap: 8px;
+        }
+
+        .nav-bar .nav-btn {
+            background: rgba(255,255,255,0.12);
+            color: #fff;
+            border: 1px solid rgba(255,255,255,0.2);
+            padding: 6px 14px;
+            border-radius: var(--radius-sm);
+            font-family: var(--font-zh);
+            font-size: 13px;
+            cursor: pointer;
+            text-decoration: none;
+            transition: all 0.2s;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+        }
+        .nav-bar .nav-btn:hover {
+            background: rgba(255,255,255,0.22);
+        }
+
+        /* ----- Cards (pancad.ai clean style) ----- */
+        .card-pancad {
+            background: var(--bg-white);
+            border: 1px solid var(--border-light);
+            border-radius: var(--radius-md);
+            margin-bottom: 20px;
+            overflow: hidden;
+            transition: box-shadow 0.2s;
+        }
+        .card-pancad:hover {
+            box-shadow: var(--shadow-md);
+        }
+
+        .card-pancad .card-head {
+            padding: 14px 20px;
+            font-family: var(--font-zh);
+            font-weight: 600;
+            font-size: 15px;
+            border-bottom: 1px solid var(--border-light);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            background: var(--bg-light);
+        }
+        .card-pancad .card-head .head-icon {
+            width: 24px;
+            height: 24px;
+            border-radius: 6px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 13px;
+            margin-right: 8px;
+            color: #fff;
+        }
+        .head-icon-blue { background: var(--brand-blue); }
+        .head-icon-green { background: #059669; }
+        .head-icon-gray { background: var(--text-muted); }
+
+        .card-pancad .card-body {
+            padding: 20px;
+        }
+
+        /* ----- Form Inputs ----- */
+        .form-control {
+            font-family: var(--font-zh);
+            font-size: 14px;
+            padding: 10px 14px;
+            border: 1.5px solid var(--border-light);
+            border-radius: var(--radius-sm);
+            background: var(--bg-white);
+            color: var(--text-primary);
+            width: 100%;
+            transition: border-color 0.2s, box-shadow 0.2s;
+            outline: none;
+        }
+        .form-control:focus {
+            border-color: var(--brand-blue);
+            box-shadow: 0 0 0 3px rgba(41,93,170,0.1);
+        }
+        .form-control[readonly] {
+            background: var(--bg-light);
+            cursor: default;
+        }
+        .form-control-sm {
+            padding: 6px 10px;
+            font-size: 13px;
+        }
+
+        .form-label, form label:not(.small) {
+            font-family: var(--font-zh);
+            font-size: 12px;
+            font-weight: 600;
+            color: var(--text-secondary);
+            margin-bottom: 4px;
+            display: block;
+            letter-spacing: 0.2px;
+        }
+
+        label.small {
+            font-size: 11px;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            font-weight: 500;
+        }
+
+        /* ----- Buttons (pancad.ai style) ----- */
+        .btn {
+            font-family: var(--font-zh);
+            font-weight: 600;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            cursor: pointer;
+            transition: all 0.2s;
+            text-decoration: none;
+            border: none;
+        }
+
+        .btn-orange {
+            background: var(--brand-orange);
+            color: #fff;
+            padding: 12px 28px;
+            border-radius: var(--radius-sm);
+            font-size: 15px;
+            box-shadow: var(--shadow-orange);
+        }
+        .btn-orange:hover {
+            background: var(--brand-orange-hover);
+            transform: translateY(-1px);
+            box-shadow: 0 6px 20px rgba(236,112,0,0.3);
+        }
+
+        .btn-blue {
+            background: var(--brand-blue);
+            color: #fff;
+            padding: 12px 28px;
+            border-radius: var(--radius-sm);
+            font-size: 15px;
+        }
+        .btn-blue:hover {
+            background: #214d8f;
+            transform: translateY(-1px);
+        }
+
+        .btn-outline-blue {
+            background: transparent;
+            color: var(--brand-blue);
+            border: 1.5px solid var(--brand-blue);
+            padding: 8px 16px;
+            border-radius: var(--radius-sm);
+            font-size: 13px;
+        }
+        .btn-outline-blue:hover {
+            background: rgba(41,93,170,0.06);
+        }
+
+        .btn-ghost-light {
+            background: rgba(255,255,255,0.15);
+            color: #fff;
+            border: 1px solid rgba(255,255,255,0.25);
+            padding: 8px 16px;
+            border-radius: var(--radius-sm);
+            font-size: 13px;
+        }
+        .btn-ghost-light:hover {
+            background: rgba(255,255,255,0.25);
+        }
+
+        .btn-sm {
+            padding: 6px 14px;
+            font-size: 12px;
+        }
+
+        .btn-submit-wrap {
+            padding: 6px;
+            border-radius: var(--radius-sm);
+            background: linear-gradient(135deg, var(--brand-orange), #d46200);
+            box-shadow: var(--shadow-orange);
+            transition: all 0.2s;
+        }
+        .btn-submit-wrap:hover {
+            box-shadow: 0 6px 20px rgba(236,112,0,0.35);
+            transform: translateY(-1px);
+        }
+        .btn-submit-wrap .btn {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            width: 100%;
+            padding: 14px 24px;
+            background: transparent;
+            color: #fff;
+            font-size: 16px;
+            font-weight: 600;
+            border: none;
+            cursor: pointer;
+            font-family: var(--font-zh);
+        }
+
+        /* ----- Detail Row Card ----- */
+        .detail-card {
+            background: var(--bg-light);
+            border: 1px solid var(--border-light);
+            border-radius: var(--radius-sm);
+            padding: 16px;
+            margin-bottom: 12px;
+            transition: box-shadow 0.15s;
+        }
+        .detail-card:hover {
+            box-shadow: var(--shadow-sm);
+        }
+
+        .detail-card .badge-detail {
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+            background: var(--brand-blue);
+            color: #fff;
+            font-size: 11px;
+            font-weight: 500;
+            padding: 2px 10px;
+            border-radius: 20px;
+            font-family: var(--font-zh);
+        }
+
+        .detail-card .btn-close {
+            border: none;
+            background: none;
+            font-size: 16px;
+            color: var(--text-muted);
+            cursor: pointer;
+            opacity: 0.4;
+            padding: 0 4px;
+            line-height: 1;
+        }
+        .detail-card .btn-close:hover {
+            opacity: 0.8;
+        }
+
+        .fee-input {
+            font-size: 13px !important;
+            padding: 6px 10px !important;
+        }
+
+        /* ----- Preview Area ----- */
+        #previewArea .file-preview {
+            border: 1px solid var(--border-light);
+            border-radius: var(--radius-sm);
+            padding: 4px;
+            background: var(--bg-white);
+            position: relative;
+            transition: box-shadow 0.15s;
+        }
+        #previewArea .file-preview:hover {
+            box-shadow: var(--shadow-sm);
+        }
+
+        .preview-img {
+            width: 60px; height: 60px; object-fit: cover;
+            border-radius: 4px;
+        }
+
+        #totalAmount {
+            font-size: 18px !important;
+            background: var(--brand-orange-light) !important;
+            color: #92400e !important;
+            border-color: #fed7aa !important;
+            font-weight: 700 !important;
+        }
+
+        /* ----- File Input ----- */
+        input[type="file"]::file-selector-button {
+            font-family: var(--font-zh);
+            background: var(--bg-surface);
+            border: 1px solid var(--border-light);
+            border-radius: var(--radius-sm);
+            padding: 6px 14px;
+            cursor: pointer;
+            color: var(--text-primary);
+            font-weight: 500;
+            transition: background 0.15s;
+        }
+        input[type="file"]::file-selector-button:hover {
+            background: #e5e9f0;
+        }
+
+        /* ----- Footer ----- */
+        .app-footer {
+            text-align: center;
+            padding: 28px 0 8px;
+            border-top: 1px solid var(--border-light);
+            margin-top: 32px;
+        }
+        .app-footer img {
+            height: 24px;
+            width: auto;
+            margin-bottom: 12px;
+            opacity: 0.6;
+        }
+        .app-footer p {
+            font-size: 12px;
+            color: var(--text-muted);
+            margin: 0;
+        }
+        .app-footer p strong {
+            color: var(--text-secondary);
+        }
+
+        /* ===== Responsive ===== */
+        @media (max-width: 576px) {
+            .login-card { padding: 32px 20px; }
+            .login-card .brand-logo { height: 28px; }
+            #mainApp { padding: 0 12px 32px; }
+            .top-bar .top-bar-inner { padding: 0 12px; }
+            .nav-bar { flex-direction: column; gap: 8px; padding: 12px; }
+            .card-pancad .card-head { padding: 12px 14px; font-size: 14px; flex-wrap: wrap; gap: 8px; }
+            .card-pancad .card-body { padding: 14px; }
+        }
     </style>
 </head>
-<body class="bg-light">
+<body>
 
-    <!-- 登入遮罩 -->
+    <!-- ===== LOGIN OVERLAY ===== -->
     <div id="loginOverlay">
-        <h2 class="mb-4 text-primary"><i class="bi bi-briefcase-fill"></i> 出差旅費報銷系統</h2>
-        <p class="text-muted mb-4">請使用 Google 帳號登入 (請允許彈出視窗)</p>
-        
-        <div id="g_id_onload" 
-             data-client_id="470505739418-tdi7edodl65q0hpr9272kd4uof3d7l9v.apps.googleusercontent.com" 
-             data-callback="handleCredentialResponse" 
-             data-auto_prompt="false">
+        <div class="login-card">
+            <img src="image/pancad.ai-logo.svg" alt="PanCAD.ai" class="brand-logo">
+            <h2>出差旅費報銷系統</h2>
+            <p class="brand-sub">仲智數位健康股份有限公司</p>
+
+            <div class="divider">使用 Google 帳號登入</div>
+
+            <div id="g_id_onload"
+                 data-client_id="470505739418-tdi7edodl65q0hpr9272kd4uof3d7l9v.apps.googleusercontent.com"
+                 data-callback="handleCredentialResponse"
+                 data-auto_prompt="false">
+            </div>
+            <div class="g_id_signin" data-type="standard" data-size="large" data-theme="outline" data-text="sign_in_with" data-shape="rectangular" data-logo_alignment="left"></div>
+
+            <div class="login-footer">
+                請允許彈出視窗以完成 Google 登入
+            </div>
         </div>
-        <div class="g_id_signin" data-type="standard" data-size="large" data-theme="outline" data-text="sign_in_with" data-shape="rectangular" data-logo_alignment="left"></div>
     </div>
 
-    <!-- 系統主介面 -->
-    <div class="container py-4" id="mainApp" style="display:none; max-width: 900px;">
-        <div class="d-flex justify-content-between align-items-center mb-4">
-            <h3 class="text-primary mb-0"><i class="bi bi-airplane-engines"></i> 仲智數位健康 - 出差旅費報銷單</h3>
-            <a href="dashboard.html" class="btn btn-outline-primary btn-sm"><i class="bi bi-clock-history"></i> 歷史紀錄</a>
+    <!-- ===== MAIN APP ===== -->
+    <div id="mainApp" style="display:none;">
+
+        <!-- Top Bar (pancad.ai style white bar) -->
+        <div class="top-bar">
+            <div class="top-bar-inner">
+                <div class="brand-group">
+                    <img src="image/pancad.ai-logo.svg" alt="PanCAD.ai" class="brand-logo-sm">
+                    <div class="brand-name">
+                        出差旅費報銷單
+                        <small>仲智數位健康股份有限公司</small>
+                    </div>
+                </div>
+                <a href="dashboard.html" class="btn btn-outline-blue btn-sm">
+                    <i class="bi bi-clock-history"></i> 歷史紀錄
+                </a>
+            </div>
         </div>
-        
+
+        <!-- Nav Bar (pancad.ai style blue bar) -->
+        <div class="nav-bar">
+            <div class="nav-title">
+                <i class="bi bi-airplane-engines" style="font-size:18px;"></i>
+                出差旅費報銷系統
+            </div>
+            <div class="nav-actions">
+                <a href="dashboard.html" class="btn btn-ghost-light btn-sm">
+                    <i class="bi bi-clock-history"></i> 歷史紀錄
+                </a>
+            </div>
+        </div>
+
         <form id="expenseForm">
-            <!-- 基本資料與期間 -->
-            <div class="card shadow-sm mb-4">
-                <div class="card-header bg-primary text-white">基本資料與出差期間</div>
+            <!-- 基本資料 -->
+            <div class="card-pancad">
+                <div class="card-head">
+                    <span><span class="head-icon head-icon-blue"><i class="bi bi-person-badge"></i></span> 基本資料與出差期間</span>
+                </div>
                 <div class="card-body">
                     <div class="row g-3">
                         <div class="col-md-3"><label>申請單位</label><input type="text" id="department" class="form-control" required></div>
                         <div class="col-md-3"><label>申請人</label><input type="text" id="applicant" class="form-control" readonly required></div>
                         <div class="col-md-3"><label>聯絡電話</label><input type="text" id="phone" class="form-control" required></div>
-                        <div class="col-md-3"><label>總金額 (自動計算)</label><input type="number" id="totalAmount" class="form-control bg-warning text-dark fw-bold" readonly></div>
-                        
+                        <div class="col-md-3"><label>總金額</label><input type="number" id="totalAmount" class="form-control" readonly></div>
+
                         <div class="col-md-4"><label>出差開始日期</label><input type="date" id="startDate" class="form-control" required onchange="calcDays()"></div>
                         <div class="col-md-4"><label>出差結束日期</label><input type="date" id="endDate" class="form-control" required onchange="calcDays()"></div>
-                        <div class="col-md-4"><label>共計天數</label><input type="number" id="totalDays" class="form-control bg-light" readonly></div>
-                        
-                        <div class="col-12"><label>出差事由 (用途摘要)</label><input type="text" id="summary" class="form-control" required></div>
+                        <div class="col-md-4"><label>共計天數</label><input type="number" id="totalDays" class="form-control" readonly style="background:var(--bg-light);"></div>
+
+                        <div class="col-12"><label>出差事由（用途摘要）</label><input type="text" id="summary" class="form-control" required></div>
                     </div>
                 </div>
             </div>
 
-            <!-- 出差明細 -->
-            <div class="card shadow-sm mb-4">
-                <div class="card-header bg-success text-white d-flex justify-content-between align-items-center">
-                    <span>費用明細 (最多 10 筆)</span>
-                    <button type="button" class="btn btn-sm btn-light" onclick="addDetailRow()"><i class="bi bi-plus-lg"></i> 新增一筆</button>
+            <!-- 費用明細 -->
+            <div class="card-pancad">
+                <div class="card-head">
+                    <span><span class="head-icon head-icon-green"><i class="bi bi-receipt"></i></span> 費用明細（最多 10 筆）</span>
+                    <button type="button" class="btn btn-outline-blue btn-sm" onclick="addDetailRow()">
+                        <i class="bi bi-plus-lg"></i> 新增一筆
+                    </button>
                 </div>
                 <div class="card-body" id="detailsContainer"></div>
             </div>
 
             <!-- 附件上傳 -->
-            <div class="card shadow-sm mb-4">
-                <div class="card-header bg-secondary text-white">上傳憑證 (支援照片與PDF依序添加)</div>
+            <div class="card-pancad">
+                <div class="card-head">
+                    <span><span class="head-icon head-icon-gray"><i class="bi bi-paperclip"></i></span> 上傳憑證</span>
+                    <span style="font-size:12px;color:var(--text-muted);font-weight:400;">照片 / PDF 依序添加</span>
+                </div>
                 <div class="card-body">
-                    <input type="file" id="fileInput" class="form-control mb-3" multiple accept="image/*,application/pdf" onchange="handleFiles(event)">
-                    <div id="previewArea" class="d-flex flex-wrap gap-2"></div>
+                    <input type="file" id="fileInput" class="form-control" multiple accept="image/*,application/pdf" onchange="handleFiles(event)">
+                    <div id="previewArea" class="d-flex flex-wrap gap-2" style="margin-top:12px;"></div>
                 </div>
             </div>
 
-            <button type="submit" class="btn btn-primary w-100 py-2 fs-5" id="submitBtn"><i class="bi bi-cloud-arrow-up"></i> 送出申請並產生PDF</button>
+            <!-- Submit Button (pancad.ai orange CTA style) -->
+            <div class="btn-submit-wrap">
+                <button type="submit" id="submitBtn" class="btn">
+                    <i class="bi bi-cloud-arrow-up"></i> 送出申請並產生 PDF
+                </button>
+            </div>
         </form>
+
+        <!-- Footer -->
+        <div class="app-footer">
+            <img src="image/pancad.ai-logo.svg" alt="PanCAD.ai">
+            <p><strong>仲智數位健康股份有限公司</strong> &nbsp;·&nbsp; PanCAD.ai &nbsp;·&nbsp; 出差旅費報銷系統</p>
+        </div>
     </div>
 
     <script>
@@ -93,29 +656,26 @@
 
         // 登入驗證處理 (已修正 JWT 解碼的 Bug)
         function handleCredentialResponse(response) {
-            // 🛡️ 第一步：檢查 CONFIG 是否存在（避免 config.js 載入失敗時噴 ReferenceError）
+            // 🛡️ 第一步：檢查 CONFIG 是否存在
             if (typeof CONFIG === 'undefined') {
-                alert('系統錯誤：config.js 未正確載入！請按 Ctrl+Shift+R (Windows) 或 Cmd+Shift+R (Mac) 強制重新整理清除快取後再試。');
+                alert('系統錯誤：config.js 未正確載入！請按 Ctrl+Shift+R 強制重新整理清除快取後再試。');
                 console.error('CONFIG is undefined — config.js 可能未正確載入或含有語法錯誤');
                 return;
             }
             
-            // 🛡️ 第二步：提取並驗證 JWT
             let payload;
             try {
                 const token = response.credential;
                 if (!token || typeof token !== 'string') {
-                    throw new Error('無效的登入憑證 (response.credential)');
+                    throw new Error('無效的登入憑證');
                 }
                 
-                // 💡 修正：加上了 [1] 來精確抓取 Payload，避免 replace 出錯
                 const parts = token.split('.');
                 if (parts.length !== 3) {
-                    throw new Error('JWT 格式錯誤：非標準的 3 段式 token');
+                    throw new Error('JWT 格式錯誤');
                 }
                 const base64Url = parts[1];
                 const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
-                // 補齊 base64 padding（JWT 可能省略 =）
                 const padded = base64.padEnd(base64.length + (4 - base64.length % 4) % 4, '=');
                 const jsonPayload = decodeURIComponent(atob(padded).split('').map(function(c) {
                     return '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2);
@@ -126,19 +686,17 @@
                     throw new Error('JWT payload 缺少 email 欄位');
                 }
             } catch (jwtErr) {
-                alert('登入資料解析失敗，請按 Ctrl+Shift+R (Windows) 或 Cmd+Shift+R (Mac) 強制重新整理後再試。');
+                alert('登入資料解析失敗，請按 Ctrl+Shift+R 強制重新整理後再試。');
                 console.error('JWT Decode Error:', jwtErr);
                 return;
             }
             
             document.getElementById('submitBtn').innerHTML = '<span class="spinner-border spinner-border-sm"></span> 驗證權限中...';
             
-            // 🛡️ 第三步：發送驗證請求到 GAS（注意：不可加自訂 header，否則觸發 CORS 預檢導致 GAS 拒絕）
             fetch(CONFIG.GAS_API_URL, {
                 method: 'POST',
                 body: JSON.stringify({ action: 'login', email: payload.email })
             }).then(res => {
-                // GAS 的回應可能是 text/html（exec 回傳）需要先轉 JSON
                 return res.json().catch(() => {
                     throw new Error('GAS 回應不是 JSON，請確認 GAS 專案已重新部署為「網路應用程式」');
                 });
@@ -152,7 +710,7 @@
                     document.getElementById('mainApp').style.display = 'block';
                     document.getElementById('applicant').value = data.name;
                     document.getElementById('phone').value = data.phone || '';
-                    document.getElementById('submitBtn').innerHTML = '<i class="bi bi-cloud-arrow-up"></i> 送出申請並產生PDF';
+                    document.getElementById('submitBtn').innerHTML = '<i class="bi bi-cloud-arrow-up"></i> 送出申請並產生 PDF';
                     
                     if(document.getElementById('detailsContainer').children.length === 0) {
                         addDetailRow(); 
@@ -167,7 +725,6 @@
             });
         }
 
-        // 天數計算
         function calcDays() {
             const start = new Date(document.getElementById('startDate').value);
             const end = new Date(document.getElementById('endDate').value);
@@ -187,8 +744,8 @@
             rowDiv.className = 'detail-card detail-row';
             rowDiv.innerHTML = `
                 <div class="d-flex justify-content-between mb-2">
-                    <span class="badge bg-secondary">明細</span>
-                    <button type="button" class="btn-close" onclick="this.parentElement.parentElement.remove(); calculateTotal();"></button>
+                    <span class="badge-detail">${container.children.length + 1}</span>
+                    <button type="button" class="btn-close" onclick="this.parentElement.parentElement.remove(); calculateTotal();">&times;</button>
                 </div>
                 <div class="row g-2 mb-2">
                     <div class="col-md-2 col-3"><label class="small">月</label><input type="number" class="form-control form-control-sm i-month" placeholder="月" min="1" max="12" required></div>
@@ -241,13 +798,13 @@
                     
                     selectedFiles.push({ name: file.name, mimeType: mimeType, base64: base64String });
                     let div = document.createElement('div');
-                    div.className = 'border p-1 position-relative bg-white';
+                    div.className = 'file-preview';
                     
                     let content = mimeType.startsWith('image') ? 
                         `<img src="${base64String}" class="preview-img">` : 
-                        `<div class="preview-img d-flex align-items-center justify-content-center bg-light"><i class="bi bi-file-earmark-pdf text-danger fs-3"></i></div>`;
+                        `<div class="preview-img d-flex align-items-center justify-content-center" style="background:var(--bg-light);"><i class="bi bi-file-earmark-pdf text-danger" style="font-size:24px;"></i></div>`;
                     
-                    div.innerHTML = `${content}<button type="button" class="btn-close position-absolute top-0 start-100 translate-middle" onclick="removeFile(${selectedFiles.length - 1}, this)"></button><div class="small text-truncate" style="width:60px;">${file.name}</div>`;
+                    div.innerHTML = `${content}<button type="button" class="btn-close" style="position:absolute;top:-6px;right:-6px;background:#fff;border:1px solid var(--border-light);border-radius:50%;width:18px;height:18px;font-size:12px;display:flex;align-items:center;justify-content:center;opacity:1;" onclick="removeFile(${selectedFiles.length - 1}, this)">&times;</button><div class="small text-truncate" style="width:60px;text-align:center;margin-top:2px;font-size:10px;color:var(--text-muted);">${file.name}</div>`;
                     previewArea.appendChild(div);
                 };
                 reader.readAsDataURL(file);
@@ -332,7 +889,6 @@
                     // ── 將合併後的 PDF 存回 Google Drive ──
                     btn.innerHTML = '<span class="spinner-border spinner-border-sm"></span> 正在存檔到雲端...';
                     try {
-                        // 轉 base64（相容大檔案的 chunk 寫法）
                         const bytes = new Uint8Array(finalPdfBytes);
                         let binary = '';
                         for (let i = 0; i < bytes.byteLength; i++) {
@@ -340,7 +896,6 @@
                         }
                         const finalPdfBase64 = btoa(binary);
                         
-                        // 把 detail 轉成 saveRecord 格式
                         const saveDetails = details.map(d => ({
                             date: (d.month && d.day) ? `${d.month}/${d.day}` : '',
                             description: [d.desc, d.startLoc && d.endLoc ? `${d.startLoc}→${d.endLoc}` : ''].filter(Boolean).join(' '),
@@ -382,7 +937,7 @@
                 alert('傳送或合併失敗，請檢查網路連線。' + error); 
             } finally {
                 btn.disabled = false;
-                btn.innerHTML = '<i class="bi bi-cloud-arrow-up"></i> 送出申請並產生PDF';
+                btn.innerHTML = '<i class="bi bi-cloud-arrow-up"></i> 送出申請並產生 PDF';
             }
         });
     </script>
