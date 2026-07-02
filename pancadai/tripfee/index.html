@@ -143,14 +143,15 @@
                     throw new Error('GAS 回應不是 JSON，請確認 GAS 專案已重新部署為「網路應用程式」');
                 });
             }).then(data => {
-                if(data.success) {
-                    currentUser = data.user;
-                    localStorage.setItem('userEmail', currentUser.email);
+                if(data.status === 'success') {
+                    currentUser = { name: data.name, role: data.role, phone: data.phone, email: payload.email };
+                    localStorage.setItem('userEmail', payload.email);
+                    localStorage.setItem('pancad_user', JSON.stringify(currentUser));
                     
                     document.getElementById('loginOverlay').style.display = 'none';
                     document.getElementById('mainApp').style.display = 'block';
-                    document.getElementById('applicant').value = currentUser.name;
-                    document.getElementById('phone').value = currentUser.phone || '';
+                    document.getElementById('applicant').value = data.name;
+                    document.getElementById('phone').value = data.phone || '';
                     document.getElementById('submitBtn').innerHTML = '<i class="bi bi-cloud-arrow-up"></i> 送出申請並產生PDF';
                     
                     if(document.getElementById('detailsContainer').children.length === 0) {
@@ -327,13 +328,52 @@
                     }
                     
                     const finalPdfBytes = await mergedPdf.save();
+                    
+                    // ── 將合併後的 PDF 存回 Google Drive ──
+                    btn.innerHTML = '<span class="spinner-border spinner-border-sm"></span> 正在存檔到雲端...';
+                    try {
+                        // 轉 base64（相容大檔案的 chunk 寫法）
+                        const bytes = new Uint8Array(finalPdfBytes);
+                        let binary = '';
+                        for (let i = 0; i < bytes.byteLength; i++) {
+                            binary += String.fromCharCode(bytes[i]);
+                        }
+                        const finalPdfBase64 = btoa(binary);
+                        
+                        // 把 detail 轉成 saveRecord 格式
+                        const saveDetails = details.map(d => ({
+                            date: (d.month && d.day) ? `${d.month}/${d.day}` : '',
+                            description: [d.desc, d.startLoc && d.endLoc ? `${d.startLoc}→${d.endLoc}` : ''].filter(Boolean).join(' '),
+                            price: [d.plane, d.taxi, d.train, d.hotel, d.meal, d.other].reduce((s, v) => s + (parseInt(v)||0), 0),
+                            quantity: 1,
+                            subtotal: parseInt(d.subtotal) || 0
+                        }));
+                        
+                        await fetch(CONFIG.GAS_API_URL, {
+                            method: 'POST',
+                            body: JSON.stringify({
+                                action: 'saveRecord',
+                                formId: result.formId,
+                                department: document.getElementById('department').value,
+                                applicantName: document.getElementById('applicant').value,
+                                phone: document.getElementById('phone').value,
+                                summary: document.getElementById('summary').value,
+                                totalAmount: document.getElementById('totalAmount').value,
+                                details: saveDetails,
+                                finalPdfBase64: finalPdfBase64
+                            })
+                        });
+                    } catch(saveErr) {
+                        console.warn('雲端存檔失敗（PDF 仍會下載）:', saveErr);
+                    }
+                    
                     const blob = new Blob([finalPdfBytes], { type: 'application/pdf' });
                     const a = document.createElement('a');
                     a.href = window.URL.createObjectURL(blob);
                     a.download = `${result.formId}_出差旅費報銷單.pdf`;
                     a.click();
                     
-                    alert('申請成功！合併完成的 PDF 已下載。');
+                    alert('申請成功！合併完成的 PDF 已下載並存回雲端。');
                     window.location.reload();
                 } else {
                     alert('伺服器錯誤: ' + result.message);
