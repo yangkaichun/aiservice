@@ -413,7 +413,133 @@
             font-family: var(--font-zh);
         }
 
-        /* ----- Detail Row Card ----- */
+        /* ----- Fee Tiles (和牌風格) ----- */
+        .fee-tile {
+            background: var(--bg-white);
+            border: 1px solid var(--border-light);
+            border-radius: var(--radius-sm);
+            padding: 8px;
+            min-width: 100px;
+            flex: 1 1 0;
+            transition: box-shadow 0.15s;
+            position: relative;
+        }
+        .fee-tile:hover { box-shadow: var(--shadow-sm); }
+
+        .fee-tile .fee-cat {
+            font-size: 11px;
+            padding: 3px 6px;
+            border: 1px solid var(--border-light);
+            border-radius: 4px;
+            background: var(--bg-white);
+            color: var(--text-primary);
+            width: 100%;
+            font-family: var(--font-zh);
+            font-weight: 500;
+            cursor: pointer;
+            outline: none;
+            transition: border-color 0.15s;
+        }
+        .fee-tile .fee-cat:focus { border-color: var(--brand-blue); }
+
+        .fee-tile .fee-amt {
+            font-size: 14px;
+            font-weight: 600;
+            padding: 4px 6px;
+            border: none;
+            border-bottom: 1.5px solid var(--border-light);
+            background: transparent;
+            width: 100%;
+            text-align: center;
+            outline: none;
+            transition: border-color 0.2s;
+            font-family: var(--font-zh);
+        }
+        .fee-tile .fee-amt:focus { border-bottom-color: var(--brand-blue); }
+
+        .fee-tile .fee-amt::placeholder { color: var(--text-muted); font-weight: 400; font-size: 12px; }
+
+        .fee-tile .tile-remove {
+            position: absolute;
+            top: -6px; right: -6px;
+            width: 16px; height: 16px;
+            border-radius: 50%;
+            border: 1px solid var(--border-light);
+            background: #fff;
+            color: var(--text-muted);
+            font-size: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            opacity: 0;
+            transition: opacity 0.15s;
+            padding: 0;
+            line-height: 1;
+        }
+        .fee-tile:hover .tile-remove { opacity: 1; }
+        .fee-tile .tile-remove:hover { color: #dc2626; border-color: #dc2626; }
+
+        .fee-tiles-wrap {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            margin: 8px 0 4px;
+        }
+
+        .btn-add-tile {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 4px;
+            min-width: 100px;
+            flex: 1 1 0;
+            padding: 8px;
+            border: 1.5px dashed var(--border-light);
+            border-radius: var(--radius-sm);
+            background: transparent;
+            color: var(--text-muted);
+            font-size: 12px;
+            font-family: var(--font-zh);
+            cursor: pointer;
+            transition: all 0.15s;
+        }
+        .btn-add-tile:hover {
+            border-color: var(--brand-blue);
+            color: var(--brand-blue);
+            background: var(--brand-blue-light);
+        }
+
+        .detail-row-date {
+            font-size: 14px;
+            padding: 6px 10px;
+            border: 1.5px solid var(--border-light);
+            border-radius: var(--radius-sm);
+            font-family: var(--font-zh);
+            outline: none;
+            transition: border-color 0.2s;
+            width: 100%;
+        }
+        .detail-row-date:focus { border-color: var(--brand-blue); }
+
+        .detail-card .row-label {
+            font-size: 11px;
+            color: var(--text-muted);
+            margin-bottom: 2px;
+            display: block;
+            font-weight: 500;
+        }
+
+        .detail-card .form-control-sm {
+            font-size: 13px;
+            padding: 5px 8px;
+        }
+
+        .detail-card .loc-input {
+            min-width: 0;
+            flex: 1;
+        }
+
         .detail-card {
             background: var(--bg-light);
             border: 1px solid var(--border-light);
@@ -422,9 +548,7 @@
             margin-bottom: 12px;
             transition: box-shadow 0.15s;
         }
-        .detail-card:hover {
-            box-shadow: var(--shadow-sm);
-        }
+        .detail-card:hover { box-shadow: var(--shadow-sm); }
 
         .detail-card .badge-detail {
             display: inline-flex;
@@ -446,17 +570,10 @@
             color: var(--text-muted);
             cursor: pointer;
             opacity: 0.4;
-            padding: 0 4px;
+            padding: 0 6px;
             line-height: 1;
         }
-        .detail-card .btn-close:hover {
-            opacity: 0.8;
-        }
-
-        .fee-input {
-            font-size: 13px !important;
-            padding: 6px 10px !important;
-        }
+        .detail-card .btn-close:hover { opacity: 0.8; }
 
         /* ----- Preview Area ----- */
         #previewArea .file-preview {
@@ -739,47 +856,132 @@
         function addDetailRow() {
             const container = document.getElementById('detailsContainer');
             if(container.children.length >= 10) return alert('最多只能新增 10 筆明細');
+            const idx = container.children.length + 1;
             
             const rowDiv = document.createElement('div');
             rowDiv.className = 'detail-card detail-row';
             rowDiv.innerHTML = `
-                <div class="d-flex justify-content-between mb-2">
-                    <span class="badge-detail">${container.children.length + 1}</span>
+                <div class="d-flex justify-content-between align-items-center mb-2">
+                    <span class="badge-detail">${idx}</span>
                     <button type="button" class="btn-close" onclick="this.parentElement.parentElement.remove(); calculateTotal();">&times;</button>
                 </div>
-                <div class="row g-2 mb-2">
-                    <div class="col-md-2 col-3"><label class="small">月</label><input type="number" class="form-control form-control-sm i-month" placeholder="月" min="1" max="12" required></div>
-                    <div class="col-md-2 col-3"><label class="small">日</label><input type="number" class="form-control form-control-sm i-day" placeholder="日" min="1" max="31" required></div>
-                    <div class="col-md-4 col-6"><label class="small">起點</label><input type="text" class="form-control form-control-sm i-start"></div>
-                    <div class="col-md-4 col-12"><label class="small">迄點</label><input type="text" class="form-control form-control-sm i-end"></div>
+                <div class="d-flex gap-2 mb-2 align-items-end flex-wrap">
+                    <div style="flex:0 0 140px;">
+                        <span class="row-label">日期</span>
+                        <input type="date" class="detail-row-date i-date" required>
+                    </div>
+                    <div class="loc-input" style="flex:1;min-width:80px;">
+                        <span class="row-label">起點</span>
+                        <input type="text" class="form-control form-control-sm i-start" placeholder="起點">
+                    </div>
+                    <div style="padding-bottom:8px;color:var(--text-muted);">→</div>
+                    <div class="loc-input" style="flex:1;min-width:80px;">
+                        <span class="row-label">迄點</span>
+                        <input type="text" class="form-control form-control-sm i-end" placeholder="迄點">
+                    </div>
                 </div>
-                <div class="row g-2 mb-2">
-                    <div class="col-12"><label class="small">訪洽對象及工作紀要</label><input type="text" class="form-control form-control-sm i-desc" required></div>
+                <div class="mb-2">
+                    <span class="row-label">訪洽對象及工作紀要</span>
+                    <input type="text" class="form-control form-control-sm i-desc" required placeholder="請輸入訪洽對象與摘要">
                 </div>
-                <div class="row g-2">
-                    <div class="col-md-2 col-4"><label class="small text-muted">飛機/高鐵</label><input type="number" class="form-control form-control-sm i-plane fee-input" oninput="calculateTotal()"></div>
-                    <div class="col-md-2 col-4"><label class="small text-muted">開車/計程車</label><input type="number" class="form-control form-control-sm i-taxi fee-input" oninput="calculateTotal()"></div>
-                    <div class="col-md-2 col-4"><label class="small text-muted">火車/捷運</label><input type="number" class="form-control form-control-sm i-train fee-input" oninput="calculateTotal()"></div>
-                    <div class="col-md-2 col-4"><label class="small text-muted">住宿費</label><input type="number" class="form-control form-control-sm i-hotel fee-input" oninput="calculateTotal()"></div>
-                    <div class="col-md-2 col-4"><label class="small text-muted">膳雜費</label><input type="number" class="form-control form-control-sm i-meal fee-input" oninput="calculateTotal()"></div>
-                    <div class="col-md-2 col-4"><label class="small text-muted">其他費用</label><input type="number" class="form-control form-control-sm i-other fee-input" oninput="calculateTotal()"></div>
+                <div class="fee-tiles-wrap">
+                    <div class="fee-tile" data-cat="飛機" data-amt="0">
+                        <button type="button" class="tile-remove" onclick="this.closest('.fee-tile').remove();calculateTotal();">&times;</button>
+                        <select class="fee-cat" onchange="calculateTotal()">
+                            <option value="飛機">✈ 飛機</option>
+                            <option value="高鐵">🚄 高鐵</option>
+                        </select>
+                        <input type="number" class="fee-amt" placeholder="金額" min="0" oninput="calculateTotal()">
+                    </div>
+                    <div class="fee-tile" data-cat="開車" data-amt="0">
+                        <button type="button" class="tile-remove" onclick="this.closest('.fee-tile').remove();calculateTotal();">&times;</button>
+                        <select class="fee-cat" onchange="calculateTotal()">
+                            <option value="開車">🚗 開車</option>
+                            <option value="計程車">🚕 計程車</option>
+                        </select>
+                        <input type="number" class="fee-amt" placeholder="金額" min="0" oninput="calculateTotal()">
+                    </div>
+                    <div class="fee-tile" data-cat="火車" data-amt="0">
+                        <button type="button" class="tile-remove" onclick="this.closest('.fee-tile').remove();calculateTotal();">&times;</button>
+                        <select class="fee-cat" onchange="calculateTotal()">
+                            <option value="火車">🚂 火車</option>
+                            <option value="捷運">🚇 捷運</option>
+                        </select>
+                        <input type="number" class="fee-amt" placeholder="金額" min="0" oninput="calculateTotal()">
+                    </div>
+                    <div class="fee-tile" data-cat="住宿費" data-amt="0">
+                        <button type="button" class="tile-remove" onclick="this.closest('.fee-tile').remove();calculateTotal();">&times;</button>
+                        <select class="fee-cat" onchange="calculateTotal()">
+                            <option value="住宿費">🏨 住宿費</option>
+                        </select>
+                        <input type="number" class="fee-amt" placeholder="金額" min="0" oninput="calculateTotal()">
+                    </div>
+                    <div class="fee-tile" data-cat="膳雜費" data-amt="0">
+                        <button type="button" class="tile-remove" onclick="this.closest('.fee-tile').remove();calculateTotal();">&times;</button>
+                        <select class="fee-cat" onchange="calculateTotal()">
+                            <option value="膳雜費">🍽 膳雜費</option>
+                        </select>
+                        <input type="number" class="fee-amt" placeholder="金額" min="0" oninput="calculateTotal()">
+                    </div>
+                    <div class="fee-tile" data-cat="其他費用" data-amt="0">
+                        <button type="button" class="tile-remove" onclick="this.closest('.fee-tile').remove();calculateTotal();">&times;</button>
+                        <select class="fee-cat" onchange="calculateTotal()">
+                            <option value="其他費用">📦 其他</option>
+                        </select>
+                        <input type="number" class="fee-amt" placeholder="金額" min="0" oninput="calculateTotal()">
+                    </div>
+                    <button type="button" class="btn-add-tile" onclick="addFeeTile(this)">
+                        <i class="bi bi-plus-lg"></i> 費用
+                    </button>
                 </div>
                 <div class="row mt-2"><div class="col-12 text-end text-danger fw-bold small">單筆小計: $<span class="i-subtotal">0</span></div></div>
             `;
             container.appendChild(rowDiv);
         }
 
+        function addFeeTile(btn) {
+            const wrap = btn.closest('.fee-tiles-wrap');
+            const tile = document.createElement('div');
+            tile.className = 'fee-tile';
+            tile.innerHTML = `
+                <button type="button" class="tile-remove" onclick="this.closest('.fee-tile').remove();calculateTotal();">&times;</button>
+                <select class="fee-cat" onchange="calculateTotal()">
+                    <option value="飛機">✈ 飛機</option>
+                    <option value="高鐵">🚄 高鐵</option>
+                    <option value="開車">🚗 開車</option>
+                    <option value="計程車">🚕 計程車</option>
+                    <option value="火車">🚂 火車</option>
+                    <option value="捷運">🚇 捷運</option>
+                    <option value="住宿費">🏨 住宿費</option>
+                    <option value="膳雜費">🍽 膳雜費</option>
+                    <option value="其他費用">📦 其他</option>
+                </select>
+                <input type="number" class="fee-amt" placeholder="金額" min="0" oninput="calculateTotal()">
+            `;
+            wrap.insertBefore(tile, btn);
+        }
+
+        function getFeeData(row) {
+            const map = { plane:0, taxi:0, train:0, hotel:0, meal:0, other:0 };
+            let subtotal = 0;
+            row.querySelectorAll('.fee-tile').forEach(tile => {
+                const cat = tile.querySelector('.fee-cat').value;
+                const amt = parseInt(tile.querySelector('.fee-amt').value) || 0;
+                subtotal += amt;
+                if (cat === '飛機' || cat === '高鐵') map.plane += amt;
+                else if (cat === '開車' || cat === '計程車') map.taxi += amt;
+                else if (cat === '火車' || cat === '捷運') map.train += amt;
+                else if (cat === '住宿費') map.hotel += amt;
+                else if (cat === '膳雜費') map.meal += amt;
+                else map.other += amt;
+            });
+            return { ...map, subtotal };
+        }
+
         function calculateTotal() {
             let grandTotal = 0;
             document.querySelectorAll('.detail-row').forEach(row => {
-                const plane = parseInt(row.querySelector('.i-plane').value) || 0;
-                const taxi = parseInt(row.querySelector('.i-taxi').value) || 0;
-                const train = parseInt(row.querySelector('.i-train').value) || 0;
-                const hotel = parseInt(row.querySelector('.i-hotel').value) || 0;
-                const meal = parseInt(row.querySelector('.i-meal').value) || 0;
-                const other = parseInt(row.querySelector('.i-other').value) || 0;
-                
-                const subtotal = plane + taxi + train + hotel + meal + other;
+                const { subtotal } = getFeeData(row);
                 row.querySelector('.i-subtotal').innerText = subtotal;
                 grandTotal += subtotal;
             });
@@ -825,18 +1027,21 @@
 
             let details = [];
             document.querySelectorAll('.detail-row').forEach(row => {
+                const dateVal = row.querySelector('.i-date').value;
+                const dateParts = dateVal ? dateVal.split('-') : [];
+                const feeData = getFeeData(row);
                 details.push({
-                    month: row.querySelector('.i-month').value,
-                    day: row.querySelector('.i-day').value,
+                    month: dateParts[1] || '',
+                    day: dateParts[2] || '',
                     startLoc: row.querySelector('.i-start').value,
                     endLoc: row.querySelector('.i-end').value,
                     desc: row.querySelector('.i-desc').value,
-                    plane: row.querySelector('.i-plane').value,
-                    taxi: row.querySelector('.i-taxi').value,
-                    train: row.querySelector('.i-train').value,
-                    hotel: row.querySelector('.i-hotel').value,
-                    meal: row.querySelector('.i-meal').value,
-                    other: row.querySelector('.i-other').value,
+                    plane: feeData.plane || '',
+                    taxi: feeData.taxi || '',
+                    train: feeData.train || '',
+                    hotel: feeData.hotel || '',
+                    meal: feeData.meal || '',
+                    other: feeData.other || '',
                     subtotal: row.querySelector('.i-subtotal').innerText
                 });
             });
