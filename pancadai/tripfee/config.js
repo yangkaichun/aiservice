@@ -2,7 +2,7 @@
 // config.js
 const CONFIG = {
     // 替換為您的 GAS Web App URL (需重新部署後的最新網址)
-    GAS_API_URL: "https://script.google.com/macros/s/AKfycbyjpqoVQkDMvPyTq2NW-mSw_9IsDQeQ7k1FNdI6Qy0bLnqiB-bffJfYp0npAeCuakcS_g/exec",
+    GAS_API_URL: "https://script.google.com/macros/s/AKfycbz9H2J3MQyfjsiT6FPmaS5vl9FC_Wnt8IWv_pmYYTn4/dev",
 
     // 您申請的 Google Client ID
     GOOGLE_CLIENT_ID: "470505739418-tdi7edodl65q0hpr9272kd4uof3d7l9v.apps.googleusercontent.com",
