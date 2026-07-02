@@ -50,7 +50,7 @@ function doPost(e) {
       return ContentService.createTextOutput(JSON.stringify({status: 'success', data: records.reverse()})).setMimeType(ContentService.MimeType.JSON);
     }
 
-    // 🛡️ 動作三：產生 PDF
+    // 🛡️ 動作三：產生 PDF（對應範本詳細欄位，無值留空白）
     if (action === 'submit') {
       const timestamp = new Date();
       const formId = "EXP" + Utilities.formatDate(timestamp, "Asia/Taipei", "yyyyMMddHHmmss");
@@ -71,53 +71,32 @@ function doPost(e) {
       body.replaceText("{{出差結束日期}}", requestData.endDate || "");
       body.replaceText("{{總天數}}", requestData.totalDays || "");
 
-      // ── 明細變數 ──
-      if (requestData.details && requestData.details.length > 0) {
-        for (let i = 0; i < Math.min(requestData.details.length, 10); i++) {
-          const d = requestData.details[i];
-          const n = i + 1;
+      // ── 明細變數：對應範本的詳細欄位（每欄獨立，無值就空白）──
+      var details = requestData.details || [];
+      for (var i = 0; i < 10; i++) {
+        var n = i + 1;
+        var d = (i < details.length) ? details[i] : null;
 
-          // 日期：月/日
-          const dateStr = (d.month && d.day) ? `${d.month}/${d.day}` : "";
-          body.replaceText(`{{date_${n}}}`, dateStr);
+        // 無值就留空白（不顯示 "0"）
+        var v = function(val) { return (val && String(val).trim() !== "" && String(val) !== "0") ? String(val) : ""; };
 
-          // 描述：紀要 + 起迄點（無值就空白）
-          const routeStr = (d.startLoc && d.endLoc) ? `${d.startLoc}→${d.endLoc}` : "";
-          const descStr = [d.desc || "", routeStr].filter(Boolean).join(" ");
-          body.replaceText(`{{desc_${n}}}`, descStr);
-
-          // 費用總和（0 就留空白）
-          const totalFee = [d.plane, d.taxi, d.train, d.hotel, d.meal, d.other]
-            .reduce((sum, v) => sum + (parseInt(v) || 0), 0);
-          body.replaceText(`{{price_${n}}}`, totalFee > 0 ? String(totalFee) : "");
-          body.replaceText(`{{qty_${n}}}`, totalFee > 0 ? "1" : "");
-
-          // 小計（0 留空白）
-          body.replaceText(`{{sub_${n}}}`, (d.subtotal && parseInt(d.subtotal) > 0) ? String(d.subtotal) : "");
-        }
-        // 清除未使用的 placeholder
-        for (let i = requestData.details.length; i < 10; i++) {
-          const n = i + 1;
-          body.replaceText(`{{date_${n}}}`, "");
-          body.replaceText(`{{desc_${n}}}`, "");
-          body.replaceText(`{{price_${n}}}`, "");
-          body.replaceText(`{{qty_${n}}}`, "");
-          body.replaceText(`{{sub_${n}}}`, "");
-        }
-      } else {
-        // 完全沒有明細：清除全部 10 列
-        for (let n = 1; n <= 10; n++) {
-          body.replaceText(`{{date_${n}}}`, "");
-          body.replaceText(`{{desc_${n}}}`, "");
-          body.replaceText(`{{price_${n}}}`, "");
-          body.replaceText(`{{qty_${n}}}`, "");
-          body.replaceText(`{{sub_${n}}}`, "");
-        }
+        body.replaceText("{{m_" + n + "}}", d ? v(d.month) : "");
+        body.replaceText("{{d_" + n + "}}", d ? v(d.day) : "");
+        body.replaceText("{{start_" + n + "}}", d ? v(d.startLoc) : "");
+        body.replaceText("{{end_" + n + "}}", d ? v(d.endLoc) : "");
+        body.replaceText("{{desc_" + n + "}}", d ? v(d.desc) : "");
+        body.replaceText("{{plane_" + n + "}}", d ? v(d.plane) : "");
+        body.replaceText("{{taxi_" + n + "}}", d ? v(d.taxi) : "");
+        body.replaceText("{{train_" + n + "}}", d ? v(d.train) : "");
+        body.replaceText("{{hotel_" + n + "}}", d ? v(d.hotel) : "");
+        body.replaceText("{{meal_" + n + "}}", d ? v(d.meal) : "");
+        body.replaceText("{{other_" + n + "}}", d ? v(d.other) : "");
+        body.replaceText("{{sub_" + n + "}}", d ? v(d.subtotal) : "");
       }
 
       tempDoc.saveAndClose();
-      const pdfBlob = tempFile.getAs(MimeType.PDF);
-      const base64 = Utilities.base64Encode(pdfBlob.getBytes());
+      var pdfBlob = tempFile.getAs(MimeType.PDF);
+      var base64 = Utilities.base64Encode(pdfBlob.getBytes());
       tempFile.setTrashed(true);
 
       return ContentService.createTextOutput(JSON.stringify({
@@ -127,13 +106,13 @@ function doPost(e) {
 
     // 🛡️ 動作四：儲存最終合併 PDF
     if (action === 'saveRecord') {
-      const folder = DriveApp.getFolderById(PDF_FOLDER_ID);
-      const formId = requestData.formId;
-      const timestamp = new Date();
+      var folder = DriveApp.getFolderById(PDF_FOLDER_ID);
+      var formId = requestData.formId;
+      var timestamp = new Date();
 
-      const blob = Utilities.newBlob(Utilities.base64Decode(requestData.finalPdfBase64), 'application/pdf', formId + "_差旅報銷單.pdf");
-      const file = folder.createFile(blob);
-      const pdfUrl = file.getUrl();
+      var blob = Utilities.newBlob(Utilities.base64Decode(requestData.finalPdfBase64), 'application/pdf', formId + "_差旅報銷單.pdf");
+      var file = folder.createFile(blob);
+      var pdfUrl = file.getUrl();
 
       appSheet.appendRow([
         formId, Utilities.formatDate(timestamp, "Asia/Taipei", "yyyy-MM-dd HH:mm:ss"),
@@ -142,9 +121,9 @@ function doPost(e) {
         "已合併於單一PDF", pdfUrl, "待審核"
       ]);
 
-      const detailsSheet = sheet.getSheetByName('Details');
+      var detailsSheet = sheet.getSheetByName('Details');
       if (requestData.details && requestData.details.length > 0) {
-        requestData.details.forEach(detail => {
+        requestData.details.forEach(function(detail) {
           detailsSheet.appendRow([
             formId, detail.date || "", detail.description || "",
             detail.price || 0, detail.quantity || 0, detail.subtotal || 0
