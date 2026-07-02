@@ -13,7 +13,7 @@ function doPost(e) {
 
     const action = requestData.action;
 
-    // 🛡️ 動作一：登入驗證 (自動抓取 D 欄電話)
+    // 🛡️ 動作一：登入驗證
     if (action === 'login') {
       const email = requestData.email;
       const usersData = usersSheet.getDataRange().getValues();
@@ -27,7 +27,7 @@ function doPost(e) {
       return ContentService.createTextOutput(JSON.stringify({status: 'error', message: '無權限使用此系統'})).setMimeType(ContentService.MimeType.JSON);
     }
 
-    // 🛡️ 動作二：取得歷史紀錄 (Admin 看全部，User 看自己的)
+    // 🛡️ 動作二：歷史紀錄
     if (action === 'getRecords') {
       const role = requestData.role;
       const name = requestData.name;
@@ -35,7 +35,6 @@ function doPost(e) {
       let records = [];
 
       for (let i = 1; i < appData.length; i++) {
-        // appData[i][3] 是申請人姓名
         if (role === 'Admin' || appData[i][3] === name) {
           records.push({
             formId: appData[i][0],
@@ -51,7 +50,7 @@ function doPost(e) {
       return ContentService.createTextOutput(JSON.stringify({status: 'success', data: records.reverse()})).setMimeType(ContentService.MimeType.JSON);
     }
 
-    // 🛡️ 動作三：前端送出完整申請 — 產生 PDF 底稿（mapping 前端欄位到 template）
+    // 🛡️ 動作三：產生 PDF
     if (action === 'submit') {
       const timestamp = new Date();
       const formId = "EXP" + Utilities.formatDate(timestamp, "Asia/Taipei", "yyyyMMddHHmmss");
@@ -62,34 +61,57 @@ function doPost(e) {
       const tempDoc = DocumentApp.openById(tempFile.getId());
       const body = tempDoc.getBody();
 
+      // ── 頁首主檔變數 ──
       body.replaceText("{{申請單位}}", requestData.department || "");
       body.replaceText("{{申請人}}", requestData.applicant || "");
       body.replaceText("{{電話}}", requestData.phone || "");
       body.replaceText("{{用途摘要}}", requestData.summary || "");
       body.replaceText("{{總金額}}", requestData.totalAmount || "");
+      body.replaceText("{{出差開始日期}}", requestData.startDate || "");
+      body.replaceText("{{出差結束日期}}", requestData.endDate || "");
+      body.replaceText("{{總天數}}", requestData.totalDays || "");
 
+      // ── 明細變數 ──
       if (requestData.details && requestData.details.length > 0) {
         for (let i = 0; i < Math.min(requestData.details.length, 10); i++) {
           const d = requestData.details[i];
+          const n = i + 1;
+
+          // 日期：月/日
           const dateStr = (d.month && d.day) ? `${d.month}/${d.day}` : "";
+          body.replaceText(`{{date_${n}}}`, dateStr);
+
+          // 描述：紀要 + 起迄點（無值就空白）
           const routeStr = (d.startLoc && d.endLoc) ? `${d.startLoc}→${d.endLoc}` : "";
           const descStr = [d.desc || "", routeStr].filter(Boolean).join(" ");
+          body.replaceText(`{{desc_${n}}}`, descStr);
+
+          // 費用總和（0 就留空白）
           const totalFee = [d.plane, d.taxi, d.train, d.hotel, d.meal, d.other]
             .reduce((sum, v) => sum + (parseInt(v) || 0), 0);
+          body.replaceText(`{{price_${n}}}`, totalFee > 0 ? String(totalFee) : "");
+          body.replaceText(`{{qty_${n}}}`, totalFee > 0 ? "1" : "");
 
-          body.replaceText(`{{date_${i+1}}}`, dateStr);
-          body.replaceText(`{{desc_${i+1}}}`, descStr);
-          body.replaceText(`{{price_${i+1}}}`, String(totalFee));
-          body.replaceText(`{{qty_${i+1}}}`, "1");
-          body.replaceText(`{{sub_${i+1}}}`, String(d.subtotal || totalFee));
+          // 小計（0 留空白）
+          body.replaceText(`{{sub_${n}}}`, (d.subtotal && parseInt(d.subtotal) > 0) ? String(d.subtotal) : "");
         }
         // 清除未使用的 placeholder
         for (let i = requestData.details.length; i < 10; i++) {
-          body.replaceText(`{{date_${i+1}}}`, "");
-          body.replaceText(`{{desc_${i+1}}}`, "");
-          body.replaceText(`{{price_${i+1}}}`, "");
-          body.replaceText(`{{qty_${i+1}}}`, "");
-          body.replaceText(`{{sub_${i+1}}}`, "");
+          const n = i + 1;
+          body.replaceText(`{{date_${n}}}`, "");
+          body.replaceText(`{{desc_${n}}}`, "");
+          body.replaceText(`{{price_${n}}}`, "");
+          body.replaceText(`{{qty_${n}}}`, "");
+          body.replaceText(`{{sub_${n}}}`, "");
+        }
+      } else {
+        // 完全沒有明細：清除全部 10 列
+        for (let n = 1; n <= 10; n++) {
+          body.replaceText(`{{date_${n}}}`, "");
+          body.replaceText(`{{desc_${n}}}`, "");
+          body.replaceText(`{{price_${n}}}`, "");
+          body.replaceText(`{{qty_${n}}}`, "");
+          body.replaceText(`{{sub_${n}}}`, "");
         }
       }
 
@@ -103,13 +125,13 @@ function doPost(e) {
       })).setMimeType(ContentService.MimeType.JSON);
     }
 
-    // 🛡️ 動作四：接收前端合併好的最終 PDF 並寫入資料庫
+    // 🛡️ 動作四：儲存最終合併 PDF
     if (action === 'saveRecord') {
       const folder = DriveApp.getFolderById(PDF_FOLDER_ID);
       const formId = requestData.formId;
       const timestamp = new Date();
 
-      const blob = Utilities.newBlob(Utilities.base64Decode(requestData.finalPdfBase64), 'application/pdf', formId + "_支出憑證黏存單.pdf");
+      const blob = Utilities.newBlob(Utilities.base64Decode(requestData.finalPdfBase64), 'application/pdf', formId + "_差旅報銷單.pdf");
       const file = folder.createFile(blob);
       const pdfUrl = file.getUrl();
 
@@ -132,7 +154,6 @@ function doPost(e) {
       return ContentService.createTextOutput(JSON.stringify({status: 'success', pdfUrl: pdfUrl})).setMimeType(ContentService.MimeType.JSON);
     }
 
-    // ⚠️ 未匹配的 action — 加上這個避免 submit 呼叫不到任何 handler
     return ContentService.createTextOutput(JSON.stringify({status: 'error', message: '未知的 action: ' + action})).setMimeType(ContentService.MimeType.JSON);
 
   } catch (error) {
