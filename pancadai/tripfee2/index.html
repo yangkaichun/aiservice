@@ -1,0 +1,1164 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<!-- 出差旅費申報系統 v1.0 — 2026-07-02：初始版本，pancad.ai 設計、日期選擇器、和牌費用方塊、GAS 後端 -->
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>仲智數位健康 · PanCAD.ai · 出差旅費申報系統 v1.0</title>
+
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Noto+Sans+TC:wght@400;500;700&display=swap" rel="stylesheet">
+
+    <!-- Bootstrap 5 Icons only (no CSS framework for full control) -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css">
+
+    <!-- Google 登入 (GIS) -->
+    <script src="https://accounts.google.com/gsi/client" async defer data-itp_support="true"></script>
+
+    <!-- Favicon -->
+    <link rel="shortcut icon" href="image/favicon-pancad.ico">
+
+    <!-- PDF 合併 -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf-lib/1.17.1/pdf-lib.min.js"></script>
+
+    <!-- 設定檔 -->
+    <script src="config.js"></script>
+
+    <style>
+        /* ===== Pancad.ai Design System ===== */
+        :root {
+            --brand-blue: #295daa;
+            --brand-blue-dark: #001a33;
+            --brand-blue-mid: #1a3a6b;
+            --brand-orange: #ec7000;
+            --brand-orange-light: #fef0e0;
+            --brand-orange-hover: #d46200;
+            --bg-white: #ffffff;
+            --bg-light: #f6f8fc;
+            --bg-surface: #f0f4f9;
+            --border-light: #dee2e8;
+            --text-primary: #0f172a;
+            --text-secondary: #475569;
+            --text-muted: #94a3b8;
+            --shadow-sm: 0 1px 2px rgba(0,0,0,0.04);
+            --shadow-md: 0 4px 12px rgba(0,0,0,0.06);
+            --shadow-lg: 0 8px 24px rgba(0,0,0,0.08);
+            --shadow-orange: 0 4px 14px rgba(236,112,0,0.25);
+            --radius-sm: 6px;
+            --radius-md: 10px;
+            --radius-lg: 14px;
+            --font-sans: 'Inter', -apple-system, 'Segoe UI', sans-serif;
+            --font-zh: 'Noto Sans TC', 'PingFang TC', 'Microsoft JhengHei', sans-serif;
+        }
+
+        * { box-sizing: border-box; }
+
+        body {
+            font-family: var(--font-zh);
+            background: var(--bg-white);
+            color: var(--text-primary);
+            -webkit-font-smoothing: antialiased;
+            line-height: 1.6;
+            margin: 0;
+        }
+
+        /* ===== LOGIN OVERLAY ===== */
+        #loginOverlay {
+            position: fixed; inset: 0;
+            background: linear-gradient(160deg, #f0f4f9 0%, #ffffff 60%);
+            z-index: 9999;
+            display: flex; flex-direction: column;
+            justify-content: center; align-items: center;
+            padding: 24px;
+        }
+
+        .login-card {
+            background: var(--bg-white);
+            border: 1px solid var(--border-light);
+            border-radius: var(--radius-lg);
+            box-shadow: var(--shadow-lg);
+            padding: 48px 44px 40px;
+            max-width: 420px;
+            width: 100%;
+            text-align: center;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .login-card::before {
+            content: '';
+            position: absolute;
+            top: 0; left: 0; right: 0;
+            height: 4px;
+            background: linear-gradient(90deg, var(--brand-blue), var(--brand-orange));
+        }
+
+        .login-card .brand-logo {
+            height: 36px;
+            width: auto;
+            margin-bottom: 24px;
+        }
+
+        .login-card h2 {
+            font-family: var(--font-zh);
+            font-weight: 700;
+            font-size: 21px;
+            color: var(--text-primary);
+            margin: 0 0 4px;
+        }
+
+        .login-card .brand-sub {
+            font-size: 13px;
+            color: var(--text-muted);
+            margin-bottom: 28px;
+        }
+
+        .login-card .divider {
+            display: flex; align-items: center; gap: 12px;
+            margin-bottom: 24px;
+            color: var(--text-muted);
+            font-size: 12px;
+        }
+        .login-card .divider::before,
+        .login-card .divider::after {
+            content: ''; flex: 1; height: 1px; background: var(--border-light);
+        }
+
+        .login-card .g_id_signin > div {
+            margin: 0 auto !important;
+        }
+
+        .login-card .login-footer {
+            margin-top: 24px;
+            font-size: 12px;
+            color: var(--text-muted);
+        }
+
+        /* The Google button container fix */
+        .login-card .abcRioButton {
+            border-radius: 8px !important;
+        }
+
+        /* ===== MAIN APP ===== */
+        #mainApp {
+            max-width: 960px;
+            margin: 0 auto;
+            padding: 0 24px 48px;
+        }
+
+        /* ----- Top Navigation Bar (pancad.ai style) ----- */
+        .top-bar {
+            background: var(--bg-white);
+            border-bottom: 1px solid var(--border-light);
+            padding: 12px 0;
+        }
+
+        .top-bar .top-bar-inner {
+            max-width: 960px;
+            margin: 0 auto;
+            padding: 0 24px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .top-bar .brand-group {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .top-bar .brand-logo-sm {
+            height: 30px;
+            width: auto;
+        }
+
+        .top-bar .brand-name {
+            font-family: var(--font-zh);
+            font-weight: 700;
+            font-size: 14px;
+            color: var(--brand-blue-dark);
+            line-height: 1.2;
+        }
+        .top-bar .brand-name small {
+            display: block;
+            font-weight: 400;
+            font-size: 11px;
+            color: var(--text-muted);
+        }
+
+        /* ----- Main Nav (pancad.ai style) ----- */
+        .nav-bar {
+            background: var(--brand-blue);
+            padding: 0 24px;
+            border-radius: var(--radius-md);
+            margin-bottom: 28px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            min-height: 48px;
+        }
+
+        .nav-bar .nav-title {
+            color: #fff;
+            font-family: var(--font-zh);
+            font-weight: 500;
+            font-size: 15px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .nav-bar .nav-actions {
+            display: flex;
+            gap: 8px;
+        }
+
+        .nav-bar .nav-btn {
+            background: rgba(255,255,255,0.12);
+            color: #fff;
+            border: 1px solid rgba(255,255,255,0.2);
+            padding: 6px 14px;
+            border-radius: var(--radius-sm);
+            font-family: var(--font-zh);
+            font-size: 13px;
+            cursor: pointer;
+            text-decoration: none;
+            transition: all 0.2s;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+        }
+        .nav-bar .nav-btn:hover {
+            background: rgba(255,255,255,0.22);
+        }
+
+        /* ----- Cards (pancad.ai clean style) ----- */
+        .card-pancad {
+            background: var(--bg-white);
+            border: 1px solid var(--border-light);
+            border-radius: var(--radius-md);
+            margin-bottom: 20px;
+            overflow: hidden;
+            transition: box-shadow 0.2s;
+        }
+        .card-pancad:hover {
+            box-shadow: var(--shadow-md);
+        }
+
+        .card-pancad .card-head {
+            padding: 14px 20px;
+            font-family: var(--font-zh);
+            font-weight: 600;
+            font-size: 15px;
+            border-bottom: 1px solid var(--border-light);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            background: var(--bg-light);
+        }
+        .card-pancad .card-head .head-icon {
+            width: 24px;
+            height: 24px;
+            border-radius: 6px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 13px;
+            margin-right: 8px;
+            color: #fff;
+        }
+        .head-icon-blue { background: var(--brand-blue); }
+        .head-icon-green { background: #059669; }
+        .head-icon-gray { background: var(--text-muted); }
+
+        .card-pancad .card-body {
+            padding: 20px;
+        }
+
+        /* ----- Form Inputs ----- */
+        .form-control {
+            font-family: var(--font-zh);
+            font-size: 14px;
+            padding: 10px 14px;
+            border: 1.5px solid var(--border-light);
+            border-radius: var(--radius-sm);
+            background: var(--bg-white);
+            color: var(--text-primary);
+            width: 100%;
+            transition: border-color 0.2s, box-shadow 0.2s;
+            outline: none;
+        }
+        .form-control:focus {
+            border-color: var(--brand-blue);
+            box-shadow: 0 0 0 3px rgba(41,93,170,0.1);
+        }
+        .form-control[readonly] {
+            background: var(--bg-light);
+            cursor: default;
+        }
+        .form-control-sm {
+            padding: 6px 10px;
+            font-size: 13px;
+        }
+
+        .form-label, form label:not(.small) {
+            font-family: var(--font-zh);
+            font-size: 12px;
+            font-weight: 600;
+            color: var(--text-secondary);
+            margin-bottom: 4px;
+            display: block;
+            letter-spacing: 0.2px;
+        }
+
+        label.small {
+            font-size: 11px;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            font-weight: 500;
+        }
+
+        /* ----- Buttons (pancad.ai style) ----- */
+        .btn {
+            font-family: var(--font-zh);
+            font-weight: 600;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            cursor: pointer;
+            transition: all 0.2s;
+            text-decoration: none;
+            border: none;
+        }
+
+        .btn-orange {
+            background: var(--brand-orange);
+            color: #fff;
+            padding: 12px 28px;
+            border-radius: var(--radius-sm);
+            font-size: 15px;
+            box-shadow: var(--shadow-orange);
+        }
+        .btn-orange:hover {
+            background: var(--brand-orange-hover);
+            transform: translateY(-1px);
+            box-shadow: 0 6px 20px rgba(236,112,0,0.3);
+        }
+
+        .btn-blue {
+            background: var(--brand-blue);
+            color: #fff;
+            padding: 12px 28px;
+            border-radius: var(--radius-sm);
+            font-size: 15px;
+        }
+        .btn-blue:hover {
+            background: #214d8f;
+            transform: translateY(-1px);
+        }
+
+        .btn-outline-blue {
+            background: transparent;
+            color: var(--brand-blue);
+            border: 1.5px solid var(--brand-blue);
+            padding: 8px 16px;
+            border-radius: var(--radius-sm);
+            font-size: 13px;
+        }
+        .btn-outline-blue:hover {
+            background: rgba(41,93,170,0.06);
+        }
+
+        .btn-ghost-light {
+            background: rgba(255,255,255,0.15);
+            color: #fff;
+            border: 1px solid rgba(255,255,255,0.25);
+            padding: 8px 16px;
+            border-radius: var(--radius-sm);
+            font-size: 13px;
+        }
+        .btn-ghost-light:hover {
+            background: rgba(255,255,255,0.25);
+        }
+
+        .btn-sm {
+            padding: 6px 14px;
+            font-size: 12px;
+        }
+
+        .btn-submit-wrap {
+            padding: 6px;
+            border-radius: var(--radius-sm);
+            background: linear-gradient(135deg, var(--brand-orange), #d46200);
+            box-shadow: var(--shadow-orange);
+            transition: all 0.2s;
+        }
+        .btn-submit-wrap:hover {
+            box-shadow: 0 6px 20px rgba(236,112,0,0.35);
+            transform: translateY(-1px);
+        }
+        .btn-submit-wrap .btn {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            width: 100%;
+            padding: 14px 24px;
+            background: transparent;
+            color: #fff;
+            font-size: 16px;
+            font-weight: 600;
+            border: none;
+            cursor: pointer;
+            font-family: var(--font-zh);
+        }
+
+        /* ----- Fee Tiles (和牌風格) ----- */
+        .fee-tile {
+            background: var(--bg-white);
+            border: 1px solid var(--border-light);
+            border-radius: var(--radius-sm);
+            padding: 8px;
+            min-width: 100px;
+            flex: 1 1 0;
+            transition: box-shadow 0.15s;
+            position: relative;
+        }
+        .fee-tile:hover { box-shadow: var(--shadow-sm); }
+
+        .fee-tile .fee-cat {
+            font-size: 11px;
+            padding: 3px 6px;
+            border: 1px solid var(--border-light);
+            border-radius: 4px;
+            background: var(--bg-white);
+            color: var(--text-primary);
+            width: 100%;
+            font-family: var(--font-zh);
+            font-weight: 500;
+            cursor: pointer;
+            outline: none;
+            transition: border-color 0.15s;
+        }
+        .fee-tile .fee-cat:focus { border-color: var(--brand-blue); }
+
+        .fee-tile .fee-amt {
+            font-size: 14px;
+            font-weight: 600;
+            padding: 4px 6px;
+            border: none;
+            border-bottom: 1.5px solid var(--border-light);
+            background: transparent;
+            width: 100%;
+            text-align: center;
+            outline: none;
+            transition: border-color 0.2s;
+            font-family: var(--font-zh);
+        }
+        .fee-tile .fee-amt:focus { border-bottom-color: var(--brand-blue); }
+
+        .fee-tile .fee-amt::placeholder { color: var(--text-muted); font-weight: 400; font-size: 12px; }
+
+        .fee-tile .tile-remove {
+            position: absolute;
+            top: -6px; right: -6px;
+            width: 16px; height: 16px;
+            border-radius: 50%;
+            border: 1px solid var(--border-light);
+            background: #fff;
+            color: var(--text-muted);
+            font-size: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            opacity: 0;
+            transition: opacity 0.15s;
+            padding: 0;
+            line-height: 1;
+        }
+        .fee-tile:hover .tile-remove { opacity: 1; }
+        .fee-tile .tile-remove:hover { color: #dc2626; border-color: #dc2626; }
+
+        .fee-tiles-wrap {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            margin: 8px 0 4px;
+        }
+
+        .btn-add-tile {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 4px;
+            min-width: 100px;
+            flex: 1 1 0;
+            padding: 8px;
+            border: 1.5px dashed var(--border-light);
+            border-radius: var(--radius-sm);
+            background: transparent;
+            color: var(--text-muted);
+            font-size: 12px;
+            font-family: var(--font-zh);
+            cursor: pointer;
+            transition: all 0.15s;
+        }
+        .btn-add-tile:hover {
+            border-color: var(--brand-blue);
+            color: var(--brand-blue);
+            background: var(--brand-blue-light);
+        }
+
+        .detail-row-date {
+            font-size: 14px;
+            padding: 6px 10px;
+            border: 1.5px solid var(--border-light);
+            border-radius: var(--radius-sm);
+            font-family: var(--font-zh);
+            outline: none;
+            transition: border-color 0.2s;
+            width: 100%;
+        }
+        .detail-row-date:focus { border-color: var(--brand-blue); }
+
+        .detail-card .row-label {
+            font-size: 11px;
+            color: var(--text-muted);
+            margin-bottom: 2px;
+            display: block;
+            font-weight: 500;
+        }
+
+        .detail-card .form-control-sm {
+            font-size: 13px;
+            padding: 5px 8px;
+        }
+
+        .detail-card .loc-input {
+            min-width: 0;
+            flex: 1;
+        }
+
+        .detail-card {
+            background: var(--bg-light);
+            border: 1px solid var(--border-light);
+            border-radius: var(--radius-sm);
+            padding: 16px;
+            margin-bottom: 12px;
+            transition: box-shadow 0.15s;
+        }
+        .detail-card:hover { box-shadow: var(--shadow-sm); }
+
+        .detail-card .badge-detail {
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+            background: var(--brand-blue);
+            color: #fff;
+            font-size: 11px;
+            font-weight: 500;
+            padding: 2px 10px;
+            border-radius: 20px;
+            font-family: var(--font-zh);
+        }
+
+        .detail-card .btn-close {
+            border: none;
+            background: none;
+            font-size: 16px;
+            color: var(--text-muted);
+            cursor: pointer;
+            opacity: 0.4;
+            padding: 0 6px;
+            line-height: 1;
+        }
+        .detail-card .btn-close:hover { opacity: 0.8; }
+
+        /* ----- Preview Area ----- */
+        #previewArea .file-preview {
+            border: 1px solid var(--border-light);
+            border-radius: var(--radius-sm);
+            padding: 4px;
+            background: var(--bg-white);
+            position: relative;
+            transition: box-shadow 0.15s;
+        }
+        #previewArea .file-preview:hover {
+            box-shadow: var(--shadow-sm);
+        }
+
+        .preview-img {
+            width: 60px; height: 60px; object-fit: cover;
+            border-radius: 4px;
+        }
+
+        #totalAmount {
+            font-size: 18px !important;
+            background: var(--brand-orange-light) !important;
+            color: #92400e !important;
+            border-color: #fed7aa !important;
+            font-weight: 700 !important;
+        }
+
+        /* ----- File Input ----- */
+        input[type="file"]::file-selector-button {
+            font-family: var(--font-zh);
+            background: var(--bg-surface);
+            border: 1px solid var(--border-light);
+            border-radius: var(--radius-sm);
+            padding: 6px 14px;
+            cursor: pointer;
+            color: var(--text-primary);
+            font-weight: 500;
+            transition: background 0.15s;
+        }
+        input[type="file"]::file-selector-button:hover {
+            background: #e5e9f0;
+        }
+
+        /* ----- Footer ----- */
+        .app-footer {
+            text-align: center;
+            padding: 28px 0 8px;
+            border-top: 1px solid var(--border-light);
+            margin-top: 32px;
+        }
+        .app-footer img {
+            height: 24px;
+            width: auto;
+            margin-bottom: 12px;
+            opacity: 0.6;
+        }
+        .app-footer p {
+            font-size: 12px;
+            color: var(--text-muted);
+            margin: 0;
+        }
+        .app-footer p strong {
+            color: var(--text-secondary);
+        }
+
+        /* ===== Responsive ===== */
+        @media (max-width: 576px) {
+            .login-card { padding: 32px 20px; }
+            .login-card .brand-logo { height: 28px; }
+            #mainApp { padding: 0 12px 32px; }
+            .top-bar .top-bar-inner { padding: 0 12px; }
+            .nav-bar { flex-direction: column; gap: 8px; padding: 12px; }
+            .card-pancad .card-head { padding: 12px 14px; font-size: 14px; flex-wrap: wrap; gap: 8px; }
+            .card-pancad .card-body { padding: 14px; }
+        }
+    </style>
+</head>
+<body>
+
+    <!-- ===== LOGIN OVERLAY ===== -->
+    <div id="loginOverlay">
+        <div class="login-card">
+            <img src="image/pancad.ai-logo.svg" alt="PanCAD.ai" class="brand-logo">
+            <h2>出差旅費申報系統 <span style="background:#295daa;color:#fff;padding:2px 8px;border-radius:10px;font-size:14px;font-weight:700;vertical-align:middle;">v1.0</span></h2>
+            <p class="brand-sub">仲智數位健康股份有限公司</p>
+
+            <div class="divider">使用 Google 帳號登入</div>
+
+            <div id="g_id_onload"
+                 data-client_id="470505739418-tdi7edodl65q0hpr9272kd4uof3d7l9v.apps.googleusercontent.com"
+                 data-callback="handleCredentialResponse"
+                 data-auto_prompt="false">
+            </div>
+            <div class="g_id_signin" data-type="standard" data-size="large" data-theme="outline" data-text="sign_in_with" data-shape="rectangular" data-logo_alignment="left"></div>
+
+            <div class="login-footer">
+                請允許彈出視窗以完成 Google 登入
+            </div>
+        </div>
+    </div>
+
+    <!-- ===== MAIN APP ===== -->
+    <div id="mainApp" style="display:none;">
+
+        <!-- Top Bar (pancad.ai style white bar) -->
+        <div class="top-bar">
+            <div class="top-bar-inner">
+                <div class="brand-group">
+                    <img src="image/pancad.ai-logo.svg" alt="PanCAD.ai" class="brand-logo-sm">
+                    <div class="brand-name">
+                        出差旅費申報單 <span style="font-size:11px;color:#295daa;font-weight:700;">v1.0</span>
+                        <small>仲智數位健康股份有限公司</small>
+                    </div>
+                </div>
+                <a href="dashboard.html" class="btn btn-outline-blue btn-sm">
+                    <i class="bi bi-clock-history"></i> 歷史紀錄
+                </a>
+            </div>
+        </div>
+
+        <!-- Nav Bar (pancad.ai style blue bar) -->
+        <div class="nav-bar">
+            <div class="nav-title">
+                <i class="bi bi-airplane-engines" style="font-size:18px;"></i>
+                出差旅費申報系統
+                <span style="margin-left:10px;background:rgba(255,255,255,0.2);padding:2px 10px;border-radius:12px;font-size:13px;font-weight:700;letter-spacing:1px;">v1.0</span>
+            </div>
+            <div class="nav-actions">
+                <a href="dashboard.html" class="btn btn-ghost-light btn-sm">
+                    <i class="bi bi-clock-history"></i> 歷史紀錄
+                </a>
+            </div>
+        </div>
+
+        <form id="expenseForm">
+            <!-- 基本資料 -->
+            <div class="card-pancad">
+                <div class="card-head">
+                    <span><span class="head-icon head-icon-blue"><i class="bi bi-person-badge"></i></span> 基本資料與出差期間</span>
+                </div>
+                <div class="card-body">
+                    <div class="row g-3">
+                        <div class="col-md-3"><label>申請單位</label><input type="text" id="department" class="form-control" required></div>
+                        <div class="col-md-3"><label>申請人</label><input type="text" id="applicant" class="form-control" readonly required></div>
+                        <div class="col-md-3"><label>聯絡電話</label><input type="text" id="phone" class="form-control" required></div>
+                        <div class="col-md-3"><label>總金額</label><input type="number" id="totalAmount" class="form-control" readonly></div>
+
+                        <div class="col-md-4"><label>出差開始日期</label><input type="date" id="startDate" class="form-control" required onchange="calcDays()"></div>
+                        <div class="col-md-4"><label>出差結束日期</label><input type="date" id="endDate" class="form-control" required onchange="calcDays()"></div>
+                        <div class="col-md-4"><label>共計天數</label><input type="number" id="totalDays" class="form-control" readonly style="background:var(--bg-light);"></div>
+
+                        <div class="col-12"><label>出差事由（用途摘要）</label><input type="text" id="summary" class="form-control" required></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 費用明細 -->
+            <div class="card-pancad">
+                <div class="card-head">
+                    <span><span class="head-icon head-icon-green"><i class="bi bi-receipt"></i></span> 費用明細（最多 10 筆）</span>
+                    <button type="button" class="btn btn-outline-blue btn-sm" onclick="addDetailRow()">
+                        <i class="bi bi-plus-lg"></i> 新增一筆
+                    </button>
+                </div>
+                <div class="card-body" id="detailsContainer"></div>
+            </div>
+
+            <!-- 附件上傳 -->
+            <div class="card-pancad">
+                <div class="card-head">
+                    <span><span class="head-icon head-icon-gray"><i class="bi bi-paperclip"></i></span> 上傳憑證</span>
+                    <span style="font-size:12px;color:var(--text-muted);font-weight:400;">照片 / PDF 依序添加</span>
+                </div>
+                <div class="card-body">
+                    <input type="file" id="fileInput" class="form-control" multiple accept="image/*,application/pdf" onchange="handleFiles(event)">
+                    <div id="previewArea" class="d-flex flex-wrap gap-2" style="margin-top:12px;"></div>
+                </div>
+            </div>
+
+            <!-- Submit Button (pancad.ai orange CTA style) -->
+            <div class="btn-submit-wrap">
+                <button type="submit" id="submitBtn" class="btn">
+                    <i class="bi bi-cloud-arrow-up"></i> 送出申請並產生 PDF
+                </button>
+            </div>
+        </form>
+
+        <!-- Footer -->
+        <div class="app-footer">
+            <img src="image/pancad.ai-logo.svg" alt="PanCAD.ai">
+            <p><strong>仲智數位健康股份有限公司</strong> &nbsp;·&nbsp; PanCAD.ai &nbsp;·&nbsp; 出差旅費申報系統</p>
+            <p style="margin-top:8px;font-size:16px;font-weight:700;color:#295daa;letter-spacing:2px;">v1.0</p>
+        </div>
+    </div>
+
+    <script>
+        // ✅ 自動清除舊版快取：版本號變更時自動清除 localStorage
+        const APP_VERSION = '1.0';
+        const storedVersion = localStorage.getItem('app_version');
+        if (storedVersion !== APP_VERSION) {
+            localStorage.clear();
+            localStorage.setItem('app_version', APP_VERSION);
+        }
+
+        let currentUser = null;
+        let selectedFiles = [];
+
+        // 登入驗證處理 (已修正 JWT 解碼的 Bug)
+        function handleCredentialResponse(response) {
+            // 🛡️ 第一步：檢查 CONFIG 是否存在
+            if (typeof CONFIG === 'undefined') {
+                alert('系統錯誤：config.js 未正確載入！請按 Ctrl+Shift+R 強制重新整理清除快取後再試。');
+                console.error('CONFIG is undefined — config.js 可能未正確載入或含有語法錯誤');
+                return;
+            }
+            
+            let payload;
+            try {
+                const token = response.credential;
+                if (!token || typeof token !== 'string') {
+                    throw new Error('無效的登入憑證');
+                }
+                
+                const parts = token.split('.');
+                if (parts.length !== 3) {
+                    throw new Error('JWT 格式錯誤');
+                }
+                const base64Url = parts[1];
+                const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
+                const padded = base64.padEnd(base64.length + (4 - base64.length % 4) % 4, '=');
+                const jsonPayload = decodeURIComponent(atob(padded).split('').map(function(c) {
+                    return '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2);
+                }).join(''));
+                payload = JSON.parse(jsonPayload);
+                
+                if (!payload.email) {
+                    throw new Error('JWT payload 缺少 email 欄位');
+                }
+            } catch (jwtErr) {
+                alert('登入資料解析失敗，請按 Ctrl+Shift+R 強制重新整理後再試。');
+                console.error('JWT Decode Error:', jwtErr);
+                return;
+            }
+            
+            document.getElementById('submitBtn').innerHTML = '<span class="spinner-border spinner-border-sm"></span> 驗證權限中...';
+            
+            fetch(CONFIG.GAS_API_URL, {
+                method: 'POST',
+                body: JSON.stringify({ action: 'login', email: payload.email })
+            }).then(res => {
+                return res.json().catch(() => {
+                    throw new Error('GAS 回應不是 JSON，請確認 GAS 專案已重新部署為「網路應用程式」');
+                });
+            }).then(data => {
+                if(data.status === 'success') {
+                    currentUser = { name: data.name, role: data.role, phone: data.phone, email: payload.email };
+                    localStorage.setItem('userEmail', payload.email);
+                    localStorage.setItem('pancad_user', JSON.stringify(currentUser));
+                    
+                    document.getElementById('loginOverlay').style.display = 'none';
+                    document.getElementById('mainApp').style.display = 'block';
+                    document.getElementById('applicant').value = data.name;
+                    document.getElementById('phone').value = data.phone || '';
+                    document.getElementById('submitBtn').innerHTML = '<i class="bi bi-cloud-arrow-up"></i> 送出申請並產生 PDF';
+                    
+                    if(document.getElementById('detailsContainer').children.length === 0) {
+                        addDetailRow(); 
+                    }
+                } else {
+                    alert(`登入失敗：您的帳號 (${payload.email}) 未登記在系統權限名單中！`);
+                    document.getElementById('submitBtn').innerHTML = '無權限';
+                }
+            }).catch(err => {
+                alert('連線失敗：請確認 config.js 中的 GAS 網址是否正確且已重新部署。\n\n詳細錯誤：' + err.message);
+                console.error('Fetch Error:', err);
+            });
+        }
+
+        function calcDays() {
+            const start = new Date(document.getElementById('startDate').value);
+            const end = new Date(document.getElementById('endDate').value);
+            if(start && end && end >= start) {
+                const diffTime = Math.abs(end - start);
+                document.getElementById('totalDays').value = Math.ceil(diffTime / (1000 * 60 * 60 * 24)) + 1; 
+            } else {
+                document.getElementById('totalDays').value = '';
+            }
+        }
+
+        function addDetailRow() {
+            const container = document.getElementById('detailsContainer');
+            if(container.children.length >= 10) return alert('最多只能新增 10 筆明細');
+            const idx = container.children.length + 1;
+            
+            const rowDiv = document.createElement('div');
+            rowDiv.className = 'detail-card detail-row';
+            rowDiv.innerHTML = `
+                <div class="d-flex justify-content-between align-items-center mb-2">
+                    <span class="badge-detail">${idx}</span>
+                    <button type="button" class="btn-close" onclick="this.parentElement.parentElement.remove(); calculateTotal();">&times;</button>
+                </div>
+                <div class="d-flex gap-2 mb-2 align-items-end flex-wrap">
+                    <div style="flex:0 0 140px;">
+                        <span class="row-label">日期</span>
+                        <input type="date" class="detail-row-date i-date" required>
+                    </div>
+                    <div class="loc-input" style="flex:1;min-width:80px;">
+                        <span class="row-label">起點</span>
+                        <input type="text" class="form-control form-control-sm i-start" placeholder="起點">
+                    </div>
+                    <div style="padding-bottom:8px;color:var(--text-muted);">→</div>
+                    <div class="loc-input" style="flex:1;min-width:80px;">
+                        <span class="row-label">迄點</span>
+                        <input type="text" class="form-control form-control-sm i-end" placeholder="迄點">
+                    </div>
+                </div>
+                <div class="mb-2">
+                    <span class="row-label">訪洽對象及工作紀要</span>
+                    <input type="text" class="form-control form-control-sm i-desc" required placeholder="請輸入訪洽對象與摘要">
+                </div>
+                <div class="fee-tiles-wrap">
+                    <div class="fee-tile" data-cat="飛機" data-amt="0">
+                        <button type="button" class="tile-remove" onclick="this.closest('.fee-tile').remove();calculateTotal();">&times;</button>
+                        <select class="fee-cat" onchange="calculateTotal()">
+                            <option value="飛機">✈ 飛機</option>
+                            <option value="高鐵">🚄 高鐵</option>
+                        </select>
+                        <input type="number" class="fee-amt" placeholder="金額" min="0" oninput="calculateTotal()">
+                    </div>
+                    <div class="fee-tile" data-cat="開車" data-amt="0">
+                        <button type="button" class="tile-remove" onclick="this.closest('.fee-tile').remove();calculateTotal();">&times;</button>
+                        <select class="fee-cat" onchange="calculateTotal()">
+                            <option value="開車">🚗 開車</option>
+                            <option value="計程車">🚕 計程車</option>
+                        </select>
+                        <input type="number" class="fee-amt" placeholder="金額" min="0" oninput="calculateTotal()">
+                    </div>
+                    <div class="fee-tile" data-cat="火車" data-amt="0">
+                        <button type="button" class="tile-remove" onclick="this.closest('.fee-tile').remove();calculateTotal();">&times;</button>
+                        <select class="fee-cat" onchange="calculateTotal()">
+                            <option value="火車">🚂 火車</option>
+                            <option value="捷運">🚇 捷運</option>
+                        </select>
+                        <input type="number" class="fee-amt" placeholder="金額" min="0" oninput="calculateTotal()">
+                    </div>
+                    <div class="fee-tile" data-cat="住宿費" data-amt="0">
+                        <button type="button" class="tile-remove" onclick="this.closest('.fee-tile').remove();calculateTotal();">&times;</button>
+                        <select class="fee-cat" onchange="calculateTotal()">
+                            <option value="住宿費">🏨 住宿費</option>
+                        </select>
+                        <input type="number" class="fee-amt" placeholder="金額" min="0" oninput="calculateTotal()">
+                    </div>
+                    <div class="fee-tile" data-cat="膳雜費" data-amt="0">
+                        <button type="button" class="tile-remove" onclick="this.closest('.fee-tile').remove();calculateTotal();">&times;</button>
+                        <select class="fee-cat" onchange="calculateTotal()">
+                            <option value="膳雜費">🍽 膳雜費</option>
+                        </select>
+                        <input type="number" class="fee-amt" placeholder="金額" min="0" oninput="calculateTotal()">
+                    </div>
+                    <div class="fee-tile" data-cat="其他費用" data-amt="0">
+                        <button type="button" class="tile-remove" onclick="this.closest('.fee-tile').remove();calculateTotal();">&times;</button>
+                        <select class="fee-cat" onchange="calculateTotal()">
+                            <option value="其他費用">📦 其他</option>
+                        </select>
+                        <input type="number" class="fee-amt" placeholder="金額" min="0" oninput="calculateTotal()">
+                    </div>
+                    <button type="button" class="btn-add-tile" onclick="addFeeTile(this)">
+                        <i class="bi bi-plus-lg"></i> 費用
+                    </button>
+                </div>
+                <div class="row mt-2"><div class="col-12 text-end text-danger fw-bold small">單筆小計: $<span class="i-subtotal">0</span></div></div>
+            `;
+            container.appendChild(rowDiv);
+        }
+
+        function addFeeTile(btn) {
+            const wrap = btn.closest('.fee-tiles-wrap');
+            const tile = document.createElement('div');
+            tile.className = 'fee-tile';
+            tile.innerHTML = `
+                <button type="button" class="tile-remove" onclick="this.closest('.fee-tile').remove();calculateTotal();">&times;</button>
+                <select class="fee-cat" onchange="calculateTotal()">
+                    <option value="飛機">✈ 飛機</option>
+                    <option value="高鐵">🚄 高鐵</option>
+                    <option value="開車">🚗 開車</option>
+                    <option value="計程車">🚕 計程車</option>
+                    <option value="火車">🚂 火車</option>
+                    <option value="捷運">🚇 捷運</option>
+                    <option value="住宿費">🏨 住宿費</option>
+                    <option value="膳雜費">🍽 膳雜費</option>
+                    <option value="其他費用">📦 其他</option>
+                </select>
+                <input type="number" class="fee-amt" placeholder="金額" min="0" oninput="calculateTotal()">
+            `;
+            wrap.insertBefore(tile, btn);
+        }
+
+        function getFeeData(row) {
+            const map = { plane:0, taxi:0, train:0, hotel:0, meal:0, other:0 };
+            let subtotal = 0;
+            row.querySelectorAll('.fee-tile').forEach(tile => {
+                const cat = tile.querySelector('.fee-cat').value;
+                const amt = parseInt(tile.querySelector('.fee-amt').value) || 0;
+                subtotal += amt;
+                if (cat === '飛機' || cat === '高鐵') map.plane += amt;
+                else if (cat === '開車' || cat === '計程車') map.taxi += amt;
+                else if (cat === '火車' || cat === '捷運') map.train += amt;
+                else if (cat === '住宿費') map.hotel += amt;
+                else if (cat === '膳雜費') map.meal += amt;
+                else map.other += amt;
+            });
+            return { ...map, subtotal };
+        }
+
+        function calculateTotal() {
+            let grandTotal = 0;
+            document.querySelectorAll('.detail-row').forEach(row => {
+                const { subtotal } = getFeeData(row);
+                row.querySelector('.i-subtotal').innerText = subtotal;
+                grandTotal += subtotal;
+            });
+            document.getElementById('totalAmount').value = grandTotal;
+        }
+
+        async function handleFiles(event) {
+            const files = event.target.files;
+            const previewArea = document.getElementById('previewArea');
+            for(let i=0; i<files.length; i++) {
+                let file = files[i];
+                let reader = new FileReader();
+                reader.onload = function(e) {
+                    let base64String = e.target.result;
+                    let mimeType = file.type || (file.name.toLowerCase().endsWith('.pdf') ? 'application/pdf' : '');
+                    
+                    selectedFiles.push({ name: file.name, mimeType: mimeType, base64: base64String });
+                    let div = document.createElement('div');
+                    div.className = 'file-preview';
+                    
+                    let content = mimeType.startsWith('image') ? 
+                        `<img src="${base64String}" class="preview-img">` : 
+                        `<div class="preview-img d-flex align-items-center justify-content-center" style="background:var(--bg-light);"><i class="bi bi-file-earmark-pdf text-danger" style="font-size:24px;"></i></div>`;
+                    
+                    div.innerHTML = `${content}<button type="button" class="btn-close" style="position:absolute;top:-6px;right:-6px;background:#fff;border:1px solid var(--border-light);border-radius:50%;width:18px;height:18px;font-size:12px;display:flex;align-items:center;justify-content:center;opacity:1;" onclick="removeFile(${selectedFiles.length - 1}, this)">&times;</button><div class="small text-truncate" style="width:60px;text-align:center;margin-top:2px;font-size:10px;color:var(--text-muted);">${file.name}</div>`;
+                    previewArea.appendChild(div);
+                };
+                reader.readAsDataURL(file);
+            }
+            event.target.value = ''; 
+        }
+
+        function removeFile(index, btnElement) {
+            selectedFiles[index] = null; 
+            btnElement.parentElement.remove();
+        }
+
+        document.getElementById('expenseForm').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            const btn = document.getElementById('submitBtn');
+            btn.disabled = true;
+            btn.innerHTML = '<span class="spinner-border spinner-border-sm"></span> 處理中，請勿關閉網頁...';
+
+            let details = [];
+            document.querySelectorAll('.detail-row').forEach(row => {
+                const dateVal = row.querySelector('.i-date').value;
+                const dateParts = dateVal ? dateVal.split('-') : [];
+                const feeData = getFeeData(row);
+                details.push({
+                    month: dateParts[1] || '',
+                    day: dateParts[2] || '',
+                    startLoc: row.querySelector('.i-start').value,
+                    endLoc: row.querySelector('.i-end').value,
+                    desc: row.querySelector('.i-desc').value,
+                    plane: feeData.plane || '',
+                    taxi: feeData.taxi || '',
+                    train: feeData.train || '',
+                    hotel: feeData.hotel || '',
+                    meal: feeData.meal || '',
+                    other: feeData.other || '',
+                    subtotal: row.querySelector('.i-subtotal').innerText
+                });
+            });
+
+            const payload = {
+                action: 'submit',
+                startDate: document.getElementById('startDate').value,
+                endDate: document.getElementById('endDate').value,
+                totalDays: document.getElementById('totalDays').value,
+                department: document.getElementById('department').value,
+                applicant: document.getElementById('applicant').value,
+                phone: document.getElementById('phone').value,
+                summary: document.getElementById('summary').value,
+                totalAmount: document.getElementById('totalAmount').value,
+                details: details,
+                files: selectedFiles.filter(f => f !== null)
+            };
+
+            try {
+                const response = await fetch(CONFIG.GAS_API_URL, { method: 'POST', body: JSON.stringify(payload) });
+                const result = await response.json();
+                
+                if(result.success) {
+                    btn.innerHTML = '<span class="spinner-border spinner-border-sm"></span> 正在合併憑證，請稍候...';
+                    
+                    const { PDFDocument } = PDFLib;
+                    const mainPdfBytes = Uint8Array.from(atob(result.base64Pdf), c => c.charCodeAt(0));
+                    const mergedPdf = await PDFDocument.load(mainPdfBytes);
+                    
+                    for (let file of selectedFiles.filter(f => f !== null)) {
+                        try {
+                            if (file.mimeType.includes('pdf')) {
+                                const attachBytes = Uint8Array.from(atob(file.base64.split(',')[1]), c => c.charCodeAt(0));
+                                const attachDoc = await PDFDocument.load(attachBytes);
+                                const copiedPages = await mergedPdf.copyPages(attachDoc, attachDoc.getPageIndices());
+                                copiedPages.forEach(page => mergedPdf.addPage(page));
+                            } else if (file.mimeType.startsWith('image')) {
+                                const imgBytes = Uint8Array.from(atob(file.base64.split(',')[1]), c => c.charCodeAt(0));
+                                let pdfImage = file.mimeType.includes('png') ? await mergedPdf.embedPng(imgBytes) : await mergedPdf.embedJpg(imgBytes);
+                                const page = mergedPdf.addPage();
+                                const { width, height } = page.getSize();
+                                const scaled = pdfImage.scaleToFit(width - 40, height - 40);
+                                page.drawImage(pdfImage, { x: width/2 - scaled.width/2, y: height/2 - scaled.height/2, width: scaled.width, height: scaled.height });
+                            }
+                        } catch(e) { console.log('附件合併發生錯誤 (可能為密碼保護)：', e); }
+                    }
+                    
+                    const finalPdfBytes = await mergedPdf.save();
+                    
+                    // ── 將合併後的 PDF 存回 Google Drive ──
+                    btn.innerHTML = '<span class="spinner-border spinner-border-sm"></span> 正在存檔到雲端...';
+                    try {
+                        const bytes = new Uint8Array(finalPdfBytes);
+                        let binary = '';
+                        for (let i = 0; i < bytes.byteLength; i++) {
+                            binary += String.fromCharCode(bytes[i]);
+                        }
+                        const finalPdfBase64 = btoa(binary);
+                        
+                        const saveDetails = details.map(d => ({
+                            date: (d.month && d.day) ? `${d.month}/${d.day}` : '',
+                            description: [d.desc, d.startLoc && d.endLoc ? `${d.startLoc}→${d.endLoc}` : ''].filter(Boolean).join(' '),
+                            price: [d.plane, d.taxi, d.train, d.hotel, d.meal, d.other].reduce((s, v) => s + (parseInt(v)||0), 0),
+                            quantity: 1,
+                            subtotal: parseInt(d.subtotal) || 0
+                        }));
+                        
+                        await fetch(CONFIG.GAS_API_URL, {
+                            method: 'POST',
+                            body: JSON.stringify({
+                                action: 'saveRecord',
+                                formId: result.formId,
+                                department: document.getElementById('department').value,
+                                applicantName: document.getElementById('applicant').value,
+                                phone: document.getElementById('phone').value,
+                                summary: document.getElementById('summary').value,
+                                totalAmount: document.getElementById('totalAmount').value,
+                                details: saveDetails,
+                                finalPdfBase64: finalPdfBase64
+                            })
+                        });
+                    } catch(saveErr) {
+                        console.warn('雲端存檔失敗（PDF 仍會下載）:', saveErr);
+                    }
+                    
+                    const blob = new Blob([finalPdfBytes], { type: 'application/pdf' });
+                    const a = document.createElement('a');
+                    a.href = window.URL.createObjectURL(blob);
+                    a.download = `${result.formId}_出差旅費申報單.pdf`;
+                    a.click();
+                    
+                    alert('申請成功！合併完成的 PDF 已下載並存回雲端。');
+                    window.location.reload();
+                } else {
+                    alert('伺服器錯誤: ' + result.message);
+                }
+            } catch (error) { 
+                alert('傳送或合併失敗，請檢查網路連線。' + error); 
+            } finally {
+                btn.disabled = false;
+                btn.innerHTML = '<i class="bi bi-cloud-arrow-up"></i> 送出申請並產生 PDF';
+            }
+        });
+    </script>
+</body>
+</html>
