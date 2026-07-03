@@ -1,10 +1,10 @@
 <!DOCTYPE html>
 <html lang="zh-TW">
-<!-- 出差旅費申報系統 v1.1 — 2026-07-02：初始版本，pancad.ai 設計、日期選擇器、和牌費用方塊、GAS 後端 -->
+<!-- 出差旅費申報系統 v1.2 — 2026-07-02：初始版本，pancad.ai 設計、日期選擇器、和牌費用方塊、GAS 後端 -->
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>仲智數位健康 · PanCAD.ai · 出差旅費申報系統 v1.1</title>
+    <title>仲智數位健康 · PanCAD.ai · 出差旅費申報系統 v1.2</title>
 
     <!-- Google Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -638,6 +638,92 @@
             width: auto;
             margin-bottom: 12px;
             opacity: 0.6;
+            transition: opacity 0.2s;
+        }
+
+        /* PDF Preview Modal */
+        .pdf-modal-overlay {
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0, 0, 0, 0.85);
+            backdrop-filter: blur(4px);
+            z-index: 9999;
+            display: none;
+            align-items: center;
+            justify-content: center;
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+        .pdf-modal-overlay.active {
+            display: flex;
+            opacity: 1;
+        }
+        .pdf-modal-container {
+            width: 95%;
+            height: 95%;
+            background: #fff;
+            border-radius: 12px;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+            transform: translateY(20px) scale(0.98);
+            transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+        .pdf-modal-overlay.active .pdf-modal-container {
+            transform: translateY(0) scale(1);
+        }
+        .pdf-modal-header {
+            padding: 12px 20px;
+            background: #f8fafc;
+            border-bottom: 1px solid #e2e8f0;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+        .pdf-modal-title {
+            font-size: 15px;
+            font-weight: 600;
+            color: #0f172a;
+        }
+        .pdf-modal-actions {
+            display: flex;
+            gap: 12px;
+        }
+        .pdf-modal-btn {
+            padding: 6px 14px;
+            border-radius: 6px;
+            font-size: 13px;
+            font-weight: 600;
+            cursor: pointer;
+            border: none;
+            transition: all 0.2s;
+        }
+        .pdf-modal-close {
+            background: #e2e8f0;
+            color: #475569;
+        }
+        .pdf-modal-close:hover {
+            background: #cbd5e1;
+            color: #334155;
+        }
+        .pdf-modal-download {
+            background: var(--brand-blue);
+            color: #fff;
+        }
+        .pdf-modal-download:hover {
+            background: var(--brand-blue-hover);
+        }
+        .pdf-modal-body {
+            flex: 1;
+            width: 100%;
+            background: #cbd5e1;
+        }
+        .pdf-modal-body iframe {
+            width: 100%;
+            height: 100%;
+            border: none;
+        }
         }
         .app-footer p {
             font-size: 12px;
@@ -666,7 +752,7 @@
     <div id="loginOverlay">
         <div class="login-card">
             <img src="image/pancad.ai-logo.svg" alt="PanCAD.ai" class="brand-logo">
-            <h2>出差旅費申報系統 <span style="background:#295daa;color:#fff;padding:2px 8px;border-radius:10px;font-size:14px;font-weight:700;vertical-align:middle;">v1.1</span></h2>
+            <h2>出差旅費申報系統 <span style="background:#295daa;color:#fff;padding:2px 8px;border-radius:10px;font-size:14px;font-weight:700;vertical-align:middle;">v1.2</span></h2>
             <p class="brand-sub">仲智數位健康股份有限公司</p>
 
             <div class="divider">使用 Google 帳號登入</div>
@@ -693,7 +779,7 @@
                 <div class="brand-group">
                     <img src="image/pancad.ai-logo.svg" alt="PanCAD.ai" class="brand-logo-sm">
                     <div class="brand-name">
-                        出差旅費申報單 <span style="font-size:11px;color:#295daa;font-weight:700;">v1.1</span>
+                        出差旅費申報單 <span style="font-size:11px;color:#295daa;font-weight:700;">v1.2</span>
                         <small>仲智數位健康股份有限公司</small>
                     </div>
                 </div>
@@ -708,7 +794,7 @@
             <div class="nav-title">
                 <i class="bi bi-airplane-engines" style="font-size:18px;"></i>
                 出差旅費申報系統
-                <span style="margin-left:10px;background:rgba(255,255,255,0.2);padding:2px 10px;border-radius:12px;font-size:13px;font-weight:700;letter-spacing:1px;">v1.1</span>
+                <span style="margin-left:10px;background:rgba(255,255,255,0.2);padding:2px 10px;border-radius:12px;font-size:13px;font-weight:700;letter-spacing:1px;">v1.2</span>
             </div>
             <div class="nav-actions">
                 <a href="dashboard.html" class="btn btn-ghost-light btn-sm">
@@ -774,13 +860,30 @@
         <div class="app-footer">
             <img src="image/pancad.ai-logo.svg" alt="PanCAD.ai">
             <p><strong>仲智數位健康股份有限公司</strong> &nbsp;·&nbsp; PanCAD.ai &nbsp;·&nbsp; 出差旅費申報系統</p>
-            <p style="margin-top:8px;font-size:16px;font-weight:700;color:#295daa;letter-spacing:2px;">v1.1</p>
+            <p style="margin-top:8px;font-size:16px;font-weight:700;color:#295daa;letter-spacing:2px;">v1.2</p>
         </div>
     </div>
 
+    <!-- PDF Preview Modal -->
+    <div class="pdf-modal-overlay" id="pdfModal">
+        <div class="pdf-modal-container">
+            <div class="pdf-modal-header">
+                <div class="pdf-modal-title"><i class="bi bi-file-earmark-pdf-fill text-danger"></i> 產生完成 - 預覽申報單</div>
+                <div class="pdf-modal-actions">
+                    <button class="pdf-modal-btn pdf-modal-download" id="pdfDownloadBtn"><i class="bi bi-download"></i> 下載 PDF</button>
+                    <button class="pdf-modal-btn pdf-modal-close" onclick="closePdfModal()"><i class="bi bi-x-lg"></i> 關閉並返回</button>
+                </div>
+            </div>
+            <div class="pdf-modal-body">
+                <iframe id="pdfIframe" src=""></iframe>
+            </div>
+        </div>
+    </div>
+
+    <script src="config.js"></script>
     <script>
         // ✅ 自動清除舊版快取：版本號變更時自動清除 localStorage
-        const APP_VERSION = '1.1';
+        const APP_VERSION = '1.2';
         const storedVersion = localStorage.getItem('app_version');
         if (storedVersion !== APP_VERSION) {
             localStorage.clear();
@@ -1147,13 +1250,30 @@
                     }
                     
                     const blob = new Blob([finalPdfBytes], { type: 'application/pdf' });
-                    const a = document.createElement('a');
-                    a.href = window.URL.createObjectURL(blob);
-                    a.download = `${result.formId}_出差旅費申報單.pdf`;
-                    a.click();
+                    const url = window.URL.createObjectURL(blob);
                     
-                    alert('申請成功！合併完成的 PDF 已下載並存回雲端。');
-                    window.location.reload();
+                    // Show PDF in modal
+                    const modal = document.getElementById('pdfModal');
+                    const iframe = document.getElementById('pdfIframe');
+                    const downloadBtn = document.getElementById('pdfDownloadBtn');
+                    
+                    iframe.src = url;
+                    modal.classList.add('active');
+                    
+                    downloadBtn.onclick = () => {
+                        const a = document.createElement('a');
+                        a.href = url;
+                        a.download = `${result.formId}_出差旅費申報單.pdf`;
+                        a.click();
+                    };
+                    
+                    window.closePdfModal = () => {
+                        modal.classList.remove('active');
+                        setTimeout(() => {
+                            window.location.reload();
+                        }, 300);
+                    };
+
                 } else {
                     alert('伺服器錯誤: ' + result.message);
                 }
