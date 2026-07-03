@@ -1,27 +1,34 @@
-const SS_ID = '1YroeUCjTPlZMrbHICwt-w2ZmfmgaYOYPqvVzhdSZ2fo';
-const PDF_FOLDER = '1nCVypKwagV9BzXfVxp-MUgjJExwMzwvy';
+const SPREADSHEET_ID = '1YroeUCjTPlZMrbHICwt-w2ZmfmgaYOYPqvVzhdSZ2fo';
+const PDF_FOLDER_ID = '1nCVypKwagV9BzXfVxp-MUgjJExwMzwvy';
 
 function doPost(e) {
   try {
     var d = JSON.parse(e.postData.contents);
-    if (d.action === 'login')       return handleLogin(d);
-    if (d.action === 'getRecords')  return handleGetRecords(d);
-    if (d.action === 'submit')      return handleSubmit(d);
-    if (d.action === 'saveRecord')  return handleSaveRecord(d);
-    return json({status:'error', message:'未知動作: '+d.action});
-  } catch(err) { return json({status:'error', message:err.toString()}); }
+    var act = d.action;
+
+    if (act === 'login')       return handleLogin(d);
+    if (act === 'getRecords')  return handleGetRecords(d);
+    if (act === 'submit')      return handleSubmit(d);
+    if (act === 'saveRecord')  return handleSaveRecord(d);
+
+    return json({status:'error', message:'未知動作: '+act});
+  } catch(err) {
+    return json({status:'error', message:err.toString()});
+  }
 }
 
 function handleLogin(d) {
-  var users = SpreadsheetApp.openById(SS_ID).getSheetByName('Users').getDataRange().getValues();
+  var users = SpreadsheetApp.openById(SPREADSHEET_ID).getSheetByName('Users').getDataRange().getValues();
   for (var i=1; i<users.length; i++) {
-    if (users[i][0] === d.email) return json({status:'success', name:users[i][1], role:users[i][2], phone:users[i][3]||''});
+    if (users[i][0] === d.email) {
+      return json({status:'success', name:users[i][1], role:users[i][2], phone:users[i][3]||''});
+    }
   }
   return json({status:'error', message:'無權限使用此系統'});
 }
 
 function handleGetRecords(d) {
-  var app = SpreadsheetApp.openById(SS_ID).getSheetByName('Applications').getDataRange().getValues();
+  var app = SpreadsheetApp.openById(SPREADSHEET_ID).getSheetByName('Applications').getDataRange().getValues();
   var recs = [];
   for (var i=1; i<app.length; i++) {
     if (d.role==='Admin' || app[i][3]===d.name) {
@@ -37,10 +44,10 @@ function handleSubmit(d) {
 }
 
 function handleSaveRecord(d) {
-  var file = DriveApp.getFolderById(PDF_FOLDER).createFile(
+  var file = DriveApp.getFolderById(PDF_FOLDER_ID).createFile(
     Utilities.newBlob(Utilities.base64Decode(d.finalPdfBase64), 'application/pdf', d.formId+'_差旅申報單.pdf')
   );
-  var ss = SpreadsheetApp.openById(SS_ID);
+  var ss = SpreadsheetApp.openById(SPREADSHEET_ID);
   ss.getSheetByName('Applications').appendRow([
     d.formId, Utilities.formatDate(new Date(),'Asia/Taipei','yyyy-MM-dd HH:mm:ss'),
     d.department||'', d.applicantName||'', d.phone||'',
