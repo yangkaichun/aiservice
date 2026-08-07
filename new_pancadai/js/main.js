@@ -64,4 +64,21 @@
   /* --- 頁尾年份自動更新 --- */
   var yr = document.querySelector('.footer-bottom span:first-child');
   if (yr) yr.textContent = yr.textContent.replace('2026', String(new Date().getFullYear()));
+
+  /* --- Hero 金色粒子（活出精彩的活力感） --- */
+  var particles = document.getElementById('heroParticles');
+  if (particles) {
+    var COUNT = window.innerWidth < 768 ? 10 : 18;
+    for (var i = 0; i < COUNT; i++) {
+      var p = document.createElement('span');
+      p.className = 'particle';
+      var size = 3 + Math.random() * 7;
+      p.style.width = size + 'px';
+      p.style.height = size + 'px';
+      p.style.left = (Math.random() * 100) + '%';
+      p.style.animationDuration = (9 + Math.random() * 14) + 's';
+      p.style.animationDelay = (-Math.random() * 20) + 's';
+      particles.appendChild(p);
+    }
+  }
 })();
