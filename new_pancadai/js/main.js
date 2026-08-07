@@ -65,10 +65,13 @@
   var yr = document.querySelector('.footer-bottom span:first-child');
   if (yr) yr.textContent = yr.textContent.replace('2026', String(new Date().getFullYear()));
 
-  /* --- INTRO 進入動畫（停留等待，使用者下滑才進入） --- */
+  /* --- INTRO 進入動畫（停留3秒後自動進入首頁；下滑/SKIP 可提早） --- */
   var intro = document.getElementById('intro');
   if (intro) {
+    var entered = false;
     function finishIntro() {
+      if (entered) return;
+      entered = true;
       intro.classList.add('done');
       document.body.classList.remove('no-scroll');
       setTimeout(function () { if (intro.parentNode) intro.parentNode.removeChild(intro); }, 1200);
@@ -76,28 +79,23 @@
     if (window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
       finishIntro(); /* 無障礙：減少動態偏好直接進入 */
     } else {
-      var entered = false;
-      function enterByScroll() {
-        if (entered) return;
-        entered = true;
-        finishIntro();
-      }
-      /* 滑鼠滾輪向下 / 觸控上滑 → 進入 */
-      window.addEventListener('wheel', function (e) { if (e.deltaY > 8) enterByScroll(); }, { passive: true });
+      /* 3 秒後自動進入首頁 */
+      setTimeout(finishIntro, 3000);
+      /* 滑鼠滾輪向下 / 觸控上滑 → 提早進入 */
+      window.addEventListener('wheel', function (e) { if (e.deltaY > 8) finishIntro(); }, { passive: true });
       window.addEventListener('touchstart', function (e) {
         var y = e.touches[0].clientY;
-        var h = window.innerHeight;
         window.addEventListener('touchmove', function (ev) {
-          if (!entered && ev.touches[0].clientY < y - 24) enterByScroll();
+          if (ev.touches[0].clientY < y - 24) finishIntro();
         }, { passive: true, once: true });
       }, { passive: true });
       /* 鍵盤 PageDown / 向下鍵 */
       window.addEventListener('keydown', function (e) {
-        if (e.key === 'PageDown' || e.key === 'ArrowDown' || e.key === ' ') enterByScroll();
+        if (e.key === 'PageDown' || e.key === 'ArrowDown' || e.key === ' ') finishIntro();
       });
       /* SKIP 直接進入 */
       var skipBtn = document.getElementById('introSkip');
-      if (skipBtn) skipBtn.addEventListener('click', enterByScroll);
+      if (skipBtn) skipBtn.addEventListener('click', finishIntro);
     }
   }
 
