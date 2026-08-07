@@ -65,6 +65,20 @@
   var yr = document.querySelector('.footer-bottom span:first-child');
   if (yr) yr.textContent = yr.textContent.replace('2026', String(new Date().getFullYear()));
 
+  /* --- Hero 背景漸進載入：低解析先顯示 → 高解析載入後淡入 --- */
+  var heroBg = document.querySelector('.hero-bg');
+  if (heroBg) {
+    var hi = new Image();
+    hi.onload = function () {
+      heroBg.classList.add('swap-hd');
+      setTimeout(function () {
+        heroBg.style.backgroundImage = "url('assets/hero_sunrise.jpg')";
+        heroBg.classList.remove('swap-hd');
+      }, 120);
+    };
+    hi.src = 'assets/hero_sunrise.jpg';
+  }
+
   /* --- Hero 金色粒子（活出精彩的活力感） --- */
   var particles = document.getElementById('heroParticles');
   if (particles) {
