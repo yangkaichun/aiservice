@@ -5,7 +5,7 @@ window.PANCAD_I18N.zh = {
   meta_desc: 'PANCREASaver 助胰見® 源自台大團隊，以 AI 影像技術輔助胰臟癌早期偵測，<2cm 腫瘤敏感度 92.1%。以病患為中心，活出精彩，不胰憾。',
   'nav.products': '產品介紹', 'nav.early': '早期偵測', 'nav.process': '檢測流程',
   'nav.about': '關於我們', 'nav.hospital': '醫療機構', 'nav.news': '最新消息', 'nav.contact': '聯絡我們',
-  'hero.badge': '台灣原創 AI 胰臟癌早期偵測',
+  'hero.badge': '台灣自主研發，世界首創 AI 胰臟癌早期偵測',
   'hero.title': '活出精彩<br>不<em class="hl">胰</em>憾',
   'hero.sub': '以病患為中心 — 在腫瘤早期發現時，就為生命爭取機會。',
   'hero.desc': 'PANCREASaver<sup>®</sup> 助胰見<sup>®</sup>，源自台大團隊的 AI 影像技術，輔助醫師在 <2cm 階段及早發現胰臟癌，把「晚期發現」的遺憾，變成「早期治療」的希望。',
