@@ -73,12 +73,12 @@ window.PANCAD_I18N.zh = {
 };
 
 window.PANCAD_I18N.en = {
-  meta_title: 'Live Life Fully, No Regrets｜PANCREASaver® — AI Early Detection of Pancreatic Cancer',
+  meta_title: 'Catch it early. Live it fully.｜PANCREASaver® — AI Early Detection of Pancreatic Cancer',
   meta_desc: 'PANCREASaver® from NTU team uses AI imaging to assist early pancreatic cancer detection, 92.1% sensitivity for tumors <2cm. Patient-centered. Live life fully.',
   'nav.products': 'Products', 'nav.early': 'Early Detection', 'nav.process': 'How It Works',
   'nav.about': 'About Us', 'nav.hospital': 'For Hospitals', 'nav.news': 'News', 'nav.contact': 'Contact',
   'hero.badge': 'Taiwan-Origin AI for Early Pancreatic Cancer Detection',
-  'hero.title': 'Live Life Fully,<br>No <em class="hl">Pancreas</em> Regrets',
+  'hero.title': 'Catch it early.<br>Live it <em class="hl">fully</em>.',
   'hero.sub': 'Patient-centered — catching cancer while it is still small, giving life its best chance.',
   'hero.desc': 'PANCREASaver<sup>®</sup>, built on AI imaging from the NTU team, helps physicians detect pancreatic cancer early at the <2cm stage — turning the regret of late diagnosis into the hope of early treatment.',
   'hero.cta1': 'Learn More', 'hero.cta2': 'For Hospitals',
@@ -145,12 +145,12 @@ window.PANCAD_I18N.en = {
 };
 
 window.PANCAD_I18N.ja = {
-  meta_title: '人生を全うする、悔いなし｜PANCREASaver® — 膵臓がん早期発見AI',
+  meta_title: '人生、悔いなし。｜PANCREASaver® — 膵臓がん早期発見AI',
   meta_desc: 'PANCREASaver® は台湾大学チーム発のAI画像技術で膵臓がんの早期発見を支援します。2cm未満の腫瘍感度92.1%。患者中心の医療を。',
   'nav.products': '製品紹介', 'nav.early': '早期発見', 'nav.process': '検査の流れ',
   'nav.about': '私たちについて', 'nav.hospital': '医療機関', 'nav.news': 'お知らせ', 'nav.contact': 'お問い合わせ',
   'hero.badge': '台湾発のAI膵臓がん早期発見技術',
-  'hero.title': '人生を全うする、<br>悔い<em class="hl">な</em>し',
+  'hero.title': '人生、<em class="hl">悔い</em>なし。',
   'hero.sub': '患者中心 — 腫瘍が小さなうちに、命にチャンスを。',
   'hero.desc': 'PANCREASaver<sup>®</sup> は台湾大学チームのAI画像技術。医師の読影を支援し、2cm未満の段階で膵臓がんを発見 — 「遅すぎた発見」の悔いを「早期治療」の希望に変えます。',
   'hero.cta1': '製品を知る', 'hero.cta2': '医療機関の方へ',
