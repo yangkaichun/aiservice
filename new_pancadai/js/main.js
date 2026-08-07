@@ -65,6 +65,26 @@
   var yr = document.querySelector('.footer-bottom span:first-child');
   if (yr) yr.textContent = yr.textContent.replace('2026', String(new Date().getFullYear()));
 
+  /* --- INTRO 進入動畫（3秒後上滑揭露主頁） --- */
+  var intro = document.getElementById('intro');
+  if (intro) {
+    var introTimer;
+    function finishIntro() {
+      intro.classList.add('done');
+      document.body.classList.remove('no-scroll');
+      setTimeout(function () { if (intro.parentNode) intro.parentNode.removeChild(intro); }, 1200);
+    }
+    if (window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+      finishIntro(); /* 無障礙：減少動態偏好直接進入 */
+    } else {
+      introTimer = setTimeout(finishIntro, 3000);
+      var skipBtn = document.getElementById('introSkip');
+      if (skipBtn) skipBtn.addEventListener('click', function () {
+        clearTimeout(introTimer); finishIntro();
+      });
+    }
+  }
+
   /* --- Hero 背景漸進載入：低解析先顯示 → 高解析載入後淡入 --- */
   var heroBg = document.querySelector('.hero-bg');
   if (heroBg) {
