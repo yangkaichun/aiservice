@@ -18,6 +18,7 @@
   var menu = document.getElementById('menu');
   burger.addEventListener('click', function () {
     menu.classList.toggle('open');
+    burger.classList.toggle('open');
   });
   menu.querySelectorAll('a').forEach(function (a) {
     a.addEventListener('click', function () { menu.classList.remove('open'); });
