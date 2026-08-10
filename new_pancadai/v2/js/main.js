@@ -102,19 +102,7 @@
     }
   }
 
-  /* --- Hero 背景漸進載入：低解析先顯示 → 高解析載入後淡入 --- */
-  var heroBg = document.querySelector('.hero-bg');
-  if (heroBg) {
-    var hi = new Image();
-    hi.onload = function () {
-      heroBg.classList.add('swap-hd');
-      setTimeout(function () {
-        heroBg.style.backgroundImage = "url('assets/hero_sunrise.jpg')";
-        heroBg.classList.remove('swap-hd');
-      }, 120);
-    };
-    hi.src = 'assets/hero_sunrise.jpg';
-  }
+  /* --- Hero 背景漸進載入（v2 使用 CT SVG，不需漸進載入，移除） --- */
 
   /* --- Hero 金色粒子（活出精彩的活力感） --- */
   var particles = document.getElementById('heroParticles');
