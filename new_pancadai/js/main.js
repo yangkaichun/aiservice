@@ -37,19 +37,18 @@
     reveals.forEach(function (el) { el.classList.add('visible'); });
   }
 
-  /* --- 數字跑馬燈 --- */
+  /* --- 數字跑馬燈（easeOutCubic） --- */
   var counters = document.querySelectorAll('.counter');
   function animateCounter(el) {
     var target = parseFloat(el.dataset.target);
     var decimals = parseInt(el.dataset.decimals || '0', 10);
-    var dur = 1600, start = null;
+    var dur = 1800, start = null;
     function tick(ts) {
       if (!start) start = ts;
       var p = Math.min((ts - start) / dur, 1);
-      var eased = 1 - Math.pow(1 - p, 3); /* easeOutCubic */
+      var eased = 1 - Math.pow(1 - p, 3);
       el.textContent = (target * eased).toFixed(decimals);
       if (p < 1) requestAnimationFrame(tick);
-      else el.textContent = target.toFixed(decimals);
     }
     requestAnimationFrame(tick);
   }
@@ -75,6 +74,9 @@
       entered = true;
       intro.classList.add('done');
       document.body.classList.remove('no-scroll');
+      /* Hero 文字錯落入場 */
+      var hc = document.querySelector('.hero-card');
+      if (hc) hc.classList.add('hero-enter');
       setTimeout(function () { if (intro.parentNode) intro.parentNode.removeChild(intro); }, 1200);
     }
     if (window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
