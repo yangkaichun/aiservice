@@ -102,6 +102,34 @@
     }
   }
 
+  /* --- Hero 背景三階漸進載入：small(64KB) → med(168KB) → HD(5K) 依網路速度 --- */
+  var heroBg = document.querySelector('.hero-bg');
+  if (heroBg) {
+    var conn = navigator.connection || {};
+    var et = (conn.effectiveType || '4g').toLowerCase();
+    var wantMed = et !== 'slow-2g' && et !== '2g';
+    var wantHd = et === '4g' || et === 'wifi' || et.indexOf('ethernet') === 0 || !conn.effectiveType;
+    if (wantMed) {
+      var med = new Image();
+      med.onload = function () {
+        heroBg.style.backgroundImage = "url('assets/hero_sun_picnic_med.jpg')";
+      };
+      med.src = 'assets/hero_sun_picnic_med.jpg';
+    }
+    if (wantHd) {
+      var hd = new Image();
+      hd.onload = function () {
+        heroBg.style.transition = 'opacity 1.2s ease';
+        heroBg.style.opacity = '0';
+        setTimeout(function () {
+          heroBg.style.backgroundImage = "url('assets/hero_sun_picnic_hd.jpg')";
+          heroBg.style.opacity = '1';
+        }, 200);
+      };
+      hd.src = 'assets/hero_sun_picnic_hd.jpg';
+    }
+  }
+
   /* --- Hero 金色粒子（活出精彩的活力感） --- */
   var particles = document.getElementById('heroParticles');
   if (particles) {
