@@ -102,13 +102,17 @@
     }
   }
 
-  /* --- Hero 背景：隨機輪換（7 張候選）＋picnic 優先升級 HD --- */
+  /* --- Hero 背景：隨機輪換（7 張候選）＋載入該圖 HD（5120） --- */
   var heroBg = document.querySelector('.hero-bg');
   if (heroBg) {
     var heroCandidates = [
-      'assets/hero_sun_bike.jpg', 'assets/hero_sun_yoga.jpg', 'assets/hero_sun_picnic.jpg',
-      'assets/hero_sun_coffee.jpg', 'assets/hero_sun_kayak.jpg', 'assets/hero_sun_bridge.jpg',
-      'assets/hero_sun_forest.jpg'
+      { src: 'assets/hero_sun_bike.jpg', hd: 'assets/hero_sun_bike_hd.jpg' },
+      { src: 'assets/hero_sun_yoga.jpg', hd: 'assets/hero_sun_yoga_hd.jpg' },
+      { src: 'assets/hero_sun_picnic.jpg', hd: 'assets/hero_sun_picnic_hd.jpg' },
+      { src: 'assets/hero_sun_coffee.jpg', hd: 'assets/hero_sun_coffee_hd.jpg' },
+      { src: 'assets/hero_sun_kayak.jpg', hd: 'assets/hero_sun_kayak_hd.jpg' },
+      { src: 'assets/hero_sun_bridge.jpg', hd: 'assets/hero_sun_bridge_hd.jpg' },
+      { src: 'assets/hero_sun_forest.jpg', hd: 'assets/hero_sun_forest_hd.jpg' }
     ];
     var heroPick = heroCandidates[Math.floor(Math.random() * heroCandidates.length)];
     var conn = navigator.connection || {};
@@ -121,22 +125,22 @@
         heroBg.style.transition = 'opacity 1.2s ease';
         heroBg.style.opacity = '0';
         setTimeout(function () {
-          heroBg.style.backgroundImage = "url('" + heroPick + "')";
+          heroBg.style.backgroundImage = "url('" + heroPick.src + "')";
           heroBg.style.opacity = '1';
         }, 180);
-        if (wantHd && heroPick.indexOf('picnic') > -1) {
+        if (wantHd) {
           var hdImg = new Image();
           hdImg.onload = function () {
             heroBg.style.opacity = '0';
             setTimeout(function () {
-              heroBg.style.backgroundImage = "url('assets/hero_sun_picnic_hd.jpg')";
+              heroBg.style.backgroundImage = "url('" + heroPick.hd + "')";
               heroBg.style.opacity = '1';
             }, 200);
           };
-          hdImg.src = 'assets/hero_sun_picnic_hd.jpg';
+          hdImg.src = heroPick.hd;
         }
       };
-      hImg.src = heroPick;
+      hImg.src = heroPick.src;
     }
   }
 
