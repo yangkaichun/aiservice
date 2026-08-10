@@ -102,8 +102,6 @@
     }
   }
 
-  /* --- Hero 背景漸進載入（v2 使用 CT SVG，不需漸進載入，移除） --- */
-
   /* --- Hero 金色粒子（活出精彩的活力感） --- */
   var particles = document.getElementById('heroParticles');
   if (particles) {
