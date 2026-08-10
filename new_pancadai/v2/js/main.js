@@ -142,6 +142,39 @@
       };
       hImg.src = heroPick.src;
     }
+    /* --- 停留輪換：每 8s 隨機換一張，預載完成（onload）才淡入淡出切換 --- */
+    var reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    if (!reduceMotion) {
+      setInterval(function () {
+        var next = heroCandidates[Math.floor(Math.random() * heroCandidates.length)];
+        if (next === heroPick) {
+          next = heroCandidates[(heroCandidates.indexOf(heroPick) + 1) % heroCandidates.length];
+        }
+        var pre = new Image();
+        pre.onload = function () {
+          heroBg.style.transition = 'opacity .9s ease';
+          heroBg.style.opacity = '0';
+          setTimeout(function () {
+            heroBg.style.backgroundImage = "url('" + next.hd + "')";
+            heroBg.style.opacity = '1';
+            heroPick = next;
+          }, 320);
+        };
+        pre.onerror = function () {
+          var fb = new Image();
+          fb.onload = function () {
+            heroBg.style.opacity = '0';
+            setTimeout(function () {
+              heroBg.style.backgroundImage = "url('" + next.src + "')";
+              heroBg.style.opacity = '1';
+              heroPick = next;
+            }, 320);
+          };
+          fb.src = next.src;
+        };
+        pre.src = next.hd;
+      }, 8000);
+    }
   }
 
   /* --- Hero 金色粒子（活出精彩的活力感） --- */
