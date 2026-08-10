@@ -102,31 +102,41 @@
     }
   }
 
-  /* --- Hero 背景三階漸進載入：small(64KB) → med(168KB) → HD(5K) 依網路速度 --- */
+  /* --- Hero 背景：隨機輪換（7 張候選）＋picnic 優先升級 HD --- */
   var heroBg = document.querySelector('.hero-bg');
   if (heroBg) {
+    var heroCandidates = [
+      'assets/hero_sun_bike.jpg', 'assets/hero_sun_yoga.jpg', 'assets/hero_sun_picnic.jpg',
+      'assets/hero_sun_coffee.jpg', 'assets/hero_sun_kayak.jpg', 'assets/hero_sun_bridge.jpg',
+      'assets/hero_sun_forest.jpg'
+    ];
+    var heroPick = heroCandidates[Math.floor(Math.random() * heroCandidates.length)];
     var conn = navigator.connection || {};
     var et = (conn.effectiveType || '4g').toLowerCase();
     var wantMed = et !== 'slow-2g' && et !== '2g';
     var wantHd = et === '4g' || et === 'wifi' || et.indexOf('ethernet') === 0 || !conn.effectiveType;
     if (wantMed) {
-      var med = new Image();
-      med.onload = function () {
-        heroBg.style.backgroundImage = "url('assets/hero_sun_picnic_med.jpg')";
-      };
-      med.src = 'assets/hero_sun_picnic_med.jpg';
-    }
-    if (wantHd) {
-      var hd = new Image();
-      hd.onload = function () {
+      var hImg = new Image();
+      hImg.onload = function () {
         heroBg.style.transition = 'opacity 1.2s ease';
         heroBg.style.opacity = '0';
         setTimeout(function () {
-          heroBg.style.backgroundImage = "url('assets/hero_sun_picnic_hd.jpg')";
+          heroBg.style.backgroundImage = "url('" + heroPick + "')";
           heroBg.style.opacity = '1';
-        }, 200);
+        }, 180);
+        if (wantHd && heroPick.indexOf('picnic') > -1) {
+          var hdImg = new Image();
+          hdImg.onload = function () {
+            heroBg.style.opacity = '0';
+            setTimeout(function () {
+              heroBg.style.backgroundImage = "url('assets/hero_sun_picnic_hd.jpg')";
+              heroBg.style.opacity = '1';
+            }, 200);
+          };
+          hdImg.src = 'assets/hero_sun_picnic_hd.jpg';
+        }
       };
-      hd.src = 'assets/hero_sun_picnic_hd.jpg';
+      hImg.src = heroPick;
     }
   }
 
