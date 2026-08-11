@@ -503,16 +503,24 @@
      15. 動態光影（v2 級）：全域 orb 注入 + hero 金色粒子 + 場景過場
      ========================================================== */
   function initGlobalOrbs() {
-    var targets = document.querySelectorAll('.scene.dark, .scene.darker, .scene.sun, .page-hero');
+    var targets = document.querySelectorAll('.scene.dark, .scene.darker, .scene.sun, .page-hero, .story-scene');
     if (!targets.length) return;
     var variants = ['orb-a', 'orb-b', 'orb-c', 'orb-d'];
     var counter = 0;
     targets.forEach(function (t) {
       if (t.querySelector('.orb')) return; /* 已有手動光斑就跳過 */
-      var n = t.classList.contains('page-hero') ? 2 : 2;
+      var n = 2;
       for (var i = 0; i < n; i++) {
         var orb = document.createElement('div');
         orb.className = 'orb ' + variants[(counter++) % variants.length];
+        /* 敘事章節：光斑分散在右側背景區（避開左側文字卡） */
+        if (t.classList.contains('story-scene')) {
+          orb.style.left = (Math.random() * 50 + 45) + '%';
+          orb.style.top = (Math.random() * 55 + 10) + '%';
+          var sz = (Math.random() * 16 + 24).toFixed(0);
+          orb.style.width = sz + 'vmin';
+          orb.style.height = sz + 'vmin';
+        }
         t.appendChild(orb);
       }
     });
