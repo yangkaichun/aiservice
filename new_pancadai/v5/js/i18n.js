@@ -46,7 +46,7 @@
       b.classList.toggle('active', b.getAttribute('data-lang') === lang);
     });
     var btn = document.getElementById('langBtn');
-    if (btn) btn.innerHTML = '<i class="bi bi-globe2"></i> ' + NAMES[lang];
+    if (btn) btn.textContent = NAMES[lang] + ' ▾';
     try { localStorage.setItem(LANG_KEY, lang); } catch (e) {}
     /* 通知外部（背景池切換等） */
     try { window.dispatchEvent(new CustomEvent('langchange')); } catch (e) {}
