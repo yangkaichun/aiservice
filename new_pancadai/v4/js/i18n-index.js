@@ -14,7 +14,7 @@ window.PANCAD_I18N.zh = {
   
   'vp.hint': '拖曳滑桿，比較 AI 判讀', 'vp.demo': '自動演示',
   'vp.cap1': '真實腹部 CT 示意影像', 'vp.cap2': ' · 拖曳滑桿比較 AI 判讀',
-  'facts.f1_t': '&lt;2cm 腫瘤偵測敏感度', 'facts.f1_d': 'AI 對小於 2 公分早期病灶的偵測能力 — 這是胰臟癌治療的黃金關鍵。',
+  'facts.f1_t': '<2cm 腫瘤偵測敏感度', 'facts.f1_d': 'AI 對小於 2 公分早期病灶的偵測能力 — 這是胰臟癌治療的黃金關鍵。',
   'facts.f2_t': '全國多中心臨床驗證', 'facts.f2_d': '在台灣多家醫學中心與區域醫院的真實臨床資料中驗證的判讀效能。',
   'facts.f3_u': '+ 人次', 'facts.f3_t': '臨床部署使用', 'facts.f3_d': '醫學中心・區域醫院・健檢中心陸續導入，守護更多人的胰臟健康。',
   'gate.en': 'Choose Your Path',
@@ -57,7 +57,7 @@ window.PANCAD_I18N.en = {
   
   'vp.hint': 'Drag to compare AI reading', 'vp.demo': 'Auto demo',
   'vp.cap1': 'Illustrative abdominal CT', 'vp.cap2': ' · drag to compare AI reading',
-  'facts.f1_t': 'Sensitivity for &lt;2cm tumors', 'facts.f1_d': 'How well the AI detects early lesions under 2 cm — the golden window for pancreatic cancer treatment.',
+  'facts.f1_t': '<2cm tumor sensitivity', 'facts.f1_d': 'How well the AI detects early lesions under 2 cm — the golden window for pancreatic cancer treatment.',
   'facts.f2_t': 'Nationwide multicenter validation', 'facts.f2_d': 'Performance validated on real clinical data from medical centers and regional hospitals across Taiwan.',
   'facts.f3_u': '+ exams', 'facts.f3_t': 'Deployed in clinical practice', 'facts.f3_d': 'Medical centers, regional hospitals and health check centers are adopting it to protect more lives.',
   'gate.en': 'Choose Your Path',
