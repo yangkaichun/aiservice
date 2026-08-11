@@ -435,27 +435,53 @@
     }
   }
 
-  /* ---------- 8. 表單提交（mailto 備援 / 導向成功訊息） ---------- */
+  /* ---------- 8. 表單提交（GAS 後端；未部署時 mailto 備援） ---------- */
   var forms = document.querySelectorAll('form[data-form]');
   forms.forEach(function (f) {
     f.addEventListener('submit', function (e) {
       e.preventDefault();
       var btn = f.querySelector('button[type="submit"]');
+      var origLabel = btn ? btn.textContent : '';
       if (btn) {
         btn.disabled = true;
         btn.textContent = btn.getAttribute('data-sending') || '送出中…';
       }
-      // 靜態站：組 mailto 連結作為可用的最低成本方案
       var name = (f.querySelector('#name') || {}).value || '';
+      var email = (f.querySelector('#email') || {}).value || '';
       var topic = (f.querySelector('#topic') || {}).value || '';
       var msg = (f.querySelector('#message') || {}).value || '';
-      var mailto = 'mailto:contact@pancad.ai?subject=' +
-        encodeURIComponent('[' + topic + '] ' + name) +
-        '&body=' + encodeURIComponent(msg);
-      window.location.href = mailto;
-      setTimeout(function () {
-        if (btn) { btn.disabled = false; btn.textContent = btn.getAttribute('data-orig') || '送出'; }
-      }, 1500);
+      var payload = {
+        name: name, email: email, topic: topic,
+        subject: '[' + topic + '] ' + name, message: msg
+      };
+      var gasUrl = (window.PANCAD_FORM && window.PANCAD_FORM.GAS_API_URL) || '';
+      if (gasUrl) {
+        // GAS 後端（text/plain 避免 CORS preflight）
+        fetch(gasUrl, {
+          method: 'POST',
+          body: JSON.stringify(payload)
+        }).then(function (r) { return r.json(); }).then(function (res) {
+          if (res.ok) {
+            if (btn) { btn.textContent = btn.getAttribute('data-done') || '✓ 已送出'; btn.disabled = false; }
+            f.reset();
+            setTimeout(function () { if (btn) btn.textContent = origLabel; }, 3000);
+          } else {
+            throw new Error(res.error || 'GAS error');
+          }
+        }).catch(function () {
+          if (btn) { btn.textContent = origLabel; btn.disabled = false; }
+          alert('送出失敗，請稍後再試或直接 Email contact@pancad.ai');
+        });
+      } else {
+        // mailto 備援（未部署 GAS 時）
+        var mailto = 'mailto:contact@pancad.ai?subject=' +
+          encodeURIComponent('[' + topic + '] ' + name) +
+          '&body=' + encodeURIComponent(msg);
+        window.location.href = mailto;
+        setTimeout(function () {
+          if (btn) { btn.disabled = false; btn.textContent = origLabel; }
+        }, 1500);
+      }
     });
   });
 })();
