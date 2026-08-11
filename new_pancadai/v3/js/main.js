@@ -188,6 +188,44 @@
     });
   }
 
+  /* ---------- 9. 動態光影系統 ---------- */
+  // 9.1 滑鼠追蹤光暈（更新 CSS 變數，rAF 節流）
+  var rootEl = document.documentElement;
+  var glow = document.querySelector('.spot-glow');
+  var mousemoveRaf = null;
+  window.addEventListener('mousemove', function (e) {
+    if (mousemoveRaf) return;
+    mousemoveRaf = requestAnimationFrame(function () {
+      var x = (e.clientX / window.innerWidth) * 100;
+      var y = (e.clientY / window.innerHeight) * 100;
+      rootEl.style.setProperty('--mx', x + '%');
+      rootEl.style.setProperty('--my', y + '%');
+      if (glow && !glow.classList.contains('on')) glow.classList.add('on');
+      mousemoveRaf = null;
+    });
+  }, { passive: true });
+  // 觸控裝置不顯示追蹤光暈
+  if (window.matchMedia('(hover: none)').matches && glow) {
+    glow.style.display = 'none';
+  }
+
+  // 9.2 Hero 金色粒子生成
+  var particlesBox = document.querySelector('.hero-particles');
+  if (particlesBox) {
+    for (var i = 0; i < 18; i++) {
+      var p = document.createElement('span');
+      p.className = 'particle';
+      var size = 3 + Math.random() * 5;
+      p.style.width = size + 'px';
+      p.style.height = size + 'px';
+      p.style.left = (Math.random() * 100) + '%';
+      p.style.top = (30 + Math.random() * 70) + '%';
+      p.style.animationDuration = (6 + Math.random() * 8) + 's';
+      p.style.animationDelay = (Math.random() * 6) + 's';
+      particlesBox.appendChild(p);
+    }
+  }
+
   /* ---------- 8. 表單提交（mailto 備援 / 導向成功訊息） ---------- */
   var forms = document.querySelectorAll('form[data-form]');
   forms.forEach(function (f) {

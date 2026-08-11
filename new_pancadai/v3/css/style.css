@@ -648,3 +648,121 @@ html:not([lang="zh-TW"]) .zh-only { display: none !important; }
   .reveal { opacity: 1; transform: none; }
   .chapter .chapter-body { opacity: 1; transform: none; }
 }
+
+/* ============================================================
+   17. 動態光影系統（v3 增強）
+   ============================================================ */
+
+/* 滑鼠追蹤光暈（全站，跟隨游標） */
+:root { --mx: 50%; --my: 40%; }
+.spot-glow {
+  position: fixed; inset: 0; z-index: 45; pointer-events: none;
+  background: radial-gradient(720px circle at var(--mx) var(--my), rgba(41,93,170,.08), transparent 46%);
+  opacity: 0; transition: opacity .8s ease;
+}
+.spot-glow.on { opacity: 1; }
+@media (hover: hover) and (pointer: fine) { .spot-glow { display: block; } }
+@media (hover: none) { .spot-glow { display: none; } }
+
+/* Hero 光帶掃過（斜向光束） */
+.hero-lightbeam {
+  position: absolute; top: -25%; bottom: -25%; width: 240px;
+  left: -35%; z-index: 1; pointer-events: none;
+  background: linear-gradient(105deg, transparent 0%, rgba(255,225,160,.16) 40%, rgba(255,255,255,.08) 55%, transparent 100%);
+  transform: skewX(-18deg);
+  animation: lightSweep 11s ease-in-out infinite;
+}
+@keyframes lightSweep {
+  0% { left: -35%; opacity: 0; }
+  6% { opacity: 1; }
+  52% { left: 115%; opacity: .85; }
+  58% { opacity: 0; }
+  100% { left: 115%; opacity: 0; }
+}
+
+/* Hero 金色粒子（JS 生成） */
+.hero-particles { position: absolute; inset: 0; overflow: hidden; z-index: 1; pointer-events: none; }
+.particle {
+  position: absolute; border-radius: 50%;
+  background: radial-gradient(circle, rgba(255,215,150,.95) 0%, rgba(236,112,0,.3) 70%);
+  filter: blur(.6px);
+  animation: floatUp linear infinite;
+  opacity: 0;
+}
+@keyframes floatUp {
+  0% { transform: translateY(0) scale(1); opacity: 0; }
+  10% { opacity: .9; }
+  80% { opacity: .55; }
+  100% { transform: translateY(-45vh) scale(.35); opacity: 0; }
+}
+
+/* 分流卡：邊框光流（conic-gradient 旋轉）+ hover 內光 */
+@property --ga { syntax: '<angle>'; initial-value: 0deg; inherits: false; }
+.gate-card::before {
+  content: ''; position: absolute; inset: 0; z-index: 3; pointer-events: none;
+  border-radius: var(--radius-lg);
+  padding: 2px;
+  background: conic-gradient(from var(--ga, 0deg), transparent 0deg, rgba(255,255,255,.9) 55deg, transparent 115deg, transparent 220deg, rgba(236,112,0,.85) 285deg, transparent 360deg);
+  -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+  -webkit-mask-composite: xor;
+  mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+  mask-composite: exclude;
+  opacity: 0; transition: opacity .5s ease;
+  animation: borderSpin 4.5s linear infinite;
+}
+.gate-card:hover::before { opacity: 1; }
+@keyframes borderSpin { to { --ga: 360deg; } }
+.gate-card::after {
+  content: ''; position: absolute; inset: 0; z-index: 1; pointer-events: none;
+  background: radial-gradient(480px circle at 50% 110%, rgba(236,112,0,.16), transparent 55%);
+  opacity: 0; transition: opacity .5s ease;
+}
+.gate-card:hover::after { opacity: 1; }
+.gate-card .body { z-index: 2; }
+
+/* 深色區塊光斑漂移（why / cta / patient-cta / clinician-cta） */
+.glow-orb {
+  position: absolute; border-radius: 50%; pointer-events: none;
+  filter: blur(72px); z-index: 0;
+  animation: orbDrift 16s ease-in-out infinite alternate;
+}
+.glow-orb.orb-a { width: 46vmin; height: 46vmin; background: rgba(41,93,170,.35); top: -8%; left: -6%; }
+.glow-orb.orb-b { width: 38vmin; height: 38vmin; background: rgba(236,112,0,.22); bottom: -10%; right: -4%; animation-delay: -8s; }
+.glow-orb.orb-c { width: 30vmin; height: 30vmin; background: rgba(53,196,224,.2); top: 40%; left: 68%; animation-delay: -4s; }
+@keyframes orbDrift {
+  0% { transform: translate(0,0) scale(1); }
+  100% { transform: translate(48px,-36px) scale(1.18); }
+}
+.why, .cta-band, .patient-cta, .clinician-cta { position: relative; }
+.why .container, .cta-band .container, .patient-cta .container, .clinician-cta .container { position: relative; z-index: 2; }
+
+/* 文字 shimmer 光澤（深色底標題） */
+.shimmer {
+  background: linear-gradient(100deg, currentColor 42%, #ffd9a0 50%, currentColor 58%);
+  background-size: 220% 100%;
+  -webkit-background-clip: text; background-clip: text;
+  -webkit-text-fill-color: transparent; color: transparent;
+  animation: shimmerMove 3.8s linear infinite;
+}
+@keyframes shimmerMove { 0% { background-position: 130% 0; } 100% { background-position: -90% 0; } }
+
+/* 卡片 hover 藍光（why-card / step-card / cert-card / news-card / pub-card / award-item） */
+.why-card, .step-card, .cert-card, .news-card, .pub-card, .award-item {
+  transition: transform .35s ease, box-shadow .35s ease, border-color .35s ease;
+}
+.why-card:hover, .step-card:hover, .cert-card:hover, .news-card:hover, .pub-card:hover, .award-item:hover {
+  box-shadow: 0 0 0 1px rgba(41,93,170,.28), 0 18px 44px rgba(41,93,170,.22), 0 0 34px rgba(41,93,170,.16);
+}
+
+/* 數字跑馬燈文字光澤（trust 數字 hover） */
+.trust-item .num { transition: color .3s ease, text-shadow .3s ease; }
+.trust-item:hover .num { text-shadow: 0 0 22px rgba(41,93,170,.4); }
+
+/* 章節過場微光（patient 幕與幕之間） */
+.chapter::after {
+  content: ''; position: absolute; left: 0; right: 0; bottom: 0; height: 90px;
+  background: linear-gradient(180deg, transparent, rgba(14,34,68,.5));
+  z-index: 2; pointer-events: none;
+  opacity: 0; transition: opacity .8s ease;
+}
+.chapter.active::after { opacity: 1; }
