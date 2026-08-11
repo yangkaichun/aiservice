@@ -517,7 +517,7 @@
         if (t.classList.contains('story-scene')) {
           orb.style.left = (Math.random() * 50 + 45) + '%';
           orb.style.top = (Math.random() * 55 + 10) + '%';
-          var sz = (Math.random() * 16 + 24).toFixed(0);
+          var sz = (Math.random() * 24 + 36).toFixed(0);
           orb.style.width = sz + 'vmin';
           orb.style.height = sz + 'vmin';
         }
@@ -550,10 +550,10 @@
   function initSceneParticles() {
     if (prefersReduced) return;
     document.querySelectorAll('.story-scene').forEach(function (scene) {
-      for (var i = 0; i < 18; i++) {
+      for (var i = 0; i < 24; i++) {
         var d = document.createElement('div');
         d.className = 'dust';
-        var size = (Math.random() * 8 + 5).toFixed(1);
+        var size = (Math.random() * 9 + 7).toFixed(1);
         d.style.width = size + 'px';
         d.style.height = size + 'px';
         d.style.left = (Math.random() * 100) + '%';
