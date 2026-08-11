@@ -28,7 +28,7 @@ window.PANCAD_I18N.zh = Object.assign(window.PANCAD_I18N.zh, {
   act4_num: "ACT 04 · 15:00 暖陽",
   act4_title: "早一步，就有不同的選擇",
   act4_p1: "「幸好發現得早。」醫師說。局限於胰臟的腫瘤，仍有根治的機會；若等到轉移，治療將是一場更艱難的仗。",
-  act4_p2: "拖曳比較：同樣的疾病，不同的時間點，不同的未來。",
+  act4_p2: "同樣的疾病，不同的時間點，不同的未來——早一步，就有不同的選擇。",
 
   act5_num: "ACT 05 · 17:00 金光",
   act5_title: "日落之前，把未來握在手裡",
@@ -39,11 +39,6 @@ window.PANCAD_I18N.zh = Object.assign(window.PANCAD_I18N.zh, {
   /* 共用互動元件（跨頁） */
   st2_wl: "窗位 WL",
   st2_ww: "窗寬 WW",
-  wi_title: "胰臟癌五年存活率",
-  wi_hint: "◄ 拖曳比較 ►",
-  wi_early: "早期發現（<2cm）",
-  wi_late: "轉移後發現",
-  wi_foot: "* 依文獻統計：日本膵癌登録報告（2007）顯示腫瘤 ≤1cm 之胰臟癌五年存活率為 80.4%（1–2cm 約 50%）；已轉移者約 3%（SEER）。實際預後依個人病情與治療而定。",
   quote_text: "「檢查報告出來那天，醫師說：還好發現得早。」",
   quote_sub: "—— 每一位因早期發現而改變命運的患者",
 
@@ -79,7 +74,7 @@ window.PANCAD_I18N.en = Object.assign(window.PANCAD_I18N.en, {
   act4_num: "ACT 04 · 15:00 WARM SUN",
   act4_title: "One step earlier. Different choices.",
   act4_p1: "\"Good thing we found it early,\" the doctor said. A tumor still confined to the pancreas leaves room for cure; had it metastasized, treatment would have been a much harder battle.",
-  act4_p2: "Drag to compare: the same disease, a different moment, a different future.",
+  act4_p2: "The same disease, a different moment, a different future — one step earlier, different choices.",
 
   act5_num: "ACT 05 · 17:00 GOLDEN HOUR",
   act5_title: "Before sunset, hold the future in your hands",
@@ -88,12 +83,7 @@ window.PANCAD_I18N.en = Object.assign(window.PANCAD_I18N.en, {
   act5_btn: "Learn About Pancreatic Health",
 
   st2_wl: "Window Level",
-  st2_ww: "Window Width",
-  wi_title: "Five-Year Survival Rate",
-  wi_hint: "◄ Drag to compare ►",
-  wi_early: "Found early (<2cm)",
-  wi_late: "Found late (metastatic)",
-  wi_foot: "* Based on published data: the Japanese Pancreatic Cancer Registry (2007) reports 80.4% five-year survival for tumors ≤1cm (≈50% for 1–2cm); metastatic disease ≈3% (SEER). Actual outcomes depend on individual condition and treatment.",
+  st2_ww: "窗寬 WW",
   quote_text: "“That day, when the report came back, the doctor said: good thing we found it early.”",
   quote_sub: "— Every patient whose life changed because of early detection",
 
@@ -129,7 +119,7 @@ window.PANCAD_I18N.ja = Object.assign(window.PANCAD_I18N.ja, {
   act4_num: "ACT 04 · 15:00 暖かな陽",
   act4_title: "一歩早ければ、選べることが違う",
   act4_p1: "「早く見つかってよかった」と医師は言いました。膵臓に限局した腫瘍には根治の可能性が残ります。転移を待っていたなら、治療はもっと厳しい戦いになっていたでしょう。",
-  act4_p2: "ドラッグして比べてください：同じ病気、違う時期、違う未来。",
+  act4_p2: "同じ病気、違う時期、違う未来——一歩早ければ、選べることが違う。",
 
   act5_num: "ACT 05 · 17:00 黄金の光",
   act5_title: "日が沈む前に、未来をこの手に",
@@ -138,12 +128,7 @@ window.PANCAD_I18N.ja = Object.assign(window.PANCAD_I18N.ja, {
   act5_btn: "膵臓の健康について学ぶ",
 
   st2_wl: "ウィンドウレベル",
-  st2_ww: "ウィンドウ幅",
-  wi_title: "膵臓がん5年生存率",
-  wi_hint: "◄ ドラッグして比較 ►",
-  wi_early: "早期発見（2cm未満）",
-  wi_late: "転移後に発見",
-  wi_foot: "* 文献統計による：日本膵癌登録報告（2007）では腫瘍1cm以下の膵臓がんの5年生存率は80.4%（1–2cmは約50%）、転移後は約3%（SEER）。実際の予後は病状と治療により異なります。",
+  st2_ww: "窗寬 WW",
   quote_text: "「検査結果が出た日、医師は言いました。早く見つかってよかった、と。」",
   quote_sub: "—— 早期発見で人生が変わったすべての患者さま",
 
