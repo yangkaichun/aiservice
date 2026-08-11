@@ -162,14 +162,17 @@
   if (slider) {
     var topLayer = slider.querySelector('.top-layer');
     var handle = slider.querySelector('.handle');
+    var divider = slider.querySelector('.divider');
     var dragging = false;
 
     function setPos(clientX) {
       var r = slider.getBoundingClientRect();
       var pct = ((clientX - r.left) / r.width) * 100;
       pct = Math.max(0, Math.min(100, pct));
-      topLayer.style.width = pct + '%';
+      // 遮罩方式：圖片不縮放，clip-path 控制顯示範圍
+      topLayer.style.clipPath = 'inset(0 ' + (100 - pct) + '% 0 0)';
       handle.style.left = pct + '%';
+      if (divider) divider.style.left = pct + '%';
     }
 
     function onMove(e) {
