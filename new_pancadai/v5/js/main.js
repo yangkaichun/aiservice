@@ -42,53 +42,32 @@
   }
 
   /* ==========================================================
-     1. 平滑捲動（自製 Lenis：桌面 + 非 reduced-motion）
-     ========================================================== */
-  function initSmoothScroll() {
-    if (prefersReduced || !isFine) return;
-    var current = window.scrollY;
-    var target = current;
-    var running = false;
-
-    window.addEventListener('scroll', function () {
-      target = window.scrollY;
-      if (!running) {
-        running = true;
-        requestAnimationFrame(step);
-      }
-    }, { passive: true });
-
-    function step() {
-      var diff = target - current;
-      if (Math.abs(diff) < 0.5) {
-        current = target;
-        running = false;
-        return;
-      }
-      current += diff * 0.09;
-      window.scrollTo(0, current);
-      requestAnimationFrame(step);
-    }
-  }
-
-  /* ==========================================================
-     2. 捲動時間軸：--sp 全域進度 + 視差
+     1. 捲動時間軸：--sp 全域進度 + 視差（原生捲動，最順手感）
      ========================================================== */
   function initScrollTimeline() {
     var root = document.documentElement;
-    var parEls = document.querySelectorAll('.chapter-bg, .page-hero .bg');
+    var parEls = document.querySelectorAll('.chapter-bg, .page-hero .bg, .hero-inner');
+    var bar = document.getElementById('scrollProgress');
+    var ticking = false;
 
     function update() {
       var max = document.documentElement.scrollHeight - window.innerHeight;
-      root.style.setProperty('--sp', max > 0 ? (window.scrollY / max).toFixed(4) : '0');
+      var p = max > 0 ? (window.scrollY / max) : 0;
+      root.style.setProperty('--sp', p.toFixed(4));
+      if (bar) bar.style.width = (p * 100).toFixed(2) + '%';
       parEls.forEach(function (el) {
-        var r = el.parentElement.getBoundingClientRect();
+        var r = el.parentElement ? el.parentElement.getBoundingClientRect() : null;
+        if (!r) return;
         var mid = r.top + r.height / 2 - window.innerHeight / 2;
         el.style.setProperty('--par', (mid * -0.07).toFixed(1) + 'px');
       });
+      ticking = false;
     }
-    window.addEventListener('scroll', update, { passive: true });
-    window.addEventListener('resize', update);
+    function onScroll() {
+      if (!ticking) { ticking = true; requestAnimationFrame(update); }
+    }
+    window.addEventListener('scroll', onScroll, { passive: true });
+    window.addEventListener('resize', onScroll);
     update();
   }
 
@@ -111,28 +90,74 @@
   }
 
   /* ==========================================================
-     4. 3D 全息互動（A 提案核心）
+     4. 3D 全息互動（A 提案核心）— 自動旋轉 + 拖曳 + 懸停
      ========================================================== */
   function initHolo() {
     var stage = document.querySelector('.holo-stage');
     if (!stage) return;
     var holo = stage.querySelector('.holo');
     var rotY = 0, rotX = 0, targetY = 0, targetX = 0;
+    var idleSpin = 0.35;          /* 每秒自動旋轉度數 */
+    var dragging = false, lastX = 0, lastY = 0;
+    var hoverStrength = 0;
 
-    if (isFine && !prefersReduced) {
-      stage.addEventListener('mousemove', function (e) {
+    /* 拖曳旋轉（滑鼠 + 觸控）— 直覺、靈敏 */
+    stage.addEventListener('mousedown', function (e) {
+      dragging = true;
+      lastX = e.clientX; lastY = e.clientY;
+      e.preventDefault();
+    });
+    window.addEventListener('mousemove', function (e) {
+      if (dragging) {
+        var dx = e.clientX - lastX;
+        var dy = e.clientY - lastY;
+        lastX = e.clientX; lastY = e.clientY;
+        targetY += dx * 0.45;   /* 高靈敏度 */
+        targetX += dy * 0.35;
+      } else if (isFine && !prefersReduced) {
+        /* 懸停微傾（靠近中心加乘） */
         var r = stage.getBoundingClientRect();
-        targetY = ((e.clientX - r.left) / r.width - 0.5) * 30;
-        targetX = ((e.clientY - r.top) / r.height - 0.5) * -20;
-      });
-      stage.addEventListener('mouseleave', function () { targetY = 0; targetX = 0; });
-    }
+        var nx = (e.clientX - r.left) / r.width - 0.5;
+        var ny = (e.clientY - r.top) / r.height - 0.5;
+        targetY = nx * 40;
+        targetX = ny * -28;
+      }
+    });
+    window.addEventListener('mouseup', function () { dragging = false; });
+    stage.addEventListener('mouseenter', function () {
+      if (!dragging) hoverStrength = 1;
+    });
+    stage.addEventListener('mouseleave', function () {
+      if (!dragging) { targetY = 0; targetX = 0; hoverStrength = 0; }
+    });
+
+    /* 觸控拖曳 */
+    stage.addEventListener('touchstart', function (e) {
+      dragging = true;
+      lastX = e.touches[0].clientX; lastY = e.touches[0].clientY;
+    }, { passive: true });
+    stage.addEventListener('touchmove', function (e) {
+      if (!dragging) return;
+      var dx = e.touches[0].clientX - lastX;
+      var dy = e.touches[0].clientY - lastY;
+      lastX = e.touches[0].clientX; lastY = e.touches[0].clientY;
+      targetY += dx * 0.5;
+      targetX += dy * 0.4;
+    }, { passive: true });
+    stage.addEventListener('touchend', function () { dragging = false; }, { passive: true });
 
     /* 捲動時模型收縮進場（首屏捲離時） */
     var hero = document.querySelector('.hero');
-    function holoRaf() {
-      rotY += (targetY - rotY) * 0.06;
-      rotX += (targetX - rotX) * 0.06;
+    var lastT = 0;
+    function holoRaf(t) {
+      var dt = lastT ? (t - lastT) / 1000 : 0;
+      lastT = t;
+      /* idle 自動旋轉（不拖曳、不懸停時） */
+      if (!dragging && hoverStrength === 0 && !prefersReduced) {
+        targetY += idleSpin * dt * 60 / 60;
+      }
+      rotY += (targetY - rotY) * 0.08;
+      rotX += (targetX - rotX) * 0.08;
       var scale = 1;
       if (hero) {
         var h = hero.getBoundingClientRect();
@@ -145,20 +170,25 @@
       requestAnimationFrame(holoRaf);
     }
     requestAnimationFrame(holoRaf);
+  }
 
-    /* 觸控：拖動旋轉 */
-    var dragging = false, lastX = 0;
-    stage.addEventListener('touchstart', function (e) {
-      dragging = true;
-      lastX = e.touches[0].clientX;
+  /* 滑鼠光暈追蹤（桌面，全站） */
+  function initSpotGlow() {
+    if (!isFine || prefersReduced) return;
+    var glow = document.createElement('div');
+    glow.className = 'spot-glow';
+    document.body.appendChild(glow);
+    var x = 0, y = 0, cx = 0, cy = 0;
+    window.addEventListener('mousemove', function (e) {
+      x = e.clientX; y = e.clientY;
     }, { passive: true });
-    stage.addEventListener('touchmove', function (e) {
-      if (!dragging) return;
-      var dx = e.touches[0].clientX - lastX;
-      lastX = e.touches[0].clientX;
-      targetY += dx * 0.5;
-    }, { passive: true });
-    stage.addEventListener('touchend', function () { dragging = false; }, { passive: true });
+    (function raf() {
+      cx += (x - cx) * 0.12;
+      cy += (y - cy) * 0.12;
+      glow.style.setProperty('--gx', cx + 'px');
+      glow.style.setProperty('--gy', cy + 'px');
+      requestAnimationFrame(raf);
+    })();
   }
 
   /* ==========================================================
