@@ -33,6 +33,7 @@
 /* ---------- 2. Reset ---------- */
 * { margin: 0; padding: 0; box-sizing: border-box; }
 html { scroll-behavior: smooth; }
+body.no-scroll { overflow: hidden; }
 body {
   font-family: var(--font);
   color: var(--ink);
@@ -894,4 +895,122 @@ html:not([lang="zh-TW"]) .zh-only { display: none !important; }
 @media (max-width: 768px) {
   .hero-enter { animation-duration: .7s; }
   .gate-card .glow-follow { display: none; }
+}
+
+/* ============================================================
+   19. 導入頁 INTRO（v3 進場特效）
+   ============================================================ */
+.intro {
+  position: fixed; inset: 0; z-index: 9999;
+  background: linear-gradient(160deg, #0e2244, #1b3f7a 55%, #295daa);
+  display: flex; align-items: center; justify-content: center;
+  overflow: hidden;
+  transition: transform 1s cubic-bezier(.72,0,.26,1), opacity .8s ease;
+}
+.intro.done { transform: translateY(-100%); }
+
+/* intro 背景：微微光暈網格 */
+.intro::before {
+  content: ''; position: absolute; inset: 0;
+  background-image: linear-gradient(rgba(255,255,255,.045) 1px, transparent 1px),
+                    linear-gradient(90deg, rgba(255,255,255,.045) 1px, transparent 1px);
+  background-size: 44px 44px;
+  animation: introGrid 8s linear infinite;
+}
+@keyframes introGrid { 0% { background-position: 0 0; } 100% { background-position: 44px 44px; } }
+
+/* intro 金色光暈（中心爆開） */
+.intro-glow {
+  position: absolute; width: 90vmin; height: 90vmin; border-radius: 50%;
+  top: 50%; left: 50%;
+  background: radial-gradient(circle, rgba(255,205,110,.85) 0%, rgba(236,112,0,.4) 40%, transparent 68%);
+  filter: blur(14px);
+  transform: translate(-50%,-50%) scale(.3);
+  animation: introGlow 3s cubic-bezier(.2,.7,.2,1) forwards;
+}
+@keyframes introGlow {
+  0% { transform: translate(-50%,-50%) scale(.3); opacity: 0; }
+  30% { opacity: .9; }
+  100% { transform: translate(-50%,-50%) scale(1.6); opacity: .7; }
+}
+
+/* intro 青色掃描光帶 */
+.intro-beam {
+  position: absolute; top: -30%; bottom: -30%; width: 260px; left: -40%;
+  background: linear-gradient(105deg, transparent, rgba(53,196,224,.2), rgba(255,255,255,.07), transparent);
+  transform: skewX(-18deg);
+  animation: introBeam 3.2s cubic-bezier(.2,.7,.2,1) forwards;
+}
+@keyframes introBeam { 0% { left: -40%; opacity: 0; } 20% { opacity: 1; } 100% { left: 120%; opacity: .6; } }
+
+/* intro 粒子（JS 生成） */
+.intro-particles { position: absolute; inset: 0; overflow: hidden; pointer-events: none; }
+
+/* intro Slogan 錯落入場 */
+.intro-content { position: relative; z-index: 2; text-align: center; padding: 0 24px; }
+.intro-logo {
+  opacity: 0; transform: translateY(-18px);
+  animation: introFadeUp .8s ease-out .15s forwards;
+  margin-bottom: 26px;
+}
+.intro-logo img { height: 54px; margin: 0 auto; }
+.intro-slogan {
+  color: #fff; font-size: clamp(2.2rem, 7vw, 3.4rem); font-weight: 900;
+  letter-spacing: .05em; line-height: 1.3;
+  opacity: 0; transform: translateY(26px) scale(.97);
+  animation: introFadeUp .95s cubic-bezier(.2,.7,.2,1) .5s forwards;
+  text-shadow: 0 6px 44px rgba(10,30,60,.5);
+}
+.intro-slogan .hl {
+  background: linear-gradient(100deg, #ffb066 42%, #ffe3bd 50%, #ffb066 58%);
+  background-size: 220% 100%;
+  -webkit-background-clip: text; background-clip: text;
+  -webkit-text-fill-color: transparent; color: transparent;
+  animation: shimmerMove 3.6s linear infinite;
+  font-style: normal;
+}
+.intro-sub {
+  color: rgba(255,255,255,.75); font-size: clamp(1rem, 2.4vw, 1.25rem);
+  letter-spacing: .3em; margin-top: 20px;
+  opacity: 0; animation: introFadeUp .9s ease-out .95s forwards;
+}
+@keyframes introFadeUp { to { opacity: 1; transform: none; } }
+
+/* intro 下滑提示 */
+.intro-hint {
+  position: absolute; left: 50%; bottom: 44px; transform: translateX(-50%);
+  z-index: 3; text-align: center; color: rgba(255,255,255,.85);
+  font-size: 14px; letter-spacing: .24em;
+  display: flex; flex-direction: column; align-items: center; gap: 8px;
+  opacity: 0; animation: introFadeUp 1s ease-out 1.6s forwards;
+}
+.intro-hint i { font-size: 20px; color: var(--orange); animation: hintArrow 1.6s ease-in-out infinite; }
+@keyframes hintArrow { 0%,100% { transform: translateY(0); opacity: .7; } 50% { transform: translateY(7px); opacity: 1; } }
+
+/* intro SKIP */
+.intro-skip {
+  position: absolute; right: 24px; bottom: 34px; z-index: 4;
+  color: rgba(255,255,255,.6); font-size: 13px; letter-spacing: .14em;
+  cursor: pointer; user-select: none; opacity: 0;
+  animation: introFadeUp .8s ease-out 1.4s forwards;
+  transition: color .3s;
+}
+.intro-skip:hover { color: #fff; }
+
+/* ============================================================
+   20. Hero 背景 Ken Burns 加強（多方向縮放平移）
+   ============================================================ */
+.hero-bg {
+  animation: kenburns 26s ease-in-out infinite alternate;
+}
+@keyframes kenburns {
+  0%   { transform: scale(1.14) translate(0, 0); }
+  33%  { transform: scale(1.08) translate(-1.2%, -0.8%); }
+  66%  { transform: scale(1.1) translate(0.9%, 0.6%); }
+  100% { transform: scale(1.14) translate(-0.5%, 0.9%); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .intro { display: none; }
+  .hero-bg { animation: none; }
 }

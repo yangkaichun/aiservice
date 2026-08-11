@@ -6,6 +6,57 @@
 (function () {
   'use strict';
 
+  /* ---------- 0. INTRO 進場特效 ---------- */
+  var intro = document.getElementById('intro');
+  if (intro) {
+    var introEntered = false;
+    function finishIntro() {
+      if (introEntered) return;
+      introEntered = true;
+      intro.classList.add('done');
+      document.body.classList.remove('no-scroll');
+      setTimeout(function () { if (intro.parentNode) intro.parentNode.removeChild(intro); }, 1100);
+    }
+    // 頁面載入期間鎖滾動（intro 結束才放開）
+    document.body.classList.add('no-scroll');
+    // 生成 intro 粒子
+    var introParticles = document.getElementById('introParticles');
+    if (introParticles) {
+      for (var ip = 0; ip < 22; ip++) {
+        var p2 = document.createElement('span');
+        p2.className = 'particle';
+        var sz = 3 + Math.random() * 6;
+        p2.style.width = sz + 'px';
+        p2.style.height = sz + 'px';
+        p2.style.left = (Math.random() * 100) + '%';
+        p2.style.top = (20 + Math.random() * 80) + '%';
+        p2.style.animationDuration = (5 + Math.random() * 9) + 's';
+        p2.style.animationDelay = (Math.random() * 4) + 's';
+        introParticles.appendChild(p2);
+      }
+    }
+    // 無障礙：減少動態偏好直接進入
+    if (window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+      finishIntro();
+    } else {
+      // 3 秒後自動進入
+      setTimeout(finishIntro, 3200);
+      // 下滑 / 觸控上滑 / PageDown / 空白 → 提早進入
+      window.addEventListener('wheel', function (e) { if (e.deltaY > 8) finishIntro(); }, { passive: true });
+      window.addEventListener('touchstart', function (e) {
+        var ty = e.touches[0].clientY;
+        window.addEventListener('touchmove', function (ev) {
+          if (ev.touches[0].clientY < ty - 24) finishIntro();
+        }, { passive: true, once: true });
+      }, { passive: true });
+      window.addEventListener('keydown', function (e) {
+        if (e.key === 'PageDown' || e.key === 'ArrowDown' || e.key === ' ') finishIntro();
+      });
+      var skipBtn = document.getElementById('introSkip');
+      if (skipBtn) skipBtn.addEventListener('click', finishIntro);
+    }
+  }
+
   /* ---------- 1. NAV：滾動加陰影 + 漢堡選單 ---------- */
   var nav = document.getElementById('nav');
   var burger = document.getElementById('burger');
@@ -299,10 +350,18 @@
     var wantMed = et !== 'slow-2g' && et !== '2g';
     var wantHd = et === '4g' || et === 'wifi' || et.indexOf('ethernet') === 0 || !conn.effectiveType;
 
+    function restartKenburns() {
+      // 重啟背景縮放動畫（每張新圖都重新 Ken Burns）
+      heroBg.style.animation = 'none';
+      void heroBg.offsetWidth; /* reflow 強制重啟 */
+      heroBg.style.animation = '';
+    }
+
     function showHeroBg(cand) {
       if (!wantMed) {
         // 慢速網路：直接顯示小圖（CSS 首幀已載入）
         heroBg.style.backgroundImage = "url('" + cand.src + "')";
+        restartKenburns();
         return;
       }
       var hImg = new Image();
@@ -312,6 +371,7 @@
         setTimeout(function () {
           heroBg.style.backgroundImage = "url('" + cand.src + "')";
           heroBg.style.opacity = '1';
+          restartKenburns();
         }, 180);
         if (wantHd) {
           var hdImg = new Image();
@@ -320,6 +380,7 @@
             setTimeout(function () {
               heroBg.style.backgroundImage = "url('" + cand.hd + "')";
               heroBg.style.opacity = '1';
+              restartKenburns();
             }, 200);
           };
           hdImg.src = cand.hd;
@@ -353,6 +414,7 @@
             heroBg.style.backgroundImage = "url('" + next.hd + "')";
             heroBg.style.opacity = '1';
             heroPick = next;
+            restartKenburns();
           }, 320);
         };
         pre.onerror = function () {
@@ -363,6 +425,7 @@
               heroBg.style.backgroundImage = "url('" + next.src + "')";
               heroBg.style.opacity = '1';
               heroPick = next;
+              restartKenburns();
             }, 320);
           };
           fb.src = next.src;
