@@ -203,7 +203,7 @@
       var p = Math.min((ts - start) / dur, 1);
       var eased = 1 - Math.pow(1 - p, 3);
       var val = target * eased;
-      el.textContent = decimals > 0 ? val.toFixed(decimals) : Math.round(val).toLocaleString();
+      el.textContent = decimals > 0 ? val.toFixed(decimals) : Math.round(val).toString();
       if (p < 1) requestAnimationFrame(step);
     }
     requestAnimationFrame(step);
