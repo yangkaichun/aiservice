@@ -553,7 +553,7 @@
       for (var i = 0; i < 18; i++) {
         var d = document.createElement('div');
         d.className = 'dust';
-        var size = (Math.random() * 5 + 3).toFixed(1);
+        var size = (Math.random() * 8 + 5).toFixed(1);
         d.style.width = size + 'px';
         d.style.height = size + 'px';
         d.style.left = (Math.random() * 100) + '%';
@@ -572,6 +572,18 @@
       glow.style.top = (Math.random() * 40 + 10) + '%';
       glow.style.animationDelay = (-Math.random() * 7).toFixed(1) + 's';
       scene.appendChild(glow);
+    });
+  }
+
+  /* 光束掃過（每幕 2 道：金 + 冷青） */
+  function initActBeams() {
+    if (prefersReduced) return;
+    document.querySelectorAll('.story-scene, .ph-sun').forEach(function (t) {
+      for (var i = 0; i < 2; i++) {
+        var b = document.createElement('div');
+        b.className = 'act-beam' + (i === 1 ? ' beam-b' : '');
+        t.appendChild(b);
+      }
     });
   }
 
@@ -694,6 +706,7 @@
     initGlobalOrbs();
     initHeroParticles();
     initSceneParticles();
+    initActBeams();
     initSceneEnter();
     initBgPool();
     initReveal();
