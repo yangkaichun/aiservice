@@ -109,18 +109,18 @@
       var arr = [];
       for (var i = 1; i <= 30; i++) {
         var n = (i < 10 ? '0' : '') + i;
-        arr.push({ src: 'assets/hero_intl_' + n + '.jpg', hd: 'assets/hero_intl_' + n + '_hd.jpg' });
+        arr.push({ src: 'assets/hero_intl_' + n + '_safe.jpg', hd: 'assets/hero_intl_' + n + '_safe_hd.jpg' });
       }
       return arr;
     }
     return [
-      { src: 'assets/hero_sun_bike.jpg', hd: 'assets/hero_sun_bike_hd.jpg' },
-      { src: 'assets/hero_sun_yoga.jpg', hd: 'assets/hero_sun_yoga_hd.jpg' },
-      { src: 'assets/hero_sun_picnic.jpg', hd: 'assets/hero_sun_picnic_hd.jpg' },
-      { src: 'assets/hero_sun_coffee.jpg', hd: 'assets/hero_sun_coffee_hd.jpg' },
-      { src: 'assets/hero_sun_kayak.jpg', hd: 'assets/hero_sun_kayak_hd.jpg' },
-      { src: 'assets/hero_sun_bridge.jpg', hd: 'assets/hero_sun_bridge_hd.jpg' },
-      { src: 'assets/hero_sun_forest.jpg', hd: 'assets/hero_sun_forest_hd.jpg' }
+      { src: 'assets/hero_sun_bike_safe.jpg', hd: 'assets/hero_sun_bike_safe_hd.jpg' },
+      { src: 'assets/hero_sun_yoga_safe.jpg', hd: 'assets/hero_sun_yoga_safe_hd.jpg' },
+      { src: 'assets/hero_sun_picnic_safe.jpg', hd: 'assets/hero_sun_picnic_safe_hd.jpg' },
+      { src: 'assets/hero_sun_coffee_safe.jpg', hd: 'assets/hero_sun_coffee_safe_hd.jpg' },
+      { src: 'assets/hero_sun_kayak_safe.jpg', hd: 'assets/hero_sun_kayak_safe_hd.jpg' },
+      { src: 'assets/hero_sun_bridge_safe.jpg', hd: 'assets/hero_sun_bridge_safe_hd.jpg' },
+      { src: 'assets/hero_sun_forest_safe.jpg', hd: 'assets/hero_sun_forest_safe_hd.jpg' }
     ];
   }
   if (heroBg) {
