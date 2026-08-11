@@ -33,6 +33,17 @@ window.PANCAD_I18N.zh = Object.assign(window.PANCAD_I18N.zh, {
   act5_p2: "追蹤檢查一切穩定。他開始告訴朋友們：「去檢查吧，真的，早一點發現，多一種可能。」",
   act5_btn: "了解胰臟健康知識",
 
+  /* 共用互動元件（跨頁） */
+  st2_wl: "窗位 WL",
+  st2_ww: "窗寬 WW",
+  wi_title: "胰臟癌五年存活率",
+  wi_hint: "◄ 拖曳比較 ►",
+  wi_early: "局限期發現",
+  wi_late: "轉移後發現",
+  wi_foot: "* 依國際癌症登記統計（SEER）五年相對存活率；實際預後依個人病情而定。",
+  quote_text: "「檢查報告出來那天，醫師說：還好發現得早。」",
+  quote_sub: "—— 每一位因早期發現而改變命運的患者",
+
   ph_cta1: "做 30 秒風險自測",
   ph_cta2: "諮詢專業團隊"
 });
@@ -71,6 +82,16 @@ window.PANCAD_I18N.en = Object.assign(window.PANCAD_I18N.en, {
   act5_p2: "Follow-up scans are stable. He has started telling friends: \"Go get checked. Really — find it early, keep the possibilities.\"",
   act5_btn: "Learn About Pancreatic Health",
 
+  st2_wl: "Window Level",
+  st2_ww: "Window Width",
+  wi_title: "Five-Year Survival Rate",
+  wi_hint: "◄ Drag to compare ►",
+  wi_early: "Found early (localized)",
+  wi_late: "Found late (metastatic)",
+  wi_foot: "* Based on international cancer registry statistics (SEER) five-year relative survival; actual outcomes depend on individual condition and treatment.",
+  quote_text: "“That day, when the report came back, the doctor said: good thing we found it early.”",
+  quote_sub: "— Every patient whose life changed because of early detection",
+
   ph_cta1: "Take the 30-Second Risk Check",
   ph_cta2: "Talk to Our Team"
 });
@@ -108,6 +129,16 @@ window.PANCAD_I18N.ja = Object.assign(window.PANCAD_I18N.ja, {
   act5_p1: "手術は成功しました。三ヶ月後、彼は再び自転車に乗りました——同じ川沿い、同じ朝。娘が彼の背中を写真に収めました。陽の光がちょうどよく降り注いでいました。",
   act5_p2: "経過観察の検査は安定しています。彼は友達にこう話し始めました：「検査に行って。本当に——早く見つければ、可能性が広がるから。」",
   act5_btn: "膵臓の健康について学ぶ",
+
+  st2_wl: "ウィンドウレベル",
+  st2_ww: "ウィンドウ幅",
+  wi_title: "膵臓がん5年生存率",
+  wi_hint: "◄ ドラッグして比較 ►",
+  wi_early: "限局期で発見",
+  wi_late: "転移後に発見",
+  wi_foot: "* 国際がん登録統計（SEER）による5年相対生存率。実際の予後は病状と治療により異なります。",
+  quote_text: "「検査結果が出た日、医師は言いました。早く見つかってよかった、と。」",
+  quote_sub: "—— 早期発見で人生が変わったすべての患者さま",
 
   ph_cta1: "30秒リスクチェック",
   ph_cta2: "専門チームに相談"

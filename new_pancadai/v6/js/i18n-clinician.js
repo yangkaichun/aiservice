@@ -72,7 +72,13 @@ window.PANCAD_I18N.zh = Object.assign(window.PANCAD_I18N.zh, {
   cl_cta_title: "為您的機構，<span class=\"hl\">導入可信賴的 AI</span>",
   cl_cta_sub: "與我們的醫療事務團隊聯繫，安排技術說明或臨床導入評估。",
   cl_cta_btn1: "聯繫醫療事務團隊",
-  cl_cta_btn2: "瀏覽衛教知識庫"
+  cl_cta_btn2: "瀏覽衛教知識庫",
+
+  /* 共用統計標籤（跨頁） */
+  stat_1_l: "<2cm 腫瘤偵測敏感度",
+  stat_2_l: "全國多中心 AUC",
+  stat_3_l: "累積判讀人次",
+  stat_4_l: "台美專利"
 });
 
 window.PANCAD_I18N.en = Object.assign(window.PANCAD_I18N.en, {
@@ -148,7 +154,12 @@ window.PANCAD_I18N.en = Object.assign(window.PANCAD_I18N.en, {
   cl_cta_title: "Bring <span class=\"hl\">trustworthy AI</span> to your institution",
   cl_cta_sub: "Contact our medical affairs team for a technical briefing or clinical deployment assessment.",
   cl_cta_btn1: "Contact Medical Affairs",
-  cl_cta_btn2: "Explore the Education Library"
+  cl_cta_btn2: "Explore the Education Library",
+
+  stat_1_l: "Sensitivity (<2cm tumors)",
+  stat_2_l: "Nationwide multicenter AUC",
+  stat_3_l: "Cases read",
+  stat_4_l: "Patents (TW & US)"
 });
 
 window.PANCAD_I18N.ja = Object.assign(window.PANCAD_I18N.ja, {
@@ -224,5 +235,10 @@ window.PANCAD_I18N.ja = Object.assign(window.PANCAD_I18N.ja, {
   cl_cta_title: "貴院に<span class=\"hl\">信頼できるAI</span>を",
   cl_cta_sub: "医療事務チームにご連絡いただき、技術説明または臨床導入評価を。",
   cl_cta_btn1: "医療事務チームに連絡",
-  cl_cta_btn2: "教育ライブラリを見る"
+  cl_cta_btn2: "教育ライブラリを見る",
+
+  stat_1_l: "2cm未満腫瘍の検出感度",
+  stat_2_l: "全国多施設AUC",
+  stat_3_l: "累計読影件数",
+  stat_4_l: "特許（台湾・米国）"
 });

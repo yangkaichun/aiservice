@@ -2,7 +2,7 @@
 
 > 參考標竿：Siemens Healthineers Cancer Care（cancercare.siemens-healthineers.com）
 > 目標：比 v2/v3/v4/v5 **都更好**，且全面**超越 Siemens**。
-> 日期：2026-08-11 ｜ 狀態：**提案階段，待使用者確認方向**
+> 日期：2026-08-11 ｜ 狀態：**✅ 建置完成 v6.0.1（A×B×C 全都要：旅程 360° × 證據即體驗 × 暖光編輯敘事）— 驗證全過**
 
 ---
 
