@@ -110,7 +110,7 @@
       var total = stations.length - 1;
       var cur = stations[current].getBoundingClientRect();
       var within = Math.min(Math.max(-cur.top / (cur.height + vh * 0.45), 0), 1);
-      var p = (current + within * 0.999) / total;
+      var p = Math.min((current + within * 0.999) / total, 1);
       document.documentElement.style.setProperty('--journey-p', (p * 100).toFixed(1));
       lineEls.forEach(function (ln, i) {
         var f = i < current ? 1 : (i === current ? within : 0);
@@ -503,7 +503,7 @@
      15. 動態光影（v2 級）：全域 orb 注入 + hero 金色粒子 + 場景過場
      ========================================================== */
   function initGlobalOrbs() {
-    var targets = document.querySelectorAll('.scene.dark, .scene.darker, .page-hero');
+    var targets = document.querySelectorAll('.scene.dark, .scene.darker, .scene.sun, .page-hero');
     if (!targets.length) return;
     var variants = ['orb-a', 'orb-b', 'orb-c', 'orb-d'];
     var counter = 0;

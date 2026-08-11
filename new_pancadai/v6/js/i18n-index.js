@@ -68,13 +68,13 @@ window.PANCAD_I18N.zh = Object.assign(window.PANCAD_I18N.zh, {
   /* What-if 滑桿 */
   wi_title: "胰臟癌五年存活率",
   wi_hint: "◄ 拖曳比較 ►",
-  wi_early: "局限期發現",
+  wi_early: "早期發現（<2cm）",
   wi_late: "轉移後發現",
   wi_cap1: "早發現",
-  wi_cap1_d: "：治療選擇多，預後明顯更好",
+  wi_cap1_d: "：五年存活率達 80% 以上",
   wi_cap2: "晚發現",
   wi_cap2_d: "：治療選項有限，預後嚴峻",
-  wi_foot: "* 依國際癌症登記統計（SEER，美國國家癌症研究所）五年相對存活率；實際預後依個人病情與治療而定。",
+  wi_foot: "* 依文獻統計：日本膵癌登録報告（2007）顯示腫瘤 ≤1cm 之胰臟癌五年存活率為 80.4%（1–2cm 約 50%）；已轉移者約 3%（SEER，美國國家癌症研究所）。實際預後依個人病情與治療而定。",
 
   /* 站 05 追蹤 */
   st5_title: "治療之後，是繼續生活",
@@ -213,13 +213,13 @@ window.PANCAD_I18N.en = Object.assign(window.PANCAD_I18N.en, {
 
   wi_title: "Five-Year Survival Rate",
   wi_hint: "◄ Drag to compare ►",
-  wi_early: "Found early (localized)",
+  wi_early: "Found early (<2cm)",
   wi_late: "Found late (metastatic)",
   wi_cap1: "Early",
-  wi_cap1_d: ": more options, clearly better outcomes",
+  wi_cap1_d: ": five-year survival of 80% or higher",
   wi_cap2: "Late",
   wi_cap2_d: ": limited options, a much harder road",
-  wi_foot: "* Based on international cancer registry statistics (SEER, US National Cancer Institute) five-year relative survival; actual outcomes depend on individual condition and treatment.",
+  wi_foot: "* Based on published data: the Japanese Pancreatic Cancer Registry (2007) reports 80.4% five-year survival for tumors ≤1cm (≈50% for 1–2cm); metastatic disease ≈3% (SEER, US National Cancer Institute). Actual outcomes depend on individual condition and treatment.",
 
   st5_title: "After treatment, life continues",
   st5_sub: "Stop 5: the meaning of early detection lives in every day that follows.",
@@ -352,13 +352,13 @@ window.PANCAD_I18N.ja = Object.assign(window.PANCAD_I18N.ja, {
 
   wi_title: "膵臓がん5年生存率",
   wi_hint: "◄ ドラッグして比較 ►",
-  wi_early: "限局期で発見",
+  wi_early: "早期発見（2cm未満）",
   wi_late: "転移後に発見",
   wi_cap1: "早い発見",
-  wi_cap1_d: "：選択肢が多く、予後も明らかに良好",
+  wi_cap1_d: "：5年生存率80%以上",
   wi_cap2: "遅い発見",
   wi_cap2_d: "：選択肢が限られ、厳しい道のり",
-  wi_foot: "* 国際がん登録統計（SEER、米国国立がん研究所）による5年相対生存率。実際の予後は病状と治療により異なります。",
+  wi_foot: "* 文献統計による：日本膵癌登録報告（2007）では腫瘍1cm以下の膵臓がんの5年生存率は80.4%（1–2cmは約50%）、転移後は約3%（SEER、米国国立がん研究所）。実際の予後は病状と治療により異なります。",
 
   st5_title: "治療のあとは、人生が続く",
   st5_sub: "第五駅：早期発見の意味は、その後の毎日にあります。",

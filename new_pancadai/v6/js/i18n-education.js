@@ -33,7 +33,7 @@ window.PANCAD_I18N.zh = Object.assign(window.PANCAD_I18N.zh, {
   edu_a1_p1: "胰臟位於腹腔深處，是兼具消化與內分泌功能的關鍵器官。也正因為位置深、被胃與腸道遮擋，胰臟癌在早期幾乎不會產生明顯症狀——這就是它被稱為「沉默殺手」的原因。",
   edu_a1_p2: "等到黃疸、背痛、體重減輕等症狀出現時，腫瘤往往已經局部侵犯或轉移，治療選擇大幅受限。根據國際統計，胰臟癌的五年存活率是所有主要癌症中最低的之一。",
   edu_a1_c1: "但有一件事可以改變這個數字：",
-  edu_a1_c2: "在腫瘤還小的時候發現它。早期（局限期）發現的五年存活率，是晚期發現的十倍以上。",
+  edu_a1_c2: "在腫瘤還小的時候發現它。文獻顯示，腫瘤 ≤1cm 時發現的五年存活率可達 80% 以上——是晚期發現的二十倍以上。",
   edu_a1_p3: "正因如此，認識風險、定期檢查、善用工具——包括 AI 輔助判讀——才是真正的「早知道」。",
 
   edu_a2_t: "誰是高風險族群？——五大風險因子",
@@ -126,7 +126,7 @@ window.PANCAD_I18N.en = Object.assign(window.PANCAD_I18N.en, {
   edu_a1_p1: "The pancreas sits deep in the abdomen, a key organ for both digestion and hormones. Because it is deeply located and shielded by the stomach and intestines, pancreatic cancer rarely produces obvious symptoms in its early stages — which is why it is called the silent killer.",
   edu_a1_p2: "By the time jaundice, back pain or weight loss appear, the tumor has often already invaded locally or metastasized, sharply limiting treatment options. Internationally, pancreatic cancer has one of the lowest five-year survival rates among major cancers.",
   edu_a1_c1: "But one thing can change that number:",
-  edu_a1_c2: "finding it while the tumor is still small. Five-year survival when found early (localized) is more than ten times that of late detection.",
+  edu_a1_c2: "finding it while the tumor is still small. Published data shows five-year survival above 80% when the tumor is found at ≤1cm — more than twenty times that of late detection.",
   edu_a1_p3: "That is why knowing your risk, checking regularly and using the right tools — including AI-assisted reading — is what \"knowing early\" truly means.",
 
   edu_a2_t: "Who is at high risk? — five key risk factors",
@@ -219,7 +219,7 @@ window.PANCAD_I18N.ja = Object.assign(window.PANCAD_I18N.ja, {
   edu_a1_p1: "膵臓は腹腔の奥深くにあり、消化とホルモン分泌の両方を担う重要な臓器です。位置が深く胃や腸に隠れているため、膵臓がんは初期にほとんど症状を出しません——「沈黙の殺し屋」と呼ばれる所以です。",
   edu_a1_p2: "黄疸や背部痛、体重減少などの症状が現れた頃には、腫瘍はすでに局所浸潤や転移を起こし、治療の選択肢が大きく狭まっています。国際統計でも、膵臓がんの5年生存率は主要ながんの中で最も低い部類です。",
   edu_a1_c1: "しかし、この数字を変えられることがひとつあります：",
-  edu_a1_c2: "腫瘍が小さいうちに見つけること。早期（限局期）発見の5年生存率は、晚期発見の10倍以上です。",
+  edu_a1_c2: "腫瘍が小さいうちに見つけること。文献によれば、腫瘍1cm以下での発見なら5年生存率は80%以上——晚期発見の20倍以上です。",
   edu_a1_p3: "だからこそ、リスクを知り、定期的に検査し、AI支援読影などの道具を活用することが、本当の「早く知る」なのです。",
 
   edu_a2_t: "高リスク群とは？——5つの主要リスク因子",
