@@ -569,6 +569,102 @@
   }
 
   /* ==========================================================
+     15.5 背景語言池 + 隨機輪換 + 漸進解析度（v3 機制移植）
+     中文/日文 → 台灣 sun 池；英文 → 西歐人種 intl 池
+     每 9 秒隨機換圖；effectiveType 決定 med(1280 jpg) → hd(5120 webp)
+     ========================================================== */
+  var BG_POOLS = null;
+  function buildPools() {
+    if (BG_POOLS) return BG_POOLS;
+    var sun = ['bike', 'bridge', 'coffee', 'forest', 'kayak', 'picnic', 'yoga'];
+    var intl = [];
+    for (var i = 1; i <= 30; i++) intl.push(('0' + i).slice(-2));
+    function items(names, prefix) {
+      return names.map(function (n) {
+        return {
+          name: prefix + n,
+          med: 'assets/hero_' + prefix + n + '_safe.jpg',
+          hd: 'assets/hero_' + prefix + n + '_safe_hd.webp'
+        };
+      });
+    }
+    BG_POOLS = {
+      sun: items(sun, 'sun_'),
+      intl: items(intl, 'intl_')
+    };
+    return BG_POOLS;
+  }
+  function poolForLang() {
+    var lang = (window.PANCAD_LANG && PANCAD_LANG.current()) || 'zh-TW';
+    return (String(lang).toLowerCase().indexOf('en') === 0) ? buildPools().intl : buildPools().sun;
+  }
+  function netTier() {
+    var conn = navigator.connection || navigator.mozConnection || navigator.webkitConnection;
+    if (!conn || !conn.effectiveType) return 'hd';
+    var et = conn.effectiveType;
+    if (et === 'slow-2g' || et === '2g') return 'med';
+    if (et === '3g') return 'med';
+    return 'hd';
+  }
+  function restartBgAnim(el) {
+    var anim = getComputedStyle(el).animationName;
+    if (anim && anim !== 'none') {
+      el.style.animation = 'none';
+      void el.offsetWidth;
+      el.style.animation = '';
+    }
+  }
+  function applyBg(el, item, tier) {
+    if (tier === 'hd') {
+      /* 先 med（立即顯示）→ HD 載好再升級（漸進） */
+      el.style.backgroundImage = "url('" + item.med + "')";
+      restartBgAnim(el);
+      var img = new Image();
+      img.onload = function () {
+        if (el.getAttribute('data-bg-name') === item.name) {
+          el.style.backgroundImage = "url('" + item.hd + "')";
+          restartBgAnim(el);
+        }
+      };
+      img.src = item.hd;
+    } else {
+      el.style.backgroundImage = "url('" + item.med + "')";
+      restartBgAnim(el);
+    }
+  }
+  function initBgPool() {
+    var targets = document.querySelectorAll('[data-bg-pool]');
+    if (!targets.length) return;
+    var pool = poolForLang();
+    var tier = netTier();
+    targets.forEach(function (el) {
+      var cur = pool[Math.floor(Math.random() * pool.length)];
+      el.setAttribute('data-bg-name', cur.name);
+      el.style.opacity = 0;
+      applyBg(el, cur, tier);
+      el.style.opacity = 1;
+      if (prefersReduced) return;
+      setInterval(function () {
+        var next;
+        do { next = pool[Math.floor(Math.random() * pool.length)]; } while (next.name === cur.name);
+        cur = next;
+        el.setAttribute('data-bg-name', next.name);
+        el.style.opacity = 0;
+        setTimeout(function () {
+          applyBg(el, next, tier);
+          el.style.opacity = 1;
+        }, 450);
+      }, 9000);
+    });
+  }
+  function reinitBgPool() {
+    document.querySelectorAll('[data-bg-pool]').forEach(function (el) {
+      el.setAttribute('data-bg-name', '');
+    });
+    initBgPool();
+  }
+
+  /* ==========================================================
      Boot
      ========================================================== */
   document.addEventListener('DOMContentLoaded', function () {
@@ -580,6 +676,7 @@
     initHeroParticles();
     initSceneParticles();
     initSceneEnter();
+    initBgPool();
     initReveal();
     initCounters();
     initCT();
@@ -594,7 +691,7 @@
     initSpotGlow();
   });
 
-  /* 語言切換後重跑 kinetic */
+  /* 語言切換後重跑 kinetic + 背景換池 */
   window.addEventListener('langchange', function () {
     setTimeout(function () {
       document.querySelectorAll('.kinetic').forEach(function (el) {
@@ -602,5 +699,6 @@
       });
       initKinetic();
     }, 60);
+    setTimeout(reinitBgPool, 120);
   });
 })();
