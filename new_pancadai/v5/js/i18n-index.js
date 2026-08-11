@@ -254,6 +254,10 @@ window.PANCAD_I18N = {
     cta_btn1: "Patient Consultation",
     cta_btn2: "Institution Partnership",
 
+    quote_text: "“The day the report came back, my doctor said: good thing we found it early.”",
+    quote_sub: "— For every patient whose life changed because of early detection",
+    quote_btn: "Hear their stories",
+
     foot_about: "PanCAD.ai — using AI to protect pancreatic health, making early detection reachable for everyone.",
     foot_nav: "Sitemap",
     foot_prod: "Product & Evidence",
@@ -381,6 +385,10 @@ window.PANCAD_I18N = {
     cta_sub: "患者さま、ご家族、医療機関 — 次の一歩を、私たちもご一緒に。",
     cta_btn1: "患者さま相談",
     cta_btn2: "機関との連携",
+
+    quote_text: "「検査結果が出た日、医師は言いました——早く見つかって良かったね。」",
+    quote_sub: "—— 早期発見で人生が変わったすべての患者さまへ",
+    quote_btn: "物語を聞く",
 
     foot_about: "仲智デジタルヘルス（PanCAD.ai）— AIで膵臓の健康を守り、早期発見を身近に。",
     foot_nav: "サイトマップ",
