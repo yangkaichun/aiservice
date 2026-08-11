@@ -68,7 +68,7 @@
   });
 
   /* ---------- 3. Reveal 滾動淡入 ---------- */
-  var revealEls = document.querySelectorAll('.reveal');
+  var revealEls = document.querySelectorAll('.reveal, .reveal-l, .reveal-r');
   if ('IntersectionObserver' in window && revealEls.length) {
     var ro = new IntersectionObserver(function (entries) {
       entries.forEach(function (e) {
@@ -267,6 +267,109 @@
         paf = null;
       });
     }, { passive: true });
+  }
+
+  // 9.5 Hero 背景：語言池分流（en=多元種族 30 張；zh/ja=台灣 7 張）
+  //      ＋依網速漸進解析度（slow-2g/2g=小圖、3g=原圖、4g/wifi=HD 5120）
+  //      ＋9 秒停留隨機輪換（預載完成才淡入切換）
+  var heroBg = document.querySelector('.hero-bg');
+  function heroPool() {
+    if (document.documentElement.lang === 'en') {
+      var arr = [];
+      for (var i = 1; i <= 30; i++) {
+        var n = (i < 10 ? '0' : '') + i;
+        arr.push({ src: 'assets/hero_intl_' + n + '_safe.jpg', hd: 'assets/hero_intl_' + n + '_safe_hd.jpg' });
+      }
+      return arr;
+    }
+    return [
+      { src: 'assets/hero_sun_bike_safe.jpg', hd: 'assets/hero_sun_bike_safe_hd.jpg' },
+      { src: 'assets/hero_sun_yoga_safe.jpg', hd: 'assets/hero_sun_yoga_safe_hd.jpg' },
+      { src: 'assets/hero_sun_picnic_safe.jpg', hd: 'assets/hero_sun_picnic_safe_hd.jpg' },
+      { src: 'assets/hero_sun_coffee_safe.jpg', hd: 'assets/hero_sun_coffee_safe_hd.jpg' },
+      { src: 'assets/hero_sun_kayak_safe.jpg', hd: 'assets/hero_sun_kayak_safe_hd.jpg' },
+      { src: 'assets/hero_sun_bridge_safe.jpg', hd: 'assets/hero_sun_bridge_safe_hd.jpg' },
+      { src: 'assets/hero_sun_forest_safe.jpg', hd: 'assets/hero_sun_forest_safe_hd.jpg' }
+    ];
+  }
+  if (heroBg) {
+    var heroPick = heroPool()[Math.floor(Math.random() * heroPool().length)];
+    var conn = navigator.connection || {};
+    var et = (conn.effectiveType || '4g').toLowerCase();
+    var wantMed = et !== 'slow-2g' && et !== '2g';
+    var wantHd = et === '4g' || et === 'wifi' || et.indexOf('ethernet') === 0 || !conn.effectiveType;
+
+    function showHeroBg(cand) {
+      if (!wantMed) {
+        // 慢速網路：直接顯示小圖（CSS 首幀已載入）
+        heroBg.style.backgroundImage = "url('" + cand.src + "')";
+        return;
+      }
+      var hImg = new Image();
+      hImg.onload = function () {
+        heroBg.style.transition = 'opacity 1.2s ease';
+        heroBg.style.opacity = '0';
+        setTimeout(function () {
+          heroBg.style.backgroundImage = "url('" + cand.src + "')";
+          heroBg.style.opacity = '1';
+        }, 180);
+        if (wantHd) {
+          var hdImg = new Image();
+          hdImg.onload = function () {
+            heroBg.style.opacity = '0';
+            setTimeout(function () {
+              heroBg.style.backgroundImage = "url('" + cand.hd + "')";
+              heroBg.style.opacity = '1';
+            }, 200);
+          };
+          hdImg.src = cand.hd;
+        }
+      };
+      hImg.src = cand.src;
+    }
+    showHeroBg(heroPick);
+
+    // 語言切換 → 立即從新語言池重選背景
+    window.addEventListener('langchange', function () {
+      var pool = heroPool();
+      heroPick = pool[Math.floor(Math.random() * pool.length)];
+      showHeroBg(heroPick);
+    });
+
+    // 停留輪換：每 9s 隨機換一張，預載完成（onload）才淡入淡出切換
+    var reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    if (!reduceMotion) {
+      setInterval(function () {
+        var pool = heroPool();
+        var next = pool[Math.floor(Math.random() * pool.length)];
+        if (next === heroPick) {
+          next = pool[(pool.indexOf(heroPick) + 1) % pool.length];
+        }
+        var pre = new Image();
+        pre.onload = function () {
+          heroBg.style.transition = 'opacity .9s ease';
+          heroBg.style.opacity = '0';
+          setTimeout(function () {
+            heroBg.style.backgroundImage = "url('" + next.hd + "')";
+            heroBg.style.opacity = '1';
+            heroPick = next;
+          }, 320);
+        };
+        pre.onerror = function () {
+          var fb = new Image();
+          fb.onload = function () {
+            heroBg.style.opacity = '0';
+            setTimeout(function () {
+              heroBg.style.backgroundImage = "url('" + next.src + "')";
+              heroBg.style.opacity = '1';
+              heroPick = next;
+            }, 320);
+          };
+          fb.src = next.src;
+        };
+        pre.src = next.hd;
+      }, 9000);
+    }
   }
 
   /* ---------- 8. 表單提交（mailto 備援 / 導向成功訊息） ---------- */

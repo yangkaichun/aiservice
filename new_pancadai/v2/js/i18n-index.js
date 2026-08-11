@@ -64,7 +64,7 @@ window.PANCAD_I18N.en = {
   'hero.desc': 'PanCAD.ai turns NTU AI imaging research into PANCREASaver<sup>®</sup> — the world\'s only TFDA & FDA breakthrough-designated AI device for pancreatic cancer detection.',
   'hero.cta1': 'Explore Product', 'hero.cta2': 'For Hospitals',
   'hero.m1': 'TFDA Medical Device License', 'hero.m2': 'FDA Breakthrough', 'hero.m3': 'NTU Technology',
-  'hero.scan': '▲ Abdominal CT — AI-marked suspicious lesion',
+  'hero.scan': '▲ PANCREASaver<sup>®</sup> — AI-marked suspicious lesion',
   'trust.s1': '<2cm Tumor Sensitivity', 'trust.s2': 'Nationwide Multi-center Validation', 'trust.s3': 'National & International Awards', 'trust.s4': 'Medical Centers · Regional Hospitals · Health Centers',
   'trust.s3u': '', 'trust.s4u': '+ Exams',
   'story.head': 'Caught early, <span class="hl">life goes on</span>',
