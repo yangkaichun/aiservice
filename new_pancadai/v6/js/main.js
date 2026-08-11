@@ -500,6 +500,54 @@
   }
 
   /* ==========================================================
+     15. 動態光影（v2 級）：全域 orb 注入 + hero 金色粒子 + 場景過場
+     ========================================================== */
+  function initGlobalOrbs() {
+    var targets = document.querySelectorAll('.scene.dark, .scene.darker, .page-hero');
+    if (!targets.length) return;
+    var variants = ['orb-a', 'orb-b', 'orb-c', 'orb-d'];
+    var counter = 0;
+    targets.forEach(function (t) {
+      if (t.querySelector('.orb')) return; /* 已有手動光斑就跳過 */
+      var n = t.classList.contains('page-hero') ? 2 : 2;
+      for (var i = 0; i < n; i++) {
+        var orb = document.createElement('div');
+        orb.className = 'orb ' + variants[(counter++) % variants.length];
+        t.appendChild(orb);
+      }
+    });
+  }
+
+  function initHeroParticles() {
+    if (prefersReduced) return;
+    var hero = document.querySelector('.hero');
+    if (!hero) return;
+    var n = isFine ? 22 : 14;
+    for (var i = 0; i < n; i++) {
+      var p = document.createElement('div');
+      p.className = 'particle';
+      var size = (Math.random() * 5 + 3).toFixed(1);
+      p.style.width = size + 'px';
+      p.style.height = size + 'px';
+      p.style.left = (Math.random() * 100) + '%';
+      p.style.animationDuration = (Math.random() * 9 + 8).toFixed(1) + 's';
+      p.style.animationDelay = (-Math.random() * 16).toFixed(1) + 's';
+      hero.appendChild(p);
+    }
+  }
+
+  function initSceneEnter() {
+    var scenes = document.querySelectorAll('.scene');
+    if (!('IntersectionObserver' in window)) return;
+    var io = new IntersectionObserver(function (entries) {
+      entries.forEach(function (en) {
+        if (en.isIntersecting) en.target.classList.add('enter');
+      });
+    }, { threshold: 0.06 });
+    scenes.forEach(function (s) { io.observe(s); });
+  }
+
+  /* ==========================================================
      Boot
      ========================================================== */
   document.addEventListener('DOMContentLoaded', function () {
@@ -507,6 +555,9 @@
     initScrollTimeline();
     initKinetic();
     initJourney();
+    initGlobalOrbs();
+    initHeroParticles();
+    initSceneEnter();
     initReveal();
     initCounters();
     initCT();

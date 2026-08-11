@@ -729,3 +729,114 @@ sup { font-size: .55em; }
   .spot-glow { display: none; }
   html { scroll-behavior: auto; }
 }
+
+/* ============================================================
+   23. 動態光影強化（v2 級醒目 — 2026-08-11 使用者要求）
+   深場景常駐光斑 + hero 光帶掃過 + 金色粒子 + 場景過場光 + 標題流光
+   ============================================================ */
+
+/* 光斑 orb（JS 注入深色場景） */
+.orb {
+  position: absolute; border-radius: 50%; pointer-events: none; z-index: 0;
+  filter: blur(52px);
+}
+.scene.dark .orb, .scene.darker .orb, .page-hero .orb { z-index: 0; }
+.orb-a { width: 46vmin; height: 46vmin; left: -8%; top: 16%; background: radial-gradient(circle, rgba(41,93,170,.55), transparent 70%); animation: orbDrift 15s ease-in-out infinite; }
+.orb-b { width: 40vmin; height: 40vmin; right: -6%; top: 44%; background: radial-gradient(circle, rgba(53,196,224,.45), transparent 70%); animation: orbDrift 18s ease-in-out -4s infinite; }
+.orb-c { width: 32vmin; height: 32vmin; left: 20%; bottom: -8%; background: radial-gradient(circle, rgba(236,112,0,.42), transparent 70%); animation: orbDrift 13s ease-in-out -2s infinite; }
+.orb-d { width: 36vmin; height: 36vmin; right: 24%; top: -10%; background: radial-gradient(circle, rgba(255,210,122,.38), transparent 70%); animation: orbDrift 20s ease-in-out -8s infinite; }
+@keyframes orbDrift {
+  0%, 100% { transform: translate(0, 0) scale(1); opacity: .65; }
+  33% { transform: translate(4vmin, -3vmin) scale(1.14); opacity: 1; }
+  66% { transform: translate(-3vmin, 3vmin) scale(.92); opacity: .75; }
+}
+
+/* hero 斜向光帶掃過 */
+.hero-lightbeam {
+  position: absolute; top: -20%; left: -20%; width: 55%; height: 150%;
+  background: linear-gradient(100deg, transparent 30%, rgba(255,210,122,.16) 48%, rgba(53,196,224,.14) 58%, transparent 75%);
+  transform: skewX(-18deg);
+  animation: lightSweep 9s ease-in-out infinite;
+  z-index: 1; pointer-events: none;
+}
+@keyframes lightSweep {
+  0%, 52% { transform: skewX(-18deg) translateX(-40%); opacity: 0; }
+  10%, 42% { opacity: 1; }
+  100% { transform: skewX(-18deg) translateX(220%); opacity: 0; }
+}
+
+/* hero 金色粒子（JS 注入，上飄） */
+.particle {
+  position: absolute; bottom: -12px; border-radius: 50%; pointer-events: none; z-index: 2;
+  background: radial-gradient(circle, rgba(255,210,122,.95), rgba(255,210,122,0) 70%);
+  animation: floatUp linear infinite;
+}
+@keyframes floatUp {
+  0% { transform: translateY(0) translateX(0); opacity: 0; }
+  8% { opacity: .95; }
+  85% { opacity: .45; }
+  100% { transform: translateY(-108vh) translateX(4vmin); opacity: 0; }
+}
+
+/* 場景過場光帶（進入視野時頂部掃過） */
+.scene::before {
+  content: ""; position: absolute; top: 0; left: 0; height: 3px; width: 0;
+  z-index: 4; pointer-events: none; opacity: 0;
+  background: linear-gradient(90deg, transparent, var(--cyan) 40%, var(--orange) 75%, transparent);
+}
+.scene.enter::before { animation: sceneLight 1.3s var(--ease-out) .1s forwards; }
+@keyframes sceneLight { to { width: 100%; opacity: 1; } }
+
+/* 標題流光（sheen 掃過，深淺場景都有效） */
+.sec-title { position: relative; overflow: hidden; }
+.sec-title::after {
+  content: ""; position: absolute; top: 0; bottom: 0; width: 38%; left: -60%;
+  background: linear-gradient(100deg, transparent, rgba(255,255,255,.22), transparent);
+  transform: skewX(-18deg);
+  animation: titleSheen 5.5s ease-in-out infinite;
+  pointer-events: none;
+}
+.scene.warm .sec-title::after, .scene.light .sec-title::after {
+  background: linear-gradient(100deg, transparent, rgba(41,93,170,.10), transparent);
+}
+@keyframes titleSheen { 0%, 55% { left: -60%; } 85%, 100% { left: 135%; } }
+@media (prefers-reduced-motion: reduce) { .sec-title::after { display: none; } }
+
+/* 滑鼠光暈強化（雙色疊加） */
+.spot-glow {
+  position: fixed; inset: 0; z-index: 5; pointer-events: none; mix-blend-mode: screen;
+  background:
+    radial-gradient(600px circle at var(--gx,50%) var(--gy,50%), rgba(53,196,224,.16), transparent 62%),
+    radial-gradient(360px circle at var(--gx,50%) var(--gy,50%), rgba(255,210,122,.10), transparent 55%);
+}
+@media (hover: none) { .spot-glow { display: none; } }
+
+/* ============================================================
+   24. 數字強化（2026-08-11 使用者要求：放大 + 由小到大彈跳）
+   ============================================================ */
+.stat b {
+  font-size: clamp(64px, 7.5vw, 118px);
+  transform-origin: center bottom;
+}
+.hm b { font-size: clamp(40px, 4.6vw, 68px); transform-origin: center bottom; }
+.auc-num b { font-size: clamp(56px, 6.5vw, 96px); }
+/* 首屏 hero-meta 載入即彈跳（交錯延遲） */
+.hm { animation: numPop .9s var(--ease-spring) both; }
+.hm:nth-child(1) { animation-delay: .35s; }
+.hm:nth-child(2) { animation-delay: .48s; }
+.hm:nth-child(3) { animation-delay: .61s; }
+.hm:nth-child(4) { animation-delay: .74s; }
+/* 數字帶：reveal 觸發彈跳 */
+.stat.in b { animation: numPop .95s var(--ease-spring) both; }
+.stat.in .d1 b { animation-delay: .05s; }
+@keyframes numPop {
+  0% { transform: scale(.3); opacity: 0; filter: blur(16px); }
+  58% { transform: scale(1.14); opacity: 1; filter: blur(0); }
+  78% { transform: scale(.97); }
+  100% { transform: scale(1); }
+}
+@media (max-width: 767px) {
+  .stat b { font-size: clamp(42px, 12vw, 60px); }
+  .hm b { font-size: clamp(30px, 8vw, 40px); }
+  .auc-num b { font-size: clamp(44px, 12vw, 60px); }
+}
