@@ -5,8 +5,8 @@ window.PANCAD_I18N.zh = Object.assign(window.PANCAD_I18N.zh, {
   meta_desc: "從晨曦到金光，一段被 AI 守護的照護旅程：篩檢、發現、診斷、治療、追蹤——早一點發現，未來就多一種可能。",
 
   ph_badge: "照護旅程 · 晨光啟程",
-  ph_title: "迎向晨光，<br><span class=\"hl\">擁抱未來。</span>",
-  ph_lead: "他從沒想過，一次例行健康檢查，會讓未來有了光。天亮了，故事才剛剛開始。",
+  ph_title: "每一個平凡日常，<br><span class=\"hl\">都值得被守護。</span>",
+  ph_lead: "迎向晨光，擁抱未來——他從沒想過，一次例行健康檢查，會讓未來有了光。天亮了，故事才剛剛開始。",
   ph_btn1: "回顧照護旅程",
   ph_btn2: "了解胰臟健康",
 
@@ -56,8 +56,8 @@ window.PANCAD_I18N.en = Object.assign(window.PANCAD_I18N.en, {
   meta_desc: "From dawn to golden hour, a care journey guarded by AI: screening, detection, diagnosis, treatment, survivorship — find it early, keep every possibility.",
 
   ph_badge: "THE JOURNEY · SETTING OUT AT DAWN",
-  ph_title: "Face the sunrise.<br><span class=\"hl\">Embrace the future.</span>",
-  ph_lead: "He never imagined a routine checkup would give the future its light. The day breaks — and the story is just beginning.",
+  ph_title: "Every ordinary day,<br><span class=\"hl\">deserves to be protected.</span>",
+  ph_lead: "Face the sunrise, embrace the future — he never imagined a routine checkup would give the future its light. The day breaks, and the story is just beginning.",
   ph_btn1: "Review the Journey",
   ph_btn2: "Learn About Pancreatic Health",
 
@@ -106,8 +106,8 @@ window.PANCAD_I18N.ja = Object.assign(window.PANCAD_I18N.ja, {
   meta_desc: "夜明けから黄金の光まで、AIに守られたケアの旅：検診、発見、診断、治療、経過観察——早く見つければ、未来に可能性が残る。",
 
   ph_badge: "ケアの旅 · 夜明けとともに",
-  ph_title: "朝日に向かって、<br><span class=\"hl\">未来を抱きしめる。</span>",
-  ph_lead: "彼は思ってもいませんでした。一度の定期健診が、未来に光を灯すなんて。夜が明けて——物語は、まだ始まったばかりです。",
+  ph_title: "何気ない毎日を、<br><span class=\"hl\">守りたい。</span>",
+  ph_lead: "朝日に向かい、未来を抱きしめる——彼は思ってもいませんでした。一度の定期健診が、未来に光を灯すなんて。夜が明けて——物語は、まだ始まったばかりです。",
   ph_btn1: "ケアの旅を振り返る",
   ph_btn2: "膵臓の健康について学ぶ",
 

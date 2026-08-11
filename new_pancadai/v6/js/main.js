@@ -520,20 +520,41 @@
 
   function initHeroParticles() {
     if (prefersReduced) return;
-    var hero = document.querySelector('.hero');
-    if (!hero) return;
-    var n = isFine ? 22 : 14;
-    for (var i = 0; i < n; i++) {
-      var p = document.createElement('div');
-      p.className = 'particle';
-      var size = (Math.random() * 5 + 3).toFixed(1);
-      p.style.width = size + 'px';
-      p.style.height = size + 'px';
-      p.style.left = (Math.random() * 100) + '%';
-      p.style.animationDuration = (Math.random() * 9 + 8).toFixed(1) + 's';
-      p.style.animationDelay = (-Math.random() * 16).toFixed(1) + 's';
-      hero.appendChild(p);
-    }
+    var heroes = document.querySelectorAll('.hero, .ph-sun');
+    if (!heroes.length) return;
+    heroes.forEach(function (hero) {
+      var n = isFine ? 22 : 14;
+      for (var i = 0; i < n; i++) {
+        var p = document.createElement('div');
+        p.className = 'particle';
+        var size = (Math.random() * 5 + 3).toFixed(1);
+        p.style.width = size + 'px';
+        p.style.height = size + 'px';
+        p.style.left = (Math.random() * 100) + '%';
+        p.style.animationDuration = (Math.random() * 9 + 8).toFixed(1) + 's';
+        p.style.animationDelay = (-Math.random() * 16).toFixed(1) + 's';
+        hero.appendChild(p);
+      }
+    });
+  }
+
+  /* 敘事章節金色塵光（每幕 10 顆上飄） */
+  function initSceneParticles() {
+    if (prefersReduced) return;
+    document.querySelectorAll('.story-scene').forEach(function (scene) {
+      for (var i = 0; i < 10; i++) {
+        var d = document.createElement('div');
+        d.className = 'dust';
+        var size = (Math.random() * 4 + 2).toFixed(1);
+        d.style.width = size + 'px';
+        d.style.height = size + 'px';
+        d.style.left = (Math.random() * 100) + '%';
+        d.style.bottom = (Math.random() * 20) + '%';
+        d.style.animationDuration = (Math.random() * 8 + 9).toFixed(1) + 's';
+        d.style.animationDelay = (-Math.random() * 17).toFixed(1) + 's';
+        scene.appendChild(d);
+      }
+    });
   }
 
   function initSceneEnter() {
@@ -557,6 +578,7 @@
     initJourney();
     initGlobalOrbs();
     initHeroParticles();
+    initSceneParticles();
     initSceneEnter();
     initReveal();
     initCounters();
