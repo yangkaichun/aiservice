@@ -192,45 +192,80 @@
   }
 
   /* ==========================================================
-     5. 星空粒子 canvas（首屏）
+     5. 星空粒子 canvas（首屏）— 星座連線版
      ========================================================== */
   function initParticles() {
     var canvas = document.querySelector('canvas.particles');
     if (!canvas || prefersReduced) return;
     var ctx = canvas.getContext('2d');
     var W, H, pts = [];
+    var mouseX = -9999, mouseY = -9999;
 
     function resize() {
       W = canvas.width = canvas.offsetWidth;
       H = canvas.height = canvas.offsetHeight;
-      var n = Math.min(Math.floor(W * H / 14000), 90);
+      var n = Math.min(Math.floor(W * H / 9000), 140);
       pts = [];
       for (var i = 0; i < n; i++) {
         pts.push({
           x: Math.random() * W,
           y: Math.random() * H,
-          r: Math.random() * 1.6 + 0.4,
-          vx: (Math.random() - 0.5) * 0.25,
-          vy: (Math.random() - 0.5) * 0.25,
-          a: Math.random() * 0.5 + 0.15
+          r: Math.random() * 1.8 + 0.5,
+          vx: (Math.random() - 0.5) * 0.4,
+          vy: (Math.random() - 0.5) * 0.4,
+          a: Math.random() * 0.55 + 0.15
         });
       }
     }
     resize();
     window.addEventListener('resize', resize);
 
+    if (isFine) {
+      window.addEventListener('mousemove', function (e) {
+        mouseX = e.clientX; mouseY = e.clientY;
+      }, { passive: true });
+    }
+
     function draw() {
       ctx.clearRect(0, 0, W, H);
-      pts.forEach(function (p) {
-        p.x += p.vx; p.y += p.vy;
-        if (p.x < 0) p.x = W; if (p.x > W) p.x = 0;
-        if (p.y < 0) p.y = H; if (p.y > H) p.y = 0;
-        var g = ctx.createRadialGradient(p.x, p.y, 0, p.x, p.y, p.r * 4);
-        g.addColorStop(0, 'rgba(126,231,255,' + p.a + ')');
+      var i, j, p, q;
+      /* 星座連線：近點互連 */
+      ctx.lineWidth = 0.6;
+      for (i = 0; i < pts.length; i++) {
+        p = pts[i];
+        for (j = i + 1; j < pts.length; j++) {
+          q = pts[j];
+          var dx = p.x - q.x, dy = p.y - q.y;
+          var d2 = dx * dx + dy * dy;
+          if (d2 < 130 * 130) {
+            var alpha = (1 - Math.sqrt(d2) / 130) * 0.22;
+            ctx.strokeStyle = 'rgba(126,231,255,' + alpha + ')';
+            ctx.beginPath();
+            ctx.moveTo(p.x, p.y);
+            ctx.lineTo(q.x, q.y);
+            ctx.stroke();
+          }
+        }
+      }
+      /* 粒子 + 滑鼠排斥 */
+      pts.forEach(function (pt) {
+        var mdx = pt.x - mouseX, mdy = pt.y - mouseY;
+        var md2 = mdx * mdx + mdy * mdy;
+        if (md2 < 120 * 120 && md2 > 0.01) {
+          var mdist = Math.sqrt(md2);
+          var force = (120 - mdist) / 120 * 1.6;
+          pt.x += mdx / mdist * force;
+          pt.y += mdy / mdist * force;
+        }
+        pt.x += pt.vx; pt.y += pt.vy;
+        if (pt.x < 0) pt.x = W; if (pt.x > W) pt.x = 0;
+        if (pt.y < 0) pt.y = H; if (pt.y > H) pt.y = 0;
+        var g = ctx.createRadialGradient(pt.x, pt.y, 0, pt.x, pt.y, pt.r * 4);
+        g.addColorStop(0, 'rgba(126,231,255,' + pt.a + ')');
         g.addColorStop(1, 'rgba(126,231,255,0)');
         ctx.fillStyle = g;
         ctx.beginPath();
-        ctx.arc(p.x, p.y, p.r * 4, 0, Math.PI * 2);
+        ctx.arc(pt.x, pt.y, pt.r * 4, 0, Math.PI * 2);
         ctx.fill();
       });
       requestAnimationFrame(draw);
@@ -268,6 +303,25 @@
       });
     }, { threshold: 0.05 });
     scenes.forEach(function (s) { io.observe(s); });
+  }
+
+  /* 卡片 3D 傾斜（gate / stat / cert，桌面 hover） */
+  function initTilt() {
+    if (!isFine || prefersReduced) return;
+    document.querySelectorAll('.gate, .stat, .cert-card, .flow-step, .pub-card').forEach(function (card) {
+      card.addEventListener('mousemove', function (e) {
+        var r = card.getBoundingClientRect();
+        var nx = (e.clientX - r.left) / r.width - 0.5;
+        var ny = (e.clientY - r.top) / r.height - 0.5;
+        card.style.transform =
+          'perspective(900px) translateY(-8px) rotateX(' + (ny * -6).toFixed(2) + 'deg) rotateY(' + (nx * 8).toFixed(2) + 'deg)';
+        card.style.setProperty('--gx', (nx * 100 + 50) + '%');
+        card.style.setProperty('--gy', (ny * 100 + 50) + '%');
+      });
+      card.addEventListener('mouseleave', function () {
+        card.style.transform = '';
+      });
+    });
   }
 
   /* ==========================================================
@@ -472,13 +526,14 @@
      ========================================================== */
   document.addEventListener('DOMContentLoaded', function () {
     initNav();
-    initSmoothScroll();
     initScrollTimeline();
     initKinetic();
     initHolo();
+    initSpotGlow();
     initParticles();
     initReveal();
     initSceneEnter();
+    initTilt();
     initCounters();
     initCT();
     initAppTabbar();

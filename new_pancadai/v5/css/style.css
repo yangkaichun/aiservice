@@ -830,3 +830,81 @@ html[lang="en"] body, html[lang="ja"] body { font-family: var(--font-en), var(--
 /* ---------- 23. 深耕計畫 zh-only（英/日文隱藏） ---------- */
 .zh-only { display: block; }
 html:not([lang="zh-TW"]) .zh-only { display: none !important; }
+
+/* ---------- 24. 動效增強（使用者要求 2026-08-11） ---------- */
+/* 全息旋轉由 rAF 平滑驅動，勿加 CSS transition（會與 lerp 疊加延遲） */
+
+/* 滑鼠光暈追蹤（桌面） */
+.spot-glow {
+  position: fixed; left: 0; top: 0; z-index: 998;
+  width: 520px; height: 520px; border-radius: 50%;
+  pointer-events: none;
+  background: radial-gradient(circle, rgba(53,196,224,.09), rgba(41,93,170,.05) 40%, transparent 70%);
+  transform: translate(calc(var(--gx) - 260px), calc(var(--gy) - 260px));
+  mix-blend-mode: screen;
+}
+@keyframes spotPulse { 0%,100% { opacity: .7; } 50% { opacity: 1; } }
+.spot-glow { animation: spotPulse 5s ease-in-out infinite; }
+@media (hover: none) { .spot-glow { display: none; } }
+
+/* 頂部捲動進度條 */
+.scroll-progress {
+  position: fixed; top: 0; left: 0; height: 3px; width: 0%;
+  background: linear-gradient(90deg, var(--cyan), var(--blue), var(--orange));
+  box-shadow: 0 0 12px rgba(53,196,224,.7);
+  z-index: 1000;
+}
+
+/* 卡片光線跟隨（tilt 時） */
+.gate, .stat, .cert-card, .flow-step, .pub-card { position: relative; }
+.gate::after, .stat::after, .cert-card::after, .flow-step::after, .pub-card::after {
+  content: ""; position: absolute; inset: 0; border-radius: inherit; pointer-events: none;
+  background: radial-gradient(circle at var(--gx, 50%) var(--gy, 50%), rgba(53,196,224,.12), transparent 55%);
+  opacity: 0; transition: opacity .4s;
+}
+.gate:hover::after, .stat:hover::after, .cert-card:hover::after, .flow-step:hover::after, .pub-card:hover::after { opacity: 1; }
+
+/* reveal 加 blur 淡入（更精緻） */
+.reveal, .reveal-l, .reveal-r, .reveal-scale {
+  filter: blur(0px);
+}
+@keyframes revealBlur { from { filter: blur(8px); } to { filter: blur(0); } }
+.reveal.in, .reveal-l.in, .reveal-r.in, .reveal-scale.in { animation: revealBlur .9s var(--ease-out) forwards; }
+
+/* 標題 shimmer 光澤 */
+.shimmer {
+  background: linear-gradient(110deg, rgba(255,255,255,.45) 30%, #fff 50%, rgba(255,255,255,.45) 70%);
+  background-size: 200% 100%;
+  -webkit-background-clip: text; background-clip: text; color: transparent;
+  animation: shimmerMove 3.2s linear infinite;
+}
+@keyframes shimmerMove { from { background-position: 200% 0; } to { background-position: -200% 0; } }
+
+/* 時間軸節點呼吸 */
+.tl-year::before { animation: tlNode 2.6s ease-in-out infinite; }
+@keyframes tlNode { 0%,100% { box-shadow: 0 0 10px var(--cyan); } 50% { box-shadow: 0 0 22px var(--cyan), 0 0 40px rgba(53,196,224,.4); } }
+
+/* 首屏標題光帶掃過（進場後常駐微光） */
+.hero-title { position: relative; }
+.hero-title::after {
+  content: ""; position: absolute; left: 0; right: 0; bottom: -6px; height: 2px;
+  background: linear-gradient(90deg, transparent, var(--cyan), transparent);
+  opacity: .5; animation: titleLine 4s ease-in-out infinite;
+}
+@keyframes titleLine { 0%,100% { transform: scaleX(.3); opacity: .3; } 50% { transform: scaleX(1); opacity: .6; } }
+
+/* 數值 hover 光暈 */
+.stat b { transition: text-shadow .3s; }
+.stat:hover b { text-shadow: 0 0 24px rgba(53,196,224,.6); }
+
+/* 按鈕 hover 放大（微互動） */
+.btn { transition: transform .3s var(--ease-spring), box-shadow .3s; }
+.btn:hover { transform: translateY(-3px) scale(1.03); }
+
+/* CT 視窗掃描線（常駐 HUD 感） */
+.ct-frame::after {
+  content: ""; position: absolute; left: 0; right: 0; height: 2px; z-index: 6; pointer-events: none;
+  background: linear-gradient(90deg, transparent, rgba(53,196,224,.5), transparent);
+  animation: ctScan 4.5s linear infinite;
+}
+@keyframes ctScan { 0% { top: 4%; opacity: 0; } 10% { opacity: .8; } 90% { opacity: .8; } 100% { top: 96%; opacity: 0; } }
