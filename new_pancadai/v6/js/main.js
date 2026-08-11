@@ -638,11 +638,12 @@
     var pool = poolForLang();
     var tier = netTier();
     targets.forEach(function (el) {
+      var op = el.getAttribute('data-bg-opacity') || '1';
       var cur = pool[Math.floor(Math.random() * pool.length)];
       el.setAttribute('data-bg-name', cur.name);
       el.style.opacity = 0;
       applyBg(el, cur, tier);
-      el.style.opacity = 1;
+      el.style.opacity = op;
       if (prefersReduced) return;
       setInterval(function () {
         var next;
@@ -652,7 +653,7 @@
         el.style.opacity = 0;
         setTimeout(function () {
           applyBg(el, next, tier);
-          el.style.opacity = 1;
+          el.style.opacity = op;
         }, 450);
       }, 9000);
     });
