@@ -4,25 +4,29 @@
 (function () {
   'use strict';
 
-  /* --- Nav：滾動變色 --- */
+  /* --- Nav：滾動變色（缺元素時跳過） --- */
   var nav = document.getElementById('nav');
   function onScroll() {
-    if (window.scrollY > 40) nav.classList.add('scrolled');
-    else nav.classList.remove('scrolled');
+    if (nav) {
+      if (window.scrollY > 40) nav.classList.add('scrolled');
+      else nav.classList.remove('scrolled');
+    }
   }
   window.addEventListener('scroll', onScroll, { passive: true });
   onScroll();
 
-  /* --- 行動版漢堡選單 --- */
+  /* --- 行動版漢堡選單（缺元素時跳過，避免崩潰） --- */
   var burger = document.getElementById('burger');
   var menu = document.getElementById('menu');
-  burger.addEventListener('click', function () {
-    menu.classList.toggle('open');
-    burger.classList.toggle('open');
-  });
-  menu.querySelectorAll('a').forEach(function (a) {
-    a.addEventListener('click', function () { menu.classList.remove('open'); });
-  });
+  if (burger && menu) {
+    burger.addEventListener('click', function () {
+      menu.classList.toggle('open');
+      burger.classList.toggle('open');
+    });
+    menu.querySelectorAll('a').forEach(function (a) {
+      a.addEventListener('click', function () { menu.classList.remove('open'); });
+    });
+  }
 
   /* --- 滾動漸現（IntersectionObserver） --- */
   var reveals = document.querySelectorAll('.reveal');
