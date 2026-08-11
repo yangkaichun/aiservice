@@ -305,6 +305,23 @@
     scenes.forEach(function (s) { io.observe(s); });
   }
 
+  /* 全域光影：為所有深色場景自動注入光斑（orb）— 保證每頁都有光影動畫 */
+  function initGlobalOrbs() {
+    var targets = document.querySelectorAll('.scene.dark, .scene.darker, .page-hero');
+    if (!targets.length) return;
+    var variants = ['orb-a', 'orb-b', 'orb-c'];
+    var counter = 0;
+    targets.forEach(function (t) {
+      if (t.querySelector('.orb')) return; /* 已有手動光斑就跳過 */
+      var n = t.classList.contains('page-hero') ? 2 : 1;
+      for (var i = 0; i < n; i++) {
+        var orb = document.createElement('div');
+        orb.className = 'orb ' + variants[(counter++) % 3];
+        t.appendChild(orb);
+      }
+    });
+  }
+
   /* 卡片 3D 傾斜（gate / stat / cert，桌面 hover） */
   function initTilt() {
     if (!isFine || prefersReduced) return;
@@ -530,6 +547,7 @@
     initKinetic();
     initHolo();
     initSpotGlow();
+    initGlobalOrbs();
     initParticles();
     initReveal();
     initSceneEnter();
