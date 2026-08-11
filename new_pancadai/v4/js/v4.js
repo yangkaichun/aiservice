@@ -12,8 +12,6 @@
     var imgBase = document.getElementById('vpImgBase');
     var imgAi = document.getElementById('vpImgAi');
     var divider = document.getElementById('vpDivider');
-    var lesion = document.getElementById('vpLesion');
-    var card = document.getElementById('vpCard');
     var demoBtn = document.getElementById('vpDemo');
     var wlRange = document.getElementById('vpWl');
     var wwRange = document.getElementById('vpWw');
@@ -62,22 +60,6 @@
         var cur = parseFloat(vp.style.getPropertyValue('--split') || '50');
         if (e.key === 'ArrowLeft') { e.preventDefault(); setSplit(cur - 4); }
         if (e.key === 'ArrowRight') { e.preventDefault(); setSplit(cur + 4); }
-      });
-    }
-
-    /* 病灶點擊 → 資料卡 */
-    if (lesion && card) {
-      lesion.addEventListener('click', function (e) {
-        e.stopPropagation();
-        var show = !card.classList.contains('show');
-        card.classList.toggle('show', show);
-        lesion.classList.toggle('on', show);
-      });
-      vp.addEventListener('click', function (e) {
-        if (e.target !== lesion && e.target !== card && !card.contains(e.target)) {
-          card.classList.remove('show');
-          lesion.classList.remove('on');
-        }
       });
     }
 

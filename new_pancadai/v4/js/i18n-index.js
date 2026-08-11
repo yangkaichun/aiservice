@@ -11,7 +11,7 @@ window.PANCAD_I18N.zh = {
   'hero.note': 'AI 引擎即時運作中 · 影像可互動',
   'hero.cta1': '體驗患者旅程', 'hero.cta2': '查看臨床證據',
   'hero.m1': 'TFDA 醫療器材許可', 'hero.m2': 'FDA Breakthrough', 'hero.m3': '台大團隊技術',
-  'vp.card_t': '胰臟尾部病灶', 'vp.card_s': ' · 高度可疑', 'vp.card_c': 'AI 信心度 92.1%',
+  
   'vp.hint': '拖曳滑桿，比較 AI 判讀', 'vp.demo': '自動演示',
   'vp.cap1': '真實腹部 CT 示意影像', 'vp.cap2': ' · 拖曳滑桿比較 AI 判讀',
   'facts.f1_t': '&lt;2cm 腫瘤偵測敏感度', 'facts.f1_d': 'AI 對小於 2 公分早期病灶的偵測能力 — 這是胰臟癌治療的黃金關鍵。',
@@ -54,7 +54,7 @@ window.PANCAD_I18N.en = {
   'hero.note': 'AI engine live · image is interactive',
   'hero.cta1': 'Experience the journey', 'hero.cta2': 'View clinical evidence',
   'hero.m1': 'TFDA medical device clearance', 'hero.m2': 'FDA Breakthrough', 'hero.m3': 'Built on NTU research',
-  'vp.card_t': 'Pancreatic tail lesion', 'vp.card_s': ' · high suspicion', 'vp.card_c': 'AI confidence 92.1%',
+  
   'vp.hint': 'Drag to compare AI reading', 'vp.demo': 'Auto demo',
   'vp.cap1': 'Illustrative abdominal CT', 'vp.cap2': ' · drag to compare AI reading',
   'facts.f1_t': 'Sensitivity for &lt;2cm tumors', 'facts.f1_d': 'How well the AI detects early lesions under 2 cm — the golden window for pancreatic cancer treatment.',
@@ -97,7 +97,7 @@ window.PANCAD_I18N.ja = {
   'hero.note': 'AIエンジン稼働中 · 画像は操作可能',
   'hero.cta1': '患者の旅を体験', 'hero.cta2': '臨床エビデンスを見る',
   'hero.m1': 'TFDA 医療機器認可', 'hero.m2': 'FDA Breakthrough', 'hero.m3': '台湾大学発の技術',
-  'vp.card_t': '膵尾部の病変', 'vp.card_s': ' · 高疑い', 'vp.card_c': 'AI信頼度 92.1%',
+  
   'vp.hint': 'スライダーをドラッグして AI 読影と比較', 'vp.demo': '自動デモ',
   'vp.cap1': '腹部CT画像（イメージ）', 'vp.cap2': ' · スライダーで AI 読影と比較',
   'facts.f1_t': '2cm未満の腫瘍検出感度', 'facts.f1_d': 'AIが2cm未満の早期病変を検出する能力 — 膵臓癌治療の黄金の窓です。',
