@@ -212,18 +212,61 @@
   // 9.2 Hero 金色粒子生成
   var particlesBox = document.querySelector('.hero-particles');
   if (particlesBox) {
-    for (var i = 0; i < 18; i++) {
+    for (var i = 0; i < 26; i++) {
       var p = document.createElement('span');
       p.className = 'particle';
-      var size = 3 + Math.random() * 5;
+      var size = 3 + Math.random() * 6;
       p.style.width = size + 'px';
       p.style.height = size + 'px';
       p.style.left = (Math.random() * 100) + '%';
       p.style.top = (30 + Math.random() * 70) + '%';
-      p.style.animationDuration = (6 + Math.random() * 8) + 's';
-      p.style.animationDelay = (Math.random() * 6) + 's';
+      p.style.animationDuration = (5 + Math.random() * 9) + 's';
+      p.style.animationDelay = (Math.random() * 7) + 's';
       particlesBox.appendChild(p);
     }
+  }
+
+  // 9.3 分流卡 3D 傾斜 + 光暈跟隨（滑鼠）
+  var gateCards = document.querySelectorAll('.gate-card');
+  if (gateCards.length && window.matchMedia('(hover: hover) and (pointer: fine)').matches) {
+    gateCards.forEach(function (card) {
+      // 加入光暈跟隨元素
+      var follow = document.createElement('span');
+      follow.className = 'glow-follow';
+      card.appendChild(follow);
+
+      card.addEventListener('mousemove', function (e) {
+        var r = card.getBoundingClientRect();
+        var px = (e.clientX - r.left) / r.width;
+        var py = (e.clientY - r.top) / r.height;
+        var rx = (0.5 - py) * 8;
+        var ry = (px - 0.5) * 10;
+        card.style.transform = 'perspective(1000px) rotateX(' + rx + 'deg) rotateY(' + ry + 'deg) translateY(-6px)';
+        follow.style.setProperty('--gx', (px * 100) + '%');
+        follow.style.setProperty('--gy', (py * 100) + '%');
+      });
+      card.addEventListener('mouseleave', function () {
+        card.style.transform = '';
+      });
+    });
+  }
+
+  // 9.4 視差滾動（chapter / page-hero 背景緩慢位移；hero-bg 已有 kenburns 不動）
+  var parallaxEls = document.querySelectorAll('.chapter .chapter-bg, .page-hero .bg');
+  if (parallaxEls.length && window.matchMedia('(prefers-reduced-motion: no-preference)').matches) {
+    var paf = null;
+    window.addEventListener('scroll', function () {
+      if (paf) return;
+      paf = requestAnimationFrame(function () {
+        parallaxEls.forEach(function (el) {
+          var r = el.parentElement.getBoundingClientRect();
+          if (r.bottom < -100 || r.top > window.innerHeight + 100) return;
+          var rel = (r.top + r.height / 2 - window.innerHeight / 2);
+          el.style.transform = 'scale(1.12) translateY(' + (rel * -0.07) + 'px)';
+        });
+        paf = null;
+      });
+    }, { passive: true });
   }
 
   /* ---------- 8. 表單提交（mailto 備援 / 導向成功訊息） ---------- */
