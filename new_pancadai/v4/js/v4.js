@@ -24,7 +24,7 @@
 
     function setSplit(pct) {
       pct = Math.max(4, Math.min(96, pct));
-      vp.style.setProperty('--split', pct + '%');
+      vp.style.setProperty('--split', String(pct));
       if (divider) divider.setAttribute('aria-valuenow', Math.round(pct));
     }
 
