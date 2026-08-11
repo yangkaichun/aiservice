@@ -4,8 +4,8 @@ Object.assign(window.PANCAD_I18N.zh, {
   meta_desc: "從一張 CT 影像開始，走進早期發現、早期治療的希望旅程。活出精彩，不胰憾。",
 
   ph_en: "PATIENT JOURNEY",
-  ph_title: "活出精彩，<span class=\"hl\">不胰憾</span>",
-  ph_desc: "從一張 CT 影像開始，走進早期發現、早期治療的希望旅程。這不是一個產品故事，這是一場與時間的賽跑。",
+  ph_title: "每一個平凡日常，<span class=\"hl\">都值得被守護</span>",
+  ph_desc: "他從沒想過，一次例行健康檢查會改變一切——直到 AI 在腫瘤還小的時候，看見了那個威脅。這不是產品故事，而是關於日常、家人與希望的故事。",
 
   ct_kicker: "親手體驗",
   ct_title: "拖一下，<span class=\"hl-blue\">看見 AI 的判斷</span>",
@@ -57,8 +57,8 @@ Object.assign(window.PANCAD_I18N.en, {
   meta_desc: "From a single CT image, step into a journey of early detection and early treatment. Catch it early. Live it fully.",
 
   ph_en: "PATIENT JOURNEY",
-  ph_title: "Catch it early.<br><span class=\"hl\">Live it fully.</span>",
-  ph_desc: "From a single CT image, step into a journey of early detection and early treatment. This is not a product story — it's a race against time.",
+  ph_title: "Every ordinary day<br><span class=\"hl\">deserves to be protected</span>",
+  ph_desc: "He never imagined a routine checkup could change everything — until AI spotted the threat while it was still small. This isn't a product story; it's about everyday life, family, and hope.",
 
   ct_kicker: "Try It Yourself",
   ct_title: "Drag to see <span class=\"hl-blue\">what AI sees</span>",
@@ -110,8 +110,8 @@ Object.assign(window.PANCAD_I18N.ja, {
   meta_desc: "一枚のCT画像から、早期発見・早期治療の希望の旅へ。人生、悔いなし。",
 
   ph_en: "PATIENT JOURNEY",
-  ph_title: "人生、<span class=\"hl\">悔いなし。</span>",
-  ph_desc: "一枚のCT画像から、早期発見・早期治療の希望の旅へ。これは製品の物語ではなく、時間との闘いです。",
+  ph_title: "何気ない毎日を、<span class=\"hl\">守りたい</span>",
+  ph_desc: "彼は思いもしませんでした。定期健診がすべてを変えるなんて——AIが腫瘍がまだ小さいうちに、その脅威を見つけるまで。これは製品の物語ではなく、日常と家族と希望の物語です。",
 
   ct_kicker: "ご自身で体験",
   ct_title: "ドラッグして<span class=\"hl-blue\">AIの判断を見る</span>",

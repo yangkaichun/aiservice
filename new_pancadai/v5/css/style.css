@@ -529,16 +529,47 @@ html[lang="en"] body, html[lang="ja"] body { font-family: var(--font-en), var(--
 
 /* ---------- 8. 信任數字帶 ---------- */
 .stats { display: grid; grid-template-columns: repeat(4, 1fr); gap: 24px; position: relative; z-index: 2; }
-.stat { text-align: center; padding: 34px 16px 30px; border-radius: 20px; background: rgba(255,255,255,.05); border: 1px solid rgba(120,190,255,.14); transition: transform .35s var(--ease-out), border-color .35s; }
+.stat { text-align: center; padding: 34px 16px 30px; border-radius: 20px; background: rgba(255,255,255,.05); border: 1px solid rgba(120,190,255,.14); transition: transform .35s var(--ease-out), border-color .35s; overflow: hidden; }
 .stat:hover { transform: translateY(-8px); border-color: rgba(53,196,224,.5); }
+/* 數字帶背景掃描線（常駐動態） */
+.stats::before {
+  content: ""; position: absolute; left: 0; right: 0; height: 2px; z-index: 0; pointer-events: none;
+  background: linear-gradient(90deg, transparent, rgba(53,196,224,.55), transparent);
+  box-shadow: 0 0 18px rgba(53,196,224,.4);
+  animation: statsScan 5.5s linear infinite;
+  opacity: .7;
+}
+@keyframes statsScan { 0% { top: 4%; opacity: 0; } 10% { opacity: .7; } 90% { opacity: .7; } 100% { top: 96%; opacity: 0; } }
 .stat b {
   display: block; font-size: clamp(52px, 6.4vw, 92px); font-weight: 900; letter-spacing: -.03em; line-height: 1;
   background: linear-gradient(120deg, #fff, #9fd8ff);
   -webkit-background-clip: text; background-clip: text; color: transparent;
   font-variant-numeric: tabular-nums;
+  position: relative;
 }
 .stat b i { font-style: normal; font-size: .42em; margin-left: 3px; color: var(--cyan); -webkit-text-fill-color: var(--cyan); font-weight: 700; }
 .stat span { display: block; margin-top: 12px; font-size: 14.5px; color: rgba(255,255,255,.62); letter-spacing: .02em; }
+
+/* 數字流光 shimmer（常駐） */
+.stat b::after {
+  content: ""; position: absolute; top: -10%; bottom: -10%; left: 0; width: 40%;
+  background: linear-gradient(105deg, transparent, rgba(255,255,255,.5), transparent);
+  transform: skewX(-18deg);
+  animation: numShine 3.8s ease-in-out infinite;
+  pointer-events: none;
+}
+@keyframes numShine { 0% { left: -45%; } 55% { left: 115%; } 100% { left: 115%; } }
+
+/* 數字進場：錯落上飛 + 光帶（.in 觸發） */
+.stat { opacity: 0; transform: translateY(26px) scale(.96); transition: opacity .7s var(--ease-out), transform .7s var(--ease-spring), border-color .35s; }
+.stat.in { opacity: 1; transform: translateY(0) scale(1); }
+.stat::before {
+  content: ""; position: absolute; top: 0; left: -80%; width: 55%; height: 100%; z-index: 1; pointer-events: none;
+  background: linear-gradient(105deg, transparent, rgba(255,255,255,.09), transparent);
+  transform: skewX(-20deg);
+  transition: left 1s var(--ease-out) .5s;
+}
+.stat.in::before { left: 130%; }
 
 /* ---------- 9. 雙軌分流（卡片） ---------- */
 .gates { display: grid; grid-template-columns: 1fr 1fr; gap: 28px; position: relative; z-index: 2; }
@@ -887,6 +918,36 @@ html[lang="en"] body, html[lang="ja"] body { font-family: var(--font-en), var(--
 }
 @keyframes phGlow { 0%,100% { opacity: .6; } 50% { opacity: 1; } }
 .page-hero .wrap { position: relative; z-index: 2; }
+/* 人物背景 Ken Burns（patient hero 專用，比照 v3） */
+.page-hero .bg.kenburns {
+  opacity: .62 !important;
+  animation: phKenburns 30s ease-in-out infinite alternate;
+  will-change: transform;
+}
+@keyframes phKenburns {
+  0% { transform: scale(1.02) translateX(0); }
+  50% { transform: scale(1.1) translateX(-1.2%); }
+  100% { transform: scale(1.16) translateX(1%); }
+}
+/* patient hero 暖色光帶掃過（人物照上） */
+#patientHero::marker { display: none; }
+#patientHero .wrap::after {
+  content: ""; position: absolute; top: -20%; bottom: -20%; left: -30%; width: 34%;
+  background: linear-gradient(105deg, transparent, rgba(255,225,170,.16), transparent);
+  transform: skewX(-18deg);
+  animation: phWarmSweep 9s ease-in-out infinite;
+  pointer-events: none; z-index: 0;
+}
+@keyframes phWarmSweep { 0% { left: -40%; } 60% { left: 120%; } 100% { left: 120%; } }
+/* patient hero 人物圖漸層護文字（左深右透） */
+#patientHero::before {
+  background:
+    linear-gradient(90deg, rgba(6,12,24,.82) 0%, rgba(8,18,34,.55) 42%, rgba(8,18,34,.15) 70%, rgba(8,18,34,.25) 100%),
+    linear-gradient(180deg, rgba(6,12,24,.5), transparent 40%, transparent 70%, rgba(6,12,24,.6));
+  background-size: 44px 44px, 100% 100%;
+  animation: phGridDrift 26s linear infinite;
+  mask-image: none; -webkit-mask-image: none;
+}
 .page-hero h1 { font-size: clamp(32px, 5vw, 60px); font-weight: 900; line-height: 1.18; }
 .page-hero h1 .hl {
   background: linear-gradient(120deg, var(--cyan), #7ee7ff);
