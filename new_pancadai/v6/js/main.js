@@ -668,6 +668,8 @@
     var pool = poolForLang();
     var tier = netTier();
     targets.forEach(function (el) {
+      /* v6.0.26：清除舊 timer，避免 reinit 疊加導致輪換加速 */
+      if (el._bgTimer) { clearInterval(el._bgTimer); el._bgTimer = null; }
       var op = el.getAttribute('data-bg-opacity') || '1';
       var cur = pool[Math.floor(Math.random() * pool.length)];
       el.setAttribute('data-bg-name', cur.name);
@@ -675,7 +677,7 @@
       applyBg(el, cur, tier);
       el.style.opacity = op;
       if (prefersReduced) return;
-      setInterval(function () {
+      el._bgTimer = setInterval(function () {
         var next;
         do { next = pool[Math.floor(Math.random() * pool.length)]; } while (next.name === cur.name);
         cur = next;
@@ -685,7 +687,7 @@
           applyBg(el, next, tier);
           el.style.opacity = op;
         }, 450);
-      }, 9000);
+      }, 9000);   /* 固定 9 秒輪換 */
     });
   }
   function reinitBgPool() {
