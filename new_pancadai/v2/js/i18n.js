@@ -48,6 +48,8 @@
     var btn = document.getElementById('langBtn');
     if (btn) btn.innerHTML = '<i class="bi bi-globe2"></i> ' + NAMES[lang];
     try { localStorage.setItem(LANG_KEY, lang); } catch (e) {}
+    /* 通知外部（背景池切換等） */
+    try { window.dispatchEvent(new CustomEvent('langchange')); } catch (e) {}
   }
 
   function current() { return document.documentElement.lang || detect(); }

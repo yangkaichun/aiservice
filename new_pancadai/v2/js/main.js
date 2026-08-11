@@ -102,10 +102,18 @@
     }
   }
 
-  /* --- Hero 背景：隨機輪換（7 張候選）＋載入該圖 HD（5120） --- */
+  /* --- Hero 背景：依語言選池（en=多元種族 30 張；zh/ja=台灣 7 張）＋HD 升級＋9s 輪換 --- */
   var heroBg = document.querySelector('.hero-bg');
-  if (heroBg) {
-    var heroCandidates = [
+  function heroPool() {
+    if (document.documentElement.lang === 'en') {
+      var arr = [];
+      for (var i = 1; i <= 30; i++) {
+        var n = (i < 10 ? '0' : '') + i;
+        arr.push({ src: 'assets/hero_intl_' + n + '.jpg', hd: 'assets/hero_intl_' + n + '_hd.jpg' });
+      }
+      return arr;
+    }
+    return [
       { src: 'assets/hero_sun_bike.jpg', hd: 'assets/hero_sun_bike_hd.jpg' },
       { src: 'assets/hero_sun_yoga.jpg', hd: 'assets/hero_sun_yoga_hd.jpg' },
       { src: 'assets/hero_sun_picnic.jpg', hd: 'assets/hero_sun_picnic_hd.jpg' },
@@ -114,41 +122,53 @@
       { src: 'assets/hero_sun_bridge.jpg', hd: 'assets/hero_sun_bridge_hd.jpg' },
       { src: 'assets/hero_sun_forest.jpg', hd: 'assets/hero_sun_forest_hd.jpg' }
     ];
-    var heroPick = heroCandidates[Math.floor(Math.random() * heroCandidates.length)];
+  }
+  if (heroBg) {
+    var heroPick = heroPool()[Math.floor(Math.random() * heroPool().length)];
     var conn = navigator.connection || {};
     var et = (conn.effectiveType || '4g').toLowerCase();
     var wantMed = et !== 'slow-2g' && et !== '2g';
     var wantHd = et === '4g' || et === 'wifi' || et.indexOf('ethernet') === 0 || !conn.effectiveType;
-    if (wantMed) {
-      var hImg = new Image();
-      hImg.onload = function () {
-        heroBg.style.transition = 'opacity 1.2s ease';
-        heroBg.style.opacity = '0';
-        setTimeout(function () {
-          heroBg.style.backgroundImage = "url('" + heroPick.src + "')";
-          heroBg.style.opacity = '1';
-        }, 180);
-        if (wantHd) {
-          var hdImg = new Image();
-          hdImg.onload = function () {
-            heroBg.style.opacity = '0';
-            setTimeout(function () {
-              heroBg.style.backgroundImage = "url('" + heroPick.hd + "')";
-              heroBg.style.opacity = '1';
-            }, 200);
-          };
-          hdImg.src = heroPick.hd;
-        }
-      };
-      hImg.src = heroPick.src;
+    function showHeroBg(cand) {
+      if (wantMed) {
+        var hImg = new Image();
+        hImg.onload = function () {
+          heroBg.style.transition = 'opacity 1.2s ease';
+          heroBg.style.opacity = '0';
+          setTimeout(function () {
+            heroBg.style.backgroundImage = "url('" + cand.src + "')";
+            heroBg.style.opacity = '1';
+          }, 180);
+          if (wantHd) {
+            var hdImg = new Image();
+            hdImg.onload = function () {
+              heroBg.style.opacity = '0';
+              setTimeout(function () {
+                heroBg.style.backgroundImage = "url('" + cand.hd + "')";
+                heroBg.style.opacity = '1';
+              }, 200);
+            };
+            hdImg.src = cand.hd;
+          }
+        };
+        hImg.src = cand.src;
+      }
     }
-    /* --- 停留輪換：每 8s 隨機換一張，預載完成（onload）才淡入淡出切換 --- */
+    showHeroBg(heroPick);
+    /* --- 語言切換 → 立即從新語言池重選背景 --- */
+    window.addEventListener('langchange', function () {
+      var pool = heroPool();
+      heroPick = pool[Math.floor(Math.random() * pool.length)];
+      showHeroBg(heroPick);
+    });
+    /* --- 停留輪換：每 9s 隨機換一張，預載完成（onload）才淡入淡出切換 --- */
     var reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
     if (!reduceMotion) {
       setInterval(function () {
-        var next = heroCandidates[Math.floor(Math.random() * heroCandidates.length)];
+        var pool = heroPool();
+        var next = pool[Math.floor(Math.random() * pool.length)];
         if (next === heroPick) {
-          next = heroCandidates[(heroCandidates.indexOf(heroPick) + 1) % heroCandidates.length];
+          next = pool[(pool.indexOf(heroPick) + 1) % pool.length];
         }
         var pre = new Image();
         pre.onload = function () {
@@ -173,7 +193,7 @@
           fb.src = next.src;
         };
         pre.src = next.hd;
-      }, 8000);
+      }, 9000);
     }
   }
 
