@@ -538,14 +538,14 @@
     });
   }
 
-  /* 敘事章節金色塵光（每幕 10 顆上飄） */
+  /* 敘事章節金色塵光（每幕 18 顆上飄）+ 光影呼吸光暈 */
   function initSceneParticles() {
     if (prefersReduced) return;
     document.querySelectorAll('.story-scene').forEach(function (scene) {
-      for (var i = 0; i < 10; i++) {
+      for (var i = 0; i < 18; i++) {
         var d = document.createElement('div');
         d.className = 'dust';
-        var size = (Math.random() * 4 + 2).toFixed(1);
+        var size = (Math.random() * 5 + 3).toFixed(1);
         d.style.width = size + 'px';
         d.style.height = size + 'px';
         d.style.left = (Math.random() * 100) + '%';
@@ -554,6 +554,16 @@
         d.style.animationDelay = (-Math.random() * 17).toFixed(1) + 's';
         scene.appendChild(d);
       }
+      /* 光影呼吸光暈（每幕一顆金色光球，位置分散） */
+      var glow = document.createElement('div');
+      glow.className = 'act-glow';
+      var sz = (Math.random() * 22 + 34).toFixed(0);
+      glow.style.width = sz + 'vmin';
+      glow.style.height = sz + 'vmin';
+      glow.style.left = (Math.random() * 50 + 45) + '%';
+      glow.style.top = (Math.random() * 40 + 10) + '%';
+      glow.style.animationDelay = (-Math.random() * 7).toFixed(1) + 's';
+      scene.appendChild(glow);
     });
   }
 

@@ -203,15 +203,6 @@ window.PANCAD_I18N.en = Object.assign(window.PANCAD_I18N.en, {
   st4_p3: "Every early detection keeps a family whole",
   st4_cap: "One step earlier. More hope.",
 
-  wi_title: "Five-Year Survival Rate",
-  wi_hint: "◄ Drag to compare ►",
-  wi_early: "Found early (<2cm)",
-  wi_late: "Found late (metastatic)",
-  wi_cap1: "Early",
-  wi_cap1_d: ": five-year survival of 80% or higher",
-  wi_cap2: "Late",
-  wi_cap2_d: ": limited options, a much harder road",
-  wi_foot: "* Based on published data: the Japanese Pancreatic Cancer Registry (2007) reports 80.4% five-year survival for tumors ≤1cm (≈50% for 1–2cm); metastatic disease ≈3% (SEER, US National Cancer Institute). Actual outcomes depend on individual condition and treatment.",
 
   st5_title: "After treatment, life continues",
   st5_sub: "Stop 5: the meaning of early detection lives in every day that follows.",
@@ -343,15 +334,6 @@ window.PANCAD_I18N.ja = Object.assign(window.PANCAD_I18N.ja, {
   st4_p3: "早期発見の一つひとつが、家族の円を守る",
   st4_cap: "一歩早く、希望をひとつ多く",
 
-  wi_title: "膵臓がん5年生存率",
-  wi_hint: "◄ ドラッグして比較 ►",
-  wi_early: "早期発見（2cm未満）",
-  wi_late: "転移後に発見",
-  wi_cap1: "早い発見",
-  wi_cap1_d: "：5年生存率80%以上",
-  wi_cap2: "遅い発見",
-  wi_cap2_d: "：選択肢が限られ、厳しい道のり",
-  wi_foot: "* 文献統計による：日本膵癌登録報告（2007）では腫瘍1cm以下の膵臓がんの5年生存率は80.4%（1–2cmは約50%）、転移後は約3%（SEER、米国国立がん研究所）。実際の予後は病状と治療により異なります。",
 
   st5_title: "治療のあとは、人生が続く",
   st5_sub: "第五駅：早期発見の意味は、その後の毎日にあります。",
