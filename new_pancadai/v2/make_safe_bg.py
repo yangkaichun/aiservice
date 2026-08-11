@@ -16,8 +16,8 @@ def safe(path, out):
     bg = im.resize((int(w * scale) + 4, int(h * scale) + 4), Image.LANCZOS)
     bx = (bg.width - TW) // 2; by = (bg.height - TH) // 2
     bg = bg.crop((bx, by, bx + TW, by + TH)).filter(ImageFilter.GaussianBlur(28))
-    # 上層：contain 置中（人物完整）
-    s = min(TW / w, TH / h)
+    # 上層：contain 置中 + 6% 安全邊距（人物絕不觸框）
+    s = min(TW / w, TH / h) * 0.94
     fg = im.resize((int(w * s), int(h * s)), Image.LANCZOS)
     fg = fg.convert('RGBA')
     fg.putalpha(255)
