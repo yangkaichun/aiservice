@@ -73,6 +73,17 @@ window.PANCAD_I18N = {
     gate_clinician_desc: "臨床數據、法規認證、國際期刊 — 為您的機構導入經得起檢驗的判讀輔助。",
     gate_clinician_link: "瀏覽臨床證據",
 
+    /* 活出精彩（病人為中心） */
+    life_kicker: "活出精彩",
+    life_title: "早期發現，是為了<span class=\"hl\">繼續生活</span>",
+    life_sub: "檢測不是目的。健康才是。PANCREASaver® 的存在，是讓每一位受檢者都能繼續騎車、爬山、陪家人吃飯——把日子過成想要的樣子。",
+    life_1_t: "與家人團聚",
+    life_1_d: "每一張餐桌，都值得完整的圓。",
+    life_2_t: "迎向陽光",
+    life_2_d: "騎車、慢跑、旅行——健康的身體才有無限可能。",
+    life_3_t: "登高望遠",
+    life_3_d: "人生的山，要一步一步親自走完。",
+
     /* 時間軸 */
     tl_kicker: "品牌故事",
     tl_title: "從台大研究，到<span class=\"hl-blue\">世界第一座標</span>",
@@ -108,6 +119,11 @@ window.PANCAD_I18N = {
     cta_sub: "無論您是患者、家屬，或是醫療機構 — 我們都在這裡，陪您走下一步。",
     cta_btn1: "患者諮詢",
     cta_btn2: "機構合作",
+
+    /* 病人引言（情感） */
+    quote_text: "「檢查報告出來那天，醫師說：還好發現得早。」",
+    quote_sub: "—— 每一位因早期發現而改變命運的患者",
+    quote_btn: "聽他們的故事",
 
     /* Footer */
     foot_about: "仲智數位健康股份有限公司（PanCAD.ai）— 以 AI 守護胰臟健康，讓早期發現不再遙遠。",
@@ -194,6 +210,16 @@ window.PANCAD_I18N = {
     gate_clinician_title: "AI that speaks in evidence",
     gate_clinician_desc: "Clinical data, regulatory approval, international journals — an assistive reader built to withstand scrutiny.",
     gate_clinician_link: "Explore the evidence",
+
+    life_kicker: "Live Fully",
+    life_title: "Early detection is about<br><span class=\"hl\">living on</span>",
+    life_sub: "Screening isn't the point. Health is. PANCREASaver® exists so every patient can keep cycling, hiking, and sharing meals with family — living the life they choose.",
+    life_1_t: "Family around the table",
+    life_1_d: "Every table deserves to be whole.",
+    life_2_t: "Into the sunshine",
+    life_2_d: "Cycling, jogging, traveling — health opens every door.",
+    life_3_t: "Climbing higher",
+    life_3_d: "Life's mountains are climbed one step at a time.",
 
     tl_kicker: "Our Story",
     tl_title: "From NTU research to <span class=\"hl-blue\">a world first</span>",
@@ -312,6 +338,16 @@ window.PANCAD_I18N = {
     gate_clinician_title: "エビデンスで語るAI",
     gate_clinician_desc: "臨床データ、規制認証、国際ジャーナル — 検証に耐える読影支援を導入へ。",
     gate_clinician_link: "臨床エビデンスを見る",
+
+    life_kicker: "人生、悔いなし",
+    life_title: "早期発見は、<span class=\"hl\">生き続けるため</span>",
+    life_sub: "検診が目的ではありません。健康こそが目的です。PANCREASaver®があるから、自転車に乗り、山に登り、家族と食卓を囲める——人生を思い通りに生きるために。",
+    life_1_t: "家族と食卓を囲む",
+    life_1_d: "すべての食卓に、完全な円を。",
+    life_2_t: "陽の光の中で",
+    life_2_d: "自転車、ジョギング、旅——健康がすべての扉を開く。",
+    life_3_t: "山を登り続ける",
+    life_3_d: "人生の山は、一歩ずつ自分の足で。",
 
     tl_kicker: "私たちの歩み",
     tl_title: "台大の研究から<span class=\"hl-blue\">世界初の座標へ</span>",
