@@ -252,21 +252,25 @@
     }
   }
 
-  /* ---------- 9. 塵光粒子（hero） ---------- */
-  function initDust() {
-    var host = $('.hero');
-    if (!host || window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
-    for (var i = 0; i < 18; i++) {
+  /* ---------- 9. 塵光粒子（hero + patient 各幕 dust-layer） ---------- */
+  function spawnDust(host, count, spreadTop) {
+    for (var i = 0; i < count; i++) {
       var d = document.createElement('span');
       d.className = 'dust';
       var size = 3 + Math.random() * 7;
       d.style.width = d.style.height = size.toFixed(1) + 'px';
       d.style.left = (Math.random() * 100).toFixed(1) + '%';
-      d.style.top = (60 + Math.random() * 38).toFixed(1) + '%';
+      d.style.top = (spreadTop + Math.random() * (98 - spreadTop)).toFixed(1) + '%';
       d.style.animationDuration = (9 + Math.random() * 14).toFixed(1) + 's';
       d.style.animationDelay = (Math.random() * 9).toFixed(1) + 's';
       host.appendChild(d);
     }
+  }
+  function initDust() {
+    if (window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+    var hero = $('.hero');
+    if (hero) spawnDust(hero, 18, 60);
+    $all('.dust-layer').forEach(function (layer) { spawnDust(layer, 16, 40); });
   }
 
   /* ---------- 10. 互動 CT ---------- */
