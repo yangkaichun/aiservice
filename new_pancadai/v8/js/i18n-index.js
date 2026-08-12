@@ -1,8 +1,6 @@
-/* v8 index 字典（三語） */
-(function () {
-  var D = window.PANCAD_I18N = window.PANCAD_I18N || {};
-  D.index = {
-    zh: {
+/* v8 index 字典（三語）— 扁平結構 + Object.assign 合併（家族慣例） */
+window.PANCAD_I18N = window.PANCAD_I18N || { zh: {}, en: {}, ja: {} };
+Object.assign(window.PANCAD_I18N.zh, {
       hero_kicker: 'PANCREASaver® 助胰見®',
       hero_t1: '讓癌王',
       hero_t2: '無所遁形',
@@ -88,8 +86,8 @@
       contact_lab: '聯絡我們',
       contact_mail: 'kc.yang@pancad.ai',
       contact_company: '仲智數位健康股份有限公司 PanCAD.ai'
-    },
-    en: {
+});
+Object.assign(window.PANCAD_I18N.en, {
       hero_kicker: 'PANCREASaver®',
       hero_t1: 'Catch the',
       hero_t2: 'unseen early',
@@ -175,8 +173,8 @@
       contact_lab: 'Contact',
       contact_mail: 'kc.yang@pancad.ai',
       contact_company: 'PanCAD.ai Co., Ltd.'
-    },
-    ja: {
+});
+Object.assign(window.PANCAD_I18N.ja, {
       hero_kicker: 'PANCREASaver® 助胰見®',
       hero_t1: '膵臓がんを',
       hero_t2: '見逃さない',
@@ -262,6 +260,4 @@
       contact_lab: 'お問い合わせ',
       contact_mail: 'kc.yang@pancad.ai',
       contact_company: '仲智數位健康股份有限公司 PanCAD.ai'
-    }
-  };
-})();
+});

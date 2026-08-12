@@ -58,6 +58,7 @@
   window.PANCAD_LANG = {
     get: function () { return current; },
     set: setLang,
+    applyAll: apply,
     t: function (k) {
       var d = (window.PANCAD_I18N || {})[current] || {};
       return d[k] !== undefined ? d[k] : k;

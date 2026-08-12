@@ -195,7 +195,10 @@
     if (!hosts.length || reduceMotion) return;
     hosts.forEach(function (host) {
       if (host.getAttribute('data-kinetic-done')) return;
+      // 保存原始 HTML（含 data-i18n 標記），供語言切換還原
+      if (!host.dataset.kineticHtml) host.dataset.kineticHtml = host.innerHTML;
       var text = host.textContent.trim();
+      if (!text) return; // 防護：文字為空時不動（家族慣例：缺內容不連鎖崩潰）
       host.innerHTML = '';
       var parts = text.split(/(<[^>]+>)/g).filter(Boolean);
       parts.forEach(function (part) {
@@ -271,12 +274,13 @@
       apply();
       el._poolTimer = setInterval(apply, 9000);
     });
-    // kinetic 重建（等 i18n apply 完成後）
+    // kinetic 重建（語言切換）：先還原原始 HTML（含 data-i18n）→ 重新翻譯 → 重建 kinetic
     setTimeout(function () {
       $$('[data-kinetic]').forEach(function (h) {
+        if (h.dataset.kineticHtml) h.innerHTML = h.dataset.kineticHtml;
         h.removeAttribute('data-kinetic-done');
-        h.innerHTML = '';
       });
+      if (window.PANCAD_LANG && window.PANCAD_LANG.applyAll) window.PANCAD_LANG.applyAll();
       initKinetic();
     }, 320);
   };
