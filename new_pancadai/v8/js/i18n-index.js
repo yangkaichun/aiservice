@@ -2,8 +2,8 @@
 window.PANCAD_I18N = window.PANCAD_I18N || { zh: {}, en: {}, ja: {} };
 Object.assign(window.PANCAD_I18N.zh, {
       hero_kicker: 'PANCREASaver® 助胰見®',
-      hero_t1: '讓癌王',
-      hero_t2: '無所遁形',
+      hero_t1: '早一步發現，',
+      hero_t2: '多一種可能',
       hero_sub: '全球首創全自動化胰臟癌 CT AI 輔助偵測系統——在每一次掃描中，主動攔截 <2cm 的早期病灶，為病患爭取黃金治療期。',
       hero_cta1: '了解 PANCREASaver',
       hero_cta2: '醫療機構合作',
@@ -89,8 +89,8 @@ Object.assign(window.PANCAD_I18N.zh, {
 });
 Object.assign(window.PANCAD_I18N.en, {
       hero_kicker: 'PANCREASaver®',
-      hero_t1: 'Catch the',
-      hero_t2: 'unseen early',
+      hero_t1: 'Find it earlier,',
+      hero_t2: 'keep more possibilities',
       hero_sub: 'The world\'s first fully automated AI-assisted detection system for pancreatic cancer on CT — intercepting <2cm lesions in every scan to give patients the golden window for treatment.',
       hero_cta1: 'Learn more',
       hero_cta2: 'For clinicians',
@@ -176,8 +176,8 @@ Object.assign(window.PANCAD_I18N.en, {
 });
 Object.assign(window.PANCAD_I18N.ja, {
       hero_kicker: 'PANCREASaver® 助胰見®',
-      hero_t1: '膵臓がんを',
-      hero_t2: '見逃さない',
+      hero_t1: '早く見つけて、',
+      hero_t2: '可能性を広げる',
       hero_sub: '世界初の全自動膵臓がんCT AI検出システム——すべてのスキャンで2cm未満の早期病変を積極的に捉え、治療の黄金期を守ります。',
       hero_cta1: '製品を知る',
       hero_cta2: '医療機関の方へ',
