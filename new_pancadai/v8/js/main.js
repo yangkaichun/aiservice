@@ -1,9 +1,9 @@
-/* PANCREASaver 官網 v8 — main.js 動態系統（零套件） */
+/* PANCREASaver 官網 v8 —「黎明之光」main.js（零套件） */
 (function () {
   'use strict';
 
   var reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-  var netTier = 2; // 0=2g 1=3g 2=4g+
+  var netTier = 2;
   try {
     var conn = navigator.connection || navigator.mozConnection || navigator.webkitConnection;
     if (conn) {
@@ -17,7 +17,7 @@
   function $(s, c) { return (c || document).querySelector(s); }
   function $$(s, c) { return Array.prototype.slice.call((c || document).querySelectorAll(s)); }
 
-  /* ---------- 1. Nav（sticky + 漢堡） ---------- */
+  /* ---------- 1. Nav ---------- */
   function initNav() {
     var burger = $('#burger');
     var menu = $('#menu');
@@ -33,14 +33,13 @@
         });
       });
     }
-    // 當前頁高亮
     var page = (location.pathname.split('/').pop() || 'index.html').replace(/\.html$/, '');
     $$('.nav .menu a[data-page]').forEach(function (a) {
       if (a.getAttribute('data-page') === page) a.classList.add('on');
     });
   }
 
-  /* ---------- 2. Reveal（捲動漸顯） ---------- */
+  /* ---------- 2. Reveal ---------- */
   function initReveal() {
     var els = $$('.reveal');
     if (!els.length) return;
@@ -53,7 +52,7 @@
     els.forEach(function (el) { io.observe(el); });
   }
 
-  /* ---------- 3. 掃描線（章節進入掃過） ---------- */
+  /* ---------- 3. 掃描線（黎明光） ---------- */
   function initScanlines() {
     var hosts = $$('[data-scanline]');
     if (!hosts.length || reduceMotion) return;
@@ -64,7 +63,6 @@
         var line = document.createElement('div');
         line.className = 'scanline';
         host.appendChild(line);
-        // 觸發 animation
         requestAnimationFrame(function () { line.classList.add('active'); });
         setTimeout(function () { if (line.parentNode) line.parentNode.removeChild(line); }, 1300);
       });
@@ -72,47 +70,112 @@
     hosts.forEach(function (h) { io.observe(h); });
   }
 
-  /* ---------- 4. 數字雷達（進入視野計數） ---------- */
-  function initRadar() {
-    var cards = $$('.radar .card[data-count]');
+  /* ---------- 4. 黎明光暈跟隨捲動（dawn-glow 位移） ---------- */
+  function initDawnGlow() {
+    var glow = $('.dawn-glow');
+    if (!glow || reduceMotion) return;
+    var ticking = false;
+    function onScroll() {
+      if (ticking) return;
+      ticking = true;
+      requestAnimationFrame(function () {
+        var y = window.scrollY;
+        var docH = document.documentElement.scrollHeight - window.innerHeight;
+        var p = docH > 0 ? y / docH : 0;
+        // 光暈隨捲動：左上 → 中 → 右下（希望之光巡視全站）
+        glow.style.left = (12 + p * 76) + '%';
+        glow.style.top = (8 + p * 55) + '%';
+        glow.style.opacity = 0.55 + p * 0.45;
+        ticking = false;
+      });
+    }
+    window.addEventListener('scroll', onScroll, { passive: true });
+    onScroll();
+  }
+
+  /* ---------- 5. 數字希望帶（計數） ---------- */
+  function initHopeCounters() {
+    var cards = $$('.hope-card[data-count]');
     if (!cards.length) return;
+    function fire(card) {
+      if (card._fired) return;
+      card._fired = true;
+      card.classList.add('revealed');
+      var target = parseFloat(card.getAttribute('data-count'));
+      var decimals = parseInt(card.getAttribute('data-dec') || '0', 10);
+      var el = $('.num span:first-child', card);
+      if (el && !reduceMotion) {
+        var t0 = null;
+        var dur = 1600;
+        function step(ts) {
+          if (!t0) t0 = ts;
+          var p = Math.min((ts - t0) / dur, 1);
+          var eased = 1 - Math.pow(1 - p, 3);
+          el.textContent = (target * eased).toFixed(decimals);
+          if (p < 1) requestAnimationFrame(step);
+          else el.textContent = target.toFixed(decimals);
+        }
+        requestAnimationFrame(step);
+      } else if (el) {
+        el.textContent = target.toFixed(decimals);
+      }
+    }
+    if (reduceMotion) { cards.forEach(function (c) { fire(c); }); return; }
+    var io = new IntersectionObserver(function (entries) {
+      entries.forEach(function (en) {
+        if (en.isIntersecting) { fire(en.target); io.unobserve(en.target); }
+      });
+    }, { threshold: 0.15, rootMargin: '0px 0px -5% 0px' });
+    cards.forEach(function (c) { io.observe(c); });
+    // fallback：3s 後仍在視口上方未觸發者直接 fire（快速捲動安全網）
+    setTimeout(function () {
+      cards.forEach(function (c) {
+        if (!c._fired) {
+          var r = c.getBoundingClientRect();
+          if (r.top < window.innerHeight && r.bottom > 0) fire(c);
+        }
+      });
+    }, 2500);
+  }
+
+  /* ---------- 6. 個案電影（case-film 逐幕進場 + CT 自動演示） ---------- */
+  function initCaseFilm() {
+    var scenes = $$('.case-scene');
+    if (!scenes.length) return;
+    if (reduceMotion) {
+      scenes.forEach(function (s) { s.classList.add('in'); });
+      return;
+    }
     var io = new IntersectionObserver(function (entries) {
       entries.forEach(function (en) {
         if (!en.isIntersecting) return;
-        var card = en.target;
-        card.classList.add('revealed');
-        var target = parseFloat(card.getAttribute('data-count'));
-        var decimals = parseInt(card.getAttribute('data-dec') || '0', 10);
-        var el = $('.num', card);
-        if (el && !reduceMotion) {
-          var t0 = null;
-          var dur = 1600;
-          function step(ts) {
-            if (!t0) t0 = ts;
-            var p = Math.min((ts - t0) / dur, 1);
-            var eased = 1 - Math.pow(1 - p, 3);
-            el.textContent = (target * eased).toFixed(decimals);
-            if (p < 1) requestAnimationFrame(step);
-            else el.textContent = target.toFixed(decimals);
-          }
-          requestAnimationFrame(step);
-        } else if (el) {
-          el.textContent = target.toFixed(decimals);
+        var scene = en.target;
+        if (scene._fired) return;
+        scene._fired = true;
+        scene.classList.add('in');
+        // CT 對比自動演示
+        var pair = $('.ct-pair', scene);
+        if (pair) {
+          pair.style.setProperty('--split', '50%');
+          var t = 50;
+          var timer = setInterval(function () {
+            t += 2.2;
+            pair.style.setProperty('--split', t + '%');
+            if (t >= 88) clearInterval(timer);
+          }, 40);
         }
-        io.unobserve(card);
+        io.unobserve(scene);
       });
-    }, { threshold: 0.4 });
-    cards.forEach(function (c) { io.observe(c); });
+    }, { threshold: 0.12, rootMargin: '0px 0px -8% 0px' });
+    scenes.forEach(function (s) { io.observe(s); });
   }
 
-  /* ---------- 5. CT split 互動（拖曳） ---------- */
+  /* ---------- 7. CT split 互動（拖曳） ---------- */
   function initCT() {
     var box = $('#ctSplit');
     if (!box) return;
-    var split = 50;
     function set(v) {
-      split = Math.max(8, Math.min(92, v));
-      box.style.setProperty('--split', split + '%');
+      box.style.setProperty('--split', Math.max(8, Math.min(92, v)) + '%');
     }
     function startDrag(e) {
       e.preventDefault();
@@ -136,7 +199,6 @@
       div.addEventListener('mousedown', startDrag);
       div.addEventListener('touchstart', startDrag, { passive: false });
     }
-    // 進入視野自動演示一次
     if (!reduceMotion) {
       var io = new IntersectionObserver(function (entries) {
         entries.forEach(function (en) {
@@ -155,7 +217,7 @@
     }
   }
 
-  /* ---------- 6. FAQ 手風琴 ---------- */
+  /* ---------- 8. FAQ ---------- */
   function initFAQ() {
     $$('.faq .item').forEach(function (item) {
       var q = $('.q', item);
@@ -172,7 +234,30 @@
     });
   }
 
-  /* ---------- 7. Hero 影片（漸進 + reduced-motion） ---------- */
+  /* ---------- 9. 動態背景影片（data-bg-video） ---------- */
+  function initBgVideos() {
+    $$('[data-bg-video]').forEach(function (host) {
+      if (reduceMotion || netTier === 0) return;
+      var src = host.getAttribute('data-bg-video');
+      if (!src) return;
+      var poster = host.querySelector('.poster');
+      var v = document.createElement('video');
+      v.autoplay = true; v.muted = true; v.loop = true; v.playsInline = true;
+      v.preload = 'auto';
+      var s1 = document.createElement('source');
+      s1.src = 'video/' + src + '.mp4'; s1.type = 'video/mp4';
+      v.appendChild(s1);
+      var s2 = document.createElement('source');
+      s2.src = 'video/' + src + '.webm'; s2.type = 'video/webm';
+      v.appendChild(s2);
+      v.addEventListener('playing', function () { if (poster) poster.classList.add('hidden'); });
+      var p = v.play();
+      if (p && p.catch) p.catch(function () { v.remove(); if (poster) poster.classList.remove('hidden'); });
+      host.appendChild(v);
+    });
+  }
+
+  /* ---------- 10. Hero 影片 ---------- */
   function initHeroVideo() {
     var video = $('#heroVideo');
     var poster = $('#heroPoster');
@@ -182,119 +267,22 @@
       if (poster) poster.classList.remove('hidden');
       return;
     }
-    video.addEventListener('playing', function () {
-      if (poster) poster.classList.add('hidden');
-    });
+    video.addEventListener('playing', function () { if (poster) poster.classList.add('hidden'); });
     var p = video.play();
     if (p && p.catch) p.catch(function () { video.remove(); if (poster) poster.classList.remove('hidden'); });
   }
-
-  /* ---------- 8. Kinetic 標題（逐字包裝，i18n 安全） ---------- */
-  function initKinetic() {
-    var hosts = $$('[data-kinetic]');
-    if (!hosts.length || reduceMotion) return;
-    hosts.forEach(function (host) {
-      if (host.getAttribute('data-kinetic-done')) return;
-      // 保存原始 HTML（含 data-i18n 標記），供語言切換還原
-      if (!host.dataset.kineticHtml) host.dataset.kineticHtml = host.innerHTML;
-      var text = host.textContent.trim();
-      if (!text) return; // 防護：文字為空時不動（家族慣例：缺內容不連鎖崩潰）
-      host.innerHTML = '';
-      var parts = text.split(/(<[^>]+>)/g).filter(Boolean);
-      parts.forEach(function (part) {
-        if (part.charAt(0) === '<') { host.insertAdjacentHTML('beforeend', part); return; }
-        var words = part.split(/(\s+)/);
-        words.forEach(function (w) {
-          if (!w) return;
-          var span = document.createElement('span');
-          span.className = 'w';
-          span.style.display = 'inline-block';
-          span.style.opacity = '0';
-          span.style.transform = 'translateY(14px)';
-          span.textContent = w;
-          host.appendChild(span);
-        });
-      });
-      host.setAttribute('data-kinetic-done', '1');
-      // 進入視野觸發
-      var io = new IntersectionObserver(function (entries) {
-        entries.forEach(function (en) {
-          if (!en.isIntersecting) return;
-          io.unobserve(host);
-          $$('.w', host).forEach(function (w, i) {
-            setTimeout(function () {
-              w.style.transition = 'opacity .5s ease, transform .5s ease';
-              w.style.opacity = '1';
-              w.style.transform = 'none';
-            }, i * 45);
-          });
-        });
-      }, { threshold: 0.4 });
-      io.observe(host);
-    });
-  }
-
-  /* ---------- 9. 背景圖池（多圖輪換） ---------- */
-  function initBgPool() {
-    var pools = $$('[data-bg-pool]');
-    if (!pools.length) return;
-    var shown = {};
-    pools.forEach(function (el) {
-      var list = (el.getAttribute('data-bg-pool') || '').split(',').map(function (s) { return s.trim(); }).filter(Boolean);
-      if (!list.length) return;
-      var idx = 0;
-      function apply() {
-        var key = list[idx % list.length];
-        el.style.backgroundImage = 'url(assets/' + key + ')';
-        idx++;
-      }
-      apply();
-      el._poolTimer = setInterval(function () { apply(); }, 9000);
-    });
-    // 語言切換時若 intl 池不同，交由 onLangChange 處理
-  }
-
-  /* ---------- 10. onLangChange（頁面語言掛勾） ---------- */
-  window.onLangChange = function (lang) {
-    // 背景池語言切換：en → intl 圖
-    var langPools = {
-      zh: 'bg_ct_room.jpg,bg_reading.jpg,bg_hospital.jpg,bg_data.jpg,bg_patient.jpg,bg_doctor.jpg',
-      ja: 'bg_ct_room.jpg,bg_reading.jpg,bg_hospital.jpg,bg_data.jpg,bg_patient.jpg,bg_doctor.jpg',
-      en: 'bg_intl_ct.jpg,bg_intl_reading.jpg,bg_intl_hospital.jpg,bg_intl_data.jpg,bg_intl_patient.jpg'
-    };
-    var pools = $$('[data-bg-pool-lang]');
-    pools.forEach(function (el) {
-      if (el._poolTimer) clearInterval(el._poolTimer);
-      var list = (langPools[lang] || langPools.zh).split(',');
-      var idx = 0;
-      function apply() {
-        el.style.backgroundImage = 'url(assets/' + (list[idx % list.length]) + ')';
-        idx++;
-      }
-      apply();
-      el._poolTimer = setInterval(apply, 9000);
-    });
-    // kinetic 重建（語言切換）：先還原原始 HTML（含 data-i18n）→ 重新翻譯 → 重建 kinetic
-    setTimeout(function () {
-      $$('[data-kinetic]').forEach(function (h) {
-        if (h.dataset.kineticHtml) h.innerHTML = h.dataset.kineticHtml;
-        h.removeAttribute('data-kinetic-done');
-      });
-      if (window.PANCAD_LANG && window.PANCAD_LANG.applyAll) window.PANCAD_LANG.applyAll();
-      initKinetic();
-    }, 320);
-  };
 
   /* ---------- init ---------- */
   document.addEventListener('DOMContentLoaded', function () {
     initNav();
     initReveal();
     initScanlines();
-    initRadar();
+    initDawnGlow();
+    initHopeCounters();
+    initCaseFilm();
     initCT();
     initFAQ();
+    initBgVideos();
     initHeroVideo();
-    initKinetic();
-    initBgPool();
   });
 })();
