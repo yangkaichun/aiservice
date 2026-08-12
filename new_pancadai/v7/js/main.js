@@ -165,54 +165,50 @@
     if (!els.length) return;
     var lang = (document.documentElement.lang || 'zh').toLowerCase().replace('-', '');
     var poolName = (lang === 'en') ? 'intl' : 'sun';
+    var pool;
+    if (poolName === 'sun') {
+      pool = ['bike', 'bridge', 'coffee', 'forest', 'kayak', 'picnic', 'yoga'].map(function (k) {
+        return { key: k, src: 'assets/hero_sun_' + k + '_safe.jpg', hd: 'assets/hero_sun_' + k + '_safe_hd.webp' };
+      });
+    } else {
+      pool = [];
+      for (var i = 1; i <= 30; i++) {
+        var n = (i < 10 ? '0' : '') + i;
+        pool.push({ key: 'i' + i, src: 'assets/hero_intl_' + n + '_safe.jpg', hd: 'assets/hero_intl_' + n + '_safe_hd.webp' });
+      }
+    }
+    var tier = netTier();
+    /* 同頁不重複：目前正被顯示的圖 key → 計數 */
+    var shown = {};
+    function pickFree() {
+      var free = pool.filter(function (it) { return !shown[it.key]; });
+      if (!free.length) free = pool;
+      return free[Math.floor(Math.random() * free.length)];
+    }
+    function display(el, item, useHd) {
+      var img = new Image();
+      img.onload = function () {
+        el.style.backgroundImage = 'url(' + item.src + ')';
+        if (useHd) {
+          var hd = new Image();
+          hd.onload = function () { el.style.backgroundImage = 'url(' + item.hd + ')'; };
+          hd.onerror = function () {};
+          hd.src = item.hd;
+        }
+      };
+      img.src = item.src;
+    }
     els.forEach(function (el) {
       if (el._bgTimer) { clearInterval(el._bgTimer); el._bgTimer = null; }
-      var pool;
-      if (poolName === 'sun') {
-        pool = ['bike', 'bridge', 'coffee', 'forest', 'kayak', 'picnic', 'yoga'].map(function (k) {
-          return { src: 'assets/hero_sun_' + k + '_safe.jpg', hd: 'assets/hero_sun_' + k + '_safe_hd.webp' };
-        });
-      } else {
-        pool = [];
-        for (var i = 1; i <= 30; i++) {
-          var n = (i < 10 ? '0' : '') + i;
-          pool.push({ src: 'assets/hero_intl_' + n + '_safe.jpg', hd: 'assets/hero_intl_' + n + '_safe_hd.webp' });
-        }
+      var cur = null;
+      function apply(item) {
+        if (cur) shown[cur.key] = (shown[cur.key] || 1) - 1;
+        cur = item;
+        shown[cur.key] = (shown[cur.key] || 0) + 1;
+        display(el, cur, tier >= 2);
       }
-      var tier = netTier();
-      var idx = Math.floor(Math.random() * pool.length);
-      function show(i, useHd) {
-        var item = pool[i];
-        var img = new Image();
-        img.onload = function () {
-          el.style.backgroundImage = 'url(' + item.src + ')';
-          if (useHd) {
-            var hd = new Image();
-            hd.onload = function () { el.style.backgroundImage = 'url(' + item.hd + ')'; };
-            hd.onerror = function () {};
-            hd.src = item.hd;
-          }
-        };
-        img.src = item.src;
-      }
-      show(idx, tier >= 2);
-      el._bgTimer = setInterval(function () {
-        var next = idx;
-        while (next === idx) next = Math.floor(Math.random() * pool.length);
-        idx = next;
-        var item = pool[idx];
-        var img = new Image();
-        img.onload = function () {
-          el.style.backgroundImage = 'url(' + item.src + ')';
-          if (tier >= 2) {
-            var hd = new Image();
-            hd.onload = function () { el.style.backgroundImage = 'url(' + item.hd + ')'; };
-            hd.onerror = function () {};
-            hd.src = item.hd;
-          }
-        };
-        img.src = item.src;
-      }, 9000);
+      apply(pickFree());
+      el._bgTimer = setInterval(function () { apply(pickFree()); }, 9000);
     });
   }
 
@@ -270,7 +266,22 @@
     if (window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
     var hero = $('.hero');
     if (hero) spawnDust(hero, 18, 60);
-    $all('.dust-layer').forEach(function (layer) { spawnDust(layer, 16, 40); });
+    /* 自動為所有背景圖容器加粒子層（不重複加） */
+    function addDustTo(el, count, top) {
+      if (el.querySelector('.dust-layer')) return;
+      var layer = document.createElement('div');
+      layer.className = 'dust-layer';
+      layer.setAttribute('aria-hidden', 'true');
+      el.appendChild(layer);
+      spawnDust(layer, count, top);
+    }
+    $all('.page-hero').forEach(function (h) { addDustTo(h, 18, 30); });
+    $all('.journey-station').forEach(function (s) { addDustTo(s, 16, 40); });
+    $all('.day-card').forEach(function (c) { addDustTo(c, 12, 50); });
+    /* 既有手寫 .dust-layer（patient 各幕） */
+    $all('.dust-layer').forEach(function (layer) {
+      if (!layer.children.length) spawnDust(layer, 16, 40);
+    });
   }
 
   /* ---------- 10. 互動 CT ---------- */
