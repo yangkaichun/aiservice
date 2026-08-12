@@ -96,7 +96,7 @@ def gen_aurora_g():
             cy = basey + amp*math.sin(2*math.pi*f*speed + ph) / H
             d = np.abs(yy/H - cy) / (0.05 + 0.02*math.sin(2*math.pi*f*speed*1.7 + ph))
             ribbon = np.exp(-d*d) * (0.6 + 0.4*math.sin(2*math.pi*f*0.9 + ph*3))
-            sway = 0.5 + 0.5*math.sin(2*math.pi*f*speed*1.3 + ph + xx/W*math.pi*2)
+            sway = 0.5 + 0.5*np.sin(2*math.pi*f*speed*1.3 + ph + xx/W*math.pi*2)
             img += (ribbon * sway * strength)[..., None] * col[None, None, :]
         # 微塵上升
         for i in range(24):

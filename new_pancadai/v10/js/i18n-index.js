@@ -141,7 +141,7 @@
     news_title: "Every headline <span class=\"hl\">is a beam of light</span>",
     news_t1: "Global", news_h1: "FDA 510(k) submitted — moving toward the US market", news_d1: "After the Breakthrough designation, PANCREASaver<sup>®</sup> has formally submitted its 510(k) application.",
     news_t2: "Deployment", news_h2: "300+ scans reviewed — protecting more families", news_d2: "From medical centers to screening centers, the AI sentinel stands watch over every CT.",
-    news_t3: "Award", news_h3: "RSNA Margulis Award — first from Taiwan", news_d3: "The highest殿堂 of radiology honored a Taiwanese team for the first time.",
+    news_t3: "Award", news_h3: "RSNA Margulis Award — first from Taiwan", news_d3: "The world's highest honor in radiology, won by a Taiwanese team for the first time.",
     cta_title: "May no pancreas<br><span class=\"hl\">be swallowed by the night</span>",
     cta_sub: "Join us — let AI's starlight reach every hospital, every CT, every family."
   };
