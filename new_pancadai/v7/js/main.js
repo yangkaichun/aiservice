@@ -100,8 +100,9 @@
   function rebuildKinetic() {
     $all('.kinetic').forEach(function (el) {
       el.removeAttribute('data-kinetic-done');
-      el.innerHTML = el.getAttribute('aria-label') || el.textContent;
+      var t = el.textContent; /* i18n apply() 已更新為新語言文字 */
       el.removeAttribute('aria-label');
+      el.innerHTML = t; /* 還原純文字，等待 initKinetic 重新包裝 */
     });
     setTimeout(initKinetic, 320);
   }
