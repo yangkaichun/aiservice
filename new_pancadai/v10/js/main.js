@@ -182,6 +182,23 @@
   }
 
   /* ---------- Kinetic 標題（逐字彈入，v8 修法：保存原始 HTML） ---------- */
+  function splitWords(text) {
+    // 中文/日文逐字，英文按單詞，標點附著前字
+    var out = [];
+    var m = text.match(/([\u4e00-\u9fff\u3040-\u30ff\uac00-\ud7af]|[A-Za-z0-9]+(?:\.[A-Za-z0-9]+)*|\s+|[^\s\u4e00-\u9fff\u3040-\u30ff\uac00-\ud7afA-Za-z0-9]+)/g);
+    if (!m) return [];
+    for (var i = 0; i < m.length; i++) {
+      var t = m[i];
+      if (/^[\u4e00-\u9fff\u3040-\u30ff\uac00-\ud7af]/.test(t)) {
+        for (var j = 0; j < t.length; j++) out.push(t[j]);
+      } else if (/^\s+$/.test(t)) {
+        // skip whitespace
+      } else {
+        out.push(t);
+      }
+    }
+    return out;
+  }
   function initKinetic() {
     if (RM) return;
     var hosts = $$('.kinetic');
@@ -191,10 +208,10 @@
       if (!text) return;
       h.setAttribute('data-kinetic-done', '1');
       h.setAttribute('data-kinetic-html', h.innerHTML); // 還原點（含 data-i18n-html 內容）
-      var words = text.split(/(\s+)/).filter(function (w) { return w.trim() !== ''; });
+      var words = splitWords(text);
       var html = '';
       words.forEach(function (w, i) {
-        html += '<span class="w" style="animation-delay:' + (0.25 + i * 0.055) + 's">' + escapeHtml(w) + '</span>';
+        html += '<span class="w" style="animation-delay:' + (0.25 + i * 0.045) + 's">' + escapeHtml(w) + '</span>';
       });
       h.innerHTML = html;
     });
@@ -207,9 +224,11 @@
     var hosts = $$('.kinetic[data-kinetic-done]');
     hosts.forEach(function (h) {
       var raw = h.getAttribute('data-kinetic-html');
-      if (raw) h.innerHTML = raw;
+      if (raw) h.innerHTML = raw; // 還原（含 data-i18n-html 屬性內容）
       h.removeAttribute('data-kinetic-done');
     });
+    // 重新翻譯（kinetic 包裝前的原始 HTML 是舊語言）
+    if (window.PANCAD_LANG && window.PANCAD_LANG.applyAll) window.PANCAD_LANG.applyAll();
     initKinetic();
   };
 
