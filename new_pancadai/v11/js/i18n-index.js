@@ -14,7 +14,7 @@
     hero_cta_2: "醫療機構合作",
     hero_m1: "敏感度（<2cm）",
     hero_m2: "全國多中心 AUC",
-    hero_m3: "累積判讀人次",
+    hero_m3: "累積判讀人次（含臨床驗證）",
     hero_m4: "突破性醫材認定",
     hero_scroll: "捲動探索",
 
@@ -64,13 +64,13 @@
     gate2_p: "互動證據館：AUC 0.95、<2cm 敏感度 92.1%、法規認證與導入流程，30 秒拿到決策資訊。",
     gate2_cta: "查看證據與導入",
     gate3_t: "健檢中心",
-    gate3_p: "把胰臟癌 AI 篩檢加入您的健檢套組：流程整合、放射科協作、300+ 人次實戰經驗。",
+    gate3_p: "把胰臟癌 AI 篩檢加入您的健檢套組：流程整合、放射科協作、2156+ 人次實戰經驗。",
     gate3_cta: "了解篩檢方案",
 
     /* 數字帶 */
     st_label_1: "敏感度（<2cm 腫瘤）",
     st_label_2: "全國多中心 AUC",
-    st_label_3: "累積判讀人次",
+    st_label_3: "累積判讀人次（含臨床驗證）",
     st_label_4: "台美專利",
 
     /* 自測 teaser */
@@ -132,7 +132,7 @@
     car5_cta: "了解認證歷程",
     car6_k: "導入流程",
     car6_t: "從簽約到上線，<span class=\"hl\">4 週完成導入。</span>",
-    car6_p: "醫學中心＋區域醫院＋健檢中心已累積 300+ 人次判讀——資料不出院、SaaS 訂閱、持續模型更新。",
+    car6_p: "醫學中心＋區域醫院＋健檢中心已累積 2156+ 人次判讀——資料不出院、SaaS 訂閱、持續模型更新。",
     car6_cta: "查看導入方案",
 
     /* 護胰大聯盟 Line CTA（v11.1 首頁加入） */
@@ -161,7 +161,7 @@
     hero_cta_2: "For Clinicians",
     hero_m1: "Sensitivity (<2cm)",
     hero_m2: "Multi-center AUC",
-    hero_m3: "Cases Interpreted",
+    hero_m3: "Cases Interpreted (incl. clinical validation)",
     hero_m4: "FDA Breakthrough",
     hero_scroll: "Scroll to explore",
 
@@ -213,7 +213,7 @@
 
     st_label_1: "Sensitivity (<2cm tumors)",
     st_label_2: "Multi-center AUC",
-    st_label_3: "Cases interpreted",
+    st_label_3: "Cases interpreted (incl. clinical validation)",
     st_label_4: "Patents (TW & US)",
 
     qt_k: "30-Second Awareness",
@@ -300,7 +300,7 @@
     hero_cta_2: "医療機関の方へ",
     hero_m1: "感度（2cm未満）",
     hero_m2: "全国多施設AUC",
-    hero_m3: "累計読影件数",
+    hero_m3: "累計読影件数（臨床検証含む）",
     hero_m4: "FDA画期的指定",
     hero_scroll: "スクロール",
 
@@ -352,7 +352,7 @@
 
     st_label_1: "感度（2cm未満の腫瘍）",
     st_label_2: "全国多施設AUC",
-    st_label_3: "累計読影件数",
+    st_label_3: "累計読影件数（臨床検証含む）",
     st_label_4: "台湾・米国特許",
 
     qt_k: "30秒リスク意識",

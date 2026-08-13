@@ -638,6 +638,23 @@
     restart();
   }
 
+  /* ---------- 14.6 動態計數器（v11.2.7：累積判讀人次每 10 秒 +1） ---------- */
+  function initLiveCounter() {
+    var els = $all('[data-live-count]');
+    if (!els.length) return;
+    els.forEach(function (el) {
+      var n = parseInt(el.getAttribute('data-start') || '2156', 10);
+      el.textContent = n;
+      el._lcTimer = setInterval(function () {
+        n++;
+        el.textContent = n;
+        el.classList.remove('bump');
+        void el.offsetWidth;
+        el.classList.add('bump');
+      }, 10000);
+    });
+  }
+
   /* ---------- 15. 啟動 ---------- */
   function boot() {
     initSunlight();
@@ -658,6 +675,7 @@
     initQuiz();
     initFAQ();
     initCarousel();
+    initLiveCounter();
     window.addEventListener('langchange', function () {
       initBgPool();
       initDinnerPool();
