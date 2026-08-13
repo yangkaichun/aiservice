@@ -179,6 +179,8 @@
     }
     var tier = netTier();
     var useHd = tier >= 1; /* v11.2：3g 以上也漸進載入 HD（小圖先顯示、HD 背景預載後替換） */
+    /* v11.2.18：無 pad 滿版圖（cover，不放大 118%） */
+    var FULL = { '2': 1, '9': 1 }; /* sun 池 key：hero_sun_2 / hero_sun_9 */
     /* 池洗牌（每次進站隨機順序，背景隨機產生） */
     shuffle(pool);
     /* 同頁不重複：目前正被顯示的圖 key → 計數 */
@@ -192,9 +194,13 @@
       var img = new Image();
       img.onload = function () {
         el.style.backgroundImage = 'url(' + item.src + ')';
+        if (FULL[item.key]) el.style.backgroundSize = 'cover';
         if (useHd) {
           var hd = new Image();
-          hd.onload = function () { el.style.backgroundImage = 'url(' + item.hd + ')'; };
+          hd.onload = function () {
+            el.style.backgroundImage = 'url(' + item.hd + ')';
+            if (FULL[item.key]) el.style.backgroundSize = 'cover';
+          };
           hd.onerror = function () {};
           hd.src = item.hd;
         }
@@ -391,15 +397,21 @@
     if (lang === 'en') pool = ['dinner_en_1', 'dinner_en_2'];
     else if (lang === 'ja') pool = ['dinner_ja_1', 'dinner_ja_2'];
     else pool = ['dinner_zh_1', 'dinner_zh_2'];
+    /* v11.2.18：無 pad 滿版圖（cover） */
+    var DINNER_FULL = { 'dinner_zh_1': 1, 'dinner_zh_2': 1 };
     var idx = 0;
     function show() {
       var base = pool[idx];
       var img = new Image();
       img.onload = function () {
         el.style.backgroundImage = 'url(assets/' + base + '_safe.jpg)';
+        if (DINNER_FULL[base]) el.style.backgroundSize = 'cover';
         /* 漸進：HD 預載後替換（HD 未生成時 onerror 跳過，繼續用小圖） */
         var hd = new Image();
-        hd.onload = function () { el.style.backgroundImage = 'url(assets/' + base + '_safe_hd.webp)'; };
+        hd.onload = function () {
+          el.style.backgroundImage = 'url(assets/' + base + '_safe_hd.webp)';
+          if (DINNER_FULL[base]) el.style.backgroundSize = 'cover';
+        };
         hd.onerror = function () {};
         hd.src = 'assets/' + base + '_safe_hd.webp';
       };
