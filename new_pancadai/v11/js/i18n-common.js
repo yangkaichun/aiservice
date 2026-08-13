@@ -4,6 +4,7 @@
 window.PANCAD_I18N = {
   zh: {
     /* 導覽 */
+    nav_product: "產品介紹",
     nav_patient: "患者旅程",
     nav_clinician: "醫療機構",
     nav_screening: "健檢中心",
@@ -53,6 +54,7 @@ window.PANCAD_I18N = {
     jr_hint: "照護旅程 — 捲動跟隨"
   },
   en: {
+    nav_product: "Product",
     nav_patient: "Patient Journey",
     nav_clinician: "For Clinicians",
     nav_screening: "Health Centers",
@@ -99,6 +101,7 @@ window.PANCAD_I18N = {
     jr_hint: "The care journey — scroll to follow"
   },
   ja: {
+    nav_product: "製品紹介",
     nav_patient: "患者の旅",
     nav_clinician: "医療機関",
     nav_screening: "健診センター",

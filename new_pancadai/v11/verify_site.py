@@ -41,6 +41,7 @@ for f in html_files:
     defined = set()
     for d in dicts:
         defined |= set(re.findall(r'^\s{4}([a-zA-Z0-9_]+):\s*["\u201c]', d, re.M))
+        defined |= set(re.findall(r',\s*([a-zA-Z0-9_]+):\s*["\u201c]', d))
     mk = used - defined
     if mk:
         key_errs.append(f"{page}: {sorted(mk)}")
