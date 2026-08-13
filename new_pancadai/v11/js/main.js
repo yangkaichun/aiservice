@@ -294,32 +294,45 @@
     });
   }
 
-  /* ---------- 9.5 光子粒子（v11.2：黃金光子上升，加量） ---------- */
+  /* ---------- 9.5 光子粒子（v11.2.4：金黃圓點、快速上升、動態重生不間斷） ---------- */
   function spawnPhotons(host, count) {
-    var colors = ['', '', '', '', '', 'blue', 'white']; /* 金 5/7、藍 1/7、白 1/7 */
     var h = host.clientHeight || 700;
     for (var i = 0; i < count; i++) {
       var p = document.createElement('span');
-      p.className = 'photon ' + colors[Math.floor(Math.random() * colors.length)];
-      var len = 34 + Math.random() * 80;
-      p.style.width = len.toFixed(0) + 'px';
-      p.style.height = (1.5 + Math.random() * 2.2).toFixed(1) + 'px';
+      p.className = 'photon';
+      var sz = 3 + Math.random() * 6;
+      p.style.width = p.style.height = sz.toFixed(1) + 'px';
       p.style.left = (Math.random() * 100).toFixed(1) + '%';
-      p.style.top = (50 + Math.random() * 48).toFixed(1) + '%'; /* 下半部出發向上飄 */
-      p.style.setProperty('--ph-rot', ((Math.random() * 2 - 1) * 24).toFixed(0) + 'deg');
-      p.style.setProperty('--ph-rise', (-(h * 0.85 + Math.random() * h * 0.5)).toFixed(0) + 'px');
-      p.style.setProperty('--ph-sw', ((Math.random() * 2 - 1) * 48).toFixed(0) + 'px');
-      p.style.setProperty('--ph-op', (0.45 + Math.random() * 0.5).toFixed(2));
-      p.style.animationDuration = (7 + Math.random() * 9).toFixed(1) + 's';
-      p.style.animationDelay = (Math.random() * 10).toFixed(1) + 's';
+      p.style.top = (45 + Math.random() * 53).toFixed(1) + '%'; /* 下半部出發向上飄 */
+      p.style.setProperty('--ph-rise', (-(h * 0.9 + Math.random() * h * 0.6)).toFixed(0) + 'px');
+      p.style.setProperty('--ph-sw', ((Math.random() * 2 - 1) * 40).toFixed(0) + 'px');
+      p.style.setProperty('--ph-op', (0.5 + Math.random() * 0.5).toFixed(2));
+      p.style.animationDuration = (3 + Math.random() * 3.5).toFixed(2) + 's'; /* 快速上升 */
+      p.style.animationDelay = (Math.random() * 4).toFixed(2) + 's';
       host.appendChild(p);
     }
+  }
+  function respawnPhoton(p, h) {
+    /* 不間斷隨機出現：隨機重生單顆粒子（新位置/速度/延遲） */
+    var sz = 3 + Math.random() * 6;
+    p.style.width = p.style.height = sz.toFixed(1) + 'px';
+    p.style.left = (Math.random() * 100).toFixed(1) + '%';
+    p.style.top = (45 + Math.random() * 53).toFixed(1) + '%';
+    p.style.setProperty('--ph-rise', (-(h * 0.9 + Math.random() * h * 0.6)).toFixed(0) + 'px');
+    p.style.setProperty('--ph-sw', ((Math.random() * 2 - 1) * 40).toFixed(0) + 'px');
+    p.style.setProperty('--ph-op', (0.5 + Math.random() * 0.5).toFixed(2));
+    p.style.animationDuration = (3 + Math.random() * 3.5).toFixed(2) + 's';
+    p.style.animationDelay = (Math.random() * 4).toFixed(2) + 's';
+    /* 強制重啟動畫 */
+    p.style.animationName = 'none';
+    void p.offsetWidth;
+    p.style.animationName = '';
   }
   function initPhotons() {
     if (window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
     var hosts = [
-      ['.hero', 44], ['.page-hero', 30], ['.journey-station', 26], ['.day-card', 18],
-      ['.quote-section', 14], ['.cta-band', 18], ['.line-band', 26], ['.stats-band', 14]
+      ['.hero', 48], ['.page-hero', 34], ['.journey-station', 30], ['.day-card', 20],
+      ['.quote-section', 16], ['.cta-band', 20], ['.line-band', 30], ['.stats-band', 16]
     ];
     hosts.forEach(function (h) {
       $all(h[0]).forEach(function (el) {
@@ -329,6 +342,17 @@
         layer.setAttribute('aria-hidden', 'true');
         el.appendChild(layer);
         spawnPhotons(layer, h[1]);
+        /* 動態重生：每 1.5 秒隨機重生 2 顆 → 不間斷隨機出現 */
+        (function (lay, cnt) {
+          setInterval(function () {
+            var dots = lay.querySelectorAll('.photon');
+            if (!dots.length) return;
+            for (var k = 0; k < 2; k++) {
+              var p = dots[Math.floor(Math.random() * dots.length)];
+              respawnPhoton(p, lay.clientHeight || 700);
+            }
+          }, 1500);
+        })(layer, h[1]);
       });
     });
   }
