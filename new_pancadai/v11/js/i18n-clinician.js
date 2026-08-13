@@ -14,7 +14,7 @@
     auc_legend_baseline: "隨機判讀（0.5）",
     stat_label_1: "敏感度（<2cm 腫瘤）",
     stat_label_2: "全國多中心 AUC",
-    stat_label_3: "累積判讀人次",
+    stat_label_3: "累積判讀人次（含臨床驗證）",
     stat_label_4: "台美專利",
 
     ev_k: "臨床證據",
@@ -100,7 +100,7 @@
     auc_legend_baseline: "Random reading (0.5)",
     stat_label_1: "Sensitivity (<2cm tumors)",
     stat_label_2: "Multi-center AUC",
-    stat_label_3: "Cases interpreted",
+    stat_label_3: "Cases interpreted (incl. clinical validation)",
     stat_label_4: "Patents (TW & US)",
 
     ev_k: "Clinical Evidence",
@@ -186,7 +186,7 @@
     auc_legend_baseline: "ランダム読影（0.5）",
     stat_label_1: "感度（2cm未満の腫瘍）",
     stat_label_2: "全国多施設AUC",
-    stat_label_3: "累計読影件数",
+    stat_label_3: "累計読影件数（臨床検証含む）",
     stat_label_4: "台湾・米国特許",
 
     ev_k: "臨床エビデンス",

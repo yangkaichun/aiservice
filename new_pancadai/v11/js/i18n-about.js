@@ -31,7 +31,7 @@
     tl_5_b: "2024",
     tl_5_p: "美國 FDA 突破性醫材認定；TFDA 衛部醫器製字第007946號",
     tl_6_b: "2026",
-    tl_6_p: "部署醫學中心、區域醫院與健檢中心，累積 300+ 人次",
+    tl_6_p: "部署醫學中心、區域醫院與健檢中心，累積 2156+ 人次",
 
     tech_k: "技術源頭",
     tech_t: "世界首創的背後，是十年的堅持",
@@ -89,7 +89,7 @@
     tl_5_b: "2024",
     tl_5_p: "FDA Breakthrough designation; TFDA license No. 007946",
     tl_6_b: "2026",
-    tl_6_p: "Deployed at medical centers, regional hospitals and health centers; 300+ cases",
+    tl_6_p: "Deployed at medical centers, regional hospitals and health centers; 2,156+ cases",
 
     tech_k: "Technology Origin",
     tech_t: "A decade of persistence behind a world first",
@@ -136,7 +136,7 @@
     tl_5_b: "2024",
     tl_5_p: "FDA画期的指定、TFDA認証取得",
     tl_6_b: "2026",
-    tl_6_p: "医学センター・地域病院・健診センターに導入、累計300件超",
+    tl_6_p: "医学センター・地域病院・健診センターに導入、累計2,156件超",
 
     tech_k: "技術の源流",
     tech_t: "世界初の背後にある10年の積み重ね",
