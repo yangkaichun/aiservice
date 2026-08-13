@@ -27,14 +27,12 @@ for i in "${!NAMES[@]}"; do
     while kill -0 $MPID 2>/dev/null; do
       sleep 30
       [ -f "$raw" ] && { done_flag=1; break; }
-      cpu=$(ps -p $MPID -o %cpu= 2>/dev/null | tr -d ' ')
-      mem=$(ps -p $MPID -o %mem= 2>/dev/null | tr -d ' ')
-      [ -z "$cpu" ] && break
-      idle_now=0
-      awk -v c="$cpu" -v m="$mem" 'BEGIN{ if (c+0 < 1.0 && m+0 < 3.0) exit 0; else exit 1 }' && idle_now=1
-      if [ $idle_now -eq 1 ]; then idle=$((idle+1)); else idle=0; fi
-      if [ $idle -ge 2 ]; then
-        echo "  ⚠️ [$name] 卡住（CPU ${cpu}% MEM ${mem}%）→ kill 重試"
+      # 卡住判斷：log 檔案超過 180 秒無更新（tqdm 每 step 寫入；Metal GPU 運算 CPU% 不可靠）
+      mt=$(stat -f %m "_gen_v11/${name}.log" 2>/dev/null || echo 0)
+      now=$(date +%s)
+      age=$((now - mt))
+      if [ $age -gt 180 ]; then
+        echo "  ⚠️ [$name] 卡住（log ${age}s 無更新）→ kill 重試"
         kill $MPID 2>/dev/null; pkill -P $MPID 2>/dev/null; sleep 2
         rm -f "$raw"
         break
