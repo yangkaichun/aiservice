@@ -178,7 +178,8 @@
       }
     }
     var tier = netTier();
-    /* 池洗牌（v11.1：每次進站隨機順序，背景隨機產生） */
+    var useHd = tier >= 1; /* v11.2：3g 以上也漸進載入 HD（小圖先顯示、HD 背景預載後替換） */
+    /* 池洗牌（每次進站隨機順序，背景隨機產生） */
     shuffle(pool);
     /* 同頁不重複：目前正被顯示的圖 key → 計數 */
     var shown = {};
@@ -207,15 +208,15 @@
         if (cur) shown[cur.key] = (shown[cur.key] || 1) - 1;
         cur = item;
         shown[cur.key] = (shown[cur.key] || 0) + 1;
-        display(el, cur, tier >= 2);
+        display(el, cur, useHd);
       }
       apply(pickFree());
-      /* v11.1：輪換間隔隨機化（6–12 秒），背景更隨機 */
+      /* v11.2：固定 10 秒輪換（使用者指定），背景隨機不重複 */
       function schedule() {
         el._bgTimer = setTimeout(function () {
           apply(pickFree());
           schedule();
-        }, 6000 + Math.random() * 6000);
+        }, 10000);
       }
       schedule();
     });
@@ -332,19 +333,19 @@
   }
   function initLightFX() {
     if (window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
-    $all('.hero, .page-hero, .journey-station, .line-band').forEach(function (el) {
+    $all('.hero, .page-hero, .journey-station, .line-band, .day-card, .stats-band').forEach(function (el) {
       if (el.querySelector('.light-orb')) return;
       var n = 2 + Math.floor(Math.random() * 2);
       for (var i = 0; i < n; i++) {
         var o = document.createElement('div');
         var r = Math.random();
         o.className = 'light-orb' + (r < 0.28 ? ' blue' : (r < 0.45 ? ' green' : ''));
-        var sz = 180 + Math.random() * 280;
+        var sz = 300 + Math.random() * 340;
         o.style.width = o.style.height = sz.toFixed(0) + 'px';
         o.style.left = (Math.random() * 85).toFixed(1) + '%';
         o.style.top = (Math.random() * 75).toFixed(1) + '%';
-        o.style.setProperty('--orb-dx', ((Math.random() * 2 - 1) * 60).toFixed(0) + 'px');
-        o.style.setProperty('--orb-dy', ((Math.random() * 2 - 1) * 50).toFixed(0) + 'px');
+        o.style.setProperty('--orb-dx', ((Math.random() * 2 - 1) * 70).toFixed(0) + 'px');
+        o.style.setProperty('--orb-dy', ((Math.random() * 2 - 1) * 55).toFixed(0) + 'px');
         o.style.setProperty('--orb-dur', (10 + Math.random() * 10).toFixed(1) + 's');
         el.appendChild(o);
       }
