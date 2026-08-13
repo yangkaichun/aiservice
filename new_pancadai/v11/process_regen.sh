@@ -8,6 +8,7 @@ for name in "${NAMES[@]}"; do
   raw="../_gen_v11/${name}_raw.jpg"
   [ -f "$raw" ] || { echo "skip $name (無 raw)"; continue; }
   echo "=== [$name] SeedVR2 5120 $(date '+%H:%M:%S') ==="
+  rm -f "${name}_safe_hd.webp" "${name}_safe_hd_1.webp" "${name}_safe.jpg"
   PYTHONPATH= "$UP" --image-path "$raw" --resolution 2x --output "${name}_safe_hd.webp" 2>&1 | tail -1
   echo "  ✓ HD webp"
   # 1280 滿版小圖（無 pad）
