@@ -5,8 +5,8 @@
     meta_desc: "從晨光到星空，跟著一位 40 歲主角經歷「發現得早」的一天：例行健檢、AI 圈出 1.2cm 腫瘤、醫師確認、安心晚餐。早期發現，多一種可能。",
 
     ph_badge: "以患者為中心",
-    ph_title_1: "每一個平凡日常，",
-    ph_title_2: "<span class=\"hl\">都值得被守護。</span>",
+    ph_title_1: "活出精彩",
+    ph_title_2: "<span class=\"hl\">不胰憾。</span>",
     ph_sub: "這是他最喜歡的一天。他什麼都不知道——而 AI 已經看見了。",
     ph_scroll: "跟著他，走過一天",
 
