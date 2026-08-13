@@ -364,18 +364,37 @@
     if (el._dinnerTimer) { clearInterval(el._dinnerTimer); el._dinnerTimer = null; }
     var lang = (document.documentElement.lang || 'zh').toLowerCase().replace('-', '');
     var pool;
-    if (lang === 'en') pool = ['assets/dinner_en_1_safe_hd.webp', 'assets/dinner_en_2_safe_hd.webp'];
-    else if (lang === 'ja') pool = ['assets/dinner_ja_1_safe_hd.webp', 'assets/dinner_ja_2_safe_hd.webp'];
-    else pool = ['assets/dinner_zh_1_safe_hd.webp', 'assets/dinner_zh_2_safe_hd.webp'];
+    if (lang === 'en') pool = ['dinner_en_1', 'dinner_en_2'];
+    else if (lang === 'ja') pool = ['dinner_ja_1', 'dinner_ja_2'];
+    else pool = ['dinner_zh_1', 'dinner_zh_2'];
     var idx = 0;
     function show() {
+      var base = pool[idx];
       var img = new Image();
-      img.onload = function () { el.style.backgroundImage = 'url(' + pool[idx] + ')'; };
+      img.onload = function () {
+        el.style.backgroundImage = 'url(assets/' + base + '_safe.jpg)';
+        /* 漸進：HD 預載後替換（HD 未生成時 onerror 跳過，繼續用小圖） */
+        var hd = new Image();
+        hd.onload = function () { el.style.backgroundImage = 'url(assets/' + base + '_safe_hd.webp)'; };
+        hd.onerror = function () {};
+        hd.src = 'assets/' + base + '_safe_hd.webp';
+      };
       img.onerror = function () {};
-      img.src = pool[idx];
+      img.src = 'assets/' + base + '_safe.jpg';
     }
     show();
     el._dinnerTimer = setInterval(function () { idx = (idx + 1) % pool.length; show(); }, 10000);
+    /* 幕3 CT 固定圖 HD 漸進（data-ct-hd） */
+    var ct = $('[data-ct-hd]');
+    if (ct) {
+      var hdSrc = ct.getAttribute('data-ct-hd');
+      if (hdSrc) {
+        var hdImg = new Image();
+        hdImg.onload = function () { ct.style.backgroundImage = 'url(' + hdSrc + ')'; };
+        hdImg.onerror = function () {};
+        hdImg.src = hdSrc;
+      }
+    }
   }
 
   /* ---------- 9.6 背景隨機強化（v11.1）：池洗牌＋隨機輪換間隔 ---------- */
