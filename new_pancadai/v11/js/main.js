@@ -294,31 +294,32 @@
     });
   }
 
-  /* ---------- 9.5 光子粒子＋光影動畫（v11.1） ---------- */
+  /* ---------- 9.5 光子粒子（v11.2：黃金光子上升，加量） ---------- */
   function spawnPhotons(host, count) {
-    var colors = ['', '', '', 'blue', 'white'];
+    var colors = ['', '', '', '', '', 'blue', 'white']; /* 金 5/7、藍 1/7、白 1/7 */
+    var h = host.clientHeight || 700;
     for (var i = 0; i < count; i++) {
       var p = document.createElement('span');
       p.className = 'photon ' + colors[Math.floor(Math.random() * colors.length)];
-      var len = 30 + Math.random() * 70;
+      var len = 34 + Math.random() * 80;
       p.style.width = len.toFixed(0) + 'px';
-      p.style.height = (1.5 + Math.random() * 2).toFixed(1) + 'px';
+      p.style.height = (1.5 + Math.random() * 2.2).toFixed(1) + 'px';
       p.style.left = (Math.random() * 100).toFixed(1) + '%';
-      p.style.top = (Math.random() * 100).toFixed(1) + '%';
-      p.style.setProperty('--ph-rot', (Math.random() * 360).toFixed(0) + 'deg');
-      p.style.setProperty('--ph-dx', ((Math.random() * 2 - 1) * 130).toFixed(0) + 'px');
-      p.style.setProperty('--ph-dy', ((Math.random() * 2 - 1) * 130).toFixed(0) + 'px');
-      p.style.setProperty('--ph-op', (0.35 + Math.random() * 0.55).toFixed(2));
-      p.style.animationDuration = (6 + Math.random() * 10).toFixed(1) + 's';
-      p.style.animationDelay = (Math.random() * 12).toFixed(1) + 's';
+      p.style.top = (50 + Math.random() * 48).toFixed(1) + '%'; /* 下半部出發向上飄 */
+      p.style.setProperty('--ph-rot', ((Math.random() * 2 - 1) * 24).toFixed(0) + 'deg');
+      p.style.setProperty('--ph-rise', (-(h * 0.85 + Math.random() * h * 0.5)).toFixed(0) + 'px');
+      p.style.setProperty('--ph-sw', ((Math.random() * 2 - 1) * 48).toFixed(0) + 'px');
+      p.style.setProperty('--ph-op', (0.45 + Math.random() * 0.5).toFixed(2));
+      p.style.animationDuration = (7 + Math.random() * 9).toFixed(1) + 's';
+      p.style.animationDelay = (Math.random() * 10).toFixed(1) + 's';
       host.appendChild(p);
     }
   }
   function initPhotons() {
     if (window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
     var hosts = [
-      ['.hero', 22], ['.page-hero', 16], ['.journey-station', 14], ['.day-card', 10],
-      ['.quote-section', 8], ['.cta-band', 10], ['.line-band', 14], ['.stats-band', 8]
+      ['.hero', 44], ['.page-hero', 30], ['.journey-station', 26], ['.day-card', 18],
+      ['.quote-section', 14], ['.cta-band', 18], ['.line-band', 26], ['.stats-band', 14]
     ];
     hosts.forEach(function (h) {
       $all(h[0]).forEach(function (el) {
@@ -354,6 +355,27 @@
       sw.setAttribute('aria-hidden', 'true');
       el.appendChild(sw);
     });
+  }
+
+  /* ---------- 9.7 幕7 晚餐語言專屬池（v11.2：zh/ja 亞裔、en 西歐，每 10 秒交替） ---------- */
+  function initDinnerPool() {
+    var el = $('[data-dinner-pool]');
+    if (!el) return;
+    if (el._dinnerTimer) { clearInterval(el._dinnerTimer); el._dinnerTimer = null; }
+    var lang = (document.documentElement.lang || 'zh').toLowerCase().replace('-', '');
+    var pool;
+    if (lang === 'en') pool = ['assets/dinner_en_1_safe_hd.webp', 'assets/dinner_en_2_safe_hd.webp'];
+    else if (lang === 'ja') pool = ['assets/dinner_ja_1_safe_hd.webp', 'assets/dinner_ja_2_safe_hd.webp'];
+    else pool = ['assets/dinner_zh_1_safe_hd.webp', 'assets/dinner_zh_2_safe_hd.webp'];
+    var idx = 0;
+    function show() {
+      var img = new Image();
+      img.onload = function () { el.style.backgroundImage = 'url(' + pool[idx] + ')'; };
+      img.onerror = function () {};
+      img.src = pool[idx];
+    }
+    show();
+    el._dinnerTimer = setInterval(function () { idx = (idx + 1) % pool.length; show(); }, 10000);
   }
 
   /* ---------- 9.6 背景隨機強化（v11.1）：池洗牌＋隨機輪換間隔 ---------- */
@@ -586,6 +608,7 @@
     initDust();
     initPhotons();
     initLightFX();
+    initDinnerPool();
     initCT();
     initWhatIf();
     initAUC();
@@ -594,6 +617,7 @@
     initCarousel();
     window.addEventListener('langchange', function () {
       initBgPool();
+      initDinnerPool();
       rebuildKinetic();
     });
   }
