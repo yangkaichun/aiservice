@@ -638,7 +638,7 @@
     restart();
   }
 
-  /* ---------- 14.6 動態計數器（v11.2.7：累積判讀人次每 10 秒 +1） ---------- */
+  /* ---------- 14.6 動態計數器（v11.2.8：彩色滑動上升累加） ---------- */
   function initLiveCounter() {
     var els = $all('[data-live-count]');
     if (!els.length) return;
@@ -647,10 +647,11 @@
       el.textContent = n;
       el._lcTimer = setInterval(function () {
         n++;
-        el.textContent = n;
-        el.classList.remove('bump');
+        el.setAttribute('data-prev', el.textContent); /* 舊值：往上滑出 */
+        el.textContent = n;                            /* 新值：從下方滑入 */
+        el.classList.remove('count-slide');
         void el.offsetWidth;
-        el.classList.add('bump');
+        el.classList.add('count-slide');
       }, 10000);
     });
   }
