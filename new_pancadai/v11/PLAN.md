@@ -2,7 +2,8 @@
 
 > 以 **v7 為主體**（日光系統／晨光影片／panel hero／sticky nav／真實證據子頁）
 > ＋ **所有過往版本優點** ＋ **Siemens Healthineers Cancer Care 架構參考**
-> 2026-08-13 提案，待使用者確認後建置
+> ＋ **護胰大聯盟 PancretasCare 參考（Line 導引／風險快篩／SDM／FAQ）**
+> 2026-08-13 定案：使用者調整後確認，直接建置
 
 ---
 
@@ -15,19 +16,38 @@
 - v7 的日光系統（晨→午→黃昏→星空）升級為「旅程即陽光」：捲動等於沿著照護旅程前進
 - 首頁導入 Siemens 式**產品／主題輪播卡** + **旅程軌 4 站**（篩檢→診斷→治療→追蹤）
 - **背景圖左右滿版（edge-to-edge full-bleed）**：所有 hero／section 背景 100vw 無左右留白，內容疊置於上——同參考站視覺語言
+- **patient 旅程頁加入「加入護胰大聯盟 Line」導引**（使用者指定）：官方 Line 智能管家作為旅程終點的行動呼籲
 
 ## 二、參考站拆解（Siemens Cancer Care）
 
 | Siemens 元素 | v11 導入 |
 |---|---|
 | Utility nav（MyVarian/Investors/For Patients…） | 精簡保留三語切換器（品牌不變） |
-| 主選單 3 大類（About/Products/Resources） | 7 連結：患者旅程／醫療機構／健檢中心／期刊論文／智財布局／最新消息／聯絡我們 |
+| 主選單 3 大類（About/Products/Resources） | 8 連結：患者旅程／醫療機構／健檢中心／期刊論文／智財布局／最新消息／聯絡我們 |
 | Hero「A world without fear of cancer」滿版圖 | Hero「活出精彩 不胰憾」＋晨光影片滿版（左右填滿） |
 | Product carousel（6 卡圖＋Learn more） | 首頁產品證據輪播 6 卡（產品／數據／論文／專利／認證／導入） |
 | 全寬滿版背景圖（edge-to-edge） | **全部 hero/分隔帶背景 100vw 滿版**（本次優化重點） |
 | News / Blogs 日期時間軸 | 最新消息（繼承 v7）+ 新聞樣式微調 |
 | Footer mega-menu（4 欄） | 4 欄：網站導覽／產品與證據／期刊與智財／聯絡資訊 |
 | Vision 頁 4 支柱（patient experience / personalized care / clinical workflows / innovation） | 受眾三分流（患者／醫療機構／健檢中心）＋旅程軌 |
+
+## 二之二、PancretasCare 參考（護胰大聯盟，使用者指定）
+
+| 來源 | 元素 | v11 導入 |
+|---|---|---|
+| https://health.yangkaichun.net/PancreasCare/linebot/ | 「為何選擇 LineBOT」3 卡（權威知識庫／營養保健／24h 問答） | patient 頁 Line 導引區塊文案參考 |
+| 同上 | 加入好友連結 `https://lin.ee/pZJmfjl`（@PancreasCare） | **patient 頁 Line CTA 主按鈕**（開新分頁） |
+| 同上 | QR Code `M_gainfriends_2dbarcodes_GW.png` | ✅ 已下載本地 `assets/line/line_qr.png`（360×360，內嵌站內） |
+| 同上 | knowledge_base / nutrition_care 意象圖 | ✅ 已下載本地 `assets/line/*.jpg`（1024×1024） |
+| https://health.yangkaichun.net/PancreasCare/ | 3 分鐘風險快篩（5 題匿名） | patient 幕 5「自測」沿用（v7 risk_check 繼承）＋ Line 加入 CTA 強化 |
+| 同上 | SDM 醫病共享決策 3 步驟 | patient 幕 6「What-if 醫病共決」沿用 |
+| 同上 | 衛教 FAQ 手風琴 | education.html 繼承 |
+
+**Line CTA 設計（patient.html 新增區塊，使用者指定）**：
+- 位置：幕 8（星空）之後、quote 之前；深色玻璃卡＋Line 品牌綠點綴
+- 內容：標題「加入護胰大聯盟官方 Line」＋3 短卡（權威知識庫／全方位營養保健／24 小時即時問答）＋主按鈕「點擊加入好友 @PancreasCare → lin.ee/pZJmfjl」＋ QR Code 圖（掃描加入）
+- 三語：zh 中文／en 英文／ja 日文（Line 官方帳號名 @PancreasCare 不翻譯）
+- 素材：`assets/line/line_qr.png`（QR）、`assets/line/knowledge_base.jpg`、`assets/line/nutrition_care.jpg`
 
 ## 三、資訊架構（8 頁三語 zh/en/ja）
 
@@ -36,6 +56,7 @@ v11/
 ├── index.html          # 滿版晨光影片 hero → 痛點vs希望 → 旅程軌4站(全寬背景)
 │                       # → 產品輪播6卡(Siemens式) → 數字帶 → 受眾3卡 → 論文精選3 → 新聞 → CTA
 ├── patient.html        # 8 幕第一人稱旅程（繼承 v7，幕背景全寬滿版）
+│                       # ★新增「加入護胰大聯盟 Line」CTA 區塊（lin.ee/pZJmfjl + QR）
 ├── clinician.html      # AUC 捲動 + 證據 4 卡 + 認證牆 6 + 里程碑 6 + 期刊 3（繼承 v7）
 ├── screening.html      # 健檢中心軌（繼承 v7）
 ├── publications.html   # 【本次升級核心】期刊論文館：5 篇真實論文
@@ -91,12 +112,14 @@ v11/
 
 ## 七、建置流程
 
-1. `cp -r v7 v11` 為主體 → 逐頁升級（hero 滿版化、nav 加期刊論文連結、footer 加欄）
-2. publications.html 重寫（5 篇完整卡片＋摘要＋PMID URL）＋ i18n-publications.js 全新字典
-3. index 首頁新增產品輪播 6 卡＋旅程軌滿版分隔帶
-4. CSS 升級（full-bleed 系統、輪播、論文卡）→ `?v=N` 全站 +1；footer v11.0.x
-5. verify_site.py 全綠 → 三語切換驗證 → 瀏覽器實測 ≥10 次
-6. sitemap/robots/manifest 更新 → deploy.yml 加 v11 雙路徑（`v11/`＋`new_pancadai/v11/`）
+1. ✅ 素材整理：論文查證（5 篇真實 PMID/DOI/摘要）＋ Line 素材下載 ＋ 資產盤點
+2. `cp -r v7 v11` 為主體 → 逐頁升級（hero 滿版化、nav 加期刊論文連結、footer 加欄）
+3. publications.html 重寫（5 篇完整卡片＋摘要＋PMID URL）＋ i18n-publications.js 全新字典
+4. patient.html 新增 Line CTA 區塊（lin.ee/pZJmfjl ＋ QR Code ＋ 三語）
+5. index 首頁新增產品輪播 6 卡＋旅程軌滿版分隔帶
+6. CSS 升級（full-bleed 系統、輪播、論文卡、Line CTA）→ `?v=N` 全站 +1；footer v11.0.x
+7. verify_site.py 全綠 → 三語切換驗證 → 瀏覽器實測 ≥10 次
+8. sitemap/robots/manifest 更新 → deploy.yml 加 v11 雙路徑（`v11/`＋`new_pancadai/v11/`）
 
 ## 八、部署
 
