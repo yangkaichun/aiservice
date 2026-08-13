@@ -7,7 +7,7 @@ mkdir -p _gen_v11
 gen() { # name prompt
   local name="$1"; shift
   echo "=== [$name] 生成 $(date '+%H:%M:%S') ==="
-  PYTHONPATH= mflux-generate-z-image-turbo --output "_gen_v11/${name}_raw.jpg" \
+  PYTHONPATH= "$HOME/.local/bin/mflux-generate-z-image-turbo" --output "_gen_v11/${name}_raw.jpg" \
     --width 5120 --height 2880 --steps 4 --seed $RANDOM --prompt "$*" 2>&1 | tail -2
 }
 
