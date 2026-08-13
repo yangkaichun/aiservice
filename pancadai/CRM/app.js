@@ -1,0 +1,903 @@
+// app.js V7.3 (Prescribing Doctor Edition)
+
+let currentUser = null;
+let currentRole = null;
+let globalHospitals = []; 
+let globalKOLs = [];
+let globalStats = []; 
+let globalMonthlyData = []; 
+let globalConfig = { regions: [], levels: [] }; 
+let kolModal, userModal, settlementModal, drilldownModal;
+
+let selectedAnalyticsHospitalId = null; 
+let loadingInterval = null;
+
+const DEFAULT_AVATAR = "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0iI2NjYyI+PHBhdGggZD0iTTEyIDJDMi40OCAyIDIgNi40OCAyIDEyczQuNDggMTAgMTAgMTAgMTAtNC40OCAxMC0xMFMyMS41MiAy IDEyIDJ6bTAgM2MzLjE5IDAgNS43OSAyLjU5IDUuNzkgNS43OVMxNS4xOSAxNi41OCAxMiAxNi41OHMtNS43OS0yLjU5LTUuNzktNS43OVM4LjgxIDUgMTIgNXptMCAxNC4yYy0yLjUgMC00LjcxLTEuMjgtNi4wMi0zLjIyLjA0LTEuOTkgNC0zLjA4IDYuMDItMy4wOHMyLjk4IDEu0OSA2LjAyIDMuMDhjLTEuMzEgMS45NC0zLjUyIDMuMjItNi4wMiAzLjIyeiIvPjwvc3ZnPg==";
+
+window.onload = function() {
+    const client_id = CONFIG.GOOGLE_CLIENT_ID;
+    document.getElementById('g_id_onload').setAttribute('data-client_id', client_id);
+    
+    if(document.getElementById('modalKOL')) kolModal = new bootstrap.Modal(document.getElementById('modalKOL'));
+    if(document.getElementById('modalUser')) userModal = new bootstrap.Modal(document.getElementById('modalUser'));
+    if(document.getElementById('modalSettlement')) settlementModal = new bootstrap.Modal(document.getElementById('modalSettlement'));
+    if(document.getElementById('modalDrilldown')) drilldownModal = new bootstrap.Modal(document.getElementById('modalDrilldown'));
+
+    const today = new Date();
+    const y = today.getFullYear();
+    const m = String(today.getMonth() + 1).padStart(2, '0');
+    
+    if(document.getElementById('dash-start')) document.getElementById('dash-start').value = `${y}-01`;
+    if(document.getElementById('dash-end')) document.getElementById('dash-end').value = `${y}-12`;
+    if(document.getElementById('finance-month-picker')) document.getElementById('finance-month-picker').value = `${y}-${m}`;
+    if(document.getElementById('usage-start')) document.getElementById('usage-start').value = `${y}-01`;
+    if(document.getElementById('usage-end')) document.getElementById('usage-end').value = `${y}-12`;
+
+    const savedUser = localStorage.getItem('pancad_user');
+    const savedUserPic = localStorage.getItem('pancad_user_pic');
+    
+    if (savedUserPic) {
+        document.getElementById('user-avatar').src = savedUserPic;
+        document.getElementById('mobile-user-avatar').src = savedUserPic;
+    } else {
+        document.getElementById('user-avatar').src = DEFAULT_AVATAR;
+        document.getElementById('mobile-user-avatar').src = DEFAULT_AVATAR;
+    }
+
+    const currentTheme = document.documentElement.getAttribute('data-theme') || 'dark';
+    const btn = document.getElementById('theme-toggle-btn');
+    if (btn) {
+        // 🚀 修改初始 HTML 結構
+        btn.innerHTML = currentTheme === 'light' ? '<i class="fas fa-moon me-2"></i> 切換深色' : '<i class="fas fa-sun me-2"></i> 切換淺色';
+    }
+
+    Chart.defaults.color = '#94a3b8';
+    Chart.defaults.font.family = "'Segoe UI', 'Microsoft JhengHei', sans-serif";
+
+    if (savedUser) {
+        currentUser = savedUser;
+        verifyBackendAuth(savedUser);
+    }
+};
+
+function toggleTheme() {
+    const body = document.documentElement;
+    const currentTheme = body.getAttribute('data-theme');
+    const newTheme = currentTheme === 'light' ? 'dark' : 'light';
+    
+    body.setAttribute('data-theme', newTheme);
+    localStorage.setItem('pancad_theme', newTheme);
+
+    const btn = document.getElementById('theme-toggle-btn');
+    if (btn) {
+        // 🚀 修改切換後的 HTML 結構
+        btn.innerHTML = newTheme === 'light' ? '<i class="fas fa-moon me-2"></i> 切換深色' : '<i class="fas fa-sun me-2"></i> 切換淺色';
+    }
+
+    updateDashboardCharts();
+    renderUsageAnalytics();
+    
+    const dashDataRes = { kpi: { 
+        regionStats: {}, devRegionStats: {}, 
+        kolCount: parseInt(document.getElementById('kpi-kol-count').innerText.replace(/,/g, '') || 0),
+        developingCount: parseInt(document.getElementById('kpi-dev-hospital-count').innerText.replace(/,/g, '') || 0),
+        negotiatingCount: parseInt(document.getElementById('kpi-neg-hospital-count').innerText.replace(/,/g, '') || 0),
+        productIntroCount: parseInt(document.getElementById('kpi-intro-hospital-count').innerText.replace(/,/g, '') || 0),
+        signedCount: parseInt(document.getElementById('kpi-signed-hospital-count').innerText.replace(/,/g, '') || 0)
+    }};
+    
+    globalHospitals.forEach(h => {
+        if (h.Status === '已簽約') dashDataRes.kpi.regionStats[h.Region||'Unknown'] = (dashDataRes.kpi.regionStats[h.Region||'Unknown'] || 0) + 1;
+        if (h.Status === '開發中') dashDataRes.kpi.devRegionStats[h.Region||'Unknown'] = (dashDataRes.kpi.devRegionStats[h.Region||'Unknown'] || 0) + 1;
+    });
+    renderDashboard(dashDataRes);
+}
+
+function getVal(id) { const el = document.getElementById(id); return el ? el.value : ''; }
+function setVal(id, value) { const el = document.getElementById(id); if (el) el.value = value || ''; }
+
+const loadingTexts = ["ESTABLISHING UPLINK", "FETCHING CLOUD DATA", "SYNCING MODULES", "PROCESSING INTERFACE", "ALMOST READY"];
+function showLoading(show) { 
+    const overlay = document.getElementById('loading-overlay');
+    const textEl = document.getElementById('loading-text-display');
+    
+    if (show) {
+        overlay.classList.remove('d-none');
+        let step = 0;
+        if (textEl) {
+            textEl.innerText = loadingTexts[0];
+            clearInterval(loadingInterval);
+            loadingInterval = setInterval(() => {
+                step = (step + 1) % loadingTexts.length;
+                textEl.innerText = loadingTexts[step] + "...";
+            }, 800); 
+        }
+    } else {
+        overlay.classList.add('d-none');
+        clearInterval(loadingInterval);
+    }
+}
+
+function logout() { 
+    currentUser = null; 
+    localStorage.removeItem('pancad_user'); 
+    localStorage.removeItem('pancad_user_pic');
+    location.reload(); 
+}
+function toggleSidebar() { document.getElementById('main-sidebar').classList.toggle('show'); }
+
+function getStageBadge(stage) {
+    if(!stage) return '';
+    if(stage.includes('初次接觸')) return '<span class="badge bg-secondary">1.初次接觸</span>';
+    if(stage.includes('產品展示')) return '<span class="badge bg-primary">2.產品展示</span>';
+    if(stage.includes('試用中')) return '<span class="badge bg-info text-dark">3.試用中</span>';
+    if(stage.includes('議價中')) return '<span class="badge bg-warning text-dark">4.議價中</span>';
+    if(stage.includes('已成交')) return '<span class="badge bg-success">5.已成交</span>';
+    return `<span class="badge bg-secondary">${stage}</span>`;
+}
+
+function handleCredentialResponse(r) { 
+    const payload = decodeJwtResponse(r.credential);
+    currentUser = payload.email; 
+    localStorage.setItem('pancad_user', currentUser); 
+    localStorage.setItem('pancad_user_pic', payload.picture); 
+    
+    document.getElementById('user-name').innerText = payload.name;
+    document.getElementById('user-avatar').src = payload.picture || DEFAULT_AVATAR;
+    document.getElementById('mobile-user-name').innerText = payload.name;
+    document.getElementById('mobile-user-avatar').src = payload.picture || DEFAULT_AVATAR;
+    verifyBackendAuth(currentUser); 
+}
+
+function decodeJwtResponse(token) { return JSON.parse(decodeURIComponent(window.atob(token.split('.')[1].replace(/-/g, '+').replace(/_/g, '/')).split('').map(c => '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2)).join(''))); }
+
+async function verifyBackendAuth(email) {
+    showLoading(true);
+    try {
+        const [authRes, hRes, kRes, fRes, confRes] = await Promise.all([
+            fetch(CONFIG.SCRIPT_URL, { method: "POST", body: JSON.stringify({ action: "getDashboardData", userEmail: email }) }),
+            fetch(CONFIG.SCRIPT_URL, { method: "POST", body: JSON.stringify({ action: "getHospitals", userEmail: email }) }),
+            fetch(CONFIG.SCRIPT_URL, { method: "POST", body: JSON.stringify({ action: "getKOLs", userEmail: email }) }),
+            fetch(CONFIG.SCRIPT_URL, { method: "POST", body: JSON.stringify({ action: "getMonthlyStats", userEmail: email }) }),
+            fetch(CONFIG.SCRIPT_URL, { method: "POST", body: JSON.stringify({ action: "getConfig", userEmail: email }) })
+        ]);
+
+        const json = await authRes.json();
+        
+        if (json.status === 'success') {
+            currentRole = json.role;
+            document.getElementById('login-view').classList.add('d-none');
+            document.getElementById('app-view').classList.remove('d-none');
+            
+            if (currentRole === 'Admin') document.getElementById('nav-admin').classList.remove('d-none');
+            
+            if (json.name) {
+                document.getElementById('user-name').innerText = json.name;
+                document.getElementById('mobile-user-name').innerText = json.name;
+            } else if (document.getElementById('user-name').innerText === 'User') {
+                 document.getElementById('user-name').innerText = email.split('@')[0];
+            }
+
+            globalHospitals = (await hRes.json()).data || [];
+            globalKOLs = (await kRes.json()).data || [];
+            globalStats = (await fRes.json()).data || [];
+            globalMonthlyData = json.data.monthlyStats || []; 
+            
+            const confJson = await confRes.json();
+            if (confJson.status === 'success') {
+                globalConfig.regions = confJson.data.filter(r => r.Category === 'Region').map(r => r.Option_Value);
+                globalConfig.levels = confJson.data.filter(r => r.Category === 'Hospital_Level').map(r => r.Option_Value);
+                populateSelect('radar-filter-region', globalConfig.regions, '全部區域');
+                populateSelect('radar-filter-level', globalConfig.levels, '全部規模');
+                populateSelect('hospital-filter-level', globalConfig.levels, '篩選等級：全部');
+                populateSelect('h-region', globalConfig.regions);
+                populateSelect('h-level', globalConfig.levels);
+            }
+
+            renderDashboard(json.data);
+            updateKOLFilterOptions();
+            renderRadarTable();
+            renderHospitalList();
+            renderKOLList();
+            renderFinanceTable();
+            renderUsageAnalytics();
+            
+        } else { 
+            alert("存取被拒：您的帳號不在允許清單中，或已被停用。"); 
+            logout(); 
+        }
+    } catch (e) { console.error(e); logout(); } finally { showLoading(false); } 
+}
+
+async function refreshAllData() {
+    try {
+        const [hRes, kRes, fRes, dRes] = await Promise.all([
+            fetch(CONFIG.SCRIPT_URL, { method: "POST", body: JSON.stringify({ action: "getHospitals", userEmail: currentUser }) }),
+            fetch(CONFIG.SCRIPT_URL, { method: "POST", body: JSON.stringify({ action: "getKOLs", userEmail: currentUser }) }),
+            fetch(CONFIG.SCRIPT_URL, { method: "POST", body: JSON.stringify({ action: "getMonthlyStats", userEmail: currentUser }) }),
+            fetch(CONFIG.SCRIPT_URL, { method: "POST", body: JSON.stringify({ action: "getDashboardData", userEmail: currentUser }) })
+        ]);
+        
+        globalHospitals = (await hRes.json()).data || [];
+        globalKOLs = (await kRes.json()).data || [];
+        globalStats = (await fRes.json()).data || [];
+        
+        const dJson = await dRes.json();
+        if(dJson.status === 'success') {
+             globalMonthlyData = dJson.data.monthlyStats || [];
+             renderDashboard(dJson.data);
+        }
+        
+        updateKOLFilterOptions();
+        renderRadarTable();
+        renderHospitalList();
+        renderKOLList();
+        renderFinanceTable();
+        renderUsageAnalytics();
+    } catch(e) { console.error(e); }
+}
+
+function populateSelect(id, opts, def) { const el = document.getElementById(id); if(!el)return; el.innerHTML = ''; if(def) el.innerHTML+=`<option value="All">${def}</option>`; opts.forEach(o=>el.innerHTML+=`<option value="${o}">${o}</option>`); }
+
+function showPage(pageId) {
+    document.querySelectorAll('.page-content').forEach(el => el.classList.add('d-none'));
+    document.getElementById('page-' + pageId).classList.remove('d-none');
+    document.querySelectorAll('.nav-link').forEach(el => el.classList.remove('active'));
+    const links = document.querySelectorAll('.nav-link');
+    for(let l of links) if(l.getAttribute('onclick') && l.getAttribute('onclick').includes(pageId)) l.classList.add('active');
+    if (window.innerWidth < 768) toggleSidebar();
+
+    if (pageId === 'kols') renderKOLList();
+    if (pageId === 'hospitals') renderHospitalList();
+    if (pageId === 'finance') { renderFinanceTable(); renderUsageAnalytics(); }
+    if (pageId === 'dashboard') updateDashboardCharts(); 
+    if (pageId === 'admin') loadAdminData();
+}
+
+function updateKOLFilterOptions() {
+    const sel = document.getElementById('kol-filter-hospital');
+    if(!sel) return;
+    const currentVal = sel.value; 
+    sel.innerHTML = '<option value="All">篩選醫院：全部</option>';
+    globalHospitals.forEach(h => { sel.innerHTML += `<option value="${h.Hospital_ID}">${h.Name}</option>`; });
+    sel.value = currentVal || 'All';
+}
+
+async function loadAdminData() { if(currentRole!=='Admin')return; showLoading(true); try{ const [u,l] = await Promise.all([fetch(CONFIG.SCRIPT_URL,{method:"POST",body:JSON.stringify({action:"getUsers",userEmail:currentUser})}), fetch(CONFIG.SCRIPT_URL,{method:"POST",body:JSON.stringify({action:"getLogs",userEmail:currentUser})})]); renderUserTable((await u.json()).data); renderLogTable((await l.json()).data); }catch(e){}finally{showLoading(false);} }
+
+function getPieOptions() {
+    const isLight = document.documentElement.getAttribute('data-theme') === 'light';
+    const panelColor = isLight ? '#ffffff' : '#1e1e32';
+    const textColor = isLight ? '#858796' : '#f8fafc';
+    
+    return {
+        maintainAspectRatio: false, cutout: '70%', 
+        plugins: { 
+            legend: { position: 'right', labels: { boxWidth: 15, font: { size: 12, family: "'Segoe UI', sans-serif" }, padding: 15, color: textColor } },
+            datalabels: {
+                color: '#fff', font: { weight: 'bold', size: 13, family: "'Segoe UI', sans-serif" },
+                formatter: (value, context) => {
+                    let label = context.chart.data.labels[context.dataIndex];
+                    if (label.includes('無資料') || value === 0) return '';
+                    let sum = context.chart.data.datasets[0].data.reduce((a, b) => a + b, 0);
+                    let percentage = Math.round(value * 100 / sum) + '%';
+                    return (value * 100 / sum) < 5 ? null : percentage;
+                }
+            }
+        },
+        elements: { arc: { borderWidth: 2, borderColor: panelColor } }
+    };
+}
+
+function renderDashboard(data) {
+    const kpi = data.kpi;
+    const frontendNegCount = globalHospitals.filter(h => h.Status === '議約中').length;
+    
+    if(document.getElementById('kpi-kol-count')) document.getElementById('kpi-kol-count').innerText = (kpi.kolCount || 0).toLocaleString();
+    if(document.getElementById('kpi-dev-hospital-count')) document.getElementById('kpi-dev-hospital-count').innerText = (kpi.developingCount || 0).toLocaleString();
+    if(document.getElementById('kpi-neg-hospital-count')) document.getElementById('kpi-neg-hospital-count').innerText = frontendNegCount.toLocaleString(); 
+    if(document.getElementById('kpi-intro-hospital-count')) document.getElementById('kpi-intro-hospital-count').innerText = (kpi.productIntroCount || 0).toLocaleString();
+    if(document.getElementById('kpi-signed-hospital-count')) document.getElementById('kpi-signed-hospital-count').innerText = (kpi.signedCount || 0).toLocaleString();
+
+    const ctxRegion = document.getElementById('chart-region');
+    if (ctxRegion) {
+        if(window.myRegionChart) window.myRegionChart.destroy();
+        const rLabelsRaw = Object.keys(kpi.regionStats || {});
+        const rData = Object.values(kpi.regionStats || {});
+        let rLabels = [];
+        
+        if(rLabelsRaw.length === 0) { rLabels.push('無資料'); rData.push(1); } 
+        else {
+            const rTotal = rData.reduce((a, b) => a + b, 0);
+            rLabels = rLabelsRaw.map((label, index) => `${label} (${Math.round((rData[index] / rTotal) * 100)}%)`);
+        }
+        
+        const ctx1 = ctxRegion.getContext('2d');
+        const gradients1 = rLabels.map((_, i) => {
+            const colors = [ ['#06b6d4', '#3b82f6'], ['#ec4899', '#8b5cf6'], ['#f97316', '#eab308'], ['#10b981', '#14b8a6'], ['#3b82f6', '#4f46e5'] ];
+            const colorPair = colors[i % colors.length];
+            let grad = ctx1.createLinearGradient(0, 0, 0, 300);
+            grad.addColorStop(0, colorPair[0]); grad.addColorStop(1, colorPair[1]);
+            return grad;
+        });
+
+        window.myRegionChart = new Chart(ctx1, {
+            type: 'doughnut',
+            data: { labels: rLabels, datasets: [{ data: rData, backgroundColor: gradients1, hoverOffset: 5 }] },
+            options: getPieOptions(),
+            plugins: [ChartDataLabels]
+        });
+    }
+
+    const ctxDevRegion = document.getElementById('chart-dev-region');
+    if (ctxDevRegion) {
+        if(window.myDevRegionChart) window.myDevRegionChart.destroy();
+        const devLabelsRaw = Object.keys(kpi.devRegionStats || {});
+        const devData = Object.values(kpi.devRegionStats || {});
+        let devLabels = [];
+
+        if(devLabelsRaw.length === 0) { devLabels.push('無資料'); devData.push(1); } 
+        else {
+            const devTotal = devData.reduce((a, b) => a + b, 0);
+            devLabels = devLabelsRaw.map((label, index) => `${label} (${Math.round((devData[index] / devTotal) * 100)}%)`);
+        }
+        
+        const ctx2 = ctxDevRegion.getContext('2d');
+        const gradients2 = devLabels.map((_, i) => {
+            const colors = [ ['#ec4899', '#8b5cf6'], ['#06b6d4', '#3b82f6'], ['#10b981', '#14b8a6'], ['#f97316', '#eab308'], ['#3b82f6', '#4f46e5'] ];
+            const colorPair = colors[i % colors.length];
+            let grad = ctx2.createLinearGradient(0, 0, 0, 300);
+            grad.addColorStop(0, colorPair[0]); grad.addColorStop(1, colorPair[1]);
+            return grad;
+        });
+
+        window.myDevRegionChart = new Chart(ctx2, {
+            type: 'doughnut',
+            data: { labels: devLabels, datasets: [{ data: devData, backgroundColor: gradients2, hoverOffset: 5 }] },
+            options: getPieOptions(),
+            plugins: [ChartDataLabels]
+        });
+    }
+
+    updateDashboardCharts();
+}
+
+function updateDashboardCharts() {
+    const start = getVal('dash-start'), end = getVal('dash-end'), ctxTrend = document.getElementById('chart-trend');
+    if (!ctxTrend || !globalMonthlyData) return;
+    
+    let aggData = {};
+    let totalGross = 0; 
+    let totalNet = 0; 
+
+    globalMonthlyData.forEach(item => {
+        let ym = String(item.Year_Month).substring(0, 7); 
+        let gross = Number(item.Gross_Revenue) || 0, net = Number(item.Net_Revenue) || 0;
+        
+        if (ym >= start && ym <= end) {
+            if (!aggData[ym]) aggData[ym] = { gross: 0, net: 0 };
+            aggData[ym].gross += gross; 
+            aggData[ym].net += net;
+            totalGross += gross;
+            totalNet += net;
+        }
+    });
+
+    const grossEl = document.getElementById('kpi-gross-display');
+    const netEl = document.getElementById('kpi-net-display');
+    if (grossEl && netEl) {
+        grossEl.innerText = "$" + totalGross.toLocaleString();
+        netEl.innerText = "$" + totalNet.toLocaleString();
+    }
+
+    const labels = Object.keys(aggData).sort();
+    const grossData = labels.map(m => aggData[m].gross), netData = labels.map(m => aggData[m].net);
+    const ctx = ctxTrend.getContext('2d');
+    if (window.myTrendChart) window.myTrendChart.destroy();
+    
+    const isLight = document.documentElement.getAttribute('data-theme') === 'light';
+    const gridColorY = isLight ? 'rgba(0,0,0,0.05)' : 'rgba(255,255,255,0.05)';
+    const textColor = isLight ? '#858796' : '#a1a5b7';
+    const pointColor = isLight ? '#ffffff' : '#1e1e2d';
+
+    const gradGross = ctx.createLinearGradient(0, 0, 0, 300); 
+    gradGross.addColorStop(0, 'rgba(59, 130, 246, 0.4)'); 
+    gradGross.addColorStop(1, 'rgba(59, 130, 246, 0.0)');
+    
+    const gradNet = ctx.createLinearGradient(0, 0, 0, 300); 
+    gradNet.addColorStop(0, 'rgba(16, 185, 129, 0.4)'); 
+    gradNet.addColorStop(1, 'rgba(16, 185, 129, 0.0)');
+    
+    window.myTrendChart = new Chart(ctx, {
+        type: 'line',
+        data: {
+            labels: labels,
+            datasets: [
+                { label: 'Gross', data: grossData, borderColor: '#3b82f6', backgroundColor: gradGross, fill: true, tension: 0.4, pointBackgroundColor: pointColor, pointBorderColor: '#3b82f6', borderWidth: 2 }, 
+                { label: 'Net', data: netData, borderColor: '#10b981', backgroundColor: gradNet, fill: true, tension: 0.4, pointBackgroundColor: pointColor, pointBorderColor: '#10b981', borderWidth: 2 }
+            ]
+        },
+        options: { 
+            responsive: true, maintainAspectRatio: false, 
+            plugins: { legend: { position: 'top', align: 'end', labels: {color: textColor, boxWidth: 12, font: {family: "'Segoe UI', sans-serif"}} }, datalabels: { display: false } }, 
+            scales: { 
+                x: { grid: { display: false }, ticks: {color: textColor, font: {family: "'Segoe UI', sans-serif"}} }, 
+                y: { grid: { borderDash: [4, 4], color: gridColorY, drawBorder: false }, beginAtZero: true, ticks: {color: textColor, font: {family: "'Segoe UI', sans-serif"}} } 
+            } 
+        }
+    });
+}
+
+function openDrilldown(type) {
+    if (!globalHospitals.length || !globalKOLs.length) return; 
+
+    const titleEl = document.getElementById('drilldown-title');
+    const theadEl = document.getElementById('drilldown-thead');
+    const tbodyEl = document.getElementById('drilldown-tbody');
+    
+    tbodyEl.innerHTML = '';
+    theadEl.innerHTML = '';
+
+    if (type === 'kols') {
+        titleEl.innerText = '已接觸 KOL 總覽';
+        theadEl.innerHTML = '<tr><th>姓名</th><th>醫院</th><th>職稱</th><th>目前階段</th><th>機率</th></tr>';
+        globalKOLs.forEach(k => {
+            const hName = (globalHospitals.find(h => h.Hospital_ID === k.Hospital_ID) || {}).Name || '-';
+            tbodyEl.innerHTML += `<tr><td><strong>${k.Name}</strong></td><td>${hName}</td><td>${k.Title}</td><td>${getStageBadge(k.Visit_Stage)}</td><td>${k.Probability}%</td></tr>`;
+        });
+    } else if (type === 'developing') {
+        titleEl.innerText = '開發中醫院清單';
+        theadEl.innerHTML = '<tr><th>醫院名稱</th><th>區域</th><th>規模等級</th></tr>';
+        globalHospitals.filter(h => h.Status === '開發中').forEach(h => {
+            tbodyEl.innerHTML += `<tr><td><strong>${h.Name}</strong></td><td>${h.Region}</td><td>${h.Level}</td></tr>`;
+        });
+    } else if (type === 'negotiating') {
+        titleEl.innerText = '議約中醫院清單';
+        theadEl.innerHTML = '<tr><th>醫院名稱</th><th>區域</th><th>規模等級</th></tr>';
+        globalHospitals.filter(h => h.Status === '議約中').forEach(h => {
+            tbodyEl.innerHTML += `<tr><td><strong>${h.Name}</strong></td><td>${h.Region}</td><td>${h.Level}</td></tr>`;
+        });
+    } else if (type === 'intro') {
+        titleEl.innerText = '產品介紹階段 - 重點推廣清單';
+        theadEl.innerHTML = '<tr><th>醫院名稱</th><th>KOL 姓名</th><th>職稱</th></tr>';
+        globalKOLs.filter(k => k.Visit_Stage && k.Visit_Stage.includes('產品展示')).forEach(k => {
+            const hName = (globalHospitals.find(h => h.Hospital_ID === k.Hospital_ID) || {}).Name || '-';
+            tbodyEl.innerHTML += `<tr><td><strong>${hName}</strong></td><td>${k.Name}</td><td>${k.Title}</td></tr>`;
+        });
+    } else if (type === 'signed') {
+        titleEl.innerText = '已簽約醫院清單';
+        theadEl.innerHTML = '<tr><th>醫院名稱</th><th>單價</th><th>合約迄日</th></tr>';
+        globalHospitals.filter(h => h.Status === '已簽約').forEach(h => {
+            let dateStr = h.Contract_End_Date ? String(h.Contract_End_Date).substring(0, 10) : '-';
+            tbodyEl.innerHTML += `<tr><td><strong>${h.Name}</strong></td><td>$${(Number(h.Unit_Price)||0).toLocaleString()}</td><td>${dateStr}</td></tr>`;
+        });
+    }
+
+    if(tbodyEl.innerHTML === '') {
+        tbodyEl.innerHTML = '<tr><td colspan="5" class="text-center text-muted py-4">目前尚無資料</td></tr>';
+    }
+
+    drilldownModal.show();
+}
+
+function selectUsageHospital(hospId) {
+    selectedAnalyticsHospitalId = hospId;
+    renderUsageAnalytics();
+}
+
+function renderUsageAnalytics() {
+    const start = getVal('usage-start');
+    const end = getVal('usage-end');
+    if (!start || !end) return;
+
+    let monthlyUsage = {}; 
+    let hospitalUsage = {}; 
+    let monthlyRevenue = {};
+
+    const titleEl = document.getElementById('usage-chart-title');
+    const backBtn = document.getElementById('btn-usage-back');
+    
+    if (selectedAnalyticsHospitalId) {
+        const h = globalHospitals.find(x => String(x.Hospital_ID) === String(selectedAnalyticsHospitalId));
+        titleEl.innerText = (h ? h.Name : '指定醫院') + ' - 趨勢分析';
+        backBtn.classList.remove('d-none');
+    } else {
+        titleEl.innerText = '所有醫院 - 每月趨勢分析';
+        backBtn.classList.add('d-none');
+    }
+
+    globalStats.forEach(s => {
+        let dataMonth = String(s.Year_Month).substring(0, 7);
+        if (dataMonth >= start && dataMonth <= end) {
+            let usage = Number(s.Usage_Count) || 0;
+            let gross = Number(s.Gross_Revenue) || 0;
+            let net = Number(s.Net_Revenue) || 0;
+            
+            hospitalUsage[s.Hospital_ID] = (hospitalUsage[s.Hospital_ID] || 0) + usage;
+
+            if (!selectedAnalyticsHospitalId || String(s.Hospital_ID) === String(selectedAnalyticsHospitalId)) {
+                monthlyUsage[dataMonth] = (monthlyUsage[dataMonth] || 0) + usage;
+                if (!monthlyRevenue[dataMonth]) monthlyRevenue[dataMonth] = { gross: 0, net: 0 };
+                monthlyRevenue[dataMonth].gross += gross;
+                monthlyRevenue[dataMonth].net += net;
+            }
+        }
+    });
+
+    const labels = Object.keys(monthlyUsage).sort();
+    const usageData = labels.map(m => monthlyUsage[m]);
+    const grossData = labels.map(m => monthlyRevenue[m].gross);
+    const netData = labels.map(m => monthlyRevenue[m].net);
+
+    const isLight = document.documentElement.getAttribute('data-theme') === 'light';
+    const gridColorY = isLight ? 'rgba(0,0,0,0.05)' : 'rgba(255,255,255,0.05)';
+    const textColor = isLight ? '#858796' : '#a1a5b7';
+    const pointColor = isLight ? '#ffffff' : '#1e1e2d';
+
+    const ctxUsage = document.getElementById('chart-usage-trend');
+    if (ctxUsage) {
+        if (window.myUsageTrendChart) window.myUsageTrendChart.destroy();
+        const ctx = ctxUsage.getContext('2d');
+        let gradBar = ctx.createLinearGradient(0, 0, 0, 300);
+        gradBar.addColorStop(0, '#8b5cf6'); 
+        gradBar.addColorStop(1, '#06b6d4'); 
+
+        window.myUsageTrendChart = new Chart(ctx, {
+            type: 'bar',
+            data: { labels: labels, datasets: [{ label: '總使用次數', data: usageData, backgroundColor: gradBar, borderRadius: 4, barPercentage: 0.4 }] },
+            options: {
+                responsive: true, maintainAspectRatio: false,
+                plugins: { 
+                    legend: { display: false }, 
+                    datalabels: { anchor: 'end', align: 'top', color: textColor, font: { weight: 'bold', family: "'Segoe UI', sans-serif" }, formatter: (val) => val > 0 ? val.toLocaleString() : '' } 
+                },
+                scales: { 
+                    x: { grid: { display: false }, ticks: {color: textColor, font: {family: "'Segoe UI', sans-serif"}} }, 
+                    y: { grid: { borderDash: [4, 4], color: gridColorY, drawBorder: false }, beginAtZero: true, ticks: {color: textColor, stepSize: 10, font: {family: "'Segoe UI', sans-serif"}} } 
+                }
+            },
+            plugins: [ChartDataLabels]
+        });
+    }
+
+    const ctxRev = document.getElementById('chart-usage-revenue');
+    if (ctxRev) {
+        if (window.myUsageRevChart) window.myUsageRevChart.destroy();
+        const ctx = ctxRev.getContext('2d');
+        let gradGross = ctx.createLinearGradient(0, 0, 0, 300); gradGross.addColorStop(0, 'rgba(59, 130, 246, 0.4)'); gradGross.addColorStop(1, 'rgba(59, 130, 246, 0.0)');
+        let gradNet = ctx.createLinearGradient(0, 0, 0, 300); gradNet.addColorStop(0, 'rgba(16, 185, 129, 0.4)'); gradNet.addColorStop(1, 'rgba(16, 185, 129, 0.0)');
+
+        window.myUsageRevChart = new Chart(ctx, {
+            type: 'line',
+            data: { labels: labels, datasets: [ 
+                { label: 'Gross', data: grossData, borderColor: '#3b82f6', backgroundColor: gradGross, fill: true, tension: 0.4, borderWidth: 2, pointBackgroundColor: pointColor }, 
+                { label: 'Net', data: netData, borderColor: '#10b981', backgroundColor: gradNet, fill: true, tension: 0.4, borderWidth: 2, pointBackgroundColor: pointColor } 
+            ] },
+            options: { 
+                responsive: true, maintainAspectRatio: false, 
+                plugins: { legend: { position: 'top', align: 'end', labels: {color: textColor, boxWidth: 12, font: {family: "'Segoe UI', sans-serif"}} }, datalabels: { display: false } }, 
+                scales: { 
+                    x: { grid: { display: false }, ticks:{color: textColor, font: {family: "'Segoe UI', sans-serif"}} }, 
+                    y: { grid: { borderDash: [4, 4], color: gridColorY, drawBorder: false }, beginAtZero: true, ticks:{color: textColor, font: {family: "'Segoe UI', sans-serif"}} } 
+                } 
+            }
+        });
+    }
+
+    const tbody = document.getElementById('usage-ranking-body');
+    if (!tbody) return;
+    tbody.innerHTML = '';
+
+    const signedHospitals = globalHospitals.filter(h => h.Status === '已簽約');
+    let rankingData = signedHospitals.map(h => { return { id: h.Hospital_ID, name: h.Name, usage: hospitalUsage[h.Hospital_ID] || 0 }; });
+    rankingData.sort((a, b) => b.usage - a.usage);
+
+    if (rankingData.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="3" class="text-center text-muted py-4">目前尚無已簽約醫院</td></tr>';
+    } else {
+        rankingData.forEach((item, index) => {
+            let rankBadge = '';
+            if (index === 0) rankBadge = '<span class="badge bg-warning text-dark px-2 py-1 shadow-sm">1</span>'; 
+            else if (index === 1) rankBadge = '<span class="badge bg-secondary px-2 py-1 shadow-sm" style="color: #475569 !important;">2</span>'; 
+            else if (index === 2) rankBadge = '<span class="badge px-2 py-1 shadow-sm" style="background-color: #b45309; color: white;">3</span>'; 
+            else rankBadge = `<span class="text-muted fw-bold ms-2">${index + 1}</span>`;
+
+            let textClass = item.usage === 0 ? 'text-muted' : (isLight ? 'fw-bold text-dark' : 'fw-bold text-white');
+            let rowClass = String(item.id) === String(selectedAnalyticsHospitalId) ? 'active-row' : '';
+
+            tbody.innerHTML += `
+                <tr class="cursor-pointer ${rowClass}" onclick="selectUsageHospital('${item.id}')">
+                    <td style="width: 50px; border-bottom-color: var(--border-color);">${rankBadge}</td>
+                    <td class="${textClass}" style="border-bottom-color: var(--border-color);">${item.name}</td>
+                    <td class="text-end ${textClass}" style="border-bottom-color: var(--border-color);">${item.usage.toLocaleString()}</td>
+                </tr>
+            `;
+        });
+    }
+}
+
+function renderFinanceTable() {
+    const selMonth = getVal('finance-month-picker'); 
+    const tbody = document.getElementById('finance-table-body'); 
+    if(!tbody) return;
+    tbody.innerHTML = '';
+    
+    let kpiG=0, kpiN=0, kpiA=0, kpiE=0;
+    let hasData = false;
+    const isLight = document.documentElement.getAttribute('data-theme') === 'light';
+
+    const sortedStats = [...globalStats].sort((a, b) => new Date(b.Created_At) - new Date(a.Created_At));
+
+    sortedStats.forEach(s => {
+        let dataMonth = String(s.Year_Month).substring(0, 7);
+        if (dataMonth !== selMonth) return;
+        
+        hasData = true;
+        const hosp = globalHospitals.find(h => String(h.Hospital_ID) === String(s.Hospital_ID));
+        const hName = hosp ? hosp.Name : `(ID: ${s.Hospital_ID})`;
+
+        const g = Number(s.Gross_Revenue)||0, n = Number(s.Net_Revenue)||0;
+        kpiG+=g; kpiN+=n; kpiE+=(Number(s.EBM_Fee)||0); 
+        if (s.Invoice_Status!=='Paid') kpiA+=g;
+        
+        let badge = s.Invoice_Status==='Billed'?'bg-primary':(s.Invoice_Status==='Paid'?'bg-success':'bg-secondary');
+        let displayDate = String(s.Year_Month).substring(0, 10);
+        let nameColorClass = isLight ? 'text-dark' : 'text-white';
+
+        tbody.innerHTML += `
+            <tr>
+                <td><strong class="${nameColorClass}">${hName}</strong><br><small class="text-muted">${displayDate}</small></td>
+                <td>${s.Usage_Count}</td>
+                <td>$${s.Unit_Price_Snapshot}</td>
+                <td>$${g.toLocaleString()}</td>
+                <td class="fw-bold text-success">$${n.toLocaleString()}</td>
+                <td><span class="badge ${badge} status-badge" onclick="toggleInvoiceStatus('${s.Record_ID}', '${s.Invoice_Status}')">${s.Invoice_Status}</span></td>
+                <td><button class="btn btn-sm btn-outline-info" onclick="openSettlementModal('${s.Record_ID}')"><i class="fas fa-edit"></i></button></td>
+            </tr>`;
+    });
+    
+    if(!hasData) tbody.innerHTML = `<tr><td colspan="7" class="text-center text-muted py-4">本月尚無結算資料</td></tr>`;
+
+    document.getElementById('fin-kpi-gross').innerText="$"+kpiG.toLocaleString(); 
+    document.getElementById('fin-kpi-net').innerText="$"+kpiN.toLocaleString();
+    document.getElementById('fin-kpi-ar').innerText="$"+kpiA.toLocaleString(); 
+    document.getElementById('fin-kpi-ebm').innerText="$"+kpiE.toLocaleString();
+}
+
+function renderRadarTable() { 
+    const reg = getVal('radar-filter-region'), lvl = getVal('radar-filter-level'), sts = getVal('radar-filter-status'); 
+    const tbody = document.getElementById('radar-table-body'); tbody.innerHTML = ''; 
+    const isLight = document.documentElement.getAttribute('data-theme') === 'light';
+
+    globalHospitals.forEach(h => { 
+        if (reg!=='All' && h.Region!==reg) return; 
+        if (lvl!=='All' && h.Level!==lvl) return; 
+        if (sts!=='All' && h.Status!==sts) return; 
+        
+        let badge = h.Status==='已簽約'?'bg-success':(h.Status==='議約中'?'bg-info text-dark':(h.Status==='開發中'?'bg-warning text-dark':'bg-secondary')); 
+        let nameColorClass = isLight ? 'text-dark' : 'text-white';
+        
+        tbody.innerHTML += `<tr><td><strong class="${nameColorClass}">${h.Name}</strong></td><td>${h.Region||'-'}</td><td>${h.Level||'-'}</td><td><span class="badge ${badge}">${h.Status||''}</span></td><td>${h.Exclusivity==='Yes'?'<i class="fas fa-check text-success"></i>':'-'}</td><td><button class="btn btn-sm btn-outline-primary" onclick="openHospitalInput('${h.Hospital_ID}')">編輯</button></td></tr>`; 
+    }); 
+}
+
+function renderHospitalList() { 
+    const tbody = document.getElementById('hospital-list-body'); 
+    const filterLevel = getVal('hospital-filter-level');
+    const filterKeyword = getVal('hospital-filter-keyword').toLowerCase();
+    const isLight = document.documentElement.getAttribute('data-theme') === 'light';
+
+    tbody.innerHTML = ''; 
+    globalHospitals.forEach(h => { 
+        if (filterLevel && filterLevel !== 'All' && h.Level !== filterLevel) return;
+
+        if (filterKeyword) {
+            const hName = String(h.Name || '').toLowerCase();
+            if (!hName.includes(filterKeyword)) return;
+        }
+
+        let nameColorClass = isLight ? 'text-dark' : 'text-white';
+        tbody.innerHTML += `<tr><td class="${nameColorClass}">${h.Name}</td><td>${h.Level}</td><td>$${(Number(h.Unit_Price)||0).toLocaleString()}</td><td>${h.Exclusivity}</td><td>${h.Contract_End_Date ? h.Contract_End_Date.split('T')[0] : '-'}</td><td><button class="btn btn-sm btn-outline-primary" onclick="openHospitalInput('${h.Hospital_ID}')">Edit</button></td></tr>`; 
+    }); 
+}
+
+function renderKOLList() { 
+    const tbody = document.getElementById('kol-list-body'); 
+    const filterHosp = getVal('kol-filter-hospital');
+    const filterPrescribing = getVal('kol-filter-prescribing'); 
+    const filterKeyword = getVal('kol-filter-keyword').toLowerCase(); 
+    const isLight = document.documentElement.getAttribute('data-theme') === 'light';
+    
+    tbody.innerHTML = ''; 
+    
+    globalKOLs.forEach(k => { 
+        if (filterHosp !== 'All' && k.Hospital_ID !== filterHosp) return;
+
+        const isPrescribing = (k.Is_Prescribing === 'Yes');
+        if (filterPrescribing === 'Yes' && !isPrescribing) return;
+        if (filterPrescribing === 'No' && isPrescribing) return;
+
+        const hName = (globalHospitals.find(h=>h.Hospital_ID===k.Hospital_ID)||{}).Name || String(k.Hospital_ID); 
+        
+        if (filterKeyword) {
+            const kolName = String(k.Name || '').toLowerCase();
+            const hospitalNameStr = String(hName || '').toLowerCase();
+            const titleStr = String(k.Title || '').toLowerCase();
+            if (!kolName.includes(filterKeyword) && !hospitalNameStr.includes(filterKeyword) && !titleStr.includes(filterKeyword)) {
+                return;
+            }
+        }
+
+        const emailLink = k.Email ? `<a href="mailto:${k.Email}" class="text-decoration-none text-info fw-medium"><i class="fas fa-envelope me-1"></i>${k.Email}</a>` : '<span class="text-muted">-</span>';
+        let nameColorClass = isLight ? 'text-dark' : 'text-white';
+        let preBadge = isPrescribing ? `<span class="badge bg-danger ms-2 status-badge">開單</span>` : '';
+
+        tbody.innerHTML += `
+            <tr>
+                <td><strong class="${nameColorClass}">${k.Name}</strong>${preBadge}</td>
+                <td>${hName}</td>
+                <td>${k.Title}</td>
+                <td>${emailLink}</td>
+                <td>${getStageBadge(k.Visit_Stage)}</td>
+                <td class="${nameColorClass} fw-bold">${k.Probability}%</td>
+                <td><button class="btn btn-sm btn-outline-success" onclick="openKOLModal('${k.KOL_ID}')">Edit</button></td>
+            </tr>`; 
+    }); 
+}
+
+function renderUserTable(u) { const t=document.getElementById('admin-users-body'); t.innerHTML=''; const isLight = document.documentElement.getAttribute('data-theme') === 'light'; const c=isLight?'text-dark':'text-white'; u.forEach(x=>t.innerHTML+=`<tr><td class="${c}">${x.Email}</td><td>${x.Name}</td><td>${x.Role}</td><td>${x.Status}</td><td>${x.Last_Login?new Date(x.Last_Login).toLocaleDateString():'-'}</td><td><button class="btn btn-sm btn-outline-info" onclick="openUserModal('${x.Email}','${x.Name}','${x.Role}','${x.Status}')">Edit</button></td></tr>`); }
+function renderLogTable(l) { const t=document.getElementById('admin-logs-body'); t.innerHTML=''; const isLight = document.documentElement.getAttribute('data-theme') === 'light'; const c=isLight?'text-dark':'text-white'; l.reverse().forEach(x=>t.innerHTML+=`<tr><td class="text-muted">${new Date(x.Timestamp).toLocaleString()}</td><td class="${c}">${x.User}</td><td><span class="badge bg-primary bg-opacity-25 text-primary border border-primary">${x.Action}</span></td><td class="text-muted small">${x.Details}</td></tr>`); }
+
+function openHospitalInput(id){ 
+    showPage('hospital-input'); 
+    document.getElementById('form-hospital').reset(); 
+    setVal('h-id',''); 
+    setVal('h-link',''); 
+    setVal('h-note',''); 
+    document.getElementById('btn-view-contract').classList.add('d-none');
+    if(id){ 
+        const h=globalHospitals.find(x=>x.Hospital_ID===id); 
+        if(h){ 
+            setVal('h-id',h.Hospital_ID); setVal('h-name',h.Name); setVal('h-region',h.Region); setVal('h-level',h.Level); setVal('h-address',h.Address); setVal('h-status',h.Status); setVal('h-exclusivity',h.Exclusivity); setVal('h-unit-price',h.Unit_Price); setVal('h-ebm',h.EBM_Share_Ratio); setVal('h-amount',h.Contract_Amount); setVal('h-link',h.Contract_Link); 
+            if(h.Contract_Start_Date)setVal('h-start',h.Contract_Start_Date.split('T')[0]); 
+            if(h.Contract_End_Date)setVal('h-end',h.Contract_End_Date.split('T')[0]); 
+            setVal('h-note', h.Visit_Note); 
+            if(h.Contract_Link) {
+                const viewBtn = document.getElementById('btn-view-contract');
+                viewBtn.href = h.Contract_Link;
+                viewBtn.classList.remove('d-none');
+            }
+        } 
+    } 
+}
+
+async function submitHospital(){ 
+    showLoading(true); 
+    let link=getVal('h-link'); 
+    const f=document.getElementById('h-file'); 
+    if(f.files.length){ try{link=(await uploadFile(f.files[0])).url;}catch(e){console.error("File upload failed", e);} } 
+    const p={
+        hospitalId:getVal('h-id'), name:getVal('h-name'), region:getVal('h-region'), level:getVal('h-level'), address:getVal('h-address'), status:getVal('h-status'), exclusivity:getVal('h-exclusivity'), unitPrice:getVal('h-unit-price'), ebmShare:getVal('h-ebm'), contractAmount:getVal('h-amount'), contractStart:getVal('h-start'), contractEnd:getVal('h-end'), contractLink:link, 
+        salesRep:document.getElementById('user-name').innerText,
+        visitNote: getVal('h-note') 
+    }; 
+    await fetch(CONFIG.SCRIPT_URL,{method:'POST',body:JSON.stringify({action:'saveHospital',userEmail:currentUser,payload:p})}); 
+    await refreshAllData(); 
+    showPage('hospitals'); 
+    showLoading(false); 
+}
+
+function openKOLModal(id){ 
+    document.getElementById('form-kol').reset(); 
+    setVal('k-id',''); 
+    document.getElementById('k-prob-val').innerText = '20%';
+    document.getElementById('k-is-prescribing').checked = false; 
+    
+    const s = document.getElementById('k-hospital-datalist'); 
+    s.innerHTML = ''; 
+    globalHospitals.forEach(h => s.innerHTML += `<option value="${h.Name}"></option>`); 
+    
+    const delBtn = document.getElementById('btn-delete-kol');
+    if(delBtn) delBtn.style.display = id ? 'block' : 'none';
+    
+    if(id){
+        const k=globalKOLs.find(x=>x.KOL_ID===id);
+        if(k){
+            setVal('k-id',k.KOL_ID);
+            const hosp = globalHospitals.find(h => h.Hospital_ID === k.Hospital_ID);
+            setVal('k-hospital-input', hosp ? hosp.Name : '');
+            setVal('k-name',k.Name);
+            setVal('k-title',k.Title);
+            setVal('k-email',k.Email);
+            setVal('k-phone',k.Phone); 
+            setVal('k-stage',k.Visit_Stage);
+            let prob = k.Probability || 20;
+            setVal('k-prob', prob);
+            document.getElementById('k-prob-val').innerText = prob + '%';
+            setVal('k-note',k.Visit_Note);
+            if(k.Is_Prescribing === 'Yes') {
+                document.getElementById('k-is-prescribing').checked = true;
+            }
+        }
+    } else {
+        setVal('k-hospital-input', ''); 
+    }
+    kolModal.show(); 
+}
+
+async function submitKOL(){ 
+    const hospInputName = getVal('k-hospital-input');
+    const hospObj = globalHospitals.find(h => h.Name === hospInputName);
+    
+    if(!hospObj && hospInputName !== '') {
+        alert('找不到該醫院，請從下拉選單中點選正確的醫院名稱！');
+        return;
+    }
+    const targetHospId = hospObj ? hospObj.Hospital_ID : '';
+    const isPrescribing = document.getElementById('k-is-prescribing').checked ? 'Yes' : 'No';
+
+    const p={kolId:getVal('k-id'), hospitalId:targetHospId, name:getVal('k-name'), title:getVal('k-title'), phone:getVal('k-phone'), email:getVal('k-email'), visitStage:getVal('k-stage'), probability:getVal('k-prob'), visitNote:getVal('k-note'), isPrescribing:isPrescribing}; 
+    if(!p.name) return; 
+    showLoading(true); 
+    await fetch(CONFIG.SCRIPT_URL,{method:'POST',body:JSON.stringify({action:'saveKOL',userEmail:currentUser,payload:p})}); 
+    kolModal.hide(); 
+    await refreshAllData();
+    showLoading(false); 
+}
+
+async function deleteKOL() {
+    const id = getVal('k-id');
+    if(!id) return;
+    if(!confirm("確定要刪除此筆 KOL 資料嗎？此動作無法復原。")) return;
+    showLoading(true);
+    try {
+        const res = await fetch(CONFIG.SCRIPT_URL, {method:'POST', body:JSON.stringify({action:'deleteKOL', userEmail:currentUser, payload:{kolId:id}})});
+        const json = await res.json();
+        if(json.status === 'success') {kolModal.hide(); await refreshAllData();} 
+        else {alert("刪除失敗：" + json.message);}
+    } catch(e) {console.error(e); alert("連線錯誤");} finally {showLoading(false);}
+}
+
+function openSettlementModal(id) { 
+    document.getElementById('form-settlement').reset();
+    setVal('s-record-id', '');
+    const now = new Date();
+    setVal('s-date', `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}-${String(now.getDate()).padStart(2,'0')}`);
+    const delBtn = document.getElementById('btn-delete-settlement');
+    if(delBtn) delBtn.style.display = id ? 'block' : 'none';
+    const sel = document.getElementById('s-hospital');
+    sel.innerHTML = '<option value="">請選擇醫院...</option>';
+    globalHospitals.filter(h => h.Status==='已簽約').forEach(h => sel.innerHTML+=`<option value="${h.Hospital_ID}">${h.Name}</option>`);
+    if(id) {
+        const r = globalStats.find(x => String(x.Record_ID) === String(id));
+        if(r) {
+            setVal('s-record-id', r.Record_ID);
+            setVal('s-date', String(r.Year_Month).substring(0, 10));
+            setVal('s-hospital', r.Hospital_ID);
+            setVal('s-usage', r.Usage_Count);
+            setVal('s-note', r.Note);
+        }
+    }
+    calcPreview();
+    settlementModal.show(); 
+}
+
+async function deleteSettlement() {
+    const id = getVal('s-record-id');
+    if(!id) return;
+    if(!confirm("確定要刪除此筆資料嗎？此動作無法復原。")) return;
+    showLoading(true);
+    try {
+        const res = await fetch(CONFIG.SCRIPT_URL, {method:'POST', body:JSON.stringify({action:'deleteMonthlyStat', userEmail:currentUser, payload:{recordId:id}})});
+        const json = await res.json();
+        if(json.status === 'success') {settlementModal.hide(); await refreshAllData();} 
+        else {alert("刪除失敗");}
+    } catch(e) {console.error(e); alert("連線錯誤");} finally {showLoading(false);}
+}
+
+function calcPreview(){ const h=globalHospitals.find(x=>String(x.Hospital_ID)===String(getVal('s-hospital'))); if(h){ const u=Number(getVal('s-usage'))||0, p=Number(String(h.Unit_Price).replace(/[^0-9.-]+/g,""))||0, s=Number(String(h.EBM_Share_Ratio).replace(/[^0-9.-]+/g,""))||0; document.getElementById('s-hosp-info').innerText=`單價:${p} | 分潤:${s}%`; document.getElementById('s-prev-gross').innerText="$"+(u*p).toLocaleString(); document.getElementById('s-prev-net').innerText="$"+Math.round(u*p*(1-s/100)).toLocaleString(); } }
+async function submitSettlement() { const p={recordId:getVal('s-record-id'), yearMonth:getVal('s-date'), hospitalId:getVal('s-hospital'), usageCount:getVal('s-usage'), note:getVal('s-note'), invoiceStatus:'Unbilled'}; if(!p.hospitalId)return; showLoading(true); await fetch(CONFIG.SCRIPT_URL,{method:'POST',body:JSON.stringify({action:'saveMonthlyStat',userEmail:currentUser,payload:p})}); settlementModal.hide(); await refreshAllData(); showLoading(false); }
+async function toggleInvoiceStatus(id,s){ const m={'Unbilled':'Billed','Billed':'Paid','Paid':'Unbilled'}; if(confirm(`變更狀態為 ${m[s]}?`)){showLoading(true); await fetch(CONFIG.SCRIPT_URL,{method:'POST',body:JSON.stringify({action:'updateInvoiceStatus',userEmail:currentUser,payload:{recordId:id,status:m[s]}})}); await refreshAllData(); showLoading(false);} }
+function openUserModal(e='',n='',r='User',s='Active'){ setVal('u-email',e); setVal('u-name',n); setVal('u-role',r); setVal('u-status',s); userModal.show(); }
+async function submitUser(){ const p={email:getVal('u-email'),name:getVal('u-name'),role:getVal('u-role'),status:getVal('u-status')}; if(!p.email)return; showLoading(true); await fetch(CONFIG.SCRIPT_URL,{method:'POST',body:JSON.stringify({action:'saveUser',userEmail:currentUser,payload:p})}); userModal.hide(); loadAdminData(); showLoading(false); }
+async function uploadFile(f){ return new Promise((resolve, reject) => { const r = new FileReader(); r.onload=async()=>{ try{const b=r.result.split(',')[1]; const res=await fetch(CONFIG.SCRIPT_URL,{method:'POST',body:JSON.stringify({action:'uploadFile',userEmail:currentUser,fileData:b,fileName:f.name,mimeType:f.type})}); resolve(await res.json());}catch(e){reject(e);}}; r.onerror=reject; r.readAsDataURL(f); }); }
