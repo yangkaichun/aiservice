@@ -20,15 +20,3 @@ ffmpeg -y -i "$OUT" -filter_complex \
 -frames:v 1 ct_scan_bed_safe.jpg
 echo "=== safe done ==="
 ls -la ct_scan_bed_safe.jpg
-
-# HD：SeedVR2 兩階段（1280×720 → 2560×1440 → 5120×2880）
-UP="$HOME/.local/bin/mflux-upscale-seedvr2"
-if [ ! -f ct_scan_bed_safe_hd.webp ]; then
-  echo "=== CT HD 階段1 (2560) $(date '+%H:%M:%S') ==="
-  PYTHONPATH= "$UP" --image-path ct_scan_bed_safe.jpg --resolution 2x --output _tmp_ct_hd1.jpg 2>&1 | tail -1
-  echo "=== CT HD 階段2 (5120) $(date '+%H:%M:%S') ==="
-  PYTHONPATH= "$UP" --image-path _tmp_ct_hd1.jpg --resolution 2x --output ct_scan_bed_safe_hd.webp 2>&1 | tail -1
-  rm -f _tmp_ct_hd1.jpg
-fi
-echo "=== CT ALL DONE $(date '+%H:%M:%S') ==="
-ls -la ct_scan_bed_safe.*

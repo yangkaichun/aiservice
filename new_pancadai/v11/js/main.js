@@ -167,7 +167,7 @@
     var poolName = (lang === 'en') ? 'intl' : 'sun';
     var pool;
     if (poolName === 'sun') {
-      pool = ['bike', 'bridge', 'coffee', 'forest', 'kayak', 'picnic', 'yoga'].map(function (k) {
+      pool = ['bike', 'bridge', 'coffee', 'forest', 'kayak', 'picnic', 'yoga', '1', '2', '3', '4', '5', '6', '7', '8', '9', '10'].map(function (k) {
         return { key: k, src: 'assets/hero_sun_' + k + '_safe.jpg', hd: 'assets/hero_sun_' + k + '_safe_hd.webp' };
       });
     } else {
