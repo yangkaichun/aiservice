@@ -1,0 +1,413 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>護理站行動白板</title>
+    <link rel="icon" href="image/feticon.ico" type="image/x-icon">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        :root {
+            /* 醫療級配色系統 */
+            --bg-body: #f0f2f5;
+            --bg-card: #ffffff;
+            --text-main: #2d3748;
+            --text-sub: #718096;
+            --border-color: #e2e8f0;
+            --primary: #005b96;
+            --status-occupied: #48bb78;
+            --status-cleaning: #ed8936;
+            --status-isolation: #f56565;
+            --status-empty: #cbd5e0;
+            
+            /* Mobile Specific Vars */
+            --header-height: 56px;
+            --nav-height: 60px;
+            --marquee-height: 36px;
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+        
+        body {
+            font-family: "Microsoft JhengHei", "Segoe UI", sans-serif;
+            background-color: var(--bg-body);
+            color: var(--text-main);
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        /* --- Loader (同 Desktop) --- */
+        #system-loader {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background-color: #f8f9fa; z-index: 9999;
+            display: flex; flex-direction: column; align-items: center; justify-content: center;
+            transition: opacity 0.8s ease-out, visibility 0.8s;
+        }
+        .pulse-icon { font-size: 3rem; color: var(--primary); animation: fa-beat 1s infinite linear; margin-bottom: 15px; }
+        .loader-text { font-size: 1.2rem; font-weight: bold; color: var(--text-main); margin-bottom: 5px; }
+        .loader-subtext { font-size: 0.8rem; color: var(--text-sub); margin-bottom: 20px; }
+        .progress-container { width: 200px; height: 5px; background-color: #e2e8f0; border-radius: 3px; overflow: hidden; }
+        .progress-bar { width: 0%; height: 100%; background-color: var(--primary); animation: loadProgress 4s linear forwards; }
+        @keyframes loadProgress { 0% { width: 0%; } 100% { width: 100%; } }
+        .loader-hidden { opacity: 0; visibility: hidden; pointer-events: none; }
+
+        /* --- Mobile Header --- */
+        header {
+            height: var(--header-height);
+            background: var(--bg-card);
+            border-bottom: 1px solid var(--border-color);
+            display: flex; align-items: center; justify-content: space-between;
+            padding: 0 15px; box-shadow: 0 1px 3px rgba(0,0,0,0.05); z-index: 100;
+        }
+        .brand-area { display: flex; align-items: center; gap: 10px; }
+        .logo-img { height: 32px; width: auto; }
+        .ward-name { font-size: 1.1rem; font-weight: 800; color: var(--primary); border-left: 2px solid #ddd; padding-left: 10px; }
+        .clock-area { font-family: monospace; font-size: 1rem; font-weight: bold; color: var(--text-main); }
+
+        /* --- Marquee --- */
+        .marquee-container {
+            height: var(--marquee-height); background: #fff5f5; color: #c53030;
+            display: flex; align-items: center; overflow: hidden; white-space: nowrap;
+            font-size: 0.9rem; border-bottom: 1px solid #fed7d7;
+        }
+        .marquee-content { display: inline-block; padding-left: 100%; animation: scroll 20s linear infinite; }
+        @keyframes scroll { 0% { transform: translateX(0); } 100% { transform: translateX(-200%); } }
+
+        /* --- Main Content Area --- */
+        .content-wrapper {
+            flex: 1; overflow-y: auto; padding: 10px; padding-bottom: calc(var(--nav-height) + 20px);
+            position: relative;
+        }
+
+        /* Views (Tabs) */
+        .view-section { display: none; animation: fadeIn 0.3s; }
+        .view-section.active { display: block; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: translateY(0); } }
+
+        /* --- View 1: Bed Grid (2 Columns) --- */
+        .bed-container {
+            display: grid;
+            grid-template-columns: 1fr 1fr; /* Mobile 2 columns */
+            gap: 10px;
+        }
+        .bed-card {
+            background: white; border: 1px solid #e2e8f0; border-radius: 8px;
+            position: relative; padding: 10px; display: flex; flex-direction: column;
+            box-shadow: 0 1px 2px rgba(0,0,0,0.05);
+        }
+        .bed-card::before {
+            content: ''; position: absolute; left: 0; top: 0; bottom: 0;
+            width: 4px; border-radius: 8px 0 0 8px; background: var(--status-empty);
+        }
+        .bed-card.occupied::before { background: var(--status-occupied); }
+        .bed-card.cleaning::before { background: var(--status-cleaning); }
+        .bed-card.isolation::before { background: var(--status-isolation); }
+        
+        .bed-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 5px; }
+        .bed-num { font-size: 1.1rem; font-weight: 800; color: #2d3748; margin-left: 5px; }
+        
+        .patient-info { font-size: 1rem; font-weight: bold; margin-bottom: 5px; }
+        .team-info { font-size: 0.75rem; color: #718096; line-height: 1.3; }
+        .tags-row { display: flex; flex-wrap: wrap; gap: 3px; margin-top: 5px; }
+        .tag { font-size: 0.6rem; padding: 1px 4px; border-radius: 3px; color: white; }
+        .tag-dnr { background: #e53e3e; }
+        .tag-fall { background: #dd6b20; }
+        .tag-allergy { background: #3182ce; }
+
+        /* --- View 2: Stats & Schedule --- */
+        .panel-header {
+            font-size: 1rem; font-weight: bold; color: var(--primary);
+            margin-bottom: 10px; padding-bottom: 5px; border-bottom: 1px solid #eee;
+        }
+        .chart-box { display: flex; justify-content: center; align-items: center; margin: 20px 0; position: relative; }
+        .chart-legend { position: absolute; text-align: center; }
+        .stat-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 20px; }
+        .stat-card { background: white; padding: 15px; border-radius: 8px; text-align: center; box-shadow: 0 1px 3px rgba(0,0,0,0.05); }
+        .stat-val { font-size: 1.5rem; font-weight: bold; }
+        
+        .schedule-list { list-style: none; background: white; border-radius: 8px; overflow: hidden; }
+        .schedule-item { padding: 12px; border-bottom: 1px solid #f0f0f0; display: flex; gap: 10px; }
+        .sch-time { font-weight: bold; color: var(--primary); }
+
+        /* --- View 3: Team & Settings --- */
+        .staff-list { background: white; border-radius: 8px; overflow: hidden; margin-bottom: 20px; }
+        .staff-row { display: flex; align-items: center; padding: 12px; border-bottom: 1px solid #f0f0f0; }
+        .staff-avatar { width: 40px; height: 40px; background: #ebf8ff; color: var(--primary); border-radius: 50%; display: flex; align-items: center; justify-content: center; margin-right: 12px; }
+        
+        .quick-links { display: flex; flex-direction: column; gap: 10px; }
+        .link-btn {
+            background: white; padding: 15px; border-radius: 8px; border: 1px solid #e2e8f0;
+            text-decoration: none; color: var(--text-main); font-weight: bold; display: flex; align-items: center;
+            box-shadow: 0 1px 2px rgba(0,0,0,0.05);
+        }
+        .link-btn i { width: 30px; color: #718096; }
+        
+        /* Admin Button Special Style */
+        .link-btn.admin-link { background: #edf2f7; border-style: dashed; color: #4a5568; }
+
+        /* --- Bottom Navigation --- */
+        .bottom-nav {
+            position: fixed; bottom: 0; left: 0; width: 100%; height: var(--nav-height);
+            background: white; border-top: 1px solid #e2e8f0; display: flex; justify-content: space-around;
+            z-index: 500; box-shadow: 0 -2px 10px rgba(0,0,0,0.05);
+        }
+        .nav-item {
+            flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center;
+            color: #a0aec0; font-size: 0.75rem; cursor: pointer; transition: 0.2s;
+        }
+        .nav-item i { font-size: 1.4rem; margin-bottom: 4px; }
+        .nav-item.active { color: var(--primary); }
+
+        /* --- Modal (Mobile Optimized) --- */
+        .modal-backdrop {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.5); backdrop-filter: blur(2px);
+            z-index: 2000; display: none; justify-content: center; align-items: center;
+        }
+        .modal-card {
+            background: white; width: 90%; max-height: 80vh; border-radius: 12px;
+            display: flex; flex-direction: column; overflow: hidden;
+        }
+        .modal-header { padding: 15px; background: #f8f9fa; border-bottom: 1px solid #eee; display: flex; justify-content: space-between; align-items: center; font-weight: bold; color: var(--primary); }
+        .modal-body { padding: 20px; overflow-y: auto; }
+        .close-btn { border: none; background: none; font-size: 1.5rem; padding: 5px; }
+
+    </style>
+</head>
+<body>
+
+    <!-- Loader -->
+    <div id="system-loader">
+        <div class="loader-content">
+            <i class="fa-solid fa-heart-pulse pulse-icon"></i>
+            <div class="loader-text">系統載入中</div>
+            <div class="progress-container"><div class="progress-bar"></div></div>
+        </div>
+    </div>
+
+    <!-- Header -->
+    <header>
+        <div class="brand-area">
+            <img src="fetlogo.png" alt="FET" class="logo-img" onerror="this.style.display='none';">
+            <div class="ward-name">52病房</div>
+        </div>
+        <div class="clock-area" id="clock">12:00</div>
+    </header>
+
+    <!-- Marquee -->
+    <div class="marquee-container">
+        <div class="marquee-content">
+            <i class="fa-solid fa-bullhorn"></i> 【緊急公告】14:00 全院感控會議 | 16:00 消防測試 | 請落實手部衛生。
+        </div>
+    </div>
+
+    <!-- Main Content -->
+    <div class="content-wrapper">
+        
+        <!-- View 1: 病床總覽 (預設顯示) -->
+        <div id="view-beds" class="view-section active">
+            <div class="bed-container" id="bed-grid">
+                <!-- JS Generated -->
+            </div>
+        </div>
+
+        <!-- View 2: 動態與排程 -->
+        <div id="view-stats" class="view-section">
+            <div class="panel-header"><i class="fa-solid fa-chart-pie"></i> 病房動態</div>
+            <div class="chart-box">
+                <div style="width:140px; height:140px; border-radius:50%; background: conic-gradient(var(--status-occupied) 0% 83%, var(--status-empty) 83% 100%);"></div>
+                <div class="chart-legend">
+                    <div style="font-size:1.8rem; color:var(--text-main);">83%</div>
+                    <div style="font-size:0.8rem; color:var(--text-sub);">佔床率</div>
+                </div>
+            </div>
+            
+            <div class="stat-grid">
+                <div class="stat-card"><div class="stat-val" style="color:var(--status-occupied);">+3</div><div>今日入院</div></div>
+                <div class="stat-card"><div class="stat-val" style="color:#3182ce;">-2</div><div>今日出院</div></div>
+                <div class="stat-card"><div class="stat-val" style="color:#dd6b20;">1</div><div>手術中</div></div>
+                <div class="stat-card"><div class="stat-val">2</div><div>預計檢查</div></div>
+            </div>
+
+            <div class="panel-header"><i class="fa-solid fa-clock"></i> 待辦與排程</div>
+            <ul class="schedule-list">
+                <li class="schedule-item">
+                    <div class="sch-time">14:00</div>
+                    <div><span style="font-weight:bold;">52-03</span> 傷口換藥</div>
+                </li>
+                <li class="schedule-item">
+                    <div class="sch-time">15:30</div>
+                    <div><span style="font-weight:bold;">52-09</span> CT檢查 (已傳送)</div>
+                </li>
+                <li class="schedule-item">
+                    <div class="sch-time">16:00</div>
+                    <div><span style="font-weight:bold;">52-11</span> 血糖檢測 (AC)</div>
+                </li>
+            </ul>
+        </div>
+
+        <!-- View 3: 團隊與設定 -->
+        <div id="view-team" class="view-section">
+            <div class="panel-header"><i class="fa-solid fa-user-md"></i> 值班團隊</div>
+            <div class="staff-list">
+                <div class="staff-row">
+                    <div class="staff-avatar"><i class="fa-solid fa-stethoscope"></i></div>
+                    <div>
+                        <div style="font-weight:bold;">李志豪 醫師</div>
+                        <div style="font-size:0.8rem; color:#666;">值班主治 (Ext.1101)</div>
+                    </div>
+                </div>
+                <div class="staff-row">
+                    <div class="staff-avatar" style="background:#fff5f5; color:#e53e3e;"><i class="fa-solid fa-user-nurse"></i></div>
+                    <div>
+                        <div style="font-weight:bold;">林雅婷 N4</div>
+                        <div style="font-size:0.8rem; color:#666;">護理長 (Ext.2201)</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="panel-header"><i class="fa-solid fa-link"></i> 常用連結</div>
+            <div class="quick-links">
+                <button class="link-btn" onclick="alert('HIS')"><i class="fa-solid fa-desktop"></i> 醫療資訊系統 (HIS)</button>
+                <button class="link-btn" onclick="alert('NIS')"><i class="fa-solid fa-clipboard-list"></i> 護理紀錄系統 (NIS)</button>
+                <button class="link-btn" onclick="alert('PACS')"><i class="fa-solid fa-x-ray"></i> 影像查詢 (PACS)</button>
+                
+                <!-- Admin Link -->
+                <a href="admin.html" class="link-btn admin-link">
+                    <i class="fa-solid fa-gear"></i> 系統管理設定
+                </a>
+            </div>
+        </div>
+
+    </div>
+
+    <!-- Bottom Navigation -->
+    <div class="bottom-nav">
+        <div class="nav-item active" onclick="switchTab('beds', this)">
+            <i class="fa-solid fa-bed"></i>
+            <span>病床</span>
+        </div>
+        <div class="nav-item" onclick="switchTab('stats', this)">
+            <i class="fa-solid fa-chart-pie"></i>
+            <span>動態</span>
+        </div>
+        <div class="nav-item" onclick="switchTab('team', this)">
+            <i class="fa-solid fa-user-nurse"></i>
+            <span>團隊</span>
+        </div>
+    </div>
+
+    <!-- Modal -->
+    <div class="modal-backdrop" id="detail-modal">
+        <div class="modal-card">
+            <div class="modal-header">
+                <span id="modal-title">詳細資訊</span>
+                <button class="close-btn" onclick="closeModal()">×</button>
+            </div>
+            <div class="modal-body">
+                <p style="color:#718096; margin-bottom:15px;">病歷號: 8812345 | 住院第 3 天</p>
+                <div style="margin-bottom:15px;">
+                    <h4 style="color:var(--text-main);">照護團隊</h4>
+                    <ul style="padding-left:20px; color:#555; margin-top:5px;">
+                        <li>主治: 李志豪</li>
+                        <li>護理: 林雅婷</li>
+                    </ul>
+                </div>
+                <div style="margin-bottom:15px;">
+                    <h4 style="color:#e53e3e;">臨床警示</h4>
+                    <ul style="padding-left:20px; color:#c53030; margin-top:5px;">
+                        <li>藥物過敏: Penicillin</li>
+                        <li>高危跌倒 (4分)</li>
+                    </ul>
+                </div>
+                <div style="background:#f7fafc; padding:10px; border-radius:6px;">
+                    <strong>醫囑摘要:</strong><br>
+                    1. Check V/S q4h<br>2. Wound dressing QD
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // --- Init ---
+        window.addEventListener('load', function() {
+            setTimeout(function() {
+                const loader = document.getElementById('system-loader');
+                loader.classList.add('loader-hidden');
+            }, 4000);
+        });
+
+        // --- Tab Switching ---
+        function switchTab(viewId, navEl) {
+            // Hide all views
+            document.querySelectorAll('.view-section').forEach(el => el.classList.remove('active'));
+            // Show selected view
+            document.getElementById('view-' + viewId).classList.add('active');
+            
+            // Update Nav State
+            document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('active'));
+            navEl.classList.add('active');
+        }
+
+        // --- Bed Generation ---
+        const bedGrid = document.getElementById('bed-grid');
+        const doctors = ["李志豪", "陳建國", "王大文"];
+        const nurses = ["林雅婷", "張惠雯", "陳怡君"];
+
+        let html = '';
+        for(let i=1; i<=24; i++) {
+            const bedNum = `52-${i.toString().padStart(2, '0')}`;
+            let status = 'occupied';
+            let name = i % 2 === 0? '陳O華' : '王O明';
+            let genderIcon = i % 2 === 0 ? '<i class="fa-solid fa-venus" style="color:#ed64a6"></i>' : '<i class="fa-solid fa-mars" style="color:#4299e1"></i>';
+            let extraClass = 'occupied';
+            let tagsHtml = '';
+
+            const rand = Math.random();
+            if(rand > 0.9) { status = 'empty'; name = '空床'; extraClass = ''; }
+            else if(rand > 0.85) { status = 'cleaning'; name = '清潔中'; extraClass = 'cleaning'; }
+            else if(rand > 0.8) { status = 'occupied'; extraClass = 'isolation'; tagsHtml += `<span class="tag tag-dnr" style="background:#f56565">隔離</span>`; }
+
+            if(status === 'occupied' && Math.random() > 0.7) tagsHtml += `<span class="tag tag-dnr">DNR</span>`;
+
+            html += `
+            <div class="bed-card ${extraClass}" onclick="${status==='occupied'? `openModal('${bedNum}', '${name}')` : ''}">
+                <div class="bed-header">
+                    <span class="bed-num">${bedNum}</span>
+                    ${status === 'occupied' ? '<i class="fa-solid fa-user-injured" style="color:var(--primary)"></i>' : ''}
+                </div>
+                <div class="patient-info">
+                    ${name} ${status==='occupied'? genderIcon : ''}
+                </div>
+                ${status === 'occupied' ? `
+                <div class="team-info">
+                    Dr. ${doctors[i%3]}<br>RN. ${nurses[i%3]}
+                </div>
+                <div class="tags-row">${tagsHtml}</div>
+                ` : `<div style="font-size:0.8rem; color:#aaa;">${status==='cleaning'?'預計10分':'目前無人'}</div>`}
+            </div>`;
+        }
+        bedGrid.innerHTML = html;
+
+        // --- Time ---
+        setInterval(() => {
+            const now = new Date();
+            document.getElementById('clock').innerText = now.toLocaleTimeString('zh-TW', {hour12:false, hour:'2-digit', minute:'2-digit'});
+        }, 1000);
+
+        // --- Modal ---
+        function openModal(bed, name) {
+            document.getElementById('modal-title').innerText = `${bed} ${name}`;
+            document.getElementById('detail-modal').style.display = 'flex';
+        }
+        function closeModal() {
+            document.getElementById('detail-modal').style.display = 'none';
+        }
+        window.onclick = function(e) {
+            if(e.target == document.getElementById('detail-modal')) closeModal();
+        }
+    </script>
+</body>
+</html>

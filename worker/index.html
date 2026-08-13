@@ -1,0 +1,684 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>HODS 醫院派工系統</title>
+    <link rel="shortcut icon" href="image/feticon.ico" type="image/x-icon">
+
+    <!-- Mobile Redirect Script -->
+    <script>
+        (function() {
+            var userAgent = navigator.userAgent || navigator.vendor || window.opera;
+            // 簡單的行動裝置偵測 (Android, iOS)
+            if (/android|iPad|iPhone|iPod/i.test(userAgent) && !window.MSStream) {
+                window.location.href = "mobile.html";
+            }
+            // 螢幕寬度輔助判斷 (可選，若視窗縮太小也跳轉)
+            // if (window.innerWidth < 768) { window.location.href = "mobile.html"; }
+        })();
+    </script>
+
+    <!-- 1. Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+
+    <!-- 2. Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+    <!-- 3. FontAwesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@300;400;500;700&display=swap');
+
+        body {
+            font-family: 'Noto Sans TC', sans-serif;
+            background-color: #f8fafc;
+        }
+
+        [x-cloak] { 
+            display: none !important; 
+        }
+
+        /* Loader Styles */
+        #loader {
+            position: fixed;
+            inset: 0;
+            background: white;
+            z-index: 9999;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            transition: opacity 0.5s ease, visibility 0.5s;
+        }
+        
+        .loader-hide {
+            opacity: 0;
+            visibility: hidden;
+            pointer-events: none;
+        }
+
+        .pulse-circle {
+            width: 60px;
+            height: 60px;
+            border-radius: 50%;
+            background: #3b82f6;
+            box-shadow: 0 0 0 0 rgba(59, 130, 246, 0.7);
+            animation: pulse-blue 2s infinite;
+        }
+
+        @keyframes pulse-blue {
+            0% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(59, 130, 246, 0.7); }
+            70% { transform: scale(1); box-shadow: 0 0 0 20px rgba(59, 130, 246, 0); }
+            100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(59, 130, 246, 0); }
+        }
+
+        .card-hover {
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+        .card-hover:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 10px 20px rgba(0,0,0,0.05);
+        }
+
+        .fade-in {
+            animation: fadeIn 0.5s ease-out forwards;
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+    </style>
+
+    <script>
+        document.addEventListener('alpine:init', () => {
+            Alpine.data('hodsApp', () => ({
+                loading: true,
+                currentView: 'dashboard', // dashboard, list, detail, form
+                breadcrumbs: [],
+                
+                // 核心過濾狀態
+                filterMode: 'none', // 'none', 'module', 'stat'
+                filterValue: null,
+                filterTitle: '',
+
+                currentTask: null,
+                formSubmitting: false,
+                
+                // 表單暫存資料
+                formData: {
+                    location: '',
+                    priority: 'Normal',
+                    desc: '',
+                    // 針對不同模組的特定欄位
+                    repairDevice: '',
+                    requestType: '',
+                    cleanType: ''
+                },
+
+                // 資料定義
+                stats: [
+                    { id: 'stat_repair', title: "待處理維修", value: 12, bgClass: "bg-red-50", textClass: "text-red-500", icon: "fa-wrench" },
+                    { id: 'stat_today', title: "今日請求", value: 45, bgClass: "bg-blue-50", textClass: "text-blue-500", icon: "fa-file-lines" },
+                    { id: 'stat_clean', title: "清潔任務", value: 8, bgClass: "bg-green-50", textClass: "text-green-500", icon: "fa-broom" },
+                    { id: 'stat_rate', title: "設備妥善率", value: "98%", bgClass: "bg-purple-50", textClass: "text-purple-500", icon: "fa-heart-pulse" },
+                ],
+                modules: [
+                    { id: 'repair', title: '儀器維修', icon: 'fa-stethoscope', desc: '醫療儀器故障排除與報修' },
+                    { id: 'request', title: '人員請求', icon: 'fa-user-nurse', desc: '護理站人力支援與物資請求' },
+                    { id: 'maintain', title: '設備維護', icon: 'fa-screwdriver-wrench', desc: '定期保養與巡檢排程' },
+                    { id: 'clean', title: '清潔派工', icon: 'fa-pump-soap', desc: '病房與公共區域清潔調度' },
+                ],
+                tasks: [
+                    { id: 101, type: 'repair', title: '呼吸器故障 (Ventilator-02)', location: 'ICU-Bed 5', priority: 'High', status: 'Pending', time: '10:30', requester: '林護理長' },
+                    { id: 102, type: 'clean', title: '病床終期清潔', location: 'Ward 702', priority: 'Normal', status: 'Processing', time: '11:15', requester: '陳護理師' },
+                    { id: 103, type: 'maintain', title: 'MRI 季保養', location: 'Radiology', priority: 'Scheduled', status: 'Pending', time: '14:00', requester: '系統排程' },
+                    { id: 104, type: 'repair', title: '輸液幫浦異常', location: 'ER-03', priority: 'High', status: 'Done', time: '09:00', requester: '王醫師' },
+                    { id: 105, type: 'request', title: '備用氧氣鋼瓶補充', location: '5F 護理站', priority: 'High', status: 'Pending', time: '10:45', requester: '李護理師' },
+                    { id: 106, type: 'repair', title: '心電圖機校正', location: '3F 診間', priority: 'Normal', status: 'Pending', time: '11:00', requester: '張醫師' },
+                    { id: 107, type: 'clean', title: '手術室清潔 (OR-1)', location: 'OR', priority: 'High', status: 'Pending', time: '11:30', requester: '手術室控台' },
+                ],
+
+                // 統一過濾邏輯 (Getter)
+                get filteredTasks() {
+                    if (this.filterMode === 'module') {
+                        return this.tasks.filter(t => t.type === this.filterValue);
+                    } else if (this.filterMode === 'stat') {
+                        // 模擬卡片點擊的過濾邏輯
+                        if (this.filterValue === 'stat_repair') return this.tasks.filter(t => t.type === 'repair' && t.status === 'Pending');
+                        if (this.filterValue === 'stat_today') return this.tasks; // 顯示全部當作今日
+                        if (this.filterValue === 'stat_clean') return this.tasks.filter(t => t.type === 'clean');
+                        if (this.filterValue === 'stat_rate') return this.tasks.filter(t => t.type === 'maintain'); // 妥善率關聯維護
+                    }
+                    return [];
+                },
+
+                initApp() {
+                    setTimeout(() => {
+                        this.loading = false;
+                        this.$nextTick(() => this.initCharts());
+                    }, 3000);
+                },
+
+                // 導航邏輯
+                goHome() {
+                    this.currentView = 'dashboard';
+                    this.breadcrumbs = [];
+                    this.filterMode = 'none';
+                    this.$nextTick(() => this.initCharts());
+                },
+
+                // 點擊模組
+                selectModule(mod) {
+                    this.filterMode = 'module';
+                    this.filterValue = mod.id;
+                    this.filterTitle = mod.title;
+                    this.currentView = 'list';
+                    this.breadcrumbs = [{ label: mod.title, view: 'list' }];
+                },
+
+                // 點擊統計卡片
+                selectStat(stat) {
+                    this.filterMode = 'stat';
+                    this.filterValue = stat.id;
+                    this.filterTitle = stat.title;
+                    this.currentView = 'list';
+                    this.breadcrumbs = [{ label: stat.title, view: 'list' }];
+                },
+
+                selectTask(task) {
+                    this.currentTask = task;
+                    this.currentView = 'detail';
+                    // 確保麵包屑邏輯
+                    const rootCrumb = this.breadcrumbs.length > 0 ? this.breadcrumbs[0] : { label: '列表', view: 'list' };
+                    this.breadcrumbs = [rootCrumb, { label: '詳情', view: 'detail' }];
+                },
+
+                // === 第四層：開啟表單 ===
+                openForm() {
+                    // 重置表單
+                    this.formData = { location: '', priority: 'Normal', desc: '', repairDevice: '', requestType: '', cleanType: '' };
+                    this.currentView = 'form';
+                    const rootCrumb = this.breadcrumbs.length > 0 ? this.breadcrumbs[0] : { label: '列表', view: 'list' };
+                    this.breadcrumbs = [rootCrumb, { label: '新增需求單', view: 'form' }];
+                },
+
+                // === 第四層：提交表單 ===
+                submitForm() {
+                    this.formSubmitting = true;
+                    // 模擬 API 請求
+                    setTimeout(() => {
+                        this.formSubmitting = false;
+                        alert('需求單已成功送出！');
+                        // 這裡可以將新資料 push 到 tasks array，這裡省略
+                        this.navigateTo('list'); // 返回列表
+                    }, 1500);
+                },
+
+                navigateTo(view) {
+                    if (view === 'list') {
+                        this.currentView = 'list';
+                        // 保留第一層麵包屑
+                        this.breadcrumbs = [this.breadcrumbs[0]]; 
+                        this.currentTask = null;
+                    }
+                },
+
+                getPriorityColor(p) {
+                    if (p === 'High') return 'bg-red-100 text-red-700';
+                    if (p === 'Scheduled') return 'bg-purple-100 text-purple-700';
+                    return 'bg-green-100 text-green-700';
+                },
+                getStatusColor(s) {
+                    if (s === 'Pending') return 'bg-yellow-400';
+                    if (s === 'Processing') return 'bg-blue-500';
+                    return 'bg-green-500';
+                },
+
+                initCharts() {
+                    if (this.currentView !== 'dashboard') return;
+                    
+                    const ctxLine = document.getElementById('trafficChart');
+                    const ctxPie = document.getElementById('statusChart');
+
+                    if (ctxLine) {
+                        const existingChart = Chart.getChart(ctxLine);
+                        if (existingChart) existingChart.destroy();
+                        new Chart(ctxLine, {
+                            type: 'line',
+                            data: {
+                                labels: ['08:00', '10:00', '12:00', '14:00', '16:00', '18:00'],
+                                datasets: [{
+                                    label: '請求數',
+                                    data: [12, 19, 8, 25, 15, 10],
+                                    borderColor: '#3b82f6',
+                                    backgroundColor: 'rgba(59, 130, 246, 0.1)',
+                                    tension: 0.4,
+                                    fill: true
+                                }]
+                            },
+                            options: {
+                                responsive: true,
+                                maintainAspectRatio: false,
+                                plugins: { legend: { display: false } },
+                                scales: { y: { beginAtZero: true, grid: { borderDash: [2, 4] } }, x: { grid: { display: false } } }
+                            }
+                        });
+                    }
+
+                    if (ctxPie) {
+                        const existingPie = Chart.getChart(ctxPie);
+                        if (existingPie) existingPie.destroy();
+                        new Chart(ctxPie, {
+                            type: 'doughnut',
+                            data: {
+                                labels: ['已完成', '處理中', '待指派', '異常'],
+                                datasets: [{
+                                    data: [40, 30, 10, 5],
+                                    backgroundColor: ['#3b82f6', '#facc15', '#d1d5db', '#f87171'],
+                                    borderWidth: 0
+                                }]
+                            },
+                            options: {
+                                responsive: true,
+                                maintainAspectRatio: false,
+                                cutout: '75%',
+                                plugins: { legend: { display: false } }
+                            }
+                        });
+                    }
+                }
+            }));
+        });
+    </script>
+
+    <script src="https://cdn.jsdelivr.net/npm/alpinejs@3.13.3/dist/cdn.min.js" defer></script>
+</head>
+<body class="text-slate-800" x-data="hodsApp" x-init="initApp()">
+
+    <!-- Loading Screen -->
+    <div id="loader" :class="{ 'loader-hide': !loading }">
+        <div class="pulse-circle mb-6"></div>
+        <h1 class="text-2xl font-bold text-slate-700 tracking-widest">HODS</h1>
+        <p class="text-slate-400 text-sm mt-2">醫院營運派工系統載入中...</p>
+    </div>
+
+    <!-- Navbar -->
+    <nav class="bg-white border-b border-slate-100 sticky top-0 z-40 shadow-sm">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between h-16">
+                <div class="flex items-center cursor-pointer" @click="goHome()">
+                    <img src="image/fetlogo.png" alt="FET" class="h-8 mr-3 object-contain" onerror="this.style.display='none'; this.nextElementSibling.classList.remove('hidden')">
+                    <div class="hidden text-blue-600 font-bold text-2xl mr-2">FET</div>
+                    <div class="h-6 w-px bg-slate-300 mx-3"></div>
+                    <span class="font-bold text-lg text-slate-700">HODS 派工中心</span>
+                </div>
+                <div class="flex items-center space-x-4">
+                    <button class="relative p-2 text-slate-400 hover:text-blue-600 transition">
+                        <i class="fa-solid fa-bell text-xl"></i>
+                        <span class="absolute top-1 right-1 w-2.5 h-2.5 bg-red-500 rounded-full border-2 border-white"></span>
+                    </button>
+                    <div class="flex items-center pl-4 border-l border-slate-100">
+                        <div class="w-9 h-9 rounded-full bg-gradient-to-r from-blue-500 to-cyan-400 flex items-center justify-center text-white font-bold shadow-sm">
+                            AD
+                        </div>
+                        <div class="hidden md:block ml-3">
+                            <p class="text-sm font-medium text-slate-700">系統管理員</p>
+                            <p class="text-xs text-slate-400">總務處</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Main Content -->
+    <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 min-h-[calc(100vh-64px)]" x-show="!loading" x-cloak>
+
+        <!-- Breadcrumbs -->
+        <div class="flex items-center text-sm text-slate-500 mb-6">
+            <button @click="goHome()" class="hover:text-blue-600 transition"><i class="fa-solid fa-house mr-1"></i> 首頁</button>
+            <template x-for="(crumb, index) in breadcrumbs" :key="index">
+                <div class="flex items-center">
+                    <span class="mx-2 text-slate-300">/</span>
+                    <button 
+                        @click="index !== breadcrumbs.length - 1 ? navigateTo(crumb.view) : null"
+                        :class="index === breadcrumbs.length - 1 ? 'font-bold text-slate-800 cursor-default' : 'hover:text-blue-600 transition'"
+                        x-text="crumb.label">
+                    </button>
+                </div>
+            </template>
+        </div>
+
+        <!-- ==================== Layer 1: Dashboard ==================== -->
+        <div x-show="currentView === 'dashboard'" class="fade-in">
+            <!-- 統計卡片 (可點擊篩選) -->
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+                <template x-for="stat in stats" :key="stat.id">
+                    <div @click="selectStat(stat)" class="bg-white p-6 rounded-2xl shadow-sm border border-slate-100 card-hover cursor-pointer relative group">
+                        <div class="flex justify-between items-start">
+                            <div>
+                                <p class="text-sm text-slate-500 mb-1" x-text="stat.title"></p>
+                                <h3 class="text-3xl font-bold text-slate-800" x-text="stat.value"></h3>
+                            </div>
+                            <div :class="`p-3 rounded-xl ${stat.bgClass} ${stat.textClass}`">
+                                <i :class="`fa-solid ${stat.icon} text-xl`"></i>
+                            </div>
+                        </div>
+                        <!-- Hover 提示 -->
+                        <div class="absolute bottom-4 right-6 opacity-0 group-hover:opacity-100 transition-opacity text-xs text-blue-500">
+                            查看詳情 <i class="fa-solid fa-arrow-right ml-1"></i>
+                        </div>
+                    </div>
+                </template>
+            </div>
+
+            <!-- 派工模組 -->
+            <h2 class="text-xl font-bold text-slate-800 mb-4 pl-2 border-l-4 border-blue-500">派工模組</h2>
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-10">
+                <template x-for="mod in modules" :key="mod.id">
+                    <div @click="selectModule(mod)" class="bg-white p-6 rounded-2xl shadow-sm border border-slate-100 card-hover cursor-pointer group">
+                        <div class="mb-4 inline-flex items-center justify-center w-12 h-12 rounded-xl bg-blue-50 text-blue-600 group-hover:bg-blue-600 group-hover:text-white transition-colors duration-300">
+                            <i :class="`fa-solid ${mod.icon} text-xl`"></i>
+                        </div>
+                        <h3 class="text-lg font-bold text-slate-800 group-hover:text-blue-600 transition" x-text="mod.title"></h3>
+                        <p class="text-sm text-slate-400 mt-2" x-text="mod.desc"></p>
+                    </div>
+                </template>
+            </div>
+
+            <!-- 圖表區 -->
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-100 lg:col-span-2">
+                    <h3 class="font-bold text-slate-700 mb-6">即時案件流量</h3>
+                    <div class="relative h-64 w-full">
+                        <canvas id="trafficChart"></canvas>
+                    </div>
+                </div>
+                <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-100">
+                    <h3 class="font-bold text-slate-700 mb-6">狀態分佈</h3>
+                    <div class="relative h-48 w-full flex justify-center">
+                        <canvas id="statusChart"></canvas>
+                    </div>
+                    <div class="mt-4 grid grid-cols-2 gap-2 text-xs text-slate-500">
+                        <div class="flex items-center"><span class="w-2 h-2 rounded-full bg-blue-500 mr-2"></span>已完成</div>
+                        <div class="flex items-center"><span class="w-2 h-2 rounded-full bg-yellow-400 mr-2"></span>處理中</div>
+                        <div class="flex items-center"><span class="w-2 h-2 rounded-full bg-gray-300 mr-2"></span>待指派</div>
+                        <div class="flex items-center"><span class="w-2 h-2 rounded-full bg-red-400 mr-2"></span>異常</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ==================== Layer 2: List ==================== -->
+        <div x-show="currentView === 'list'" class="fade-in">
+            <div class="flex justify-between items-center mb-6">
+                <h2 class="text-2xl font-bold text-slate-800">
+                    <span x-text="filterTitle"></span>
+                    <span class="text-sm font-normal text-slate-400 ml-2">任務清單</span>
+                </h2>
+                <!-- 新增任務按鈕：觸發第四層 (openForm) -->
+                <button @click="openForm()" class="bg-blue-600 hover:bg-blue-700 text-white px-5 py-2.5 rounded-lg shadow-md shadow-blue-200 transition flex items-center">
+                    <i class="fa-solid fa-plus mr-2"></i> 新增需求
+                </button>
+            </div>
+
+            <div class="bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden">
+                <div class="overflow-x-auto">
+                    <table class="w-full text-left border-collapse">
+                        <thead class="bg-slate-50 border-b border-slate-100">
+                            <tr>
+                                <th class="p-4 text-sm font-semibold text-slate-500">單號</th>
+                                <th class="p-4 text-sm font-semibold text-slate-500">標題</th>
+                                <th class="p-4 text-sm font-semibold text-slate-500">地點</th>
+                                <th class="p-4 text-sm font-semibold text-slate-500">優先級</th>
+                                <th class="p-4 text-sm font-semibold text-slate-500">狀態</th>
+                                <th class="p-4 text-sm font-semibold text-slate-500 text-right">操作</th>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y divide-slate-50">
+                            <template x-for="task in filteredTasks" :key="task.id">
+                                <tr class="hover:bg-blue-50/30 transition cursor-pointer" @click="selectTask(task)">
+                                    <td class="p-4 text-slate-500 font-mono text-sm" x-text="'#' + task.id"></td>
+                                    <td class="p-4">
+                                        <div class="font-medium text-slate-800" x-text="task.title"></div>
+                                        <div class="text-xs text-slate-400 mt-0.5" x-text="task.time"></div>
+                                    </td>
+                                    <td class="p-4 text-slate-600">
+                                        <i class="fa-solid fa-location-dot text-slate-300 mr-1"></i>
+                                        <span x-text="task.location"></span>
+                                    </td>
+                                    <td class="p-4">
+                                        <span :class="`px-2.5 py-1 rounded-full text-xs font-medium ${getPriorityColor(task.priority)}`" x-text="task.priority"></span>
+                                    </td>
+                                    <td class="p-4">
+                                        <div class="flex items-center">
+                                            <span :class="`w-2 h-2 rounded-full mr-2 ${getStatusColor(task.status)}`"></span>
+                                            <span class="text-sm text-slate-600" x-text="task.status"></span>
+                                        </div>
+                                    </td>
+                                    <td class="p-4 text-right">
+                                        <button class="text-blue-500 hover:text-blue-700 p-2">
+                                            <i class="fa-solid fa-chevron-right"></i>
+                                        </button>
+                                    </td>
+                                </tr>
+                            </template>
+                            <tr x-show="filteredTasks.length === 0">
+                                <td colspan="6" class="p-8 text-center text-slate-400">
+                                    <i class="fa-regular fa-folder-open text-3xl mb-2 block"></i>
+                                    目前沒有符合條件的任務
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- ==================== Layer 3: Detail ==================== -->
+        <div x-show="currentView === 'detail'" class="fade-in">
+            <div class="bg-white rounded-2xl shadow-lg border border-slate-100 overflow-hidden">
+                <div class="p-6 bg-slate-50 border-b border-slate-100 flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4">
+                    <div>
+                        <div class="flex items-center gap-3 mb-2">
+                            <span class="bg-slate-200 text-slate-600 px-2 py-0.5 rounded text-xs font-mono" x-text="'ID: ' + currentTask?.id"></span>
+                            <span :class="`px-2 py-0.5 rounded text-xs font-medium ${currentTask ? getPriorityColor(currentTask.priority) : ''}`" x-text="currentTask?.priority"></span>
+                        </div>
+                        <h1 class="text-2xl font-bold text-slate-800" x-text="currentTask?.title"></h1>
+                    </div>
+                    <div class="flex gap-2">
+                        <button class="bg-white border border-slate-200 text-slate-600 px-4 py-2 rounded-lg hover:bg-slate-50 transition text-sm">
+                            <i class="fa-solid fa-print mr-2"></i>列印
+                        </button>
+                        <button class="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition text-sm shadow-md shadow-blue-200">
+                            <i class="fa-solid fa-check mr-2"></i>結案
+                        </button>
+                    </div>
+                </div>
+
+                <div class="p-6 grid grid-cols-1 lg:grid-cols-3 gap-8">
+                    <div class="lg:col-span-2 space-y-8">
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                            <div class="p-4 rounded-xl bg-slate-50 border border-slate-100">
+                                <p class="text-xs text-slate-400 uppercase mb-1">位置</p>
+                                <p class="font-medium text-slate-700 flex items-center">
+                                    <i class="fa-solid fa-location-dot text-blue-500 mr-2"></i>
+                                    <span x-text="currentTask?.location"></span>
+                                </p>
+                            </div>
+                            <div class="p-4 rounded-xl bg-slate-50 border border-slate-100">
+                                <p class="text-xs text-slate-400 uppercase mb-1">回報人</p>
+                                <p class="font-medium text-slate-700 flex items-center">
+                                    <i class="fa-solid fa-user text-blue-500 mr-2"></i>
+                                    <span x-text="currentTask?.requester"></span>
+                                </p>
+                            </div>
+                            <div class="p-4 rounded-xl bg-slate-50 border border-slate-100">
+                                <p class="text-xs text-slate-400 uppercase mb-1">時間</p>
+                                <p class="font-medium text-slate-700 flex items-center">
+                                    <i class="fa-solid fa-clock text-blue-500 mr-2"></i>
+                                    <span x-text="currentTask?.time"></span>
+                                </p>
+                            </div>
+                            <div class="p-4 rounded-xl bg-slate-50 border border-slate-100">
+                                <p class="text-xs text-slate-400 uppercase mb-1">狀態</p>
+                                <p class="font-medium text-slate-700" x-text="currentTask?.status"></p>
+                            </div>
+                        </div>
+
+                        <div>
+                            <h3 class="text-lg font-bold text-slate-800 mb-4">處理進度</h3>
+                            <div class="relative pl-8 border-l-2 border-slate-200 space-y-8">
+                                <div class="relative">
+                                    <div class="absolute -left-[39px] top-0 w-5 h-5 bg-blue-500 rounded-full border-4 border-white shadow-sm"></div>
+                                    <div class="bg-white p-4 rounded-xl border border-slate-100 shadow-sm">
+                                        <div class="flex justify-between mb-2">
+                                            <span class="font-bold text-slate-700">指派工程師</span>
+                                            <span class="text-xs text-slate-400">10:35 AM</span>
+                                        </div>
+                                        <p class="text-sm text-slate-600">系統自動指派給 <span class="text-blue-600">工程組-王大明</span>。</p>
+                                    </div>
+                                </div>
+                                <div class="relative">
+                                    <div class="absolute -left-[39px] top-0 w-5 h-5 bg-slate-300 rounded-full border-4 border-white"></div>
+                                    <div class="bg-white p-4 rounded-xl border border-slate-100 shadow-sm">
+                                        <div class="flex justify-between mb-2">
+                                            <span class="font-bold text-slate-700">建立請求</span>
+                                            <span class="text-xs text-slate-400">10:30 AM</span>
+                                        </div>
+                                        <p class="text-sm text-slate-600">由 <span x-text="currentTask?.requester"></span> 透過護理站終端回報。</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="space-y-4">
+                        <div class="bg-slate-50 p-4 rounded-xl border border-slate-100">
+                            <h4 class="font-bold text-slate-700 mb-3">快速操作</h4>
+                            <div class="space-y-2">
+                                <button class="w-full text-left px-4 py-3 bg-white hover:bg-blue-50 rounded-lg border border-slate-200 transition flex items-center group">
+                                    <div class="w-8 h-8 rounded-full bg-blue-100 text-blue-600 flex items-center justify-center mr-3 group-hover:bg-blue-600 group-hover:text-white transition">
+                                        <i class="fa-solid fa-phone"></i>
+                                    </div>
+                                    <span class="text-sm font-medium text-slate-700">聯絡報修人</span>
+                                </button>
+                                <button class="w-full text-left px-4 py-3 bg-white hover:bg-blue-50 rounded-lg border border-slate-200 transition flex items-center group">
+                                    <div class="w-8 h-8 rounded-full bg-yellow-100 text-yellow-600 flex items-center justify-center mr-3 group-hover:bg-yellow-500 group-hover:text-white transition">
+                                        <i class="fa-solid fa-camera"></i>
+                                    </div>
+                                    <span class="text-sm font-medium text-slate-700">上傳現場照片</span>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ==================== Layer 4: Forms (新增架構) ==================== -->
+        <div x-show="currentView === 'form'" class="fade-in">
+            <div class="max-w-3xl mx-auto bg-white rounded-2xl shadow-lg border border-slate-100 overflow-hidden">
+                <!-- Form Header -->
+                <div class="p-6 bg-slate-50 border-b border-slate-100">
+                    <h2 class="text-2xl font-bold text-slate-800 flex items-center">
+                        <i class="fa-solid fa-pen-to-square text-blue-500 mr-3"></i>
+                        <span>新增需求單</span>
+                    </h2>
+                    <p class="text-slate-500 mt-1 text-sm">請填寫詳細資訊以利快速派工</p>
+                </div>
+
+                <!-- Form Body -->
+                <div class="p-8">
+                    <div class="space-y-6">
+                        
+                        <!-- 共通欄位：地點與優先級 -->
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            <div>
+                                <label class="block text-sm font-medium text-slate-700 mb-2">發生地點 / 需求位置</label>
+                                <div class="relative">
+                                    <span class="absolute inset-y-0 left-0 pl-3 flex items-center text-slate-400">
+                                        <i class="fa-solid fa-location-dot"></i>
+                                    </span>
+                                    <input type="text" x-model="formData.location" class="w-full pl-10 pr-4 py-2.5 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition" placeholder="例如：5F 護理站, ICU-01">
+                                </div>
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-slate-700 mb-2">優先等級</label>
+                                <select x-model="formData.priority" class="w-full px-4 py-2.5 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition bg-white">
+                                    <option value="Normal">普通 (Normal)</option>
+                                    <option value="High">緊急 (High)</option>
+                                    <option value="Scheduled">預約排程 (Scheduled)</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <!-- 根據 filterValue 顯示不同欄位 -->
+                        
+                        <!-- 儀器維修 or 預設 -->
+                        <div x-show="filterValue === 'repair' || filterMode === 'stat'" class="fade-in">
+                            <label class="block text-sm font-medium text-slate-700 mb-2">設備名稱 / 財產編號</label>
+                            <div class="relative">
+                                <span class="absolute inset-y-0 left-0 pl-3 flex items-center text-slate-400">
+                                    <i class="fa-solid fa-barcode"></i>
+                                </span>
+                                <input type="text" x-model="formData.repairDevice" class="w-full pl-10 pr-4 py-2.5 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none" placeholder="輸入儀器名稱或掃描條碼">
+                            </div>
+                        </div>
+
+                        <!-- 人員請求 -->
+                        <div x-show="filterValue === 'request'" class="fade-in">
+                            <label class="block text-sm font-medium text-slate-700 mb-2">需求類型</label>
+                            <select x-model="formData.requestType" class="w-full px-4 py-2.5 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none bg-white">
+                                <option value="" disabled selected>請選擇類型</option>
+                                <option value="transport">病患傳送</option>
+                                <option value="specimen">檢體傳送</option>
+                                <option value="support">護理支援</option>
+                                <option value="supplies">物資補充</option>
+                            </select>
+                        </div>
+
+                        <!-- 清潔派工 -->
+                        <div x-show="filterValue === 'clean' || filterValue === 'stat_clean'" class="fade-in">
+                            <label class="block text-sm font-medium text-slate-700 mb-2">清潔類型</label>
+                            <div class="grid grid-cols-2 gap-4">
+                                <button @click="formData.cleanType = 'daily'" :class="formData.cleanType === 'daily' ? 'bg-blue-50 border-blue-500 text-blue-700' : 'bg-white border-slate-200 text-slate-600 hover:bg-slate-50'" class="border rounded-lg p-3 text-center transition font-medium">
+                                    <i class="fa-solid fa-broom mb-1 block text-lg"></i> 日常清潔
+                                </button>
+                                <button @click="formData.cleanType = 'terminal'" :class="formData.cleanType === 'terminal' ? 'bg-blue-50 border-blue-500 text-blue-700' : 'bg-white border-slate-200 text-slate-600 hover:bg-slate-50'" class="border rounded-lg p-3 text-center transition font-medium">
+                                    <i class="fa-solid fa-biohazard mb-1 block text-lg"></i> 終期消毒
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- 描述與備註 -->
+                        <div>
+                            <label class="block text-sm font-medium text-slate-700 mb-2">詳細說明</label>
+                            <textarea x-model="formData.desc" rows="4" class="w-full px-4 py-2.5 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition" placeholder="請描述詳細情況..."></textarea>
+                        </div>
+
+                        <!-- 檔案上傳 (Mock UI) -->
+                        <div class="border-2 border-dashed border-slate-300 rounded-lg p-6 text-center hover:bg-slate-50 transition cursor-pointer">
+                            <i class="fa-solid fa-cloud-arrow-up text-3xl text-slate-400 mb-2"></i>
+                            <p class="text-sm text-slate-500">點擊上傳現場照片或將檔案拖曳至此</p>
+                        </div>
+
+                    </div>
+                </div>
+
+                <!-- Form Footer -->
+                <div class="p-6 bg-slate-50 border-t border-slate-100 flex justify-end gap-4">
+                    <button @click="navigateTo('list')" class="px-6 py-2.5 rounded-lg border border-slate-300 text-slate-700 font-medium hover:bg-white transition">取消</button>
+                    <button @click="submitForm()" :disabled="formSubmitting" class="px-6 py-2.5 rounded-lg bg-blue-600 text-white font-medium hover:bg-blue-700 transition shadow-lg shadow-blue-200 disabled:opacity-50 flex items-center">
+                        <i class="fa-solid fa-circle-notch fa-spin mr-2" x-show="formSubmitting"></i>
+                        <span x-text="formSubmitting ? '傳送中...' : '確認送出'"></span>
+                    </button>
+                </div>
+            </div>
+        </div>
+
+    </main>
+</body>
+</html>

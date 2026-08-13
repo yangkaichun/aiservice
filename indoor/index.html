@@ -1,0 +1,1413 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>台北榮總室內導航系統</title>
+    <!-- 新增網頁 Icon -->
+    <link rel="icon" href="image/feticon.ico">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Noto Sans TC', sans-serif;
+            background: #ffffff;
+            overflow-x: hidden;
+        }
+
+        .screen {
+            display: none;
+            min-height: 100vh;
+            animation: fadeIn 0.3s ease;
+        }
+
+        .screen.active {
+            display: block;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+
+        /* Welcome Screen */
+        .welcome-screen {
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            padding: 20px;
+            background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+        }
+
+        .logo-container {
+            text-align: center;
+            margin-bottom: 50px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        /* 修改：雙 Logo 排版樣式 */
+        .logos-wrapper {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 20px; /* Logo 之間的間距 */
+            margin-bottom: 25px;
+        }
+
+        .logo-tvgh {
+            height: 100px; /* 主 Logo 高度 */
+            width: auto;
+        }
+
+        .logo-fet {
+            height: 50px; /* 次要 Logo 較小 */
+            width: auto;
+        }
+
+        .hospital-name {
+            font-size: 24px;
+            font-weight: 600;
+            color: #2c3e50;
+            margin-bottom: 10px;
+        }
+
+        .app-name {
+            font-size: 16px;
+            color: #7f8c8d;
+        }
+
+        .main-icon {
+            width: 120px;
+            height: 120px;
+            background: #ffffff;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto 30px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+            cursor: pointer;
+            transition: transform 0.3s ease;
+        }
+
+        .main-icon:active {
+            transform: scale(0.95);
+        }
+
+        .main-icon svg {
+            width: 60px;
+            height: 60px;
+        }
+
+        .language-selector {
+            width: 100%;
+            max-width: 300px;
+            margin-top: 30px;
+        }
+
+        .language-btn {
+            width: 100%;
+            padding: 15px;
+            margin: 10px 0;
+            border: 2px solid #3498db;
+            background: #ffffff;
+            color: #2c3e50;
+            font-size: 16px;
+            font-weight: 500;
+            border-radius: 12px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+        }
+
+        .language-btn:active {
+            transform: scale(0.98);
+            background: #3498db;
+            color: white;
+        }
+
+        /* Bluetooth Prompt Screen */
+        .bluetooth-screen {
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            padding: 30px;
+            text-align: center;
+        }
+
+        .bluetooth-icon {
+            width: 100px;
+            height: 100px;
+            margin-bottom: 30px;
+        }
+
+        .bluetooth-icon svg {
+            width: 100%;
+            height: 100%;
+            fill: #3498db;
+        }
+
+        .bluetooth-title {
+            font-size: 24px;
+            font-weight: 600;
+            color: #2c3e50;
+            margin-bottom: 15px;
+        }
+
+        .bluetooth-desc {
+            font-size: 16px;
+            color: #7f8c8d;
+            line-height: 1.6;
+            margin-bottom: 40px;
+        }
+
+        .action-btn {
+            width: 100%;
+            max-width: 300px;
+            padding: 15px;
+            border: none;
+            background: #3498db;
+            color: white;
+            font-size: 16px;
+            font-weight: 600;
+            border-radius: 12px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .action-btn:active {
+            transform: scale(0.98);
+            background: #2980b9;
+        }
+
+        .skip-btn {
+            margin-top: 15px;
+            background: transparent;
+            color: #7f8c8d;
+            text-decoration: underline;
+        }
+
+        /* Navigation Screen */
+        .nav-screen {
+            display: flex;
+            flex-direction: column;
+            height: 100vh;
+        }
+
+        .header {
+            background: #ffffff;
+            padding: 15px 20px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            z-index: 100;
+        }
+
+        .header-title {
+            font-size: 18px;
+            font-weight: 600;
+            color: #2c3e50;
+        }
+
+        .lang-switch {
+            padding: 8px 15px;
+            border: 1px solid #ddd;
+            background: white;
+            border-radius: 20px;
+            font-size: 14px;
+            cursor: pointer;
+        }
+
+        .map-container {
+            flex: 1;
+            position: relative;
+            background: #f8f9fa;
+            overflow: hidden;
+        }
+
+        .hospital-map {
+            width: 100%;
+            height: 100%;
+            position: relative;
+            background: #e8eef3;
+        }
+
+        .map-image {
+            width: 100%;
+            height: 100%;
+            object-fit: contain;
+        }
+
+        .current-location {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 20px;
+            height: 20px;
+            background: #3498db;
+            border: 3px solid white;
+            border-radius: 50%;
+            box-shadow: 0 0 0 8px rgba(52, 152, 219, 0.2);
+            animation: pulse 2s infinite;
+            z-index: 10;
+        }
+
+        @keyframes pulse {
+            0%, 100% {
+                box-shadow: 0 0 0 0 rgba(52, 152, 219, 0.4);
+            }
+            50% {
+                box-shadow: 0 0 0 15px rgba(52, 152, 219, 0);
+            }
+        }
+
+        .location-label {
+            position: absolute;
+            top: 45%;
+            left: 50%;
+            transform: translate(-50%, -100%);
+            background: white;
+            padding: 8px 15px;
+            border-radius: 20px;
+            font-size: 14px;
+            font-weight: 500;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            white-space: nowrap;
+        }
+
+        .zoom-controls {
+            position: absolute;
+            right: 20px;
+            top: 50%;
+            transform: translateY(-50%);
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .zoom-btn {
+            width: 40px;
+            height: 40px;
+            background: white;
+            border: none;
+            border-radius: 50%;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            font-size: 20px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .search-panel {
+            background: white;
+            border-radius: 20px 20px 0 0;
+            box-shadow: 0 -2px 20px rgba(0,0,0,0.1);
+            padding: 20px;
+        }
+
+        .search-container {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 15px;
+        }
+
+        .search-input {
+            flex: 1;
+            padding: 12px 15px;
+            border: 1px solid #ddd;
+            border-radius: 25px;
+            font-size: 16px;
+            outline: none;
+        }
+
+        .search-input:focus {
+            border-color: #3498db;
+        }
+
+        .voice-btn, .menu-btn {
+            width: 45px;
+            height: 45px;
+            background: #3498db;
+            border: none;
+            border-radius: 50%;
+            color: white;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+        }
+
+        .menu-btn {
+            background: #95a5a6;
+        }
+
+        .voice-btn svg, .menu-btn svg {
+            width: 20px;
+            height: 20px;
+            fill: white;
+        }
+
+        .quick-locations {
+            margin-top: 20px;
+        }
+
+        .section-title {
+            font-size: 16px;
+            font-weight: 600;
+            color: #2c3e50;
+            margin-bottom: 15px;
+        }
+
+        .location-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 10px;
+        }
+
+        .location-card {
+            background: #f8f9fa;
+            padding: 15px 10px;
+            border-radius: 12px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            border: 2px solid transparent;
+        }
+
+        .location-card:active {
+            transform: scale(0.95);
+            background: #e8eef3;
+            border-color: #3498db;
+        }
+
+        .location-icon {
+            font-size: 28px;
+            margin-bottom: 8px;
+        }
+
+        .location-name {
+            font-size: 13px;
+            color: #2c3e50;
+            font-weight: 500;
+        }
+
+        /* Menu Modal */
+        .menu-modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0,0,0,0.5);
+            z-index: 1000;
+            animation: fadeIn 0.3s ease;
+        }
+
+        .menu-modal.active {
+            display: flex;
+            align-items: flex-end;
+        }
+
+        .menu-content {
+            width: 100%;
+            background: white;
+            border-radius: 20px 20px 0 0;
+            max-height: 80vh;
+            overflow-y: auto;
+            padding: 20px;
+            animation: slideUp 0.3s ease;
+        }
+
+        @keyframes slideUp {
+            from {
+                transform: translateY(100%);
+            }
+            to {
+                transform: translateY(0);
+            }
+        }
+
+        .menu-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+
+        .close-btn {
+            background: none;
+            border: none;
+            font-size: 24px;
+            cursor: pointer;
+            color: #7f8c8d;
+        }
+
+        .category-section {
+            margin-bottom: 25px;
+        }
+
+        .category-title {
+            font-size: 16px;
+            font-weight: 600;
+            color: #2c3e50;
+            margin-bottom: 12px;
+            padding-bottom: 8px;
+            border-bottom: 2px solid #ecf0f1;
+        }
+
+        .location-list {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .location-item {
+            padding: 12px 15px;
+            background: #f8f9fa;
+            border-radius: 10px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .location-item:active {
+            background: #e8eef3;
+            transform: translateX(5px);
+        }
+
+        .location-item-text {
+            font-size: 15px;
+            color: #2c3e50;
+        }
+
+        .location-item-arrow {
+            color: #95a5a6;
+        }
+
+        /* Navigation Route Screen */
+        .route-screen {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: white;
+            z-index: 2000;
+            display: none;
+        }
+
+        .route-screen.active {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .route-header {
+            background: #3498db;
+            color: white;
+            padding: 15px 20px;
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+
+        .back-btn {
+            background: none;
+            border: none;
+            color: white;
+            font-size: 24px;
+            cursor: pointer;
+            padding: 5px;
+        }
+
+        .route-info {
+            flex: 1;
+        }
+
+        .destination-name {
+            font-size: 18px;
+            font-weight: 600;
+            margin-bottom: 5px;
+        }
+
+        .route-stats {
+            font-size: 14px;
+            opacity: 0.9;
+        }
+
+        .route-map {
+            flex: 1;
+            position: relative;
+            background: #e8eef3;
+            overflow: hidden;
+        }
+
+        .route-path {
+            position: absolute;
+            width: 4px;
+            background: #3498db;
+            z-index: 5;
+        }
+
+        .path-vertical {
+            left: 50%;
+            top: 50%;
+            height: 200px;
+            transform: translateX(-50%);
+        }
+
+        .path-horizontal {
+            top: calc(50% + 200px);
+            left: 50%;
+            width: 150px;
+            height: 4px;
+        }
+
+        .destination-marker {
+            position: absolute;
+            top: calc(50% + 200px);
+            left: calc(50% + 150px);
+            width: 30px;
+            height: 30px;
+            background: #e74c3c;
+            border: 3px solid white;
+            border-radius: 50%;
+            transform: translate(-50%, -50%);
+            box-shadow: 0 2px 10px rgba(0,0,0,0.2);
+            z-index: 10;
+        }
+
+        .route-instructions {
+            background: white;
+            padding: 20px;
+            box-shadow: 0 -2px 10px rgba(0,0,0,0.05);
+        }
+
+        .instruction-item {
+            display: flex;
+            gap: 15px;
+            padding: 15px 0;
+            border-bottom: 1px solid #ecf0f1;
+        }
+
+        .instruction-item:last-child {
+            border-bottom: none;
+        }
+
+        .instruction-icon {
+            width: 40px;
+            height: 40px;
+            background: #ecf0f1;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+        }
+
+        .instruction-text {
+            flex: 1;
+        }
+
+        .instruction-title {
+            font-size: 15px;
+            font-weight: 500;
+            color: #2c3e50;
+            margin-bottom: 3px;
+        }
+
+        .instruction-detail {
+            font-size: 13px;
+            color: #7f8c8d;
+        }
+
+        .arrival-btn {
+            width: 100%;
+            padding: 15px;
+            background: #27ae60;
+            color: white;
+            border: none;
+            border-radius: 12px;
+            font-size: 16px;
+            font-weight: 600;
+            margin-top: 15px;
+            cursor: pointer;
+        }
+
+        /* Floor Map Overlay */
+        .floor-map {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 90%;
+            max-width: 400px;
+            aspect-ratio: 1.2;
+            background: white;
+            border: 2px solid #ddd;
+            border-radius: 8px;
+            padding: 10px;
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            grid-template-rows: repeat(3, 1fr);
+            gap: 5px;
+            box-shadow: 0 0 0 9999px rgba(0,0,0,0.1);
+        }
+
+        .room {
+            background: #f8f9fa;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 11px;
+            text-align: center;
+            padding: 3px;
+            color: #7f8c8d;
+        }
+
+        .room.current {
+            background: #3498db;
+            color: white;
+            font-weight: 600;
+        }
+
+        .room.highlight {
+            background: #e74c3c;
+            color: white;
+            animation: blink 1s infinite;
+        }
+
+        @keyframes blink {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+    </style>
+</head>
+<body>
+    <!-- Welcome Screen -->
+    <div class="screen active" id="welcomeScreen">
+        <div class="welcome-screen">
+            <div class="logo-container">
+                <!-- 修改：雙 Logo 區域 -->
+                <div class="logos-wrapper">
+                  
+                    <img src="image/fetlogo.png" alt="FET Logo" class="logo-fet">
+                </div>
+                                <div class="logos-wrapper">
+                    <img src="image/tvghlogo.png" alt="TVGH Logo" class="logo-tvgh">
+              
+                </div>
+                <div class="hospital-name">台北榮民總醫院</div>
+                <div class="app-name">室內導航系統</div>
+            </div>
+            
+            <div class="main-icon" onclick="showLanguageSelector()">
+                <svg viewBox="0 0 24 24" fill="none" stroke="#3498db" stroke-width="2">
+                    <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path>
+                    <circle cx="12" cy="10" r="3"></circle>
+                </svg>
+            </div>
+
+            <div class="language-selector" id="languageSelector" style="display: none;">
+                <button class="language-btn" onclick="selectLanguage('zh-TW')">
+                    🇹🇼 繁體中文
+                </button>
+                <button class="language-btn" onclick="selectLanguage('en')">
+                    🇬🇧 English
+                </button>
+                <button class="language-btn" onclick="selectLanguage('ms')">
+                    🇲🇾 Bahasa Melayu
+                </button>
+                <button class="language-btn" onclick="selectLanguage('vi')">
+                    🇻🇳 Tiếng Việt
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Bluetooth Prompt Screen -->
+    <div class="screen" id="bluetoothScreen">
+        <div class="bluetooth-screen">
+            <div class="bluetooth-icon">
+                <svg viewBox="0 0 24 24">
+                    <path d="M17.71 7.71L12 2h-1v7.59L6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 11 14.41V22h1l5.71-5.71-4.3-4.29 4.3-4.29zM13 5.83l1.88 1.88L13 9.59V5.83zm1.88 10.46L13 18.17v-3.76l1.88 1.88z"/>
+                </svg>
+            </div>
+            <div class="bluetooth-title" id="btTitle">請開啟藍牙功能</div>
+            <div class="bluetooth-desc" id="btDesc">
+                為了提供精確的室內定位服務，<br>
+                系統需要使用您的藍牙功能<br>
+                來定位您在醫院內的位置
+            </div>
+            <button class="action-btn" onclick="enableBluetooth()">
+                <span id="btBtnText">開啟藍牙</span>
+            </button>
+            <button class="action-btn skip-btn" onclick="skipBluetooth()">
+                <span id="btSkipText">稍後設定</span>
+            </button>
+        </div>
+    </div>
+
+    <!-- Navigation Screen -->
+    <div class="screen" id="navScreen">
+        <div class="nav-screen">
+            <div class="header">
+                <div class="header-title" id="headerTitle">室內導航</div>
+                <button class="lang-switch" onclick="showLanguageMenu()">
+                    <span id="currentLang">中文</span> ▼
+                </button>
+            </div>
+
+            <div class="map-container">
+                <div class="hospital-map">
+                    <!-- Simulated hospital floor map -->
+                    <div class="floor-map">
+                        <div class="room">藥局</div>
+                        <div class="room">掛號</div>
+                        <div class="room">批價</div>
+                        <div class="room">電梯</div>
+                        <div class="room">候診區</div>
+                        <div class="room current">您在這裡</div>
+                        <div class="room">服務台</div>
+                        <div class="room">電梯</div>
+                        <div class="room">檢驗室</div>
+                        <div class="room">洗手間</div>
+                        <div class="room">走廊</div>
+                        <div class="room">出口</div>
+                    </div>
+                    
+                    <div class="current-location"></div>
+                    <div class="location-label" id="currentLocationLabel">第一門診 1樓 服務台附近</div>
+                </div>
+
+                <div class="zoom-controls">
+                    <button class="zoom-btn" onclick="zoomIn()">+</button>
+                    <button class="zoom-btn" onclick="zoomOut()">−</button>
+                </div>
+            </div>
+
+            <div class="search-panel">
+                <div class="search-container">
+                    <input 
+                        type="text" 
+                        class="search-input" 
+                        id="searchInput" 
+                        placeholder="請輸入目的地..."
+                        onkeypress="handleSearch(event)"
+                    >
+                    <button class="voice-btn" onclick="startVoiceInput()" title="語音輸入">
+                        <svg viewBox="0 0 24 24">
+                            <path d="M12 14c1.66 0 3-1.34 3-3V5c0-1.66-1.34-3-3-3S9 3.34 9 5v6c0 1.66 1.34 3 3 3z"/>
+                            <path d="M17 11c0 2.76-2.24 5-5 5s-5-2.24-5-5H5c0 3.53 2.61 6.43 6 6.92V21h2v-3.08c3.39-.49 6-3.39 6-6.92h-2z"/>
+                        </svg>
+                    </button>
+                    <button class="menu-btn" onclick="showMenu()" title="地點選單">
+                        <svg viewBox="0 0 24 24">
+                            <path d="M3 18h18v-2H3v2zm0-5h18v-2H3v2zm0-7v2h18V6H3z"/>
+                        </svg>
+                    </button>
+                </div>
+
+                <div class="quick-locations">
+                    <div class="section-title" id="quickTitle">常用地點</div>
+                    <div class="location-grid">
+                        <div class="location-card" onclick="navigateTo('第一門診')">
+                            <div class="location-icon">🏥</div>
+                            <div class="location-name">第一門診</div>
+                        </div>
+                        <div class="location-card" onclick="navigateTo('第二門診')">
+                            <div class="location-icon">🏥</div>
+                            <div class="location-name">第二門診</div>
+                        </div>
+                        <div class="location-card" onclick="navigateTo('第三門診')">
+                            <div class="location-icon">🏥</div>
+                            <div class="location-name">第三門診</div>
+                        </div>
+                        <div class="location-card" onclick="navigateTo('藥局')">
+                            <div class="location-icon">💊</div>
+                            <div class="location-name">藥局</div>
+                        </div>
+                        <div class="location-card" onclick="navigateTo('檢驗室')">
+                            <div class="location-icon">🔬</div>
+                            <div class="location-name">檢驗室</div>
+                        </div>
+                        <div class="location-card" onclick="navigateTo('急診')">
+                            <div class="location-icon">🚨</div>
+                            <div class="location-name">急診</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Menu Modal -->
+    <div class="menu-modal" id="menuModal" onclick="closeMenuIfOutside(event)">
+        <div class="menu-content" onclick="event.stopPropagation()">
+            <div class="menu-header">
+                <h2 id="menuTitle">所有地點</h2>
+                <button class="close-btn" onclick="closeMenu()">×</button>
+            </div>
+
+            <div class="category-section">
+                <div class="category-title">門診大樓</div>
+                <div class="location-list">
+                    <div class="location-item" onclick="navigateTo('第一門診')">
+                        <span class="location-item-text">第一門診</span>
+                        <span class="location-item-arrow">›</span>
+                    </div>
+                    <div class="location-item" onclick="navigateTo('第二門診')">
+                        <span class="location-item-text">第二門診</span>
+                        <span class="location-item-arrow">›</span>
+                    </div>
+                    <div class="location-item" onclick="navigateTo('第三門診')">
+                        <span class="location-item-text">第三門診</span>
+                        <span class="location-item-arrow">›</span>
+                    </div>
+                    <div class="location-item" onclick="navigateTo('湖畔門診')">
+                        <span class="location-item-text">湖畔門診</span>
+                        <span class="location-item-arrow">›</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="category-section">
+                <div class="category-title">內科</div>
+                <div class="location-list">
+                    <div class="location-item" onclick="navigateTo('心臟內科')">
+                        <span class="location-item-text">心臟內科 (三門診3F)</span>
+                        <span class="location-item-arrow">›</span>
+                    </div>
+                    <div class="location-item" onclick="navigateTo('胸腔內科')">
+                        <span class="location-item-text">胸腔內科 (湖畔門診2F)</span>
+                        <span class="location-item-arrow">›</span>
+                    </div>
+                    <div class="location-item" onclick="navigateTo('胃腸肝膽科')">
+                        <span class="location-item-text">胃腸肝膽科 (三門診5F)</span>
+                        <span class="location-item-arrow">›</span>
+                    </div>
+                    <div class="location-item" onclick="navigateTo('神經內科')">
+                        <span class="location-item-text">神經內科 (一門診2F)</span>
+                        <span class="location-item-arrow">›</span>
+                    </div>
+                    <div class="location-item" onclick="navigateTo('內分泌科')">
+                        <span class="location-item-text">內分泌暨新陳代謝科 (二門診3F)</span>
+                        <span class="location-item-arrow">›</span>
+                    </div>
+                    <div class="location-item" onclick="navigateTo('腎臟科')">
+                        <span class="location-item-text">腎臟科 (三門診4F)</span>
+                        <span class="location-item-arrow">›</span>
+                    </div>
+                    <div class="location-item" onclick="navigateTo('血液腫瘤科')">
+                        <span class="location-item-text">血液腫瘤科 (二門診2F)</span>
+                        <span class="location-item-arrow">›</span>
+                    </div>
+                    <div class="location-item" onclick="navigateTo('感染科')">
+                        <span class="location-item-text">感染科 (湖畔門診2F)</span>
+                        <span class="location-item-arrow">›</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="category-section">
+                <div class="category-title">外科</div>
+                <div class="location-list">
+                    <div class="location-item" onclick="navigateTo('一般外科')">
+                        <span class="location-item-text">一般外科 (三門診5F)</span>
+                        <span class="location-item-arrow">›</span>
+                    </div>
+                    <div class="location-item" onclick="navigateTo('心臟外科')">
+                        <span class="location-item-text">心臟外科 (三門診3F)</span>
+                        <span class="location-item-arrow">›</span>
+                    </div>
+                    <div class="location-item" onclick="navigateTo('胸腔外科')">
+                        <span class="location-item-text">胸腔外科 (湖畔門診2F)</span>
+                        <span class="location-item-arrow">›</span>
+                    </div>
+                    <div class="location-item" onclick="navigateTo('神經外科')">
+                        <span class="location-item-text">神經外科 (三門診3F)</span>
+                        <span class="location-item-arrow">›</span>
+                    </div>
+                    <div class="location-item" onclick="navigateTo('骨科')">
+                        <span class="location-item-text">骨科 (三門診2F)</span>
+                        <span class="location-item-arrow">›</span>
+                    </div>
+                    <div class="location-item" onclick="navigateTo('泌尿科')">
+                        <span class="location-item-text">泌尿科 (三門診4F)</span>
+                        <span class="location-item-arrow">›</span>
+                    </div>
+                    <div class="location-item" onclick="navigateTo('整形外科')">
+                        <span class="location-item-text">整形外科 (三門診5F)</span>
+                        <span class="location-item-arrow">›</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="category-section">
+                <div class="category-title">婦兒科</div>
+                <div class="location-list">
+                    <div class="location-item" onclick="navigateTo('婦產科')">
+                        <span class="location-item-text">婦產科 (二門診7F)</span>
+                        <span class="location-item-arrow">›</span>
+                    </div>
+                    <div class="location-item" onclick="navigateTo('兒童門診')">
+                        <span class="location-item-text">兒童門診 (湖畔門診3F)</span>
+                        <span class="location-item-arrow">›</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="category-section">
+                <div class="category-title">其他專科</div>
+                <div class="location-list">
+                    <div class="location-item" onclick="navigateTo('眼科')">
+                        <span class="location-item-text">眼科 (三門診7F)</span>
+                        <span class="location-item-arrow">›</span>
+                    </div>
+                    <div class="location-item" onclick="navigateTo('耳鼻喉科')">
+                        <span class="location-item-text">耳鼻喉科 (二門診6F)</span>
+                        <span class="location-item-arrow">›</span>
+                    </div>
+                    <div class="location-item" onclick="navigateTo('牙科')">
+                        <span class="location-item-text">牙科門診 (三門診8F)</span>
+                        <span class="location-item-arrow">›</span>
+                    </div>
+                    <div class="location-item" onclick="navigateTo('皮膚科')">
+                        <span class="location-item-text">皮膚科 (三門診6F)</span>
+                        <span class="location-item-arrow">›</span>
+                    </div>
+                    <div class="location-item" onclick="navigateTo('復健科')">
+                        <span class="location-item-text">復健醫學科 (中正樓5F)</span>
+                        <span class="location-item-arrow">›</span>
+                    </div>
+                    <div class="location-item" onclick="navigateTo('精神科')">
+                        <span class="location-item-text">精神科 (二門診3F)</span>
+                        <span class="location-item-arrow">›</span>
+                    </div>
+                    <div class="location-item" onclick="navigateTo('家庭醫學科')">
+                        <span class="location-item-text">家庭醫學科 (一門診3F)</span>
+                        <span class="location-item-arrow">›</span>
+                    </div>
+                    <div class="location-item" onclick="navigateTo('中醫科')">
+                        <span class="location-item-text">中醫科 (中正樓B1)</span>
+                        <span class="location-item-arrow">›</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="category-section">
+                <div class="category-title">檢查與服務</div>
+                <div class="location-list">
+                    <div class="location-item" onclick="navigateTo('門診檢驗室')">
+                        <span class="location-item-text">門診檢驗室 (二門診1F)</span>
+                        <span class="location-item-arrow">›</span>
+                    </div>
+                    <div class="location-item" onclick="navigateTo('放射科')">
+                        <span class="location-item-text">放射科X光室 (三門診2F)</span>
+                        <span class="location-item-arrow">›</span>
+                    </div>
+                    <div class="location-item" onclick="navigateTo('CT檢查室')">
+                        <span class="location-item-text">CT檢查室 (中正樓2F)</span>
+                        <span class="location-item-arrow">›</span>
+                    </div>
+                    <div class="location-item" onclick="navigateTo('MRI檢查室')">
+                        <span class="location-item-text">MRI檢查室 (中正樓2F)</span>
+                        <span class="location-item-arrow">›</span>
+                    </div>
+                    <div class="location-item" onclick="navigateTo('內視鏡中心')">
+                        <span class="location-item-text">內視鏡中心 (三門診5F)</span>
+                        <span class="location-item-arrow">›</span>
+                    </div>
+                    <div class="location-item" onclick="navigateTo('藥局')">
+                        <span class="location-item-text">藥局 (三門診1F)</span>
+                        <span class="location-item-arrow">›</span>
+                    </div>
+                    <div class="location-item" onclick="navigateTo('掛號櫃檯')">
+                        <span class="location-item-text">掛號櫃檯 (三門診1F)</span>
+                        <span class="location-item-arrow">›</span>
+                    </div>
+                    <div class="location-item" onclick="navigateTo('批價收費')">
+                        <span class="location-item-text">批價收費 (三門診1F)</span>
+                        <span class="location-item-arrow">›</span>
+                    </div>
+                    <div class="location-item" onclick="navigateTo('急診')">
+                        <span class="location-item-text">急診室 (中正樓1F)</span>
+                        <span class="location-item-arrow">›</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Route Navigation Screen -->
+    <div class="route-screen" id="routeScreen">
+        <div class="route-header">
+            <button class="back-btn" onclick="closeRoute()">‹</button>
+            <div class="route-info">
+                <div class="destination-name" id="destinationName">第三門診 5F</div>
+                <div class="route-stats">
+                    <span id="routeDistance">約180公尺</span> · 
+                    <span id="routeTime">預計3分鐘</span>
+                </div>
+            </div>
+        </div>
+
+        <div class="route-map">
+            <div class="floor-map">
+                <div class="room">藥局</div>
+                <div class="room">掛號</div>
+                <div class="room">批價</div>
+                <div class="room">電梯</div>
+                <div class="room">候診區</div>
+                <div class="room current">您在這裡</div>
+                <div class="room">服務台</div>
+                <div class="room">電梯</div>
+                <div class="room">檢驗室</div>
+                <div class="room">洗手間</div>
+                <div class="room">走廊</div>
+                <div class="room highlight">目的地</div>
+            </div>
+            
+            <div class="current-location"></div>
+            <div class="route-path path-vertical"></div>
+            <div class="route-path path-horizontal"></div>
+            <div class="destination-marker"></div>
+        </div>
+
+        <div class="route-instructions">
+            <div class="instruction-item">
+                <div class="instruction-icon">1</div>
+                <div class="instruction-text">
+                    <div class="instruction-title" id="step1Title">直行 50 公尺</div>
+                    <div class="instruction-detail" id="step1Detail">沿著目前走廊直行</div>
+                </div>
+            </div>
+            <div class="instruction-item">
+                <div class="instruction-icon">2</div>
+                <div class="instruction-text">
+                    <div class="instruction-title" id="step2Title">右轉至電梯區</div>
+                    <div class="instruction-detail" id="step2Detail">在服務台前右轉</div>
+                </div>
+            </div>
+            <div class="instruction-item">
+                <div class="instruction-icon">3</div>
+                <div class="instruction-text">
+                    <div class="instruction-title" id="step3Title">搭乘電梯至 5 樓</div>
+                    <div class="instruction-detail" id="step3Detail">選擇往上電梯</div>
+                </div>
+            </div>
+            <div class="instruction-item">
+                <div class="instruction-icon">✓</div>
+                <div class="instruction-text">
+                    <div class="instruction-title" id="step4Title">抵達目的地</div>
+                    <div class="instruction-detail" id="step4Detail">出電梯後左轉即可看到</div>
+                </div>
+            </div>
+            <button class="arrival-btn" onclick="arrivedAtDestination()">
+                <span id="arrivalBtnText">我已抵達</span>
+            </button>
+        </div>
+    </div>
+
+    <script>
+        // Translations
+        const translations = {
+            'zh-TW': {
+                welcomeTitle: '台北榮民總醫院',
+                appName: '室內導航系統',
+                btTitle: '請開啟藍牙功能',
+                btDesc: '為了提供精確的室內定位服務，<br>系統需要使用您的藍牙功能<br>來定位您在醫院內的位置',
+                btBtn: '開啟藍牙',
+                btSkip: '稍後設定',
+                headerTitle: '室內導航',
+                currentLang: '中文',
+                searchPlaceholder: '請輸入目的地...',
+                quickTitle: '常用地點',
+                menuTitle: '所有地點',
+                currentLocation: '第一門診 1樓 服務台附近',
+                arrivalBtn: '我已抵達',
+                routeDistance: '約180公尺',
+                routeTime: '預計3分鐘',
+                step1Title: '直行 50 公尺',
+                step1Detail: '沿著目前走廊直行',
+                step2Title: '右轉至電梯區',
+                step2Detail: '在服務台前右轉',
+                step3Title: '搭乘電梯至 5 樓',
+                step3Detail: '選擇往上電梯',
+                step4Title: '抵達目的地',
+                step4Detail: '出電梯後左轉即可看到'
+            },
+            'en': {
+                welcomeTitle: 'Taipei Veterans General Hospital',
+                appName: 'Indoor Navigation System',
+                btTitle: 'Please Enable Bluetooth',
+                btDesc: 'To provide accurate indoor positioning,<br>the system needs to use your Bluetooth<br>to locate you within the hospital',
+                btBtn: 'Enable Bluetooth',
+                btSkip: 'Set Up Later',
+                headerTitle: 'Indoor Navigation',
+                currentLang: 'English',
+                searchPlaceholder: 'Enter destination...',
+                quickTitle: 'Quick Access',
+                menuTitle: 'All Locations',
+                currentLocation: 'Clinic 1, 1F Near Service Counter',
+                arrivalBtn: 'I Have Arrived',
+                routeDistance: 'About 180m',
+                routeTime: 'Approx. 3 min',
+                step1Title: 'Go straight 50m',
+                step1Detail: 'Continue along current corridor',
+                step2Title: 'Turn right to elevator',
+                step2Detail: 'Turn right at service counter',
+                step3Title: 'Take elevator to 5F',
+                step3Detail: 'Select upward elevator',
+                step4Title: 'Arrive at destination',
+                step4Detail: 'Turn left after exiting elevator'
+            },
+            'ms': {
+                welcomeTitle: 'Hospital Veteran Am Taipei',
+                appName: 'Sistem Navigasi Dalaman',
+                btTitle: 'Sila Aktifkan Bluetooth',
+                btDesc: 'Untuk menyediakan perkhidmatan kedudukan dalaman yang tepat,<br>sistem memerlukan fungsi Bluetooth anda<br>untuk mengesan lokasi anda di hospital',
+                btBtn: 'Aktifkan Bluetooth',
+                btSkip: 'Tetapkan Kemudian',
+                headerTitle: 'Navigasi Dalaman',
+                currentLang: 'Melayu',
+                searchPlaceholder: 'Masukkan destinasi...',
+                quickTitle: 'Lokasi Kerap',
+                menuTitle: 'Semua Lokasi',
+                currentLocation: 'Klinik 1, Tingkat 1 Berhampiran Kaunter Perkhidmatan',
+                arrivalBtn: 'Saya Telah Tiba',
+                routeDistance: 'Kira-kira 180m',
+                routeTime: 'Anggaran 3 minit',
+                step1Title: 'Terus 50m',
+                step1Detail: 'Teruskan di koridor semasa',
+                step2Title: 'Belok kanan ke lif',
+                step2Detail: 'Belok kanan di kaunter perkhidmatan',
+                step3Title: 'Naik lif ke tingkat 5',
+                step3Detail: 'Pilih lif ke atas',
+                step4Title: 'Tiba di destinasi',
+                step4Detail: 'Belok kiri selepas keluar dari lif'
+            },
+            'vi': {
+                welcomeTitle: 'Bệnh viện Tổng hợp Cựu chiến binh Đài Bắc',
+                appName: 'Hệ thống Định vị Trong nhà',
+                btTitle: 'Vui lòng Bật Bluetooth',
+                btDesc: 'Để cung cấp dịch vụ định vị trong nhà chính xác,<br>hệ thống cần sử dụng Bluetooth của bạn<br>để xác định vị trí trong bệnh viện',
+                btBtn: 'Bật Bluetooth',
+                btSkip: 'Thiết lập Sau',
+                headerTitle: 'Định vị Trong nhà',
+                currentLang: 'Tiếng Việt',
+                searchPlaceholder: 'Nhập điểm đến...',
+                quickTitle: 'Địa điểm Thường dùng',
+                menuTitle: 'Tất cả Địa điểm',
+                currentLocation: 'Phòng khám 1, Tầng 1 Gần Quầy Dịch vụ',
+                arrivalBtn: 'Tôi Đã Đến Nơi',
+                routeDistance: 'Khoảng 180m',
+                routeTime: 'Ước tính 3 phút',
+                step1Title: 'Đi thẳng 50m',
+                step1Detail: 'Tiếp tục dọc hành lang hiện tại',
+                step2Title: 'Rẽ phải đến thang máy',
+                step2Detail: 'Rẽ phải tại quầy dịch vụ',
+                step3Title: 'Đi thang máy lên tầng 5',
+                step3Detail: 'Chọn thang máy đi lên',
+                step4Title: 'Đến nơi',
+                step4Detail: 'Rẽ trái sau khi ra khỏi thang máy'
+            }
+        };
+
+        let currentLanguage = 'zh-TW';
+        let isVoiceRecording = false;
+
+        function showLanguageSelector() {
+            document.getElementById('languageSelector').style.display = 'block';
+        }
+
+        function selectLanguage(lang) {
+            currentLanguage = lang;
+            applyTranslations(lang);
+            showScreen('bluetoothScreen');
+        }
+
+        function applyTranslations(lang) {
+            const t = translations[lang];
+            document.querySelector('.hospital-name').textContent = t.welcomeTitle;
+            document.querySelector('.app-name').textContent = t.appName;
+            document.getElementById('btTitle').textContent = t.btTitle;
+            document.getElementById('btDesc').innerHTML = t.btDesc;
+            document.getElementById('btBtnText').textContent = t.btBtn;
+            document.getElementById('btSkipText').textContent = t.btSkip;
+            document.getElementById('headerTitle').textContent = t.headerTitle;
+            document.getElementById('currentLang').textContent = t.currentLang;
+            document.getElementById('searchInput').placeholder = t.searchPlaceholder;
+            document.getElementById('quickTitle').textContent = t.quickTitle;
+            document.getElementById('menuTitle').textContent = t.menuTitle;
+            document.getElementById('currentLocationLabel').textContent = t.currentLocation;
+            document.getElementById('arrivalBtnText').textContent = t.arrivalBtn;
+            document.getElementById('routeDistance').textContent = t.routeDistance;
+            document.getElementById('routeTime').textContent = t.routeTime;
+            document.getElementById('step1Title').textContent = t.step1Title;
+            document.getElementById('step1Detail').textContent = t.step1Detail;
+            document.getElementById('step2Title').textContent = t.step2Title;
+            document.getElementById('step2Detail').textContent = t.step2Detail;
+            document.getElementById('step3Title').textContent = t.step3Title;
+            document.getElementById('step3Detail').textContent = t.step3Detail;
+            document.getElementById('step4Title').textContent = t.step4Title;
+            document.getElementById('step4Detail').textContent = t.step4Detail;
+        }
+
+        function showScreen(screenId) {
+            document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+            document.getElementById(screenId).classList.add('active');
+        }
+
+        function enableBluetooth() {
+            // Simulate bluetooth enabling
+            alert(currentLanguage === 'zh-TW' ? '藍牙已開啟！' : 
+                  currentLanguage === 'en' ? 'Bluetooth enabled!' :
+                  currentLanguage === 'ms' ? 'Bluetooth diaktifkan!' :
+                  'Bluetooth đã được bật!');
+            showScreen('navScreen');
+        }
+
+        function skipBluetooth() {
+            showScreen('navScreen');
+        }
+
+        function showLanguageMenu() {
+            showLanguageSelector();
+        }
+
+        function zoomIn() {
+            const map = document.querySelector('.floor-map');
+            const currentScale = map.style.transform ? parseFloat(map.style.transform.match(/scale\(([^)]+)\)/)?.[1] || 1) : 1;
+            map.style.transform = `translate(-50%, -50%) scale(${Math.min(currentScale + 0.2, 2)})`;
+        }
+
+        function zoomOut() {
+            const map = document.querySelector('.floor-map');
+            const currentScale = map.style.transform ? parseFloat(map.style.transform.match(/scale\(([^)]+)\)/)?.[1] || 1) : 1;
+            map.style.transform = `translate(-50%, -50%) scale(${Math.max(currentScale - 0.2, 0.6)})`;
+        }
+
+        function handleSearch(event) {
+            if (event.key === 'Enter') {
+                const searchTerm = event.target.value;
+                if (searchTerm.trim()) {
+                    navigateTo(searchTerm);
+                }
+            }
+        }
+
+        function startVoiceInput() {
+            const voiceBtn = document.querySelector('.voice-btn');
+            if (!isVoiceRecording) {
+                isVoiceRecording = true;
+                voiceBtn.style.background = '#e74c3c';
+                
+                // Simulate voice recognition
+                const messages = {
+                    'zh-TW': '請說出目的地...',
+                    'en': 'Please speak destination...',
+                    'ms': 'Sila sebut destinasi...',
+                    'vi': 'Vui lòng nói điểm đến...'
+                };
+                alert(messages[currentLanguage]);
+                
+                setTimeout(() => {
+                    isVoiceRecording = false;
+                    voiceBtn.style.background = '#3498db';
+                    
+                    // Simulate recognized text
+                    const samples = {
+                        'zh-TW': '心臟內科',
+                        'en': 'Cardiology',
+                        'ms': 'Kardiologi',
+                        'vi': 'Khoa Tim mạch'
+                    };
+                    document.getElementById('searchInput').value = samples[currentLanguage];
+                    navigateTo(samples[currentLanguage]);
+                }, 2000);
+            }
+        }
+
+        function showMenu() {
+            document.getElementById('menuModal').classList.add('active');
+        }
+
+        function closeMenu() {
+            document.getElementById('menuModal').classList.remove('active');
+        }
+
+        function closeMenuIfOutside(event) {
+            if (event.target.id === 'menuModal') {
+                closeMenu();
+            }
+        }
+
+        function navigateTo(destination) {
+            closeMenu();
+            
+            const destNames = {
+                'zh-TW': destination,
+                'en': destination,
+                'ms': destination,
+                'vi': destination
+            };
+            
+            document.getElementById('destinationName').textContent = destNames[currentLanguage];
+            document.getElementById('routeScreen').classList.add('active');
+            
+            // Clear search input
+            document.getElementById('searchInput').value = '';
+        }
+
+        function closeRoute() {
+            document.getElementById('routeScreen').classList.remove('active');
+        }
+
+        function arrivedAtDestination() {
+            const messages = {
+                'zh-TW': '已完成導航！感謝使用本系統。',
+                'en': 'Navigation completed! Thank you for using the system.',
+                'ms': 'Navigasi selesai! Terima kasih kerana menggunakan sistem.',
+                'vi': 'Hoàn thành điều hướng! Cảm ơn bạn đã sử dụng hệ thống.'
+            };
+            alert(messages[currentLanguage]);
+            closeRoute();
+        }
+
+        // Initialize
+        document.addEventListener('DOMContentLoaded', function() {
+            // Prevent double-tap zoom
+            let lastTouchEnd = 0;
+            document.addEventListener('touchend', function(event) {
+                const now = Date.now();
+                if (now - lastTouchEnd <= 300) {
+                    event.preventDefault();
+                }
+                lastTouchEnd = now;
+            }, false);
+        });
+    </script>
+</body>
+</html>

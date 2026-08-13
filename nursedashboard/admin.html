@@ -1,0 +1,417 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>系統管理設定 - 護理站電子白板</title>
+    <link rel="icon" href="./image/feticon.ico" type="image/x-icon">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <style>
+        /* 復用 index.html 的基本變數以保持風格一致 */
+        :root {
+            --bg-body: #f7f9fc;
+            --bg-white: #ffffff;
+            --primary: #005b96;
+            --text-main: #333333;
+            --text-sub: #666666;
+            --border-light: #e0e0e0;
+            --error: #e53e3e;
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: "Noto Sans TC", "Microsoft JhengHei", sans-serif; }
+
+        body {
+            background-color: var(--bg-body);
+            color: var(--text-main);
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        /* --- 載入動畫層 (與 Index.html 同步) --- */
+        #system-loader {
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background-color: #f8f9fa;
+            z-index: 9999;
+            display: none; /* 修改：預設隱藏，登入後才顯示 */
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            transition: opacity 0.8s ease-out, visibility 0.8s;
+        }
+        
+        .loader-content { text-align: center; }
+        
+        /* 心跳圖示動畫 */
+        .pulse-icon {
+            font-size: 4rem;
+            color: var(--primary);
+            animation: fa-beat 1s infinite linear;
+            margin-bottom: 20px;
+        }
+        
+        .loader-text {
+            font-size: 1.5rem;
+            font-weight: bold;
+            color: var(--text-main);
+            margin-bottom: 5px;
+            letter-spacing: 2px;
+        }
+        
+        .loader-subtext {
+            font-size: 0.9rem;
+            color: var(--text-sub);
+            margin-bottom: 30px;
+        }
+
+        /* 進度條容器 */
+        .progress-container {
+            width: 280px;
+            height: 6px;
+            background-color: #e2e8f0;
+            border-radius: 3px;
+            overflow: hidden;
+            position: relative;
+        }
+
+        /* 進度條動畫 (4秒) */
+        .progress-bar {
+            width: 0%;
+            height: 100%;
+            background-color: var(--primary);
+            /* 動畫將透過 JS 動態觸發 class 播放 */
+            border-radius: 3px;
+            box-shadow: 0 0 10px rgba(0, 91, 150, 0.5);
+        }
+        
+        .animate-progress {
+            animation: loadProgress 4s linear forwards; 
+        }
+
+        @keyframes loadProgress {
+            0% { width: 0%; }
+            100% { width: 100%; }
+        }
+
+        /* 隱藏 Loader 的 class */
+        .loader-hidden {
+            opacity: 0;
+            visibility: hidden;
+            pointer-events: none;
+        }
+
+        /* --- Login Modal --- */
+        #login-container {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.5); backdrop-filter: blur(5px);
+            z-index: 5000;
+            display: flex; /* 修改：預設直接顯示 */
+            justify-content: center; align-items: center;
+        }
+        
+        .login-box {
+            background: white; padding: 40px; border-radius: 15px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.2);
+            width: 400px; text-align: center;
+        }
+        .login-box h2 { margin-bottom: 20px; color: var(--primary); }
+        .input-group { margin-bottom: 15px; text-align: left; }
+        .input-group label { display: block; margin-bottom: 5px; color: var(--text-sub); }
+        .input-group input {
+            width: 100%; padding: 10px; border: 1px solid var(--border-light);
+            border-radius: 5px; font-size: 1rem;
+        }
+        .btn-login {
+            width: 100%; padding: 12px; background: var(--primary);
+            color: white; border: none; border-radius: 5px;
+            font-size: 1.1rem; cursor: pointer; margin-top: 10px;
+        }
+        .error-msg { color: var(--error); font-size: 0.9rem; margin-top: 10px; display: none; }
+
+        /* --- Main Admin Layout --- */
+        #admin-dashboard {
+            display: none; /* Hidden until login & loading complete */
+            flex-direction: column; height: 100%;
+        }
+
+        header {
+            background: var(--bg-white); height: 70px;
+            display: flex; align-items: center; padding: 0 30px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+            justify-content: space-between;
+        }
+        .header-title { font-size: 1.5rem; color: var(--primary); font-weight: bold; display: flex; align-items: center; gap: 10px; }
+        .btn-back {
+            text-decoration: none; color: var(--text-sub); font-weight: bold;
+            border: 1px solid var(--border-light); padding: 8px 15px;
+            border-radius: 20px; transition: 0.3s;
+        }
+        .btn-back:hover { background: var(--primary); color: white; border-color: var(--primary); }
+
+        /* Content Area - Fix Overlap with Grid */
+        .admin-content {
+            flex: 1; padding: 30px; overflow-y: auto;
+        }
+        
+        .settings-grid {
+            display: grid;
+            /* 使用 repeat(auto-fit) 確保卡片不會重疊，自動換行 */
+            grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+            gap: 25px;
+            padding-bottom: 30px;
+        }
+
+        /* Setting Card */
+        .setting-card {
+            background: white; border-radius: 12px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+            border: 1px solid var(--border-light);
+            display: flex; flex-direction: column;
+        }
+
+        .card-title {
+            padding: 15px 20px; border-bottom: 1px solid var(--border-light);
+            background: #f8f9fa; color: var(--primary); font-weight: bold; font-size: 1.1rem;
+            display: flex; align-items: center; gap: 10px;
+            border-radius: 12px 12px 0 0;
+        }
+
+        .card-body {
+            padding: 20px; flex: 1;
+        }
+
+        /* Form Elements inside cards */
+        .form-row { margin-bottom: 15px; }
+        .form-row label { display: block; font-size: 0.9rem; color: var(--text-sub); margin-bottom: 5px; }
+        .form-row input[type="text"], .form-row input[type="url"], .form-row select {
+            width: 100%; padding: 8px; border: 1px solid var(--border-light); border-radius: 4px;
+        }
+        .status-indicator {
+            display: inline-block; width: 10px; height: 10px; border-radius: 50%;
+            background: #48bb78; margin-right: 5px;
+        }
+        .btn-save {
+            background: var(--primary); color: white; border: none;
+            padding: 8px 15px; border-radius: 4px; cursor: pointer; float: right;
+        }
+
+    </style>
+</head>
+<body>
+
+    <!-- 1. Loading Animation (New Style, initially hidden) -->
+    <div id="system-loader">
+        <div class="loader-content">
+            <i class="fa-solid fa-gear pulse-icon"></i>
+            <div class="loader-text">系統管理模組載入中</div>
+            <div class="loader-subtext">System Administration Module Loading</div>
+            
+            <div class="progress-container">
+                <div class="progress-bar" id="progress-bar"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 2. Login Modal (Default Visible) -->
+    <div id="login-container">
+        <div class="login-box">
+            <img src="fetlogo.png" alt="Logo" style="height: 40px; margin-bottom: 15px;" onerror="this.style.display='none';">
+            <h2>管理員登入</h2>
+            <div class="input-group">
+                <label><i class="fa-solid fa-user"></i> 帳號</label>
+                <input type="text" id="username" placeholder="請輸入帳號">
+            </div>
+            <div class="input-group">
+                <label><i class="fa-solid fa-lock"></i> 密碼</label>
+                <input type="password" id="password" placeholder="請輸入密碼">
+            </div>
+            <p class="error-msg" id="login-error"><i class="fa-solid fa-circle-exclamation"></i> 帳號或密碼錯誤</p>
+            <button class="btn-login" onclick="attemptLogin()">登入系統</button>
+        </div>
+    </div>
+
+    <!-- 3. Main Dashboard -->
+    <div id="admin-dashboard">
+        <header>
+            <div class="header-title">
+                <i class="fa-solid fa-sliders"></i> 系統管理控制台
+            </div>
+            <a href="index.html" class="btn-back"><i class="fa-solid fa-arrow-right-from-bracket"></i> 返回白板</a>
+        </header>
+
+        <div class="admin-content">
+            <div class="settings-grid">
+                
+                <!-- NIS 介接 -->
+                <div class="setting-card">
+                    <div class="card-title"><i class="fa-solid fa-user-nurse"></i> NIS 護理系統設定</div>
+                    <div class="card-body">
+                        <div class="form-row">
+                            <label>API Endpoint URL</label>
+                            <input type="url" value="https://nis-api.hospital.internal/v2/beds">
+                        </div>
+                        <div class="form-row">
+                            <label>更新頻率 (秒)</label>
+                            <input type="text" value="60">
+                        </div>
+                        <div class="form-row">
+                            <label>連線狀態</label>
+                            <div style="font-size: 0.9rem;"><span class="status-indicator"></span>正常連線中</div>
+                        </div>
+                        <button class="btn-save">儲存設定</button>
+                    </div>
+                </div>
+
+                <!-- HIS 介接 -->
+                <div class="setting-card">
+                    <div class="card-title"><i class="fa-solid fa-hospital"></i> HIS 醫療資訊設定</div>
+                    <div class="card-body">
+                        <div class="form-row">
+                            <label>資料庫連線字串</label>
+                            <input type="text" value="192.168.1.100:1521/HISDB">
+                        </div>
+                        <div class="form-row">
+                            <label>病患隱私遮罩</label>
+                            <select>
+                                <option>顯示全名</option>
+                                <option selected>中間名遮罩 (王○明)</option>
+                            </select>
+                        </div>
+                        <button class="btn-save">儲存設定</button>
+                    </div>
+                </div>
+
+                <!-- PACS 介接 -->
+                <div class="setting-card">
+                    <div class="card-title"><i class="fa-solid fa-x-ray"></i> PACS 影像系統設定</div>
+                    <div class="card-body">
+                        <div class="form-row">
+                            <label>DICOM Server IP</label>
+                            <input type="text" value="192.168.50.20">
+                        </div>
+                        <div class="form-row">
+                            <label>AETitle</label>
+                            <input type="text" value="FET_WHITEBOARD">
+                        </div>
+                        <button class="btn-save">儲存設定</button>
+                    </div>
+                </div>
+
+                <!-- 電子排班表 -->
+                <div class="setting-card">
+                    <div class="card-title"><i class="fa-solid fa-calendar-days"></i> 電子排班表介接</div>
+                    <div class="card-body">
+                        <div class="form-row">
+                            <label>排班資料來源</label>
+                            <select>
+                                <option>Excel 匯入</option>
+                                <option selected>HR 系統 API</option>
+                            </select>
+                        </div>
+                        <div class="form-row">
+                            <label>當班人員顯示數量上限</label>
+                            <input type="text" value="10">
+                        </div>
+                        <button class="btn-save">儲存設定</button>
+                    </div>
+                </div>
+
+                <!-- 公告訊息 -->
+                <div class="setting-card">
+                    <div class="card-title"><i class="fa-solid fa-bullhorn"></i> 公告訊息介接</div>
+                    <div class="card-body">
+                        <div class="form-row">
+                            <label>跑馬燈訊息來源</label>
+                            <input type="text" value="院內公告系統 JSON">
+                        </div>
+                        <div class="form-row">
+                            <label>跑馬燈速度</label>
+                            <input type="range" min="1" max="10" value="5">
+                        </div>
+                        <button class="btn-save">儲存設定</button>
+                    </div>
+                </div>
+
+                <!-- 系統資訊 (Extra for balance) -->
+                <div class="setting-card">
+                    <div class="card-title"><i class="fa-solid fa-server"></i> 本機系統資訊</div>
+                    <div class="card-body">
+                        <div class="form-row">
+                            <label>IP 位址</label>
+                            <input type="text" value="10.20.30.45" disabled style="background:#eee;">
+                        </div>
+                        <div class="form-row">
+                            <label>軟體版本</label>
+                            <input type="text" value="v2.5.1 (Build 20231115)" disabled style="background:#eee;">
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // 1. Login Logic (Triggered first)
+        function attemptLogin() {
+            const user = document.getElementById('username').value;
+            const pass = document.getElementById('password').value;
+            const errorMsg = document.getElementById('login-error');
+
+            if (user === 'fet' && pass === 'fet') {
+                // 登入成功
+                errorMsg.style.display = 'none';
+                document.getElementById('login-container').style.display = 'none';
+                
+                // 開始播放載入動畫
+                startLoadingSequence();
+                
+            } else {
+                // 登入失敗
+                errorMsg.style.display = 'block';
+                // Shake animation effect
+                const box = document.querySelector('.login-box');
+                box.style.transform = 'translateX(10px)';
+                setTimeout(() => box.style.transform = 'translateX(0)', 100);
+                setTimeout(() => box.style.transform = 'translateX(-10px)', 200);
+                setTimeout(() => box.style.transform = 'translateX(0)', 300);
+            }
+        }
+
+        // 2. Loading Sequence
+        function startLoadingSequence() {
+            const loader = document.getElementById('system-loader');
+            const progressBar = document.getElementById('progress-bar');
+            
+            // 顯示 Loader
+            loader.style.display = 'flex';
+            
+            // 開始進度條動畫
+            progressBar.classList.add('animate-progress');
+            
+            // 等待 4 秒動畫結束
+            setTimeout(() => {
+                // 隱藏 Loader
+                loader.classList.add('loader-hidden');
+                
+                setTimeout(() => {
+                    loader.style.display = 'none';
+                    // 顯示 Dashboard
+                    document.getElementById('admin-dashboard').style.display = 'flex';
+                }, 500); // 等待 fade out
+                
+            }, 4000);
+        }
+
+        // Enter key support for Login
+        document.addEventListener('keypress', function (e) {
+            if (e.key === 'Enter' && document.getElementById('login-container').style.display !== 'none') {
+                attemptLogin();
+            }
+        });
+    </script>
+</body>
+</html>

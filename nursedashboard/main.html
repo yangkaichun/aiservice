@@ -1,0 +1,452 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>護理站電子白板 - 整合清單模式</title>
+    <link rel="icon" href="image/feticon.icon" type="image/x-icon">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        :root {
+            /* 依據照片取色 */
+            --header-bg: #1a5f7a;       /* 深青色 Header */
+            --sidebar-bg: #e8e8e8;      /* 側邊欄底色 */
+            --sidebar-item-bg: #dfeecf; /* 側邊欄項目淡綠色 */
+            --sidebar-active: #eadd7b;  /* 側邊欄選中鵝黃色 */
+            --table-header: #bde0eb;    /* 表格標題淺藍 */
+            --table-row-even: #ffffff;  /* 表格偶數行白 */
+            --table-row-odd: #eaf6fa;   /* 表格奇數行淺藍 */
+            --text-dark: #333333;
+            --primary: #005b96;
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: "Microsoft JhengHei", sans-serif; }
+
+        body {
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            background-color: #f0f2f5;
+            overflow: hidden;
+        }
+
+        /* --- Top Header --- */
+        .top-header {
+            height: 60px;
+            background-color: var(--header-bg);
+            display: flex;
+            align-items: center;
+            padding: 0 20px;
+            color: white;
+            justify-content: space-between;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+            z-index: 100;
+        }
+
+        .header-left { display: flex; align-items: center; gap: 15px; }
+        .logo-img { height: 35px; background: rgba(255,255,255,0.9); padding: 2px 5px; border-radius: 4px; }
+        
+        .ward-circle {
+            width: 40px; height: 40px; border-radius: 50%;
+            background: rgba(255,255,255,0.2); border: 2px solid white;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 1.2rem; font-weight: bold; cursor: pointer;
+            transition: 0.3s;
+        }
+        .ward-circle:hover { background: white; color: var(--header-bg); }
+
+        .header-right { display: flex; align-items: center; gap: 10px; }
+
+        /* Header Buttons */
+        .header-btn {
+            padding: 6px 15px; border-radius: 20px;
+            border: 1px solid rgba(255,255,255,0.5);
+            background: rgba(255,255,255,0.1);
+            color: white; font-size: 0.9rem; cursor: pointer;
+            transition: 0.2s; display: flex; align-items: center; gap: 5px;
+        }
+        .header-btn:hover { background: rgba(255,255,255,0.3); transform: translateY(-1px); }
+        .header-btn:active { transform: translateY(1px); }
+        
+        .btn-blue { background: #2b86ad; border: none; }
+        .btn-green { background: #2c8f8b; border: none; }
+        .btn-icon-only { width: 36px; height: 36px; padding: 0; justify-content: center; border-radius: 50%; }
+
+        .datetime-display {
+            text-align: right; font-size: 0.85rem; line-height: 1.2;
+            margin-left: 15px; border-left: 1px solid rgba(255,255,255,0.3);
+            padding-left: 15px;
+        }
+
+        /* --- Main Layout --- */
+        .main-container { flex: 1; display: flex; overflow: hidden; }
+
+        /* --- Sidebar --- */
+        .sidebar {
+            width: 220px; background-color: var(--sidebar-bg);
+            padding: 10px; overflow-y: auto; border-right: 1px solid #ccc;
+            display: flex; flex-direction: column; gap: 8px;
+        }
+
+        .nav-item {
+            padding: 12px 15px; background-color: var(--sidebar-item-bg);
+            border-radius: 0 20px 20px 0; margin-right: 5px;
+            font-size: 0.95rem; color: var(--text-dark);
+            cursor: pointer; transition: 0.2s; position: relative; font-weight: 500;
+        }
+        .nav-item:hover { transform: translateX(5px); background-color: #d1e4c0; }
+        .nav-item.active {
+            background-color: var(--sidebar-active); font-weight: bold;
+            box-shadow: 2px 2px 5px rgba(0,0,0,0.1);
+        }
+        .nav-item.active::before {
+            content: ''; position: absolute; left: 0; top: 0; bottom: 0;
+            width: 5px; background-color: #b5a642;
+        }
+
+        /* --- Content Area --- */
+        .content-area { flex: 1; display: flex; flex-direction: column; background: white; overflow: hidden; }
+
+        /* Top Stats Bar */
+        .stats-bar {
+            padding: 8px 20px; background: #f1f8fa; border-bottom: 1px solid #d0e6ed;
+            display: flex; align-items: center; font-size: 0.9rem; color: #444; gap: 20px;
+        }
+        .stat-item { font-weight: bold; color: var(--primary); }
+
+        /* Legend Bar */
+        .legend-bar {
+            padding: 5px 20px; display: flex; gap: 15px; font-size: 0.8rem;
+            border-bottom: 1px solid #eee; background: white; flex-wrap: wrap;
+        }
+        .legend-item { display: flex; align-items: center; gap: 5px; }
+        .legend-box { width: 12px; height: 12px; border-radius: 2px; }
+        
+        .l-red { background: #e53e3e; }
+        .l-blue { background: #3182ce; }
+        .l-green { background: #48bb78; }
+        .l-purple { background: #805ad5; }
+        .l-yellow { background: #d69e2e; }
+        .l-dark { background: #333; }
+        .l-gray { background: #aaa; }
+
+        /* Table */
+        .table-wrapper { flex: 1; overflow: auto; position: relative; }
+        table { width: 100%; border-collapse: collapse; min-width: 1000px; }
+        
+        thead th {
+            position: sticky; top: 0; background-color: var(--table-header);
+            color: #333; padding: 10px 5px; font-size: 0.9rem; font-weight: bold;
+            text-align: center; border-bottom: 2px solid #a0c4d1; white-space: nowrap; z-index: 10;
+        }
+        
+        tbody tr { height: 45px; border-bottom: 1px solid #eee; transition: background 0.1s; cursor: pointer; }
+        tbody tr:nth-child(odd) { background-color: var(--table-row-odd); }
+        tbody tr:nth-child(even) { background-color: var(--table-row-even); }
+        tbody tr:hover { background-color: #fff9c4; }
+
+        td { padding: 8px 5px; text-align: center; font-size: 0.9rem; color: #333; white-space: nowrap; }
+        .dot { display: inline-block; width: 10px; height: 10px; background-color: #333; border-radius: 50%; }
+        td.align-left { text-align: left; padding-left: 15px; }
+
+        /* --- Modal (模擬子頁面) --- */
+        .modal-backdrop {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.6); backdrop-filter: blur(3px);
+            z-index: 2000; display: none; justify-content: center; align-items: center;
+        }
+        .modal-container {
+            background: white; width: 800px; max-width: 90%; height: 600px; max-height: 90%;
+            border-radius: 10px; display: flex; flex-direction: column;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.3); animation: zoomIn 0.3s;
+        }
+        @keyframes zoomIn { from { transform: scale(0.9); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+        
+        .modal-header {
+            padding: 15px 20px; background: var(--header-bg); color: white;
+            display: flex; justify-content: space-between; align-items: center;
+            border-radius: 10px 10px 0 0; font-size: 1.2rem; font-weight: bold;
+        }
+        .modal-body {
+            flex: 1; padding: 30px; overflow-y: auto; background: #f9f9f9;
+            display: flex; flex-direction: column; align-items: center; justify-content: center;
+        }
+        .close-btn {
+            background: none; border: none; color: white; font-size: 1.5rem; cursor: pointer;
+        }
+        .close-btn:hover { color: #ddd; }
+
+        /* Dummy content styles */
+        .dummy-placeholder { text-align: center; color: #666; }
+        .dummy-icon { font-size: 4rem; color: var(--primary); margin-bottom: 20px; opacity: 0.5; }
+        .dummy-table { width: 100%; border: 1px solid #ccc; margin-top: 20px; }
+        .dummy-table th { background: #eee; padding: 10px; }
+        .dummy-table td { border-top: 1px solid #eee; padding: 10px; text-align: center; }
+
+    </style>
+</head>
+<body>
+
+    <!-- 1. Header -->
+    <header class="top-header">
+        <div class="header-left">
+            <img src="fetlogo.png" alt="FET" class="logo-img" onerror="this.style.display='none'">
+            <div class="ward-circle" onclick="showModal('病房資訊', 'wardInfo')">42</div>
+            <span style="font-size:1.2rem; font-weight:bold;">42病房護理站</span>
+        </div>
+
+        <div class="header-right">
+            <button class="header-btn btn-blue" onclick="showModal('護理師資訊', 'nurseList')"><i class="fa-solid fa-user-nurse"></i> 護理師資訊</button>
+            <button class="header-btn btn-blue" onclick="showModal('團隊資訊', 'teamList')"><i class="fa-solid fa-users"></i> 團隊資訊</button>
+            <button class="header-btn btn-blue" onclick="showModal('病人資訊', 'patientInfo')"><i class="fa-solid fa-address-card"></i> 病人資訊</button>
+            <button class="header-btn btn-green" onclick="showModal('公告與連結', 'announcement')"><i class="fa-solid fa-bullhorn"></i> 公告與連結</button>
+            <button class="header-btn btn-green" onclick="showModal('護理站資訊', 'stationInfo')"><i class="fa-solid fa-hospital"></i> 護理站資訊</button>
+            <button class="header-btn" style="background:#666;" onclick="showModal('系統訊息', 'logout')"><i class="fa-solid fa-right-from-bracket"></i> 登出</button>
+            
+            <div style="margin-left:10px; display:flex; gap:5px;">
+                <button class="header-btn btn-icon-only" onclick="showModal('病床管理', 'bedMgmt')"><i class="fa-solid fa-bed"></i></button>
+                <button class="header-btn btn-icon-only" onclick="showModal('使用者設定', 'userSettings')"><i class="fa-solid fa-user"></i></button>
+                <button class="header-btn btn-icon-only" onclick="showModal('系統版本', 'version')"><i class="fa-solid fa-info"></i></button>
+                <button class="header-btn btn-icon-only" onclick="showModal('功能選單', 'menu')"><i class="fa-solid fa-bars"></i></button>
+            </div>
+
+            <div class="datetime-display">
+                <div id="date">2025年11月19日</div>
+                <div id="time">星期三 16:30</div>
+            </div>
+        </div>
+    </header>
+
+    <!-- 2. Main Layout -->
+    <div class="main-container">
+        
+        <!-- Sidebar -->
+        <nav class="sidebar">
+            <div class="nav-item" onclick="showModal('護理人員值班電話', 'phone')">護理人員值班電話</div>
+            <div class="nav-item" onclick="showModal('儀器項目維護', 'equipment')">儀器項目維護</div>
+            <div class="nav-item" onclick="showModal('病患來源分析', 'source')">病患來源</div>
+            <div class="nav-item" onclick="showModal('排程分類總覽', 'schedule')">排程分類</div>
+            <div class="nav-item active" onclick="location.reload()">病人一覽表</div>
+            <div class="nav-item" onclick="showModal('照護團隊分配', 'teamCare')">照護團隊照護床位</div>
+            <div class="nav-item" onclick="showModal('護理師派床作業', 'assign')">護理師派床</div>
+            <div class="nav-item" onclick="showModal('病人特殊註記管理', 'notes')">病人特殊註記</div>
+            <div class="nav-item" onclick="showModal('儀器使用狀態監控', 'eqStatus')">儀器使用狀態</div>
+            <div class="nav-item" onclick="showModal('本日出院及轉出', 'out')">本日出院及轉出</div>
+            <div class="nav-item" onclick="showModal('本日入院及轉入', 'in')">本日入院及轉入</div>
+            <div class="nav-item" onclick="showModal('預計出院名單', 'preOut')">預計出院名單</div>
+            <div class="nav-item" onclick="showModal('預計入院名單', 'preIn')">預計入院名單</div>
+            <div class="nav-item" onclick="showModal('數位公告欄', 'board')">公告欄</div>
+            <div class="nav-item" onclick="showModal('病床明細資料', 'detail')">病床明細</div>
+        </nav>
+
+        <!-- Content -->
+        <main class="content-area">
+            
+            <!-- Stats Bar -->
+            <div class="stats-bar">
+                <span>總床數: <span class="stat-item">56</span></span>
+                <span>空床: <span class="stat-item" style="color:#2b86ad;">16</span></span>
+                <span>可用床: <span class="stat-item">56</span></span>
+                <span>佔床: <span class="stat-item" style="color:#e53e3e;">40</span></span>
+                <span>可開床: <span class="stat-item">16</span></span>
+            </div>
+
+            <!-- Legend Bar -->
+            <div class="legend-bar">
+                <div class="legend-item"><div class="legend-box l-red"></div> 0700前藥</div>
+                <div class="legend-item"><div class="legend-box l-blue"></div> 0600前藥</div>
+                <div class="legend-item"><div class="legend-box l-green"></div> 早餐後藥</div>
+                <div class="legend-item"><div class="legend-box l-purple"></div> 午餐後藥</div>
+                <div class="legend-item"><div class="legend-box l-yellow"></div> 禁食除藥</div>
+                <div class="legend-item"><div class="legend-box l-dark"></div> 跌倒高危</div>
+                <div class="legend-item"><div class="legend-box l-gray"></div> DNR</div>
+            </div>
+
+            <!-- Data Table -->
+            <div class="table-wrapper">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>主治醫師</th>
+                            <th>共同照護</th>
+                            <th>護理師</th>
+                            <th>病人姓名</th>
+                            <th>入院日</th>
+                            <th>住院天數</th>
+                            <th>0700前<br>食</th>
+                            <th>0600前<br>食</th>
+                            <th>早餐後<br>藥</th>
+                            <th>午餐後<br>藥</th>
+                            <th>午夜後<br>藥</th>
+                            <th>禁食除<br>藥</th>
+                            <th>敏</th>
+                            <th>跌</th>
+                            <th>DNR</th>
+                            <th>出</th>
+                            <th>部</th>
+                            <th>氧</th>
+                            <th>急</th>
+                            <th>隔1</th>
+                        </tr>
+                    </thead>
+                    <tbody id="patient-table-body">
+                        <!-- JS will fill this -->
+                    </tbody>
+                </table>
+            </div>
+        </main>
+    </div>
+
+    <!-- Modal Structure -->
+    <div class="modal-backdrop" id="generic-modal">
+        <div class="modal-container">
+            <div class="modal-header">
+                <span id="modal-title-text">標題</span>
+                <button class="close-btn" onclick="closeModal()">×</button>
+            </div>
+            <div class="modal-body" id="modal-content">
+                <!-- Content Injected via JS -->
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // --- 1. 模擬資料與表格渲染 ---
+        const patients = [
+            { dr: "何孟興", nurse: "林雅婷", name: "陳O華", date: "2025-11-01", days: 12, risk: true, dnr: true, allergy: false },
+            { dr: "張國華", nurse: "王惠雯", name: "林O美", date: "2025-11-05", days: 8, risk: true, dnr: true, allergy: false },
+            { dr: "李志豪", nurse: "陳怡君", name: "王O明", date: "2025-11-01", days: 12, risk: true, dnr: true, allergy: false },
+            { dr: "林志玲", nurse: "張小燕", name: "許O文", date: "2025-11-07", days: 6, risk: true, dnr: false, allergy: false },
+            { dr: "伍佰",   nurse: "謝金燕", name: "蔡O杰", date: "2025-11-11", days: 2, risk: false, dnr: false, allergy: false },
+            { dr: "周杰倫", nurse: "蔡依林", name: "黃O芬", date: "2025-11-08", days: 5, risk: true, dnr: false, allergy: true },
+            { dr: "劉德華", nurse: "張學友", name: "郭O城", date: "2025-11-08", days: 5, risk: false, dnr: false, allergy: false },
+            { dr: "金城武", nurse: "梁朝偉", name: "彭O晏", date: "2025-11-10", days: 3, risk: false, dnr: false, allergy: false },
+            { dr: "王力宏", nurse: "陶喆",   name: "蕭O騰", date: "2025-10-24", days: 20, risk: true, dnr: true, allergy: false },
+            { dr: "蕭亞軒", nurse: "孫燕姿", name: "梁O茹", date: "2025-11-01", days: 10, risk: true, dnr: false, allergy: false },
+        ];
+
+        const tbody = document.getElementById('patient-table-body');
+        let html = '';
+
+        patients.forEach(p => {
+            html += `
+                <tr onclick="showModal('病人詳細資料: ${p.name}', 'patientDetail')">
+                    <td class="align-left">${p.dr}</td>
+                    <td></td>
+                    <td>${p.nurse}</td>
+                    <td>${p.name}</td>
+                    <td>${p.date}</td>
+                    <td>${p.days}</td>
+                    <td></td> <!-- 0700前食 -->
+                    <td></td> <!-- 0600前食 -->
+                    <td></td> <!-- 早餐後藥 -->
+                    <td></td> <!-- 午餐後藥 -->
+                    <td></td> <!-- 午夜後藥 -->
+                    <td></td> <!-- 禁食除藥 -->
+                    <td>${p.allergy ? '<span class="dot"></span>' : ''}</td>
+                    <td>${p.risk ? '<span class="dot"></span>' : ''}</td>
+                    <td>${p.dnr ? '<span class="dot"></span>' : ''}</td>
+                    <td></td>
+                    <td></td>
+                    <td>${p.allergy ? '<span class="dot"></span>' : ''}</td>
+                    <td></td>
+                    <td></td>
+                </tr>
+            `;
+        });
+
+        // 重複資料填充
+        for(let i=0; i<2; i++) { tbody.innerHTML += html; }
+
+        // --- 2. 時間更新 ---
+        function updateDateTime() {
+            const now = new Date();
+            const dateStr = `${now.getFullYear()}年${now.getMonth()+1}月${now.getDate()}日`;
+            const days = ['日', '一', '二', '三', '四', '五', '六'];
+            const timeStr = `星期${days[now.getDay()]} ${now.getHours().toString().padStart(2,'0')}:${now.getMinutes().toString().padStart(2,'0')}`;
+            document.getElementById('date').innerText = dateStr;
+            document.getElementById('time').innerText = timeStr;
+        }
+        setInterval(updateDateTime, 1000);
+        updateDateTime();
+
+        // --- 3. 模擬視窗邏輯 (Modal Logic) ---
+        const modal = document.getElementById('generic-modal');
+        const modalTitle = document.getElementById('modal-title-text');
+        const modalContent = document.getElementById('modal-content');
+
+        function showModal(title, type) {
+            modalTitle.innerText = title;
+            let content = '';
+
+            // 根據類型生成模擬內容
+            switch(type) {
+                case 'nurseList':
+                    content = `
+                        <i class="fa-solid fa-user-nurse dummy-icon"></i>
+                        <h3>當班護理師名單</h3>
+                        <table class="dummy-table" style="width:80%">
+                            <tr><th>職級</th><th>姓名</th><th>分機</th></tr>
+                            <tr><td>護理長</td><td>林雅婷</td><td>2201</td></tr>
+                            <tr><td>N4</td><td>王惠雯</td><td>2202</td></tr>
+                            <tr><td>N3</td><td>陳怡君</td><td>2203</td></tr>
+                        </table>`;
+                    break;
+                case 'schedule':
+                    content = `
+                        <i class="fa-solid fa-calendar-days dummy-icon"></i>
+                        <h3>本日排程總覽</h3>
+                        <p>模擬畫面：顯示今日所有檢查、手術、治療排程。</p>
+                        <div style="margin-top:20px; width:100%; background:#eee; height:200px; display:flex; align-items:center; justify-content:center;">排程甘特圖 placeholder</div>`;
+                    break;
+                case 'logout':
+                    content = `
+                        <i class="fa-solid fa-right-from-bracket dummy-icon" style="color:#666"></i>
+                        <h3>確定要登出系統嗎？</h3>
+                        <div style="margin-top:20px;">
+                            <button class="header-btn btn-blue" style="display:inline-block; background:#e53e3e" onclick="closeModal()">確定登出</button>
+                            <button class="header-btn" style="display:inline-block; color:#333; background:#ccc" onclick="closeModal()">取消</button>
+                        </div>`;
+                    break;
+                case 'patientDetail':
+                     content = `
+                        <i class="fa-solid fa-file-medical dummy-icon"></i>
+                        <h3>病人詳細病歷摘要</h3>
+                        <div style="text-align:left; width:80%; background:white; padding:20px; border:1px solid #ccc;">
+                            <p><strong>病歷號：</strong> 12345678</p>
+                            <p><strong>主訴：</strong> 胸痛、呼吸急促。</p>
+                            <p><strong>目前醫囑：</strong></p>
+                            <ul>
+                                <li>On Foley</li>
+                                <li>Check V/S q4h</li>
+                                <li>NPO since midnight</li>
+                            </ul>
+                        </div>`;
+                    break;
+                default:
+                    content = `
+                        <div class="dummy-placeholder">
+                            <i class="fa-solid fa-screwdriver-wrench dummy-icon"></i>
+                            <h3>${title}</h3>
+                            <p>這是「${title}」功能的模擬子頁面。</p>
+                            <p>此功能模組正在開發中或僅供展示用。</p>
+                        </div>
+                    `;
+            }
+            
+            modalContent.innerHTML = content;
+            modal.style.display = 'flex';
+        }
+
+        function closeModal() {
+            modal.style.display = 'none';
+        }
+        
+        // 點擊背景關閉
+        modal.addEventListener('click', function(e) {
+            if (e.target === modal) closeModal();
+        });
+
+    </script>
+</body>
+</html>
