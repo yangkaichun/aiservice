@@ -178,6 +178,8 @@
       }
     }
     var tier = netTier();
+    /* 池洗牌（v11.1：每次進站隨機順序，背景隨機產生） */
+    shuffle(pool);
     /* 同頁不重複：目前正被顯示的圖 key → 計數 */
     var shown = {};
     function pickFree() {
@@ -208,7 +210,14 @@
         display(el, cur, tier >= 2);
       }
       apply(pickFree());
-      el._bgTimer = setInterval(function () { apply(pickFree()); }, 9000);
+      /* v11.1：輪換間隔隨機化（6–12 秒），背景更隨機 */
+      function schedule() {
+        el._bgTimer = setTimeout(function () {
+          apply(pickFree());
+          schedule();
+        }, 6000 + Math.random() * 6000);
+      }
+      schedule();
     });
   }
 
@@ -282,6 +291,77 @@
     $all('.dust-layer').forEach(function (layer) {
       if (!layer.children.length) spawnDust(layer, 16, 40);
     });
+  }
+
+  /* ---------- 9.5 光子粒子＋光影動畫（v11.1） ---------- */
+  function spawnPhotons(host, count) {
+    var colors = ['', '', '', 'blue', 'white'];
+    for (var i = 0; i < count; i++) {
+      var p = document.createElement('span');
+      p.className = 'photon ' + colors[Math.floor(Math.random() * colors.length)];
+      var len = 30 + Math.random() * 70;
+      p.style.width = len.toFixed(0) + 'px';
+      p.style.height = (1.5 + Math.random() * 2).toFixed(1) + 'px';
+      p.style.left = (Math.random() * 100).toFixed(1) + '%';
+      p.style.top = (Math.random() * 100).toFixed(1) + '%';
+      p.style.setProperty('--ph-rot', (Math.random() * 360).toFixed(0) + 'deg');
+      p.style.setProperty('--ph-dx', ((Math.random() * 2 - 1) * 130).toFixed(0) + 'px');
+      p.style.setProperty('--ph-dy', ((Math.random() * 2 - 1) * 130).toFixed(0) + 'px');
+      p.style.setProperty('--ph-op', (0.35 + Math.random() * 0.55).toFixed(2));
+      p.style.animationDuration = (6 + Math.random() * 10).toFixed(1) + 's';
+      p.style.animationDelay = (Math.random() * 12).toFixed(1) + 's';
+      host.appendChild(p);
+    }
+  }
+  function initPhotons() {
+    if (window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+    var hosts = [
+      ['.hero', 22], ['.page-hero', 16], ['.journey-station', 14], ['.day-card', 10],
+      ['.quote-section', 8], ['.cta-band', 10], ['.line-band', 14], ['.stats-band', 8]
+    ];
+    hosts.forEach(function (h) {
+      $all(h[0]).forEach(function (el) {
+        if (el.querySelector('.photon-layer')) return;
+        var layer = document.createElement('div');
+        layer.className = 'photon-layer';
+        layer.setAttribute('aria-hidden', 'true');
+        el.appendChild(layer);
+        spawnPhotons(layer, h[1]);
+      });
+    });
+  }
+  function initLightFX() {
+    if (window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+    $all('.hero, .page-hero, .journey-station, .line-band').forEach(function (el) {
+      if (el.querySelector('.light-orb')) return;
+      var n = 2 + Math.floor(Math.random() * 2);
+      for (var i = 0; i < n; i++) {
+        var o = document.createElement('div');
+        var r = Math.random();
+        o.className = 'light-orb' + (r < 0.28 ? ' blue' : (r < 0.45 ? ' green' : ''));
+        var sz = 180 + Math.random() * 280;
+        o.style.width = o.style.height = sz.toFixed(0) + 'px';
+        o.style.left = (Math.random() * 85).toFixed(1) + '%';
+        o.style.top = (Math.random() * 75).toFixed(1) + '%';
+        o.style.setProperty('--orb-dx', ((Math.random() * 2 - 1) * 60).toFixed(0) + 'px');
+        o.style.setProperty('--orb-dy', ((Math.random() * 2 - 1) * 50).toFixed(0) + 'px');
+        o.style.setProperty('--orb-dur', (10 + Math.random() * 10).toFixed(1) + 's');
+        el.appendChild(o);
+      }
+      var sw = document.createElement('div');
+      sw.className = 'light-sweep';
+      sw.setAttribute('aria-hidden', 'true');
+      el.appendChild(sw);
+    });
+  }
+
+  /* ---------- 9.6 背景隨機強化（v11.1）：池洗牌＋隨機輪換間隔 ---------- */
+  function shuffle(arr) {
+    for (var i = arr.length - 1; i > 0; i--) {
+      var j = Math.floor(Math.random() * (i + 1));
+      var t = arr[i]; arr[i] = arr[j]; arr[j] = t;
+    }
+    return arr;
   }
 
   /* ---------- 10. 互動 CT ---------- */
@@ -503,6 +583,8 @@
     initHeroVideo();
     initStars();
     initDust();
+    initPhotons();
+    initLightFX();
     initCT();
     initWhatIf();
     initAUC();

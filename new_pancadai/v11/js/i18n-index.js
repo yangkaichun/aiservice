@@ -7,8 +7,8 @@
 
     /* Hero */
     hero_badge: "AI 胰臟癌早期偵測",
-    hero_title_1: "早一點發現，",
-    hero_title_2: "<span class=\"hl\">多一種可能。</span>",
+    hero_title_1: "活出精彩",
+    hero_title_2: "<span class=\"hl\">不胰憾。</span>",
     hero_sub: "胰臟癌早期幾乎沒有症狀。PANCREASaver® 以 AI 在腫瘤還小於 2 公分時就找到它——就像天亮之前的第一道光，為您與家人爭取最寶貴的治療時間。",
     hero_cta_1: "開始照護旅程",
     hero_cta_2: "醫療機構合作",
@@ -133,7 +133,20 @@
     car6_k: "導入流程",
     car6_t: "從簽約到上線，<span class=\"hl\">4 週完成導入。</span>",
     car6_p: "醫學中心＋區域醫院＋健檢中心已累積 300+ 人次判讀——資料不出院、SaaS 訂閱、持續模型更新。",
-    car6_cta: "查看導入方案"
+    car6_cta: "查看導入方案",
+
+    /* 護胰大聯盟 Line CTA（v11.1 首頁加入） */
+    line_kicker: "護胰大聯盟 · 官方 Line",
+    line_t: "把醫療級衛教知識，<span class=\"hl\">放進您的口袋。</span>",
+    line_p: "加入護胰大聯盟官方 Line：24 小時 AI 即時問答、胰臟健康飲食建議與預防保健指南，由台大胰臟中心、衛福部與國健署的嚴謹衛教資料打造。",
+    line_f1_t: "權威知識庫",
+    line_f1_p: "台大胰臟中心 × 衛福部 × 國健署衛教資料",
+    line_f2_t: "全方位營養保健",
+    line_f2_p: "飲食建議・作息調整・預防保健指南",
+    line_f3_t: "24 小時即時問答",
+    line_f3_p: "症狀・危險因子・篩檢，隨時傳訊詢問",
+    line_btn: "點擊加入好友 @PancreasCare",
+    line_qr_p: "掃描 QR Code 立即加入"
   };
 
   var en = {
@@ -259,7 +272,20 @@
     car6_k: "Deployment",
     car6_t: "From contract to go-live, <span class=\"hl\">deployed in 4 weeks.</span>",
     car6_p: "Medical centers, regional hospitals and health centers — 300+ reading sessions. Data stays on-premise, SaaS subscription, continuous model updates.",
-    car6_cta: "View deployment plans"
+    car6_cta: "View deployment plans",
+
+    /* Pancreas Care Alliance LINE CTA (v11.1 homepage) */
+    line_kicker: "Pancreas Care Alliance · Official LINE",
+    line_t: "Put medical-grade health education,<span class=\"hl\"> in your pocket.</span>",
+    line_p: "Join the official Pancreas Care Alliance LINE account: 24/7 AI Q&A, pancreatic health diet advice and prevention guides — built from rigorous education materials by NTU Pancreas Center, MOHW and HPA.",
+    line_f1_t: "Authoritative Knowledge Base",
+    line_f1_p: "NTU Pancreas Center × MOHW × HPA materials",
+    line_f2_t: "All-round Nutrition & Prevention",
+    line_f2_p: "Diet advice · lifestyle tips · prevention guides",
+    line_f3_t: "24/7 Instant Q&A",
+    line_f3_p: "Symptoms, risk factors, screening — ask anytime",
+    line_btn: "Add friend @PancreasCare",
+    line_qr_p: "Scan the QR code to join"
   };
 
   var ja = {
@@ -385,7 +411,20 @@
     car6_k: "導入プロセス",
     car6_t: "契約から稼働まで、<span class=\"hl\">4 週間で導入。</span>",
     car6_p: "医学センター・地域病院・健診センターで 300+ 回の判読実績 — データは院内完結、SaaS サブスク、継続的なモデル更新。",
-    car6_cta: "導入プランを見る"
+    car6_cta: "導入プランを見る",
+
+    /* Pancreas Care Alliance LINE CTA（v11.1 ホーム） */
+    line_kicker: "Pancreas Care Alliance · 公式 LINE",
+    line_t: "医療級の健康知識を、<span class=\"hl\">あなたのポケットに。</span>",
+    line_p: "公式 LINE に参加：24 時間 AI 即時回答、膵臓にやさしい食事・生活習慣・予防のアドバイス。台湾大学膵臓センター、衛福部、国健署の厳選された健康教育資料に基づきます。",
+    line_f1_t: "信頼できる知識ベース",
+    line_f1_p: "台湾大学膵臓センター × 衛福部 × 国健署",
+    line_f2_t: "栄養と予防ケア",
+    line_f2_p: "食事の提案・生活改善・予防ガイド",
+    line_f3_t: "24 時間即時 Q&A",
+    line_f3_p: "症状・危険因子・検診 — いつでも質問可能",
+    line_btn: "友だち追加 @PancreasCare",
+    line_qr_p: "QR コードをスキャンして参加"
   };
 
   window.PANCAD_I18N = window.PANCAD_I18N || {};
