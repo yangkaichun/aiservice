@@ -21,7 +21,7 @@ for i in "${!NAMES[@]}"; do
   while [ $attempt -lt 3 ]; do
     attempt=$((attempt+1))
     echo "=== [$name] 嘗試 $attempt/3 $(date '+%H:%M:%S') ==="
-    PYTHONPATH= "$MFX" --output "$raw" --width 5120 --height 2880 --steps 4 --seed $RANDOM --prompt "$prompt" > "_gen_v11/${name}.log" 2>&1 &
+    PYTHONPATH= "$MFX" --output "$raw" --width 2560 --height 1440 --steps 4 --seed $RANDOM --prompt "$prompt" > "_gen_v11/${name}.log" 2>&1 &
     MPID=$!
     idle=0; done_flag=0
     while kill -0 $MPID 2>/dev/null; do
