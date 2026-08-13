@@ -656,6 +656,35 @@
     });
   }
 
+  /* ---------- 14.7 hero 海報 HD 漸進（v11.2.16：couple/intl → 5120） ---------- */
+  function initPosterHD() {
+    var lang = (document.documentElement.lang || 'zh').toLowerCase().replace('-', '');
+    var isEn = lang === 'en';
+    var posters = document.querySelectorAll('.hero-bg-video .poster, #patientHero .bg');
+    if (!posters.length) return;
+    var hdSrc = 'assets/' + (isEn ? 'hero_v7_morning_intl' : 'hero_v7_morning_couple') + '_safe_hd.webp';
+    posters.forEach(function (el) {
+      var img = new Image();
+      img.onload = function () { el.style.backgroundImage = 'url(' + hdSrc + ')'; };
+      img.onerror = function () {};
+      img.src = hdSrc;
+    });
+  }
+
+  /* ---------- 14.8 輪播大圖 HD 漸進（v11.2.16：1280/1600 → 5120） ---------- */
+  function initCarouselHD() {
+    document.querySelectorAll('.car-media img').forEach(function (img) {
+      var src = img.getAttribute('src') || '';
+      var base = src.replace(/^assets\//, '').replace(/\.(jpg|png|webp)$/, '');
+      if (!base) return;
+      var hd = 'assets/' + base + '_hd.webp';
+      var t = new Image();
+      t.onload = function () { img.src = hd; };
+      t.onerror = function () {};
+      t.src = hd;
+    });
+  }
+
   /* ---------- 15. 啟動 ---------- */
   function boot() {
     initSunlight();
@@ -677,9 +706,12 @@
     initFAQ();
     initCarousel();
     initLiveCounter();
+    initPosterHD();
+    initCarouselHD();
     window.addEventListener('langchange', function () {
       initBgPool();
       initDinnerPool();
+      initPosterHD();
       rebuildKinetic();
     });
   }
