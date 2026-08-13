@@ -104,7 +104,36 @@
     /* CTA */
     cta_t: "早一點發現，<span class=\"hl\">多一種可能。</span>",
     cta_p: "無論是為自己、為家人，還是為您的病患——從一次腹部 CT 開始。",
-    cta_btn: "與我們聯繫"
+    cta_btn: "與我們聯繫",
+
+    /* 產品證據輪播（v11） */
+    car_k: "一站式證據",
+    car_t: "從產品到認證，<span class=\"hl\">一條龍掌握。</span>",
+    car_p: "六個主題，一次看完 PANCREASaver® 的完整樣貌——左右滑動探索。",
+    car1_k: "產品",
+    car1_t: "世界首創的胰臟癌 CT <span class=\"hl\">AI 輔助偵測</span>",
+    car1_p: "全自動化端到端系統：CT 一拍完自動分析、5 分鐘內標出可疑病灶，無縫整合醫院 PACS/RIS。",
+    car1_cta: "了解產品",
+    car2_k: "臨床數據",
+    car2_t: "全國 1,473 例真實世界驗證，<span class=\"hl\">AUC 0.95</span>",
+    car2_p: "整體敏感度 89.7%、特異度 92.8%；小於 2 公分早期腫瘤敏感度 92.1%，發表於 Radiology 與 Lancet Digital Health。",
+    car2_cta: "查看臨床數據",
+    car3_k: "期刊論文",
+    car3_t: "5 篇國際期刊論文，<span class=\"hl\">每一行證據都可查證。</span>",
+    car3_p: "Lancet Digital Health、Radiology、BMC Cancer 等 5 篇真實論文：中英主題、真實摘要與 PubMed 原文連結。",
+    car3_cta: "前往期刊論文館",
+    car4_k: "智財布局",
+    car4_t: "台美 10 件發明專利，<span class=\"hl\">築起技術壁壘。</span>",
+    car4_p: "系統級＋方法級雙重寫法，涵蓋醫療影像分析系統與機器學習識別胰臟癌方法——醫療 AI 在美國取得專利極其困難。",
+    car4_cta: "查看智財布局",
+    car5_k: "法規認證",
+    car5_t: "TFDA 取證、<span class=\"hl\">FDA 突破性醫材認定</span>",
+    car5_p: "衛部醫器製字第007946號（2023）、FDA Breakthrough Device Designation（2022）、510(k) 上市申請已遞件（2026.7）。",
+    car5_cta: "了解認證歷程",
+    car6_k: "導入流程",
+    car6_t: "從簽約到上線，<span class=\"hl\">4 週完成導入。</span>",
+    car6_p: "醫學中心＋區域醫院＋健檢中心已累積 300+ 人次判讀——資料不出院、SaaS 訂閱、持續模型更新。",
+    car6_cta: "查看導入方案"
   };
 
   var en = {
@@ -201,7 +230,36 @@
 
     cta_t: "Catch it early. <span class=\"hl\">Live it fully.</span>",
     cta_p: "For yourself, for your family, or for your patients — it starts with one abdominal CT.",
-    cta_btn: "Contact Us"
+    cta_btn: "Contact Us",
+
+    /* Product carousel (v11) */
+    car_k: "All-in-one evidence",
+    car_t: "From product to certification, <span class=\"hl\">all in one place.</span>",
+    car_p: "Six themes covering the full picture of PANCREASaver® — swipe to explore.",
+    car1_k: "Product",
+    car1_t: "The world's first pancreatic cancer CT <span class=\"hl\">AI detection</span>",
+    car1_p: "A fully automated end-to-end system: analyzes CT scans as they finish, flags suspicious lesions within 5 minutes, integrated with hospital PACS/RIS.",
+    car1_cta: "Learn more",
+    car2_k: "Clinical Data",
+    car2_t: "Nationwide real-world validation of 1,473 cases, <span class=\"hl\">AUC 0.95</span>",
+    car2_p: "89.7% sensitivity, 92.8% specificity; 92.1% sensitivity for tumors <2cm — published in Radiology and The Lancet Digital Health.",
+    car2_cta: "View clinical data",
+    car3_k: "Publications",
+    car3_t: "5 international papers, <span class=\"hl\">every line verifiable.</span>",
+    car3_p: "Real papers in Lancet Digital Health, Radiology, BMC Cancer and more — bilingual topics, real abstracts and PubMed links.",
+    car3_cta: "Visit the publication hall",
+    car4_k: "IP Portfolio",
+    car4_t: "10 patents in Taiwan & US, <span class=\"hl\">building a technology moat.</span>",
+    car4_p: "System-level and method-level claims covering medical imaging analysis and ML-based pancreatic cancer detection — US medical AI patents are exceptionally hard to obtain.",
+    car4_cta: "View IP portfolio",
+    car5_k: "Regulatory",
+    car5_t: "TFDA clearance, <span class=\"hl\">FDA Breakthrough designation</span>",
+    car5_p: "TFDA license No. 007946 (2023), FDA Breakthrough Device Designation (2022), 510(k) application submitted (2026.7).",
+    car5_cta: "See certification journey",
+    car6_k: "Deployment",
+    car6_t: "From contract to go-live, <span class=\"hl\">deployed in 4 weeks.</span>",
+    car6_p: "Medical centers, regional hospitals and health centers — 300+ reading sessions. Data stays on-premise, SaaS subscription, continuous model updates.",
+    car6_cta: "View deployment plans"
   };
 
   var ja = {
@@ -298,7 +356,36 @@
 
     cta_t: "一日早く。 <span class=\"hl\">悔いなく。</span>",
     cta_p: "自分のため、家族のため、患者さんのため——最初の腹部CTから始まります。",
-    cta_btn: "お問い合わせ"
+    cta_btn: "お問い合わせ",
+
+    /* 製品エビデンスカルーセル（v11） */
+    car_k: "オールインワン・エビデンス",
+    car_t: "製品から認証まで、<span class=\"hl\">ひとつに。</span>",
+    car_p: "PANCREASaver® の全体像を 6 つのテーマで — スワイプして探索。",
+    car1_k: "製品",
+    car1_t: "世界初の膵臓がん CT <span class=\"hl\">AI 検出</span>",
+    car1_p: "完全自動のエンドツーエンドシステム：CT 撮影完了と同時に解析し、5 分以内に疑わしい病変をマーク。院内 PACS/RIS とシームレス統合。",
+    car1_cta: "製品を知る",
+    car2_k: "臨床データ",
+    car2_t: "全国 1,473 例のリアルワールド検証、<span class=\"hl\">AUC 0.95</span>",
+    car2_p: "感度 89.7%、特異度 92.8%；2cm 未満の早期腫瘍への感度 92.1% — Radiology と Lancet Digital Health に掲載。",
+    car2_cta: "臨床データを見る",
+    car3_k: "論文",
+    car3_t: "5 編の国際論文、<span class=\"hl\">すべて検証可能。</span>",
+    car3_p: "Lancet Digital Health、Radiology、BMC Cancer など 5 編の実在論文：テーマ・抄録・PubMed リンク。",
+    car3_cta: "論文ライブラリへ",
+    car4_k: "知的財産",
+    car4_t: "台湾・米国で 10 件の特許、<span class=\"hl\">技術の防波堤。</span>",
+    car4_p: "システム・方法の二重クレームで医療画像解析と機械学習による膵臓がん検出を保護 — 米国の医療 AI 特許取得は非常に困難。",
+    car4_cta: "知的財産を見る",
+    car5_k: "規制認証",
+    car5_t: "TFDA 認証、<span class=\"hl\">FDA 画期的医療機器指定</span>",
+    car5_p: "TFDA 許可証（2023）、FDA Breakthrough Device Designation（2022）、510(k) 申請済み（2026.7）。",
+    car5_cta: "認証の歩みを見る",
+    car6_k: "導入プロセス",
+    car6_t: "契約から稼働まで、<span class=\"hl\">4 週間で導入。</span>",
+    car6_p: "医学センター・地域病院・健診センターで 300+ 回の判読実績 — データは院内完結、SaaS サブスク、継続的なモデル更新。",
+    car6_cta: "導入プランを見る"
   };
 
   window.PANCAD_I18N = window.PANCAD_I18N || {};

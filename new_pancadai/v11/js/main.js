@@ -455,6 +455,43 @@
     });
   }
 
+  /* ---------- 14.5 產品證據輪播（v11，Siemens 式） ---------- */
+  function initCarousel() {
+    var root = document.getElementById('carousel');
+    if (!root) return;
+    var track = document.getElementById('carTrack');
+    var dotsBox = document.getElementById('carDots');
+    var prev = document.getElementById('carPrev');
+    var next = document.getElementById('carNext');
+    if (!track || !track.children.length || !dotsBox) return;
+    var n = track.children.length, idx = 0, timer = null;
+    for (var i = 0; i < n; i++) {
+      (function (k) {
+        var d = document.createElement('button');
+        d.className = 'car-dot' + (k === 0 ? ' active' : '');
+        d.setAttribute('aria-label', 'Slide ' + (k + 1));
+        d.addEventListener('click', function () { go(k); restart(); });
+        dotsBox.appendChild(d);
+      })(i);
+    }
+    function go(i) {
+      idx = (i + n) % n;
+      track.style.transform = 'translateX(-' + (idx * 100) + '%)';
+      for (var j = 0; j < dotsBox.children.length; j++) {
+        dotsBox.children[j].classList.toggle('active', j === idx);
+      }
+    }
+    function restart() {
+      if (timer) clearInterval(timer);
+      timer = setInterval(function () { go(idx + 1); }, 6000);
+    }
+    if (prev) prev.addEventListener('click', function () { go(idx - 1); restart(); });
+    if (next) next.addEventListener('click', function () { go(idx + 1); restart(); });
+    root.addEventListener('mouseenter', function () { if (timer) clearInterval(timer); });
+    root.addEventListener('mouseleave', restart);
+    restart();
+  }
+
   /* ---------- 15. 啟動 ---------- */
   function boot() {
     initSunlight();
@@ -471,6 +508,7 @@
     initAUC();
     initQuiz();
     initFAQ();
+    initCarousel();
     window.addEventListener('langchange', function () {
       initBgPool();
       rebuildKinetic();

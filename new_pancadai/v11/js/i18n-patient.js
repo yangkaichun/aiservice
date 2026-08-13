@@ -49,7 +49,19 @@
 
     cta_t: "這一天，<span class=\"hl\">也可以屬於您。</span>",
     cta_p: "高風險族群請與您的醫師討論定期腹部影像檢查；醫療機構合作請聯繫我們。",
-    cta_btn: "與我們聯繫"
+    cta_btn: "與我們聯繫",
+
+    line_kicker: "護胰大聯盟 · 官方 Line",
+    line_t: "把醫療級衛教知識，<span class=\"hl\">放進您的口袋。</span>",
+    line_p: "加入護胰大聯盟官方 Line：24 小時 AI 即時問答、胰臟健康飲食建議與預防保健指南，由台大胰臟中心、衛福部與國健署的嚴謹衛教資料打造。",
+    line_f1_t: "權威知識庫",
+    line_f1_p: "台大胰臟中心 × 衛福部 × 國健署衛教資料",
+    line_f2_t: "全方位營養保健",
+    line_f2_p: "飲食建議・作息調整・預防保健指南",
+    line_f3_t: "24 小時即時問答",
+    line_f3_p: "症狀・危險因子・篩檢，隨時傳訊詢問",
+    line_btn: "點擊加入好友 @PancreasCare",
+    line_qr_p: "掃描 QR Code 立即加入"
   };
   var en = {
     meta_title: "A Day in a Life — Early Pancreatic Cancer Detection Story | PANCREASaver®",
@@ -100,7 +112,19 @@
 
     cta_t: "This day <span class=\"hl\">could be yours too.</span>",
     cta_p: "If you're at higher risk, talk to your doctor about regular abdominal imaging. Clinicians: contact us for collaboration.",
-    cta_btn: "Contact Us"
+    cta_btn: "Contact Us",
+
+    line_kicker: "Pancreas Care Alliance · Official LINE",
+    line_t: "Put medical-grade health education,<span class=\"hl\"> in your pocket.</span>",
+    line_p: "Join the official Pancreas Care Alliance LINE account: 24/7 AI Q&A, pancreatic health diet advice and prevention guides — built from rigorous education materials by NTU Pancreas Center, MOHW and HPA.",
+    line_f1_t: "Authoritative Knowledge Base",
+    line_f1_p: "NTU Pancreas Center × MOHW × HPA materials",
+    line_f2_t: "All-round Nutrition & Prevention",
+    line_f2_p: "Diet advice · lifestyle tips · prevention guides",
+    line_f3_t: "24/7 Instant Q&A",
+    line_f3_p: "Symptoms, risk factors, screening — ask anytime",
+    line_btn: "Add friend @PancreasCare",
+    line_qr_p: "Scan the QR code to join"
   };
   var ja = {
     meta_title: "ある患者の一日 — 膵臓がん早期発見ストーリー | PANCREASaver® 助胰見®",
@@ -151,7 +175,19 @@
 
     cta_t: "この一日は、<span class=\"hl\">あなたにも。</span>",
     cta_p: "ハイリスク層の方は、定期腹部画像検査について医師にご相談ください。医療機関の連携はお問い合わせください。",
-    cta_btn: "お問い合わせ"
+    cta_btn: "お問い合わせ",
+
+    line_kicker: "Pancreas Care Alliance · 公式 LINE",
+    line_t: "医療級の健康知識を、<span class=\"hl\">あなたのポケットに。</span>",
+    line_p: "公式 LINE に参加：24 時間 AI 即時回答、膵臓にやさしい食事・生活習慣・予防のアドバイス。台湾大学膵臓センター、衛福部、国健署の厳選された健康教育資料に基づきます。",
+    line_f1_t: "信頼できる知識ベース",
+    line_f1_p: "台湾大学膵臓センター × 衛福部 × 国健署",
+    line_f2_t: "栄養と予防ケア",
+    line_f2_p: "食事の提案・生活改善・予防ガイド",
+    line_f3_t: "24 時間即時 Q&A",
+    line_f3_p: "症状・危険因子・検診 — いつでも質問可能",
+    line_btn: "友だち追加 @PancreasCare",
+    line_qr_p: "QR コードをスキャンして参加"
   };
   window.PANCAD_I18N = window.PANCAD_I18N || {};
   window.PANCAD_I18N.zh = Object.assign(window.PANCAD_I18N.zh || {}, zh);
