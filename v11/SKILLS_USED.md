@@ -12,6 +12,18 @@
 
 ## 重大經驗教訓（建議回寫 skills / Memory）
 
+### 0. Cloudflare Pages 部署（2026-08-14 新增）
+- **流程**：`npm i -g wrangler` → `wrangler login`（OAuth——macOS 自動開瀏覽器授權，watch_patterns「Successfully logged in」）→ `wrangler pages project create pancadai-v11 --production-branch main` → `wrangler pages deploy new_pancadai/v11 --project-name pancadai-v11 --commit-dirty=true`
+- **驗證**：curl `https://pancadai-v11.pages.dev/`（308 為尾斜線 redirect，需 `-L`）
+- **更新**：只上傳變更檔（快）；每次改版需重跑 deploy
+
+### 0.1 專利/FDA 佐證連結方法（新增）
+- 專利深鏈：`https://patents.google.com/patent/{US11424021B2|TWI745940B}`——**先 curl 驗證 200＋title 內容**再上線（10 件全驗證）
+- FDA Breakthrough：官方計畫頁（fda.gov）＋新聞佐證（自由時報台大報導）——皆驗證 200
+
+### 0.2 i18n 批次 replace 坑（新增）
+- Python 批次 replace 含 HTML 的字典值時，**值尾逗號容易被吃掉**（old_string 含逗號、new_string 不含）→ JS SyntaxError → 每次批次後跑 `node --check` 或 verify_site.py 的 JS syntax 檢查
+
 ### 1. mflux 5120×2880 直接生成必崩潰 ⚠️ 最重要
 - **現象**：5120×2880 生成 Peak MLX 49.7GB+（64GB 機）→ multiprocessing 崩潰（`resource_tracker: leaked semaphore`）或停滯 0/4
 - **解法**：**2560×1440 生成（穩定，~11 分鐘/張）→ SeedVR2 2x 放大 5120**（SeedVR2 Peak 20GB 穩定）

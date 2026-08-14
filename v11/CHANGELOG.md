@@ -1,7 +1,15 @@
 # v11 陽光旅程 — 版本紀錄（CHANGELOG）
 
-> 部署：https://health.yangkaichun.net/new_pancadai/v11/（GitHub Pages，auto-sync 每 5 分鐘）
+> 部署：https://health.yangkaichun.net/new_pancadai/v11/（GitHub Pages，auto-sync 每 5 分鐘）＋ https://pancadai-v11.pages.dev（Cloudflare Pages，手動 wrangler deploy）
 > 主體：v7（患者旅程＋8 幕），整合 v2-v10 優點與 Siemens Healthineers 架構參考
+
+## v11.2.23（2026-08-14 15:41）— Cloudflare 部署＋專利/FDA 連結＋聯絡統一
+- **Cloudflare Pages 部署**：wrangler login（OAuth，Safari 授權）→ `wrangler pages project create pancadai-v11` → `wrangler pages deploy new_pancadai/v11`（314 檔）→ https://pancadai-v11.pages.dev
+- **專利列表超連結**：ip.html 10 件專利（US 4＋TW 6）→ Google Patents 深鏈（`patents.google.com/patent/{號}`），**全部 curl 驗證 200＋title 內容吻合**；st-tag 改 a 標籤（hover 藍底）＋↗
+- **聯絡資訊統一公司登記**：全站 footer（11 頁）地址「台北市大安區敦化南路一段367號11樓」＋Email info@pancad.ai＋電話 +886 02-2331-3971（三語，同 contact 頁）
+- **FDA Breakthrough 佐證連結**：clinician ev2 卡加 FDA 官方計畫頁＋自由時報報導（均驗證 200）；三語；`.cert-link` 樣式
+- 坑：批次 replace 吃掉 ev2_p 值尾逗號（三語）→ JS 語法錯誤 → 逐一補回
+- 版本 `?v=39`
 
 ## v11.2.22（2026-08-14 14:30）— 全站背景圖無 pad 滿版＋E1/E2 停用
 - **38 張第二批重生成完成**：bike/bridge/coffee/forest/kayak/picnic/yoga（台灣情境）＋hero_v7_morning_intl（晨光多元人種海報）＋hero_intl_01-30（西歐情境）——全部無 pad 滿版（2560×1440 生成 → 1280 小圖＋2560 HD webp）
