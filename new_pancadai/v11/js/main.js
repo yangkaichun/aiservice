@@ -179,8 +179,10 @@
     }
     var tier = netTier();
     var useHd = tier >= 1; /* v11.2：3g 以上也漸進載入 HD（小圖先顯示、HD 背景預載後替換） */
-    /* v11.2.20：無 pad 滿版圖（cover，不放大 113%）——sun_1-10 全數 + dinner 全數 */
-    var FULL = { '1': 1, '2': 1, '3': 1, '4': 1, '5': 1, '6': 1, '7': 1, '8': 1, '9': 1, '10': 1 };
+    /* v11.2.22：全部背景圖皆無 pad 滿版（cover，不放大 113%） */
+    var FULL = {};
+    ['1','2','3','4','5','6','7','8','9','10','bike','bridge','coffee','forest','kayak','picnic','yoga'].forEach(function (k) { FULL[k] = 1; });
+    for (var ii = 1; ii <= 30; ii++) FULL['i' + ii] = 1;
     /* 池洗牌（每次進站隨機順序，背景隨機產生） */
     shuffle(pool);
     /* 同頁不重複：目前正被顯示的圖 key → 計數 */
@@ -668,7 +670,7 @@
     });
   }
 
-  /* ---------- 14.7 hero 海報 HD 漸進（v11.2.16：couple/intl → 5120） ---------- */
+  /* ---------- 14.7 hero 海報 HD 漸進（v11.2.22：intl 無 pad 用 cover；couple pad 維持 113%） ---------- */
   function initPosterHD() {
     var lang = (document.documentElement.lang || 'zh').toLowerCase().replace('-', '');
     var isEn = lang === 'en';
@@ -677,7 +679,10 @@
     var hdSrc = 'assets/' + (isEn ? 'hero_v7_morning_intl' : 'hero_v7_morning_couple') + '_safe_hd.webp';
     posters.forEach(function (el) {
       var img = new Image();
-      img.onload = function () { el.style.backgroundImage = 'url(' + hdSrc + ')'; };
+      img.onload = function () {
+        el.style.backgroundImage = 'url(' + hdSrc + ')';
+        if (isEn) el.style.backgroundSize = 'cover';
+      };
       img.onerror = function () {};
       img.src = hdSrc;
     });
