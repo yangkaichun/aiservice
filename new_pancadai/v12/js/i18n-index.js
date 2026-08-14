@@ -147,6 +147,20 @@
     line_f3_p: "症狀・危險因子・篩檢，隨時傳訊詢問",
     line_btn: "點擊加入好友 @PancreasCare",
     line_qr_p: "掃描 QR Code 立即加入"
+
+    /* AI 光年守護（v12） */
+    ly_k: "AI 光年守護",
+    ly_t: "每一秒的判讀，<span class=\"hl\">都是守護生命的光年</span>",
+    ly_p: "從第一張影像到第一個 <2cm 病灶，AI 用秒為單位，為您爭取以年為單位的時間。",
+    ly1_n: "60–90<span>秒</span>",
+    ly1_t: "完成全胰臟分析",
+    ly1_p: "AI 在背景即時判讀，不中斷原有檢查流程。",
+    ly2_n: "0<span>次額外掃描</span>",
+    ly2_t: "同一張影像，多一位 AI 助手",
+    ly2_p: "分析您既有的腹部 CT，無需顯影劑、無需加做。",
+    ly3_n: "92.1<span>%</span>",
+    ly3_t: "敏感度（<2cm 腫瘤）",
+    ly3_p: "在腫瘤還小時就找到它——早一步，就是多一分可能。",
   };
 
   var en = {
@@ -286,6 +300,20 @@
     line_f3_p: "Symptoms, risk factors, screening — ask anytime",
     line_btn: "Add friend @PancreasCare",
     line_qr_p: "Scan the QR code to join"
+
+    /* Light-year Guard (v12) */
+    ly_k: "Light-year Guard",
+    ly_t: "Every second of AI reading <span class=\"hl\">protects a light-year of life</span>",
+    ly_p: "From the first image to the first tumor under 2cm — AI buys time in seconds so you gain it in years.",
+    ly1_n: "60–90<span>sec</span>",
+    ly1_t: "Full pancreas analysis",
+    ly1_p: "AI reads in the background in real time, without interrupting your imaging workflow.",
+    ly2_n: "0<span>extra scan</span>",
+    ly2_t: "Same image, one more AI assistant",
+    ly2_p: "Your existing abdominal CT is analyzed — no contrast, no rescan.",
+    ly3_n: "92.1<span>%</span>",
+    ly3_t: "Sensitivity for tumors <2cm",
+    ly3_p: "Finding it small means more possibilities — earlier is everything.",
   };
 
   var ja = {
@@ -425,6 +453,20 @@
     line_f3_p: "症状・危険因子・検診 — いつでも質問可能",
     line_btn: "友だち追加 @PancreasCare",
     line_qr_p: "QR コードをスキャンして参加"
+
+    /* 光年の見守り（v12） */
+    ly_k: "光年の見守り",
+    ly_t: "AI の一秒の判読が、<span class=\"hl\">命の光年を守る</span>",
+    ly_p: "最初の画像から最初の 2cm 未満の腫瘍まで——AI は秒単位で時間を稼ぎ、命を年単位で守ります。",
+    ly1_n: "60–90<span>秒</span>",
+    ly1_t: "全膵臓を分析",
+    ly1_p: "AI がバックグラウンドで即時判読。検査の流れを妨げません。",
+    ly2_n: "0<span>回追加スキャン</span>",
+    ly2_t: "同じ画像に、もう一人の AI アシスタント",
+    ly2_p: "既存の腹部 CT を分析。造影剤も追加撮影も不要です。",
+    ly3_n: "92.1<span>%</span>",
+    ly3_t: "2cm 未満腫瘍の感度",
+    ly3_p: "小さいうちに見つける——早ければ、可能性は広がります。",
   };
 
   window.PANCAD_I18N = window.PANCAD_I18N || {};
