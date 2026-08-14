@@ -146,7 +146,7 @@
     line_f3_t: "24 小時即時問答",
     line_f3_p: "症狀・危險因子・篩檢，隨時傳訊詢問",
     line_btn: "點擊加入好友 @PancreasCare",
-    line_qr_p: "掃描 QR Code 立即加入"
+    line_qr_p: "掃描 QR Code 立即加入",
 
     /* AI 光年守護（v12） */
     ly_k: "AI 光年守護",
@@ -299,7 +299,7 @@
     line_f3_t: "24/7 Instant Q&A",
     line_f3_p: "Symptoms, risk factors, screening — ask anytime",
     line_btn: "Add friend @PancreasCare",
-    line_qr_p: "Scan the QR code to join"
+    line_qr_p: "Scan the QR code to join",
 
     /* Light-year Guard (v12) */
     ly_k: "Light-year Guard",
@@ -452,7 +452,7 @@
     line_f3_t: "24 時間即時 Q&A",
     line_f3_p: "症状・危険因子・検診 — いつでも質問可能",
     line_btn: "友だち追加 @PancreasCare",
-    line_qr_p: "QR コードをスキャンして参加"
+    line_qr_p: "QR コードをスキャンして参加",
 
     /* 光年の見守り（v12） */
     ly_k: "光年の見守り",

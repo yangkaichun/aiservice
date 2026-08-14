@@ -340,7 +340,7 @@
     if (window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
     var hosts = [
       ['.hero', 48], ['.page-hero', 34], ['.journey-station', 30], ['.day-card', 20],
-      ['.quote-section', 16], ['.cta-band', 20], ['.line-band', 30], ['.stats-band', 16]
+      ['.quote-section', 16], ['.cta-band', 20], ['.line-band', 30], ['.stats-band', 16], ['.ly-band', 30]
     ];
     hosts.forEach(function (h) {
       $all(h[0]).forEach(function (el) {
