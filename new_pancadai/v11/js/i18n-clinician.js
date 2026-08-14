@@ -24,7 +24,7 @@
     ev1_p: "5 篇期刊論文，發表於 Lancet Digital Health、Radiology 等頂尖期刊——由台大醫院團隊主導的真實臨床驗證。",
     ev1_go: "查看 5 篇論文",
     ev2_t: "美國 FDA 突破性醫材",
-    ev2_p: "獲 FDA Breakthrough Device Designation，肯定其為「可顯著改善致命疾病早期偵測」的創新技術。\n<a class=\"cert-link\" href=\"https://www.fda.gov/medical-devices/how-study-and-market-your-device/breakthrough-devices-program\" target=\"_blank\" rel=\"noopener\">FDA 官方計畫頁 ↗</a>　<a class=\"cert-link\" href=\"https://health.ltn.com.tw/article/breakingnews/4481249\" target=\"_blank\" rel=\"noopener\">媒體報導：台大獲 FDA 認定 ↗</a>"
+    ev2_p: "獲 FDA Breakthrough Device Designation，肯定其為「可顯著改善致命疾病早期偵測」的創新技術。\n<a class=\"cert-link\" href=\"https://www.fda.gov/medical-devices/how-study-and-market-your-device/breakthrough-devices-program\" target=\"_blank\" rel=\"noopener\">FDA 官方計畫頁 ↗</a>　<a class=\"cert-link\" href=\"https://health.ltn.com.tw/article/breakingnews/4481249\" target=\"_blank\" rel=\"noopener\">媒體報導：台大獲 FDA 認定 ↗</a>",
     ev3_t: "台灣 TFDA 許可",
     ev3_p: "衛部醫器製字第007946號——台灣第一個獲許可的胰臟癌 AI 輔助偵測醫材。",
     ev4_t: "智慧財產權布局",
@@ -110,7 +110,7 @@
     ev1_p: "5 peer-reviewed papers in Lancet Digital Health, Radiology and other top journals — real clinical validation led by National Taiwan University Hospital.",
     ev1_go: "View 5 papers",
     ev2_t: "FDA Breakthrough Device",
-    ev2_p: "Breakthrough Device Designation from the U.S. FDA, recognizing technology that can significantly improve early detection of a life-threatening disease.\n<a class=\"cert-link\" href=\"https://www.fda.gov/medical-devices/how-study-and-market-your-device/breakthrough-devices-program\" target=\"_blank\" rel=\"noopener\">FDA official program page ↗</a>　<a class=\"cert-link\" href=\"https://health.ltn.com.tw/article/breakingnews/4481249\" target=\"_blank\" rel=\"noopener\">Media coverage: NTUH breakthrough designation ↗</a>"
+    ev2_p: "Breakthrough Device Designation from the U.S. FDA, recognizing technology that can significantly improve early detection of a life-threatening disease.\n<a class=\"cert-link\" href=\"https://www.fda.gov/medical-devices/how-study-and-market-your-device/breakthrough-devices-program\" target=\"_blank\" rel=\"noopener\">FDA official program page ↗</a>　<a class=\"cert-link\" href=\"https://health.ltn.com.tw/article/breakingnews/4481249\" target=\"_blank\" rel=\"noopener\">Media coverage: NTUH breakthrough designation ↗</a>",
     ev3_t: "TFDA clearance (Taiwan)",
     ev3_p: "Device license No. 007946 — the first licensed pancreatic cancer AI-assisted detection device in Taiwan.",
     ev4_t: "Intellectual Property Portfolio",
@@ -196,7 +196,7 @@
     ev1_p: "Lancet Digital Health、Radiologyなど主要誌に5本——台大病院チームによる実際の臨床検証。",
     ev1_go: "論文5本を見る",
     ev2_t: "FDA画期的医療機器",
-    ev2_p: "米国FDAのBreakthrough指定。致死的疾患の早期発見を有意に改善する技術として認められました。\n<a class=\"cert-link\" href=\"https://www.fda.gov/medical-devices/how-study-and-market-your-device/breakthrough-devices-program\" target=\"_blank\" rel=\"noopener\">FDA公式ページ ↗</a>　<a class=\"cert-link\" href=\"https://health.ltn.com.tw/article/breakingnews/4481249\" target=\"_blank\" rel=\"noopener\">ニュース記事：台大の認定 ↗</a>"
+    ev2_p: "米国FDAのBreakthrough指定。致死的疾患の早期発見を有意に改善する技術として認められました。\n<a class=\"cert-link\" href=\"https://www.fda.gov/medical-devices/how-study-and-market-your-device/breakthrough-devices-program\" target=\"_blank\" rel=\"noopener\">FDA公式ページ ↗</a>　<a class=\"cert-link\" href=\"https://health.ltn.com.tw/article/breakingnews/4481249\" target=\"_blank\" rel=\"noopener\">ニュース記事：台大の認定 ↗</a>",
     ev3_t: "台湾TFDA認証",
     ev3_p: "衛部醫器製字第007946号——台湾初の膵臓がんAI補助検出機器。",
     ev4_t: "知的財産ポートフォリオ",
