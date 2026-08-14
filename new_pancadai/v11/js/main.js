@@ -396,9 +396,9 @@
     if (el._dinnerTimer) { clearInterval(el._dinnerTimer); el._dinnerTimer = null; }
     var lang = (document.documentElement.lang || 'zh').toLowerCase().replace('-', '');
     var pool;
+    /* v11.2.22：E1/E2（dinner_zh_1/2）停用存檔備用——zh 晚餐池改用亞裔 dinner_ja */
     if (lang === 'en') pool = ['dinner_en_1', 'dinner_en_2'];
-    else if (lang === 'ja') pool = ['dinner_ja_1', 'dinner_ja_2'];
-    else pool = ['dinner_zh_1', 'dinner_zh_2'];
+    else pool = ['dinner_ja_1', 'dinner_ja_2'];
     /* v11.2.20：晚餐池全部無 pad 滿版（cover） */
     var DINNER_FULL = { 'dinner_zh_1': 1, 'dinner_zh_2': 1, 'dinner_ja_1': 1, 'dinner_ja_2': 1, 'dinner_en_1': 1, 'dinner_en_2': 1 };
     var idx = 0;
