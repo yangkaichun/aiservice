@@ -179,8 +179,8 @@
     }
     var tier = netTier();
     var useHd = tier >= 1; /* v11.2：3g 以上也漸進載入 HD（小圖先顯示、HD 背景預載後替換） */
-    /* v11.2.18：無 pad 滿版圖（cover，不放大 118%） */
-    var FULL = { '2': 1, '9': 1 }; /* sun 池 key：hero_sun_2 / hero_sun_9 */
+    /* v11.2.20：無 pad 滿版圖（cover，不放大 113%）——sun_1-10 全數 + dinner 全數 */
+    var FULL = { '1': 1, '2': 1, '3': 1, '4': 1, '5': 1, '6': 1, '7': 1, '8': 1, '9': 1, '10': 1 };
     /* 池洗牌（每次進站隨機順序，背景隨機產生） */
     shuffle(pool);
     /* 同頁不重複：目前正被顯示的圖 key → 計數 */
@@ -397,8 +397,8 @@
     if (lang === 'en') pool = ['dinner_en_1', 'dinner_en_2'];
     else if (lang === 'ja') pool = ['dinner_ja_1', 'dinner_ja_2'];
     else pool = ['dinner_zh_1', 'dinner_zh_2'];
-    /* v11.2.18：無 pad 滿版圖（cover） */
-    var DINNER_FULL = { 'dinner_zh_1': 1, 'dinner_zh_2': 1 };
+    /* v11.2.20：晚餐池全部無 pad 滿版（cover） */
+    var DINNER_FULL = { 'dinner_zh_1': 1, 'dinner_zh_2': 1, 'dinner_ja_1': 1, 'dinner_ja_2': 1, 'dinner_en_1': 1, 'dinner_en_2': 1 };
     var idx = 0;
     function show() {
       var base = pool[idx];
