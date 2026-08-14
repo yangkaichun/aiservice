@@ -30,6 +30,7 @@
     p3_t: "CT 影像組學特徵可區分胰臟癌與非癌胰臟",
     p3_t_en: "Radiomic Features at CT Can Distinguish Pancreatic Cancer from Noncancerous Pancreas",
     p3_h1: "雙族群驗證",
+    p3_hx: "台／美",
     p3_h2: "台灣測試集",
     p3_h3: "敏感度・台灣",
     p3_abs: "以機器學習（XGBoost）分析 CT 影像組學特徵。以台灣與美國資料訓練的廣義模型：台灣測試集敏感度 94.7%、特異度 95.4%、AUC 0.98；美國測試集敏感度 80.6%、特異度 100%、AUC 0.91。胰臟腺癌（PDAC）相較正常胰臟呈現較低訊號強度與較高異質性的影像特徵。",
@@ -48,6 +49,7 @@
     p5_h1: "回顧性綜述",
     p5_h2: "方法學總覽",
     p5_h3: "應用領域",
+    p5_hx: "胰膽疾病",
     p5_abs: "回顧性綜述論文，介紹機器學習與深度學習兩大 AI 方法論，並梳理 AI 在胰臟膽道疾病的研究版圖。胰膽疾病診斷與治療選擇複雜，常需整合多來源資料；AI 可應用於疾病偵測／診斷、風險分層與預後預測，輔助臨床醫師決策。",
     p5_abs_en: "A concise review of major AI methodologies (machine learning, deep learning) and the current landscape of AI research in pancreatobiliary diseases — where diagnosis and treatment selection are often complex — covering detection/diagnosis, risk stratification and prognosis prediction to supplement clinicians.",
 
@@ -104,6 +106,7 @@
     p5_h1: "Review",
     p5_h2: "Methodology overview",
     p5_h3: "Application area",
+    p5_hx: "Hepatobiliary",
     p5_abs: "Applications of artificial intelligence in pancreatic and biliary diseases.",
     p5_abs_en: "A concise review of major AI methodologies (machine learning, deep learning) and the current landscape of AI research in pancreatobiliary diseases — where diagnosis and treatment selection are often complex — covering detection/diagnosis, risk stratification and prognosis prediction to supplement clinicians.",
 
@@ -142,6 +145,7 @@
     p3_t: "Radiomic Features at CT Can Distinguish Pancreatic Cancer from Noncancerous Pancreas",
     p3_t_en: "Radiomic Features at CT Can Distinguish Pancreatic Cancer from Noncancerous Pancreas",
     p3_h1: "2 集団での検証",
+    p3_hx: "米／台",
     p3_h2: "台湾テストセット",
     p3_h3: "感度・台湾",
     p3_abs: "Radiomic Features at CT Can Distinguish Pancreatic Cancer from Noncancerous Pancreas.",
@@ -160,6 +164,7 @@
     p5_h1: "Review",
     p5_h2: "方法論の概要",
     p5_h3: "応用領域",
+    p5_hx: "膵胆疾患",
     p5_abs: "Applications of artificial intelligence in pancreatic and biliary diseases.",
     p5_abs_en: "A concise review of major AI methodologies (machine learning, deep learning) and the current landscape of AI research in pancreatobiliary diseases — where diagnosis and treatment selection are often complex — covering detection/diagnosis, risk stratification and prognosis prediction to supplement clinicians.",
 

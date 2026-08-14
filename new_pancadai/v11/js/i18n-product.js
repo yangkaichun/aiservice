@@ -2,6 +2,8 @@
 (function () {
   window.PANCAD_I18N = window.PANCAD_I18N || {};
   var zh = {
+    meta_title: "產品介紹 — PANCREASaver® 助胰見® ｜ 仲智數位健康",
+    meta_desc: "PANCREASaver® 助胰見®：全球首創全自動化胰臟癌 CT AI 輔助偵測系統。即時判讀、自動標記病灶、PACS 即時警示、結構化報告。",
     ph_kicker: "全球首創全自動化胰臟癌 CT AI 輔助偵測系統",
     hero_m1: "敏感度（<2cm）", hero_m2: "全國多中心 AUC", hero_m3: "累積判讀人次（含臨床驗證）", hero_m4: "突破性醫材認定",
     ph_h1: "在掃描結束前，<span class=\"hl\">AI 已交出答案</span>",
@@ -26,6 +28,8 @@
     cta_t: "想親眼看看它怎麼運作？", cta_p: "預約一場現場 demo，讓 AI 為您示範。", cta_btn: "與我們聊聊"
   };
   var en = {
+    meta_title: "Product — PANCREASaver® | PanCAD.ai",
+    meta_desc: "PANCREASaver®: the world's first fully-automated AI-assisted pancreatic cancer CT detection system. Real-time reading, auto lesion marking, PACS alerts, structured reports.",
     ph_kicker: "World's first fully-automated AI-assisted pancreatic cancer CT detection system",
     hero_m1: "Sensitivity (<2cm)", hero_m2: "National AUC", hero_m3: "Scans (incl. clinical validation)", hero_m4: "Breakthrough designation",
     ph_h1: "Before the scan ends, <span class=\"hl\">AI has the answer</span>",
@@ -50,6 +54,8 @@
     cta_t: "Want to see it in action?", cta_p: "Book a live demo and let the AI show you.", cta_btn: "Talk to us"
   };
   var ja = {
+    meta_title: "製品紹介 — PANCREASaver® 助胰見® ｜ 仲智数位健康",
+    meta_desc: "PANCREASaver® 助胰見®：世界初の全自動膵臓がんCT AI補助検出システム。リアルタイム読影、病変自動マーク、PACSアラート、構造化レポート。",
     ph_kicker: "世界初の全自動膵臓がんCT AI補助検出システム",
     hero_m1: "感度（2cm未満）", hero_m2: "全国AUC", hero_m3: "読影件数（臨床検証含む）", hero_m4: "ブレークスルー指定",
     ph_h1: "スキャンが終わる前に、<span class=\"hl\">AIは答えを出している</span>",

@@ -5,6 +5,11 @@ window.PANCAD_I18N = {
   zh: {
     /* 導覽 */
     nav_product: "產品介紹",
+    nav_brand: "仲智數位健康<small>PANCREASaver<sup>®</sup> 助胰見<sup>®</sup></small>",
+    foot_company: "仲智數位健康股份有限公司",
+    foot_email: "業務與合作：kc.yang@pancad.ai",
+    foot_hours: "服務時間：週一至週五 09:00–18:00",
+    foot_note: "本網站內容僅供衛教與產品資訊，不構成醫療診斷。",
     nav_patient: "患者旅程",
     nav_clinician: "醫療機構",
     nav_screening: "健檢中心",
@@ -55,6 +60,11 @@ window.PANCAD_I18N = {
   },
   en: {
     nav_product: "Product",
+    nav_brand: "PanCAD.ai<small>PANCREASaver<sup>®</sup></small>",
+    foot_company: "PanCAD.ai Co., Ltd.",
+    foot_email: "Business & partnership: kc.yang@pancad.ai",
+    foot_hours: "Service hours: Mon–Fri 09:00–18:00",
+    foot_note: "This website is for education and product information only, not medical advice.",
     nav_patient: "Patient Journey",
     nav_clinician: "For Clinicians",
     nav_screening: "Health Centers",
@@ -102,6 +112,11 @@ window.PANCAD_I18N = {
   },
   ja: {
     nav_product: "製品紹介",
+    nav_brand: "PanCAD.ai<small>PANCREASaver<sup>®</sup> 助胰見<sup>®</sup></small>",
+    foot_company: "仲智数位健康株式会社",
+    foot_email: "業務・提携：kc.yang@pancad.ai",
+    foot_hours: "営業時間：月〜金 09:00–18:00",
+    foot_note: "本サイトの内容は教育・製品情報のみで、医療診断を構成するものではありません。",
     nav_patient: "患者の旅",
     nav_clinician: "医療機関",
     nav_screening: "健診センター",
