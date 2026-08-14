@@ -15,10 +15,8 @@
     var saved = null;
     try { saved = localStorage.getItem(LANG_KEY); } catch (e) {}
     if (saved && SUPPORTED.indexOf(saved) !== -1) return saved;
-    var nav = (navigator.language || navigator.userLanguage || 'zh-TW').toLowerCase();
-    if (nav.indexOf('zh') === 0) return 'zh';
-    if (nav.indexOf('ja') === 0) return 'ja';
-    return 'en';
+    /* v11.2.21：網頁預設為中文版（不依瀏覽器語言） */
+    return 'zh';
   }
 
   function apply(lang) {
