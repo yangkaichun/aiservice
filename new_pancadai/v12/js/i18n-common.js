@@ -22,6 +22,7 @@ window.PANCAD_I18N = {
     nav_contact: "聯絡我們",
     nav_cta: "開始旅程",
     lang_btn: "語言",
+    skip_link: "跳到主要內容",
 
     /* Footer */
     foot_about: "仲智數位健康股份有限公司（PanCAD.ai）— 以 AI 守護胰臟健康，讓早期發現不再遙遠。",
@@ -78,6 +79,7 @@ window.PANCAD_I18N = {
     nav_contact: "Contact",
     nav_cta: "Start Journey",
     lang_btn: "Language",
+    skip_link: "Skip to content",
 
     foot_about: "PanCAD.ai — using AI to protect pancreatic health, making early detection reachable for everyone.",
     foot_nav: "Sitemap",
@@ -131,6 +133,7 @@ window.PANCAD_I18N = {
     nav_contact: "お問い合わせ",
     nav_cta: "旅をはじめる",
     lang_btn: "言語",
+    skip_link: "本文へスキップ",
 
     foot_about: "仲智デジタルヘルス（PanCAD.ai）— AIで膵臓の健康を守り、早期発見を身近に。",
     foot_nav: "サイトマップ",
