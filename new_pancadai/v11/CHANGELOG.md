@@ -3,6 +3,12 @@
 > 部署：https://health.yangkaichun.net/new_pancadai/v11/（GitHub Pages，auto-sync 每 5 分鐘）＋ https://pancadai-v11.pages.dev（Cloudflare Pages，手動 wrangler deploy）
 > 主體：v7（患者旅程＋8 幕），整合 v2-v10 優點與 Siemens Healthineers 架構參考
 
+## v11.2.24（2026-08-17 08:46）— A16/D1 修正採用；E1/E2 確定永久停用
+- **A16（hero_sun_9）**：右側改為一位男性＋一位女性（v2 版採用，2560 HD＋1280 小圖）
+- **D1（ct_scan_bed）**：完全平躺、無頭枕（v2 版採用，2560 HD＋1280 小圖）
+- **E1/E2（dinner_zh_1/2）**：多輪重生成（v2-v6 共 5 版：30 歲男性/父母+2 小孩/溫馨/單桌/近景/斜俯視）仍不滿意 → **確定永久停用**（zh 晚餐池維持 dinner_ja_1/2；檔案保留於 assets/＋存檔區說明）
+- 版本 `?v=41`
+
 ## v11.2.23（2026-08-14 15:41）— Cloudflare 部署＋專利/FDA 連結＋聯絡統一
 - **Cloudflare Pages 部署**：wrangler login（OAuth，Safari 授權）→ `wrangler pages project create pancadai-v11` → `wrangler pages deploy new_pancadai/v11`（314 檔）→ https://pancadai-v11.pages.dev
 - **專利列表超連結**：ip.html 10 件專利（US 4＋TW 6）→ Google Patents 深鏈（`patents.google.com/patent/{號}`），**全部 curl 驗證 200＋title 內容吻合**；st-tag 改 a 標籤（hover 藍底）＋↗
