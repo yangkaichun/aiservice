@@ -12,17 +12,33 @@
 
 ## 重大經驗教訓（建議回寫 skills / Memory）
 
-### 0. Cloudflare Pages 部署（2026-08-14 新增）
-- **流程**：`npm i -g wrangler` → `wrangler login`（OAuth——macOS 自動開瀏覽器授權，watch_patterns「Successfully logged in」）→ `wrangler pages project create pancadai-v11 --production-branch main` → `wrangler pages deploy new_pancadai/v11 --project-name pancadai-v11 --commit-dirty=true`
-- **驗證**：curl `https://pancadai-v11.pages.dev/`（308 為尾斜線 redirect，需 `-L`）
-- **更新**：只上傳變更檔（快）；每次改版需重跑 deploy
+### 0. Cloudflare Pages 部署（2026-08-14/18 更新）
+- **流程**：`npm i -g wrangler` → `wrangler login`（OAuth——macOS 自動開瀏覽器授權）→ `wrangler pages project create pancadai-v11 --production-branch main` → **`cd 專案目錄 && wrangler pages deploy . --project-name pancadai-v11 --commit-dirty=true`**
+- **⚠️ wrangler 4.x 已移除 Pages Functions 自動編譯**（functions/ 目錄不再偵測；需 Workers Static Assets）→ **固定用 wrangler@3.114**（`npm i -g wrangler@3`；v3 支援 functions/ 自動編譯）
+- **⚠️ 必須在專案目錄內執行**（wrangler 在 CWD 找 functions/——從 repo 根執行會「No functions」或把 functions 當靜態檔上傳）
+- 驗證：curl `https://pancadai-v11.pages.dev/`（308 尾斜線需 -L）
+- **環境坑**：wrangler 重裝後登入狀態遺失（需重新 `wrangler login`）；npm global bin 在 `~/.local/bin/`（PATH 常不含——用完整路徑）
 
-### 0.1 專利/FDA 佐證連結方法（新增）
+### 0.1 專利/FDA 佐證連結方法
 - 專利深鏈：`https://patents.google.com/patent/{US11424021B2|TWI745940B}`——**先 curl 驗證 200＋title 內容**再上線（10 件全驗證）
 - FDA Breakthrough：官方計畫頁（fda.gov）＋新聞佐證（自由時報台大報導）——皆驗證 200
 
-### 0.2 i18n 批次 replace 坑（新增）
-- Python 批次 replace 含 HTML 的字典值時，**值尾逗號容易被吃掉**（old_string 含逗號、new_string 不含）→ JS SyntaxError → 每次批次後跑 `node --check` 或 verify_site.py 的 JS syntax 檢查
+### 0.2 i18n 批次 replace 坑
+- Python 批次 replace 含 HTML 的字典值時，**值尾逗號容易被吃掉**（old_string 含逗號、new_string 不含）→ JS SyntaxError → 每次批次後跑 verify_site.py 的 JS syntax 檢查
+
+### 0.3 AI SEO 實作（2026-08-14）
+- **llms.txt**（https://llmstxt.org/ 標準）：AI 搜尋引擎/LLM 網站摘要——公司/產品/科學數據/頁面/FAQ/資源；robots.txt 引用
+- **JSON-LD @graph** 每頁：MedicalOrganization（完整公司資料）＋BreadcrumbList＋頁面特定（WebSite/Product/MedicalDevice/Article）
+- 數據誠實：所有宣稱（92.1%/AUC 0.95/2156+）與公開來源一致
+
+### 0.4 聯絡表單方案教訓（2026-08-18）
+- **Pages Functions 表單端點**（Turnstile＋GAS）實測失敗：多版本 wrangler 部署後仍 405/靜態 fallback（Functions routing 未接）→ **務實退回 mailto 方案**（使用者可接受：提交開啟 email app）
+- **Turnstile 未設 site key 的坑**：placeholder key → widget 驗證失敗 → **顯示含 troubleshooting 連結的錯誤區塊**（使用者誤以為網站有 Troubleshoot）→ 不用 Turnstile 就完全移除
+- 表單按鈕文字「送出表單」；mailto 帶姓名/電話/Email/訊息
+
+### 0.5 git push 認證（2026-08-18）
+- osxkeychain helper「Device not configured」（Hermes 終端無 keychain 存取）→ 用 `security find-generic-password` 讀 token → **Authorization header 方式推送**（token 不進 URL/記錄）
+- sync 腳本路徑：`~/.hermes/profiles/work/scripts/sync_pancadai.sh`（非 ~/.hermes/scripts/）
 
 ### 1. mflux 5120×2880 直接生成必崩潰 ⚠️ 最重要
 - **現象**：5120×2880 生成 Peak MLX 49.7GB+（64GB 機）→ multiprocessing 崩潰（`resource_tracker: leaked semaphore`）或停滯 0/4
