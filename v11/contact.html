@@ -130,7 +130,7 @@
 <section class="section">
   <div class="wrap">
     <div class="contact-grid">
-      <!-- 表單（v11.2.25：Cloudflare Turnstile + Pages Functions + GAS 寄信） -->
+      <!-- 表單（v11.2.25：mailto 送出） -->
       <div class="form-card reveal">
         <h2 style="font-size:24px;font-weight:800;margin-bottom:14px" data-i18n="form_t">傳送訊息</h2>
         <p style="margin-bottom:22px;color:#4a5260;line-height:1.8" data-i18n="form_p">填寫表單，我們會在兩個工作天內回覆您。</p>
@@ -150,7 +150,6 @@
             </select>
           </div>
           <div class="field"><label data-i18n="f_msg">訊息內容</label><textarea name="message" rows="5" required data-i18n-ph="f_msg"></textarea></div>
-          <div class="cf-turnstile" data-sitekey="TURNSTILE_SITE_KEY" data-theme="light" data-callback="onTurnstileSuccess" style="margin-bottom:14px"></div>
           <button class="btn btn-primary" type="submit" id="formBtn" data-i18n="f_submit">送出表單</button>
           <p id="formStatus" class="form-status" role="status" style="margin-top:12px;font-size:13.5px;font-weight:600;min-height:20px"></p>
         </form>
@@ -272,7 +271,7 @@
 </footer>
 
 <script>
-/* 表單：GAS 未部署前 mailto 備援 */
+/* v11.2.25：表單提交 → mailto:info@pancad.ai（開啟使用者 email app） */
 (function () {
   var form = document.getElementById('contactForm');
   if (!form) return;
@@ -290,62 +289,9 @@
   });
 })();
 </script>
-<script src="https://challenges.cloudflare.com/turnstile/v0/api.js?onload=onTurnstileLoad" async defer></script>
-<script src="js/i18n.js?v=43"></script>
-<script src="js/i18n-common.js?v=43"></script>
-<script src="js/i18n-contact.js?v=43"></script>
-<script src="js/main.js?v=43"></script>
-<script>
-/* v11.2.25：聯絡表單提交（Turnstile + Pages Functions → GAS → info@pancad.ai） */
-(function () {
-  var form = document.getElementById('contactForm');
-  if (!form) return;
-  var status = document.getElementById('formStatus');
-  var btn = document.getElementById('formBtn');
-  var turnstileToken = null;
-  window.onTurnstileLoad = function () {};
-  window.onTurnstileSuccess = function (token) { turnstileToken = token; };
-  function setStatus(msg, ok) {
-    status.textContent = msg;
-    status.style.color = ok ? '#1a7f37' : '#c0392b';
-  }
-  form.addEventListener('submit', function (e) {
-    e.preventDefault();
-    var name = form.name.value.trim(), email = form.email.value.trim();
-    var message = form.message.value.trim();
-    if (!name || !email || !message) { setStatus('請填寫姓名、Email 與訊息內容', false); return; }
-    if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) { setStatus('Email 格式不正確', false); return; }
-    if (!turnstileToken) { setStatus('請先完成人機驗證', false); return; }
-    btn.disabled = true;
-    btn.textContent = '送出中…';
-    setStatus('傳送中…', true);
-    fetch('/api/contact', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        name: name, email: email, phone: form.phone.value.trim(),
-        type: form.type.value, message: message,
-        lang: (document.documentElement.lang || 'zh-TW').toLowerCase(),
-        turnstile: turnstileToken
-      })
-    }).then(function (r) { return r.json().then(function (d) { return { ok: r.ok, d: d }; }); })
-      .then(function (res) {
-        btn.disabled = false; btn.textContent = '送出訊息';
-        if (res.ok && res.d.ok) {
-          setStatus('✅ 已送出！我們將於兩個工作天內回覆。', true);
-          form.reset();
-          if (window.turnstile) turnstile.reset();
-          turnstileToken = null;
-        } else {
-          setStatus('❌ 送出失敗，請稍後再試或直接來信 info@pancad.ai', false);
-        }
-      })
-      .catch(function () {
-        btn.disabled = false; btn.textContent = '送出訊息';
-        setStatus('❌ 網路錯誤，請稍後再試', false);
-      });
-  });
-})();
-</script>
+<script src="js/i18n.js?v=44"></script>
+<script src="js/i18n-common.js?v=44"></script>
+<script src="js/i18n-contact.js?v=44"></script>
+<script src="js/main.js?v=44"></script>
 </body>
 </html>
