@@ -20,7 +20,7 @@ NURSE = "a professional Taiwanese female nurse in her 30s-40s, cream and soft bl
 IMAGES = [
     # ── A. 首頁 ──
     ("01_hero_main", "16:9",
-     f"{ORANGE} walking through a sunlit garden at golden hour with {NURSE} beside them, warm sunlight streaming through trees, laughing together, {STYLE}"),
+     f"{ORANGE} walking through a sunlit garden at golden hour with a professional Taiwanese female nurse in her early 30s wearing a formal elegant uniform (tailored cream blazer and matching skirt, no name tag, no visible logo or brand marks) walking slightly behind and beside them with a graceful guiding hand gesture and warm professional smile, attentive premium concierge service posture, warm sunlight streaming through trees, laughing softly, {STYLE}, luxury concierge service atmosphere"),
     ("02_pain_point", "4:3",
      f"An elegant Taiwanese woman in her 50s sitting by a bright window in a sunlit café, a health check report on the table, holding a coffee cup, thoughtful yet composed expression, not ill-looking, warm morning light, {STYLE}"),
     ("03_value_health", "4:3",
