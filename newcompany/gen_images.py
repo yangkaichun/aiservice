@@ -13,27 +13,31 @@ STYLE = ("Photorealistic commercial lifestyle photography, "
          "ivory and soft gold color palette, shallow depth of field, "
          "high-end wellness brand aesthetic, sunny cheerful atmosphere")
 
-# 族群 / 護理師 描述基底
+# 族群 / 護理師 描述基底（v2：尊榮服務版）
 ORANGE = "elegant Taiwanese couple in their late 50s to early 60s, distinguished and graceful, smart casual attire (linen shirt, light blazer, silk scarf), silver hair styled neatly"
-NURSE = "a professional Taiwanese female nurse in her 30s-40s, cream and soft blue uniform, warm professional smile, gentle attentive posture"
+NURSE = ("a professional Taiwanese female nurse in her early 30s wearing a formal elegant uniform "
+         "(tailored cream blazer and matching skirt, no name tag, no visible logo or brand marks), "
+         "warm professional smile, attentive premium concierge service posture")
+MALE_CONCIERGE = ("a young professional Taiwanese male concierge in his late 20s in a formal tailored dark suit "
+                  "with white gloves, standing attentively with a welcoming hand gesture, premium hospitality service, no visible logo")
 
 IMAGES = [
     # ── A. 首頁 ──
     ("01_hero_main", "16:9",
      f"{ORANGE} walking through a sunlit garden at golden hour with a professional Taiwanese female nurse in her early 30s wearing a formal elegant uniform (tailored cream blazer and matching skirt, no name tag, no visible logo or brand marks) walking slightly behind and beside them with a graceful guiding hand gesture and warm professional smile, attentive premium concierge service posture, warm sunlight streaming through trees, laughing softly, {STYLE}, luxury concierge service atmosphere"),
     ("02_pain_point", "4:3",
-     f"An elegant Taiwanese woman in her 50s sitting by a bright window in a sunlit café, a health check report on the table, holding a coffee cup, thoughtful yet composed expression, not ill-looking, warm morning light, {STYLE}"),
+     f"An elegant Taiwanese woman in her mid 50s, stylishly dressed and well-groomed (chic outfit, delicate makeup, elegant accessories, silk scarf), sitting by a bright window in a sunlit café, a health check report on the table beside her coffee cup, holding the cup, smiling brightly with confident optimistic expression, warm morning light streaming in, {STYLE}"),
     ("03_value_health", "4:3",
      f"{NURSE} sitting with {ORANGE.split('Taiwanese')[1].strip()} lady in a bright modern living room, chatting warmly over tea, sunlight through sheer curtains, {STYLE}"),
     ("04_value_travel", "16:9",
      f"{ORANGE} strolling along a sunlit old street in Kyoto Japan with {NURSE}, maple leaves in autumn colors, warm sunlight, {STYLE}"),
     ("05_value_ecosystem", "16:9",
-     f"{ORANGE} in an elegant hotel lobby or art gallery with warm natural light, speaking with a courteous concierge, {STYLE}"),
+     f"{ORANGE} in an elegant hotel lobby with warm natural light, on the right side a young professional Taiwanese male concierge in his late 20s in a formal tailored dark suit with white gloves and a name tag, standing attentively with a welcoming hand gesture, premium hospitality service, {STYLE}"),
     # ── B. 關於我們 ──
     ("06_about_brand", "16:9",
      f"An elegant tea ceremony table in a sunlit garden at morning, porcelain teacups, silk scarf, a closed book, golden light rays, serene luxurious atmosphere, no people, {STYLE}"),
     ("07_about_team", "4:3",
-     f"Three professional Taiwanese female nurses in their 30s-40s in cream uniforms, smiling confidently together in a bright sunlit office, warm natural light, {STYLE}"),
+     f"Three professional Taiwanese female nurses in their early 30s wearing formal elegant cream uniforms (tailored blazers, no name tags, no visible logos), smiling confidently together in a bright sunlit office, warm natural light, {STYLE}"),
     # ── C. 服務方案 ──
     ("08_plan_prime", "4:3",
      f"{ORANGE.split('couple')[0].strip()} lady in her late 50s having a relaxed conversation with {NURSE} at a sunlit café window table, coffee and teacups, {STYLE}"),
@@ -51,9 +55,9 @@ IMAGES = [
     ("14_eco_travel", "16:9",
      f"{ORANGE} enjoying tea on a luxury cruise ship deck or scenic train with panoramic window views, golden light, {STYLE}"),
     ("15_eco_finance", "16:9",
-     f"A private banking lounge with warm wooden tones, {ORANGE} discussing with a professional Taiwanese wealth manager, coffee on the table, soft warm light, {STYLE}"),
+     f"A private banking lounge with warm wooden tones, {ORANGE} being attended by {MALE_CONCIERGE} serving them coffee, soft warm light, {STYLE}"),
     ("16_eco_checkup", "4:3",
-     f"A bright upscale health check center lobby, friendly Taiwanese staff welcoming {ORANGE.split('Taiwanese')[1].strip()} lady, clean modern interior, warm natural light, {STYLE}"),
+     f"A bright upscale health check center lobby, {NURSE} warmly welcoming {ORANGE.split('Taiwanese')[1].strip()} lady, clean modern interior, warm natural light, {STYLE}"),
     ("17_eco_insurance", "4:3",
      f"A Taiwanese insurance advisor explaining a document to {ORANGE} in a sunny modern living room, warm reassuring atmosphere, {STYLE}"),
     ("18_eco_mobility", "16:9",
@@ -64,7 +68,7 @@ IMAGES = [
     ("20_trust_warm", "4:3",
      f"{NURSE} gently holding the hand of {ORANGE.split('Taiwanese')[1].strip()} elderly lady, sitting together on a sunlit garden bench, tender caring moment, {STYLE}"),
     ("21_join_nurse", "16:9",
-     f"Taiwanese nurses in their 30s-40s in a bright training room, learning and smiling together, laptops and notebooks, warm collaborative atmosphere, sunlight, {STYLE}"),
+     f"Taiwanese female nurses in their early 30s in formal elegant cream uniforms in a bright training room, learning and smiling together, laptops and notebooks, warm collaborative atmosphere, sunlight, {STYLE}"),
     ("22_contact_cta", "16:9",
      f"An afternoon tea setting in warm sunlight, two teacups, a book and flowers on an elegant table, inviting serene mood, no people, {STYLE}"),
 ]
