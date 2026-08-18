@@ -1,7 +1,22 @@
 # v11 陽光旅程 — 版本紀錄（CHANGELOG）
 
-> 部署：https://health.yangkaichun.net/new_pancadai/v11/（GitHub Pages，auto-sync 每 5 分鐘）＋ https://pancadai-v11.pages.dev（Cloudflare Pages，手動 wrangler deploy）
+> 部署：https://health.yangkaichun.net/new_pancadai/v11/（GitHub Pages，auto-sync cron 每 5 分鐘）＋ https://pancadai-v11.pages.dev（Cloudflare Pages，wrangler v3 手動部署）
 > 主體：v7（患者旅程＋8 幕），整合 v2-v10 優點與 Siemens Healthineers 架構參考
+
+## v11.2.25（2026-08-18）— AI SEO＋Cloudflare 部署＋表單定案＋文字調整
+- **AI SEO 優化**（v11.2.23 尾聲）：
+  - `llms.txt` 建立（AI 搜尋引擎/LLM 標準摘要：公司/產品/科學數據/頁面/FAQ/護胰大聯盟）
+  - 全站 JSON-LD 強化（11 頁）：MedicalOrganization（統編/地址/電話/email/logo）＋BreadcrumbList；index＋WebSite/MedicalWebPage/Product（9 獎）；clinician＋MedicalDevice（TFDA 證號）；publications＋Article×5（PubMed）
+  - canonical 補齊（product.html）、sitemap 11 URL、robots.txt 加 llms 引用
+- **Cloudflare Pages 部署確立**：wrangler v3.114（v11 目錄內執行）→ `pancadai-v11.pages.dev`；**wrangler 4 已移除 Pages Functions 自動編譯**（需 Workers Static Assets）→ 固定用 v3
+- **聯絡表單方案演進（定案：mailto）**：
+  - 初案：Turnstile＋Pages Functions＋GAS 轉發（functions/contact.js＋gas/contact_email.gs＋FORM_SETUP.md）——Functions routing 測試失敗（405/靜態 fallback，wrangler 2/3/4 皆同）→ **棄用 Functions**
+  - 定案：**表單提交 → mailto:info@pancad.ai（開啟使用者 email app，含姓名/電話/Email/訊息）**——使用者確認可接受
+  - 按鈕「前往填寫表單」→「送出表單」（三語：Send form／送信フォーム）
+  - **Troubleshoot 根除**：來源為 Turnstile widget（placeholder site key 驗證失敗顯示 troubleshooting 連結）→ 移除整個 Turnstile 區塊＋functions/ 目錄（零殘留）
+- **「智財布局」→「專利佈局」**（全站 13 檔：nav/footer/mobile/字典）
+- **環境變更**：git push 改用 keychain token（osxkeychain「Device not configured」）→ Authorization header 推送；sync 腳本在 `~/.hermes/profiles/work/scripts/`
+- 版本 `?v=45`
 
 ## v11.2.24（2026-08-17 08:46）— A16/D1 修正採用；E1/E2 確定永久停用
 - **A16（hero_sun_9）**：右側改為一位男性＋一位女性（v2 版採用，2560 HD＋1280 小圖）
