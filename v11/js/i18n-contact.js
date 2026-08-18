@@ -21,7 +21,7 @@
     t_media: "媒體聯絡",
     t_other: "其他",
     f_msg: "訊息內容",
-    f_submit: "前往填寫表單 ↗",
+    f_submit: "送出表單",
     f_sending: "送出中…",
     f_done: "✓ 已送出，感謝您的訊息",
 
@@ -88,7 +88,7 @@
     t_media: "Media",
     t_other: "Other",
     f_msg: "Message",
-    f_submit: "Fill in the form ↗",
+    f_submit: "Send form",
     f_sending: "Sending…",
     f_done: "✓ Sent. Thank you!",
 
@@ -155,7 +155,7 @@
     t_media: "取材",
     t_other: "その他",
     f_msg: "メッセージ",
-    f_submit: "フォームへ ↗",
+    f_submit: "送信フォーム",
     f_sending: "送信中…",
     f_done: "✓ 送信しました。ありがとうございます。",
 
