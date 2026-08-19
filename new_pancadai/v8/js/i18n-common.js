@@ -1,0 +1,62 @@
+/* v8 共用字典（nav/footer）— 每頁都載入；家族慣例：扁平結構 + Object.assign 合併 */
+window.PANCAD_I18N = window.PANCAD_I18N || { zh: {}, en: {}, ja: {} };
+Object.assign(window.PANCAD_I18N.zh, {
+  nav_home: '首頁',
+  nav_product: '產品',
+  nav_evidence: '證據',
+  nav_patient: '患者',
+  nav_clinician: '醫療機構',
+  nav_about: '關於',
+  nav_contact: '聯絡',
+  footer_tag: '全球首創全自動化胰臟癌 CT AI 輔助偵測系統',
+  footer_about: '關於仲智',
+  footer_product: '產品資訊',
+  footer_evidence: '證據與認證',
+  footer_contact: '聯絡我們',
+  footer_rights: '© 2026 仲智數位健康股份有限公司 版權所有',
+  footer_ver: 'v8.1.0',
+  footer_company: '仲智數位健康股份有限公司',
+  footer_company_sub: 'PanCAD.ai · 統編 89183306',
+  footer_addr: '106690 臺北市大安區敦化南路一段376號11F',
+  footer_mail: 'kc.yang@pancad.ai'
+});
+Object.assign(window.PANCAD_I18N.en, {
+  nav_home: 'Home',
+  nav_product: 'Product',
+  nav_evidence: 'Evidence',
+  nav_patient: 'Patients',
+  nav_clinician: 'Clinicians',
+  nav_about: 'About',
+  nav_contact: 'Contact',
+  footer_tag: 'World\'s first fully automated AI-assisted detection system for pancreatic cancer on CT',
+  footer_about: 'About PanCAD',
+  footer_product: 'Product',
+  footer_evidence: 'Evidence & Certifications',
+  footer_contact: 'Contact',
+  footer_rights: '© 2026 PanCAD.ai Co., Ltd. All rights reserved.',
+  footer_ver: 'v8.1.0',
+  footer_company: 'PanCAD.ai Co., Ltd.',
+  footer_company_sub: 'Unified No. 89183306',
+  footer_addr: '11F, No. 376, Sec. 1, Dunhua S. Rd., Da\'an Dist., Taipei 106690, Taiwan',
+  footer_mail: 'kc.yang@pancad.ai'
+});
+Object.assign(window.PANCAD_I18N.ja, {
+  nav_home: 'ホーム',
+  nav_product: '製品',
+  nav_evidence: 'エビデンス',
+  nav_patient: '患者様',
+  nav_clinician: '医療機関',
+  nav_about: '会社概要',
+  nav_contact: 'お問い合わせ',
+  footer_tag: '世界初の膵臓がんCT AI自動検出システム',
+  footer_about: '会社概要',
+  footer_product: '製品情報',
+  footer_evidence: 'エビデンスと認証',
+  footer_contact: 'お問い合わせ',
+  footer_rights: '© 2026 仲智數位健康股份有限公司 全著作権所有',
+  footer_ver: 'v8.1.0',
+  footer_company: '仲智數位健康股份有限公司',
+  footer_company_sub: 'PanCAD.ai',
+  footer_addr: '106690 台北市大安區敦化南路一段376号11F',
+  footer_mail: 'kc.yang@pancad.ai'
+});

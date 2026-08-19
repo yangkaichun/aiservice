@@ -1,0 +1,62 @@
+/* v8 contact 字典（三語） */
+window.PANCAD_I18N = window.PANCAD_I18N || { zh: {}, en: {}, ja: {} };
+Object.assign(window.PANCAD_I18N.zh, {
+  ct_kicker: '聯絡我們',
+  ct_h1: '讓我們，<span class="hl">開始對話</span>',
+  ct_sub: '無論是產品諮詢、院所合作，或只是想了解更多——我們都很樂意與您聊聊。',
+  ct_info_tag: '聯絡資訊', ct_info_h: '直接與我們聯繫',
+  ct_mail_t: 'Email', ct_addr_t: '地址',
+  ct_addr_p: '106690 臺北市大安區敦化南路一段376號11F',
+  ct_co_t: '公司', ct_co_p: '仲智數位健康股份有限公司（PanCAD.ai）<br>統編 89183306',
+  ct_web_t: '網站',
+  ct_form_tag: '聯絡表單', ct_form_h: '告訴我們您的需求',
+  ct_f_name: '姓名', ct_f_name_ph: '您的姓名',
+  ct_f_mail: 'Email', ct_f_mail_ph: 'you@example.com',
+  ct_f_topic: '需求類別',
+  ct_f_t1: '產品諮詢', ct_f_t2: '醫療機構合作', ct_f_t3: '健檢中心導入', ct_f_t4: '媒體聯繫', ct_f_t5: '其他',
+  ct_f_msg: '訊息內容', ct_f_msg_ph: '請簡述您的需求…',
+  ct_f_send: '送出訊息',
+  ct_f_note: '送出後將開啟您的郵件程式，我們會盡快回覆。',
+  ct_cta_h: '讓每一次掃描，都成為攔截病灶的契機',
+  ct_cta_b: '直接寄信給我們', ct_cta_b2: '回到產品介紹'
+});
+Object.assign(window.PANCAD_I18N.en, {
+  ct_kicker: 'Contact us',
+  ct_h1: 'Let\'s <span class="hl">start the conversation</span>',
+  ct_sub: 'Product inquiries, hospital partnerships, or simply curiosity — we would love to talk.',
+  ct_info_tag: 'Contact info', ct_info_h: 'Reach us directly',
+  ct_mail_t: 'Email', ct_addr_t: 'Address',
+  ct_addr_p: '11F, No. 376, Sec. 1, Dunhua S. Rd., Da\'an Dist., Taipei 106690, Taiwan',
+  ct_co_t: 'Company', ct_co_p: 'PanCAD.ai Co., Ltd. (仲智數位健康股份有限公司)<br>Unified No. 89183306',
+  ct_web_t: 'Web',
+  ct_form_tag: 'Contact form', ct_form_h: 'Tell us what you need',
+  ct_f_name: 'Name', ct_f_name_ph: 'Your name',
+  ct_f_mail: 'Email', ct_f_mail_ph: 'you@example.com',
+  ct_f_topic: 'Topic',
+  ct_f_t1: 'Product inquiry', ct_f_t2: 'Hospital partnership', ct_f_t3: 'Screening center', ct_f_t4: 'Media', ct_f_t5: 'Other',
+  ct_f_msg: 'Message', ct_f_msg_ph: 'Please describe your needs…',
+  ct_f_send: 'Send message',
+  ct_f_note: 'Submitting opens your mail app; we will reply as soon as possible.',
+  ct_cta_h: 'Make every scan a chance to intercept',
+  ct_cta_b: 'Email us directly', ct_cta_b2: 'Back to product'
+});
+Object.assign(window.PANCAD_I18N.ja, {
+  ct_kicker: 'お問い合わせ',
+  ct_h1: 'さあ、<span class="hl">対話を始めましょう</span>',
+  ct_sub: '製品のご相談、病院様との連携、または単なるご興味——お気軽にお話しください。',
+  ct_info_tag: '連絡先', ct_info_h: '直接ご連絡ください',
+  ct_mail_t: 'メール', ct_addr_t: '住所',
+  ct_addr_p: '106690 台北市大安區敦化南路一段376号11F',
+  ct_co_t: '会社', ct_co_p: '仲智數位健康股份有限公司（PanCAD.ai）<br>統一編号 89183306',
+  ct_web_t: 'ウェブ',
+  ct_form_tag: 'お問い合わせフォーム', ct_form_h: 'ご用件をお知らせください',
+  ct_f_name: 'お名前', ct_f_name_ph: 'お名前',
+  ct_f_mail: 'メール', ct_f_mail_ph: 'you@example.com',
+  ct_f_topic: 'ご用件の種類',
+  ct_f_t1: '製品に関するお問い合わせ', ct_f_t2: '医療機関との連携', ct_f_t3: '健診センター導入', ct_f_t4: 'メディア', ct_f_t5: 'その他',
+  ct_f_msg: 'メッセージ', ct_f_msg_ph: 'ご用件の内容…',
+  ct_f_send: '送信',
+  ct_f_note: '送信するとメールアプリが開きます。できるだけ早く返信いたします。',
+  ct_cta_h: 'すべてのスキャンを、病変を捉える機会に',
+  ct_cta_b: '直接メールする', ct_cta_b2: '製品紹介へ戻る'
+});
