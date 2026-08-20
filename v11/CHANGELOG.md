@@ -27,7 +27,7 @@
 ## v11.2.23（2026-08-14 15:41）— Cloudflare 部署＋專利/FDA 連結＋聯絡統一
 - **Cloudflare Pages 部署**：wrangler login（OAuth，Safari 授權）→ `wrangler pages project create pancadai-v11` → `wrangler pages deploy new_pancadai/v11`（314 檔）→ https://pancadai-v11.pages.dev
 - **專利列表超連結**：ip.html 10 件專利（US 4＋TW 6）→ Google Patents 深鏈（`patents.google.com/patent/{號}`），**全部 curl 驗證 200＋title 內容吻合**；st-tag 改 a 標籤（hover 藍底）＋↗
-- **聯絡資訊統一公司登記**：全站 footer（11 頁）地址「台北市大安區敦化南路一段367號11樓」＋Email info@pancad.ai＋電話 +886 02-2331-3971（三語，同 contact 頁）
+- **聯絡資訊統一公司登記**：全站 footer（11 頁）地址「台北市大安區敦化南路一段376號11樓」＋Email info@pancad.ai＋電話 +886 02-2331-3971（三語，同 contact 頁）
 - **FDA Breakthrough 佐證連結**：clinician ev2 卡加 FDA 官方計畫頁＋自由時報報導（均驗證 200）；三語；`.cert-link` 樣式
 - 坑：批次 replace 吃掉 ev2_p 值尾逗號（三語）→ JS 語法錯誤 → 逐一補回
 - 版本 `?v=39`
@@ -39,7 +39,7 @@
 - 版本 `?v=37`
 
 ## v11.2.21（2026-08-14 09:40）— 聯絡資訊＋預設中文
-- 聯絡資訊：地址「台北市大安區敦化南路一段367號11樓」、Email info@pancad.ai、電話 **+886 02-2331-3971**
+- 聯絡資訊：地址「台北市大安區敦化南路一段376號11樓」、Email info@pancad.ai、電話 **+886 02-2331-3971**
 - 表單改為**新視窗**開啟 `https://www.pancad.ai/contact/getInTouch`（官方表單）
 - 全站 kc.yang@pancad.ai → info@pancad.ai（零殘留）
 - **網頁預設中文版**（i18n.js detect 一律回傳 zh，不依瀏覽器語言；手動切換仍記憶）

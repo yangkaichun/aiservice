@@ -27,7 +27,7 @@
 
     info_t: "聯絡資訊",
     info_company: "仲智數位健康股份有限公司（PanCAD.ai）",
-    info_addr: "台北市大安區敦化南路一段367號11樓",
+    info_addr: "台北市大安區敦化南路一段376號11樓",
     info_email: "Email：info@pancad.ai",
     info_phone: "電話：+886 02-2331-3971",
     info_hours: "服務時間：週一至週五 09:00–18:00",
@@ -94,7 +94,7 @@
 
     info_t: "Contact info",
     info_company: "PanCAD.ai Co., Ltd.",
-    info_addr: "11F., No.367, Sec.1, Dunhua S. Rd., Taipei City, Taiwan",
+    info_addr: "11F., No.376, Sec.1, Dunhua S. Rd., Taipei City, Taiwan",
     info_email: "Email: info@pancad.ai",
     info_phone: "Tel: +886 02-2331-3971",
     info_hours: "Mon–Fri 09:00–18:00 (GMT+8)",
@@ -161,7 +161,7 @@
 
     info_t: "連絡先",
     info_company: "仲智デジタルヘルス（PanCAD.ai）",
-    info_addr: "台北市大安區敦化南路一段367号11階",
+    info_addr: "台北市大安區敦化南路一段376号11階",
     info_email: "Email：info@pancad.ai",
     info_phone: "電話：+886 02-2331-3971",
     info_hours: "月〜金 09:00–18:00",
