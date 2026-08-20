@@ -1,7 +1,7 @@
 /* pancad.ai v7 — ip 字典（智慧財產權布局）?v=1 */
 (function () {
   var zh = {
-    meta_title: "智慧財產權布局 — 台美 10 件專利列表 | PANCREASaver® 助胰見®",
+    meta_title: "智慧財產權布局 — 台美 10 件發明專利 | PANCREASaver® 助胰見®",
     meta_desc: "PANCREASaver® 智慧財產權布局：台灣 6 件、美國 4 件發明專利，涵蓋醫療影像分析系統、機器學習識別胰臟癌方法與進階影像分析架構。",
 
     ph_badge: "智慧財產權",
