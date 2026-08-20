@@ -670,6 +670,19 @@
     });
   }
 
+  /* ---------- 14.7b 通用背景 HD 漸進（v11.2.26：data-bg-hd） ---------- */
+  document.querySelectorAll('[data-bg-hd]').forEach(function (el) {
+    var hd = el.getAttribute('data-bg-hd');
+    if (!hd) return;
+    var img = new Image();
+    img.onload = function () {
+      el.style.backgroundImage = 'url(' + hd + ')';
+      el.style.backgroundSize = 'cover';
+    };
+    img.onerror = function () {};
+    img.src = hd;
+  });
+
   /* ---------- 14.7 hero 海報 HD 漸進（v11.2.22：intl 無 pad 用 cover；couple pad 維持 113%） ---------- */
   function initPosterHD() {
     var lang = (document.documentElement.lang || 'zh').toLowerCase().replace('-', '');
