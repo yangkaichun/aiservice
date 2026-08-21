@@ -86,7 +86,7 @@
     fq1_q: "Is PANCREASaver® an app for me?",
     fq1_a: "No. PANCREASaver® is AI software for medical institutions that assists radiologists when you get an abdominal CT. You don't need to install anything.",
     fq2_q: "Do I need an extra “pancreas AI” scan?",
-    fq2_a: "Not necessarily. PANCREASaver® analyzes your existing abdominal CT scan — adding an \"AI assistant\" to read the same images, with no repeated scanning or extra examination needed. However, PANCREASaver® currently analyzes abdominal CT images taken after contrast enhancement: the contrast agent makes the pancreas and surrounding tissues more clearly defined, allowing the AI to read more accurately. For high-risk groups (e.g. age 60+, family history of pancreatic cancer, new-onset diabetes, long-term smoking), whether an abdominal CT scan with PANCREASaver assessment is appropriate must be discussed with your physician — who will evaluate based on your health condition, risk level and the necessity of the examination.",
+    fq2_a: "Not necessarily. PANCREASaver® analyzes your existing abdominal CT scan — giving the same images an \"AI assistant\" reader, with no repeated scanning or extra examination needed; whether the examination is appropriate should be evaluated with your physician.",
     fq3_q: "If AI flags something, do I have cancer?",
     fq3_a: "The AI marks a region as high-risk to remind the physician \"this deserves another look\"; the final diagnosis is made by the physician combining all imaging and clinical information.",
     fq4_q: "How long until I get results?",
