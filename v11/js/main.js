@@ -338,9 +338,12 @@
   }
   function initPhotons() {
     if (window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+    /* v11.2.26 手機效能：粒子減量 70% */
+    var mobile = window.matchMedia && window.matchMedia('(max-width:768px)').matches;
+    var scale = mobile ? 0.3 : 1;
     var hosts = [
-      ['.hero', 48], ['.page-hero', 34], ['.journey-station', 30], ['.day-card', 20],
-      ['.quote-section', 16], ['.cta-band', 20], ['.line-band', 30], ['.stats-band', 16]
+      ['.hero', Math.round(48 * scale)], ['.page-hero', Math.round(34 * scale)], ['.journey-station', Math.round(30 * scale)], ['.day-card', Math.round(20 * scale)],
+      ['.quote-section', Math.round(16 * scale)], ['.cta-band', Math.round(20 * scale)], ['.line-band', Math.round(30 * scale)], ['.stats-band', Math.round(16 * scale)]
     ];
     hosts.forEach(function (h) {
       $all(h[0]).forEach(function (el) {
