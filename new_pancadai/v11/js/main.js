@@ -165,16 +165,17 @@
     if (!els.length) return;
     var lang = (document.documentElement.lang || 'zh').toLowerCase().replace('-', '');
     var poolName = (lang === 'en') ? 'intl' : 'sun';
+    var isMobile = window.matchMedia && window.matchMedia('(max-width:768px)').matches;
     var pool;
     if (poolName === 'sun') {
       pool = ['bike', 'bridge', 'coffee', 'forest', 'kayak', 'picnic', 'yoga', '1', '2', '3', '4', '5', '6', '7', '8', '9', '10'].map(function (k) {
-        return { key: k, src: 'assets/hero_sun_' + k + '_safe.jpg', hd: 'assets/hero_sun_' + k + '_safe_hd.webp' };
+        return { key: k, src: 'assets/hero_sun_' + k + '_safe.jpg', src640: 'assets/hero_sun_' + k + '_safe_640.webp', hd: 'assets/hero_sun_' + k + '_safe_hd.webp' };
       });
     } else {
       pool = [];
       for (var i = 1; i <= 30; i++) {
         var n = (i < 10 ? '0' : '') + i;
-        pool.push({ key: 'i' + i, src: 'assets/hero_intl_' + n + '_safe.jpg', hd: 'assets/hero_intl_' + n + '_safe_hd.webp' });
+        pool.push({ key: 'i' + i, src: 'assets/hero_intl_' + n + '_safe.jpg', src640: 'assets/hero_intl_' + n + '_safe_640.webp', hd: 'assets/hero_intl_' + n + '_safe_hd.webp' });
       }
     }
     var tier = netTier();
@@ -193,11 +194,12 @@
       return free[Math.floor(Math.random() * free.length)];
     }
     function display(el, item, useHd) {
+      var src = isMobile && item.src640 ? item.src640 : item.src;
       var img = new Image();
       img.onload = function () {
-        el.style.backgroundImage = 'url(' + item.src + ')';
+        el.style.backgroundImage = 'url(' + src + ')';
         if (FULL[item.key]) el.style.backgroundSize = 'cover';
-        if (useHd) {
+        if (useHd && !isMobile) {
           var hd = new Image();
           hd.onload = function () {
             el.style.backgroundImage = 'url(' + item.hd + ')';
@@ -404,36 +406,44 @@
     else pool = ['dinner_ja_1', 'dinner_ja_2'];
     /* v11.2.20：晚餐池全部無 pad 滿版（cover） */
     var DINNER_FULL = { 'dinner_zh_1': 1, 'dinner_zh_2': 1, 'dinner_ja_1': 1, 'dinner_ja_2': 1, 'dinner_en_1': 1, 'dinner_en_2': 1 };
+    var dMobile = window.matchMedia && window.matchMedia('(max-width:768px)').matches;
     var idx = 0;
     function show() {
       var base = pool[idx];
+      var src = dMobile ? 'assets/' + base + '_safe_640.webp' : 'assets/' + base + '_safe.jpg';
       var img = new Image();
       img.onload = function () {
-        el.style.backgroundImage = 'url(assets/' + base + '_safe.jpg)';
+        el.style.backgroundImage = 'url(' + src + ')';
         if (DINNER_FULL[base]) el.style.backgroundSize = 'cover';
-        /* 漸進：HD 預載後替換（HD 未生成時 onerror 跳過，繼續用小圖） */
-        var hd = new Image();
-        hd.onload = function () {
-          el.style.backgroundImage = 'url(assets/' + base + '_safe_hd.webp)';
-          if (DINNER_FULL[base]) el.style.backgroundSize = 'cover';
-        };
-        hd.onerror = function () {};
-        hd.src = 'assets/' + base + '_safe_hd.webp';
+        /* 漸進：HD 預載後替換（手機不載 HD） */
+        if (!dMobile) {
+          var hd = new Image();
+          hd.onload = function () {
+            el.style.backgroundImage = 'url(assets/' + base + '_safe_hd.webp)';
+            if (DINNER_FULL[base]) el.style.backgroundSize = 'cover';
+          };
+          hd.onerror = function () {};
+          hd.src = 'assets/' + base + '_safe_hd.webp';
+        }
       };
       img.onerror = function () {};
-      img.src = 'assets/' + base + '_safe.jpg';
+      img.src = src;
     }
     show();
     el._dinnerTimer = setInterval(function () { idx = (idx + 1) % pool.length; show(); }, 10000);
-    /* 幕3 CT 固定圖 HD 漸進（data-ct-hd） */
+    /* 幕3 CT 固定圖 HD 漸進（data-ct-hd；手機不載 HD 用 640 小圖） */
     var ct = $('[data-ct-hd]');
     if (ct) {
-      var hdSrc = ct.getAttribute('data-ct-hd');
-      if (hdSrc) {
-        var hdImg = new Image();
-        hdImg.onload = function () { ct.style.backgroundImage = 'url(' + hdSrc + ')'; };
-        hdImg.onerror = function () {};
-        hdImg.src = hdSrc;
+      if (dMobile) {
+        ct.style.backgroundImage = "url('assets/ct_scan_bed_safe_640.webp')";
+      } else {
+        var hdSrc = ct.getAttribute('data-ct-hd');
+        if (hdSrc) {
+          var hdImg = new Image();
+          hdImg.onload = function () { ct.style.backgroundImage = 'url(' + hdSrc + ')'; };
+          hdImg.onerror = function () {};
+          hdImg.src = hdSrc;
+        }
       }
     }
   }
@@ -688,6 +698,8 @@
 
   /* ---------- 14.7 hero 海報 HD 漸進（v11.2.22：intl 無 pad 用 cover；couple pad 維持 113%） ---------- */
   function initPosterHD() {
+    /* v11.2.26：手機用 CSS 480 小圖（不載 HD） */
+    if (window.matchMedia && window.matchMedia('(max-width:768px)').matches) return;
     var lang = (document.documentElement.lang || 'zh').toLowerCase().replace('-', '');
     var isEn = lang === 'en';
     var posters = document.querySelectorAll('.hero-bg-video .poster, #patientHero .bg');
