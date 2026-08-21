@@ -667,10 +667,11 @@
 
   /* ---------- 14.6 動態計數器（v11.2.8：彩色滑動上升累加） ---------- */
   function initLiveCounter() {
+    return; /* v11.2.27 靜態 2000+（不再每秒 +1） */
     var els = $all('[data-live-count]');
     if (!els.length) return;
     els.forEach(function (el) {
-      var n = parseInt(el.getAttribute('data-start') || '2156', 10);
+      var n = parseInt(el.getAttribute('data-start') || '2000', 10);
       el.textContent = n;
       el._lcTimer = setInterval(function () {
         n++;
