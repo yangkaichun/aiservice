@@ -64,7 +64,7 @@
 
     ph_badge: "ニュース",
     ph_title_1: "すべての歩みに、<span class=\"hl\">良い知らせを。</span>",
-    ph_sub: "PANCREASaver®の最新情報——研究室から病床へ、前進し続けます。",
+    ph_sub: "PANCREASaver®の最新情報——研究室から臨床へ、前進し続けます。",
 
     n1_d: "2026.07",
     n1_t: "PANCREASaver®がAPDWで最新のリアルワールドデータを発表",
