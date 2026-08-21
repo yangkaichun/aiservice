@@ -2,7 +2,7 @@
 (function () {
   var zh = {
     meta_title: "關於仲智數位健康 — 台大技術・台灣新創 | PANCREASaver® 助胰見®",
-    meta_desc: "仲智數位健康股份有限公司（PanCAD.ai）：台大王偉仲教授技術、台大醫院廖偉智教授臨床驗證。從實驗室到病床，讓胰臟癌早期發現不再遙遠。",
+    meta_desc: "仲智數位健康股份有限公司（PanCAD.ai）：台大王偉仲教授技術、台大醫院廖偉智教授臨床驗證。從實驗室到臨床，讓胰臟癌早期發現不再遙遠。",
 
     ph_badge: "About PanCAD.ai",
     ph_title_1: "讓早期發現，<span class=\"hl\">不再是遙遠的事。</span>",
@@ -19,7 +19,7 @@
     mis3_p: "AI 不取代醫師，AI 讓醫師看得更早、更準。我們與放射科、胃腸科團隊站在同一邊。",
 
     tl_k: "里程碑",
-    tl_t: "從實驗室到病床",
+    tl_t: "從實驗室到臨床",
     tl_1_b: "2019",
     tl_1_p: "台大王偉仲教授團隊啟動 AI 胰臟癌早期偵測研究",
     tl_2_b: "2021",
@@ -41,7 +41,7 @@
     tech2_t: "台大醫院廖偉智教授",
     tech2_p: "臨床驗證主持人——真實世界的多中心前瞻性驗證",
     tech3_t: "仲智數位健康",
-    tech3_p: "技術移轉商轉——從實驗室到病床的產業化推手",
+    tech3_p: "技術移轉商轉——從實驗室到臨床的產業化推手",
 
     deep_k: "健康台灣深耕計畫",
     deep_t: "不只是產品，更是對台灣的承諾",
@@ -60,7 +60,7 @@
   };
   var en = {
     meta_title: "About PanCAD.ai — NTU Technology, Taiwan Startup | PANCREASaver®",
-    meta_desc: "PanCAD.ai Co., Ltd.: technology from Prof. Wang's NTU team, clinical validation led by Prof. Liao at NTUH. From lab to bedside — making early pancreatic cancer detection reachable.",
+    meta_desc: "PanCAD.ai Co., Ltd.: technology from Prof. Wang's NTU team, clinical validation led by Prof. Liao at NTUH. From lab to clinic — making early pancreatic cancer detection reachable.",
 
     ph_badge: "About PanCAD.ai",
     ph_title_1: "Making early detection <span class=\"hl\">reachable.</span>",
@@ -77,7 +77,7 @@
     mis3_p: "AI doesn't replace doctors; it lets them see earlier and more precisely. We stand with radiology and GI teams.",
 
     tl_k: "Milestones",
-    tl_t: "From lab to bedside",
+    tl_t: "From lab to clinic",
     tl_1_b: "2019",
     tl_1_p: "Prof. Wang's NTU team launches AI early detection research",
     tl_2_b: "2021",

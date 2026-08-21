@@ -48,7 +48,7 @@
     c6_s: "美國突破性醫材認定",
 
     tl_k: "里程碑",
-    tl_t: "從實驗室到病床",
+    tl_t: "從實驗室到臨床",
     tl_1_b: "2019",
     tl_1_p: "台大王偉仲教授團隊啟動 AI 胰臟癌早期偵測研究",
     tl_2_b: "2021",
@@ -135,7 +135,7 @@
     c6_s: "U.S. Breakthrough Device",
 
     tl_k: "Milestones",
-    tl_t: "From lab to bedside",
+    tl_t: "From lab to clinic",
     tl_1_b: "2019",
     tl_1_p: "Prof. Wang's team at NTU launches AI early detection research",
     tl_2_b: "2021",

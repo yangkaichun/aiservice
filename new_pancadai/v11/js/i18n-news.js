@@ -6,7 +6,7 @@
 
     ph_badge: "News",
     ph_title_1: "每一步，<span class=\"hl\">都有好消息。</span>",
-    ph_sub: "關於 PANCREASaver® 的最新動態——從實驗室到病床，我們持續前進。",
+    ph_sub: "關於 PANCREASaver® 的最新動態——從實驗室到臨床，我們持續前進。",
 
     n1_d: "2026.07",
     n1_t: "PANCREASaver® 於亞洲消化疾病週發表最新真實世界數據",
