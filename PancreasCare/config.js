@@ -4,5 +4,8 @@ const CONFIG = {
     GAS_URL: "https://script.google.com/macros/s/AKfycbxO2nAUXTwaV6x4geSMtGkkaATTtgCFTYmM7rz12r0twSvGkJ-MfLym3XeSoP-mJoMA6Q/exec",
     
     // Google OAuth 登入專用的 Client ID
-    CLIENT_ID: "15631583768-m6bf6st6cpdtrqudue4lmblf6l96sghg.apps.googleusercontent.com"
+    CLIENT_ID: "15631583768-m6bf6st6cpdtrqudue4lmblf6l96sghg.apps.googleusercontent.com",
+
+    // Gemini API Key
+    GEMINI_API_KEY: "AIzaSyC1sA5h9L8aU_1HjCw71s8pj_sms0PqUtc"
 };
