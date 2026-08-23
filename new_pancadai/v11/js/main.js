@@ -277,7 +277,7 @@
       d.style.width = d.style.height = size.toFixed(1) + 'px';
       d.style.left = (Math.random() * 100).toFixed(1) + '%';
       d.style.top = (spreadTop + Math.random() * (98 - spreadTop)).toFixed(1) + '%';
-      d.style.animationDuration = (9 + Math.random() * 14).toFixed(1) + 's';
+      d.style.animationDuration = (18 + Math.random() * 28).toFixed(1) + 's'; /* v11.2.28 慢速 */
       d.style.animationDelay = (Math.random() * 9).toFixed(1) + 's';
       host.appendChild(d);
     }
@@ -317,7 +317,7 @@
       p.style.setProperty('--ph-rise', (-(h * 0.9 + Math.random() * h * 0.6)).toFixed(0) + 'px');
       p.style.setProperty('--ph-sw', ((Math.random() * 2 - 1) * 40).toFixed(0) + 'px');
       p.style.setProperty('--ph-op', (0.5 + Math.random() * 0.5).toFixed(2));
-      p.style.animationDuration = (3 + Math.random() * 3.5).toFixed(2) + 's'; /* 快速上升 */
+      p.style.animationDuration = (6 + Math.random() * 7).toFixed(2) + 's'; /* v11.2.28 慢速上升 */
       p.style.animationDelay = (Math.random() * 4).toFixed(2) + 's';
       host.appendChild(p);
     }
@@ -355,16 +355,16 @@
         layer.setAttribute('aria-hidden', 'true');
         el.appendChild(layer);
         spawnPhotons(layer, h[1]);
-        /* 動態重生：每 1.5 秒隨機重生 2 顆 → 不間斷隨機出現 */
+        /* 動態重生：每 3 秒隨機重生 1 顆（v11.2.28 慢速） */
         (function (lay, cnt) {
           setInterval(function () {
             var dots = lay.querySelectorAll('.photon');
             if (!dots.length) return;
-            for (var k = 0; k < 2; k++) {
+            for (var k = 0; k < 1; k++) {
               var p = dots[Math.floor(Math.random() * dots.length)];
               respawnPhoton(p, lay.clientHeight || 700);
             }
-          }, 1500);
+          }, 3000);
         })(layer, h[1]);
       });
     });

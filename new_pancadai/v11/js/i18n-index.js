@@ -9,7 +9,7 @@
     hero_badge: "AI 胰臟癌早期偵測",
     hero_title_1: "活出精彩",
     hero_title_2: "<span class=\"hl\">不胰憾。</span>",
-    hero_sub: "胰臟癌早期幾乎沒有症狀。PANCREASaver® 以 AI 在腫瘤還小於 2 公分時就找到它——就像天亮之前的第一道光，為您與家人爭取最寶貴的治療時間。",
+    hero_sub: "胰臟癌早期幾乎沒有症狀。PANCREASaver® 助胰見® 影像診斷 AI，在腫瘤還小於 2 公分時就找到它——為您與家人爭取最寶貴的治療時機。",
     hero_cta_1: "開始照護旅程",
     hero_cta_2: "醫療機構合作",
     hero_m1: "敏感度（<2cm）",
@@ -20,7 +20,7 @@
 
     /* 病患的一天（精簡 3 幕） */
     day_k: "以患者為中心",
-    day_t: "這是平常的一天，直到 AI 看見了光",
+    day_t: "這是看似平常的一天，直到 AI 發現潛在危機，為生命帶來轉機",
     day_p: "一位 40 歲的主角，一天之內經歷了從無症狀到安心確診的旅程——沒有恐慌，因為發現得早。",
     d1_time: "06:00 晨光",
     d1_t: "出門，天氣很好",
@@ -156,7 +156,7 @@
     hero_badge: "AI-Powered Early Detection",
     hero_title_1: "Catch it early.",
     hero_title_2: "<span class=\"hl\">Live it fully.</span>",
-    hero_sub: "Pancreatic cancer shows almost no early symptoms. PANCREASaver® uses AI to find it while the tumor is still under 2cm — like the first light before dawn, buying your family the most precious treatment time.",
+    hero_sub: "Pancreatic cancer shows almost no early symptoms. PANCREASaver® imaging AI finds it while the tumor is still under 2cm — buying you and your family the most precious treatment window.",
     hero_cta_1: "Start the Journey",
     hero_cta_2: "For Clinicians",
     hero_m1: "Sensitivity (<2cm)",
@@ -166,7 +166,7 @@
     hero_scroll: "Scroll to explore",
 
     day_k: "Patient First",
-    day_t: "An ordinary day, until AI found the light",
+    day_t: "An ordinary-looking day, until AI spotted a hidden risk and changed everything",
     day_p: "One morning, one checkup, one small circle — and a family that kept its tomorrow. Early detection changes everything.",
     d1_time: "06:00 AM · Dawn",
     d1_t: "A beautiful day to be out",
@@ -295,7 +295,7 @@
     hero_badge: "AI膵臓がん早期発見",
     hero_title_1: "一日早く見つければ、",
     hero_title_2: "<span class=\"hl\">可能性は広がる。</span>",
-    hero_sub: "膵臓がんは初期にほとんど症状がありません。PANCREASaver®はAIで腫瘍が2cm未満のうちに見つけます——夜明け前の最初の光のように、家族のための最も貴重な治療時間を守ります。",
+    hero_sub: "膵臓がんは初期にほとんど症状がありません。PANCREASaver® 助胰見® 画像診断AIは、腫瘍が2cm未満のうちに見つけます——ご家族とともに最も貴重な治療のタイミングを守ります。",
     hero_cta_1: "ケアの旅をはじめる",
     hero_cta_2: "医療機関の方へ",
     hero_m1: "感度（2cm未満）",
@@ -305,7 +305,7 @@
     hero_scroll: "スクロール",
 
     day_k: "患者中心",
-    day_t: "何気ない一日。AIが光を見つけた",
+    day_t: "何気ない一日に見えた。AIが潜むリスクを見つけ、命に転機をもたらした",
     day_p: "朝、検査、そして小さな丸——家族の明日は守られた。早期発見がすべてを変えます。",
     d1_time: "06:00 夜明け",
     d1_t: "いい天気だな、出かけよう",
