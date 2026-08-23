@@ -30,7 +30,7 @@
     info_addr: "台北市大安區敦化南路一段376號11樓",
     info_email: "Email：info@pancad.ai",
     info_phone: "電話：+886 02-2331-3971",
-    info_hours: "服務時間：週一至週五 09:00–18:00",
+    info_hours: "服務時間：週一至週五 09:00–17:00",
     info_note: "本網站內容僅供衛教與產品資訊，不構成醫療診斷。任何健康問題請諮詢您的醫師。",
 
     quiz_k: "先做 30 秒自測",
@@ -97,7 +97,7 @@
     info_addr: "11F., No.376, Sec.1, Dunhua S. Rd., Taipei City, Taiwan",
     info_email: "Email: info@pancad.ai",
     info_phone: "Tel: +886 02-2331-3971",
-    info_hours: "Mon–Fri 09:00–18:00 (GMT+8)",
+    info_hours: "Mon–Fri 09:00–17:00 (GMT+8)",
     info_note: "This site is for education and product information only; it does not constitute medical advice. Please consult your physician.",
 
     quiz_k: "Start with a 30-second check",
@@ -164,7 +164,7 @@
     info_addr: "台北市大安區敦化南路一段376号11階",
     info_email: "Email：info@pancad.ai",
     info_phone: "電話：+886 02-2331-3971",
-    info_hours: "月〜金 09:00–18:00",
+    info_hours: "月〜金 09:00–17:00",
     info_note: "本サイトは教育・製品情報の提供を目的としており、医療診断を構成するものではありません。健康上の問題は医師にご相談ください。",
 
     quiz_k: "まず30秒チェック",
