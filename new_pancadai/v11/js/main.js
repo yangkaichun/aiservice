@@ -684,8 +684,10 @@
     });
   }
 
-  /* ---------- 14.7b 通用背景 HD 漸進（v11.2.26：data-bg-hd） ---------- */
+  /* ---------- 14.7b 通用背景 HD 漸進（v11.2.26：data-bg-hd；手機跳過） ---------- */
+  var bgHdMobile = window.matchMedia && window.matchMedia('(max-width:768px)').matches;
   document.querySelectorAll('[data-bg-hd]').forEach(function (el) {
+    if (bgHdMobile) return;
     var hd = el.getAttribute('data-bg-hd');
     if (!hd) return;
     var img = new Image();
