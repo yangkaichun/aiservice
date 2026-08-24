@@ -687,6 +687,7 @@
   /* ---------- 14.7c 雙圖交替背景（v11.2.28：data-bg-pair="a.jpg|b.jpg" 10 秒輪換；en 分流） ---------- */
   var pageLang = (document.documentElement.lang || 'zh').toLowerCase().replace('-', '');
   var isEn = pageLang === 'en';
+  var isJa = pageLang === 'ja';
   document.querySelectorAll('[data-bg-pair]').forEach(function (el) {
     var pairAttr = (isEn && el.getAttribute('data-bg-pair-en')) ? 'data-bg-pair-en' : 'data-bg-pair';
     var srcs = (el.getAttribute(pairAttr) || '').split('|').filter(Boolean);
@@ -709,15 +710,15 @@
 
   /* ---------- 14.7d 固定背景語言分流（v11.2.29：en 版用 data-bg-fixed-en 西歐圖） ---------- */
   document.querySelectorAll('[data-bg-fixed]').forEach(function (el) {
-    var enSrc = el.getAttribute('data-bg-fixed-en');
-    if (isEn && enSrc) el.style.backgroundImage = 'url(' + enSrc + ')';
+    var langSrc = isEn ? el.getAttribute('data-bg-fixed-en') : (isJa ? el.getAttribute('data-bg-fixed-ja') : null);
+    if (langSrc) el.style.backgroundImage = 'url(' + langSrc + ')';
   });
 
   /* ---------- 14.7b 通用背景 HD 漸進（v11.2.26：data-bg-hd；手機跳過） ---------- */
   var bgHdMobile = window.matchMedia && window.matchMedia('(max-width:768px)').matches;
   document.querySelectorAll('[data-bg-hd]').forEach(function (el) {
     if (bgHdMobile) return;
-    var hd = (isEn && el.getAttribute('data-bg-hd-en')) ? el.getAttribute('data-bg-hd-en') : el.getAttribute('data-bg-hd');
+    var hd = (isEn && el.getAttribute('data-bg-hd-en')) ? el.getAttribute('data-bg-hd-en') : (isJa && el.getAttribute('data-bg-hd-ja')) ? el.getAttribute('data-bg-hd-ja') : el.getAttribute('data-bg-hd');
     if (!hd) return;
     var img = new Image();
     img.onload = function () {
