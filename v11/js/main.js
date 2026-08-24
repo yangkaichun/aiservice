@@ -684,6 +684,23 @@
     });
   }
 
+  /* ---------- 14.7c 雙圖交替背景（v11.2.28：data-bg-pair="a.jpg|b.jpg" 10 秒輪換） ---------- */
+  document.querySelectorAll('[data-bg-pair]').forEach(function (el) {
+    var srcs = (el.getAttribute('data-bg-pair') || '').split('|').filter(Boolean);
+    if (srcs.length < 1) return;
+    var pi = 0;
+    function showPair() {
+      var src = srcs[pi % srcs.length];
+      pi++;
+      var img = new Image();
+      img.onload = function () { el.style.backgroundImage = 'url(' + src + ')'; el.style.backgroundSize = 'cover'; };
+      img.onerror = function () {};
+      img.src = src;
+    }
+    showPair();
+    if (srcs.length > 1) el._pairTimer = setInterval(showPair, 10000);
+  });
+
   /* ---------- 14.7b 通用背景 HD 漸進（v11.2.26：data-bg-hd；手機跳過） ---------- */
   var bgHdMobile = window.matchMedia && window.matchMedia('(max-width:768px)').matches;
   document.querySelectorAll('[data-bg-hd]').forEach(function (el) {
