@@ -12,7 +12,24 @@
 
 ## 重大經驗教訓（建議回寫 skills / Memory）
 
-### 0. Cloudflare Pages 部署（2026-08-14/18 更新）
+### 0.5 三語配圖分流與 img2img（2026-08-24 新增）
+- **mflux 圖生圖參數**：是 `--image-path`＋`--image-strength`（`--image`/`--strength` 會 ambiguous 錯誤）；以 zh 圖為底換人種（同場景構圖）→ `--image-strength 0.55`
+- **三語背景分流**：`data-bg-fixed`（inline 顯示）＋`data-bg-fixed-en/ja`＋`data-bg-hd-en/ja`＋`data-bg-pair-en`（交替）——JS 依 `html lang` 選圖（en/ja 分流）；屬性順序陷阱：`data-bg-hd` 可能夾在 fixed-en/hd-en 之間——用正則寬鬆匹配
+- **data-i18n HTML 值**：字典值含 `<sup>`/`<span>` 的元素必須用 `data-i18n-html`（data-i18n 用 textContent 顯示字面標籤=亂碼）
+- **語言偵測**：使用者要求「依瀏覽器語言」——zh/ja 判斷、其他一律 en（localStorage 記憶覆寫）——與先前「預設中文」需求相反——以最新指示為準
+
+### 0.6 健康台灣深耕計畫（2026-08-24 新增）
+- deep-plan 獨立頁＝複製 pancadai/index.html（Bootstrap CDN＋image/ 目錄——架構一模一樣）；「聯繫我們」改 mailto
+- 3 入口：hero CTA（btn-deep 橘色）＋浮動按鈕（deep-float fixed 右下）＋footer 連結——皆 zh-only
+- zh-only 機制：CSS `html:not([lang="zh-TW"]) .zh-only{display:none}`
+- 新頁面加入 sitemap 用**無 .html 路徑**（/deep-plan/——避免 CF 308 規則重定向）
+
+### 0.7 CF `.html → 無擴展名` 308 規則（2026-08 待刪）
+- 舊站殘留的 Redirect Rule（*.html → 無擴展名）造成：GSC「替代頁面」「頁面會重新導向」「驗證失敗」——sitemap/canonical 用 .html 但實際 308 到無擴展名
+- 解法：dashboard → Rules → Redirect Rules/Bulk Redirects 刪除（需使用者操作——OAuth token 無 zone 權限）
+- **GA/GSC 檢查器（無 UA）**：CF 挑戰（Bot Fight/BIC）擋無 UA 請求——Hostname Skip 規則（全勾）為最終解
+
+### 0. Cloudflare Pages 部署（2026-08-14 新增）
 - **流程**：`npm i -g wrangler` → `wrangler login`（OAuth——macOS 自動開瀏覽器授權）→ `wrangler pages project create pancadai-v11 --production-branch main` → **`cd 專案目錄 && wrangler pages deploy . --project-name pancadai-v11 --commit-dirty=true`**
 - **⚠️ wrangler 4.x 已移除 Pages Functions 自動編譯**（functions/ 目錄不再偵測；需 Workers Static Assets）→ **固定用 wrangler@3.114**（`npm i -g wrangler@3`；v3 支援 functions/ 自動編譯）
 - **⚠️ 必須在專案目錄內執行**（wrangler 在 CWD 找 functions/——從 repo 根執行會「No functions」或把 functions 當靜態檔上傳）
