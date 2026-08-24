@@ -17,7 +17,7 @@ for i in "${!NAMES[@]}"; do
   while [ $attempt -lt 3 ]; do
     attempt=$((attempt+1))
     echo "=== [$name] 嘗試 $attempt $(date '+%H:%M:%S') ==="
-    PYTHONPATH= "$MFX" --output "$raw" --prompt "$PROMPT" --image "$src" --strength 0.55 \
+    PYTHONPATH= "$MFX" --output "$raw" --prompt "$PROMPT" --image-path "$src" --image-strength 0.55 \
       --width 2560 --height 1440 --steps 6 -q 8 --seed $((RANDOM*2)) > "_gen_v11/enfix/${name}_2.log" 2>&1 &
     MPID=$!
     while kill -0 $MPID 2>/dev/null; do
