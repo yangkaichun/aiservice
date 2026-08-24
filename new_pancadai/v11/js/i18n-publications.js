@@ -88,6 +88,7 @@
     p3_t: "Radiomic Features at CT Can Distinguish Pancreatic Cancer from Noncancerous Pancreas",
     p3_t_en: "Radiomic Features at CT Can Distinguish Pancreatic Cancer from Noncancerous Pancreas",
     p3_h1: "Two-population validation",
+    p3_hx: "Taiwan / US",
     p3_h2: "Taiwan test set",
     p3_h3: "Sensitivity · Taiwan",
     p3_abs: "Radiomic Features at CT Can Distinguish Pancreatic Cancer from Noncancerous Pancreas.",
