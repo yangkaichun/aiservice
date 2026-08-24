@@ -686,7 +686,8 @@
 
   /* ---------- 14.7c 雙圖交替背景（v11.2.28：data-bg-pair="a.jpg|b.jpg" 10 秒輪換） ---------- */
   document.querySelectorAll('[data-bg-pair]').forEach(function (el) {
-    var srcs = (el.getAttribute('data-bg-pair') || '').split('|').filter(Boolean);
+    var pairAttr = (pageLang === 'en' && el.getAttribute('data-bg-pair-en')) ? 'data-bg-pair-en' : 'data-bg-pair';
+    var srcs = (el.getAttribute(pairAttr) || '').split('|').filter(Boolean);
     if (srcs.length < 1) return;
     var pi = 0;
     function showPair() {
