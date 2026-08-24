@@ -15,8 +15,11 @@
     var saved = null;
     try { saved = localStorage.getItem(LANG_KEY); } catch (e) {}
     if (saved && SUPPORTED.indexOf(saved) !== -1) return saved;
-    /* v11.2.21：網頁預設為中文版（不依瀏覽器語言） */
-    return 'zh';
+    /* v11.2.29：依瀏覽器語言——zh→中文、ja→日文、其他一律英文 */
+    var nav = (navigator.language || navigator.userLanguage || 'en').toLowerCase();
+    if (nav.indexOf('zh') === 0) return 'zh';
+    if (nav.indexOf('ja') === 0) return 'ja';
+    return 'en';
   }
 
   function apply(lang) {
