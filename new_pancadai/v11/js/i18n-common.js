@@ -6,6 +6,7 @@ window.PANCAD_I18N = {
     /* 導覽 */
     nav_product: "產品介紹",
     deep_float_t: "了解健康台灣深耕計畫",
+    tfda_lic: "衛生福利部醫療器材許可證：衛部醫器製字第007946號",
     nav_brand: "仲智數位健康<small>PANCREASaver<sup>®</sup> 助胰見<sup>®</sup></small>",
     foot_company: "仲智數位健康股份有限公司",
     foot_email: "Email：info@pancad.ai",
@@ -63,6 +64,7 @@ window.PANCAD_I18N = {
   en: {
     nav_product: "Product",
     deep_float_t: "Learn about the Health Taiwan Deep Cultivation Plan",
+    tfda_lic: "TFDA Medical Device License: No. 007946",
     nav_brand: "PanCAD.ai<small>PANCREASaver<sup>®</sup></small>",
     foot_company: "PanCAD.ai Co., Ltd.",
     foot_email: "Email: info@pancad.ai",
@@ -117,6 +119,7 @@ window.PANCAD_I18N = {
   ja: {
     nav_product: "製品紹介",
     deep_float_t: "健康台湾深耕計画について",
+    tfda_lic: "衛福部医療機器許可証：衛部医器製字第007946号",
     nav_brand: "PanCAD.ai<small>PANCREASaver<sup>®</sup> 助胰見<sup>®</sup></small>",
     foot_company: "仲智数位健康株式会社",
     foot_email: "Email：info@pancad.ai",
