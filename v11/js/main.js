@@ -684,9 +684,11 @@
     });
   }
 
-  /* ---------- 14.7c 雙圖交替背景（v11.2.28：data-bg-pair="a.jpg|b.jpg" 10 秒輪換） ---------- */
+  /* ---------- 14.7c 雙圖交替背景（v11.2.28：data-bg-pair="a.jpg|b.jpg" 10 秒輪換；en 分流） ---------- */
+  var pageLang = (document.documentElement.lang || 'zh').toLowerCase().replace('-', '');
+  var isEn = pageLang === 'en';
   document.querySelectorAll('[data-bg-pair]').forEach(function (el) {
-    var pairAttr = (pageLang === 'en' && el.getAttribute('data-bg-pair-en')) ? 'data-bg-pair-en' : 'data-bg-pair';
+    var pairAttr = (isEn && el.getAttribute('data-bg-pair-en')) ? 'data-bg-pair-en' : 'data-bg-pair';
     var srcs = (el.getAttribute(pairAttr) || '').split('|').filter(Boolean);
     if (srcs.length < 1) return;
     var pi = 0;
@@ -703,8 +705,6 @@
   });
 
   /* ---------- 14.7d 固定背景語言分流（v11.2.29：en 版用 data-bg-fixed-en 西歐圖） ---------- */
-  var pageLang = (document.documentElement.lang || 'zh').toLowerCase().replace('-', '');
-  var isEn = pageLang === 'en';
   document.querySelectorAll('[data-bg-fixed]').forEach(function (el) {
     var enSrc = el.getAttribute('data-bg-fixed-en');
     if (isEn && enSrc) el.style.backgroundImage = 'url(' + enSrc + ')';
