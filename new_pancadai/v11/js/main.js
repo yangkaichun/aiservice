@@ -701,7 +701,10 @@
       img.src = src;
     }
     showPair();
-    if (srcs.length > 1) el._pairTimer = setInterval(showPair, 10000);
+    if (srcs.length > 1) {
+      var speed = parseInt(el.getAttribute('data-pair-ms') || '10000', 10);
+      el._pairTimer = setInterval(showPair, speed);
+    }
   });
 
   /* ---------- 14.7d 固定背景語言分流（v11.2.29：en 版用 data-bg-fixed-en 西歐圖） ---------- */
