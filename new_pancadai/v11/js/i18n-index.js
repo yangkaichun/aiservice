@@ -2,6 +2,8 @@
    用法：i18n.js → i18n-common.js → i18n-index.js（Object.assign 合併） */
 (function () {
   var zh = {
+    deep_float: "了解健康台灣深耕計畫",
+    deep_float_t: "了解健康台灣深耕計畫",
     meta_title: "PANCREASaver® 助胰見® — 胰臟癌早期偵測 AI | 仲智數位健康",
     meta_desc: "世界首創胰臟癌早期偵測 AI：<2cm 腫瘤敏感度 92.1%、全國多中心 AUC 0.95。FDA Breakthrough、TFDA 衛部醫器製字第007946號。從清晨到星空，一條被陽光守護的照護旅程。",
 
