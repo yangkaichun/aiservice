@@ -1,94 +1,68 @@
 # v11 陽光旅程 — 版本紀錄（CHANGELOG）
 
-> 部署：https://health.yangkaichun.net/new_pancadai/v11/（GitHub Pages，auto-sync cron 每 5 分鐘）＋ https://pancadai-v11.pages.dev（Cloudflare Pages，wrangler v3 手動部署）
+> 部署：https://pancad.ai（主域）＋ https://pancadai-v11.pages.dev（Cloudflare）＋ https://health.yangkaichun.net/new_pancadai/v11/（GitHub Pages）
 > 主體：v7（患者旅程＋8 幕），整合 v2-v10 優點與 Siemens Healthineers 架構參考
 
-## v11.2.25（2026-08-18）— AI SEO＋Cloudflare 部署＋表單定案＋文字調整
-- **AI SEO 優化**（v11.2.23 尾聲）：
-  - `llms.txt` 建立（AI 搜尋引擎/LLM 標準摘要：公司/產品/科學數據/頁面/FAQ/護胰大聯盟）
-  - 全站 JSON-LD 強化（11 頁）：MedicalOrganization（統編/地址/電話/email/logo）＋BreadcrumbList；index＋WebSite/MedicalWebPage/Product（9 獎）；clinician＋MedicalDevice（TFDA 證號）；publications＋Article×5（PubMed）
-  - canonical 補齊（product.html）、sitemap 11 URL、robots.txt 加 llms 引用
-- **Cloudflare Pages 部署確立**：wrangler v3.114（v11 目錄內執行）→ `pancadai-v11.pages.dev`；**wrangler 4 已移除 Pages Functions 自動編譯**（需 Workers Static Assets）→ 固定用 v3
-- **聯絡表單方案演進（定案：mailto）**：
-  - 初案：Turnstile＋Pages Functions＋GAS 轉發（functions/contact.js＋gas/contact_email.gs＋FORM_SETUP.md）——Functions routing 測試失敗（405/靜態 fallback，wrangler 2/3/4 皆同）→ **棄用 Functions**
-  - 定案：**表單提交 → mailto:info@pancad.ai（開啟使用者 email app，含姓名/電話/Email/訊息）**——使用者確認可接受
-  - 按鈕「前往填寫表單」→「送出表單」（三語：Send form／送信フォーム）
-  - **Troubleshoot 根除**：來源為 Turnstile widget（placeholder site key 驗證失敗顯示 troubleshooting 連結）→ 移除整個 Turnstile 區塊＋functions/ 目錄（零殘留）
-- **「智財布局」→「專利佈局」**（全站 13 檔：nav/footer/mobile/字典）
-- **環境變更**：git push 改用 keychain token（osxkeychain「Device not configured」）→ Authorization header 推送；sync 腳本在 `~/.hermes/profiles/work/scripts/`
-- 版本 `?v=45`
+---
 
-## v11.2.24（2026-08-17 08:46）— A16/D1 修正採用；E1/E2 確定永久停用
-- **A16（hero_sun_9）**：右側改為一位男性＋一位女性（v2 版採用，2560 HD＋1280 小圖）
-- **D1（ct_scan_bed）**：完全平躺、無頭枕（v2 版採用，2560 HD＋1280 小圖）
-- **E1/E2（dinner_zh_1/2）**：多輪重生成（v2-v6 共 5 版：30 歲男性/父母+2 小孩/溫馨/單桌/近景/斜俯視）仍不滿意 → **確定永久停用**（zh 晚餐池維持 dinner_ja_1/2；檔案保留於 assets/＋存檔區說明）
-- 版本 `?v=41`
+## v11.2.29（2026-08-24）— 三語配圖分流＋健康台灣深耕計畫＋效能收官
 
-## v11.2.23（2026-08-14 15:41）— Cloudflare 部署＋專利/FDA 連結＋聯絡統一
-- **Cloudflare Pages 部署**：wrangler login（OAuth，Safari 授權）→ `wrangler pages project create pancadai-v11` → `wrangler pages deploy new_pancadai/v11`（314 檔）→ https://pancadai-v11.pages.dev
-- **專利列表超連結**：ip.html 10 件專利（US 4＋TW 6）→ Google Patents 深鏈（`patents.google.com/patent/{號}`），**全部 curl 驗證 200＋title 內容吻合**；st-tag 改 a 標籤（hover 藍底）＋↗
-- **聯絡資訊統一公司登記**：全站 footer（11 頁）地址「台北市大安區敦化南路一段376號11樓」＋Email info@pancad.ai＋電話 +886 02-2331-3971（三語，同 contact 頁）
-- **FDA Breakthrough 佐證連結**：clinician ev2 卡加 FDA 官方計畫頁＋自由時報報導（均驗證 200）；三語；`.cert-link` 樣式
-- 坑：批次 replace 吃掉 ev2_p 值尾逗號（三語）→ JS 語法錯誤 → 逐一補回
-- 版本 `?v=39`
+### 圖像與配圖
+- **患者旅程 8 幕全部固定背景**（不再隨機池）：幕1 bike+sun_3（10 秒交替，新機制 data-bg-pair）、幕2 咖啡、幕3 CT、幕4 互動比較、幕5 醫師討論、幕6 sun_6、幕7 dinner_ja_2、幕8 新生成陽台星空圖
+- **英文版配圖西歐化**：mflux **img2img**（--image-path + --image-strength 0.55）以 zh 圖為底換西歐人種（同場景構圖）——coffee_en/doctor_en/stars_en/bike_en/dinner_ja_en
+- **三語背景分流機制**：data-bg-fixed / -en / -ja ＋ data-bg-hd-en/ja ＋ data-bg-pair-en（語言切換即換圖）
+- **ip 頁三語擬真圖**（科技護城河意象：R&D 實驗室＋專利文件）moat_zh/en/ja＋固定
+- **publications hero 擬真圖**：V1 研究圖書館＋V2 國際會議，**15 秒交替**（data-pair-ms）
+- **AUC 章節**：改用論文實際 Figure 3（Radiology 220152——4150×6032 原始圖）＋來源標注（三語＋論文 URL）
 
-## v11.2.22（2026-08-14 14:30）— 全站背景圖無 pad 滿版＋E1/E2 停用
-- **38 張第二批重生成完成**：bike/bridge/coffee/forest/kayak/picnic/yoga（台灣情境）＋hero_v7_morning_intl（晨光多元人種海報）＋hero_intl_01-30（西歐情境）——全部無 pad 滿版（2560×1440 生成 → 1280 小圖＋2560 HD webp）
-- **JS FULL 全池 cover**：sun 17 張＋intl 30 張全部無 pad → `cover` 顯示（不再 113% 放大）；C1 couple（使用者指定正確的 pad 版）維持 113%
-- **E1/E2 停用存檔**：dinner_zh_1/2 不再顯示（zh 晚餐池改用亞裔 dinner_ja_1/2）；檔案保留於 assets/＋`停用圖檔存檔區.md`
-- 版本 `?v=37`
+### 文字與內容
+- 判讀人次 **2156+ → 2000+** 且**移除自動遞增**（靜態）
+- 「從實驗室到病床」→「從基礎研究到臨床照護」（三語）
+- 里程碑修正：**2019→2016**（王偉仲＋廖偉智團隊啟動研究）、**2021→2019**（多中心驗證）——依新聞佐證（FDA Breakthrough 實為 2023/11 非 2024）
+- hero 文案：「天亮之前的第一道光」→「影像診斷 AI…治療時機」；day_t「看似平常的一天…」；product「掃描剛結束，AI 已完成分析」
+- **數字統一 logo 橘單色**（移除所有漸層：.hm b/.v622-num/.live-count/.stat b/.hero-title .hl 等 8 處）
+- 服務時間 09:00–17:00（三語）
+- 英文「台／美」→「Taiwan / US」（en p3_hx 補齊）
 
-## v11.2.21（2026-08-14 09:40）— 聯絡資訊＋預設中文
-- 聯絡資訊：地址「台北市大安區敦化南路一段376號11樓」、Email info@pancad.ai、電話 **+886 02-2331-3971**
-- 表單改為**新視窗**開啟 `https://www.pancad.ai/contact/getInTouch`（官方表單）
-- 全站 kc.yang@pancad.ai → info@pancad.ai（零殘留）
-- **網頁預設中文版**（i18n.js detect 一律回傳 zh，不依瀏覽器語言；手動切換仍記憶）
-- 版本 `?v=35`
+### 動態與效能
+- 光子粒子慢速（上升 6-13s）、光束慢速（18-46s）、重生 3 秒 1 顆
+- **所有文字背景色移除**（hero-badge/st-tag/ss-tag/pub-journal/pub-tag；含「不胰憾」殘留漸層）
+- **語言偵測改回瀏覽器語言**（zh→中文、ja→日文、其他一律英文；localStorage 記憶覆寫）
+- data-i18n HTML 值修正（flow2_d/ui_sub/ui_shot → data-i18n-html——sup® 亂碼修復）
 
-## v11.2.20（2026-08-14 08:43）— 17 張直接轉無 pad 版
-- 找到原始檔（`assets/_gen_v11/*_raw.jpg`，1600×896 無 pad）：sun_1-10、ct_scan_bed、dinner 6 張 → PIL 批次轉 1280 滿版小圖＋HD webp
-- JS FULL 例外清單擴充（cover 顯示）
-- 版本 `?v=32`
+### 健康台灣深耕計畫（中文版）
+- **deep-plan 獨立頁**（deep-plan/index.html——完整複製 pancadai/index.html 架構與圖；「聯繫我們」改 mailto:info@pancad.ai；**加衛生福利部許可證：衛部醫器製字第007946號**）
+- **3 個入口**（zh-only）：①首屏 CTA 橘色按鈕（btn-deep）②右下浮動按鈕（deep-float）③footer 網站導覽連結
+- sitemap 加入 deep-plan/（12 URL）
+- about 深耕區擴充為「三大核心精神」（痛點＋PanCAD 解方）
 
-## v11.2.19（2026-08-14 08:28）— 上下裁切修正＋內容圖滿版
-- 背景圖 `118% → 113%`（垂直裁切主體 3% → 0.5%，左右仍滿版裁 pad 邊）
-- 輪播圖 `object-position: 50% 30%`（顯示圖上部，不再中央硬切）
-- product 頁 2 張內容圖（實機畫面/系統架構）移出 wrap 全寬滿版
-- 版本 `?v=31`
+---
 
-## v11.2.18（2026-08-14 08:13）— 5 張重生成＋無 pad 產線確立
-- 5 張圖重生成：A9 hero_sun_2（手拿咖啡杯、桌上無杯）、A16 hero_sun_9（右側女性）、D1 ct_scan_bed（平躺無頭枕）、E1 dinner_zh_1（左側 60 歲女性）、E2 dinner_zh_2（左側 30 歲女性、無小孩）
-- **產線教訓**：mflux 5120×2880 直接生成 Peak 49.7GB＋→ multiprocessing 崩潰（semaphore leak、MTLCompilerService 掛點）→ **改用 2560×1440 生成＋SeedVR2 2x 放大 5120**（穩定）
-- supervisor 監控（log mtime 180s 無更新 → 自動 kill 重試 ×3）
-- system_arch 重新生成（先 CT 版 → 後抽象雷達版無 CT 全英文）
-- 版本 `?v=30`
+## v11.2.28（2026-08-14 15:40）— 12 項修改批次
+- 文案 4 處（hero_sub/day_t/ph_h1）、數字單色、粒子/光束慢速、標題漸層移除、里程碑 2016/2019、服務時間 09:00–17:00
 
-## v11.2.17（2026-08-14 07:20）— 產品介紹頁新增
-- **product.html**（參考 v9/v10 產品頁＋v11 設計語言）：六道防線、判讀流程 4 步、真實系統畫面、系統架構、CTA 玻璃框
-- nav 9→10 連結（產品介紹首位）、footer、sitemap 同步；i18n-product.js 三語
-- 坑：漏載 `i18n.js`（lang 切換邏輯）→ 三語失靈 → 補回
-- 版本 `?v=29`
+## v11.2.27（2026-08-21 14:39）— 2000+ 靜態＋文案
+- 2156→2000 靜態（移除每秒 +1）、「從實驗室到臨床」、FAQ 修正（顯影劑＋高風險族群）
 
-## v11.2.16（2026-08-14 06:00）— v7 hero HD 補齊
-- hero_v7_morning_couple/intl → SeedVR2 5120 HD（initPosterHD 漸進）
-- 輪播大圖 HD 漸進（initCarouselHD）
-- 版本 `?v=28`
+## v11.2.26（2026-08-21）— 手機效能＋AUC 圖
+- hero 影片手機停用、光子減量、img srcset（480 webp -90%）、背景 640 webp（54 張）、LCP preload（fetchpriority=high）、CLS 修復（img 尺寸）、AUC 擬真圖（後改論文原圖）
 
-## 部署修復（2026-08-14 08:30）— deploy.yml
-- **根因**：deploy.yml mkdir 清單遺失 `_deploy/new_pancadai/assets/previews` → `cp previews` 失敗 → **最近 4 次部署全失敗**（線上一直舊版）
-- 修復：補回 mkdir 項目 → Deploy success＋Pages build success
+## v11.2.25（2026-08-14 15:20）— 敘事性專利描述
+- ip 頁「保護主題」改敘事性（無編號/無術語/無連結）——美 4 台 6 敘事段落
 
-## 早前版本（摘要）
-- v11.2.15（?v=27）：背景圖 118% 滿版填補機制確立
-- v11.2.14（?v=26）：誤改回退（ct-frame/AUC 卡回原位）
-- v11.2.13-12（?v=25/24）：幕 4 CT 滿版誤改（已回退）
-- v11.2.11（?v=23）：100% 設定滿版（day-grid/carousel 移出 wrap）
-- v11.2.10（?v=22）：內容大圖滿版
-- v11.2.8（?v=20）：彩色滑動計數器 2156+（每 10 秒 +1）
-- v11.2.7（?v=19）：動態判讀人次 2156+
-- v11.2.6（?v=19）：CTA `</a>` 修復（批次正則吃標籤）
-- v11.2.5（?v=18）：cta-panel 玻璃框（夜間可讀）
-- v11.2.4（?v=17）：光子粒子改金黃圓點
-- v11.2.3（?v=16）：HD 漸進載入（17 張 5120 webp）
-- v11.2.0：背景池語言分流（sun 17 亞裔/intl 30 西歐）、幕 3 CT 固定、幕 7 晚餐池、HD 產線（SeedVR2 兩階段）
-- v11.0：陽光旅程架構（以 v7 為主體）
+## v11.2.24（2026-08-17 08:46）— A16/D1 採用＋E1/E2 永久停用
+- A16 男+女、D1 平躺無頭枕（2560 HD 採用）；E1/E2 多輪重生成不滿意→永久停用（存檔）
+
+## v11.2.23（2026-08-14 15:41）— Cloudflare＋專利/FDA 連結＋聯絡統一
+- Cloudflare Pages 部署（wrangler）、專利 10 件 Google Patents 深鏈（全驗證）、FDA Breakthrough 佐證連結、聯絡資訊統一公司登記
+
+## v11.2.22（2026-08-14 14:30）— 全站無 pad 滿版
+- 38 張第二批重生成（bike..yoga+C2+intl30）＋17 張 raw 轉換——全部無 pad cover
+
+---
+
+## 部署與 SEO 附錄
+- **Cloudflare**：pancadai-v11.pages.dev（wrangler）＋主域 pancad.ai 綁定（API）
+- **AI SEO**：llms.txt＋llms-full.txt（含 510(k)/聯新 50 例/90 萬 CT 量）、JSON-LD @graph（11 頁）、FAQPage（6 題）、GA4（G-8DNS20C93N）
+- **效能**：PageSpeed 手機 <50→72、桌面 74→92
+- **已知待辦**：CF `.html → 無擴展名` 308 規則待刪除（GSC「替代頁面/重新導向」根因——需 dashboard 操作）
