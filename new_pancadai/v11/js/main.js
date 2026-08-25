@@ -262,7 +262,7 @@
       s.style.left = (Math.random() * 100).toFixed(2) + '%';
       s.style.top = (Math.random() * 70).toFixed(2) + '%';
       s.style.animationDelay = (Math.random() * 4).toFixed(2) + 's';
-      s.style.animationDuration = (2.6 + Math.random() * 3).toFixed(2) + 's';
+      s.style.animationDuration = (5.2 + Math.random() * 6).toFixed(2) + 's'; /* v11.2.29 降速50% */
       s.style.width = s.style.height = (1.5 + Math.random() * 2).toFixed(1) + 'px';
       field.appendChild(s);
     }
@@ -277,7 +277,7 @@
       d.style.width = d.style.height = size.toFixed(1) + 'px';
       d.style.left = (Math.random() * 100).toFixed(1) + '%';
       d.style.top = (spreadTop + Math.random() * (98 - spreadTop)).toFixed(1) + '%';
-      d.style.animationDuration = (18 + Math.random() * 28).toFixed(1) + 's'; /* v11.2.28 慢速 */
+      d.style.animationDuration = (36 + Math.random() * 56).toFixed(1) + 's'; /* v11.2.29 降速50% */
       d.style.animationDelay = (Math.random() * 9).toFixed(1) + 's';
       host.appendChild(d);
     }
@@ -317,7 +317,7 @@
       p.style.setProperty('--ph-rise', (-(h * 0.9 + Math.random() * h * 0.6)).toFixed(0) + 'px');
       p.style.setProperty('--ph-sw', ((Math.random() * 2 - 1) * 40).toFixed(0) + 'px');
       p.style.setProperty('--ph-op', (0.5 + Math.random() * 0.5).toFixed(2));
-      p.style.animationDuration = (6 + Math.random() * 7).toFixed(2) + 's'; /* v11.2.28 慢速上升 */
+      p.style.animationDuration = (12 + Math.random() * 14).toFixed(2) + 's'; /* v11.2.29 降速50% */
       p.style.animationDelay = (Math.random() * 4).toFixed(2) + 's';
       host.appendChild(p);
     }
@@ -331,7 +331,7 @@
     p.style.setProperty('--ph-rise', (-(h * 0.9 + Math.random() * h * 0.6)).toFixed(0) + 'px');
     p.style.setProperty('--ph-sw', ((Math.random() * 2 - 1) * 40).toFixed(0) + 'px');
     p.style.setProperty('--ph-op', (0.5 + Math.random() * 0.5).toFixed(2));
-    p.style.animationDuration = (3 + Math.random() * 3.5).toFixed(2) + 's';
+    p.style.animationDuration = (6 + Math.random() * 7).toFixed(2) + 's'; /* v11.2.29 降速50% */
     p.style.animationDelay = (Math.random() * 4).toFixed(2) + 's';
     /* 強制重啟動畫 */
     p.style.animationName = 'none';
