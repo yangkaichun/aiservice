@@ -5,6 +5,16 @@
 
 ---
 
+## v11.2.39（2026-08-26）— vocus 知識庫自動同步鏈路補齊
+- **發現**：v11.2.30 CHANGELOG 宣稱的「cron 每 6 小時自動同步（sync_vocus_kb.sh）」**從未建立**——cron 只有 sync_pancadai.sh（每 5 分鐘 git push），sync_vocus_kb.sh 不存在，方格子發文後 pancad.ai 不會同步
+- **補建** `~/.hermes/scripts/sync_vocus_kb.sh`（watchdog 模式）：
+  - 跑 `sync_vocus_kb.py` → 更新 `data-pancreas-kb.json`＋education.html 內嵌 `window.__KB__`
+  - **articles 內容快照比對**（排除 updated_at）：無變化 → 還原 updated_at 假變更、完全靜默；有變化 → commit+push（GH Pages 自動重建）＋ `wrangler pages deploy`（CF Pages / pancad.ai 主域）
+- **cron**：`a2eb3965a52c`（every 6h、no_agent、deliver=local）——方格子發文後最長 6 小時內自動上線兩站
+- ⚠️ **已知限制**：vocus `__NEXT_DATA__` 只內嵌部分文章列表（實抓 20 篇 vs 頁面 articleCount 93）——超過內嵌上限的新文章可能漏抓，需後續擴充分頁 API
+
+---
+
 ## v11.2.38（2026-08-26）— RWD 手機版優化（首輪稽核＋修正，`?v=85`）
 - **RWD 稽核方法**（Playwright 無頭瀏覽器，venv `~/venvs/rwd-audit`）：11 頁 × 375/768/1024 三斷點 → 水平溢出/文字裁剪/柵格單欄化/觸控目標/字級/互動（burger、carousel）全自動化檢查
 - **稽核結果基線**：33/33 零水平溢出、11/11 零文字裁剪、柵格單欄化正確——v11 手機版底子良好
