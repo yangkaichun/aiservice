@@ -48,6 +48,23 @@
 - **nav 結構改動先 grep 現況**：桌面 nav 連結曾被並行工作流弄丟（「產品介紹」只剩 footer/mobile 可達）——驗證 `grep -c 'product.html' *.html` 每頁 nav 都有
 - **Escape 關閉 menu**：keydown 監聽＋語言切換後自動關閉（避免選單擋住內容）
 
+### 0.10 vocus room API 全量＋自動同步鏈路＋re.sub 陷阱（2026-08-26 下午，使用者要求完整記錄）
+**本次修改紀錄（2026-08-26 下午，全部已上線兩站）**：
+1. **md 文件同步**：PROJECT_STRUCTURE.md（v11.2.36→38 標記＋RWD/地址重點）、SKILLS_USED.md（標題日期＋0.6b 重號修正＋0.8/0.9 節）、references/專利摘要描述_提案.md（狀態改「未套用」）、CHANGELOG.md（v11.2.39/40/41 三版）
+2. **vocus 自動同步鏈路補齊**：發現 CHANGELOG v11.2.30 宣稱的「cron 每 6 小時 sync_vocus_kb.sh」從未建立（cron 只有 sync_pancadai.sh）；補建 `~/.hermes/scripts/sync_vocus_kb.sh`（watchdog：articles 快照比對、無變化還原 updated_at 假變更＋靜默、有變化 commit/push＋wrangler CF deploy）＋ cron `a2eb3965a52c`（every 6h、no_agent、deliver=local）
+3. **vocus 知識庫 20→50 篇**：room 文章列表是客戶端 API（`api/v2/site/rooms/{roomId}/contents?num=50&...`），`__NEXT_DATA__` 只內嵌前 20 篇；roomId 從 NEXT_DATA fallback key 正則動態解析；title/abstract/cover 在巢狀 `article`；`num=50` 一次抓全免分頁
+4. **re.sub 陷阱 hotfix（線上知識庫全掛）**：`pat.sub("<script>\n"+embed+"\n</script>")` 字串 repl 把 json.dumps 的轉義 `\n` 解碼成真實換行 → 內嵌 JSON 非法 → 瀏覽器 SyntaxError；改 lambda function repl 修復，驗證 node --check
+5. **footer 網站導覽欄加深耕計畫連結（zh-only，使用者指示）**：11 頁 foot_nav 欄「聯絡我們」下加 `<a class="zh-only" href="deep-plan/index.html" ... data-i18n="deep_float_t">`；ver v11.2.38→v11.2.41；check_tags 11/11
+6. **部署驗證**：GitHub（auto-sync/手動 push→GH Pages build 1-2 分）+ Cloudflare（wrangler deploy，hash URL 可即時驗證、production 同份）
+
+**本次使用的 Skills**：`pancad-website-v11`（主體）、`static-site-optimization`（部署/快取慣例）、`pancad-website`（品牌 zh-only 機制）＋工具（cronjob/terminal/python/node/curl）
+
+**關鍵教訓（回寫 skill 完成）**：
+- **re.sub 字串 repl 的 `\n` 解碼陷阱**：任何「把 json.dumps 輸出嵌入 HTML 再 re.sub」的情境，repl 必須用 function（`lambda m:`），否則轉義 `\n` 全變真實換行
+- **cron 補建後驗證**：`sync_vocus_kb.sh` 無變化分支實測（靜默＋`git checkout` 還原 updated_at 假變更）——避免每 6h 產生無意義 commit
+- **GH Pages build 延遲陷阱**：push 後 1-2 分鐘內 curl 是舊版，驗證要等 build 完成（用 Actions runs API 或重試）
+- **批次判斷「已存在」**：子字串 in s 會被同字串的既有元素（deep-float 浮動按鈕）誤判 → 用「錨點＋新行」組合
+
 ### 0. Cloudflare Pages 部署（2026-08-14 新增）
 - **流程**：`npm i -g wrangler` → `wrangler login`（OAuth——macOS 自動開瀏覽器授權）→ `wrangler pages project create pancadai-v11 --production-branch main` → **`cd 專案目錄 && wrangler pages deploy . --project-name pancadai-v11 --commit-dirty=true`**
 - **⚠️ wrangler 4.x 已移除 Pages Functions 自動編譯**（functions/ 目錄不再偵測；需 Workers Static Assets）→ **固定用 wrangler@3.114**（`npm i -g wrangler@3`；v3 支援 functions/ 自動編譯）
