@@ -65,6 +65,20 @@
 - **GH Pages build 延遲陷阱**：push 後 1-2 分鐘內 curl 是舊版，驗證要等 build 完成（用 Actions runs API 或重試）
 - **批次判斷「已存在」**：子字串 in s 會被同字串的既有元素（deep-float 浮動按鈕）誤判 → 用「錨點＋新行」組合
 
+### 0.11 三語實體子目錄 /en/ /jp/（2026-08-26，使用者要求 GSC/GA 分語言分析）
+**本次修改紀錄（已上線）**：
+1. **建置**：en/（11 頁）＋jp/（11 頁）複製自主站；資源引用批次加 `../`（assets/css/js/video/manifest/deep-plan），頁面 nav 連結保持同目錄相對
+2. **i18n.js**：detect() 加 pathname 前綴偵測（/en/→en、/jp/→ja，優先於 localStorage）；langRedirect() 語言切換跳轉對應子目錄（主站↔/en/↔/jp/）
+3. **hreflang**：33 頁 4 links（zh-TW/en/ja/x-default）；**sitemap.xml** 12→34 URL
+4. **bake 靜態內容**（關鍵）：html lang 初始值、title/meta/og、data-i18n fallback 全語言化、img alt 11 組翻譯、option value 英文化、移除中文 meta keywords
+5. **坑與修復**：
+   - **bake 同 tag 嵌套陷阱**：非貪婪正則截斷 hero kinetic span → 孤兒 `</span>`×5 → 改用 stack 配對閉 tag 演算法＋孤兒清理
+   - **日文漢字誤報**：CJK 檢查含日文漢字，日文版用假名（U+3040-30FF）判定
+   - **GSC 爬蟲不執行 JS**：只做 JS 語言切換的「語言版」沒意義——必須 bake 靜態 HTML
+6. **驗證**：33 頁標籤平衡、CF hash URL 線上驗證（/en/ lang=en 英文、/jp/ lang=ja 日文、資源 200、sitemap 34）
+
+**本次使用的 Skills**：`pancad-website-v11`（更新）、`static-site-optimization`、`pancad-website`＋工具（node 字典提取、python 批次）
+
 ### 0. Cloudflare Pages 部署（2026-08-14 新增）
 - **流程**：`npm i -g wrangler` → `wrangler login`（OAuth——macOS 自動開瀏覽器授權）→ `wrangler pages project create pancadai-v11 --production-branch main` → **`cd 專案目錄 && wrangler pages deploy . --project-name pancadai-v11 --commit-dirty=true`**
 - **⚠️ wrangler 4.x 已移除 Pages Functions 自動編譯**（functions/ 目錄不再偵測；需 Workers Static Assets）→ **固定用 wrangler@3.114**（`npm i -g wrangler@3`；v3 支援 functions/ 自動編譯）
