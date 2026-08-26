@@ -63,6 +63,12 @@
       $all('.mobile-menu a', menu).forEach(function (a) {
         a.addEventListener('click', function () { menu.classList.remove('open'); });
       });
+      $all('.mobile-lang button', menu).forEach(function (b) {
+        b.addEventListener('click', function () { menu.classList.remove('open'); });
+      });
+      document.addEventListener('keydown', function (e) {
+        if (e.key === 'Escape' && menu.classList.contains('open')) { menu.classList.remove('open'); }
+      });
     }
   }
 

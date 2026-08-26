@@ -5,6 +5,20 @@
 
 ---
 
+## v11.2.38（2026-08-26）— RWD 手機版優化（首輪稽核＋修正，`?v=85`）
+- **RWD 稽核方法**（Playwright 無頭瀏覽器，venv `~/venvs/rwd-audit`）：11 頁 × 375/768/1024 三斷點 → 水平溢出/文字裁剪/柵格單欄化/觸控目標/字級/互動（burger、carousel）全自動化檢查
+- **稽核結果基線**：33/33 零水平溢出、11/11 零文字裁剪、柵格單欄化正確——v11 手機版底子良好
+- **P0 修正**：
+  - ① **手機版語言切換**：mobile menu 尾端加 `.mobile-lang` 三語按鈕（繁體中文/English/日本語，data-lang 綁定 i18n.js 自動生效）——原 ≤820px 隱藏 `.lang` 且 menu 無語言鈕，手機用戶完全無法切語言
+  - ② **桌面 nav 補「產品介紹」首位**：全站 11 頁 `.nav-links` 補 `<a class="nav-a" href="product.html" data-i18n="nav_product">`（v11.2.19 並行子代理改 nav 結構時被弄丟，桌面只剩 footer/mobile 可達產品頁）
+  - ③ **index mobile menu 補 deep-plan 連結**（其他頁都有，index 獨缺；`zh-only` 三語隱藏正確）
+- **P1 觸控/可讀性**（≤640px 斷點）：`.burger` min-height 40px、`.nav-logo` padding、`.gate-cta`/`.pub-link`/`.ev-go` padding 加大（24px→≥34px 高）、`.car-dot` 9→12px；`.pub-tag` 11.5→12.5px、`.pub-journal`/`.ss-tag` 12.5→13px、`.pub-card p` 13.5px
+- **P2**：Escape 關閉 mobile menu（main.js keydown）、語言切換後自動關閉 menu
+- **驗證**：check_tags 11/11 平衡、node --check 過、33/33 溢出複查過、點 English→html lang=en＋menu 自動關閉、Escape 生效
+- commit 待 auto-sync；CF Pages（pancadai-v11.pages.dev）需另跑 wrangler deploy
+
+---
+
 ## v11.2.37（2026-08-26）— 全站 footer 地址 fallback 修正
 - **地址 376 號定案**：10 頁 footer `data-i18n="foot_addr"` 靜態 fallback「台北市（依公司登記）」→ **「台北市大安區敦化南路一段376號11樓」**（JS 未執行也顯示完整地址）
 - 三語對應：zh「台北市大安區敦化南路一段376號11樓」/ en「11F., No.376, Sec.1, Dunhua S. Rd., Taipei City, Taiwan」/ ja「台北市大安區敦化南路一段376号11階」
