@@ -26,16 +26,18 @@
     return 'en';
   }
 
-  /* v11.2.42：語言切換跳轉（子目錄語言版）——主站↔/en/↔/jp/ */
+  /* v11.2.42：語言切換跳轉（路徑感知——支援 GH Pages 子路徑部署）主站↔/en/↔/jp/ */
   function langRedirect(target) {
     var p = window.location.pathname || '';
-    var m = p.match(/^\/(en|jp)\//);
-    var here = m ? m[1] : '';
-    if (here === target) return null; // 已在目標語言版，原地切換
-    var page = p.split('/').filter(Boolean).pop() || 'index.html';
-    if (!/\.html$/.test(page)) page = 'index.html';
-    var dir = target === 'en' ? '/en/' : target === 'ja' ? '/jp/' : '/';
-    return dir + page;
+    var segs = p.split('/').filter(Boolean);
+    var here = (segs[0] === 'en' || segs[0] === 'jp') ? segs.shift() : '';
+    if (here === target) return null; // 已在目標語言版
+    if (here === '' && target === 'zh') return null; // 主站點中文＝原地
+    var last = segs[segs.length - 1];
+    var page = (last && /\.html$/.test(last)) ? segs.pop() : 'index.html';
+    var dir = target === 'en' ? 'en' : target === 'ja' ? 'jp' : '';
+    var base = segs.length ? '/' + segs.join('/') : '';
+    return base + '/' + (dir ? dir + '/' : '') + page;
   }
 
   function apply(lang) {
