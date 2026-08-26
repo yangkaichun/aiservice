@@ -3,6 +3,9 @@
    日光系統 / 導覽 / 旅程軌 / 背景池 / 影片 / CT / AUC / What-if / Quiz / FAQ
    ============================================================ */
 (function () {
+  /* v11.2.42：子目錄語言版（/en/ /jp/）背景圖路徑前綴 */
+  var BG = (location.pathname.indexOf('/en/') === 0 || location.pathname.indexOf('/jp/') === 0) ? '../' : '';
+
   'use strict';
 
   function $(s, c) { return (c || document).querySelector(s); }
@@ -175,13 +178,13 @@
     var pool;
     if (poolName === 'sun') {
       pool = ['bike', 'bridge', 'coffee', 'forest', 'kayak', 'picnic', 'yoga', '1', '2', '3', '4', '5', '6', '7', '8', '9', '10'].map(function (k) {
-        return { key: k, src: 'assets/hero_sun_' + k + '_safe.jpg', src640: 'assets/hero_sun_' + k + '_safe_640.webp', hd: 'assets/hero_sun_' + k + '_safe_hd.webp' };
+        return { key: k, src: BG + 'assets/hero_sun_' + k + '_safe.jpg', src640: BG + 'assets/hero_sun_' + k + '_safe_640.webp', hd: BG + 'assets/hero_sun_' + k + '_safe_hd.webp' };
       });
     } else {
       pool = [];
       for (var i = 1; i <= 30; i++) {
         var n = (i < 10 ? '0' : '') + i;
-        pool.push({ key: 'i' + i, src: 'assets/hero_intl_' + n + '_safe.jpg', src640: 'assets/hero_intl_' + n + '_safe_640.webp', hd: 'assets/hero_intl_' + n + '_safe_hd.webp' });
+        pool.push({ key: 'i' + i, src: BG + 'assets/hero_intl_' + n + '_safe.jpg', src640: BG + 'assets/hero_intl_' + n + '_safe_640.webp', hd: BG + 'assets/hero_intl_' + n + '_safe_hd.webp' });
       }
     }
     var tier = netTier();
@@ -416,7 +419,7 @@
     var idx = 0;
     function show() {
       var base = pool[idx];
-      var src = dMobile ? 'assets/' + base + '_safe_640.webp' : 'assets/' + base + '_safe.jpg';
+      var src = dMobile ? BG + 'assets/' + base + '_safe_640.webp' : BG + 'assets/' + base + '_safe.jpg';
       var img = new Image();
       img.onload = function () {
         el.style.backgroundImage = 'url(' + src + ')';
@@ -425,11 +428,11 @@
         if (!dMobile) {
           var hd = new Image();
           hd.onload = function () {
-            el.style.backgroundImage = 'url(assets/' + base + '_safe_hd.webp)';
+            el.style.backgroundImage = 'url(' + BG + 'assets/' + base + '_safe_hd.webp)';
             if (DINNER_FULL[base]) el.style.backgroundSize = 'cover';
           };
           hd.onerror = function () {};
-          hd.src = 'assets/' + base + '_safe_hd.webp';
+          hd.src = BG + 'assets/' + base + '_safe_hd.webp';
         }
       };
       img.onerror = function () {};
@@ -441,7 +444,7 @@
     var ct = $('[data-ct-hd]');
     if (ct) {
       if (dMobile) {
-        ct.style.backgroundImage = "url('assets/ct_scan_bed_safe_640.webp')";
+        ct.style.backgroundImage = "url('" + BG + "assets/ct_scan_bed_safe_640.webp')";
       } else {
         var hdSrc = ct.getAttribute('data-ct-hd');
         if (hdSrc) {
@@ -743,7 +746,7 @@
     var isEn = lang === 'en';
     var posters = document.querySelectorAll('.hero-bg-video .poster, #patientHero .bg');
     if (!posters.length) return;
-    var hdSrc = 'assets/' + (isEn ? 'hero_v7_morning_intl' : 'hero_v7_morning_couple') + '_safe_hd.webp';
+    var hdSrc = BG + 'assets/' + (isEn ? 'hero_v7_morning_intl' : 'hero_v7_morning_couple') + '_safe_hd.webp';
     posters.forEach(function (el) {
       var img = new Image();
       img.onload = function () {
@@ -761,7 +764,7 @@
       var src = img.getAttribute('src') || '';
       var base = src.replace(/^assets\//, '').replace(/\.(jpg|png|webp)$/, '');
       if (!base) return;
-      var hd = 'assets/' + base + '_hd.webp';
+      var hd = BG + 'assets/' + base + '_hd.webp';
       var t = new Image();
       t.onload = function () { img.src = hd; };
       t.onerror = function () {};
