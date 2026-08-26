@@ -40,6 +40,8 @@
 - **背景圖**：全站無 pad 滿版（cover）；語言分流（zh/ja→亞裔池、en→西歐池）；HD 漸進載入
 - **知識庫**：`sync_vocus_kb.py`（cron 每 6 小時）→ `assets/data-pancreas-kb.json`＋education.html 內嵌 `window.__KB__`（`/* __KB_EMBED__ */` 標記）
 - **git push**：osxkeychain 失效 → keychain token＋Authorization header 方式
+- **RWD（v11.2.38）**：mobile menu 內建三語切換鈕（.mobile-lang，≤820px 時唯一語言入口）；桌面 nav 10 連結含「產品介紹」首位；觸控目標 ≥40px
+- **地址（v11.2.37）**：全站 footer `data-i18n="foot_addr"` fallback 為完整地址「台北市大安區敦化南路一段376號11樓」（JS 未執行也顯示）；JSON-LD PostalAddress 同步
 
 ---
-*最後更新：2026-08-26（v11.2.36）*
+*最後更新：2026-08-26（v11.2.38）*

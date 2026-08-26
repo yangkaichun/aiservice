@@ -1,4 +1,4 @@
-# v11 陽光旅程 — Skill 使用紀錄（2026-08-13 ~ 08-14）
+# v11 陽光旅程 — Skill 使用紀錄（2026-08-13 ~ 08-26）
 
 ## 使用的 Skills
 | Skill | 用途 | 備註 |
@@ -27,7 +27,7 @@
 - **data-i18n HTML 值**：字典值含 `<sup>`/`<span>` 的元素必須用 `data-i18n-html`（data-i18n 用 textContent 顯示字面標籤=亂碼）
 - **語言偵測**：使用者要求「依瀏覽器語言」——zh/ja 判斷、其他一律 en（localStorage 記憶覆寫）——與先前「預設中文」需求相反——以最新指示為準
 
-### 0.6 健康台灣深耕計畫（2026-08-24 新增）
+### 0.6b 健康台灣深耕計畫（2026-08-24 新增）
 - deep-plan 獨立頁＝複製 pancadai/index.html（Bootstrap CDN＋image/ 目錄——架構一模一樣）；「聯繫我們」改 mailto
 - 3 入口：hero CTA（btn-deep 橘色）＋浮動按鈕（deep-float fixed 右下）＋footer 連結——皆 zh-only
 - zh-only 機制：CSS `html:not([lang="zh-TW"]) .zh-only{display:none}`
@@ -37,6 +37,16 @@
 - 舊站殘留的 Redirect Rule（*.html → 無擴展名）造成：GSC「替代頁面」「頁面會重新導向」「驗證失敗」——sitemap/canonical 用 .html 但實際 308 到無擴展名
 - 解法：dashboard → Rules → Redirect Rules/Bulk Redirects 刪除（需使用者操作——OAuth token 無 zone 權限）
 - **GA/GSC 檢查器（無 UA）**：CF 挑戰（Bot Fight/BIC）擋無 UA 請求——Hostname Skip 規則（全勾）為最終解
+
+### 0.8 地址 fallback 修正（v11.2.37，2026-08-26）
+- 全站 footer `data-i18n="foot_addr"` 的靜態 fallback 文字必須是**完整地址**（JS 未執行時也顯示公司登記地址）——fallback 寫「依公司登記」等佔位文字＝JS 掛掉時使用者看不到真實地址
+- 地址變更要同步三處：HTML fallback＋i18n 字典三語（zh/en/ja）＋JSON-LD PostalAddress（11 頁）
+
+### 0.9 RWD 手機版稽核（v11.2.38，2026-08-26）
+- **稽核方法**：Playwright 無頭瀏覽器 11 頁 × 375/768/1024 三斷點 → 水平溢出（scrollWidth>clientWidth）／文字裁剪／柵格單欄化／觸控目標（<40px）／互動元件（burger、carousel）全自動化檢查（venv `~/venvs/rwd-audit`）
+- **mobile menu 要自帶語言切換**：`.lang` 在 ≤820px 隱藏時 menu 若無語言鈕＝手機用戶完全無法切語言——補 `.mobile-lang` 三語按鈕（data-lang 綁 i18n.js 自動生效）
+- **nav 結構改動先 grep 現況**：桌面 nav 連結曾被並行工作流弄丟（「產品介紹」只剩 footer/mobile 可達）——驗證 `grep -c 'product.html' *.html` 每頁 nav 都有
+- **Escape 關閉 menu**：keydown 監聽＋語言切換後自動關閉（避免選單擋住內容）
 
 ### 0. Cloudflare Pages 部署（2026-08-14 新增）
 - **流程**：`npm i -g wrangler` → `wrangler login`（OAuth——macOS 自動開瀏覽器授權）→ `wrangler pages project create pancadai-v11 --production-branch main` → **`cd 專案目錄 && wrangler pages deploy . --project-name pancadai-v11 --commit-dirty=true`**
