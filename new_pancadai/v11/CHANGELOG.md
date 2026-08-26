@@ -5,6 +5,27 @@
 
 ---
 
+## v11.2.36（2026-08-26）— 護胰大聯盟衛教知識庫＋語言系統定案
+
+### 知識庫（vocus 自動同步，v11.2.30→36）
+- **v11.2.30**：`sync_vocus_kb.py` 抓取 vocus 沙龍（`__NEXT_DATA__` 解析 title/_id/abstract）→ `assets/data-pancreas-kb.json`（20 篇）→ education 頁 kbList 卡片（標題→新視窗原文＋摘要）；cron 每 6 小時自動同步（`sync_vocus_kb.sh`——有變化才 commit/push/CF deploy，無變化靜默）
+- **v11.2.31**：**方格子封面圖同步**（thumbnailUrl 20/20；卡片左圖右文；修正節點覆蓋——「優先保留含圖版本」）
+- **v11.2.32**：noscript 靜態前 5 篇（無 JS 也可見＋SEO）
+- **v11.2.33**：**資料內嵌 HTML**（`window.__KB__`——移除 fetch 依賴；pancad.ai 的 CF assets 保護下仍顯示——先前 fetch JSON 失敗為文章消失主因之一）
+- **v11.2.35/36 兩個關鍵 bug 修復**：
+  - ① `'zh-TW'.replace('-','')` = `'zhtw'` ≠ `'zh'` → 中文版知識庫被誤判不渲染 → 改 `indexOf('zh')===0`（首碼判斷）
+  - ② 內嵌定義 `window.__KB__` 被 sync regex 弄丟（只剩使用）→ 標記機制 `/* __KB_EMBED__ */` 定位更新（sync 腳本同步改標記法）
+
+### 語言系統（v11.2.34）
+- **預設依 OS 語系**：navigator.language——zh→中文、ja→日文、**其他一律英文**（localStorage 手動記憶覆寫）
+- **各語言分頁標題對應**：每頁字典 meta_title 三語齊全（11 頁 ×3）＋i18n.js 切換即更新 document.title/og:title
+- **知識庫 zh-only**：CSS `html[lang="en"/"ja"] .kb-section{display:none}`＋JS lang 首碼檢查（雙保險——en/ja 不顯示方格子文章）
+
+### 部署
+- GitHub（多 commit）＋ Cloudflare Pages（?v=83 最終）
+
+---
+
 ## v11.2.29（2026-08-24）— 三語配圖分流＋健康台灣深耕計畫＋效能收官
 
 ### 圖像與配圖

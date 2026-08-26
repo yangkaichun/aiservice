@@ -12,6 +12,15 @@
 
 ## 重大經驗教訓（建議回寫 skills / Memory）
 
+### 0.6 知識庫 vocus 同步＋zh-only 語言判斷（2026-08-26）
+- **vocus 解析**：`__NEXT_DATA__` JSON 內嵌（title/_id/abstract/thumbnailUrl/createdAt）——regex 直接抓 title 與 _id 會**跨篇錯位**（title 在 id 前但間距跨篇）→ 遞迴 walk 找同節點 dict（_id+title）
+- **多節點覆蓋坑**：同一文章在 __NEXT_DATA__ 多處（列表＋詳情）——後寫覆蓋先寫會**丟失 cover** → 「優先保留含 cover 的版本」
+- **`'zh-TW'.replace('-','')` = `'zhtw'` ≠ `'zh'`**——語言判斷一律用 `indexOf('zh')===0` 或 `split('-')[0]`
+- **內嵌資料 script 會被 sync regex 弄丟**（`window.__KB__ = .*?;` 非貪婪配到 JSON 內分號）→ **用標記註解 `/* __KB_EMBED__ */` 定位更新**（pat = `<script>\s*/\* __KB_EMBED__ \*/.*?</script>`）
+- **fetch 依賴陷阱**：pancad.ai 的 CF 保護擋 assets（curl 403）→ 瀏覽器 fetch JSON 可能失敗 → **關鍵資料內嵌 HTML**（window.__KB__ 立即渲染＋背景 fetch 更新）
+- **zh-only 模式**：CSS `html[lang="en"] .kb-section{display:none}`＋JS lang 首碼檢查雙保險
+- **OS 語言偵測**：navigator.language——zh→中文、ja→日文、其他一律英文（localStorage 覆寫）——使用者要求「預設 OS 語系」
+
 ### 0.5 三語配圖分流與 img2img（2026-08-24 新增）
 - **mflux 圖生圖參數**：是 `--image-path`＋`--image-strength`（`--image`/`--strength` 會 ambiguous 錯誤）；以 zh 圖為底換人種（同場景構圖）→ `--image-strength 0.55`
 - **三語背景分流**：`data-bg-fixed`（inline 顯示）＋`data-bg-fixed-en/ja`＋`data-bg-hd-en/ja`＋`data-bg-pair-en`（交替）——JS 依 `html lang` 選圖（en/ja 分流）；屬性順序陷阱：`data-bg-hd` 可能夾在 fixed-en/hd-en 之間——用正則寬鬆匹配
