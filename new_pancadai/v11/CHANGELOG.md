@@ -5,6 +5,20 @@
 
 ---
 
+## v11.2.41（2026-08-26）— footer 網站導覽欄加深耕計畫連結（zh-only）
+- 使用者指示：「中文版本的每一個頁面的最下方網站導覽下面都要有健康台灣深耕計畫的連結」
+- 11 頁 footer「網站導覽」欄（foot_nav）最後一個連結（聯絡我們）下新增：`<a class="zh-only" href="deep-plan/index.html" target="_blank" rel="noopener" data-i18n="deep_float_t">了解健康台灣深耕計畫</a>`（index 原本已有，其餘 10 頁批次插入）
+- zh-only：`html:not([lang="zh-TW"]) .zh-only{display:none !important}`——中文版顯示、en/ja 隱藏
+- 版本：footer ver v11.2.38 → **v11.2.41**（11 頁）；check_tags 11/11 平衡
+- ⚠️ 同批 hotfix：**`re.sub` 字串 repl 的 `\n` 陷阱**——`pat.sub("<script>\n"+embed+"\n</script>")` 中 embed 內 json.dumps 的轉義 `\n` 會被 re 模組**解碼成真實換行** → 內嵌 JSON 非法 → 瀏覽器 SyntaxError、知識庫空白。**正解：function repl（`lambda m: ...`）**，re 不對 function 回傳值做 escape 處理（詳見 SKILLS_USED 0.10）
+
+## v11.2.40（2026-08-26）— vocus 知識庫改 room API 全量同步（20→50 篇）
+- 改用 `https://api.vocus.cc/api/v2/site/rooms/{roomId}/contents?num=50&...`（roomId 由頁面 `__NEXT_DATA__` fallback key 動態解析）——取代 `__NEXT_DATA__` 內嵌列表（只載前 20 篇）
+- 抓全 room/PancreasCare **50 篇**（2026-04-12 ~ 08-25、50/50 有封面、唯一 ID 驗證）
+- 其餘流程不變：更新 data-pancreas-kb.json + education.html 內嵌 → sync_vocus_kb.sh（cron a2eb3965a52c 每 6h）有變化才 commit/push + CF deploy
+
+---
+
 ## v11.2.39（2026-08-26）— vocus 知識庫自動同步鏈路補齊
 - **發現**：v11.2.30 CHANGELOG 宣稱的「cron 每 6 小時自動同步（sync_vocus_kb.sh）」**從未建立**——cron 只有 sync_pancadai.sh（每 5 分鐘 git push），sync_vocus_kb.sh 不存在，方格子發文後 pancad.ai 不會同步
 - **補建** `~/.hermes/scripts/sync_vocus_kb.sh`（watchdog 模式）：
