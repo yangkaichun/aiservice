@@ -59,15 +59,18 @@ def main():
             "count": len(arts), "articles": arts}
     with open(OUT, "w", encoding="utf-8") as f:
         json.dump(data, f, ensure_ascii=False, indent=1)
-    # v11.2.32：同步更新 education.html 內嵌資料（保證無 fetch 也顯示最新）
+    # v11.2.35：同步更新 education.html 內嵌資料（標記定位，避免弄丟）
     EDU = "/Users/yangkaichun/Documents/GitHub/aiservice/new_pancadai/v11/education.html"
     try:
         eh = open(EDU, encoding="utf-8").read()
-        embed = "window.__KB__ = " + json.dumps(arts, ensure_ascii=False) + ";"
-        if "window.__KB__" in eh:
-            eh = re.sub(r'window\.__KB__ = .*?;', embed, eh, count=1, flags=re.S)
+        embed = "/* __KB_EMBED__ */window.__KB__ = " + json.dumps(arts, ensure_ascii=False) + ";"
+        pat = re.compile(r'<script>\s*/\* __KB_EMBED__ \*/.*?</script>', re.S)
+        if pat.search(eh):
+            eh = pat.sub("<script>\n" + embed + "\n</script>", eh, count=1)
             open(EDU, "w", encoding="utf-8").write(eh)
             print("✅ education.html 內嵌資料已更新")
+        else:
+            print("⚠️ 找不到 __KB_EMBED__ 標記（內嵌未更新）")
     except Exception as e:
         print("⚠️ 內嵌更新失敗:", e)
     print(f"✅ 更新 {OUT}: {len(arts)} 篇（{data['updated_at']}）")
