@@ -85,7 +85,9 @@ def main():
         embed = "/* __KB_EMBED__ */window.__KB__ = " + json.dumps(arts, ensure_ascii=False) + ";"
         pat = re.compile(r'<script>\s*/\* __KB_EMBED__ \*/.*?</script>', re.S)
         if pat.search(eh):
-            eh = pat.sub("<script>\n" + embed + "\n</script>", eh, count=1)
+            # ⚠️ 必須用 function repl：re.sub 的字串 repl 會把字面 \n 解碼成真實換行
+            #（embed 內 json.dumps 的轉義 \n 會被還原 → JSON 變非法 → 瀏覽器 SyntaxError）
+            eh = pat.sub(lambda m: "<script>\n" + embed + "\n</script>", eh, count=1)
             open(EDU, "w", encoding="utf-8").write(eh)
             print("✅ education.html 內嵌資料已更新")
         else:
