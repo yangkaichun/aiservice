@@ -27,7 +27,14 @@ def parse(t):
                     item["abstract"] = h.unescape(o["abstract"]).strip()
                 if o.get("createdAt"):
                     item["date"] = str(o["createdAt"])[:10]
-                found[o["_id"]] = item
+                # 封面圖（v11.2.31：方格子貼圖同步）
+                for ck in ("thumbnailUrl", "coverUrl", "heroImage"):
+                    if isinstance(o.get(ck), str) and o[ck].startswith("http"):
+                        item["cover"] = o[ck]
+                        break
+                # 優先保留含封面圖的版本（列表節點可能覆蓋詳情節點）
+                if o["_id"] not in found or ("cover" in item and not found[o["_id"]].get("cover")):
+                    found[o["_id"]] = item
             for v in o.values():
                 walk(v)
         elif isinstance(o, list):
