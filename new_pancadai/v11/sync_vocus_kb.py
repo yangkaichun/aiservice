@@ -59,6 +59,17 @@ def main():
             "count": len(arts), "articles": arts}
     with open(OUT, "w", encoding="utf-8") as f:
         json.dump(data, f, ensure_ascii=False, indent=1)
+    # v11.2.32：同步更新 education.html 內嵌資料（保證無 fetch 也顯示最新）
+    EDU = "/Users/yangkaichun/Documents/GitHub/aiservice/new_pancadai/v11/education.html"
+    try:
+        eh = open(EDU, encoding="utf-8").read()
+        embed = "window.__KB__ = " + json.dumps(arts, ensure_ascii=False) + ";"
+        if "window.__KB__" in eh:
+            eh = re.sub(r'window\.__KB__ = .*?;', embed, eh, count=1, flags=re.S)
+            open(EDU, "w", encoding="utf-8").write(eh)
+            print("✅ education.html 內嵌資料已更新")
+    except Exception as e:
+        print("⚠️ 內嵌更新失敗:", e)
     print(f"✅ 更新 {OUT}: {len(arts)} 篇（{data['updated_at']}）")
     for a in arts[:3]:
         print("  -", a["title"][:40])
