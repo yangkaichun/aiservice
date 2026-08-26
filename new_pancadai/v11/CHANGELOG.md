@@ -5,6 +5,19 @@
 
 ---
 
+## v11.2.42（2026-08-26）— 三語實體子目錄 /en/ /jp/（GSC/GA 分語言分析）
+- 使用者指示：「英文版網頁放在 /en、日文版放在 /jp，方便載入 GSC 與 GA 進行詳細分析」
+- **架構**：`en/`（11 頁）與 `jp/`（11 頁）實體子目錄——HTML 複製自主站，**資源共用根目錄**（`../css/` `../js/` `../assets/` `../video/` `../manifest.webmanifest` `../deep-plan/`），頁面間導覽連結保持同目錄相對（en/ 內點 nav → en/product.html）
+- **i18n.js 子目錄語言優先**：`detect()` 先檢查 `location.pathname`——`/en/` 前綴強制 en、`/jp/` 強制 ja（優先於 localStorage/瀏覽器語言）→ 爬蟲與使用者預設即對應語言
+- **語言切換跳轉**：`langRedirect()`——主站點 English → `/en/<同頁>`、點日本語 → `/jp/<同頁>`；en/ 點繁體中文 → 主站、jp/ 點 English → `/en/`（不再原地切換）
+- **hreflang**：33 頁 head 加 4 links（zh-TW/en/ja/x-default，pancad.ai 絕對 URL，index 用目錄根慣例）
+- **sitemap.xml**：12 → **34 URL**（主站 12 含 deep-plan ＋ en 11 ＋ jp 11，lastmod 2026-08-26）
+- **版本**：`?v=86`、footer ver v11.2.42（33 頁）；i18n.js node --check ✓、check_tags ✓
+- **GA4 不需改**：同一 GA4 ID，路徑自動區分（/en/xxx、/jp/xxx、/xxx）；GSC 可提交單一 sitemap（34 URL）或分語言過濾
+- ⚠️ CF「.html → 無擴展名 308」規則對 /en/index.html 會 308 到 /en/（正常服務），GSC 舊站重新導向問題待 dashboard 刪規則
+
+---
+
 ## v11.2.41（2026-08-26）— footer 網站導覽欄加深耕計畫連結（zh-only）
 - 使用者指示：「中文版本的每一個頁面的最下方網站導覽下面都要有健康台灣深耕計畫的連結」
 - 11 頁 footer「網站導覽」欄（foot_nav）最後一個連結（聯絡我們）下新增：`<a class="zh-only" href="deep-plan/index.html" target="_blank" rel="noopener" data-i18n="deep_float_t">了解健康台灣深耕計畫</a>`（index 原本已有，其餘 10 頁批次插入）

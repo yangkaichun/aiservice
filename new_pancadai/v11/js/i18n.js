@@ -12,6 +12,10 @@
   var NAMES = { zh: '繁體中文', en: 'English', ja: '日本語' };
 
   function detect() {
+    /* v11.2.42：子目錄語言版優先（/en/ 強制英文、/jp/ 強制日文）——GSC/GA 分語言分析 */
+    var p = (window.location.pathname || '');
+    if (/^\/en\//.test(p)) return 'en';
+    if (/^\/jp\//.test(p)) return 'ja';
     var saved = null;
     try { saved = localStorage.getItem(LANG_KEY); } catch (e) {}
     if (saved && SUPPORTED.indexOf(saved) !== -1) return saved;
@@ -20,6 +24,18 @@
     if (nav.indexOf('zh') === 0) return 'zh';
     if (nav.indexOf('ja') === 0) return 'ja';
     return 'en';
+  }
+
+  /* v11.2.42：語言切換跳轉（子目錄語言版）——主站↔/en/↔/jp/ */
+  function langRedirect(target) {
+    var p = window.location.pathname || '';
+    var m = p.match(/^\/(en|jp)\//);
+    var here = m ? m[1] : '';
+    if (here === target) return null; // 已在目標語言版，原地切換
+    var page = p.split('/').filter(Boolean).pop() || 'index.html';
+    if (!/\.html$/.test(page)) page = 'index.html';
+    var dir = target === 'en' ? '/en/' : target === 'ja' ? '/jp/' : '/';
+    return dir + page;
   }
 
   function apply(lang) {
@@ -59,7 +75,10 @@
     apply(detect());
     document.querySelectorAll('[data-lang]').forEach(function (b) {
       b.addEventListener('click', function () {
-        apply(b.getAttribute('data-lang'));
+        var target = b.getAttribute('data-lang');
+        var redir = langRedirect(target);
+        if (redir) { window.location.href = redir; return; }
+        apply(target);
         var menu = document.getElementById('langMenu');
         if (menu) menu.classList.remove('open');
       });
