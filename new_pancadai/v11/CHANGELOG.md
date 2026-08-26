@@ -15,7 +15,7 @@
 - **P1 觸控/可讀性**（≤640px 斷點）：`.burger` min-height 40px、`.nav-logo` padding、`.gate-cta`/`.pub-link`/`.ev-go` padding 加大（24px→≥34px 高）、`.car-dot` 9→12px；`.pub-tag` 11.5→12.5px、`.pub-journal`/`.ss-tag` 12.5→13px、`.pub-card p` 13.5px
 - **P2**：Escape 關閉 mobile menu（main.js keydown）、語言切換後自動關閉 menu
 - **驗證**：check_tags 11/11 平衡、node --check 過、33/33 溢出複查過、點 English→html lang=en＋menu 自動關閉、Escape 生效
-- commit 待 auto-sync；CF Pages（pancadai-v11.pages.dev）需另跑 wrangler deploy
+- commit a984c6c（auto-sync）；**三處全上線**：GitHub Pages（health.yangkaichun.net 雙路徑）＋ CF Pages（wrangler deploy `62acc09c`，www.pancad.ai / pancadai-v11.pages.dev 皆 v85）
 
 ---
 
