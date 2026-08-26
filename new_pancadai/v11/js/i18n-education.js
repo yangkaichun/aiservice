@@ -31,6 +31,9 @@
     e6_l: "追蹤中",
     e6_p: "定期追蹤（影像+血液腫瘤指數）是治療後的核心。生活上：均衡飲食、適度運動、戒菸限酒、控制血糖。心理支持同樣重要——和家人或病友團體聊聊，你不是一個人。",
 
+    kb_k: "護胰大聯盟衛教知識庫",
+    kb_t: "持續更新的胰臟健康文章",
+    kb_p: "精選護胰大聯盟官方沙龍文章——從風險評估到治療新知，以真實數據破解「癌王」迷思。",
     faq_k: "常見問題",
     faq_t: "您可能也會想問",
     fq1_q: "PANCREASaver® 是給我用的 App 嗎？",
@@ -81,6 +84,9 @@
     e6_l: "Follow-up",
     e6_p: "Regular follow-up (imaging + tumor markers) is the core of survivorship. Lifestyle: balanced diet, moderate exercise, no smoking, limited alcohol, controlled blood sugar. Emotional support matters too — talk with family or a support group.",
 
+    kb_k: "PancreasCare Education Library",
+    kb_t: "Continuously Updated Pancreatic Health Articles",
+    kb_p: "Curated articles from the official PancreasCare salon — from risk assessment to treatment insights, debunking the 'king of cancers' myth with real data.",
     faq_k: "FAQ",
     faq_t: "You might also wonder",
     fq1_q: "Is PANCREASaver® an app for me?",
@@ -131,6 +137,9 @@
     e6_l: "経過観察",
     e6_p: "定期的な経過観察（画像＋腫瘍マーカー）が中心。生活ではバランスの良い食事、適度な運動、禁煙、節酒、血糖管理。心理的サポートも大切です——家族や患者会と話しましょう。",
 
+    kb_k: "護胰大聯盟ヘルスライブラリー",
+    kb_t: "更新し続ける膵臓の健康記事",
+    kb_p: "公式サロンの記事を厳選——リスク評価から治療の新知見まで、実データで「癌の王」の誤解を解きます。",
     faq_k: "よくある質問",
     faq_t: "こんな疑問も",
     fq1_q: "PANCREASaver®は患者用のアプリですか？",
