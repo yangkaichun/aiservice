@@ -79,6 +79,15 @@
 
 **本次使用的 Skills**：`pancad-website-v11`（更新）、`static-site-optimization`、`pancad-website`＋工具（node 字典提取、python 批次）
 
+### 0.12 en/jp 背景圖與資源路徑災難（2026-08-26 晚，使用者回報「英文版只有文字沒圖片」）
+**完整事故鏈（三輪 bug 疊加，最終根除）**：
+1. **JS/inline 相對路徑**：main.js 背景池與 HTML inline `url('assets/...')` 在 en/ 子目錄解析到 `/en/assets/` 404 → main.js 加 `BG` 前綴（`location.pathname` 偵測 `/en/ /jp/`）+ inline 加 `../`
+2. **屬性 = 丟失**：批次 regex `([a-z-]+)="` 中 `=` 不在 group1，replacement 漏寫 → **所有非 href/src 屬性（data-bg-*/srcset/content）的 `=` 全被吃掉** → `getAttribute` 失敗、背景圖消失。**教訓：regex 捕獲組與 replacement 必須包含 `=`；批次改屬性後用 `(?<!=)attr"` lookbehind 驗證**
+3. **bake 無限循環**：手動 bake 循環（`for _ in range(400): pat.search`）**無「已處理標記」**——元素內容替換後 `data-i18n` 屬性仍在 → 下輪又匹配同一元素 → **1 個元素吃光全部迭代，其餘元素全沒 bake**（nav_product 換了、nav_patient 沒換＝特徵症狀）。**修法：處理後屬性標記 `-done`（`attr + '-done'`），結束後還原**
+4. **重建覆蓋丟失**：`shutil.copy2` 從主站重建 en/jp 後**只重跑 bake 沒重跑路徑批次** → 第一輪的 `../` 全被覆蓋回裸 → **www.pancad.ai/en/「只有文字沒圖片」（css/js/圖片全 404）**。**教訓：重建流程必須「路徑批次＋bake＋修正」全套重跑；部署後必須 curl 實際資源 URL 驗證 200（不只驗 HTML 屬性）**
+**最終驗證清單（en/jp 交付前）**：①`(href|src)="(assets|css|js|video|deep-plan)/` 為 0 ②非 href/src 屬性值裸 `assets/` 為 0 ③`url('assets/` 為 0 ④`(?<!=)(?:data-bg-fixed|data-bg-hd|srcset)"` 缺 = 為 0 ⑤可視中文 0（en）/純日文假名（jp）⑥check_tags 平衡 ⑦線上 curl 資源 200
+**使用者實際看的域名**：`www.pancad.ai`（CF 主域，與 pancad.ai 同 Pages project）——驗證要含 www；pancad.ai 無 www 對 curl 403（CF 保護）但瀏覽器正常
+
 ### 0. Cloudflare Pages 部署（2026-08-14 新增）
 - **流程**：`npm i -g wrangler` → `wrangler login`（OAuth——macOS 自動開瀏覽器授權）→ `wrangler pages project create pancadai-v11 --production-branch main` → **`cd 專案目錄 && wrangler pages deploy . --project-name pancadai-v11 --commit-dirty=true`**
 - **⚠️ wrangler 4.x 已移除 Pages Functions 自動編譯**（functions/ 目錄不再偵測；需 Workers Static Assets）→ **固定用 wrangler@3.114**（`npm i -g wrangler@3`；v3 支援 functions/ 自動編譯）
