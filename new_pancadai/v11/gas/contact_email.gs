@@ -40,7 +40,7 @@ function doPost(e) {
       MailApp.sendEmail({
         to: email,
         subject: '✅ 已收到您的訊息 — 仲智數位健康 PanCAD.ai',
-        body: name + ' 您好：\n\n我們已收到您的訊息，將於兩個工作天內回覆您。\n\n若您有緊急醫療問題，請務必直接聯繫您的醫療院所。\n\n仲智數位健康股份有限公司（PanCAD.ai）\n台北市大安區敦化南路一段367號11樓\ninfo@pancad.ai\n+886 02-2331-3971'
+        body: name + ' 您好：\n\n我們已收到您的訊息，將於兩個工作天內回覆您。\n\n若您有緊急醫療問題，請務必直接聯繫您的醫療院所。\n\n仲智數位健康股份有限公司（PanCAD.ai）\n台北市大安區敦化南路一段376號11樓\ninfo@pancad.ai\n+886 02-2331-3971'
       });
     }
 
