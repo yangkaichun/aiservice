@@ -5,6 +5,20 @@
 
 ---
 
+## v11.2.44（2026-08-27）— about 頁「共同創辦人」區塊（王偉仲/廖偉智）
+- 使用者指定：圓形大頭照＋共同創辦人資訊、成就、發表文獻（期刊論文超連結）
+- **區塊**：about.html「技術源頭」後、「深耕計畫」前——`#cofounders`：sec-head＋2 張 `.cf-card`（圓形照片 200px＋姓名＋職稱＋簡介＋成就 chips）＋`.cf-pubs` 論文列表
+- **照片**：`assets/cofounders/`（wang_weichung/liao_weichih 各 800px jpg＋480 webp）——廖偉智原圖 3461×4625 以人臉為中心裁 1:1（qwen2.5vl 判斷人臉 X50/Y35）＋裁切後本機視覺驗證人臉完整居中
+- **王偉仲**：台大應數所教授、MeDA Lab 創辦人兼主任、PanCAD.ai 共同創辦人；馬里蘭大學應數博士（1996）；100+ 論文；國科會傑出研究獎 2025/TWSIAM Fellow/RSNA Margulis 2023（台灣首次）/徐有庠 AI 論文獎 2023
+- **廖偉智**：台大醫院內科部胃腸肝膽科主治醫師、PanCAD.ai 共同創辦人；47 篇胰臟研究；FDA 突破性醫材/TFDA 007946/2156+ 判讀
+- **論文超連結**：5 篇共同論文 PubMed 直連（33328124/36098642/34241550/36650440/33624891，target=_blank）
+- **三語**：i18n-about.js 新增 24 個 cf_* keys（zh/en/ja）＋en/jp bake（靜態語言化）＋html lang（jp→ja 注意）
+- **本機視覺**：安裝 Ollama qwen2.5vl:7b＋moondream（skill `local-vision`）——照片人臉位置判斷與裁切驗證用
+- 版本：?v=88、footer ver v11.2.44（33 頁）
+- ⚠️ v11.2.43（2026-08-26）補記：jp Line 連結 lin.ee/pZJmfjl→lin.ee/nEYJoLK＋JP QR（line_qr_jp.png）；en 移除全部 Line 連結/QR/line-band；zh 不變
+
+---
+
 ## v11.2.42（2026-08-26）— 三語實體子目錄 /en/ /jp/（GSC/GA 分語言分析）
 - 使用者指示：「英文版網頁放在 /en、日文版放在 /jp，方便載入 GSC 與 GA 進行詳細分析」
 - **架構**：`en/`（11 頁）與 `jp/`（11 頁）實體子目錄——HTML 複製自主站，**資源共用根目錄**（`../css/` `../js/` `../assets/` `../video/` `../manifest.webmanifest` `../deep-plan/`），頁面間導覽連結保持同目錄相對（en/ 內點 nav → en/product.html）
