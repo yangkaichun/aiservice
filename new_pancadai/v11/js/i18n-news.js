@@ -32,6 +32,8 @@
     n6_d: "2025.06",
     n6_t: "累積判讀人次突破 300，服務範圍涵蓋醫學中心與區域醫院",
     n6_p: "從台大醫院開始，PANCREASaver® 已服務多家醫學中心與區域醫院，累積判讀超過 300 人次——每一位患者，都是一個被守護的家庭。",
+    news_byline_t: "發布單位",
+    news_byline: "仲智數位健康（PanCAD.ai）",
 
     back_t: "回到首頁"
   };
@@ -67,6 +69,9 @@
     n6_d: "2025.06",
     n6_t: "300+ cases interpreted across medical centers and regional hospitals",
     n6_p: "Starting from National Taiwan University Hospital, PANCREASaver® now serves multiple institutions — every patient, a protected family.",
+    news_byline_t: "Publisher",
+    news_byline_t: "発行元",
+    news_byline: "PanCAD.ai",
 
     back_t: "Back to Home"
   };
@@ -102,6 +107,7 @@
     n6_d: "2025.06",
     n6_t: "累計読影300件超、医学センターと地域病院をカバー",
     n6_p: "台大病院から始まり、複数の医療機関で稼働。累計300件超——一人ひとりの患者が、守られる家族です。",
+    news_byline: "PanCAD.ai",
 
     back_t: "ホームへ戻る"
   };
