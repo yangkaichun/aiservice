@@ -5,16 +5,38 @@
 
 ---
 
-## v11.2.44（2026-08-27）— about 頁「共同創辦人」區塊（王偉仲/廖偉智）
+## v11.2.44（2026-08-27）— 共同創辦人區塊・語言切換修復・AI SEO（完整修改紀錄）
+
+### 🆕 功能：about 頁「共同創辦人」區塊
 - 使用者指定：圓形大頭照＋共同創辦人資訊、成就、發表文獻（期刊論文超連結）
-- **區塊**：about.html「技術源頭」後、「深耕計畫」前——`#cofounders`：sec-head＋2 張 `.cf-card`（圓形照片 200px＋姓名＋職稱＋簡介＋成就 chips）＋`.cf-pubs` 論文列表
+- **區塊**：about.html「技術源頭」後、「深耕計畫」前——`#cofounders`：sec-head＋2 張 `.cf-card`（圓形照片 200px＋姓名＋職稱＋簡介＋成就）＋`.cf-pubs` 論文列表
 - **照片**：`assets/cofounders/`（wang_weichung/liao_weichih 各 800px jpg＋480 webp）——廖偉智原圖 3461×4625 以人臉為中心裁 1:1（qwen2.5vl 判斷人臉 X50/Y35）＋裁切後本機視覺驗證人臉完整居中
-- **王偉仲**：台大應數所教授、MeDA Lab 創辦人兼主任、PanCAD.ai 共同創辦人；馬里蘭大學應數博士（1996）；100+ 論文；國科會傑出研究獎 2025/TWSIAM Fellow/RSNA Margulis 2023（台灣首次）/徐有庠 AI 論文獎 2023
-- **廖偉智**：台大醫院內科部胃腸肝膽科主治醫師、PanCAD.ai 共同創辦人；47 篇胰臟研究；FDA 突破性醫材/TFDA 007946/2156+ 判讀
+- **王偉仲**（三區塊列表）：🔬 智慧醫療與技術創新成就（FDA 2022＋衛福部 2023／<2cm 敏感度 92.1%＋揪出 92% 病灶／PanCAD.ai 商轉）＋🏆 國內外重大獎項與榮譽（9 項列表：國科會傑出研究獎 2025、TWSIAM Fellow 2025、RSNA Margulis 2023、SNQ 銀獎 2024、台北生技金獎 2024、國家新創獎 2021-23、未來科技獎、徐有庠論文獎 2023、台大教學優良獎）＋📚 學術影響力與重要職位（100+ 論文／國科會數學學門召集人／TWSIAM 理事長／台大醫院智慧醫療中心）
+- **廖偉智**（列表＋emoji 標題）：🎖️ 重大成就與貢獻（世界首創 AI 胰臟癌系統＋Discovery 報導／4 美 5 台專利＋咬口器／113 國科會傑出研究獎）＋🩺 研究與臨床專長（內視鏡技術／胰臟疾病診療／跨領域 AI）；**移除 chips**（FDA 突破性醫材認定、TFDA 007946、2156+ 人次）
 - **論文超連結**：5 篇共同論文 PubMed 直連（33328124/36098642/34241550/36650440/33624891，target=_blank）
-- **三語**：i18n-about.js 新增 24 個 cf_* keys（zh/en/ja）＋en/jp bake（靜態語言化）＋html lang（jp→ja 注意）
-- **本機視覺**：安裝 Ollama qwen2.5vl:7b＋moondream（skill `local-vision`）——照片人臉位置判斷與裁切驗證用
-- 版本：?v=88、footer ver v11.2.44（33 頁）
+- **UI 強化**：emoji 標題＋橘色漸層線、橘點列表、獎項獨立排版、卡片 hover 浮升
+- **三語**：i18n-about.js 新增 50+ 個 cf_* keys（zh/en/ja）＋en/jp bake（靜態語言化）
+
+### 🐛 修正：語言切換路徑（langRedirect v2）
+- **問題**：detect()/langRedirect() 用「路徑開頭」`/^\/(en|jp)\//` 判斷——GH Pages 子路徑（`/new_pancadai/v11/en/`）下 en/jp 段不在開頭 → en/ 頁被 JS 切回中文、切換跳轉 404
+- **修復**：改為**掃描路徑任一段**為 en/jp（detect 迴圈 + langRedirect 迴圈 splice）——GH 子路徑與 CF 根域皆正確；17/17 langRedirect＋6/6 detect node 測試全過（含 deep-plan 不誤判）
+- 版本：?v=89（33 頁）
+
+### 🆕 系統：本機圖片辨識（skill `local-vision`）
+- 安裝 Ollama **qwen2.5vl:7b**（主力）＋**moondream**（輕量）——vision_analyze 模型不支援圖像時的本機替代
+- 建立 skill：API base64 傳圖、大圖縮 ≤1280、gemma4 佔 GPU 卡 ollama→pkill 重啟、ollama CLI 傳圖無效
+- 用途：創辦人照片人臉位置判斷與裁切驗證
+
+### 🆕 SEO：AI SEO 三件套
+- **sitemap.xml**：lastmod 全改 **2026-08-27**、about 三語 priority 0.7→0.8（34 URLs）
+- **robots.txt**：新增 **12 個 AI 爬蟲 Allow 規則**（GPTBot/ClaudeBot/anthropic-ai/Google-Extended/PerplexityBot/CCBot/cohere-ai/Bytespider/Applebot-Extended/Amazonbot/Meta-ExternalAgent/ChatGPT-User）
+- **llms.txt**：新增「## 共同創辦人」段（王偉仲/廖偉智完整資訊＋about#cofounders 錨點）、about/sitemap 行更新
+- **llms-full.txt**：「六、產學研團隊與共同創辦人」完整重寫（學歷/研究/成就/9 獎項/經歷）
+
+### 🆕 其他
+- **deep-plan 頁**：頂部加 PanCAD.ai 品牌 logo 條（pancad-ai-logo.svg，點擊回主站）
+- **jp html lang**：`lang="jp"` → `lang="ja"`（標準語言代碼，kb-section 隱藏與爬蟲判定）
+- **footer ver**：v11.2.42 → v11.2.44（33 頁）
 - ⚠️ v11.2.43（2026-08-26）補記：jp Line 連結 lin.ee/pZJmfjl→lin.ee/nEYJoLK＋JP QR（line_qr_jp.png）；en 移除全部 Line 連結/QR/line-band；zh 不變
 
 ---
