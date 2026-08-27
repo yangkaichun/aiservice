@@ -5,7 +5,7 @@
 
 ---
 
-## v11.2.44（2026-08-27）— 共同創辦人區塊・語言切換修復・AI SEO（完整修改紀錄）
+## v11.2.44（2026-08-27）— 共同創辦人・語言切換 v4・GEO 全面強化（完整修改紀錄）
 
 ### 🆕 功能：about 頁「共同創辦人」區塊
 - 使用者指定：圓形大頭照＋共同創辦人資訊、成就、發表文獻（期刊論文超連結）
@@ -17,33 +17,34 @@
 - **UI 強化**：emoji 標題＋橘色漸層線、橘點列表、獎項獨立排版、卡片 hover 浮升
 - **三語**：i18n-about.js 新增 50+ 個 cf_* keys（zh/en/ja）＋en/jp bake（靜態語言化）
 
-### 🐛 修正：語言切換路徑（langRedirect v2）
-- **問題**：detect()/langRedirect() 用「路徑開頭」`/^\/(en|jp)\//` 判斷——GH Pages 子路徑（`/new_pancadai/v11/en/`）下 en/jp 段不在開頭 → en/ 頁被 JS 切回中文、切換跳轉 404
-- **修復**：改為**掃描路徑任一段**為 en/jp（detect 迴圈 + langRedirect 迴圈 splice）——GH 子路徑與 CF 根域皆正確；17/17 langRedirect＋6/6 detect node 測試全過（含 deep-plan 不誤判）
-- 版本：?v=89（33 頁）
+### 🐛 修正：語言切換系列（v1→v4，最終版）
+- **v1**：絕對路徑 `/en/` 跳轉——GH Pages 子路徑（`/new_pancadai/v11/`）下 404
+- **v2**：路徑感知（掃描任一段 en/jp）——修正 detect() 與 langRedirect()；17/17＋6/6 測試
+- **v3**：一律導引目標語言 index（避免同頁映射 edge case）；發現並修復 **jp 目錄名 vs ja 語言碼比較 bug**（hereLang）
+- **v4（最終）**：**一律導引 pancad.ai 語言首頁絕對 URL**（使用者指定）——English→`https://www.pancad.ai/en/`、日本語→`/jp/`、繁體中文→`/`；已在該語言原地；14/14 測試
+- 版本：?v=91（33 頁）
 
 ### 🆕 系統：本機圖片辨識（skill `local-vision`）
 - 安裝 Ollama **qwen2.5vl:7b**（主力）＋**moondream**（輕量）——vision_analyze 模型不支援圖像時的本機替代
-- 建立 skill：API base64 傳圖、大圖縮 ≤1280、gemma4 佔 GPU 卡 ollama→pkill 重啟、ollama CLI 傳圖無效
-- 用途：創辦人照片人臉位置判斷與裁切驗證
-
-### 🆕 SEO：AI SEO 三件套
-- **sitemap.xml**：lastmod 全改 **2026-08-27**、about 三語 priority 0.7→0.8（34 URLs）
-- **robots.txt**：新增 **12 個 AI 爬蟲 Allow 規則**（GPTBot/ClaudeBot/anthropic-ai/Google-Extended/PerplexityBot/CCBot/cohere-ai/Bytespider/Applebot-Extended/Amazonbot/Meta-ExternalAgent/ChatGPT-User）
-- **llms.txt**：新增「## 共同創辦人」段（王偉仲/廖偉智完整資訊＋about#cofounders 錨點）、about/sitemap 行更新
-- **llms-full.txt**：「六、產學研團隊與共同創辦人」完整重寫（學歷/研究/成就/9 獎項/經歷）
+- skill 內容：API base64 傳圖、大圖縮 ≤1280、gemma4 佔 GPU 卡 ollama→pkill 重啟、ollama CLI 傳圖無效
+- 用途：創辦人照片人臉位置判斷與裁切驗證；SeedVR2（mflux-upscale-seedvr2）圖放大（450×57→1768×224 4x、2368×300）
 
 ### 🐛 修正：CF AI Scrapers 封鎖（GEO 稽核 0 分項）
 - **稽核發現**：本地 robots.txt 為 Allow 但線上回 Disallow（GPTBot/ClaudeBot 等 9 個）——**Cloudflare AI Scrapers 防護在 edge 自動生成封鎖 robots.txt**（覆蓋靜態檔）＋Bot Fight Mode 擋請求
-- **解決**：使用者 Dashboard 關閉 Security→Bots→Bot Fight Mode＋AI Scrapers（wrangler 無 zone 權限）
+- **解決**：使用者 Dashboard 關閉 Security→Bots→Bot Fight Mode＋AI Scrapers（wrangler 無 zone 權限；已記錄 skill）
 - **驗證**：robots.txt Disallow=0、Allow=13；GPTBot/ClaudeBot/Google-Extended/CCBot/PerplexityBot 全 200（含無 www、三語頁）
 
-### 🆕 GEO/SEO 強化（稽核驅動）
-- **Organization schema**：@graph 新增 Organization 節點（地址/電話/統編——稽核 LocalBusiness 項）
-- **Author/Publisher**：education/news 三語 Article JSON-LD（author/publisher=Organization＋日期）
-- **日期標記**：全站 33 頁 MedicalWebPage＋meta datePublished（2026-08-14）/dateModified（2026-08-27）
-- **canonical**：en/jp 指向語言版（22 頁修正）＋og:locale（en_US/ja_JP）＋twitter:card 全站＋robots meta＋og:image 絕對 URL 修復
-- **llms.txt 快速事實段**：一行式關鍵數據（92.1%/AUC 0.95/FDA/TFDA/2156+）供 AI 引擎直接引用
+### 🆕 GEO/SEO 強化（稽核驅動，全站 33 頁）
+- **JSON-LD 型別 8 種**：MedicalOrganization（#org 地址/電話/統編）＋**Organization（#organization）**＋WebSite＋BreadcrumbList＋MedicalWebPage＋MedicalDevice＋**Product（PANCREASaver）**＋**Service（AI 判讀服務）**
+- **FAQPage**：index 三語各 7 題
+- **Person×2**：about 三語（王偉仲/廖偉智——職稱/獎項/knowsAbout/照片/sameAs）
+- **Article**：education/news 三語——**author=Person×2（內聯王偉仲/廖偉智，E-E-A-T）**＋publisher=Organization＋日期
+- **日期標記**：33 頁 MedicalWebPage＋meta datePublished（2026-08-14）/dateModified（2026-08-27）
+- **canonical**：en/jp 指向語言版（22 頁修正）＋og:locale（zh_TW/en_US/ja_JP）＋twitter:card 全站＋robots meta index,follow＋og:image 絕對 URL 修復
+- **內部連結**：全站 33 頁加 `<main>` 語意標籤；首頁 main 區 12 個正文連結（quicklinks 曾加後因與頁尾重複移除）
+- **作者訊號**：education/news 可見 byline（三語：作者/著者/Authors＋兩位教授署名）＋Article author Person×2
+- **llms.txt**：快速事實段（92.1%/AUC 0.95/FDA/TFDA/2156+ 一行式）＋共同創辦人段＋about/sitemap 行更新
+- **llms-full.txt**：「六、產學研團隊與共同創辦人」完整重寫（學歷/研究/成就/9 獎項/經歷）
 
 ### 🆕 其他
 - **deep-plan 頁**：頂部加 PanCAD.ai 品牌 logo 條（pancad-ai-logo.svg，點擊回主站）
