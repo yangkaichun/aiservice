@@ -22,6 +22,9 @@ window.PANCAD_I18N = {
     nav_about: "關於仲智",
     nav_news: "最新消息",
     nav_contact: "聯絡我們",
+    foot_priv: "隱私權政策",
+    foot_terms: "服務條款",
+    foot_edit: "編輯政策",
     nav_cta: "開始旅程",
     lang_btn: "語言",
 
@@ -80,6 +83,9 @@ window.PANCAD_I18N = {
     nav_about: "About",
     nav_news: "News",
     nav_contact: "Contact",
+    foot_priv: "Privacy Policy",
+    foot_terms: "Terms of Service",
+    foot_edit: "Editorial Policy",
     nav_cta: "Start Journey",
     lang_btn: "Language",
 
@@ -135,6 +141,9 @@ window.PANCAD_I18N = {
     nav_about: "会社概要",
     nav_news: "ニュース",
     nav_contact: "お問い合わせ",
+    foot_priv: "プライバシーポリシー",
+    foot_terms: "利用規約",
+    foot_edit: "編集方針",
     nav_cta: "旅をはじめる",
     lang_btn: "言語",
 
