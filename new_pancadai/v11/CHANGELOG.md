@@ -51,6 +51,31 @@
 - **jp html lang**：`lang="jp"` → `lang="ja"`（標準語言代碼，kb-section 隱藏與爬蟲判定）
 - **footer ver**：v11.2.42 → v11.2.44（33 頁）
 - ⚠️ v11.2.43（2026-08-26）補記：jp Line 連結 lin.ee/pZJmfjl→lin.ee/nEYJoLK＋JP QR（line_qr_jp.png）；en 移除全部 Line 連結/QR/line-band；zh 不變
+### 📝 當日後續修改（2026-08-27 晚間，同 v11.2.44）
+#### E-E-A-T 版面與信任信號
+- **footer 內容審查行**（全站 42 頁）：內容製作＋醫學審查（王偉仲/廖偉智教授團隊）＋更新日期＋認證——後移除認證（與信任條列重複）——三語
+- **信任標誌**：首頁橫排 chips → **移到頁尾條列**（認證與獎項 5 項：FDA/TFDA/SNQ/RSNA/Lancet——三語標題）
+- **臨床部署區**（台大/輔大/博田/聯新徽章）——曾加 grid＋標題——**後全部移除**（使用者指定）
+- **版面優化**：foot-eeat 資訊卡（半透明圓角卡）、部署徽章 grid（後移除）、修復 product 舊 footer 結構（footer-legal→補 foot-eeat/社群列）
+- **重複清理**：foot-social 按鈕列移除（原本 footer 已有 LINE/Email）、footer-bottom deep-plan 連結移除（欄內保留）、Email 文字加 mailto 超連結（三語）
+#### SEO/GEO 報告驅動（SEOmator 89/100＋82/100）
+- **H1 換行清理**（index/patient 三語——稽核 H1 含 
+）
+- **_headers 安全標頭**：HSTS（含 preload）＋CSP＋XCTO＋XFO＋Referrer＋Permissions（Security 6/10→10/10）
+- **Organization sameAs**：全站 33 頁加 YouTube（@pancad）＋GitHub
+- **llms.txt 內容治理段**：作者/同行審查/醫療免責/數據誠實＋三政策頁連結
+- **screening HowTo schema**（4 週導入流程）＋**效能數據表**（92.1%/92.8%/AUC 0.95/2156+ 附 PubMed 來源）＋**疑問句標題**（三語）
+- **product 文獻引用行**（Lancet DH/Radiology PubMed＋醫療器材提醒）
+- **skip-link 無障礙**（全站 42 頁三語）
+#### GA4 與 CSP 修復
+- **CSP 擋 GA4**：connect-src 加 stats.g.doubleclick.net（GA4 之前一直收不到數據！）＋script-src 加 static.cloudflareinsights.com（CF beacon）
+- **deep-plan 補 GA4**（獨立頁原本無代碼——G-8DNS20C93N）
+- **無 www（pancad.ai）403**：WAF Custom Rule Skip 放行（Security→WAF→Custom rules：http.host eq "pancad.ai"→Skip）→ 200 直出
+- **301 統一嘗試**：Bulk Redirects（CSV：pancad.ai/*→www/$1 301）未生效（規則 Deployed 但請求直出 200）——**採雙域名並存**（canonical 指向 www、GA4 統一收 www）——替代方案 Redirect Rules 已記錄 skill
+- **GA4 ID 確認**：全站統一 G-8DNS20C93N（主控台 G-Y0D8WJM75R 非網站代碼——GA4 後台另一資源）
+
+---
+
 
 ---
 
