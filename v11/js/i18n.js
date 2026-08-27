@@ -12,10 +12,13 @@
   var NAMES = { zh: '繁體中文', en: 'English', ja: '日本語' };
 
   function detect() {
-    /* v11.2.42：子目錄語言版優先（/en/ 強制英文、/jp/ 強制日文）——GSC/GA 分語言分析 */
+    /* v11.2.44：子目錄語言版優先——掃描路徑任一段為 en/jp（支援 GH Pages 子路徑 /new_pancadai/v11/en/ 與 CF 根域 /en/） */
     var p = (window.location.pathname || '');
-    if (/^\/en\//.test(p)) return 'en';
-    if (/^\/jp\//.test(p)) return 'ja';
+    var segs = p.split('/').filter(Boolean);
+    for (var k = 0; k < segs.length; k++) {
+      if (segs[k] === 'en') return 'en';
+      if (segs[k] === 'jp') return 'ja';
+    }
     var saved = null;
     try { saved = localStorage.getItem(LANG_KEY); } catch (e) {}
     if (saved && SUPPORTED.indexOf(saved) !== -1) return saved;
@@ -26,11 +29,14 @@
     return 'en';
   }
 
-  /* v11.2.42：語言切換跳轉（路徑感知——支援 GH Pages 子路徑部署）主站↔/en/↔/jp/ */
+  /* v11.2.44：語言切換跳轉（路徑感知 v2——掃描任一段 en/jp，支援 GH 子路徑）主站↔/en/↔/jp/ */
   function langRedirect(target) {
     var p = window.location.pathname || '';
     var segs = p.split('/').filter(Boolean);
-    var here = (segs[0] === 'en' || segs[0] === 'jp') ? segs.shift() : '';
+    var here = '';
+    for (var k = 0; k < segs.length; k++) {
+      if (segs[k] === 'en' || segs[k] === 'jp') { here = segs[k]; segs.splice(k, 1); break; }
+    }
     if (here === target) return null; // 已在目標語言版
     if (here === '' && target === 'zh') return null; // 主站點中文＝原地
     var last = segs[segs.length - 1];
