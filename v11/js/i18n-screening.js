@@ -9,7 +9,7 @@
     ph_sub: "胰臟癌 AI 篩檢是健檢服務的新亮點——從流程整合到放射科協作，我們讓您 4 週內完成導入。",
 
     why_k: "為什麼是胰臟癌 AI",
-    why_t: "高致死率，正是高需求",
+    why_t: "為什麼健檢要加入胰臟 AI 篩檢？",
     why_p: "胰臟癌五年存活率不到一成，是致死率最高的癌症之一——而它幾乎沒有早期症狀。您的客戶需要它，只是還沒有人提供。",
     why1_t: "需求真實存在",
     why1_p: "胰臟癌是台灣癌症死因前十大；高風險族群（60 歲以上、家族史、糖尿病、吸菸）逐年增加。",
@@ -60,7 +60,7 @@
     ph_sub: "Pancreatic cancer AI screening is the new highlight of preventive care — from workflow integration to radiology collaboration, live in 4 weeks.",
 
     why_k: "Why pancreatic AI",
-    why_t: "The deadliest cancer is the biggest unmet need",
+    why_t: "Why add pancreatic AI screening to your health check?",
     why_p: "Pancreatic cancer has one of the lowest survival rates — and almost no early symptoms. Your clients need it; nobody offers it yet.",
     why1_t: "Real demand",
     why1_p: "Pancreatic cancer ranks among Taiwan's top-10 cancer killers; the high-risk population (60+, family history, diabetes, smoking) keeps growing.",
@@ -111,7 +111,7 @@
     ph_sub: "膵臓がんAI検診は健診サービスの新たな目玉——ワークフロー統合から放射線科連携まで、4週間で稼働します。",
 
     why_k: "なぜ膵臓がんAIか",
-    why_t: "致死率の高いがんほど、ニーズは大きい",
+    why_t: "なぜ健診に膵臓 AI 検診を加えるべきか？",
     why_p: "膵臓がんは生存率が最も低いがんの一つ——しかも初期症状はほとんどありません。お客様はそれを必要としています。",
     why1_t: "確かな需要",
     why1_p: "膵臓がんは台湾のがん死因トップ10。ハイリスク層（60歳以上、家族歴、糖尿病、喫煙）は増え続けています。",
