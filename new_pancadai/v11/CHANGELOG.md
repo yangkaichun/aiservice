@@ -33,6 +33,18 @@
 - **llms.txt**：新增「## 共同創辦人」段（王偉仲/廖偉智完整資訊＋about#cofounders 錨點）、about/sitemap 行更新
 - **llms-full.txt**：「六、產學研團隊與共同創辦人」完整重寫（學歷/研究/成就/9 獎項/經歷）
 
+### 🐛 修正：CF AI Scrapers 封鎖（GEO 稽核 0 分項）
+- **稽核發現**：本地 robots.txt 為 Allow 但線上回 Disallow（GPTBot/ClaudeBot 等 9 個）——**Cloudflare AI Scrapers 防護在 edge 自動生成封鎖 robots.txt**（覆蓋靜態檔）＋Bot Fight Mode 擋請求
+- **解決**：使用者 Dashboard 關閉 Security→Bots→Bot Fight Mode＋AI Scrapers（wrangler 無 zone 權限）
+- **驗證**：robots.txt Disallow=0、Allow=13；GPTBot/ClaudeBot/Google-Extended/CCBot/PerplexityBot 全 200（含無 www、三語頁）
+
+### 🆕 GEO/SEO 強化（稽核驅動）
+- **Organization schema**：@graph 新增 Organization 節點（地址/電話/統編——稽核 LocalBusiness 項）
+- **Author/Publisher**：education/news 三語 Article JSON-LD（author/publisher=Organization＋日期）
+- **日期標記**：全站 33 頁 MedicalWebPage＋meta datePublished（2026-08-14）/dateModified（2026-08-27）
+- **canonical**：en/jp 指向語言版（22 頁修正）＋og:locale（en_US/ja_JP）＋twitter:card 全站＋robots meta＋og:image 絕對 URL 修復
+- **llms.txt 快速事實段**：一行式關鍵數據（92.1%/AUC 0.95/FDA/TFDA/2156+）供 AI 引擎直接引用
+
 ### 🆕 其他
 - **deep-plan 頁**：頂部加 PanCAD.ai 品牌 logo 條（pancad-ai-logo.svg，點擊回主站）
 - **jp html lang**：`lang="jp"` → `lang="ja"`（標準語言代碼，kb-section 隱藏與爬蟲判定）
