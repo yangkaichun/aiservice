@@ -29,7 +29,7 @@
     return 'en';
   }
 
-  /* v11.2.44：語言切換跳轉（v3——一律導引到目標語言 index，避免同頁映射 edge case） */
+  /* v11.2.44：語言切換跳轉（v4——一律導引到 pancad.ai 語言首頁絕對 URL，使用者指定） */
   function langRedirect(target) {
     var p = window.location.pathname || '';
     var segs = p.split('/').filter(Boolean);
@@ -37,15 +37,12 @@
     for (var k = 0; k < segs.length; k++) {
       if (segs[k] === 'en' || segs[k] === 'jp') { here = segs[k]; segs.splice(k, 1); break; }
     }
-    if (here === target) return null; // 已在目標語言版
-    if (here === '' && target === 'zh') return null; // 主站點中文＝原地
     var hereLang = (here === 'jp') ? 'ja' : here; // 目錄名 jp → 語言碼 ja
-    if (hereLang === target) return null;
-    var last = segs[segs.length - 1];
-    if (last && /\.html$/.test(last)) segs.pop(); // 移除當前頁名段（只保留目錄）
-    var dir = target === 'en' ? 'en' : target === 'ja' ? 'jp' : '';
-    var base = segs.length ? '/' + segs.join('/') : '';
-    return base + '/' + (dir ? dir + '/' : '') + 'index.html';
+    if (hereLang === target) return null; // 已在目標語言版（原地）
+    if (here === '' && target === 'zh') return null; // 主站點中文＝原地
+    if (target === 'en') return 'https://www.pancad.ai/en/';
+    if (target === 'ja') return 'https://www.pancad.ai/jp/';
+    return 'https://www.pancad.ai/';
   }
 
   function apply(lang) {
