@@ -34,6 +34,9 @@
     kb_k: "護胰大聯盟衛教知識庫",
     kb_t: "持續更新的胰臟健康文章",
     kb_p: "精選護胰大聯盟官方沙龍文章——從風險評估到治療新知，以真實數據破解「癌王」迷思。",
+    ed_byline_t: "作者",
+    ed_byline: "廖偉智教授（臺大醫院）・王偉仲教授（臺大應數所）｜仲智數位健康（PanCAD.ai）團隊",
+
     faq_k: "常見問題",
     faq_t: "您可能也會想問",
     fq1_q: "PANCREASaver® 是給我用的 App 嗎？",
@@ -87,6 +90,9 @@
     kb_k: "PancreasCare Education Library",
     kb_t: "Continuously Updated Pancreatic Health Articles",
     kb_p: "Curated articles from the official PancreasCare salon — from risk assessment to treatment insights, debunking the 'king of cancers' myth with real data.",
+    ed_byline_t: "Authors",
+    ed_byline: "Prof. Wei-Chih Liao (NTU Hospital) & Prof. Wei-Chung Wang (NTU IAMS) | PanCAD.ai Team",
+
     faq_k: "FAQ",
     faq_t: "You might also wonder",
     fq1_q: "Is PANCREASaver® an app for me?",
@@ -140,6 +146,9 @@
     kb_k: "護胰大聯盟ヘルスライブラリー",
     kb_t: "更新し続ける膵臓の健康記事",
     kb_p: "公式サロンの記事を厳選——リスク評価から治療の新知見まで、実データで「癌の王」の誤解を解きます。",
+    ed_byline_t: "著者",
+    ed_byline: "廖偉智教授（台大病院）・王偉仲教授（台大応用数学科学研究所）｜PanCAD.ai チーム",
+
     faq_k: "よくある質問",
     faq_t: "こんな疑問も",
     fq1_q: "PANCREASaver®は患者用のアプリですか？",
