@@ -12,21 +12,17 @@
   var NAMES = { zh: '繁體中文', en: 'English', ja: '日本語' };
 
   function detect() {
-    /* v11.2.44：子目錄語言版優先——掃描路徑任一段為 en/jp（支援 GH Pages 子路徑 /new_pancadai/v11/en/ 與 CF 根域 /en/） */
+    /* v11.2.44：主站強制中文——路徑無 en/jp 段即 zh（不受 localStorage/瀏覽器語言影響；
+       zh-only 深耕計畫連結依 html[lang=zh-TW] 顯示——避免被舊 localStorage 切成英文而隱藏）
+       子目錄語言版優先：掃描路徑任一段為 en/jp（支援 GH Pages 子路徑 /new_pancadai/v11/en/ 與 CF 根域 /en/） */
     var p = (window.location.pathname || '');
     var segs = p.split('/').filter(Boolean);
+    var hasLang = false;
     for (var k = 0; k < segs.length; k++) {
-      if (segs[k] === 'en') return 'en';
-      if (segs[k] === 'jp') return 'ja';
+      if (segs[k] === 'en') { return 'en'; }
+      if (segs[k] === 'jp') { return 'ja'; }
     }
-    var saved = null;
-    try { saved = localStorage.getItem(LANG_KEY); } catch (e) {}
-    if (saved && SUPPORTED.indexOf(saved) !== -1) return saved;
-    /* v11.2.29：依瀏覽器語言——zh→中文、ja→日文、其他一律英文 */
-    var nav = (navigator.language || navigator.userLanguage || 'en').toLowerCase();
-    if (nav.indexOf('zh') === 0) return 'zh';
-    if (nav.indexOf('ja') === 0) return 'ja';
-    return 'en';
+    return 'zh'; // 主站＝中文版（英文/日文使用者請用右上角語言切換）
   }
 
   /* v11.2.44：語言切換跳轉（v4——一律導引到 pancad.ai 語言首頁絕對 URL，使用者指定） */
