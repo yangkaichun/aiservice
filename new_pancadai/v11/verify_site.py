@@ -14,19 +14,29 @@ for f in sorted(glob.glob(os.path.join(root, "js", "*.js"))):
     if r.returncode != 0:
         errors.append(f"JS {os.path.basename(f)}: {r.stderr.strip()[:200]}")
 
-# 2. 資源完整性（HTML src/href + CSS url；strip ?v=N；跳過錨點/外連/data:）
-html_files = sorted(glob.glob(os.path.join(root, "*.html")))
+# 2. 資源完整性（HTML src/href + CSS url；依來源檔案解析相對路徑）
+#    同時掃描 /en/ 與 /jp/，避免實體語言版漏驗。
+html_files = sorted(glob.glob(os.path.join(root, "**", "*.html"), recursive=True))
 refs = set()
 for f in html_files:
     html = open(f, encoding="utf-8").read()
     for m in re.finditer(r'(?:src|href)="([^"#]+)"', html):
-        refs.add((os.path.basename(f), m.group(1).split("?")[0]))
+        ref = m.group(1).split("?")[0]
+        # Inline JS templates such as href="' + a.url + '" are not files.
+        if any(token in ref for token in (" + ", "${", "' +", '" +')):
+            continue
+        refs.add((f, ref))
 for f in glob.glob(os.path.join(root, "css", "*.css")):
     css = open(f, encoding="utf-8").read()
     for m in re.finditer(r'url\(([^)]+)\)', css):
-        refs.add((os.path.basename(f), m.group(1).strip("'\"").split("?")[0]))
-missing = [f"{p} -> {r}" for p, r in sorted(refs)
-           if not r.startswith(("http", "mailto:", "data:")) and not os.path.exists(os.path.join(root, r))]
+        refs.add((f, m.group(1).strip("'\"").split("?")[0]))
+missing = []
+for source, ref in sorted(refs):
+    if ref.startswith(("http", "mailto:", "data:", "javascript:", "#")):
+        continue
+    target = os.path.normpath(os.path.join(os.path.dirname(source), ref))
+    if not os.path.exists(target):
+        missing.append(f"{os.path.relpath(source, root)} -> {ref}")
 
 # 3. i18n key 覆蓋（common + 每頁字典合併後，檢查 data-i18n* 使用的 key 都有定義）
 key_errs = []

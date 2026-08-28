@@ -506,6 +506,7 @@
     function setSplit(v) {
       split = Math.max(4, Math.min(96, v));
       frame.style.setProperty('--split', split);
+      if (divider) divider.setAttribute('aria-valuenow', String(Math.round(split)));
     }
     function posToSplit(clientX) {
       var r = frame.getBoundingClientRect();
@@ -520,12 +521,20 @@
     }
     function up() { dragging = false; }
     if (divider) {
+      divider.setAttribute('tabindex', '0');
+      divider.setAttribute('aria-valuenow', String(Math.round(split)));
       divider.addEventListener('mousedown', down);
       window.addEventListener('mousemove', move);
       window.addEventListener('mouseup', up);
       divider.addEventListener('touchstart', down, { passive: false });
       window.addEventListener('touchmove', move, { passive: true });
       window.addEventListener('touchend', up);
+      divider.addEventListener('keydown', function (e) {
+        if (e.key === 'ArrowLeft' || e.key === 'ArrowDown') { setSplit(split - 4); e.preventDefault(); }
+        if (e.key === 'ArrowRight' || e.key === 'ArrowUp') { setSplit(split + 4); e.preventDefault(); }
+        if (e.key === 'Home') { setSplit(4); e.preventDefault(); }
+        if (e.key === 'End') { setSplit(96); e.preventDefault(); }
+      });
     }
     var btn = $all('.ct-btn', frame.parentElement);
     btn.forEach(function (b) {
@@ -565,23 +574,36 @@
     var track = $('.wi-track');
     if (!track) return;
     var wi = parseFloat(track.style.getPropertyValue('--wi')) || 70;
-    function setWi(v) { wi = Math.max(12, Math.min(88, v)); track.style.setProperty('--wi', wi); }
+    var div = $('.wi-divider', track);
+    function setWi(v) {
+      wi = Math.max(12, Math.min(88, v));
+      track.style.setProperty('--wi', wi);
+      if (div) div.setAttribute('aria-valuenow', String(Math.round(wi)));
+    }
     function pos(e) {
       var r = track.getBoundingClientRect();
       var x = e.clientX || (e.touches && e.touches[0].clientX);
       return ((x - r.left) / r.width) * 100;
     }
-    var dragging = false, div = $('.wi-divider', track);
+    var dragging = false;
     function down(e) { dragging = true; setWi(pos(e)); e.preventDefault(); }
     function move(e) { if (dragging) setWi(pos(e)); }
     function up() { dragging = false; }
     if (div) {
+      div.setAttribute('tabindex', '0');
+      div.setAttribute('aria-valuenow', String(Math.round(wi)));
       div.addEventListener('mousedown', down);
       window.addEventListener('mousemove', move);
       window.addEventListener('mouseup', up);
       div.addEventListener('touchstart', down, { passive: false });
       window.addEventListener('touchmove', move, { passive: true });
       window.addEventListener('touchend', up);
+      div.addEventListener('keydown', function (e) {
+        if (e.key === 'ArrowLeft' || e.key === 'ArrowDown') { setWi(wi - 4); e.preventDefault(); }
+        if (e.key === 'ArrowRight' || e.key === 'ArrowUp') { setWi(wi + 4); e.preventDefault(); }
+        if (e.key === 'Home') { setWi(12); e.preventDefault(); }
+        if (e.key === 'End') { setWi(88); e.preventDefault(); }
+      });
     }
     var range = $('input[type=range]', track.parentElement);
     if (range) {
@@ -615,7 +637,11 @@
     if (!steps.length) return;
     var cur = 0, score = 0;
     function showStep(i) {
-      steps.forEach(function (s, idx) { s.classList.toggle('active', idx === i); });
+      steps.forEach(function (s, idx) {
+        var active = idx === i;
+        s.classList.toggle('active', active);
+        s.setAttribute('aria-hidden', String(!active));
+      });
       var next = $('.quiz-next', box);
       if (next) next.classList.remove('on');
       if (i === steps.length) showResult();
@@ -631,9 +657,12 @@
       var next = $('.quiz-next', step);
       opts.forEach(function (o) {
         o.addEventListener('click', function () {
-          opts.forEach(function (x) { x.classList.remove('sel'); });
+          opts.forEach(function (x) { x.classList.remove('sel'); x.setAttribute('aria-pressed', 'false'); });
+          if (step._selectedValue === '1') score--;
           o.classList.add('sel');
-          if (o.getAttribute('data-val') === '1') score++;
+          o.setAttribute('aria-pressed', 'true');
+          step._selectedValue = o.getAttribute('data-val');
+          if (step._selectedValue === '1') score++;
           if (next) next.classList.add('on');
         });
       });
