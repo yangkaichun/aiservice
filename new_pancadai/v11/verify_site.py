@@ -41,6 +41,20 @@ for source, ref in sorted(refs):
     if not os.path.exists(target):
         missing.append(f"{os.path.relpath(source, root)} -> {ref}")
 
+# 2.5 RFC 9727 API Catalog（目前無公開 API，因此 linkset 應為空陣列）
+catalog_errors = []
+catalog_path = os.path.join(root, ".well-known", "api-catalog")
+if not os.path.isfile(catalog_path):
+    catalog_errors.append("missing .well-known/api-catalog")
+else:
+    try:
+        with open(catalog_path, encoding="utf-8") as fh:
+            catalog = json.load(fh)
+        if not isinstance(catalog.get("linkset"), list):
+            catalog_errors.append("linkset must be an array")
+    except (OSError, json.JSONDecodeError) as exc:
+        catalog_errors.append(f"invalid api catalog ({exc})")
+
 # 3. i18n key 覆蓋（common + 每頁字典合併後，檢查 data-i18n* 使用的 key 都有定義）
 key_errs = []
 seo_errs = []
@@ -99,7 +113,8 @@ for f in html_files:
 
 print("JS syntax:", "OK" if not errors else errors)
 print("Resources:", f"{len(refs)} refs,", "OK" if not missing else missing)
+print("API catalog:", "OK" if not catalog_errors else catalog_errors)
 print("i18n keys:", "OK" if not key_errs else key_errs)
 print("SEO/GEO structure:", "OK" if not seo_errs else seo_errs)
-if errors or missing or key_errs or seo_errs:
+if errors or missing or catalog_errors or key_errs or seo_errs:
     sys.exit(1)
