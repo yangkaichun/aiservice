@@ -64,9 +64,14 @@
     });
     document.querySelectorAll('[data-lang]').forEach(function (b) {
       b.classList.toggle('active', b.getAttribute('data-lang') === lang);
+      b.setAttribute('aria-pressed', b.getAttribute('data-lang') === lang ? 'true' : 'false');
     });
     var btn = document.getElementById('langBtn');
-    if (btn) btn.textContent = NAMES[lang] + ' ▾';
+    if (btn) {
+      btn.textContent = NAMES[lang] + ' ▾';
+      btn.setAttribute('aria-expanded', 'false');
+      btn.setAttribute('aria-controls', 'langMenu');
+    }
     try { localStorage.setItem(LANG_KEY, lang); } catch (e) {}
     /* 通知外部（背景池切換等） */
     try { window.dispatchEvent(new CustomEvent('langchange')); } catch (e) {}
@@ -89,11 +94,32 @@
     var btn = document.getElementById('langBtn');
     var menu = document.getElementById('langMenu');
     if (btn && menu) {
+      menu.setAttribute('aria-hidden', 'true');
+      btn.setAttribute('aria-expanded', 'false');
       btn.addEventListener('click', function (e) {
         e.stopPropagation();
-        menu.classList.toggle('open');
+        var open = !menu.classList.contains('open');
+        menu.classList.toggle('open', open);
+        menu.setAttribute('aria-hidden', String(!open));
+        btn.setAttribute('aria-expanded', String(open));
+        if (open) {
+          var first = menu.querySelector('[data-lang]');
+          if (first) first.focus();
+        }
       });
-      document.addEventListener('click', function () { menu.classList.remove('open'); });
+      document.addEventListener('click', function () {
+        menu.classList.remove('open');
+        menu.setAttribute('aria-hidden', 'true');
+        btn.setAttribute('aria-expanded', 'false');
+      });
+      document.addEventListener('keydown', function (e) {
+        if (e.key === 'Escape' && menu.classList.contains('open')) {
+          menu.classList.remove('open');
+          menu.setAttribute('aria-hidden', 'true');
+          btn.setAttribute('aria-expanded', 'false');
+          btn.focus();
+        }
+      });
     }
   }
 
