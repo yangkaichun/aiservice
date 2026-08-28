@@ -33,7 +33,7 @@
     flow3_t: "自動標記 + 警示", flow3_d: "鎖定病灶、標記位置，PACS 觸發即時警示。",
     flow4_t: "醫師判讀", flow4_d: "放射科醫師確認標記，產出最終報告。",
     ui_kicker: "真實系統畫面", ui_title: "不是示意圖，<span class=\"hl\">是每天在醫院運行的系統</span>",
-    ui_sub: "從 Stone Web Viewer 整合到 Bridge 登入，PANCREASaver<sup>®</sup> 已實際部署於醫學中心、區域醫院與健檢中心，累計判讀超過 2000+ 人次（含臨床驗證）。",
+    ui_sub: "從 Stone Web Viewer 整合到 Bridge 登入，PANCREASaver<sup>®</sup> 已實際部署於醫學中心、區域醫院與健檢中心，累計判讀超過 2156+ 人次（含臨床驗證）。",
     ui_go: "查看科學證據", ui_shot: "PANCREASaver<sup>®</sup>",
     sys_kicker: "系統架構", sys_title: "安全、合規、<span class=\"hl\">融入現有環境</span>",
     cta_title2: "想親眼看看它怎麼運作？", cta_sub2: "預約一場現場 demo，讓 AI 哨兵為您示範。",

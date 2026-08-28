@@ -2,7 +2,7 @@
 (function () {
   var zh = {
     meta_title: "健檢中心方案 — 胰臟癌 AI 篩檢導入 | PANCREASaver® 助胰見®",
-    meta_desc: "把胰臟癌 AI 篩檢加入您的健檢套組：4 步驟導入、PACS/RIS 無縫整合、放射科協作、300+ 人次實戰經驗。讓早期發現成為您健檢服務的亮點。",
+    meta_desc: "把胰臟癌 AI 篩檢加入您的健檢套組：4 步驟導入、PACS/RIS 無縫整合、放射科協作、2156+ 人次實戰經驗（含臨床驗證）。讓早期發現成為您健檢服務的亮點。",
 
     ph_badge: "For Health Centers",
     ph_title_1: "讓您的健檢，<span class=\"hl\">看得更早。</span>",
@@ -53,7 +53,7 @@
   };
   var en = {
     meta_title: "Health Center Program — Pancreatic Cancer AI Screening | PANCREASaver®",
-    meta_desc: "Add pancreatic cancer AI screening to your checkup packages: 4-week integration, seamless PACS/RIS workflow, radiology collaboration, 300+ real-world cases. Early detection as your differentiator.",
+    meta_desc: "Add pancreatic cancer AI screening to your checkup packages: 4-week integration, seamless PACS/RIS workflow, radiology collaboration, 2,156+ real-world cases including clinical validation. Early detection as your differentiator.",
 
     ph_badge: "For Health Centers",
     ph_title_1: "Make your checkups <span class=\"hl\">see earlier.</span>",
