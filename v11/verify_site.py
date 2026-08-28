@@ -41,7 +41,7 @@ for source, ref in sorted(refs):
     if not os.path.exists(target):
         missing.append(f"{os.path.relpath(source, root)} -> {ref}")
 
-# 2.5 RFC 9727 API Catalog（目前無公開 API，因此 linkset 應為空陣列）
+# 2.5 RFC 9727 API Catalog
 catalog_errors = []
 catalog_path = os.path.join(root, ".well-known", "api-catalog")
 if not os.path.isfile(catalog_path):
@@ -50,8 +50,14 @@ else:
     try:
         with open(catalog_path, encoding="utf-8") as fh:
             catalog = json.load(fh)
-        if not isinstance(catalog.get("linkset"), list):
+        if not isinstance(catalog.get("linkset"), list) or not catalog["linkset"]:
             catalog_errors.append("linkset must be an array")
+        for entry in catalog.get("linkset", []):
+            if not entry.get("anchor"):
+                catalog_errors.append("catalog entry missing anchor")
+            for relation in ("service-desc", "service-doc"):
+                if not isinstance(entry.get(relation), list) or not entry[relation] or not entry[relation][0].get("href"):
+                    catalog_errors.append(f"catalog entry missing {relation}")
     except (OSError, json.JSONDecodeError) as exc:
         catalog_errors.append(f"invalid api catalog ({exc})")
 
