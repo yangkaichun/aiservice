@@ -71,7 +71,7 @@
     flow3_t: "Auto-mark + alert", flow3_d: "Lesion locked and marked; PACS alert fires.",
     flow4_t: "Radiologist review", flow4_d: "The radiologist confirms the marks and signs the final report.",
     ui_kicker: "The real system", ui_title: "Not a mockup — <span class=\"hl\">a system running in hospitals today</span>",
-    ui_sub: "From Stone Web Viewer integration to Bridge login, PANCREASaver<sup>®</sup> is deployed at medical centers, regional hospitals and screening centers — 300+ scans reviewed.",
+    ui_sub: "From Stone Web Viewer integration to Bridge login, PANCREASaver<sup>®</sup> is deployed at medical centers, regional hospitals and screening centers — 2,156+ scans reviewed, including clinical validation.",
     ui_go: "See the evidence", ui_shot: "PANCREASaver<sup>®</sup>",
     sys_kicker: "Architecture", sys_title: "Secure, compliant, <span class=\"hl\">at home in your environment</span>",
     cta_title2: "Want to see it in action?", cta_sub2: "Book a live demo — let the AI sentinel show you.",

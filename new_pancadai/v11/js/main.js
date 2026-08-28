@@ -674,6 +674,13 @@
     if (restart) {
       restart.addEventListener('click', function () {
         score = 0; cur = 0;
+        steps.forEach(function (s) {
+          s._selectedValue = null;
+          $all('.quiz-opt', s).forEach(function (o) {
+            o.classList.remove('sel');
+            o.setAttribute('aria-pressed', 'false');
+          });
+        });
         result.classList.remove('active', 'low', 'mid', 'high');
         showStep(0);
       });
@@ -683,16 +690,26 @@
 
   /* ---------- 14. FAQ ---------- */
   function initFAQ() {
-    $all('.faq-item').forEach(function (item) {
+    $all('.faq-item').forEach(function (item, idx) {
       var q = $('.faq-q', item);
       if (!q) return;
+      var a = $('.faq-a', item);
+      var answerId = a && a.id ? a.id : 'faq-answer-' + (idx + 1);
+      if (a) { a.id = answerId; a.setAttribute('aria-hidden', 'true'); }
+      q.setAttribute('aria-controls', answerId);
+      q.setAttribute('aria-expanded', 'false');
       q.addEventListener('click', function () {
         var open = item.classList.contains('open');
-        $all('.faq-item.open').forEach(function (o) { o.classList.remove('open'); $('.faq-a', o).style.maxHeight = null; });
+        $all('.faq-item.open').forEach(function (o) {
+          o.classList.remove('open');
+          var oldQ = $('.faq-q', o), oldA = $('.faq-a', o);
+          if (oldQ) oldQ.setAttribute('aria-expanded', 'false');
+          if (oldA) { oldA.style.maxHeight = null; oldA.setAttribute('aria-hidden', 'true'); }
+        });
         if (!open) {
           item.classList.add('open');
-          var a = $('.faq-a', item);
-          if (a) a.style.maxHeight = a.scrollHeight + 'px';
+          q.setAttribute('aria-expanded', 'true');
+          if (a) { a.style.maxHeight = a.scrollHeight + 'px'; a.setAttribute('aria-hidden', 'false'); }
         }
       });
     });
@@ -708,11 +725,13 @@
     var next = document.getElementById('carNext');
     if (!track || !track.children.length || !dotsBox) return;
     var n = track.children.length, idx = 0, timer = null;
+    root.setAttribute('aria-roledescription', 'carousel');
     for (var i = 0; i < n; i++) {
       (function (k) {
         var d = document.createElement('button');
         d.className = 'car-dot' + (k === 0 ? ' active' : '');
         d.setAttribute('aria-label', 'Slide ' + (k + 1));
+        d.setAttribute('aria-pressed', k === 0 ? 'true' : 'false');
         d.addEventListener('click', function () { go(k); restart(); });
         dotsBox.appendChild(d);
       })(i);
@@ -722,6 +741,7 @@
       track.style.transform = 'translateX(-' + (idx * 100) + '%)';
       for (var j = 0; j < dotsBox.children.length; j++) {
         dotsBox.children[j].classList.toggle('active', j === idx);
+        dotsBox.children[j].setAttribute('aria-pressed', j === idx ? 'true' : 'false');
       }
     }
     function restart() {
@@ -730,8 +750,14 @@
     }
     if (prev) prev.addEventListener('click', function () { go(idx - 1); restart(); });
     if (next) next.addEventListener('click', function () { go(idx + 1); restart(); });
+    root.addEventListener('keydown', function (e) {
+      if (e.key === 'ArrowLeft') { go(idx - 1); restart(); e.preventDefault(); }
+      if (e.key === 'ArrowRight') { go(idx + 1); restart(); e.preventDefault(); }
+    });
     root.addEventListener('mouseenter', function () { if (timer) clearInterval(timer); });
     root.addEventListener('mouseleave', restart);
+    root.addEventListener('focusin', function () { if (timer) clearInterval(timer); });
+    root.addEventListener('focusout', function () { restart(); });
     restart();
   }
 
