@@ -61,6 +61,19 @@ else:
     except (OSError, json.JSONDecodeError) as exc:
         catalog_errors.append(f"invalid api catalog ({exc})")
 
+# 2.6 Agent discovery declarations served by Cloudflare Pages headers.
+agent_errors = []
+auth_path = os.path.join(root, "auth.md")
+headers_path = os.path.join(root, "_headers")
+if not os.path.isfile(auth_path) or "# PanCAD.ai auth.md" not in open(auth_path, encoding="utf-8").read():
+    agent_errors.append("missing or invalid auth.md")
+if not os.path.isfile(headers_path):
+    agent_errors.append("missing _headers")
+else:
+    headers = open(headers_path, encoding="utf-8").read()
+    if 'rel="api-catalog"' not in headers or 'rel="service-desc"' not in headers or 'rel="service-doc"' not in headers:
+        agent_errors.append("missing API discovery Link relations")
+
 # 3. i18n key 覆蓋（common + 每頁字典合併後，檢查 data-i18n* 使用的 key 都有定義）
 key_errs = []
 seo_errs = []
@@ -120,7 +133,8 @@ for f in html_files:
 print("JS syntax:", "OK" if not errors else errors)
 print("Resources:", f"{len(refs)} refs,", "OK" if not missing else missing)
 print("API catalog:", "OK" if not catalog_errors else catalog_errors)
+print("Agent discovery:", "OK" if not agent_errors else agent_errors)
 print("i18n keys:", "OK" if not key_errs else key_errs)
 print("SEO/GEO structure:", "OK" if not seo_errs else seo_errs)
-if errors or missing or catalog_errors or key_errs or seo_errs:
+if errors or missing or catalog_errors or agent_errors or key_errs or seo_errs:
     sys.exit(1)
