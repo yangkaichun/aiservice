@@ -77,6 +77,16 @@
 ---
 
 
+#### deep-plan 頁修復與 RWD 優化（使用者回報「跑版」）
+- **跑版根因**：hero 背景圖 `image/hero-banner-ai.jpg` 404（從未存在——CF 404 fallback 回 HTML 造成混淆）＋原版**完全無手機 RWD 規則**（僅 3 個 min-width:992px）
+- **修復**：hero::after 回歸原版引用（hero-banner-ai.jpg——純漸層=原版視覺；曾暫換 product-ui-demo.jpg 後依使用者「原版架構」回歸）
+- **RWD 優化**：補 991/767/575 三斷點——hero 字級 clamp、padding 縮放、logo 條縮小、badge/compare 標籤縮小、按鈕手機全寬、容器 16px、背景圖手機隱藏
+- **logo 條 class 化**：inline style → `.dp-logo-bar`（RWD 可控；使用者 v11.2.44 要求保留）
+- **效能**：pancadai.png（1MB）→ pancadai.webp（102KB，10 倍壓縮）
+- **壞連結**：`www.pancad.ai/page-3`（舊站殘留 ×2）→ mailto:info@pancad.ai
+- 使用者提供原版架構（附件）diff 確認：差異僅 v11 建置改動（logo 條/mailto/TFDA 區）+RWD——非跑版來源
+- 驗證：deep-plan 線上 200、hero 引用回歸、無 /en 路徑（逐一檢查）
+
 ---
 
 ## v11.2.42（2026-08-26）— 三語實體子目錄 /en/ /jp/（GSC/GA 分語言分析）
