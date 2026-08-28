@@ -107,6 +107,22 @@
     }
   }
 
+  /* Footer address: keep i18n text while making the address a real map link. */
+  function initAddressLinks() {
+    var mapUrl = 'https://maps.app.goo.gl/pVcfMkrmiCj8nPAo7';
+    $all('.footer-grid > .footer-col:last-child p[data-i18n="foot_addr"]').forEach(function (p) {
+      if (p.querySelector('a.footer-address')) return;
+      var link = document.createElement('a');
+      link.className = 'footer-address';
+      link.href = mapUrl;
+      link.target = '_blank';
+      link.rel = 'noopener';
+      link.textContent = p.textContent.trim();
+      p.textContent = '';
+      p.appendChild(link);
+    });
+  }
+
   /* ---------- 3. Reveal ---------- */
   function initReveal() {
     var els = $all('.reveal, .reveal-l, .reveal-r, .stagger');
@@ -863,6 +879,7 @@
   function boot() {
     initSunlight();
     initNav();
+    initAddressLinks();
     initReveal();
     initKinetic();
     initJourney();
