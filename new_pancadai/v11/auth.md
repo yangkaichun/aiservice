@@ -11,9 +11,9 @@ The PanCAD.ai public site health API is a read-only public endpoint. It does not
 - Supported method: unauthenticated HTTP GET.
 - Response: JSON with `status`, `service`, and `description`.
 
-## Registration and provisioning
+## Agent registration and provisioning
 
-There is currently no agent account-registration endpoint and no credential-provisioning endpoint for the public site API. Do not submit credentials or personal data to the health endpoint.
+Agent registration is not currently supported. There is no agent account-registration endpoint and no credential-provisioning endpoint for the public site API. The supported registration method is none; agents should use the public unauthenticated health endpoint directly and must not create an account. Do not submit credentials or personal data to the health endpoint.
 
 ## API documentation
 
