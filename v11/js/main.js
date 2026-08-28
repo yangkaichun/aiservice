@@ -62,16 +62,48 @@
       onScroll();
     }
     if (burger && menu) {
-      burger.addEventListener('click', function () { menu.classList.toggle('open'); });
+      /* RWD accessibility: keep menu state available to keyboard and AT users. */
+      var navLogo = $('.nav-logo');
+      var menuLinks = $all('a, button', menu);
+      var lastFocus = null;
+      menu.id = menu.id || 'mobile-menu';
+      burger.setAttribute('aria-controls', menu.id);
+      burger.setAttribute('aria-expanded', 'false');
+      menu.setAttribute('aria-hidden', 'true');
+      menuLinks.forEach(function (item) {
+        if (item.tagName.toLowerCase() === 'a') item.setAttribute('role', 'menuitem');
+      });
+      function setMenu(open) {
+        menu.classList.toggle('open', open);
+        burger.setAttribute('aria-expanded', String(open));
+        menu.setAttribute('aria-hidden', String(!open));
+        document.body.classList.toggle('menu-open', open);
+        if (open) {
+          lastFocus = document.activeElement;
+          var first = menuLinks.find(function (item) { return item.offsetParent !== null; });
+          if (first) setTimeout(function () { first.focus(); }, 0);
+        } else if (lastFocus && typeof lastFocus.focus === 'function') {
+          lastFocus.focus();
+        }
+      }
+      burger.addEventListener('click', function () { setMenu(!menu.classList.contains('open')); });
       $all('.mobile-menu a', menu).forEach(function (a) {
-        a.addEventListener('click', function () { menu.classList.remove('open'); });
+        a.addEventListener('click', function () { setMenu(false); });
       });
       $all('.mobile-lang button', menu).forEach(function (b) {
-        b.addEventListener('click', function () { menu.classList.remove('open'); });
+        b.addEventListener('click', function () { setMenu(false); });
       });
       document.addEventListener('keydown', function (e) {
-        if (e.key === 'Escape' && menu.classList.contains('open')) { menu.classList.remove('open'); }
+        if (e.key === 'Escape' && menu.classList.contains('open')) { setMenu(false); }
+        if (e.key === 'Tab' && menu.classList.contains('open') && menuLinks.length) {
+          var visible = menuLinks.filter(function (item) { return item.offsetParent !== null; });
+          if (!visible.length) return;
+          var first = visible[0], last = visible[visible.length - 1];
+          if (e.shiftKey && document.activeElement === first) { e.preventDefault(); last.focus(); }
+          else if (!e.shiftKey && document.activeElement === last) { e.preventDefault(); first.focus(); }
+        }
       });
+      if (navLogo) navLogo.setAttribute('aria-label', navLogo.getAttribute('aria-label') || 'PanCAD.ai');
     }
   }
 
