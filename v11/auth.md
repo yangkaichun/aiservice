@@ -22,3 +22,16 @@ Agent registration is not currently supported. There is no agent account-registr
 - Human-readable documentation: `https://www.pancad.ai/api/health-doc.html`
 
 The internal CRM and contact-processing services are not public agent APIs and are not advertised here.
+
+## agent_auth
+
+```yaml
+skill: auth.md
+audience: autonomous agents using the public site health API
+register_uri: null
+registration_method: none
+credential_type: none
+credential_use: no credentials are required or accepted
+```
+
+This explicit `none` registration declaration means that agents must not attempt account creation or credential issuance for this public endpoint.
