@@ -9,8 +9,8 @@
 
     /* Hero */
     hero_badge: "AI 胰臟癌早期偵測",
-    hero_title_1: "活出精彩",
-    hero_title_2: "<span class=\"hl\">不胰憾。</span>",
+    hero_title_1: "活出精彩，",
+    hero_title_2: "<span class=\"hl\">不胰憾!!</span>",
     hero_sub: "胰臟癌早期幾乎沒有症狀。PANCREASaver® 助胰見® 影像診斷 AI，在腫瘤還小於 2 公分時就找到它——為您與家人爭取最寶貴的治療時機。",
     hero_ql_1: "產品介紹",
     hero_ql_2: "患者旅程",
@@ -71,7 +71,7 @@
     gate2_p: "互動證據館：AUC 0.95、<2cm 敏感度 92.1%、法規認證與導入流程，30 秒拿到決策資訊。",
     gate2_cta: "查看證據與導入",
     gate3_t: "健檢中心",
-    gate3_p: "把胰臟癌 AI 篩檢加入您的健檢套組：流程整合、放射科協作、2156+ 人次實戰經驗（含臨床驗證）。",
+    gate3_p: "把胰臟癌 AI 篩檢加入您的健檢套組：流程整合、放射科協作、2000+ 人次實戰經驗（含臨床驗證）。",
     gate3_cta: "了解篩檢方案",
 
     /* 數字帶 */
@@ -145,7 +145,7 @@
     car5_cta: "了解認證歷程",
     car6_k: "導入流程",
     car6_t: "從簽約到上線，<span class=\"hl\">4 週完成導入。</span>",
-    car6_p: "醫學中心＋區域醫院＋健檢中心已累積 2156+ 人次判讀（含臨床驗證）——資料不出院、SaaS 訂閱、持續模型更新。",
+    car6_p: "醫學中心＋區域醫院＋健檢中心已累積 2000+ 人次判讀（含臨床驗證）——資料不出院、SaaS 訂閱、持續模型更新。",
     car6_cta: "查看導入方案",
 
     /* 護胰大聯盟 Line CTA（v11.1 首頁加入） */
@@ -226,7 +226,7 @@
     gate2_p: "The interactive evidence hall: AUC 0.95, 92.1% sensitivity, regulatory approvals, and integration workflow — decision-ready in 30 seconds.",
     gate2_cta: "See Evidence",
     gate3_t: "Health Centers",
-    gate3_p: "Add pancreatic cancer AI screening to your checkup packages: workflow integration, radiology collaboration, 2,156+ real-world cases including clinical validation.",
+    gate3_p: "Add pancreatic cancer AI screening to your checkup packages: workflow integration, radiology collaboration, 2,000+ real-world cases including clinical validation.",
     gate3_cta: "Explore Screening",
 
     st_label_1: "Sensitivity (<2cm tumors)",
@@ -295,7 +295,7 @@
     car5_cta: "See certification journey",
     car6_k: "Deployment",
     car6_t: "From contract to go-live, <span class=\"hl\">deployed in 4 weeks.</span>",
-    car6_p: "Medical centers, regional hospitals and health centers — 2,156+ reading sessions, including clinical validation. Data stays on-premise, SaaS subscription, continuous model updates.",
+    car6_p: "Medical centers, regional hospitals and health centers — 2,000+ reading sessions, including clinical validation. Data stays on-premise, SaaS subscription, continuous model updates.",
     car6_cta: "View deployment plans",
 
     /* Pancreas Care Alliance LINE CTA (v11.1 homepage) */
@@ -376,7 +376,7 @@
     gate2_p: "インタラクティブなエビデンスホール：AUC 0.95、感度92.1%、規制認証と導入フロー——30秒で意思決定情報を。",
     gate2_cta: "エビデンスを見る",
     gate3_t: "健診センター",
-    gate3_p: "健診コースに膵臓がんAI検診を追加：ワークフロー統合、放射線科連携、300件超の実績。",
+    gate3_p: "健診コースに膵臓がんAI検診を追加：ワークフロー統合、放射線科連携、2,000件超の実績。",
     gate3_cta: "検診プランを見る",
 
     st_label_1: "感度（2cm未満の腫瘍）",
@@ -445,7 +445,7 @@
     car5_cta: "認証の歩みを見る",
     car6_k: "導入プロセス",
     car6_t: "契約から稼働まで、<span class=\"hl\">4 週間で導入。</span>",
-    car6_p: "医学センター・地域病院・健診センターで累計 2,156 件（臨床検証を含む）の読影実績 — データは院内完結、SaaS サブスク、継続的なモデル更新。",
+    car6_p: "医学センター・地域病院・健診センターで累計 2,000 件超（臨床検証を含む）の読影実績 — データは院内完結、SaaS サブスク、継続的なモデル更新。",
     car6_cta: "導入プランを見る",
 
     /* Pancreas Care Alliance LINE CTA（v11.1 ホーム） */
