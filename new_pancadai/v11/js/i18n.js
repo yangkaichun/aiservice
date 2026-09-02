@@ -9,7 +9,7 @@
   'use strict';
   var LANG_KEY = 'pancad-lang';
   var SUPPORTED = ['zh', 'en', 'ja'];
-  var NAMES = { zh: '繁體中文', en: 'English', ja: '日本語' };
+  var NAMES = { zh: 'TW', en: 'EN', ja: 'JP' };
 
   function detect() {
     /* v11.2.44：主站強制中文——路徑無 en/jp 段即 zh（不受 localStorage/瀏覽器語言影響；
