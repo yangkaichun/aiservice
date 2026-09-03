@@ -68,7 +68,7 @@
     n5_p: "The study appeared in the top journal Radiology, providing independent, reproducible academic backing for PANCREASaver®'s algorithm.",
     n6_d: "2025.06",
     n6_t: "2,000+ cases interpreted across medical centers and regional hospitals",
-    n6_p: "Starting from National Taiwan University Hospital, PANCREASaver® now serves multiple institutions — every patient, a protected family.",
+    n6_p: "PANCREASaver® is in clinical use across Taiwan's medical centers and regional hospitals — every patient, a protected family.",
     news_byline_t: "Publisher",
     news_byline_t: "発行元",
     news_byline: "PanCAD.ai",

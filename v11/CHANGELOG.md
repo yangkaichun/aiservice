@@ -5,6 +5,62 @@
 
 ---
 
+## v11.2.48（2026-09-03）— EN SEO / AI-SEO / GEO / E-E-A-T＋sitemap（本機，未部署）
+
+### 🔎 SEO / GEO
+- EN 17 頁 metadata 英文化：移除中文 keywords/og:site_name，補 `author=PanCAD.ai`，`dateModified=2026-09-03`，修正 9 頁 twitter:image 多餘 `>`。
+- EN canonical/hreflang/OG URL 統一 `https://www.pancad.ai/en/...`；保留 TFDA 官方許可證字號作可查證 identifier。
+- EN JSON-LD 舊中文描述改為英文公開口徑；教育/新聞/產品語意改為英文；不公開客戶名單，創辦人學術 E-E-A-T 隸屬保留。
+- 新增 `en/llms.txt`：產品、證據、法規、第三方評論、英文頁面索引與醫療免責；根 `llms.txt` 同步修正舊存活率與部署名單口徑。
+- `robots.txt` Sitemap 改指向 `https://www.pancad.ai/sitemap.xml`。
+
+### 🗺️ Sitemap
+- 以實際 HTML 檔自動生成 `sitemap.xml`：46 URL＝主站 14＋EN 17＋JP 14＋deep-plan 1；46 唯一、www host、default sitemap namespace、lastmod 2026-09-03。
+
+### ✅ 狀態
+- 本機驗證完成，未 commit/push/wrangler deploy；Drive 備份另存於 `16_Pancad.ai/Backup_20260903/`。
+
+## v11.2.47（2026-09-03）— EN 全站美式企業風 UI/UX＋客戶名匿名化＋Voices 第三方聲音＋US 統計 fact-check（本機，未部署）
+
+### 🎨 EN 企業風改版（css/en-us.css v4；僅 en 17 頁載入，zh/jp 不受影響）
+- 研究依據：Harrison.ai / Viz.ai / Qure.ai / Lunit / DeepHealth 五家（2026-09-03 逐頁研究）
+- 使用者定案：US 優先、不公開客戶名單、RSNA+editor 評語當見證、科學指標帶；視覺「大幅轉向美式企業科技風（白底×深藍×大留白×極簡卡）」
+- 新建 `css/en-us.css`：白底＋系統字體＋深藍墨、nav 純白＋Contact 藥丸 CTA、深藍方匡 hero（kicker #ffc46b 800 放大）、日光/光子/光影動效全關、卡片極簡（細邊淺影 r18）、白/淺灰章節節奏、頁尾 CTA 深藍滿版、PACS/cert emoji→線條 SVG、Voices 卡
+- product.html（EN 落地首頁＝index meta-refresh 導向）：hero 深藍玻璃方匡＋雙 CTA、數字列暗底分隔、修 head meta bug ×3；publications/regulatory 掛載＋hero 雙 CTA＋證書牆圖標；其餘 14 en 頁掛載；patient hero 統一深藍白字；day-card/journey 玻璃白化
+### ✏️ 內容誠實性（P0②）
+- A/B：13 頁 JSON-LD 中文 description＋具名部署 → 英文公開口徑；publications footer／regulatory FAQ／news「Starting from NTUH」／clinician anchor「NTUH breakthrough」→ 匿名化（C 類創辦人學術隸屬保留）
+- publications.html「Patent list (10)」誤植 fallback → 5 international publications（字典原正確，bake 缺口）
+- US 存活率 fact-check（P0④）：三語 about／screening 舊口徑→整體約 13%、侷限期約 44%；index FAQ JSON-LD「80% / under 10%」→13% overall / 44% localized（ACS＋NCI SEER 2026-01 一致）
+### 🔊 Voices from the field（P0①定案上稿，product＋clinician）
+- 三卡逐字引文＋出處：Linda Moy（Radiology 主編，RSNA Margulis 2023）、Aisen & Rodrigues（Radiology editorial 2023）、Chu & Fishman（Lancet DH Comment 2020）；框架「studies behind PANCREASaver®」；Lancet CC BY-NC-ND 短引＋連結
+### ✅ 驗證
+- Playwright：17 頁 ×1440/390 零水平溢位、零 JS 錯誤；JSON-LD 全 parse OK；`node --check` OK
+- 視覺自檢（qwen2.5vl）hero/kicker/見證卡/證書牆全數可讀無遮擋
+### ⚠️ 狀態
+- **未部署未 commit**（auto-sync 每日 9:00 cron 需留意）；待使用者 Safari 實機驗收 → OK 才部署
+
+## v11.2.46（2026-09-02）— GSC「產品摘要 aggregateRating 欄位未填」修正：移除 Product/Offer/Brand schema 節點（16 頁，未部署）
+
+### 🔧 根因
+- GSC Rich Results「產品摘要」報錯「`aggregateRating` 欄位未填」（開始 2026/8/29、驗證失敗 2026/9/2；樣本：/patient、/en/terms(.html)、/contact、/publications、/ip）
+- v11 全站 JSON-LD @graph 曾依 84e5647「內容型 schema 33 頁」注入 `Product`（#product）＋巢狀 `Offer`（**price 0 TWD / InStock / url→contact.html**）＋ `Brand`——無任何真實 `aggregateRating`/`review`，且醫材無零售價、$0 InStock 屬虛構商業資料 → Google Product snippets 無法呈現、回報缺 aggregateRating
+- zh 子頁（patient/contact/publications/ip 等）已於 1d85d88（2026-08-29）移除 Product 節點，但 **product.html、jp/product.html、en/ 14 頁仍帶**——GSC 樣本含 zh 頁是移除前的舊爬取；本次把殘留全部清掉
+
+### ✏️ 修改（16 檔、-514 行、零新增）
+- 移除 JSON-LD `@type: Product` 節點（含巢狀 Brand/manufacturer/offers）之頁面：`product.html`、`jp/product.html`、`en/{about,clinician,contact,editorial,education,index,ip,news,patient,privacy,product,publications,screening,terms}.html`
+- 保留：MedicalOrganization、Organization、WebSite、MedicalWebPage、MedicalDevice（en/index）、BreadcrumbList、Service、Article、FAQPage、Person——產品語意由 **Service + MedicalDevice 節點**承接
+- 手法：`json.loads` → @graph 移除 Product → `json.dumps(ensure_ascii=False, indent=1)` 回寫（原格式化完全一致，diff 純刪除）；en/index.html 結尾 `</script>` 縮排還原
+- **未來勿再對無真實用戶評價/零售價的醫療器材頁加 Product+Offer**（誠實數據紅線＋Google review 政策）
+
+### ✅ 驗證（全在本機）
+- 45 頁 63 個 ld+json 全 parse OK、零 Product 型別、零 `#product` 引用
+- `check_tags.py` 三語平衡（14+17+14 頁）、`verify_site.py` JS/資源/i18n 全綠（僅 en/partners|regulatory|resources 已知誤報）
+- `git diff` 16 檔、純刪除、0 新增
+
+### ⚠️ 狀態
+- **未部署**（未 commit/push/wrangler）；auto-sync cron 已暫停待使用者指示
+- 部署後需在 GSC 該項目按「驗證修正」並等重新檢索（樣本中的 zh 舊頁會隨重新爬取自動清除）
+
 ## v11.2.45（2026-08-31）— 中文版口號「活出精彩，不胰憾!!」＋徽章文字深色化（本機修改紀錄）
 
 ### ✏️ 中文版 slogan：早一點發現，多一種可能。→ 活出精彩，不胰憾!!

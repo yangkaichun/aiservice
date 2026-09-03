@@ -112,7 +112,7 @@
     ev1_p: "5 peer-reviewed papers in Lancet Digital Health, Radiology and other top journals — real clinical validation led by National Taiwan University Hospital.",
     ev1_go: "View 5 papers",
     ev2_t: "FDA Breakthrough Device",
-    ev2_p: "Breakthrough Device Designation from the U.S. FDA, recognizing technology that can significantly improve early detection of a life-threatening disease.\n<a class=\"cert-link\" href=\"https://www.fda.gov/medical-devices/how-study-and-market-your-device/breakthrough-devices-program\" target=\"_blank\" rel=\"noopener\">FDA official program page ↗</a>　<a class=\"cert-link\" href=\"https://health.ltn.com.tw/article/breakingnews/4481249\" target=\"_blank\" rel=\"noopener\">Media coverage: NTUH breakthrough designation ↗</a>",
+    ev2_p: "Breakthrough Device Designation from the U.S. FDA, recognizing technology that can significantly improve early detection of a life-threatening disease.\n<a class=\"cert-link\" href=\"https://www.fda.gov/medical-devices/how-study-and-market-your-device/breakthrough-devices-program\" target=\"_blank\" rel=\"noopener\">FDA official program page ↗</a>　<a class=\"cert-link\" href=\"https://health.ltn.com.tw/article/breakingnews/4481249\" target=\"_blank\" rel=\"noopener\">Media coverage: FDA breakthrough designation ↗</a>",
     ev3_t: "TFDA clearance (Taiwan)",
     ev3_p: "Device license No. 007946 — the first licensed pancreatic cancer AI-assisted detection device in Taiwan.",
     ev4_t: "Intellectual Property Portfolio",
