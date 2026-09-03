@@ -77,7 +77,7 @@ window.PANCAD_I18N = {
     foot_note: "This website is for education and product information only, not medical advice.",
     nav_patient: "Patients",
     nav_clinician: "For Clinicians",
-    nav_screening: "Health Centers",
+    nav_screening: "For Health Systems",
     nav_pub: "Clinical Evidence",
     nav_ip: "IP Portfolio",
     nav_reg: "Regulatory",
