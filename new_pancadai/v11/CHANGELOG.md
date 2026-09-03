@@ -5,6 +5,21 @@
 
 ---
 
+## v11.2.49（2026-09-03）— 依 Harrison.ai 建議深化 EN US B2B workflow / CTA / evidence（本機，未部署）
+
+### ✏️ EN 內容與 UX
+- Product hero 改為 US B2B outcome：`Find pancreatic cancer earlier. Keep your workflow unchanged.`；補 U.S. 510(k) status、`Request a clinical consultation`／`View the evidence` CTA。
+- Product 新增 `Why it matters` 三卡：Surface what routine review can miss／Prioritize the cases that need a closer look／Add confidence without adding clicks。
+- Product 科學指標帶補 Lancet Digital Health、Radiology 與 Regulatory source links；產品敘述改為 support / flag / decision-support 語氣，避免絕對保證。
+- EN 導覽 `Health Centers` → `For Health Systems`；prominent CTA 統一為 clinical consultation。
+- Clinical Evidence real-world wording 改為匿名臨床使用口徑；新增 `Scope and limitations` 證據限制區塊。
+- Resources/Partners metadata 移除暗示公開客戶名單的文案；EN CSS/i18n common cache version 升版。
+
+### ✅ 驗證／狀態
+- EN 17 頁：1440/390 共 34 viewport，零水平溢位、零 page error。
+- `verify_site.py`、JS syntax、EN `check_tags.py`、JSON-LD 全部通過。
+- auto-sync cron 暫停中，未 commit/push/deploy；完成確認後可恢復排程。
+
 ## v11.2.48（2026-09-03）— EN SEO / AI-SEO / GEO / E-E-A-T＋sitemap（本機，未部署）
 
 ### 🔎 SEO / GEO
