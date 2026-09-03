@@ -86,7 +86,7 @@ def public_url(f):
     else:
         prefix = ""
         stem = parts[0]
-    return "https://pancad.ai" + prefix + ("/" if stem == "index.html" else "/" + stem)
+    return "https://www.pancad.ai" + prefix + ("/" if stem == "index.html" else "/" + stem)
 
 for f in html_files:
     html = open(f, encoding="utf-8").read()
@@ -102,10 +102,10 @@ for f in html_files:
     hreflang = dict(re.findall(r'<link\b[^>]*hreflang=["\']([^"\']+)["\'][^>]*href=["\']([^"\']+)', html, re.I))
     page_path = "" if os.path.basename(f) == "index.html" else os.path.basename(f)
     expected_hreflang = {
-        "zh-TW": "https://pancad.ai/" + page_path,
-        "en": "https://pancad.ai/en/" + page_path,
-        "ja": "https://pancad.ai/jp/" + page_path,
-        "x-default": "https://pancad.ai/" + page_path,
+        "zh-TW": "https://www.pancad.ai/" + page_path,
+        "en": "https://www.pancad.ai/en/" + page_path,
+        "ja": "https://www.pancad.ai/jp/" + page_path,
+        "x-default": "https://www.pancad.ai/" + page_path,
     }
     if set(hreflang) != set(expected_hreflang) or any(hreflang.get(k) != v for k, v in expected_hreflang.items()):
         seo_errs.append(f"{page}: hreflang mismatch")

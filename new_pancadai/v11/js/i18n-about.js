@@ -10,7 +10,7 @@
 
     mis_k: "我們的使命",
     mis_t: "每一張 CT，都值得被多看一眼",
-    mis_p: "胰臟癌五年存活率不到一成，主因是發現得太晚。我們相信：如果 AI 能幫放射科醫師在腫瘤還小的時候就看見它，數千個家庭的故事會因此不同。",
+    mis_p: "胰臟癌五年相對存活率整體約 13%；若仍侷限於胰臟，約為 44%（美國癌症協會、NCI SEER 資料）。晚期發現仍是重大挑戰。我們相信：如果 AI 能幫放射科醫師在腫瘤還小的時候就看見它，數千個家庭的故事會因此不同。",
     mis1_t: "以病患為中心",
     mis1_p: "我們所有的產品決策，都從「對患者有沒有幫助」出發——不是技術展示，是生命守護。",
     mis2_t: "證據先行",
@@ -139,7 +139,7 @@
 
     mis_k: "Our Mission",
     mis_t: "Every CT deserves a second look",
-    mis_p: "Pancreatic cancer's five-year survival is under 10%, mostly because it's found too late. We believe if AI can help radiologists see tumors while they're still small, thousands of families would have different stories.",
+    mis_p: "Pancreatic cancer has one of the lowest five-year survival rates of any cancer — about 13% overall, and about 44% when localized (U.S. SEER data). Late diagnosis remains a major challenge. We believe if AI can help radiologists see tumors while they're still small, thousands of families would have different stories.",
     mis1_t: "Patient first",
     mis1_p: "Every product decision starts with “does it help patients?” — not a technology demo, but a commitment to protecting lives.",
     mis2_t: "Evidence first",
@@ -251,7 +251,7 @@
 
     mis_k: "ミッション",
     mis_t: "すべてのCTに、もう一度の目を",
-    mis_p: "膵臓がんの5年生存率は10%未満——主な原因は発見の遅れです。腫瘍が小さいうちにAIが気づけるなら、何千もの家族の物語が変わると信じています。",
+    mis_p: "膵臓がんの5年相対生存率は全体で約13%、膵臓に限局している場合は約44%です（米国癌協会・NCI SEERデータ）。発見の遅れは依然として大きな課題です。腫瘍が小さいうちにAIが気づけるなら、何千もの家族の物語が変わると信じています。",
     mis1_t: "患者中心",
     mis1_p: "すべての製品判断は「患者さんの役に立つか」から始まります——技術披露ではなく、命を守ること。",
     mis2_t: "エビデンス最優先",

@@ -10,7 +10,7 @@
 
     why_k: "為什麼是胰臟癌 AI",
     why_t: "為什麼健檢要加入胰臟 AI 篩檢？",
-    why_p: "胰臟癌五年存活率不到一成，是致死率最高的癌症之一——而它幾乎沒有早期症狀。您的客戶需要它，只是還沒有人提供。",
+    why_p: "胰臟癌五年相對存活率整體約 13%；若仍侷限於胰臟，約為 44%（美國癌症協會、NCI SEER 資料），且幾乎沒有早期症狀。越早發現，治療選項通常越多。",
     why1_t: "需求真實存在",
     why1_p: "胰臟癌是台灣癌症死因前十大；高風險族群（60 歲以上、家族史、糖尿病、吸菸）逐年增加。",
     why2_t: "差異化亮點",
@@ -61,7 +61,7 @@
 
     why_k: "Why pancreatic AI",
     why_t: "Why add pancreatic AI screening to your health check?",
-    why_p: "Pancreatic cancer has one of the lowest survival rates — and almost no early symptoms. Your clients need it; nobody offers it yet.",
+    why_p: "Pancreatic cancer has one of the lowest five-year relative survival rates — about 13% overall and about 44% when localized (U.S. SEER data) — and almost no early symptoms. Earlier detection can expand treatment options.",
     why1_t: "Real demand",
     why1_p: "Pancreatic cancer ranks among Taiwan's top-10 cancer killers; the high-risk population (60+, family history, diabetes, smoking) keeps growing.",
     why2_t: "A true differentiator",
@@ -112,7 +112,7 @@
 
     why_k: "なぜ膵臓がんAIか",
     why_t: "なぜ健診に膵臓 AI 検診を加えるべきか？",
-    why_p: "膵臓がんは生存率が最も低いがんの一つ——しかも初期症状はほとんどありません。お客様はそれを必要としています。",
+    why_p: "膵臓がんの5年相対生存率は全体で約13%、限局例で約44%です（米国SEERデータ）。初期症状はほとんどなく、早期発見は治療の選択肢を広げます。",
     why1_t: "確かな需要",
     why1_p: "膵臓がんは台湾のがん死因トップ10。ハイリスク層（60歳以上、家族歴、糖尿病、喫煙）は増え続けています。",
     why2_t: "差別化の目玉",
