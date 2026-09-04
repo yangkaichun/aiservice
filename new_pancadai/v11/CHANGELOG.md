@@ -5,6 +5,24 @@
 
 ---
 
+## v11.2.50（2026-09-04）— 博田／輔大 B2C 頁導覽列對齊中文版＋健檢中心頁新增導入案例區（本機，未部署）
+
+### 🎨 導覽列（parkone-case-study.html / fju-st-lukes-case-study.html，共用 css/b2c-health.css）
+- 上方 menu 由 4 連結改為與主站中文版相同的 10 連結：產品介紹／患者旅程／醫療機構／健檢中心／期刊論文／專利佈局／衛教知識／關於仲智／最新消息／聯絡我們（標籤與 href 逐項對齊 screening.html nav）；保留各頁「了解健檢方案」橘色 CTA。
+- b2c-health.css：`.b2c-nav-links` gap 22→18px；連結隱藏斷點 820→1024px（≤1024 只留 logo＋CTA）；`?v` 5→6。
+- 實測寬度 768／900／1024／1025／1050／1100／1280／1440 全零水平溢位；1440＋390 無 page error、最後一項按鈕完整在容器內。
+
+### ✏️ 健檢中心頁（screening.html，zh-only）
+- 頁面下方（實戰數據表格後、CTA 前）新增「導入實例」區塊：標題「博田與輔大，已把 AI 帶進高階健檢」＋兩張卡片（輔大醫院聖路加健康管理中心 15F／博田國際醫院高階健檢），各含摘要與站內連結（fju-st-lukes-case-study.html、parkone-case-study.html）。
+- 依使用者決策 en／jp 版本不動（EN 版維持不公開客戶名單，en/screening.html 仍 0 處醫院名稱）。
+
+### 📌 同批未提交變更
+- b2c-health.css 字型 `Microsoft JhengHei`／`Noto Sans TC`（前批 `?v=5`，本次合併升 `?v=6`）
+
+### ⚠️ 狀態
+- 驗證：`check_tags.py` 全站 16 頁平衡 ✅；Playwright 三頁（1440／390＋寬度掃描）零溢位零 page error ✅；本機 qwen2.5vl 檢視截圖（兩頁 nav＋健檢中心導入區）版式正確 ✅
+- 未 commit／push／deploy；auto-sync cron（每日 9:00）部署前需先暫停。
+
 ## v11.2.49（2026-09-03）— 依 Harrison.ai 建議深化 EN US B2B workflow / CTA / evidence（本機，未部署）
 
 ### ✏️ EN 內容與 UX
