@@ -48,7 +48,7 @@ window.PANCAD_I18N = {
     foot_link_ip: "專利佈局",
     foot_link_tfda: "法規認證",
     foot_addr: "台北市大安區敦化南路一段376號11樓",
-    foot_copy: "© 2026 仲智數位健康股份有限公司 版權所有",
+    foot_copy: "2026 仲智數位健康股份有限公司 版權所有",
     foot_privacy: "隱私權政策",
 
     /* App tab */
@@ -109,7 +109,7 @@ window.PANCAD_I18N = {
     foot_link_ip: "IP Portfolio",
     foot_link_tfda: "Regulatory",
     foot_addr: "11F., No.376, Sec.1, Dunhua S. Rd., Taipei City, Taiwan",
-    foot_copy: "© 2026 PanCAD.ai Co., Ltd. All rights reserved.",
+    foot_copy: "2026 PanCAD.ai Co., Ltd. All rights reserved.",
     foot_privacy: "Privacy Policy",
 
     tab_home: "Home",
@@ -168,7 +168,7 @@ window.PANCAD_I18N = {
     foot_link_ip: "知的財産",
     foot_link_tfda: "規制認証",
     foot_addr: "台北市大安區敦化南路一段376号11階",
-    foot_copy: "© 2026 仲智デジタルヘルス 無断転載を禁じます",
+    foot_copy: "2026 仲智デジタルヘルス 無断転載を禁じます",
     foot_privacy: "プライバシーポリシー",
 
     tab_home: "ホーム",

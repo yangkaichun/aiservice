@@ -5,6 +5,16 @@
 
 ---
 
+## v11.2.51（2026-09-04）— 版權符號 © 上標（全站三語，已部署）
+
+### ✏️ 版權列
+- 46 頁 footer `foot_copy` 版權列與 9 頁法律頁（privacy/terms/editorial 三語）結尾的 © 改為 `<sup>` 上標小字；© 移到 i18n span 外（避免 apply() 以字典 textContent 覆寫時失去上標），字典 `i18n-common.js` 三語 foot_copy 同步移除前綴 ©。
+- 46 頁 `i18n-common.js?v=` 各自 +1（內容變更快取一致性）。
+
+### ✅ 驗證／狀態
+- DOM 驗證 zh/en/jp：span 文字＝「2026 …」且前一 sibling 為 `<sup>©</sup>`（渲染單一上標 ©）、零溢位、零 page error；check_tags 主站 16＋en 17＋jp 14 全平衡；node --check i18n-common.js ✅；本機 qwen2.5vl 檢視截圖確認 © 上標、未重複、無裁切。
+- commit 8db0f77 之後新 commit；auto-sync cron 仍暫停中。
+
 ## v11.2.50（2026-09-04）— 博田／輔大 B2C 頁導覽列對齊中文版＋健檢中心頁新增導入案例區（本機，未部署）
 
 ### 🎨 導覽列（parkone-case-study.html / fju-st-lukes-case-study.html，共用 css/b2c-health.css）
