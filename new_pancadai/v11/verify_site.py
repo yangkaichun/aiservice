@@ -101,7 +101,7 @@ for f in html_files:
         seo_errs.append(f"{page}: canonical mismatch ({canonical.group(1)})")
     hreflang = dict(re.findall(r'<link\b[^>]*hreflang=["\']([^"\']+)["\'][^>]*href=["\']([^"\']+)', html, re.I))
     page_path = "" if os.path.basename(f) == "index.html" else os.path.basename(f)
-    if page == "fju-st-lukes-case-study.html":
+    if page in ("fju-st-lukes-case-study.html", "parkone-case-study.html"):
         expected_hreflang = {
             "zh-TW": "https://www.pancad.ai/" + page_path,
             "x-default": "https://www.pancad.ai/" + page_path,
