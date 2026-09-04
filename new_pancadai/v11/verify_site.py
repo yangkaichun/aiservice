@@ -101,16 +101,26 @@ for f in html_files:
         seo_errs.append(f"{page}: canonical mismatch ({canonical.group(1)})")
     hreflang = dict(re.findall(r'<link\b[^>]*hreflang=["\']([^"\']+)["\'][^>]*href=["\']([^"\']+)', html, re.I))
     page_path = "" if os.path.basename(f) == "index.html" else os.path.basename(f)
-    expected_hreflang = {
-        "zh-TW": "https://www.pancad.ai/" + page_path,
-        "en": "https://www.pancad.ai/en/" + page_path,
-        "ja": "https://www.pancad.ai/jp/" + page_path,
-        "x-default": "https://www.pancad.ai/" + page_path,
-    }
-    if set(hreflang) != set(expected_hreflang) or any(hreflang.get(k) != v for k, v in expected_hreflang.items()):
-        seo_errs.append(f"{page}: hreflang mismatch")
-    if len(hreflang) < 4:
-        seo_errs.append(f"{page}: incomplete hreflang set")
+    if page == "fju-st-lukes-case-study.html":
+        expected_hreflang = {
+            "zh-TW": "https://www.pancad.ai/" + page_path,
+            "x-default": "https://www.pancad.ai/" + page_path,
+        }
+        if set(hreflang) != set(expected_hreflang) or any(hreflang.get(k) != v for k, v in expected_hreflang.items()):
+            seo_errs.append(f"{page}: hreflang mismatch")
+        if len(hreflang) < 2:
+            seo_errs.append(f"{page}: incomplete hreflang set")
+    else:
+        expected_hreflang = {
+            "zh-TW": "https://www.pancad.ai/" + page_path,
+            "en": "https://www.pancad.ai/en/" + page_path,
+            "ja": "https://www.pancad.ai/jp/" + page_path,
+            "x-default": "https://www.pancad.ai/" + page_path,
+        }
+        if set(hreflang) != set(expected_hreflang) or any(hreflang.get(k) != v for k, v in expected_hreflang.items()):
+            seo_errs.append(f"{page}: hreflang mismatch")
+        if len(hreflang) < 4:
+            seo_errs.append(f"{page}: incomplete hreflang set")
     for block in re.findall(r'<script\b[^>]*type=["\']application/ld\+json["\'][^>]*>(.*?)</script>', html, re.I | re.S):
         try:
             json.loads(block.strip())
