@@ -5,6 +5,76 @@
 
 ---
 
+## v11.2.56（2026-09-07）— 部署 v11.2.52–55 全批上線（已部署）
+
+### 🚀 本次部署內容（一次 commit 涵蓋）
+- v11.2.52：sitemap 50 URL／案例頁 JSON-LD org＋service 節點／case-study EN head／llms 案例節（2026-09-04 累積）
+- v11.2.53：parkone 頁 CTA 聯絡卡（地址/電話/信箱＋FAQ 洽詢管道）
+- v11.2.54：parkone 討論區博田聯絡卡
+- v11.2.55：parkone 整頁精緻化（workflow 流程帶＋討論區 fju 式兩欄＋section 節奏）
+- 共用 css/b2c-health.css（?v=7）、fju 頁 CSS 版本同步
+
+### ✅ 部署驗證
+- Git push → GH Actions deploy（v11 雙路徑）completed success
+- Cloudflare `wrangler pages deploy` production 讀回
+- 三平台 curl 讀回：parkone workflow/discuss/聯絡卡標記、css?v=7、sitemap 50、llms 一致
+
+### 📌 備份
+- Google Drive 16_Pancad.ai/V11 rsync -ac checksum 同步完成（SHA-256 抽查一致）
+
+## v11.2.55（2026-09-07）— parkone 案例頁版面整頁精緻化，對齊 fju 視覺層級（v11.2.56 已部署）
+
+### 🎨 結構調整（parkone-case-study.html，對照 fju-st-lukes-case-study）
+- **補「The workflow」流程帶**：Why it matters 後插入 5 步驟 b2c-flow（健康檢查諮詢→顯影後腹部 CT→AI 輔助分析→醫師判讀與諮詢→後續安排），與 fju 同款灰底流程帶（515px 同高）。
+- **討論區改 fju 式左右兩欄**：原 2×2 四卡（2 風險卡＋重要提醒＋博田聯絡卡）→ 左欄「哪些情況可以先諮詢醫師？」標題＋6 條清單＋提醒註記、右欄博田國際健康管理中心白色聯絡卡（地址/電話/信箱＋按鈕）——版型、卡片樣式與 fju 聖路加卡一致。
+- **Section 明暗節奏**：改為 Why(白)→workflow(灰)→evidence(白)→discuss(灰)→FAQ(白)→CTA，與 fju 逐區同構（DOM 實測各區 y/高度與 fju 一致）。
+
+### ✅ 驗證／狀態
+- check_tags 全站 17 頁平衡；Playwright 1440/768/390 零 pageerror、零水平溢出；workflow 5 步、discuss ≤1024 收 1 欄；內容完整性掃描零遺漏（地址/電話/信箱/數據/免責全保留）；本機 qwen2.5vl 檢視流程帶與討論區整齊、卡片文字無切裁。
+- 未 commit／push／deploy；auto-sync cron 暫停中（延續 v11.2.52–54 未部署狀態）。
+## v11.2.54（2026-09-07）— parkone 案例頁「For your discussion with a doctor」區加入博田聯絡卡（本機，未部署）
+
+### 📞 parkone-case-study.html
+- 「哪些情況可以先諮詢醫師？」（For your discussion with a doctor）區三張風險卡下方新增白色 `.b2c-card`「博田國際健康管理中心」聯絡卡：地址 高雄市左營區博愛二路100號／電話 (07) 556-2217／信箱 wellness@parkonehealth.tw＋「前往中心官方網站」按鈕——比照 fju-st-lukes-case-study 同區的「聖路加健康管理中心」卡樣式（fju 頁已有該卡，本次僅補 parkone 對稱）。
+
+### ✅ 驗證／狀態
+- Playwright 1440／390：零 pageerror、零水平溢出；卡完整顯示（390 下寬 346 高 293），本機 qwen2.5vl 檢視文字無切裁無重疊；check_tags 全站 17 頁平衡。
+- 未 commit／push／deploy；auto-sync cron 暫停中（延續 v11.2.52/53 未部署狀態）。
+
+## v11.2.53（2026-09-07）— 博田案例頁加入博田國際健康管理中心聯絡資訊（本機，未部署）
+
+### 📞 parkone-case-study.html（博田高階健檢登陸頁）
+- CTA 區塊（.b2c-cta）下方新增 `.b2c-contact` 聯絡卡：地址 高雄市左營區博愛二路100號／電話 (07) 556-2217（tel:+88675562217）／信箱 wellness@parkonehealth.tw（mailto）——內容與博田官方 wellness.parkonehealth.tw 網站實抓一致。
+- FAQ「如何了解博田健檢方案？」答案補直接洽詢管道（地址／電話／信箱）。
+- dateModified（meta＋JSON-LD MedicalWebPage）2026-09-04 → 2026-09-07。
+
+### 🎨 共用 CSS（css/b2c-health.css，兩案例頁共用）
+- 新增 `.b2c-contact`／`.b2c-contact-grid`／`.b2c-contact-item`／`.b2c-mail` 規則（深藍 CTA 帶內半透明卡片，桌面 3 欄、≤1024 單欄）；`?v` 6→7 兩頁同步（parkone＋fju）。
+
+### ✅ 驗證／狀態
+- Playwright 1440／390：零 pageerror、零水平溢出；3 卡桌面 3 欄／手機 1 欄，本機 qwen2.5vl 檢視無重疊；JSON-LD parse OK。
+- 未 commit／push／deploy；auto-sync cron 暫停中（延續 v11.2.52 未部署狀態）。
+
+## v11.2.52（2026-09-04）— sitemap.xml 更新＋案例頁 SEO/AI-SEO/GEO 優化（本機，未部署）
+
+### 🗺️ Sitemap（48 → 50 URL）
+- 新增 `case-study/pancreasaver_case_study.html` 與 `PANCREASaver_High-End_Health_Screening_Case_Study.pdf`；screening（zh）、兩案例頁 lastmod 更新 2026-09-04。
+- 程式驗證：50 URL 全唯一、default namespace 無 ns0、XML parse 通過；llms.txt「收錄 48 URL」口徑改 50（主站 17＋EN 17＋JP 14＋case-study 2）。
+
+### 🧩 案例頁 JSON-LD（parkone / fju）
+- @graph 補 `Organization（#organization：仲智數位健康 PanCAD.ai 地址電話）`＋`Service（#service：PANCREASaver® AI 輔助判讀服務）`節點——原本 Article publisher／MedicalWebPage about 的 #organization／#service 是懸空 @id，現在解析完整（6 nodes／頁）。
+
+### 🌐 case-study EN 頁 head（原只有 <title>）
+- 補 meta description／robots index,follow／author／datePublished/Modified／canonical／og:article（title/desc/url/locale en_US）／twitter:card；title 改為敘事性。
+
+### 🤖 llms / AI-SEO
+- `llms.txt`：兩則中文案例 bullet 集中為「## 導入案例（Case Studies）」節＋補 EN 頁／PDF 兩條（原 bullet 散落在衛教資源與語言區）。
+- `llms-full.txt`、`en/llms.txt` 各補 EN case-study 連結。
+
+### ✅ 驗證／狀態
+- verify_site.py 全綠（JS syntax／1620 refs／API catalog／agent discovery／i18n keys／SEO-GEO structure）；check_tags 主站 16＋case-study 1 平衡；sitemap 50 唯一且含案例 4 URL。
+- 未 commit／push／deploy；auto-sync cron 暫停中。
+
 ## v11.2.51（2026-09-04）— 版權符號 © 上標（全站三語，已部署）
 
 ### ✏️ 版權列
