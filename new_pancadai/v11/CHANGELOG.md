@@ -25,7 +25,7 @@
 ## v11.2.57（2026-09-07）— 新增臺大醫院／台大癌症醫院頁＋案例頁 FAQ schema 對齊 SEO/GEO（本機完成，待部署）
 
 ### 🆕 新頁面（zh-only，英/日版未更動）
-- `ntuh-case-study.html`（臺大醫院）：人工智慧胰臟分析檢查登陸頁——hero＋stats＋why(3卡)＋workflow(5步，首步撥打專線)＋預約方式區(電話 02-2312-3456 轉 263356／週一至五 14:00–17:00／告知有意願即由專人安排)＋evidence(TFDA+論文數據)＋醫師諮詢清單＋FAQ 4題＋CTA 聯絡卡。JSON-LD @graph：MedicalWebPage/Article/Breadcrumb/FAQPage(4題=可見)/Organization/Service/**MedicalOrganization（國立臺灣大學醫學院附設醫院，地址中山南路7號、官網 ntuh.gov.tw）**。
+- `ntuh-case-study.html`（臺大醫院）：人工智慧胰臟分析檢查登陸頁——hero＋stats＋why(3卡)＋workflow(5步，首步撥打專線)＋預約方式區(電話 02-2312-3456 轉 263356／週一至五 09:00–17:00／告知有意願即由專人安排)＋evidence(TFDA+論文數據)＋醫師諮詢清單＋FAQ 4題＋CTA 聯絡卡。JSON-LD @graph：MedicalWebPage/Article/Breadcrumb/FAQPage(4題=可見)/Organization/Service/**MedicalOrganization（國立臺灣大學醫學院附設醫院，地址中山南路7號、官網 ntuh.gov.tw）**。
 - `ntuh-cancer-case-study.html`（台大癌症醫院＝臺大醫院癌醫中心分院）：同版型，地址基隆路三段155巷57號、官網 ntucc.gov.tw、MedicalOrganization 全名「國立臺灣大學醫學院附設醫院癌醫中心分院」＋alternateName(台大癌症醫院/台大癌醫)。
 - 兩頁：canonical/hreflang(zh-TW+x-default)/OG/twitter/datePublished+Modified 2026-09-07、FAQ schema 與可見 <details> 逐字一致（4/4）、tel:+886223123456 CTA。
 
