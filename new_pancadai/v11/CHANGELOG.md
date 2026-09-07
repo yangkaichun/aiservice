@@ -5,6 +5,23 @@
 
 ---
 
+## v11.2.58（2026-09-07）— zh 全站 SEO/AI-SEO/GEO 加強（健檢中心頁＋頁內醫院為重點；英/日版未更動）
+
+### 🎯 健檢中心頁（screening.html）重點強化
+- 新增「常見問題」可見區（5 題：人工智慧胰臟分析檢查哪裡做／哪些高階健檢中心已導入／要不要多照一次 CT／導入需多久（對齊 HowTo 四週）／AI 判讀=確診嗎），答案含站內連結（ntuh／ntuh-cancer／parkone／fju 案例頁）——GEO 直接引用素材＋內部連結。
+- head 新增 FAQPage JSON-LD（@id screening.html#faq，5 題與可見逐字一致）——FAQ schema／可見內容 parity 補齊（HowTo 早已在）。
+- 導入實例區（v11.2.57 追加台大 2 卡）同步為本頁 GEO 主體。
+
+### 🏠 首頁（index.html）FAQ schema 可見化
+- 原本 FAQPage schema 7 題僅存在 JSON-LD、頁面無可見對應 → 新增「常見問題」可見區（7 題與 schema 逐字一致，樣式沿用 .faq-item，main.js 既有切換邏輯）。
+
+### 🏥 案例頁實體補齊
+- fju-st-lukes-case-study.html：@graph 新增 MedicalOrganization（輔仁大學附設醫院聖路加健康管理中心：地址貴子路69號15樓／電話／信箱／官網）——與 parkone（博田）、ntuh 兩頁同構。
+
+### 📋 其他
+- sitemap screening lastmod→2026-09-07；llms.txt／llms-full.txt 加「人工智慧胰臟分析檢查哪裡可以做？」直接回答 bullet（含專線與四家單位）。
+- en/、jp/ 未更動（使用者指示）；本批 = index.html／screening.html／fju-st-lukes-case-study.html／sitemap.xml／llms*.txt／CHANGELOG。
+
 ## v11.2.57（2026-09-07）— 新增臺大醫院／台大癌症醫院頁＋案例頁 FAQ schema 對齊 SEO/GEO（本機完成，待部署）
 
 ### 🆕 新頁面（zh-only，英/日版未更動）
