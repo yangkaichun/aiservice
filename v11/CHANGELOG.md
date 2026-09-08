@@ -5,6 +5,17 @@
 
 ---
 
+## v11.2.60（2026-09-08）— 中文站品質、SEO／GEO／AI-SEO 與手機效能
+
+- 範圍：19 正式中文頁；en/、jp/ 與既有共用 CSS/JS 保持 byte-identical。
+- 校正 metadata／OG／runtime i18n、公司／醫院實體、頁面類型與麵包屑；FAQ 比對完整問答；5 篇文獻使用實際標題與 DOI 的 ScholarlyArticle。
+- 四醫院頁補原文出處、手機原生導覽、對比度、publisher 聲明；臺大諮詢電話加分機，服務時間維持平日 09:00–17:00。
+- 深耕頁修正 canonical／OG／schema 與療效保證式文案。新增相關內容導航，llms／sitemap 同步。
+- 手機首頁避免下載隱藏影片，修正背景圖與 preload 不一致；修正 320／1024px 導覽溢出，頁尾層級及觸控目標。
+- Chromium 19頁×5寬度共95情境無水平溢出；38情境 metadata／FAQ／pageerror 全過；WebKit 抽驗4頁；no-JS 抽驗4頁。
+- Lighthouse 本機 mobile：首頁 97／100／100（Performance／Accessibility／SEO），LCP 2.6s；博田 99／100／100。僅代表本機實驗室，不是 field CWV 或排名保證。
+- 完整驗證與限制：[references/seo-quality-20260908.md](references/seo-quality-20260908.md)。使用者授權直接雙部署、Drive checksum 備份及 Telegram 通知；各端讀回於執行紀錄確認。自動同步排程維持暫停。
+
 ## v11.2.58（2026-09-07）— zh 全站 SEO/AI-SEO/GEO 加強（健檢中心頁＋頁內醫院為重點；英/日版未更動）
 
 ### 🎯 健檢中心頁（screening.html）重點強化
