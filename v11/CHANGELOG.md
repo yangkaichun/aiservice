@@ -5,6 +5,17 @@
 
 ---
 
+## v11.2.62（2026-09-08）— SEO／AI-SEO／GEO metadata 與 AI 搜尋爬蟲修正（Cloudflare Pages production，已部署）
+
+### 🔧 修正
+- 修正中文／日文正式頁共 27 個 `og:image` `<meta>` 標籤缺少結尾 `>` 的 HTML 結構問題，避免 Open Graph 與後續 Twitter metadata 被社群解析器誤合併。
+- `robots.txt` 明確允許 `OAI-SearchBot`，將 ChatGPT Search 的搜尋爬取與 `GPTBot` 的模型訓練爬取分開管理；保留既有 `ai-train=no` 與 `ai-input=no` 內容政策，不擅自改變授權意願。
+
+### ✅ 驗證
+- 正式 HTML 頁的 malformed `<meta>` 掃描為 0。
+- 既有 JSON-LD 解析、JavaScript syntax、資源與 i18n 驗證持續通過（verifier 僅保留已知 API／備份檔誤報）。
+- 本輪內容已同步至 `16_Pancad.ai/V11`，並安排由 `main` push 觸發 GitHub Pages deploy；Cloudflare Pages production 已部署且 production domains 讀回 HTTP 200。
+
 ## v11.2.61（2026-09-08）— 三語版面複驗修正：en/jp 導覽斷點＋footer/統計帶/知識庫 RWD（全站 50 頁已部署）
 
 ### 🎯 稽核方法
