@@ -5,7 +5,7 @@
 
 ---
 
-## v11.2.63（2026-09-08）— llms.txt discoverability reference（本機，待部署）
+## v11.2.63（2026-09-08）— llms.txt discoverability reference（Cloudflare Pages＋GitHub Pages，已部署）
 
 ### 🔧 修正
 - 在 `robots.txt` 加入 `LLMs-Txt: https://www.pancad.ai/llms.txt` 明確參照。
@@ -15,7 +15,7 @@
 ### ✅ 驗證
 - 50 個正式 sitemap HTML 頁均有 llms.txt reference。
 - `llms.txt`／`llms-full.txt` 回應 200、`text/plain`；malformed `<meta>` 為 0、JSON-LD 解析錯誤為 0。
-- 本輪尚未部署；完成後需同步 `16_Pancad.ai/V11`。
+- Cloudflare Pages 與 GitHub Pages 均已部署；兩個 GitHub Pages v11 路徑與 Cloudflare production 均讀回 200。Drive mirror 已同步。
 
 ## v11.2.62（2026-09-08）— SEO／AI-SEO／GEO metadata 與 AI 搜尋爬蟲修正（Cloudflare Pages production，已部署）
 
