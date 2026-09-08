@@ -1,12 +1,12 @@
 /* pancad.ai v7 — clinician 字典（陽光證據館）?v=1 */
 (function () {
   var zh = {
-    meta_title: "臨床證據 — 胰臟癌 AI 偵測效能與認證 | PANCREASaver® 助胰見®",
-    meta_desc: "AUC 0.95、<2cm 敏感度 92.1%、FDA Breakthrough、TFDA 衛部醫器製字第007946號、台美 10 專利、5 篇期刊、9 項獎。醫療機構導入流程與真實證據，30 秒取得決策資訊。",
+    meta_title: "AI 醫學影像與臨床證據｜胰臟癌 CT AI 導入｜PANCREASaver®",
+    meta_desc: "醫療機構評估胰臟癌 AI、AI 醫學影像與放射科 AI：AUC 0.95、<2cm 敏感度 92.1%、FDA Breakthrough、TFDA 許可、10 件專利與 5 篇期刊，並說明導入流程。",
 
     ph_badge: "For Clinicians",
     ph_title_1: "證據，<span class=\"hl\">是最好的說服。</span>",
-    ph_sub: "PANCREASaver® 的每一項宣稱都有文獻與法規背書——讓您 30 秒內拿到決策所需的全部資訊。",
+    ph_sub: "PANCREASaver® 的 AI 醫學影像效能宣稱都有文獻與法規背書——讓醫療機構在 30 秒內取得導入決策所需資訊。",
 
     auc_t: "全國多中心驗證：AUC 0.95",
     auc_p: "滾動頁面，看 AUC 曲線繪製——在 <2cm 的小腫瘤偵測上，PANCREASaver® 達到 0.95 的曲線下面積。",
@@ -88,12 +88,12 @@
     cta_btn: "預約簡報"
   };
   var en = {
-    meta_title: "Clinical Evidence — Pancreatic Cancer AI Performance & Approvals | PANCREASaver®",
-    meta_desc: "AUC 0.95, 92.1% sensitivity for <2cm tumors, FDA Breakthrough, TFDA clearance, 10 patents in TW & US, 5 publications, 9 awards. Decision-ready evidence for medical institutions.",
+    meta_title: "Medical Imaging AI Evidence | PANCREASaver®",
+    meta_desc: "Clinical evidence for pancreatic cancer and PDAC medical imaging AI: AUC 0.95, 92.1% sensitivity for <2cm tumors, FDA Breakthrough, TFDA clearance, 10 patents and 5 publications.",
 
     ph_badge: "For Clinicians",
     ph_title_1: "Evidence <span class=\"hl\">speaks best.</span>",
-    ph_sub: "Every claim PANCREASaver® makes is backed by literature and regulatory approval — decision-ready information in 30 seconds.",
+    ph_sub: "Every medical imaging AI claim PANCREASaver® makes is backed by literature and regulatory approval — decision-ready information for radiology teams.",
 
     auc_t: "National multi-center validation: AUC 0.95",
     auc_p: "Scroll to watch the AUC curve draw — PANCREASaver® reaches 0.95 area under the curve detecting small <2cm tumors.",

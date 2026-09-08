@@ -1,12 +1,12 @@
 /* pancad.ai v7 — education 字典（陽光學堂）?v=1 */
 (function () {
   var zh = {
-    meta_title: "衛教知識庫 — 胰臟癌篩檢前・診斷後・追蹤中 | PANCREASaver® 助胰見®",
-    meta_desc: "陽光學堂：篩檢前該知道的事、診斷後的下一步、追蹤中的生活指南。六篇文章、六個 FAQ，以病患為中心的胰臟健康知識。",
+    meta_title: "胰臟癌（胰腺癌）衛教、症狀與 AI 影像檢查 | 助胰見",
+    meta_desc: "陽光學堂提供胰臟癌（胰腺癌）篩檢前、診斷後與追蹤中的衛教、症狀與腹部 CT AI 影像檢查知識；六篇文章、六個 FAQ，不能取代醫師診療。",
 
     ph_badge: "陽光學堂",
     ph_title_1: "知識，<span class=\"hl\">是最好的安心。</span>",
-    ph_sub: "篩檢前、診斷後、追蹤中——三個階段的知識，以病患為中心，用最白話的方式寫給你。",
+    ph_sub: "篩檢前、診斷後、追蹤中——認識胰臟癌（英文 pancreatic cancer，常見病理類型 PDAC）與 AI 醫學影像的三個階段知識；內容不能取代醫師診療。",
 
     tab_pre: "篩檢前",
     tab_post: "診斷後",
@@ -14,7 +14,7 @@
 
     e1_t: "胰臟癌為什麼「早期幾乎無症狀」",
     e1_l: "篩檢前",
-    e1_p: "胰臟位於腹腔深處，腫瘤長到一定程度前，幾乎不會壓迫到神經或器官。等到出現黃疸、體重減輕、背痛等症狀時，腫瘤往往已經不是早期——這就是「沉默殺手」的由來。",
+    e1_p: "胰臟位於腹腔深處，腫瘤長到一定程度前，幾乎不會壓迫到神經或器官。胰臟癌（英文 pancreatic cancer；其中常見病理類型為胰臟導管腺癌 PDAC）早期症狀可能不明顯；出現黃疸、體重減輕、背痛等症狀時，請儘速諮詢醫師。",
     e2_t: "誰是高風險族群？該多久檢查一次",
     e2_l: "篩檢前",
     e2_p: "60 歲以上、有胰臟癌家族史、長期吸菸、糖尿病、反覆胰臟發炎——這些都屬於高風險。醫師可能建議定期腹部影像檢查（如 CT 或 MRI）；沒有危險因子的年輕族群，則依一般健康檢查建議即可。",
@@ -57,12 +57,12 @@
     cta_btn: "聯絡我們"
   };
   var en = {
-    meta_title: "Education Library — Pancreatic Cancer Knowledge | PANCREASaver®",
-    meta_desc: "Sunlit Academy: what to know before screening, next steps after diagnosis, and living well in follow-up. Six articles, six FAQs — patient-first pancreatic health knowledge.",
+    meta_title: "Pancreatic Cancer & PDAC Education | PANCREASaver®",
+    meta_desc: "Patient-first education on pancreatic cancer and pancreatic ductal adenocarcinoma (PDAC): screening questions, CT imaging, AI-assisted reading and follow-up care.",
 
     ph_badge: "Sunlit Academy",
     ph_title_1: "Knowledge <span class=\"hl\">is reassurance.</span>",
-    ph_sub: "Before screening, after diagnosis, during follow-up — patient-first knowledge in plain language.",
+    ph_sub: "Before screening, after diagnosis and during follow-up — plain-language pancreatic cancer, PDAC and AI medical imaging education; not a substitute for medical advice.",
 
     tab_pre: "Before Screening",
     tab_post: "After Diagnosis",
@@ -70,7 +70,7 @@
 
     e1_t: "Why pancreatic cancer is “silent” early on",
     e1_l: "Before Screening",
-    e1_p: "The pancreas sits deep in the abdomen; tumors rarely press on nerves or organs until they grow large. By the time jaundice, weight loss or back pain appears, the cancer is often no longer early — that's why it's called the silent killer.",
+    e1_p: "The pancreas sits deep in the abdomen; tumors may not press on nerves or organs until they grow. Pancreatic cancer (a common pathology is pancreatic ductal adenocarcinoma, PDAC) can have few early symptoms; seek medical advice promptly for jaundice, weight loss or back pain.",
     e2_t: "Who is at higher risk? How often to check?",
     e2_l: "Before Screening",
     e2_p: "Age 60+, family history, long-term smoking, diabetes, and recurrent pancreatitis raise risk. Your doctor may recommend regular abdominal imaging (CT or MRI). Younger people without risk factors follow routine checkup advice.",

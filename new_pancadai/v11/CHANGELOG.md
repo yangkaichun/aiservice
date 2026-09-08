@@ -5,6 +5,23 @@
 
 ---
 
+## v11.2.64（2026-09-08）— 胰臟癌 AI／PDAC／醫學影像 SEO、AI-SEO、GEO 語意架構（未部署）
+
+### 🔧 優化
+- 以搜尋意圖建立中文與英文頁面分工：首頁（疾病與產品總覽）、產品（CT 醫學影像 AI）、健檢中心（AI 健檢中心導入）、醫療機構（臨床證據）、期刊論文（PDAC／研究）、衛教（症狀與患者問題）。
+- 更新 6 個中文頁與 6 個英文頁的靜態／動態 title、description、Open Graph、JSON-LD 與可見首段，涵蓋「胰臟癌、胰腺癌、胰臟腺癌、胰臟癌 AI、AI 胰臟癌、AI 健檢中心、AI 醫學影像、PDAC、pancreatic cancer AI、medical imaging AI」等自然語意變體。
+- `llms.txt`／`llms-full.txt` 新增中英術語對照、頁面對應與醫療解讀界線；此為可選的機器可讀摘要，不宣稱 Google 排名效果。
+- 保持 FAQ／結構化資料與可見內容一致，未新增關鍵字堆砌頁，也未新增不具事實依據的搜尋量或療效宣稱。
+
+### 📚 研究依據
+- Whoops SEO 文章：搜尋意圖、內容完整度、技術可爬取性、權威與持續監測的自然流量循環。
+- Google Search Central：AI features 沿用既有 SEO 基礎；沒有特殊 AI 標記捷徑，重要內容需在可爬取文字中，`llms.txt` 不是 Google 必要排名訊號。
+- 關鍵字群以目前 SERP 語彙與本站已發表 PubMed／Radiology 研究術語整理；未把搜尋量當成已驗證事實，後續以 Search Console 查詢與頁面表現校正。
+
+### ✅ 本輪驗證狀態
+- 已完成原始碼與 Markdown 記錄；待執行 `verify_site.py`、`check_tags.py`、JSON-LD／JavaScript syntax 與 `git diff --check`。
+- 依部署規則，本輪未執行 Cloudflare 或 GitHub Pages 部署。
+
 ## v11.2.63（2026-09-08）— llms.txt discoverability reference（Cloudflare Pages＋GitHub Pages，已部署）
 
 ### 🔧 修正

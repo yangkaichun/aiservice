@@ -1,12 +1,12 @@
 /* pancad.ai v7 — screening 字典（健檢中心軌）?v=1 */
 (function () {
   var zh = {
-    meta_title: "健檢中心方案 — 胰臟癌 AI 篩檢導入 | PANCREASaver® 助胰見®",
-    meta_desc: "把胰臟癌 AI 篩檢加入您的健檢套組：4 步驟導入、PACS/RIS 無縫整合、放射科協作、2000+ 人次實戰經驗（含臨床驗證）。讓早期發現成為您健檢服務的亮點。",
+    meta_title: "胰臟癌 AI 健檢中心與腹部 CT｜健檢導入方案｜助胰見",
+    meta_desc: "把胰臟癌 AI 健檢加入健檢中心方案：4 週導入、PACS/RIS 整合與放射科協作，了解人工智慧胰臟分析檢查如何在既有腹部 CT 流程中提供輔助資訊。",
 
-    ph_badge: "For Health Centers",
+    ph_badge: "AI 健檢中心導入",
     ph_title_1: "讓您的健檢，<span class=\"hl\">看得更早。</span>",
-    ph_sub: "胰臟癌 AI 篩檢是健檢服務的新亮點——從流程整合到放射科協作，我們讓您 4 週內完成導入。",
+    ph_sub: "胰臟癌 AI 健檢是健檢服務的新亮點——人工智慧胰臟分析檢查沿用既有腹部 CT，從流程整合到放射科協作，我們讓您 4 週內完成導入。",
 
     why_k: "為什麼是胰臟癌 AI",
     why_t: "為什麼健檢要加入胰臟 AI 篩檢？",
@@ -52,12 +52,12 @@
     cta_btn: "索取導入方案"
   };
   var en = {
-    meta_title: "Health Center Program — Pancreatic Cancer AI Screening | PANCREASaver®",
-    meta_desc: "Add pancreatic cancer AI screening to your checkup packages: 4-week integration, seamless PACS/RIS workflow, radiology collaboration, 2,000+ real-world cases including clinical validation. Early detection as your differentiator.",
+    meta_title: "Pancreatic Cancer AI Screening | PANCREASaver®",
+    meta_desc: "Add pancreatic cancer AI screening to a health checkup center: four-week PACS/RIS integration, radiology collaboration and medical imaging AI for existing abdominal CT workflows.",
 
     ph_badge: "For Health Centers",
     ph_title_1: "Make your checkups <span class=\"hl\">see earlier.</span>",
-    ph_sub: "Pancreatic cancer AI screening is the new highlight of preventive care — from workflow integration to radiology collaboration, live in 4 weeks.",
+    ph_sub: "Pancreatic cancer AI screening is a new preventive-care service for health checkup centers — medical imaging AI fits the existing abdominal CT workflow and goes live in four weeks.",
 
     why_k: "Why pancreatic AI",
     why_t: "Why add pancreatic AI screening to your health check?",
