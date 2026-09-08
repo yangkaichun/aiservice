@@ -5,6 +5,18 @@
 
 ---
 
+## v11.2.63（2026-09-08）— llms.txt discoverability reference（本機，待部署）
+
+### 🔧 修正
+- 在 `robots.txt` 加入 `LLMs-Txt: https://www.pancad.ai/llms.txt` 明確參照。
+- 在 sitemap 列出的 50 個正式 HTML 頁加入 `rel="alternate"` 的 `llms.txt` 連結，並在 Cloudflare Pages `_headers` 加入 HTTP `Link: ... rel="describedby"`。
+- 保留 Cloudflare Managed Content 的 AI crawler policy；GPTBot、Google-Extended、CCBot、Bytespider、Amazonbot 的 edge 封鎖仍需在 Cloudflare AI Crawl Control／Bot 設定中另行決定，不以靜態檔覆寫。
+
+### ✅ 驗證
+- 50 個正式 sitemap HTML 頁均有 llms.txt reference。
+- `llms.txt`／`llms-full.txt` 回應 200、`text/plain`；malformed `<meta>` 為 0、JSON-LD 解析錯誤為 0。
+- 本輪尚未部署；完成後需同步 `16_Pancad.ai/V11`。
+
 ## v11.2.62（2026-09-08）— SEO／AI-SEO／GEO metadata 與 AI 搜尋爬蟲修正（Cloudflare Pages production，已部署）
 
 ### 🔧 修正
