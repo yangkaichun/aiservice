@@ -14,7 +14,7 @@
 ### ✅ 驗證
 - 正式 HTML 頁的 malformed `<meta>` 掃描為 0。
 - 既有 JSON-LD 解析、JavaScript syntax、資源與 i18n 驗證持續通過（verifier 僅保留已知 API／備份檔誤報）。
-- 本輪內容已同步至 `16_Pancad.ai/V11`，並安排由 `main` push 觸發 GitHub Pages deploy；Cloudflare Pages production 已部署且 production domains 讀回 HTTP 200。
+- 本輪內容已同步至 `16_Pancad.ai/V11`，由 `main` push 觸發 GitHub Pages deploy；Cloudflare Pages production 已部署且 production domains 讀回 HTTP 200。
 
 ## v11.2.61（2026-09-08）— 三語版面複驗修正：en/jp 導覽斷點＋footer/統計帶/知識庫 RWD（全站 50 頁已部署）
 
