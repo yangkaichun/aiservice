@@ -4,14 +4,14 @@
   var zh = {
     deep_float: "了解健康台灣深耕計畫",
     deep_float_t: "了解健康台灣深耕計畫",
-    meta_title: "PANCREASaver® 助胰見® — 胰臟癌早期偵測 AI | 仲智數位健康",
-    meta_desc: "世界首創胰臟癌早期偵測 AI：<2cm 腫瘤敏感度 92.1%、全國多中心 AUC 0.95。FDA Breakthrough、TFDA 衛部醫器製字第007946號。從清晨到星空，一條被陽光守護的照護旅程。",
+    meta_title: "PANCREASaver® 助胰見｜胰臟癌 AI 早期偵測・CT 醫學影像｜仲智數位健康",
+    meta_desc: "PANCREASaver® 助胰見以醫學影像 AI 分析顯影後腹部 CT，提供胰臟癌與 PDAC 疑似病灶輔助資訊；<2cm 敏感度 92.1%、全國多中心 AUC 0.95。AI 不取代醫師診斷。",
 
     /* Hero */
-    hero_badge: "AI 胰臟癌早期偵測",
+    hero_badge: "AI 胰臟癌早期偵測｜醫學影像 AI",
     hero_title_1: "活出精彩，",
     hero_title_2: "<span class=\"hl\">不胰憾!!</span>",
-    hero_sub: "胰臟癌早期幾乎沒有症狀。PANCREASaver® 助胰見® 影像診斷 AI，在腫瘤還小於 2 公分時就找到它——為您與家人爭取最寶貴的治療時機。",
+    hero_sub: "胰臟癌早期幾乎沒有症狀。PANCREASaver® 助胰見® 以醫學影像 AI 分析腹部 CT，在腫瘤還小於 2 公分時提供疑似病灶提示——為您與家人爭取諮詢醫師的時機。",
     hero_ql_1: "產品介紹",
     hero_ql_2: "患者旅程",
     hero_ql_3: "醫療機構",
@@ -163,13 +163,13 @@
   };
 
   var en = {
-    meta_title: "PANCREASaver® — AI Early Detection for Pancreatic Cancer | PanCAD.ai",
-    meta_desc: "World-first AI for early pancreatic cancer detection: 92.1% sensitivity for tumors <2cm, national multi-center AUC 0.95. FDA Breakthrough, TFDA clearance. A care journey guarded by sunlight, from dawn to starlight.",
+    meta_title: "PANCREASaver® — Pancreatic Cancer AI | PanCAD.ai",
+    meta_desc: "Medical imaging AI for pancreatic cancer and PDAC detection from contrast-enhanced abdominal CT: 92.1% sensitivity for tumors <2cm, multi-center AUC 0.95, FDA Breakthrough and TFDA clearance.",
 
-    hero_badge: "AI-Powered Early Detection",
+    hero_badge: "Pancreatic Cancer AI Detection｜Medical Imaging AI",
     hero_title_1: "Catch it early.",
     hero_title_2: "<span class=\"hl\">Live it fully.</span>",
-    hero_sub: "Pancreatic cancer shows almost no early symptoms. PANCREASaver® imaging AI finds it while the tumor is still under 2cm — buying you and your family the most precious treatment window.",
+    hero_sub: "Pancreatic cancer shows almost no early symptoms. PANCREASaver® medical imaging AI analyzes abdominal CT and flags suspicious findings while a tumor is still under 2cm — for radiologist review.",
     hero_ql_1: "Product",
     hero_ql_2: "Patient Journey",
     hero_ql_3: "For Clinicians",

@@ -2,12 +2,12 @@
 (function () {
   window.PANCAD_I18N = window.PANCAD_I18N || {};
   var zh = {
-    meta_title: "產品介紹 — PANCREASaver® 助胰見® ｜ 仲智數位健康",
-    meta_desc: "PANCREASaver® 助胰見®：全球首創全自動化胰臟癌 CT AI 輔助偵測系統。即時判讀、自動標記病灶、PACS 即時警示、結構化報告。",
-    ph_kicker: "全球首創全自動化胰臟癌 CT AI 輔助偵測系統",
+    meta_title: "PANCREASaver® 助胰見｜胰臟癌 CT AI・醫學影像 AI 輔助偵測",
+    meta_desc: "PANCREASaver® 助胰見®：胰臟癌 AI 與醫學影像 AI 輔助偵測系統，分析顯影腹部 CT、標記可疑病灶並整合 PACS；AI 不取代醫師診斷。",
+    ph_kicker: "全球首創全自動化胰臟癌 CT AI 輔助偵測系統｜醫學影像 AI",
     ov_kick: "產品總覽",
     ov_t: "全球首創的胰臟癌 <span class=\"hl\">CT AI 輔助偵測系統</span>",
-    ov_p: "PANCREASaver® 助胰見® 是醫療器材軟體（SaMD）：在腹部 CT 掃描完成的當下，自動判讀影像、標記可疑胰臟病灶，並將警示與標註直接送回放射科工作流——讓早期胰臟癌不再被遺漏。",
+    ov_p: "PANCREASaver® 助胰見® 是醫療器材軟體（SaMD）：在腹部 CT 掃描完成的當下，以醫學影像 AI 自動判讀影像、標記可疑胰臟病灶，並將警示與標註直接送回放射科工作流——讓早期胰臟癌（胰臟腺癌／PDAC）不再被遺漏。",
     ov1_t: "全自動化即時判讀", ov1_p: "掃描完成即自動分析，無需醫師額外操作；深度學習 CNN 與影像組學 Radiomics 雙引擎並行。",
     ov2_t: "小腫瘤也看得見", ov2_p: "<2cm 病灶敏感度 92.1%——補上肉眼與傳統工具容易遺漏的關鍵一環。",
     ov3_t: "臨床驗證可靠", ov3_p: "5 篇國際期刊、全國多中心 AUC 0.95——由台大醫院團隊主導的真實臨床驗證。",
@@ -40,12 +40,12 @@
     cta_t: "想親眼看看它怎麼運作？", cta_p: "預約一場現場 demo，讓 AI 為您示範。", cta_btn: "與我們聊聊"
   };
   var en = {
-    meta_title: "Product — PANCREASaver® | PanCAD.ai",
-    meta_desc: "PANCREASaver®: the world's first fully-automated AI-assisted pancreatic cancer CT detection system. Real-time reading, auto lesion marking, PACS alerts, structured reports.",
-    ph_kicker: "The world's first fully automated AI-assisted pancreatic cancer CT detection system",
+    meta_title: "Pancreatic Cancer CT AI & Medical Imaging AI | PANCREASaver®",
+    meta_desc: "PANCREASaver® is an AI-assisted pancreatic cancer and PDAC detection system for contrast-enhanced abdominal CT, with real-time lesion marking, PACS alerts and structured reports.",
+    ph_kicker: "Fully automated pancreatic cancer CT AI detection｜medical imaging AI",
     ov_kick: "Product Overview",
     ov_t: "The world's first <span class=\"hl\">AI-assisted CT detection system</span> for pancreatic cancer",
-    ov_p: "PANCREASaver® is a medical device software (SaMD): the moment an abdominal CT scan finishes, it automatically reads the images, marks suspicious pancreatic lesions, and sends the alert back into the radiology workflow — so early pancreatic cancer is no longer missed.",
+    ov_p: "PANCREASaver® is medical device software (SaMD): when a contrast-enhanced abdominal CT scan finishes, medical imaging AI reads the images, marks suspicious pancreatic lesions, and sends alerts into the radiology workflow — supporting earlier detection of pancreatic cancer and PDAC without replacing the radiologist.",
     ov1_t: "Fully automated, real-time reading", ov1_p: "Analysis starts automatically when the scan completes — no extra steps for physicians; CNN deep learning and radiomics engines run in parallel.",
     ov2_t: "Small tumors, still detected", ov2_p: "92.1% sensitivity for lesions <2cm — closing the gap where eyes and conventional tools miss.",
     ov3_t: "Clinically validated", ov3_p: "5 international journal papers and a nationwide multicenter AUC of 0.95, led by the NTUH team.",

@@ -1,15 +1,15 @@
 /* pancad.ai v11 — publications 字典（期刊論文館）?v=11 */
 (function () {
   var zh = {
-    meta_title: "期刊論文館 — 5 篇國際期刊論文：主題、摘要與原文連結 | PANCREASaver® 助胰見®",
-    meta_desc: "PANCREASaver® 的學術根基：Lancet Digital Health、Radiology 等 5 篇國際期刊論文的中英主題、真實摘要與 PubMed 原文連結。",
+    meta_title: "胰臟癌 PDAC CT AI 研究｜醫學影像 AI 論文與 PubMed｜助胰見",
+    meta_desc: "查閱胰臟癌、胰臟腺癌（PDAC）與 CT 醫學影像 AI 的 5 篇國際期刊研究，包含 Lancet Digital Health、Radiology、研究族群與 PubMed 原文連結。",
 
     ph_badge: "期刊論文館",
     ph_title_1: "每一行證據，<span class=\"hl\">都發表在國際期刊。</span>",
-    ph_sub: "五篇論文橫跨演算法開發、全國人口基礎驗證與真實世界應用——點擊「閱讀原文」，前往 PubMed 查看完整論文。",
+    ph_sub: "五篇論文橫跨胰臟癌與 PDAC 的 AI 醫學影像演算法、全國人口基礎驗證與真實世界應用——點擊「閱讀原文」前往 PubMed。",
 
     sec_t: "5 篇國際期刊論文",
-    sec_p: "以下為 PANCREASaver® 相關的 5 篇代表學術發表，皆為臺大團隊（劉高郎／陳柏廷／廖偉智／王偉仲）之真實研究。中文摘要譯自原文 Abstract，英文摘要為原文精簡；完整內容請見論文連結。",
+    sec_p: "以下為 PANCREASaver® 相關的 5 篇代表學術發表，涵蓋胰臟導管腺癌（pancreatic ductal adenocarcinoma, PDAC）與 CT 醫學影像 AI；皆為臺大團隊之真實研究。摘要為整理，完整內容請見 PubMed 原文。",
 
     p1_t: "深度學習區分胰臟癌組織與非癌胰臟組織：跨種族外部驗證之回溯性研究",
     p1_t_en: "Deep learning to distinguish pancreatic cancer tissue from non-cancerous pancreatic tissue: a retrospective study with cross-racial external validation",
@@ -59,15 +59,15 @@
   };
 
   var en = {
-    meta_title: "Journal Publications — 5 International Papers: Topics, Abstracts & Links | PANCREASaver®",
-    meta_desc: "The academic foundation of PANCREASaver®: 5 international papers in Lancet Digital Health, Radiology and more — bilingual topics, real abstracts and PubMed links.",
+    meta_title: "Pancreatic Cancer PDAC CT AI Research | PANCREASaver®",
+    meta_desc: "Five international papers on pancreatic cancer, pancreatic ductal adenocarcinoma (PDAC), CT detection and medical imaging AI, with study summaries and PubMed links.",
 
     ph_badge: "Publications",
     ph_title_1: "Every line of evidence, <span class=\"hl\">published internationally.</span>",
-    ph_sub: "Five papers spanning algorithm development, nationwide population-based validation and real-world application — click \"Read the paper\" to open the full article on PubMed.",
+    ph_sub: "Five papers spanning pancreatic cancer and PDAC medical imaging AI, nationwide validation and real-world application — open the full articles on PubMed.",
 
     sec_t: "5 international publications",
-    sec_p: "Representative publications related to PANCREASaver®, all authored by the NTU team (Kao-Lang Liu, Po-Ting Chen, Wei-Chih Liao, Weichung Wang). Chinese summaries are translated from the original abstracts; English summaries are condensed from the originals.",
+    sec_p: "Representative PANCREASaver® publications covering pancreatic ductal adenocarcinoma (PDAC), CT detection and medical imaging AI. The work comes from the NTU team; summaries are condensed from the original abstracts and PubMed is authoritative.",
 
     p1_t: "Deep learning to distinguish pancreatic cancer tissue from non-cancerous pancreatic tissue: a retrospective study with cross-racial external validation",
     p1_t_en: "Deep learning to distinguish pancreatic cancer tissue from non-cancerous pancreatic tissue: a retrospective study with cross-racial external validation",
