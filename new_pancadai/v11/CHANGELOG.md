@@ -5,7 +5,7 @@
 
 ---
 
-## v11.2.64（2026-09-08）— 胰臟癌 AI／PDAC／醫學影像 SEO、AI-SEO、GEO 語意架構（未部署）
+## v11.2.64（2026-09-08）— 胰臟癌 AI／PDAC／醫學影像 SEO、AI-SEO、GEO 語意架構（Cloudflare＋GitHub Pages 已部署）
 
 ### 🔧 優化
 - 以搜尋意圖建立中文與英文頁面分工：首頁（疾病與產品總覽）、產品（CT 醫學影像 AI）、健檢中心（AI 健檢中心導入）、醫療機構（臨床證據）、期刊論文（PDAC／研究）、衛教（症狀與患者問題）。
@@ -19,8 +19,10 @@
 - 關鍵字群以目前 SERP 語彙與本站已發表 PubMed／Radiology 研究術語整理；未把搜尋量當成已驗證事實，後續以 Search Console 查詢與頁面表現校正。
 
 ### ✅ 本輪驗證狀態
-- 已完成原始碼與 Markdown 記錄；待執行 `verify_site.py`、`check_tags.py`、JSON-LD／JavaScript syntax 與 `git diff --check`。
-- 依部署規則，本輪未執行 Cloudflare 或 GitHub Pages 部署。
+- `node --check`、JSON-LD parser、`check_tags.py`（中文 19／英文 17／日文 14）、sitemap XML 與 `git diff --check` 通過。
+- `verify_site.py` 僅保留既有 `education 2.html` 備份檔與歷史案例頁 hreflang 警告，未新增本輪頁面錯誤。
+- Cloudflare Pages：部署版本 `043c5143`，`pancadai-v11.pages.dev`、`www.pancad.ai` 與 `llms.txt` 回應 HTTP 200。
+- GitHub Actions：`Deploy` run [34197219768](https://github.com/yangkaichun/aiservice/actions/runs/34197219768) 與 Pages build run [34197290982](https://github.com/yangkaichun/aiservice/actions/runs/34197290982) 均成功；兩個 v11 路徑讀回新 title、`llms.txt` 與 sitemap HTTP 200。
 
 ## v11.2.63（2026-09-08）— llms.txt discoverability reference（Cloudflare Pages＋GitHub Pages，已部署）
 
