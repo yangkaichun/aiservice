@@ -5,6 +5,35 @@
 
 ---
 
+## v11.2.61（2026-09-08）— 三語版面複驗修正：en/jp 導覽斷點＋footer/統計帶/知識庫 RWD（全站 50 頁已部署）
+
+### 🎯 稽核方法
+- Playwright Chromium DOM 幾何：50 頁（zh 19＋en 17＋jp 14）× 320/390/768/1024/1280/1440 ＝ 300 情境；修正前後各一輪，最終 summary **0 問題**（零水平溢出、零文本裁切、零破圖、零 pageerror）。
+- 本機 Ollama qwen2.5vl 視覺複查關鍵區塊；zh/en/jp 共用 `css/style.css` 新增規則皆 **lang-scoped**（`html[lang="en"]/ja`），zh 主站視覺不受影響。
+
+### 🧭 en/jp 導覽列（31 頁，實測重災區）
+- 根因：收合斷點只有 820px，en 9 連結需 ~1185px、jp 10 連結＋CTA 需 ~1210px → 1024px 水平溢出（en 167px／jp 55–186px）；320px 溢 31px（CTA＋lang 殘留 ＋ logo 無 width 屬性寬 271px）。
+- 修正：style.css 新增 `@media(max-width:1200px)` lang-scoped——`.nav-links .nav-a`＋`.lang` 隱藏、burger 顯示 44px、logo `width:min(240px,calc(100vw - 132px))`（對齊 zh-quality.css 手法）；1201px 以上維持全展開。
+- 實測：320/1024/1100/1150/1200 零溢出；1210/1280 nav-a 全數可見。
+
+### 🔢 統計數字帶（v622）
+- ja：inline `font-size:84px` 壓過 stylesheet RWD ＋ 日文字型全形數字 → 卡片撐破容器（390px 溢 148px、768px 右緣卡片被切）→ `html[lang="ja"] .v622-num` 換拉丁等比字型（Helvetica/Arial，CJK 回 ja）＋ ≤860px `font-size:clamp(46px,13vw,60px)!important`（!important 蓋 inline）。
+- en：`2,000+` 84px nowrap 在 ≤380px 溢 9px → ≤380px `clamp(40px,13vw,72px)!important`。
+- zh 半寬數字不受影響；修正後 390/768 皆零溢出。
+
+### 📄 其他 RWD 裁切
+- en/jp footer 320px：§27 `.footer-col:last-child p/p a` nowrap（specificity 0,3,2）使地址列右溢 40px → ≤560px 以同級＋lang 前綴規則改 `white-space:normal;overflow-wrap:anywhere`。
+- en resources hero 320px：標題無斷點 token（PANCREASaver®）min-content 撐破 `.wrap`（右溢 26px）→ ≤640px `.hero-panel *{overflow-wrap:anywhere}`（⚠️ break-word 不縮 min-content，必須 anywhere）。
+- zh education 知識庫：未載入 `<img width:100%>` 以預設 300px 寬撐破 2 欄 grid → grid 改 `repeat(2,minmax(0,1fr))`／≤640 `minmax(0,1fr)`。
+- zh education 摘要資料：2 篇 vocus 文章 abstract 開頭黏 youtube URL 造成 line-clamp 裁切 → `assets/data-pancreas-kb.json` 與 education.html 內嵌 `__KB__` 同步移除 URL 前綴。
+
+### 📌 版本與驗證
+- `css/style.css?v=` 全站 46 頁各自 +1（zh→99/100、en→114/115、jp→98、deep-plan→98）；education 2.html 備份檔維持 v96 未動。
+- `node --check` 全 js ✅；check_tags zh 19＋en 17＋jp 14 全平衡 ✅；kb JSON 50 篇 parse ✅；git diff --check ✅。
+- 部署：GH Pages（雙路徑）＋Cloudflare Pages production；三平台讀回確認 `style.css?v` 新版本號。
+
+---
+
 ## v11.2.60（2026-09-08）— 中文站品質、SEO／GEO／AI-SEO 與手機效能
 
 - 範圍：19 正式中文頁；en/、jp/ 與既有共用 CSS/JS 保持 byte-identical。

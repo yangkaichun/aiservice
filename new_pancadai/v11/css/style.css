@@ -267,7 +267,7 @@ a.st-tag:hover{background:var(--blue);color:#fff;border-color:var(--blue);transf
 .cert-link:hover{color:var(--orange);border-color:var(--orange)}
 
 /* ---------- 9.5 護胰大聯盟知識庫（v11.2.30） ---------- */
-.kb-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:18px;max-width:980px;margin:0 auto}
+.kb-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:18px;max-width:980px;margin:0 auto}
 .kb-card{display:flex;gap:16px;align-items:flex-start;background:rgba(255,255,255,.9);border:1px solid rgba(41,93,170,.14);border-radius:18px;
   padding:16px;box-shadow:var(--shadow-soft);text-decoration:none;transition:.25s}
 .kb-card:hover{transform:translateY(-3px);border-color:var(--blue);box-shadow:0 10px 26px rgba(41,93,170,.18)}
@@ -277,7 +277,7 @@ a.st-tag:hover{background:var(--blue);color:#fff;border-color:var(--blue);transf
 .kb-t{font-size:15.5px;font-weight:700;color:#16325e;line-height:1.5;margin-bottom:6px}
 .kb-ab{font-size:13px;color:#5b6472;line-height:1.7;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
 .kb-go{display:inline-block;margin-top:8px;font-size:12.5px;font-weight:700;color:var(--orange)}
-@media (max-width:640px){.kb-grid{grid-template-columns:1fr}.kb-media{flex:0 0 100px;width:100px;height:76px}}
+@media (max-width:640px){.kb-grid{grid-template-columns:minmax(0,1fr)}.kb-media{flex:0 0 100px;width:100px;height:76px}}
 /* v11.2.33：知識庫 zh-only（en/ja 隱藏） */
 html[lang="en"] .kb-section, html[lang="ja"] .kb-section{display:none}
 
@@ -1032,3 +1032,58 @@ body.menu-open{overflow:hidden}
 
 /* v1.6.3：隱藏 E-E-A-T footer 審閱列（保留 HTML 供爬蟲，視覺隱藏） */
 html[lang="en"] .foot-eeat{display:none!important}
+
+/* ---------- 28. v11.2.61 en/jp 導覽斷點對齊 zh 主站 ----------
+   zh 主站（zh-quality.css）於 ≤1100px 收合為漢堡；en/jp 原斷點 820px 過低，
+   1024–1200px 導覽溢位（en 9 連結需 ~1185px、jp 10+CTA 需 ~1210px），320px 亦溢 31px。
+   lang-scoped，不影響 zh。 */
+@media (max-width:1200px){
+  html[lang="en"] .nav-links .nav-a,
+  html[lang="en"] .nav-links .lang,
+  html[lang="ja"] .nav-links .nav-a,
+  html[lang="ja"] .nav-links .lang{display:none}
+  html[lang="en"] .burger,
+  html[lang="ja"] .burger{display:flex;min-width:44px;min-height:44px;align-items:center;justify-content:center}
+  /* en/jp logo 無 width 屬性 → 34px 高時寬 271px，320px 手機溢 31px；
+     同 zh-quality 手法：≤1200 依 viewport 縮 logo */
+  html[lang="en"] .nav-logo img,
+  html[lang="ja"] .nav-logo img{width:min(240px,calc(100vw - 132px));height:auto}
+  html[lang="en"] .nav-logo,
+  html[lang="ja"] .nav-logo{min-width:0}
+}
+
+/* v11.2.61：ja 統計大數字用拉丁等比數字字型（Helvetica/Arial，CJK 才回 ja 字型），
+   避免日文字型全形數字在 84px 時把 .v622-card 撐破容器；≤860px 以 clamp 縮號
+   （inline font-size:84px 需 !important 壓過；zh/en 不套用不受影響） */
+html[lang="ja"] .v622-num,
+html[lang="ja"] .v622-num i{font-family:"Helvetica Neue",Helvetica,Arial,"Hiragino Kaku Gothic ProN","Yu Gothic",Meiryo,sans-serif}
+@media (max-width:860px){
+  html[lang="ja"] .v622-num,
+  html[lang="ja"] .v622-num i{font-size:clamp(46px,13vw,60px)!important;line-height:1.12}
+}
+/* v11.2.61：en 統計卡 ≤380px——'2,000+' 84px nowrap 把 .v622-grid 撐到 311px（320px 右溢 9px）；
+   zh 半寬數字較窄不受影響，en Roboto 數字較寬需縮號 */
+@media (max-width:380px){
+  html[lang="en"] .v622-num,
+  html[lang="en"] .v622-num i{font-size:clamp(40px,13vw,72px)!important;line-height:1.12}
+}
+
+/* v11.2.61：en/jp footer 聯絡資訊 320px 手機被裁切（§27 `.footer-col:last-child p / p a`
+   nowrap specificity (0,3,1)/(0,3,2) 高於純 `footer p/a`——需 lang 前綴同級才蓋過；
+   en 地址 <a> 內含整行 nowrap → 整列 min-content 334px 溢出 40px） */
+@media (max-width:560px){
+  html[lang="en"] .footer-grid > .footer-col:last-child p,
+  html[lang="en"] .footer-grid > .footer-col:last-child p a,
+  html[lang="en"] .footer-grid > .footer-col a,
+  html[lang="ja"] .footer-grid > .footer-col:last-child p,
+  html[lang="ja"] .footer-grid > .footer-col:last-child p a,
+  html[lang="ja"] .footer-grid > .footer-col a{white-space:normal;overflow-wrap:anywhere}
+}
+
+/* v11.2.61：en resources hero-panel 320px——長標題（PANCREASaver® 無斷點 token）
+   min-content 把 .wrap 撐到 333px（右溢 26px 被 body 裁切）→ 小螢幕允許斷字。
+   ⚠️ 需用 anywhere：break-word 不縮 min-content（spec），anywhere 才會 */
+@media (max-width:640px){
+  html[lang="en"] .page-hero.panel .hero-panel,
+  html[lang="en"] .page-hero.panel .hero-panel *{overflow-wrap:anywhere}
+}
