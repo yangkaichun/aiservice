@@ -5,6 +5,18 @@
 
 ---
 
+## v11.2.67（2026-09-09）— 修正瀏覽器語系自動導向優先級
+
+### 🔧 修正
+- 移除 `pancad-manual-lang` localStorage 對首頁自動導向的覆蓋；根首頁每次依目前瀏覽器／OS 主要語言重新判斷。
+- 日文導向 `/jp/`；英文、繁中與其他語言導向 `/en/`。
+- 僅在網址明確帶 `?lang=zh` 時保留根首頁中文入口。
+- `language-entry.js` 與全站 `i18n.js` cache-busting 版本同步更新。
+
+### ✅ 驗證
+- Playwright 在殘留舊 localStorage（en／ja／zh）情境下，仍依 `ja-JP → /jp/`、其他語系 → `/en/`。
+- `node --check` 與 `git diff --check` 通過；本輪尚未部署。
+
 ## v11.2.66（2026-09-09）— 首頁瀏覽器語言自動導向
 
 ### 🔧 行為調整
