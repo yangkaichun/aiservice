@@ -15,7 +15,8 @@
 ### ✅ 驗證
 - Playwright locale 測試：`ja-JP → /jp/`、`en-US/zh-TW/fr-FR → /en/product.html`。
 - 手動繁中選擇後重新進入根首頁維持中文。
-- `node --check`、HTML 標籤平衡檢查通過；本輪尚未部署。
+- `node --check`、HTML 標籤平衡檢查通過。
+- GitHub commit `518c998b`、Deploy run `34300208755`、Pages build `34300259170`；Cloudflare deployment `e33b4572` 均已成功。
 
 ## v11.2.65（2026-09-09）— 語言切換地球圖示
 
