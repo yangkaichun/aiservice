@@ -1,22 +1,15 @@
-/* Homepage entry: explicit choice first, then the browser's primary language. */
+/* Homepage entry: use the browser's current primary language on every visit. */
 (function () {
   'use strict';
-  var choiceKey = 'pancad-manual-lang';
   var current = new URL(window.location.href);
   var explicit = current.searchParams.get('lang');
-  var choice = null;
   function supported(value) { return value === 'zh' || value === 'en' || value === 'ja'; }
 
-  if (supported(explicit)) {
-    choice = explicit;
-    try { window.localStorage.setItem(choiceKey, choice); } catch (e) {}
-  } else {
-    try { choice = window.localStorage.getItem(choiceKey); } catch (e) {}
-  }
-  if (choice === 'zh') return;
+  /* A deliberate ?lang=zh is the only opt-out from automatic detection. */
+  if (explicit === 'zh') return;
 
   var preferred = (navigator.languages && navigator.languages[0]) || navigator.language || '';
-  var language = supported(choice) ? choice : (/^ja(?:[-_]|$)/i.test(preferred) ? 'ja' : 'en');
+  var language = /^ja(?:[-_]|$)/i.test(preferred) ? 'ja' : 'en';
   var destination = new URL(language === 'ja' ? 'jp/' : 'en/', current);
   if (supported(explicit)) current.searchParams.delete('lang');
   destination.search = current.search;

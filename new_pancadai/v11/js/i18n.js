@@ -8,7 +8,6 @@
 (function () {
   'use strict';
   var LANG_KEY = 'pancad-lang';
-  var MANUAL_LANG_KEY = 'pancad-manual-lang';
   var SUPPORTED = ['zh', 'en', 'ja'];
   var NAMES = { zh: 'TW', en: 'EN', ja: 'JP' };
 
@@ -85,7 +84,6 @@
     document.querySelectorAll('[data-lang]').forEach(function (b) {
       b.addEventListener('click', function () {
         var target = b.getAttribute('data-lang');
-        try { localStorage.setItem(MANUAL_LANG_KEY, target); } catch (e) {}
         var redir = langRedirect(target);
         if (redir) { window.location.href = redir; return; }
         apply(target);
