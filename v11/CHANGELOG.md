@@ -15,7 +15,8 @@
 
 ### ✅ 驗證
 - Playwright 在殘留舊 localStorage（en／ja／zh）情境下，仍依 `ja-JP → /jp/`、其他語系 → `/en/`。
-- `node --check` 與 `git diff --check` 通過；本輪尚未部署。
+- `node --check` 與 `git diff --check` 通過。
+- GitHub Deploy `34330908787`、Pages build `34330971294`、Cloudflare deployment `b1891cae` 均已成功。
 
 ## v11.2.66（2026-09-09）— 首頁瀏覽器語言自動導向
 
