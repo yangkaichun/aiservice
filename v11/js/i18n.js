@@ -1,13 +1,14 @@
 /* ============================================================
    PANCREASaver 助胰見® — 多語言框架 (i18n)
-   偵測：navigator.language（瀏覽器/OS 語言）→ localStorage 記憶
-   切換：data-lang 按鈕即時套用，不需重新載入
+   首頁自動導向：language-entry.js；頁面介面語言依 zh/en/jp 路徑決定
+   手動切換：記住使用者選擇，並導向對應語言首頁
    字典：window.PANCAD_I18N = { zh: {...}, en: {...}, ja: {...} }
    標記：data-i18n（文字）/ data-i18n-html（含 HTML）/ data-i18n-ph（placeholder）
    ============================================================ */
 (function () {
   'use strict';
   var LANG_KEY = 'pancad-lang';
+  var MANUAL_LANG_KEY = 'pancad-manual-lang';
   var SUPPORTED = ['zh', 'en', 'ja'];
   var NAMES = { zh: 'TW', en: 'EN', ja: 'JP' };
 
@@ -38,7 +39,7 @@
     if (here === '' && target === 'zh') return null; // 主站點中文＝原地
     if (target === 'en') return 'https://www.pancad.ai/en/';
     if (target === 'ja') return 'https://www.pancad.ai/jp/';
-    return 'https://www.pancad.ai/';
+    return 'https://www.pancad.ai/?lang=zh';
   }
 
   function apply(lang) {
@@ -84,6 +85,7 @@
     document.querySelectorAll('[data-lang]').forEach(function (b) {
       b.addEventListener('click', function () {
         var target = b.getAttribute('data-lang');
+        try { localStorage.setItem(MANUAL_LANG_KEY, target); } catch (e) {}
         var redir = langRedirect(target);
         if (redir) { window.location.href = redir; return; }
         apply(target);
