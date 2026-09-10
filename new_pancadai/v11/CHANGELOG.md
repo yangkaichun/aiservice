@@ -5,6 +5,21 @@
 
 ---
 
+## v11.2.70（2026-09-10）— SEO／AI-SEO／GEO 結構優化與部署完成
+
+### 🔧 優化內容
+- 建立中英日分語系機器可讀摘要：`/llms.txt`、`/llms-full.txt`、`/en/llms.txt`、`/jp/llms.txt`，補上搜尋術語、研究來源、法規狀態、直接問答與醫療解讀界線。
+- 中英日首頁加入可見 FAQ，並讓 FAQPage JSON-LD 的問題與答案逐字對齊；同步修正各語系 JSON-LD 的 canonical URL、`inLanguage`、BreadcrumbList、MedicalWebPage 與 MedicalDevice 資訊。
+- `_headers`、`robots.txt` 補齊語系摘要的 agent discovery；sitemap 及 sitemap index 統一 `www.pancad.ai` canonical host，52 個 URL 的 `lastmod` 更新至 2026-09-10。
+- 將 AI 搜尋摘要中的全球首創、保證式偵測與未經證實的 PACS 自動化敘述改為可查證、以醫師複核為中心的產品定位；英文與日文頁面仍不含中文版「健康台灣深耕計畫」連結或內容。
+
+### 🚀 部署與讀回
+- Git commit：`2ebd2f4f`（`feat(v11): optimize SEO AI-SEO and GEO metadata`）。
+- GitHub Pages：Actions Deploy run `34443546162`，結果 `success`；讀回 `/new_pancadai/v11/en/`、`/jp/`、兩份語系 `llms.txt`、`robots.txt`、`sitemap.xml` 均為 HTTP 200（GitHub Pages 快取驗證使用 `?v=2ebd2f4f`）。
+- Cloudflare Pages：`pancadai-v11` deployment `35375f32`，結果成功；`https://www.pancad.ai`、`https://pancadai-v11.pages.dev` 及 deployment URL 的中英日頁面、摘要、robots、sitemap 均讀回 HTTP 200。
+- 公開讀回確認：英文與日文首頁含 `id="faq"` 且沒有 `deep-plan`；中文首頁保留 `/deep-plan/`；`/en/llms.txt` 與 `/jp/llms.txt` 均可直接取得。
+- Cloudflare 主網域的 `robots.txt` 仍包含 Cloudflare Managed Content 對部分 AI crawler 的 edge `Disallow` 規則；這是平台層設定，與本次 repo 的搜尋可爬取標記分開記錄。
+
 ## v11.2.69（2026-09-10）— 英文美式文案與中文限定深耕計畫
 
 ### 🔧 文案與語系調整
