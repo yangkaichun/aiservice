@@ -24,7 +24,7 @@
         terms_p2_t: "2. Medical Disclaimer",
         terms_p2_b: "Content on this site does not constitute medical advice, diagnosis, or treatment. Any medical decision (including pancreatic cancer screening) should be discussed with your physician.",
         terms_p3_t: "3. Intellectual Property",
-        terms_p3_b: "All content (text, images, trademarks PANCREASaver®, 助胰見®) is the intellectual property of PanCAD.ai; unauthorized reproduction or use is prohibited.",
+        terms_p3_b: "All content, including text, images, and the PANCREASaver® trademark, is the intellectual property of PanCAD.ai; unauthorized reproduction or use is prohibited.",
         terms_p4_t: "4. Limitation of Liability",
         terms_p4_b: "We strive for accuracy but do not guarantee completeness or timeliness; we are not liable for any damages arising from the use of this website.",
         terms_p5_t: "5. Changes",
