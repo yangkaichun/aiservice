@@ -17,14 +17,14 @@
   };
   var en = {
         meta_title: "Editorial Policy — PanCAD.ai | PANCREASaver®",
-        meta_desc: "PanCAD.ai editorial policy: content sources, evidence-first principle, data honesty, and review process.",
+        meta_desc: "PanCAD.ai editorial policy: sources, evidence review, data accuracy, and update process.",
         edit_h1: "Editorial Policy",
         edit_p1_t: "1. Content Sources",
         edit_p1_b: "Content on this site is produced by the PanCAD.ai team; technical and clinical information derives from research by Prof. Wei-Chung Wang's team (National Taiwan University) and Prof. Wei-Chih Liao's team (NTU Hospital).",
         edit_p2_t: "2. Evidence First",
-        edit_p2_b: "Every claim is backed by literature or regulation: 5 international journal papers (The Lancet Digital Health, Radiology, etc.) are verifiable on PubMed, and regulatory approvals (FDA/TFDA) can be checked in official databases.",
+        edit_p2_b: "Claims are supported by published literature or applicable regulatory documentation. The five peer-reviewed papers listed here can be verified on PubMed, and regulatory status can be checked in official databases.",
         edit_p3_t: "3. Data Honesty",
-        edit_p3_b: "We present performance with real research data (e.g., 92.1% sensitivity for <2cm, AUC 0.95) — never exaggerated; clinical case counts include verification records.",
+        edit_p3_b: "We present performance with research data (for example, the cited 92.1% sensitivity result for tumors under 2 cm and AUC 0.95) and identify the study population and limitations.",
         edit_p4_t: "4. Review & Updates",
         edit_p4_b: "Content is reviewed and updated regularly; major clinical or regulatory changes are reflected promptly with version dates in the footer.",
         edit_p5_t: "5. Corrections",

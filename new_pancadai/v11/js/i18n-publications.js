@@ -59,23 +59,23 @@
   };
 
   var en = {
-    meta_title: "Pancreatic Cancer PDAC CT AI Research | PANCREASaver®",
-    meta_desc: "Five international papers on pancreatic cancer, pancreatic ductal adenocarcinoma (PDAC), CT detection and medical imaging AI, with study summaries and PubMed links.",
+    meta_title: "Pancreatic Cancer and PDAC CT Research | PANCREASaver®",
+    meta_desc: "Five peer-reviewed papers on pancreatic cancer, pancreatic ductal adenocarcinoma (PDAC), CT detection, and AI-assisted medical imaging, with summaries and PubMed links.",
 
     ph_badge: "Publications",
     ph_title_1: "Every line of evidence, <span class=\"hl\">published internationally.</span>",
-    ph_sub: "Five papers spanning pancreatic cancer and PDAC medical imaging AI, nationwide validation and real-world application — open the full articles on PubMed.",
+    ph_sub: "Five papers spanning pancreatic cancer, PDAC, AI-assisted CT review, nationwide validation, and real-world application — open the full articles on PubMed.",
 
     sec_t: "5 international publications",
-    sec_p: "Representative PANCREASaver® publications covering pancreatic ductal adenocarcinoma (PDAC), CT detection and medical imaging AI. The work comes from the NTU team; summaries are condensed from the original abstracts and PubMed is authoritative.",
+    sec_p: "Representative PANCREASaver® publications covering pancreatic ductal adenocarcinoma (PDAC), CT detection, and AI-assisted medical imaging. The work comes from the NTU team; summaries are condensed from the original abstracts, and PubMed is authoritative.",
 
     p1_t: "Deep learning to distinguish pancreatic cancer tissue from non-cancerous pancreatic tissue: a retrospective study with cross-racial external validation",
     p1_t_en: "Deep learning to distinguish pancreatic cancer tissue from non-cancerous pancreatic tissue: a retrospective study with cross-racial external validation",
-    p1_h1: "Sensitivity for tumors <2cm",
+    p1_h1: "Sensitivity for tumors under 2 cm",
     p1_h2: "Radiologist-missed cancers recovered",
     p1_h3: "Local test sets",
     p1_abs: "Deep learning to distinguish pancreatic cancer tissue from non-cancerous pancreatic tissue: a retrospective study with cross-racial external validation.",
-    p1_abs_en: "Approximately 40% of pancreatic tumors smaller than 2 cm evade CT detection. A CNN distinguished pancreatic cancer tissue with 97.3–99.0% sensitivity and AUC 0.997–0.999 on local test sets, and 79.0% sensitivity / AUC 0.920 on a US dataset. CNN outperformed radiologists (98.3% vs 92.9%), correctly classified 11 of 12 radiologist-missed cancers (92%), and reached 92.1% sensitivity for tumors <2 cm.",
+    p1_abs_en: "Some pancreatic tumors smaller than 2 cm may be missed on CT; the cited study reports results for a defined study population. A CNN distinguished pancreatic cancer tissue with 97.3–99.0% sensitivity and AUC 0.997–0.999 on local test sets, and 79.0% sensitivity / AUC 0.920 on a U.S. dataset. CNN outperformed radiologists (98.3% vs. 92.9%), correctly classified 11 of 12 radiologist-missed cancers (92%), and reached 92.1% sensitivity for tumors under 2 cm.",
 
     p2_t: "Pancreatic Cancer Detection on CT Scans with Deep Learning: A Nationwide Population-based Study",
     p2_t_en: "Pancreatic Cancer Detection on CT Scans with Deep Learning: A Nationwide Population-based Study",
@@ -83,16 +83,16 @@
     p2_h2: "Nationwide validation",
     p2_h3: "Sensitivity",
     p2_abs: "Pancreatic Cancer Detection on CT Scans with Deep Learning: A Nationwide Population-based Study.",
-    p2_abs_en: "~40% of pancreatic tumors <2 cm are missed at abdominal CT. An end-to-end DL tool (segmentation CNN + ensemble of five CNNs) achieved 89.9% sensitivity / 95.9% specificity (AUC 0.96) internally, and across 1,473 nationwide real-world CT studies (669 malignant, 804 control): 89.7% sensitivity, 92.8% specificity, AUC 0.95, with 74.7% sensitivity for tumors <2 cm.",
+    p2_abs_en: "The cited study reports that some pancreatic tumors under 2 cm may be missed on abdominal CT. An end-to-end deep-learning tool (segmentation CNN plus an ensemble of five CNNs) achieved 89.9% sensitivity, 95.9% specificity, and AUC 0.96 internally. Across 1,473 nationwide real-world CT studies (669 malignant, 804 controls), it achieved 89.7% sensitivity, 92.8% specificity, and AUC 0.95, with 74.7% sensitivity for tumors under 2 cm.",
 
     p3_t: "Radiomic Features at CT Can Distinguish Pancreatic Cancer from Noncancerous Pancreas",
     p3_t_en: "Radiomic Features at CT Can Distinguish Pancreatic Cancer from Noncancerous Pancreas",
     p3_h1: "Two-population validation",
-    p3_hx: "Taiwan / US",
+    p3_hx: "Taiwan / U.S.",
     p3_h2: "Taiwan test set",
     p3_h3: "Sensitivity · Taiwan",
     p3_abs: "Radiomic Features at CT Can Distinguish Pancreatic Cancer from Noncancerous Pancreas.",
-    p3_abs_en: "XGBoost radiomic analysis of CT patches distinguished PDAC from noncancerous pancreas. The generalized model (trained on Taiwanese + U.S. data) reached 94.7% sensitivity / 95.4% specificity / AUC 0.98 on the Taiwanese test set, and 80.6% / 100% / AUC 0.91 on the U.S. test set. PDACs showed lower intensity and higher heterogeneity radiomic features.",
+    p3_abs_en: "XGBoost radiomic analysis of CT patches distinguished PDAC from noncancerous pancreas. The generalized model (trained on Taiwan and U.S. cohorts) reached 94.7% sensitivity / 95.4% specificity / AUC 0.98 on the Taiwanese test set, and 80.6% / 100% / AUC 0.91 on the U.S. test set. PDACs showed lower intensity and higher heterogeneity radiomic features.",
 
     p4_t: "Detection of pancreatic cancer with two- and three-dimensional radiomic analysis in a nationwide population-based real-world dataset",
     p4_t_en: "Detection of pancreatic cancer with two- and three-dimensional radiomic analysis in a nationwide population-based real-world dataset",
@@ -100,7 +100,7 @@
     p4_h2: "Validation result",
     p4_h3: "Sensitivity",
     p4_abs: "Detection of pancreatic cancer with two- and three-dimensional radiomic analysis in a nationwide population-based real-world dataset.",
-    p4_abs_en: "An automatic end-to-end CAD tool combining 2D and 3D radiomic machine-learning analysis reached 91.8% sensitivity / 82.2% specificity / AUC 0.947 in 1,477 nationwide CT studies (671 PC, 806 controls), with 70.7% sensitivity for tumors <2 cm. Running 2D and 3D analyses in series raised specificity to 95.2%.",
+    p4_abs_en: "An automatic end-to-end CAD tool combining 2D and 3D radiomic machine-learning analysis reached 91.8% sensitivity, 82.2% specificity, and AUC 0.947 in 1,477 nationwide CT studies (671 cancer cases, 806 controls), with 70.7% sensitivity for tumors under 2 cm. Running 2D and 3D analyses in series raised specificity to 95.2%.",
 
     p5_t: "Applications of artificial intelligence in pancreatic and biliary diseases",
     p5_t_en: "Applications of artificial intelligence in pancreatic and biliary diseases",
@@ -112,7 +112,7 @@
     p5_abs_en: "A concise review of major AI methodologies (machine learning, deep learning) and the current landscape of AI research in pancreatobiliary diseases — where diagnosis and treatment selection are often complex — covering detection/diagnosis, risk stratification and prognosis prediction to supplement clinicians.",
 
     pub_link: "Read the paper ↗",
-    note: "Chinese summaries are translated from the original abstracts (English summaries condensed); the PubMed originals are authoritative.",
+    note: "Summaries are condensed from the original abstracts. The PubMed-indexed publications are the authoritative sources.",
     back_btn: "Back to Clinical Evidence"
   };
 

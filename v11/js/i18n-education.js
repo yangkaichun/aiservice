@@ -57,12 +57,12 @@
     cta_btn: "聯絡我們"
   };
   var en = {
-    meta_title: "Pancreatic Cancer & PDAC Education | PANCREASaver®",
+    meta_title: "Pancreatic Cancer and PDAC Education | PANCREASaver®",
     meta_desc: "Patient-first education on pancreatic cancer and pancreatic ductal adenocarcinoma (PDAC): screening questions, CT imaging, AI-assisted reading and follow-up care.",
 
     ph_badge: "Sunlit Academy",
     ph_title_1: "Knowledge <span class=\"hl\">is reassurance.</span>",
-    ph_sub: "Before screening, after diagnosis and during follow-up — plain-language pancreatic cancer, PDAC and AI medical imaging education; not a substitute for medical advice.",
+    ph_sub: "Before screening, after diagnosis, and during follow-up: plain-language information about pancreatic cancer, PDAC, and AI-assisted medical imaging. This content is not medical advice.",
 
     tab_pre: "Before Screening",
     tab_post: "After Diagnosis",
@@ -70,47 +70,47 @@
 
     e1_t: "Why pancreatic cancer is “silent” early on",
     e1_l: "Before Screening",
-    e1_p: "The pancreas sits deep in the abdomen; tumors may not press on nerves or organs until they grow. Pancreatic cancer (a common pathology is pancreatic ductal adenocarcinoma, PDAC) can have few early symptoms; seek medical advice promptly for jaundice, weight loss or back pain.",
+    e1_p: "The pancreas sits deep in the abdomen, and pancreatic cancer may cause few or nonspecific symptoms early. The most common type is pancreatic ductal adenocarcinoma (PDAC). Seek medical advice for jaundice, unexplained weight loss, or persistent back pain.",
     e2_t: "Who is at higher risk? How often to check?",
     e2_l: "Before Screening",
-    e2_p: "Age 60+, family history, long-term smoking, diabetes, and recurrent pancreatitis raise risk. Your doctor may recommend regular abdominal imaging (CT or MRI). Younger people without risk factors follow routine checkup advice.",
+    e2_p: "Age, family history, smoking history, diabetes, and recurrent pancreatitis can affect risk. Your doctor can recommend whether abdominal imaging (CT or MRI) is appropriate and how often it should be performed.",
     e3_t: "Preparing for an abdominal CT",
     e3_l: "Before Screening",
-    e3_p: "Usually fast for 4–6 hours and pause certain medications (e.g. metformin) as instructed. The scan takes 10–15 minutes lying still with breath holds. Tell your doctor about allergies or kidney issues.",
+    e3_p: "You may be asked to fast for 4–6 hours and pause certain medications, such as metformin, as instructed by your care team. The scan typically takes 10–15 minutes; you may need to hold your breath briefly. Tell your care team about allergies or kidney problems.",
     e4_t: "What role does AI play in CT reading?",
     e4_l: "After Diagnosis",
-    e4_p: "AI is the radiologist's “second pair of eyes”: it scans images first and flags suspicious findings; the physician reviews and confirms. AI doesn't diagnose and doesn't replace doctors — it makes sure small lesions aren't missed.",
+    e4_p: "AI can provide an additional review: it analyzes images and flags suspicious findings, while the radiologist reviews and interprets them. AI does not make a diagnosis or replace the physician.",
     e5_t: "After a tumor is found: what happens next",
     e5_l: "After Diagnosis",
-    e5_p: "Staging follows: further imaging (MRI, endoscopic ultrasound) defines the extent, and a multidisciplinary team (surgery, oncology, radiology, pathology) plans treatment. The earlier it's found, the higher the chance of cure.",
+    e5_p: "Staging may include additional imaging, such as MRI or endoscopic ultrasound. A multidisciplinary team uses the findings to discuss treatment options; recommendations depend on disease stage and individual factors.",
     e6_t: "Follow-up and life after treatment",
     e6_l: "Follow-up",
-    e6_p: "Regular follow-up (imaging + tumor markers) is the core of survivorship. Lifestyle: balanced diet, moderate exercise, no smoking, limited alcohol, controlled blood sugar. Emotional support matters too — talk with family or a support group.",
+    e6_p: "Regular follow-up, which may include imaging and laboratory tests, is an important part of post-treatment care. Lifestyle: balanced diet, moderate exercise, no smoking, limited alcohol, controlled blood sugar. Emotional support matters too — talk with family or a support group.",
 
     kb_k: "PancreasCare Education Library",
     kb_t: "Continuously Updated Pancreatic Health Articles",
-    kb_p: "Curated articles from the official PancreasCare salon — from risk assessment to treatment insights, debunking the 'king of cancers' myth with real data.",
+    kb_p: "Curated articles from the PancreasCare education library — from risk awareness to treatment questions, using cited sources.",
     ed_byline_t: "Authors",
     ed_byline: "Prof. Wei-Chih Liao (NTU Hospital) & Prof. Wei-Chung Wang (NTU IAMS) | PanCAD.ai Team",
 
     faq_k: "FAQ",
     faq_t: "You might also wonder",
     fq1_q: "Is PANCREASaver® an app for me?",
-    fq1_a: "No. PANCREASaver® is AI software for medical institutions that assists radiologists when you get an abdominal CT. You don't need to install anything.",
+    fq1_a: "No. PANCREASaver® is software used by medical institutions to assist radiologists when you undergo an abdominal CT. You do not need to install anything.",
     fq2_q: "Do I need an extra “pancreas AI” scan?",
-    fq2_a: "Not necessarily. PANCREASaver® analyzes your existing abdominal CT scan — giving the same images an \"AI assistant\" reader, with no repeated scanning or extra examination needed; whether the examination is appropriate should be evaluated with your physician.",
+    fq2_a: "Not necessarily. PANCREASaver® analyzes your existing abdominal CT scan and provides an AI-assisted review of the same images; whether the examination is appropriate should be evaluated with your physician.",
     fq3_q: "If AI flags something, do I have cancer?",
-    fq3_a: "The AI marks a region as high-risk to remind the physician \"this deserves another look\"; the final diagnosis is made by the physician combining all imaging and clinical information.",
+    fq3_a: "The AI may flag a region for closer review. The physician makes the diagnosis using the complete imaging and clinical information.",
     fq4_q: "How long until I get results?",
     fq4_a: "Depends on the institution. AI reading takes 60–90 seconds; the radiologist's review and formal report typically take a few business days.",
     fq5_q: "I have a family history. How do I start?",
-    fq5_a: "See a gastroenterologist or family physician to discuss your risk; they'll arrange the right exam and frequency.",
+    fq5_a: "Discuss your risk with a gastroenterologist or family physician, who can recommend an appropriate evaluation and follow-up schedule.",
     fq6_q: "Is this covered by insurance?",
     fq6_a: "Coverage varies by institution and regulations — please confirm costs with your provider.",
 
     cta_t: "More questions? <span class=\"hl\">We're here.</span>",
     cta_p: "Ask via the form, or talk to your care team.",
-    cta_btn: "Contact Us"
+    cta_btn: "Contact us"
   };
   var ja = {
     meta_title: "教育ライブラリ — 膵臓がんの知識 | PANCREASaver® 助胰見®",

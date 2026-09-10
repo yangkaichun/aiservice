@@ -32,19 +32,19 @@
     back_href: "clinician.html"
   };
   var en = {
-    meta_title: "Intellectual Property — 10 Patents in TW & US | PANCREASaver®",
-    meta_desc: "PANCREASaver® IP portfolio: 6 invention patents in Taiwan and 4 in the US, covering medical imaging analysis systems, ML-based pancreatic cancer detection and advanced imaging architecture.",
+    meta_title: "Intellectual Property — 10 Patents in Taiwan and the U.S. | PANCREASaver®",
+    meta_desc: "PANCREASaver® IP portfolio: six invention patents in Taiwan and four in the U.S., covering medical imaging analysis systems, machine-learning-based pancreatic cancer detection, and imaging architecture.",
 
     ph_badge: "Intellectual Property",
-    ph_title_1: "A technology moat, <span class=\"hl\">built on 10 invention patents.</span>",
-    ph_sub: "Six patents in Taiwan and four in the US, written at both system and method level — medical AI software rarely earns US patents, making these four a genuine competitive barrier.",
+    ph_title_1: "10 invention patents, <span class=\"hl\">with scope in the official records.</span>",
+    ph_sub: "Six patents in Taiwan and four in the U.S., written at both system and method level. See the official patent records for claim scope.",
 
     sec_t: "Patent list (10)",
     sec_p: "Published / granted invention patent numbers below. Claim details per official patent office records.",
-    us_t: "US invention patents (4)",
+    us_t: "U.S. invention patents (4)",
     tw_t: "Taiwan invention patents (6)",
     top_t: "Protection topics",
-    top_p: "The patent family uses dual system-level and method-level claims covering three core topics:",
+    top_p: "The patent family includes system-level and method-level claims covering three core topics:",
     top1: "Medical imaging analysis system",
     top1_p: "System architecture for AI analysis of abdominal CT with pancreatic lesion detection output.",
     top2: "ML-based pancreatic cancer detection method",
@@ -52,9 +52,9 @@
     top3: "Advanced imaging analysis architecture",
     top3_p: "Advanced architecture integrating feature extraction, lesion classification and clinical reporting.",
     us_t: "U.S. Invention Patents (4)",
-    us_p: "These four U.S. invention patents protect every critical step of PANCREASaver—from seeing to judging. The first patent protects the AI's core ability to learn and detect pancreatic lesions that are easy for the human eye to miss; the second protects the learning and judging method—consistent performance across hospitals and imaging equipment; the third protects the multi-stage reading architecture—locating organs and tumors first, then having multiple AI models confirm findings together, like a panel of specialists reaching consensus to reduce misjudgment; the fourth protects the dual-track analysis architecture—different analysis modules read independently and cross-check, putting every reading through multiple layers of scrutiny. Together, these four inventions form PANCREASaver's most complete technological moat in the U.S. market.",
+    us_p: "These four U.S. invention patents cover system and method aspects of PANCREASaver. The official patent records define the claims and scope of each invention.",
     tw_t: "Taiwan Invention Patents (6)",
-    tw_p: "These six Taiwan invention patents protect every step of PANCREASaver's evolution—from core technology to next-generation architecture. The first two protect the core AI technology and judging methods for detecting pancreatic lesions—establishing clear, reliable standards that make early detection more stable and trustworthy; the next two protect the multi-model consensus and dual-track cross-validation architecture—multiple AI models vote together and different modules verify each other, using collective intelligence to reduce misses and errors; the final two belong to the next-generation advanced image analysis technology—enabling the AI to judge organ disease directly from CT images and automatically mark the most critical slices, even without contrast agents, laying the foundation for contrast-free screening and wider application. Six patents, from core to forward-looking, guard every step of PANCREASaver's journey in Taiwan.",
+    tw_p: "These six Taiwan invention patents cover system and method aspects of PANCREASaver. The official patent records define the claims and scope of each invention.",
     rel_t: "Related regulatory",
     rel_p: "The product also holds a Taiwan TFDA medical device license: No. 007946.",
     note: "Patent numbers are public information; actual scope per official patent office records.",
