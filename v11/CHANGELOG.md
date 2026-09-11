@@ -10,7 +10,7 @@
 ### 🎨 圖片與快取
 - 重新生成 `hero_cjk_rs_01`：改為河岸公園中兩位東亞女性同行，人物集中右側，左側保留大面積乾淨留白，避免文字區被人物或設備干擾。
 - 更新 640px、HD 與 4K UHD（3840×2160）版本；4K 使用本機 SeedVR2 超解析，WebP quality 92。
-- 為 `hero_cjk_rs_01` 四種解析度加入版本查詢參數，並將全站 `main.js?v=113` 更新，確保瀏覽器取得新版構圖。
+- 以 `hero_cjk_rs_01_v2.*` 版本化檔名提供四種解析度，並將全站 `main.js?v=114` 更新，避開既有 CDN 對原檔名的舊快取。
 
 ### ✅ 驗證
 - 新版 JPG／WebP 均通過尺寸與格式檢查；`node --check js/main.js`、`git diff --check`、`verify_site.py` 通過。
