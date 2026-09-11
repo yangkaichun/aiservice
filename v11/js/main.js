@@ -282,7 +282,8 @@
       /* v11.2.43：中文／日文桌面背景同樣採右側主體、左側留白構圖。 */
       for (var c = 1; c <= 8; c++) {
         var cn = (c < 10 ? '0' : '') + c;
-        pool.push({ key: 'cjk' + c, src: BG + 'assets/hero_cjk_rs_' + cn + '.jpg', src640: BG + 'assets/hero_cjk_rs_' + cn + '_640.webp', hd: BG + 'assets/hero_cjk_rs_' + cn + '_hd.webp', fourK: BG + 'assets/hero_cjk_rs_' + cn + '_4k.webp' });
+        var cacheBust = (c === 1) ? '?v=20260911-cjk01' : '';
+        pool.push({ key: 'cjk' + c, src: BG + 'assets/hero_cjk_rs_' + cn + '.jpg' + cacheBust, src640: BG + 'assets/hero_cjk_rs_' + cn + '_640.webp' + cacheBust, hd: BG + 'assets/hero_cjk_rs_' + cn + '_hd.webp' + cacheBust, fourK: BG + 'assets/hero_cjk_rs_' + cn + '_4k.webp' + cacheBust });
       }
     } else {
       pool = [];
