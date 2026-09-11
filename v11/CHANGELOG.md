@@ -5,6 +5,21 @@
 
 ---
 
+## v11.2.75（2026-09-11）— 中文／日文首頁套用新版 CJK 主視覺
+
+### 🎨 首頁 Hero 修正
+- 線上檢視發現首頁首屏仍由 `patient_cjk_hero_rightspace` 與舊 `hero_morning` 影片提供背景；先前新版 `hero_cjk_rs_01_v2` 僅套用在背景池，因此首頁看不到新構圖。
+- 中文與日文首頁改用 `hero_cjk_rs_01_v2`，低解析度（480px）→ JPG／HD → 4K（3840×2160）依網路速度漸進載入。
+- 中／日首頁移除舊晨光影片層，避免影片播放後覆蓋新版圖片；英文首頁影片與患者頁 hero 維持原設計。
+- 更新 OG 圖片、preload 路徑與 `style.css?v=118`、`main.js?v=115`、`zh-quality.css?v=2`，同步清除舊行動版覆蓋規則。
+
+### ✅ 驗證與部署狀態
+- 新增 `assets/hero_cjk_rs_01_v2_480.webp`（480×270）；主視覺 JPG／HD／4K 資產格式與尺寸檢查通過。
+- `node --check js/main.js`、HTML 標籤平衡、`verify_site.py` 與 `git diff --check` 通過後部署。
+- Git commit 與 GitHub Actions／Cloudflare Pages deployment ID 於部署完成後補記。
+
+---
+
 ## v11.2.74（2026-09-11）— 中文主視覺 hero_cjk_rs_01 重構
 
 ### 🎨 圖片與快取

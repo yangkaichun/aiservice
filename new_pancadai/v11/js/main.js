@@ -342,6 +342,11 @@
     var video = $('#heroVideo');
     var poster = $('.hero-bg-video .poster');
     if (!video) return;
+    /* v11.2.75：中／日首頁改用右側留白靜態主視覺，避免舊晨光影片蓋回新圖。 */
+    if (!isEn && (isJa || pageLang.indexOf('zh') === 0)) {
+      video.remove();
+      return;
+    }
     var reduce = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
     if (reduce || netTier() === 0) {
       video.remove();
@@ -880,9 +885,12 @@
     var posters = document.querySelectorAll('.hero-bg-video .poster, #patientHero .bg');
     if (!posters.length) return;
     var mobile = window.matchMedia && window.matchMedia('(max-width:768px)').matches;
-    var base = BG + 'assets/' + (isEn ? 'patient_hero_rightspace' : 'patient_cjk_hero_rightspace');
     var tier = netTier();
     posters.forEach(function (el) {
+      /* 首頁 .poster 使用新 CJK 主視覺；患者頁 #patientHero .bg 保留患者 hero。 */
+      var isHomeCjk = !isEn && el.classList && el.classList.contains('poster');
+      var baseName = isEn ? 'patient_hero_rightspace' : (isHomeCjk ? 'hero_cjk_rs_01_v2' : 'patient_cjk_hero_rightspace');
+      var base = BG + 'assets/' + baseName;
       progressiveBackground(el, {
         low: base + (mobile ? '_480.webp' : '.jpg'),
         medium: mobile ? null : base + '.jpg',
