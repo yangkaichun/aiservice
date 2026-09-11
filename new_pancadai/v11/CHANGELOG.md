@@ -5,6 +5,21 @@
 
 ---
 
+## v11.2.76（2026-09-11）— 新版主視覺移至患者頁首張圖
+
+### 🎨 位置修正
+- 依線上檢視回饋，中文／日文首頁恢復原本的 `patient_cjk_hero_rightspace` 固定背景與晨光影片行為。
+- 將新版 `hero_cjk_rs_01_v2` 套用至 `/patient.html` 與 `/jp/patient.html` 的第一張 Hero 圖，並同步更新 OG／Twitter 預覽圖。
+- 患者頁維持 480px → JPG／HD → 4K（3840×2160）依網路速度漸進載入；英文首頁與英文患者頁維持原設計。
+- 快取版本更新為 `style.css?v=119`、`main.js?v=116`、`zh-quality.css?v=3`。
+
+### ✅ 驗證與部署狀態
+- 中文／日文首頁與患者頁已完成本機瀏覽器驗證：首頁回復舊 Hero，患者頁首張圖載入新版 4K，手機載入新版 HD。
+- `node --check js/main.js`、HTML 標籤平衡、`verify_site.py` 與 `git diff --check` 通過後部署。
+- Git commit、GitHub Actions 與 Cloudflare Pages deployment ID 於部署完成後補記。
+
+---
+
 ## v11.2.75（2026-09-11）— 中文／日文首頁套用新版 CJK 主視覺
 
 ### 🎨 首頁 Hero 修正
