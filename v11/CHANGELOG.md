@@ -15,6 +15,8 @@
 ### ✅ 驗證
 - 新版 JPG／WebP 均通過尺寸與格式檢查；`node --check js/main.js`、`git diff --check`、`verify_site.py` 通過。
 - 中文／日文背景池仍維持 10 秒輪替與漸進載入，其他語系資產與頁面不變。
+- Git commit：`8e225571`；GitHub Actions Deploy `34565460071` 成功。
+- Cloudflare Pages `pancadai-v11` deployment `ffd1094f`；正式網域與 GitHub Pages 的中文首頁、新版 `hero_cjk_rs_01_v2_4k.webp` 均讀回 HTTP 200，4K 資產確認為 3840×2160。
 
 ---
 
