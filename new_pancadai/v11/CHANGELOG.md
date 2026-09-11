@@ -16,7 +16,8 @@
 ### ✅ 驗證與部署狀態
 - 新增 `assets/hero_cjk_rs_01_v2_480.webp`（480×270）；主視覺 JPG／HD／4K 資產格式與尺寸檢查通過。
 - `node --check js/main.js`、HTML 標籤平衡、`verify_site.py` 與 `git diff --check` 通過後部署。
-- Git commit 與 GitHub Actions／Cloudflare Pages deployment ID 於部署完成後補記。
+- Git commit：`0916e42a`；GitHub Actions Deploy run `34566928090`（success）。
+- Cloudflare Pages：`220a2f08`；Cloudflare hash、`pancadai-v11.pages.dev`、正式 `www.pancad.ai` 與 GitHub Pages 讀回首頁／日文首頁及新版資產均為 HTTP 200，且 HTML 使用 `main.js?v=115`、`style.css?v=118`。
 
 ---
 
