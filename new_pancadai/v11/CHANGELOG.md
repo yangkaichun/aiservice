@@ -15,6 +15,8 @@
 ### ✅ 驗證
 - 18 張輸出逐一確認為 3840×2160、RGB；抽樣檢查中文、英文與患者頁構圖無人物或文字留白異常。
 - 將更新後的 WebP 資產納入全站資產檢查與部署讀回，並重新確認頁面載入不受影響。
+- Git commit：`bc6c64b1`；GitHub Actions Deploy `34558023037` 成功。
+- Cloudflare Pages `pancadai-v11` deployment `bd9eab19`；`https://pancadai-v11.pages.dev/`、`https://www.pancad.ai/` 與 GitHub Pages 英文產品頁讀回 HTTP 200，18 張新版 4K 資產皆為 `image/webp` 且 HTTP 200。
 
 ---
 
