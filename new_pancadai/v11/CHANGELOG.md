@@ -16,7 +16,8 @@
 ### ✅ 驗證與部署狀態
 - 中文／日文首頁與患者頁已完成本機瀏覽器驗證：首頁回復舊 Hero，患者頁首張圖載入新版 4K，手機載入新版 HD。
 - `node --check js/main.js`、HTML 標籤平衡、`verify_site.py` 與 `git diff --check` 通過後部署。
-- Git commit、GitHub Actions 與 Cloudflare Pages deployment ID 於部署完成後補記。
+- Git commit：`20560e9d`；GitHub Actions Deploy run `34567645714`（success），GitHub Pages build run `34567691353`（success）。
+- Cloudflare Pages：`1ce0a980`；Cloudflare hash、`pancadai-v11.pages.dev`、正式 `www.pancad.ai` 與 GitHub Pages 讀回首頁／患者頁及新版資產均為 HTTP 200；正式患者頁實際載入 `hero_cjk_rs_01_v2_4k.webp`，手機載入 HD。
 
 ---
 
