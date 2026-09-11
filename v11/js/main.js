@@ -208,7 +208,7 @@
     update();
   }
 
-  /* ---------- 6. 背景語言圖池（zh/ja→sun、en→intl，9 秒輪換＋漸進） ---------- */
+  /* ---------- 6. 背景語言圖池（zh/ja→cjk、en→intl，9 秒輪換＋漸進） ---------- */
   function netTier() {
     var c = navigator.connection;
     if (!c) return 2;
@@ -221,18 +221,22 @@
     var els = $all('[data-bg-pool]');
     if (!els.length) return;
     var lang = (document.documentElement.lang || 'zh').toLowerCase().replace('-', '');
-    var poolName = (lang === 'en') ? 'intl' : 'sun';
+    var poolName = (lang === 'en') ? 'intl' : 'cjk';
     var isMobile = window.matchMedia && window.matchMedia('(max-width:768px)').matches;
     var pool;
-    if (poolName === 'sun') {
-      pool = ['bike', 'bridge', 'coffee', 'forest', 'kayak', 'picnic', 'yoga', '1', '2', '3', '4', '5', '6', '7', '8', '9', '10'].map(function (k) {
-        return { key: k, src: BG + 'assets/hero_sun_' + k + '_safe.jpg', src640: BG + 'assets/hero_sun_' + k + '_safe_640.webp', hd: BG + 'assets/hero_sun_' + k + '_safe_hd.webp' };
-      });
+    if (poolName === 'cjk') {
+      pool = [];
+      /* v11.2.43：中文／日文桌面背景同樣採右側主體、左側留白構圖。 */
+      for (var c = 1; c <= 8; c++) {
+        var cn = (c < 10 ? '0' : '') + c;
+        pool.push({ key: 'cjk' + c, src: BG + 'assets/hero_cjk_rs_' + cn + '.jpg', src640: BG + 'assets/hero_cjk_rs_' + cn + '_640.webp', hd: BG + 'assets/hero_cjk_rs_' + cn + '_hd.webp' });
+      }
     } else {
       pool = [];
-      for (var i = 1; i <= 30; i++) {
+      /* v11.2.42：英文桌面背景採右側主體、左側留白構圖，避免文字卡覆蓋人物。 */
+      for (var i = 1; i <= 8; i++) {
         var n = (i < 10 ? '0' : '') + i;
-        pool.push({ key: 'i' + i, src: BG + 'assets/hero_intl_' + n + '_safe.jpg', src640: BG + 'assets/hero_intl_' + n + '_safe_640.webp', hd: BG + 'assets/hero_intl_' + n + '_safe_hd.webp' });
+        pool.push({ key: 'i' + i, src: BG + 'assets/hero_intl_rs_' + n + '.jpg', src640: BG + 'assets/hero_intl_rs_' + n + '_640.webp', hd: BG + 'assets/hero_intl_rs_' + n + '_hd.webp' });
       }
     }
     var tier = netTier();
@@ -240,7 +244,8 @@
     /* v11.2.22：全部背景圖皆無 pad 滿版（cover，不放大 113%） */
     var FULL = {};
     ['1','2','3','4','5','6','7','8','9','10','bike','bridge','coffee','forest','kayak','picnic','yoga'].forEach(function (k) { FULL[k] = 1; });
-    for (var ii = 1; ii <= 30; ii++) FULL['i' + ii] = 1;
+    for (var ci = 1; ci <= 8; ci++) FULL['cjk' + ci] = 1;
+    for (var ii = 1; ii <= 8; ii++) FULL['i' + ii] = 1;
     /* 池洗牌（每次進站隨機順序，背景隨機產生） */
     shuffle(pool);
     /* 同頁不重複：目前正被顯示的圖 key → 計數 */
@@ -849,7 +854,7 @@
     var isEn = lang === 'en';
     var posters = document.querySelectorAll('.hero-bg-video .poster, #patientHero .bg');
     if (!posters.length) return;
-    var hdSrc = BG + 'assets/' + (isEn ? 'hero_v7_morning_intl' : 'hero_v7_morning_couple') + '_safe_hd.webp';
+    var hdSrc = BG + 'assets/' + (isEn ? 'patient_hero_rightspace' : 'patient_cjk_hero_rightspace') + '_hd.webp';
     posters.forEach(function (el) {
       var img = new Image();
       img.onload = function () {
