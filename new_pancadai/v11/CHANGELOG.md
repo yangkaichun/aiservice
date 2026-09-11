@@ -5,6 +5,22 @@
 
 ---
 
+## v11.2.71（2026-09-11）— 多語系桌面主視覺版面與部署
+
+### 🎨 視覺與版面
+- 中文／日文頁面改用 CJK 右側留白臨床場景，英文頁面改用國際版右側留白臨床場景；文字區保留清楚對比，避免人物與螢幕被文字方框遮擋。
+- 患者旅程頁同步使用中日／英文專用 hero poster、480px 與 HD WebP 資產；英文與中日文語系的輪播素材分開載入。
+- 全站 `style.css?v=117`、`main.js?v=111` 更新快取版本，避免瀏覽器沿用舊構圖。
+
+### ✅ 版面驗證與部署
+- 版面審核：45 個頁面 × 320／390／768／1024／1280／1440px，文字覆蓋、水平溢出、裁切與圖片載入問題皆為 0。
+- `node --check js/main.js`、`git diff --check`、`verify_site.py` 均通過；`verify_site.py` 僅保留既有 education／case-study hreflang 警示。
+- Git commit：`48b928e5`；GitHub Actions Deploy `34551959205` 與 Pages build `34551998901` 均成功。
+- Cloudflare Pages：`pancadai-v11` deployment `bb00e454` 已完成；正式網域、Cloudflare deployment URL、GitHub Pages 入口與新增圖片資產均讀回 HTTP 200。
+- Cloudflare 主網域的 `robots.txt` 仍含 Managed Content 對部分 AI crawler 的 edge `Disallow`，屬平台層設定，與 repo 內的搜尋可爬取標記分開記錄。
+
+---
+
 ## v11.2.70（2026-09-10）— SEO／AI-SEO／GEO 結構優化與部署完成
 
 ### 🔧 優化內容
