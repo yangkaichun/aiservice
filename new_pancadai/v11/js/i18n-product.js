@@ -37,7 +37,13 @@
     ui_go: "查看科學證據", ui_shot: "PANCREASaver<sup>®</sup>",
     sys_kicker: "系統架構", sys_title: "安全、合規、<span class=\"hl\">融入現有環境</span>",
     cta_title2: "想親眼看看它怎麼運作？", cta_sub2: "預約一場現場 demo，讓 AI 哨兵為您示範。",
-    cta_t: "想親眼看看它怎麼運作？", cta_p: "預約一場現場 demo，讓 AI 為您示範。", cta_btn: "與我們聊聊"
+    cta_t: "想親眼看看它怎麼運作？", cta_p: "預約一場現場 demo，讓 AI 為您示範。", cta_btn: "與我們聊聊",
+    video_product_kicker: "產品介紹影片",
+    video_product_title: "看見 PANCREASaver® 如何融入臨床工作流",
+    video_product_desc: "從掃描完成、AI 分析到放射科醫師複核，透過官方影片了解 PANCREASaver® 的工作方式。",
+    video_product_cta: "在 YouTube 觀看 ↗",
+    video_product_caption: "PANCREASaver® 官方產品介紹影片",
+    video_product_iframe_title: "PANCREASaver® 官方產品介紹影片"
   };
   var en = {
     meta_title: "AI-Assisted Pancreatic Cancer Detection for Contrast-Enhanced CT | PANCREASaver®",
@@ -75,7 +81,13 @@
     ui_go: "See the evidence", ui_shot: "PANCREASaver<sup>®</sup>",
     sys_kicker: "Architecture", sys_title: "Designed for secure, auditable deployment",
     cta_title2: "Want to see it in action?", cta_sub2: "Book a live demo to see how the workflow works.",
-    cta_t: "Want to see it in action?", cta_p: "Book a live demo to see how the workflow works.", cta_btn: "Talk to us"
+    cta_t: "Want to see it in action?", cta_p: "Book a live demo to see how the workflow works.", cta_btn: "Talk to us",
+    video_product_kicker: "Product introduction",
+    video_product_title: "See how PANCREASaver® fits the clinical workflow",
+    video_product_desc: "From scan completion to AI analysis and radiologist review, this official overview shows how PANCREASaver® works alongside the imaging team.",
+    video_product_cta: "Watch on YouTube ↗",
+    video_product_caption: "Official PANCREASaver® product introduction",
+    video_product_iframe_title: "Official PANCREASaver® product introduction"
   };
   var ja = {
     meta_title: "製品紹介 — PANCREASaver® 助胰見® ｜ 仲智数位健康",
@@ -113,7 +125,13 @@
     ui_go: "エビデンスを見る", ui_shot: "PANCREASaver<sup>®</sup>",
     sys_kicker: "システム構成", sys_title: "安全・準拠・<span class=\"hl\">既存環境に溶け込む</span>",
     cta_title2: "実際の動きを見てみませんか？", cta_sub2: "ライブデモを予約して、AIがお見せします。",
-    cta_t: "実際の動きを見てみませんか？", cta_p: "ライブデモを予約して、AIがお見せします。", cta_btn: "お問い合わせ"
+    cta_t: "実際の動きを見てみませんか？", cta_p: "ライブデモを予約して、AIがお見せします。", cta_btn: "お問い合わせ",
+    video_product_kicker: "製品紹介動画",
+    video_product_title: "PANCREASaver® が臨床ワークフローにどう入るか",
+    video_product_desc: "スキャン完了、AI解析、放射線科医の確認まで、公式動画でPANCREASaver® の流れをご紹介します。",
+    video_product_cta: "YouTubeで見る ↗",
+    video_product_caption: "PANCREASaver® 公式製品紹介動画",
+    video_product_iframe_title: "PANCREASaver® 公式製品紹介動画"
   };
   Object.assign(window.PANCAD_I18N.zh, zh);
   Object.assign(window.PANCAD_I18N.en, en);

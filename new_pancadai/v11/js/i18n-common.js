@@ -63,7 +63,9 @@ window.PANCAD_I18N = {
     jr_s3: "診斷",
     jr_s4: "治療",
     jr_s5: "追蹤",
-    jr_hint: "照護旅程 — 捲動跟隨"
+    jr_hint: "照護旅程 — 捲動跟隨",
+    video_note: "影片內容供產品與教育資訊參考；AI 輸出由醫療專業人員審閱。",
+    video_youtube_link: "在 YouTube 觀看 ↗"
   },
   en: {
     nav_product: "Product",
@@ -122,7 +124,9 @@ window.PANCAD_I18N = {
     jr_s3: "Diagnosis",
     jr_s4: "Treatment",
     jr_s5: "Survivorship",
-    jr_hint: "The care journey — scroll to follow"
+    jr_hint: "The care journey — scroll to follow",
+    video_note: "For product and educational information; AI outputs are reviewed by healthcare professionals.",
+    video_youtube_link: "Watch on YouTube ↗"
   },
   ja: {
     nav_product: "製品紹介",
@@ -181,6 +185,8 @@ window.PANCAD_I18N = {
     jr_s3: "診断",
     jr_s4: "治療",
     jr_s5: "経過観察",
-    jr_hint: "ケアの旅 — スクロールで進む"
+    jr_hint: "ケアの旅 — スクロールで進む",
+    video_note: "製品・教育情報としてご覧ください。AIの出力は医療専門職が確認します。",
+    video_youtube_link: "YouTubeで見る ↗"
   }
 };

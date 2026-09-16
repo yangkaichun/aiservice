@@ -34,6 +34,12 @@
     n6_p: "從台大醫院開始，PANCREASaver® 已服務多家醫學中心與區域醫院，累積判讀超過 2000 人次——每一位患者，都是一個被守護的家庭。",
     news_byline_t: "發布單位",
     news_byline: "仲智數位健康（PanCAD.ai）",
+    video_news_kicker: "官方影片",
+    video_news_title: "PANCREASaver® 官方介紹影片上線",
+    video_news_desc: "公司發布 PANCREASaver® 介紹影片，帶您快速了解腹部 CT 的 AI 輔助判讀流程。",
+    video_news_cta: "在 YouTube 觀看 ↗",
+    video_news_caption: "PANCREASaver® 官方產品介紹影片",
+    video_news_iframe_title: "PANCREASaver® 官方產品介紹影片",
 
     back_t: "回到首頁"
   };
@@ -71,6 +77,12 @@
     n6_p: "PANCREASaver® is used across Taiwan medical centers and regional hospitals, supporting radiology teams through an evidence-based workflow.",
     news_byline_t: "Publisher",
     news_byline: "PanCAD.ai",
+    video_news_kicker: "Official video",
+    video_news_title: "PANCREASaver® official introduction video",
+    video_news_desc: "PanCAD.ai has released an official introduction to PANCREASaver®, showing how AI-assisted review fits the contrast-enhanced abdominal CT workflow.",
+    video_news_cta: "Watch on YouTube ↗",
+    video_news_caption: "Official PANCREASaver® product introduction",
+    video_news_iframe_title: "Official PANCREASaver® product introduction",
 
     back_t: "Back to Home"
   };
@@ -107,6 +119,12 @@
     n6_t: "累計読影2,000件超、医学センターと地域病院をカバー",
     n6_p: "台大病院から始まり、複数の医療機関で稼働。累計2,000件超——一人ひとりの患者が、守られる家族です。",
     news_byline: "PanCAD.ai",
+    video_news_kicker: "公式動画",
+    video_news_title: "PANCREASaver® 公式紹介動画を公開",
+    video_news_desc: "PANCREASaver® の公式紹介動画を公開しました。造影腹部CTのAI支援レビューが既存の画像診療ワークフローに入る流れをご紹介します。",
+    video_news_cta: "YouTubeで見る ↗",
+    video_news_caption: "PANCREASaver® 公式製品紹介動画",
+    video_news_iframe_title: "PANCREASaver® 公式製品紹介動画",
 
     back_t: "ホームへ戻る"
   };

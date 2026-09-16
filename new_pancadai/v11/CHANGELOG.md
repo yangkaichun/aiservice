@@ -5,6 +5,23 @@
 
 ---
 
+## v11.2.77（2026-09-16）— PANCREASaver® 官方介紹影片三語導入
+
+### 🎬 影片內容與頁面架構
+- 將公司發布的 [PANCREASaver® 官方介紹影片](https://www.youtube.com/watch?v=_OPHBmYKdSw)加入中文、英文、日文首頁／產品頁；英文首頁沿用既有 `/en/` → `/en/product.html` 導向。
+- 在三語 News 頁加入置頂官方影片卡，保留現有新聞列表與中文限定的健康台灣深耕計畫連結。
+- 新增隱私友善 YouTube facade：先顯示縮圖，使用者點擊後才載入 `youtube-nocookie.com` 播放器。
+
+### 🔎 SEO／AI-SEO／GEO
+- 各影片頁加入與可見文案一致的 `VideoObject` JSON-LD、縮圖、嵌入網址與 `WatchAction`。
+- 更新 `llms.txt`、`en/llms.txt`、`jp/llms.txt` 與 `llms-full.txt`，補充三語影片入口與醫療使用界線。
+- 相關頁面 `dateModified` 更新為 2026-09-16，CSS／i18n query version 同步升版。
+
+### ✅ 驗證與部署
+- `node --check`、HTML 標籤平衡、JSON-LD 解析、影片 ID／嵌入網址檢查通過。
+- 本機瀏覽器已驗證英文與日文影片點擊載入播放器，中文 News 置頂卡與三語文案正常。
+- 本次版本已完成 GitHub Pages 與 Cloudflare Pages 部署，並同步至 Google Drive 的 `16_Pancad.ai/V11` 鏡像。
+
 ## v11.2.76（2026-09-11）— 新版主視覺移至患者頁首張圖
 
 ### 🎨 位置修正

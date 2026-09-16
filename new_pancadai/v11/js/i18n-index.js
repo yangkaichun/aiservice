@@ -159,7 +159,15 @@
     line_f3_t: "24 小時即時問答",
     line_f3_p: "症狀・危險因子・篩檢，隨時傳訊詢問",
     line_btn: "點擊加入好友 @PancreasCare",
-    line_qr_p: "掃描 QR Code 立即加入"
+    line_qr_p: "掃描 QR Code 立即加入",
+
+    /* 官方 PANCREASaver® 介紹影片 */
+    video_home_kicker: "官方介紹影片",
+    video_home_title: "用幾分鐘，看懂 PANCREASaver® 如何支援 CT 判讀",
+    video_home_desc: "從腹部 CT 影像進入既有工作流，到放射科醫師複核疑似所見，了解 PANCREASaver® 的 AI 輔助判讀流程。",
+    video_home_cta: "查看產品介紹",
+    video_home_caption: "PANCREASaver® 官方產品介紹影片",
+    video_home_iframe_title: "PANCREASaver® 官方產品介紹影片"
   };
 
   var en = {
@@ -309,7 +317,15 @@
     line_f3_t: "Questions at any time",
     line_f3_p: "Symptoms, risk factors, and screening questions",
     line_btn: "Add friend @PancreasCare",
-    line_qr_p: "Scan the QR code to join"
+    line_qr_p: "Scan the QR code to join",
+
+    /* Official PANCREASaver® introduction video */
+    video_home_kicker: "Official video",
+    video_home_title: "See how PANCREASaver® supports CT review",
+    video_home_desc: "From a completed abdominal CT to radiologist review, this short overview shows where PANCREASaver® fits into the imaging workflow.",
+    video_home_cta: "Explore the product",
+    video_home_caption: "Official PANCREASaver® product introduction",
+    video_home_iframe_title: "Official PANCREASaver® product introduction"
   };
 
   var ja = {
@@ -459,7 +475,15 @@
     line_f3_t: "24 時間即時 Q&A",
     line_f3_p: "症状・危険因子・検診 — いつでも質問可能",
     line_btn: "友だち追加 @PancreasCare",
-    line_qr_p: "QR コードをスキャンして参加"
+    line_qr_p: "QR コードをスキャンして参加",
+
+    /* PANCREASaver® 公式紹介動画 */
+    video_home_kicker: "公式紹介動画",
+    video_home_title: "PANCREASaver® が CT 読影をどう支援するか、数分でご紹介",
+    video_home_desc: "腹部CT撮影の完了から放射線科医による確認まで、PANCREASaver® が既存の画像診療ワークフローに入る流れをご紹介します。",
+    video_home_cta: "製品紹介を見る",
+    video_home_caption: "PANCREASaver® 公式製品紹介動画",
+    video_home_iframe_title: "PANCREASaver® 公式製品紹介動画"
   };
 
   window.PANCAD_I18N = window.PANCAD_I18N || {};
