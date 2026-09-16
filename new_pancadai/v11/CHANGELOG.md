@@ -5,6 +5,17 @@
 
 ---
 
+## v11.2.78（2026-09-16）— PANCREASaver® 官方影片網址更新
+
+### 🎬 影片來源修正
+- 依公司最新發布資訊，將中文、英文、日文首頁／產品頁／News 頁的 PANCREASaver® 影片更新為 [YouTube 新網址](https://www.youtube.com/watch?v=ICl-3noQapM)。
+- 同步更新 YouTube thumbnail、隱私友善 `youtube-nocookie.com` embed、`VideoObject` JSON-LD、WatchAction 與三語 `llms.txt` 入口。
+- 保留既有點擊後載入播放器、三語文案與中文限定的健康台灣深耕計畫連結。
+
+### ✅ 驗證與發布
+- 通過 JavaScript 語法、HTML 標籤平衡、JSON-LD 與新影片 ID 全站檢查。
+- GitHub Pages 與 Cloudflare Pages 完成部署；部署後建立本地／Google Drive 日期備份並進行 SHA-256 比對。
+
 ## v11.2.77（2026-09-16）— PANCREASaver® 官方介紹影片三語導入
 
 ### 🎬 影片內容與頁面架構
