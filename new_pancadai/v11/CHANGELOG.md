@@ -5,6 +5,15 @@
 
 ---
 
+## v11.2.79（2026-09-16）— YouTube iframe CSP 允許修正
+
+### 🔒 播放器載入修正
+- 修正正式網站 Content-Security-Policy 未允許外部 iframe 的問題，新增 `frame-src` 白名單 `www.youtube-nocookie.com` 與 `www.youtube.com`。
+- 保留點擊後才載入播放器的隱私友善 facade；YouTube 新影片 `ICl-3noQapM` 可在正式網域播放。
+
+### ✅ 驗證與發布
+- 本機語法與 HTML 標籤檢查通過；部署後讀回 CSP header 與三語頁面播放器。
+
 ## v11.2.78（2026-09-16）— PANCREASaver® 官方影片網址更新
 
 ### 🎬 影片來源修正
