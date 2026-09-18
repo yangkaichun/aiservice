@@ -5,7 +5,7 @@
 
 ---
 
-## v11.2.86（2026-09-18）— SEO／GEO／AI-SEO sitemap 與 agent discovery 一致性（本機預覽）
+## v11.2.86（2026-09-18）— SEO／GEO／AI-SEO sitemap 與 agent discovery 一致性（已部署）
 
 ### 🔎 Canonical sitemap
 - 將 `/en/index.html` 與 `/jp/index.html` 的 sitemap URL 改為各自頁面已宣告的 canonical `/en/`、`/jp/`，避免 sitemap 與 `rel=canonical` 送出不同偏好訊號。
@@ -19,7 +19,7 @@
 ### ✅ 驗證狀態
 - 本機稽核確認 sitemap 52 個 URL 唯一、皆有對應檔案，HTML sitemap URL 的 canonical 一致，且 JSON-LD 無 `Product`、`Offer` 或 `AggregateRating` 商務 schema。
 - 校正 `verify_site.py` 對歷史備份頁、中文限定案例與 `tel:` 連結的範圍判定後，全站靜態 verifier（JS、資源、API catalog、agent discovery、i18n、SEO/GEO structure）通過。
-- 本輪僅修改本機 `V11`，尚未部署至 Cloudflare Pages 或 GitHub Pages。
+- 已部署至 Cloudflare Pages production 與 GitHub Pages；Cloudflare 發布內容 hash `870e2af2.pancadai-v11.pages.dev`、Git commit `cf97b29b`、GitHub Actions Deploy `35301492573` 均已讀回新版 sitemap、AI 摘要、robots 與 agent discovery headers。
 
 ## v11.2.85（2026-09-17）— News 官方影片卡防重疊修正（已部署）
 
