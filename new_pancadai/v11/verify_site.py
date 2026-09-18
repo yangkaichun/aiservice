@@ -16,7 +16,8 @@ for f in sorted(glob.glob(os.path.join(root, "js", "*.js"))):
 
 # 2. 資源完整性（HTML src/href + CSS url；依來源檔案解析相對路徑）
 #    同時掃描 /en/ 與 /jp/；deep-plan 是獨立 zh-only 子站，不套用本頁驗收。
-html_files = sorted(glob.glob(os.path.join(root, "*.html")))
+#    education 2.html 是歷史備份，不是公開索引頁，故不納入正式網站驗證。
+html_files = [f for f in sorted(glob.glob(os.path.join(root, "*.html"))) if os.path.basename(f) != "education 2.html"]
 for lang_dir in ("en", "jp"):
     html_files.extend(glob.glob(os.path.join(root, lang_dir, "*.html")))
 html_files = sorted(html_files)
@@ -35,7 +36,7 @@ for f in glob.glob(os.path.join(root, "css", "*.css")):
         refs.add((f, m.group(1).strip("'\"").split("?")[0]))
 missing = []
 for source, ref in sorted(refs):
-    if ref.startswith(("http", "mailto:", "data:", "javascript:", "#")):
+    if ref.startswith(("http", "mailto:", "tel:", "data:", "javascript:", "#")):
         continue
     target = os.path.normpath(os.path.join(os.path.dirname(source), ref))
     if not os.path.exists(target):
@@ -77,6 +78,12 @@ else:
 # 3. i18n key 覆蓋（common + 每頁字典合併後，檢查 data-i18n* 使用的 key 都有定義）
 key_errs = []
 seo_errs = []
+zh_only_case_pages = {
+    "fju-st-lukes-case-study.html",
+    "parkone-case-study.html",
+    "ntuh-case-study.html",
+    "ntuh-cancer-case-study.html",
+}
 def public_url(f):
     rel = os.path.relpath(f, root).replace(os.sep, "/")
     parts = rel.split("/")
@@ -101,7 +108,7 @@ for f in html_files:
         seo_errs.append(f"{page}: canonical mismatch ({canonical.group(1)})")
     hreflang = dict(re.findall(r'<link\b[^>]*hreflang=["\']([^"\']+)["\'][^>]*href=["\']([^"\']+)', html, re.I))
     page_path = "" if os.path.basename(f) == "index.html" else os.path.basename(f)
-    if page in ("fju-st-lukes-case-study.html", "parkone-case-study.html"):
+    if page in zh_only_case_pages:
         expected_hreflang = {
             "zh-TW": "https://www.pancad.ai/" + page_path,
             "x-default": "https://www.pancad.ai/" + page_path,

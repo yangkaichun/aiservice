@@ -5,6 +5,86 @@
 
 ---
 
+## v11.2.86（2026-09-18）— SEO／GEO／AI-SEO sitemap 與 agent discovery 一致性（本機預覽）
+
+### 🔎 Canonical sitemap
+- 將 `/en/index.html` 與 `/jp/index.html` 的 sitemap URL 改為各自頁面已宣告的 canonical `/en/`、`/jp/`，避免 sitemap 與 `rel=canonical` 送出不同偏好訊號。
+- `sitemap_index.xml` 的自身修改日期更新為 2026-09-18；52 個公開 URL 與各頁既有、僅於實質內容變動時更新的 `lastmod` 維持不變。
+
+### 🤖 GEO／AI 可讀入口
+- 中文完整／摘要及英日 AI 摘要同步列出 sitemap index、canonical URL sitemap 與 `auth.md`，並清楚限制公開 agent API 僅供網站健康狀態確認，不提供臨床、個資或商業資料。
+- 更正 AI 摘要中的語言版本與 hreflang 說明：有翻譯對應的三語頁使用 `zh-TW/en/ja/x-default`；中文限定醫院案例只保留真實存在的 `zh-TW` 與 `x-default`。
+- robots.txt 的 llms 參考網址統一為正式 canonical host `www.pancad.ai`。
+
+### ✅ 驗證狀態
+- 本機稽核確認 sitemap 52 個 URL 唯一、皆有對應檔案，HTML sitemap URL 的 canonical 一致，且 JSON-LD 無 `Product`、`Offer` 或 `AggregateRating` 商務 schema。
+- 校正 `verify_site.py` 對歷史備份頁、中文限定案例與 `tel:` 連結的範圍判定後，全站靜態 verifier（JS、資源、API catalog、agent discovery、i18n、SEO/GEO structure）通過。
+- 本輪僅修改本機 `V11`，尚未部署至 Cloudflare Pages 或 GitHub Pages。
+
+## v11.2.85（2026-09-17）— News 官方影片卡防重疊修正（已部署）
+
+### 📐 響應式版面
+- News 的「PANCREASaver® 官方介紹影片上線」卡在桌機保留文字與影片雙欄；螢幕寬度低於 1024px 時提早切換為完整單欄，避免標題與 YouTube 播放器在中等尺寸互相擠壓或重疊。
+- 文字欄與影片欄均設為可收縮的最小寬度，播放器固定占滿自己的格線，並在單欄時限制最佳閱讀寬度。
+- `style.css` 快取版本升為 `v=122`；修正套用於中文、英文、日文 News 頁及其他共用影片區。
+- 已部署至 Cloudflare Pages production；最終部署與讀回驗證記錄於 `Codex_Records/20260917_v11.2.85_video-layout-deployment.md`。
+
+
+## v11.2.84（2026-09-17）— 中文站「下一步」導覽區 UI 重設計（已部署）
+
+### 🧭 全站中文頁導覽
+- 將原本無視覺層級的「下一步，找到適合您的資訊」純文字連結區，改為四張可點擊導覽卡：產品、研究文獻、導入方案與衛教資訊。
+- 導覽卡加入編號、箭頭行動提示、圓角、邊框、懸浮回饋與溫暖漸層背景；平板／手機自動改為兩欄，保留足夠的觸控面積。
+- 維護資訊獨立成低干擾的資訊列，讓使用者導覽與醫療免責聲明都有清晰閱讀順序。
+- 中文品質樣式快取版本升為 `zh-quality.css?v=4`。
+- 已部署至 Cloudflare Pages production；最終部署與讀回驗證記錄於 `Codex_Records/20260917_v11.2.84_related-navigation-deployment.md`。
+
+## v11.2.83（2026-09-17）— 官方影片卡與共用互動 UI 優化（本機預覽）
+
+### 🎨 News 影片卡
+- 將「PANCREASaver® 官方介紹影片上線」的外層 News 卡由直角背景改為 28px 圓角、細框、柔和陰影與溢出裁切；手機版調整為 20px 圓角，與全站卡片系統一致。
+- 影片說明改為輕量資訊膠囊，醫療使用提醒加入橘色導引線，並保留既有的隱私友善 YouTube facade。
+
+### ✨ 全站共用 UI
+- 影片區加入清晰的鍵盤焦點環；全站連結、按鈕與可聚焦元素使用一致的可見焦點樣式。
+- `style.css` 快取版本升為 `v=121`；本輪僅修改本機，尚未部署。
+
+## v11.2.82（2026-09-17）— 醫療器材類金質獎正式發布紀錄
+
+### 🚀 Cloudflare Pages 正式部署
+- 已將 v11.2.80–v11.2.81 的本機更新部署至 Cloudflare Pages production；最終部署版本與讀回結果記錄於 `Codex_Records/20260917_v11.2.82_award_deployment.md`。
+- 正式網域 [www.pancad.ai](https://www.pancad.ai) 與部署版本的 News、Clinician、`llms.txt`、sitemap 均讀回 HTTP 200。
+- 線上讀回確認：中文、英文、日文的「醫療器材類金質獎」文案、Clinician 獎項標章、AI 摘要與 sitemap `lastmod: 2026-09-17` 均為最新版。
+
+### 📌 GitHub Pages 同步狀態
+- 本機目前未持有 `yangkaichun/aiservice` 的 GitHub CLI 登入憑證，故未推送 GitHub Pages；Cloudflare 正式站已完成發布。
+- GitHub Pages 待授權登入與原始儲存庫同步後再發布，避免以不明來源或未驗證版本覆寫鏡像站。
+
+## v11.2.81（2026-09-17）— 國家藥物科技研究發展獎類別精確化（本機預覽）
+
+### 🏆 獎項內容與三語一致性
+- 中文獎項名稱統一為「獲頒國家藥物科技研究發展獎（醫療器材類金質獎）」。
+- 英文同步為 `National Drug & Medical Device Research Award (Medical Device Category Gold Award)`；日文同步為「国家医薬品・医療機器研究開発賞（医療機器部門 金賞）を受賞」。
+- 更新 Clinician 獎項卡、News 動態、三語 i18n fallback、圖片替代文字、首頁 `MedicalDevice` JSON-LD，以及三語 `llms.txt`／`llms-full.txt` 的 AI 摘要。
+- 獎項類別依 [衛福部 2025 年得獎名單](https://www.mohw.gov.tw/dl-97683-964b1e2d-3399-43b8-b09f-407ddfa4c17e.html) 校正：PANCREASaver® 為醫療器材類金質獎。
+
+### 🔎 SEO／AI-SEO／GEO
+- 受影響的首頁、Clinician 與 News 頁面 `dateModified` 與 sitemap `lastmod` 更新為 2026-09-17，讓搜尋引擎與 AI 擷取入口取得一致且可追溯的獎項語意。
+
+### ✅ 發布狀態
+- 本輪僅修改本機 `V11` 供預覽，尚未部署至 Cloudflare Pages 或 GitHub Pages。
+
+## v11.2.80（2026-09-17）— 官方 YouTube 影片網址更新（本機預覽）
+
+### 🎬 影片入口
+- 中文／英文／日文首頁、產品頁與 News 頁的 PANCREASaver® 官方影片統一改為 [https://youtu.be/8Vjb6hKoU4Y](https://youtu.be/8Vjb6hKoU4Y)。
+- 同步更新 `VideoObject` JSON-LD、YouTube thumbnail、隱私友善 `youtube-nocookie.com` embed 與三語 `llms.txt`／`llms-full.txt` 入口。
+- 知識庫引用的其他第三方影片連結維持不變。
+
+### ✅ 驗證狀態
+- 有效網站檔案已無舊官方影片 ID `ICl-3noQapM` 殘留。
+- 本輪僅修改本機 `V11`，尚未部署至 Cloudflare Pages 或 GitHub Pages。
+
 ## v11.2.79（2026-09-16）— YouTube iframe CSP 允許修正
 
 ### 🔒 播放器載入修正
