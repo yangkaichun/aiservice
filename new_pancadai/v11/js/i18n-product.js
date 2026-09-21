@@ -46,9 +46,9 @@
     video_product_iframe_title: "PANCREASaver® 官方產品介紹影片"
   };
   var en = {
-    meta_title: "AI-Assisted Pancreatic Cancer Detection for Contrast-Enhanced CT | PANCREASaver®",
-    meta_desc: "PANCREASaver® is software as a medical device (SaMD) that analyzes contrast-enhanced abdominal CT and flags suspicious pancreatic findings for radiologist review.",
-    ph_kicker: "AI-assisted analysis for contrast-enhanced abdominal CT",
+    meta_title: "AI-Powered Pancreatic Cancer Detection for Contrast-Enhanced CT | PANCREASaver®",
+    meta_desc: "PANCREASaver® is AI-powered, radiologist-reviewed medical device software that analyzes contrast-enhanced abdominal CT and flags suspicious pancreatic findings for clinical review.",
+    ph_kicker: "AI-powered, radiologist-reviewed analysis for contrast-enhanced abdominal CT",
     ov_kick: "Product Overview",
     ov_t: "An <span class=\"hl\">AI-assisted CT review system</span> for pancreatic findings",
     ov_p: "PANCREASaver® is software as a medical device (SaMD): when a contrast-enhanced abdominal CT scan finishes, it analyzes the images, flags suspicious pancreatic findings, and sends results into the radiology workflow for review.",
@@ -63,7 +63,7 @@
     rel3_t: "10 U.S. and Taiwan patents", rel3_p: "Patent numbers with Google Patents lookup.", rel3_go: "Go to Patents →",
     hero_m1: "Sensitivity for tumors under 2 cm", hero_m2: "AUC across 1,473 CT studies", hero_m3: "CT studies analyzed", hero_m4: "FDA Breakthrough Device Designation",
     ph_h1: "Support earlier review.<br><span class=\"hl\">Fit the workflow you already use.</span>",
-    ph_sub: "PANCREASaver® adds an automated AI-assisted review to contrast-enhanced abdominal CT, flagging suspicious pancreatic findings for radiologist review.",
+    ph_sub: "PANCREASaver® is AI-powered, radiologist-reviewed medical device software for contrast-enhanced abdominal CT. It flags suspicious pancreatic findings for clinical review and does not issue an independent diagnosis.",
     f_kicker: "System capabilities", f_title: "Automated analysis with review at every step",
     f1_t: "Automated analysis", f1_d: "Analysis starts after the scan completes; the full pancreas is analyzed within minutes.",
     f2_t: "Auto lesion marking", f2_d: "An orange reticle pinpoints lesion location and extent — visible at a glance.",
