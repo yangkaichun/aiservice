@@ -91,7 +91,7 @@
   };
   var ja = {
     meta_title: "製品紹介 — PANCREASaver® 助胰見® ｜ 仲智数位健康",
-    meta_desc: "PANCREASaver® 助胰見®：造影腹部CT上の疑わしい膵所見を放射線科医の確認に提示するAI支援医療機器ソフトウェア。台湾TFDA許可、米国510(k)申請は審査中です。",
+    meta_desc: "PANCREASaver® 助胰見®：造影腹部CT上の疑わしい膵所見を放射線科医の確認に提示するAI支援医療機器ソフトウェア。台湾TFDA許可、FDA 510(k) は審査中で、米国での販売承認はまだ得ていません。",
     ph_kicker: "造影腹部CTのAI支援レビュー",
     ov_kick: "製品概要",
     ov_t: "膵臓の疑わしい所見を支援する <span class=\"hl\">AI支援CTレビューシステム</span>",

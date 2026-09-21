@@ -5,6 +5,15 @@
 
 ---
 
+## v11.2.89（2026-09-21）— FDA 510(k) 狀態文字統一
+
+### 📌 現行法規狀態
+- 三語公開頁、meta／Open Graph、JSON-LD、FAQ、AI 摘要與 sitemap 統一為：`FDA 510(k) Pending; not yet cleared for U.S. marketing.`
+- 移除現行公開來源中「2026 年 7 月遞交／送件」、「submitted／filed in July 2026」與相關舊式狀態措辭；保留 FDA Breakthrough Device Designation 與台灣 TFDA 許可的既有表述。
+
+### ✅ 本機驗證
+- JavaScript syntax、JSON-LD 解析、全站 static verifier 與舊文案掃描通過。
+
 ## v11.2.88（2026-09-21）— 英文 AI-powered pancreatic cancer detection 意圖對齊
 
 ### 🔎 SEO／AI-SEO／GEO
