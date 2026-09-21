@@ -4,6 +4,7 @@
 涵蓋 v6/v7 家族坑：href 的 ?v=N 需 strip 才不會誤報缺檔；
 i18n 掃描解析 common + 每頁字典（Object.assign 合併模式），抓 HTML 用了但字典沒定義的 key。"""
 import json, os, re, subprocess, glob, sys
+import xml.etree.ElementTree as ET
 
 root = os.path.abspath(sys.argv[1] if len(sys.argv) > 1 else ".")
 errors = []
@@ -74,6 +75,11 @@ else:
     headers = open(headers_path, encoding="utf-8").read()
     if 'rel="api-catalog"' not in headers or 'rel="service-desc"' not in headers or 'rel="service-doc"' not in headers:
         agent_errors.append("missing API discovery Link relations")
+    if "Content-Signal: ai-train=no, search=yes, ai-input=no" not in headers:
+        agent_errors.append("missing Content-Signal declaration")
+    for target in ("</sitemap.xml>", "</llms.txt>", "</llms-full.txt>", "</en/llms.txt>", "</jp/llms.txt>"):
+        if target not in headers:
+            agent_errors.append(f"missing agent discovery link for {target[2:-1]}")
 
 # 3. i18n key 覆蓋（common + 每頁字典合併後，檢查 data-i18n* 使用的 key 都有定義）
 key_errs = []
@@ -94,6 +100,46 @@ def public_url(f):
         prefix = ""
         stem = parts[0]
     return "https://www.pancad.ai" + prefix + ("/" if stem == "index.html" else "/" + stem)
+
+# 3.1 Sitemap must enumerate the current canonical public surface exactly.
+sitemap_ns = "{http://www.sitemaps.org/schemas/sitemap/0.9}"
+supplemental_sitemap_urls = {
+    "https://www.pancad.ai/deep-plan/": "deep-plan/index.html",
+    "https://www.pancad.ai/case-study/pancreasaver_case_study.html": "case-study/pancreasaver_case_study.html",
+    "https://www.pancad.ai/case-study/PANCREASaver_High-End_Health_Screening_Case_Study.pdf": "case-study/PANCREASaver_High-End_Health_Screening_Case_Study.pdf",
+}
+for url, relpath in supplemental_sitemap_urls.items():
+    if not os.path.isfile(os.path.join(root, relpath)):
+        seo_errs.append(f"sitemap supplemental target missing ({relpath})")
+
+expected_sitemap_urls = {public_url(f) for f in html_files} | set(supplemental_sitemap_urls)
+sitemap_path = os.path.join(root, "sitemap.xml")
+try:
+    sitemap_root = ET.parse(sitemap_path).getroot()
+    if sitemap_root.tag != sitemap_ns + "urlset":
+        seo_errs.append("sitemap.xml must use the sitemap default namespace")
+    sitemap_urls = [node.text for node in sitemap_root.findall(sitemap_ns + "url/" + sitemap_ns + "loc") if node.text]
+    if len(sitemap_urls) != len(set(sitemap_urls)):
+        seo_errs.append("sitemap.xml contains duplicate URLs")
+    missing_sitemap_urls = sorted(expected_sitemap_urls - set(sitemap_urls))
+    unexpected_sitemap_urls = sorted(set(sitemap_urls) - expected_sitemap_urls)
+    if missing_sitemap_urls:
+        seo_errs.append(f"sitemap.xml missing canonical URLs ({', '.join(missing_sitemap_urls[:3])})")
+    if unexpected_sitemap_urls:
+        seo_errs.append(f"sitemap.xml has unexpected URLs ({', '.join(unexpected_sitemap_urls[:3])})")
+except (OSError, ET.ParseError) as exc:
+    seo_errs.append(f"invalid sitemap.xml ({exc})")
+
+sitemap_index_path = os.path.join(root, "sitemap_index.xml")
+try:
+    sitemap_index_root = ET.parse(sitemap_index_path).getroot()
+    if sitemap_index_root.tag != sitemap_ns + "sitemapindex":
+        seo_errs.append("sitemap_index.xml must use the sitemap default namespace")
+    sitemap_index_urls = [node.text for node in sitemap_index_root.findall(sitemap_ns + "sitemap/" + sitemap_ns + "loc") if node.text]
+    if sitemap_index_urls != ["https://www.pancad.ai/sitemap.xml"]:
+        seo_errs.append("sitemap_index.xml must point only to the canonical sitemap.xml")
+except (OSError, ET.ParseError) as exc:
+    seo_errs.append(f"invalid sitemap_index.xml ({exc})")
 
 for f in html_files:
     html = open(f, encoding="utf-8").read()
