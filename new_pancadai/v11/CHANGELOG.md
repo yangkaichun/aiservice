@@ -5,6 +5,18 @@
 
 ---
 
+## v11.2.88（2026-09-21）— 英文 AI-powered pancreatic cancer detection 意圖對齊
+
+### 🔎 SEO／AI-SEO／GEO
+- 英文首頁與產品頁的 title、description、Open Graph、Twitter 預覽、`MedicalWebPage`、`MedicalDevice` 與 `Service` 描述，明確對齊 `AI-powered pancreatic cancer detection` 查詢意圖。
+- 產品頁加入可見的直接問答與對應 FAQPage schema：PANCREASaver® 是由放射科醫師複核的造影腹部 CT 決策支援軟體，標記可疑胰臟所見供臨床複核；不獨立診斷癌症，亦不取代醫療專業判斷。
+- 英文、中文摘要與完整 AI 摘要同步加入該英文意圖與臨床界線；英文首頁與產品頁 sitemap `lastmod` 更新為 2026-09-21。
+
+### ✅ 本機驗證
+- `verify_site.py`、JavaScript syntax、主站及英文 HTML 標籤平衡、JSON-LD 解析通過。
+- Playwright 以 1440px 與 390px 檢查英文產品頁：完整詞組、FAQ、無 console error、無水平溢出。
+
+
 ## v11.2.87（2026-09-21）— SEO／GEO／AI-AEO sitemap 與 agent discovery 強化（已部署）
 
 ### 🤖 AI／Agent discovery
