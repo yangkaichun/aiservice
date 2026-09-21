@@ -16,6 +16,11 @@
 - `verify_site.py`、JavaScript syntax、主站及英文 HTML 標籤平衡、JSON-LD 解析通過。
 - Playwright 以 1440px 與 390px 檢查英文產品頁：完整詞組、FAQ、無 console error、無水平溢出。
 
+### 🚀 發布與讀回
+- Git commit `41cdd867` 已推送；GitHub Actions Deploy `35561739566` 成功，GitHub Pages 讀回英文產品頁後確認新版詞組已生效。
+- Cloudflare Pages production 已發布，immutable deployment `3cca5158.pancadai-v11.pages.dev`、正式 `www.pancad.ai` 與 GitHub Pages 均讀回 `AI-Powered Pancreatic Cancer Detection`。
+- 以 `GPTBot/1.0` 讀回正式 `robots.txt`：AI crawler 規則為 `Allow: /`，沒有 Cloudflare managed `Disallow: /` 覆蓋。
+
 
 ## v11.2.87（2026-09-21）— SEO／GEO／AI-AEO sitemap 與 agent discovery 強化（已部署）
 
