@@ -5,7 +5,7 @@
 
 ---
 
-## v11.2.87（2026-09-21）— SEO／GEO／AI-AEO sitemap 與 agent discovery 強化（本機優化，未部署）
+## v11.2.87（2026-09-21）— SEO／GEO／AI-AEO sitemap 與 agent discovery 強化（已部署）
 
 ### 🤖 AI／Agent discovery
 - Cloudflare Pages 的 `Link` 回應標頭新增 `llms-full.txt`，讓需要完整上下文的 AI agent 可由首頁的機器可讀發現入口取得摘要版與完整版本；既有 API catalog、OpenAPI、service document、sitemap 和三語摘要連結維持不變。
@@ -15,8 +15,9 @@
 - `verify_site.py` 新增 sitemap 與 sitemap index 的 default namespace、重複 URL、canonical URL 集合與補充資產存在性檢查，並驗證 Content-Signal 與完整 agent-discovery Link 集合（含 `llms-full.txt`）。
 - 本輪檢查確認 Drive 主來源與本機 checkout 的 713 個檔案完全同雜湊；680 個發布追蹤檔與 Cloudflare production／GitHub Pages 發布版本一致。生成素材、預覽檔與腳本保留在來源端，未視為網站發布差異。
 
-### ⚠️ 發布狀態
-- 本輪僅更新 Google Drive 的主要 V11 來源並完成本機驗證；尚未 commit、push 或部署。發布後應重新讀回 Cloudflare 的 `Link` 標頭，確認 `llms-full.txt` 已公開宣告。
+### ✅ 發布狀態
+- 功能更新已以 main commit `281c767c` 發布；Cloudflare immutable deployment `61a26dc7.pancadai-v11.pages.dev`、Cloudflare production 與正式 `www.pancad.ai` 均已讀回 `llms-full.txt` 的 `Link` 宣告與 Content-Signal。
+- GitHub Pages deployment `1a38f207`（`deploy: 281c767c`）已完成；其 680 個發布追蹤檔與 source commit 完全一致。GitHub Pages 不支援 Cloudflare `_headers`，故沒有相同的 response header，仍由 robots、sitemap 與靜態 llms 文件提供發現入口。
 
 ## v11.2.86（2026-09-18）— SEO／GEO／AI-SEO sitemap 與 agent discovery 一致性（已部署）
 
