@@ -8,8 +8,8 @@
 - 功能程式 commit：`23d8e1eb2d6433d6c9e935425b37b1db677d5e79`，已推送 GitHub `main`。部署包由該 commit 的 `new_pancadai/v11` 封存建立，保留 `functions/` 並排除 `gas/`，以 Wrangler 3.114.0 發布。
 - GitHub Actions [Deploy #36690715668](https://github.com/yangkaichun/aiservice/actions/runs/36690715668) 已完成且成功；GitHub Pages 的 `/v11/` 與 `/new_pancadai/v11/` 兩條路徑均讀回相同的 Cookie JS SHA-256。
 - Cloudflare Pages 專案：`pancadai-v11`，production branch `main`。**功能首次正式部署**：`eddb90d9-7800-490a-91d2-d9981885d341`；不可變網址：`https://eddb90d9.pancadai-v11.pages.dev`；主域：`https://www.pancad.ai`。後續僅同步發布紀錄文件的部署不更改 Cookie 功能程式。
-- 發布紀錄文件同步後的**現行 Cloudflare production**：`7d02b653-cf60-4e10-ba97-16b04b767294`（`https://7d02b653.pancadai-v11.pages.dev`），來源為文件 commit `7bca2e7965c5e08dc45d8238d8baafb0ac48789e`；Cookie JS／CSS 與 `eddb90d9` 完全相同。
-- 第一次同內容上傳產生 `0d9f03f0-7073-4821-9c2a-4c691c20690d`，但附加的完整 Git SHA 識別有誤；已立即以正確 SHA 重發為 `eddb90d9`。後者是現行 production，前者僅供歷史追溯，不作為發布依據。
+- 發布紀錄文件同步部署：`7d02b653-cf60-4e10-ba97-16b04b767294`（`https://7d02b653.pancadai-v11.pages.dev`），來源為文件 commit `7bca2e7965c5e08dc45d8238d8baafb0ac48789e`；Cookie JS／CSS 與 `eddb90d9` 完全相同。
+- 第一次同內容上傳產生 `0d9f03f0-7073-4821-9c2a-4c691c20690d`，但附加的完整 Git SHA 識別有誤；已立即以正確 SHA 重發為 `eddb90d9`。前者僅供歷史追溯，不作為功能發布依據。
 
 ## 發布後讀回
 
