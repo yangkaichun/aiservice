@@ -128,6 +128,11 @@ function getRequestSheet_() {
   return sheet;
 }
 
+/** Run once in the Apps Script editor to authorize private sheet access. */
+function authorizeRsnaSheet() {
+  getRequestSheet_();
+}
+
 function findRecentRequest_(sheet, requestId) {
   var last = sheet.getLastRow();
   if (last < 2) return 0;

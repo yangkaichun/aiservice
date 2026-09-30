@@ -5,6 +5,13 @@
 
 ---
 
+## v11.2.91（2026-09-30）— RSNA 預約資料同步私人試算表
+
+- 將 RSNA 表單的預約資料先寫入公司 Google Drive 私人試算表，再由既有 Apps Script 寄至 `info@pancad.ai`；加入寄信狀態、15 分鐘重試去重與試算表公式注入防護。
+- 使用者同意讓原 Apps Script 執行帳戶編輯此單一表格並授予試算表存取權；同一 Web App 部署更新至第 2 版，保留原表單端點。
+- 正式站送出內部 QA 資料後，頁面顯示成功，試算表記錄 Request ID `Cay-qmi5ZWB55Qa-6C9v_DpzP3P7ek9f` 與 `Email status: Sent`。郵件實際進入 `info@pancad.ai` 收件匣尚未直接驗證。
+- 英文隱私權頁說明私人 Google Drive 試算表保存；詳細表格權限、部署與 QA 證據見 `RSNA_2026_SHEET_PREP.md`。
+
 ## v11.2.90（2026-09-30）— RSNA 2026 英文活動頁與預約表單（已部署）
 
 - 變更前核對 Cloudflare Pages：487 個可公開讀取檔案 SHA-256 相同，其中 53 個 HTML 經 308 轉址後逐一讀回也相同。主域 HTML 有 Cloudflare Email Protection／Challenge 注入，位元組與原始檔不同。
