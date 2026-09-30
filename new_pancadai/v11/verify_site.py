@@ -90,6 +90,7 @@ zh_only_case_pages = {
     "ntuh-case-study.html",
     "ntuh-cancer-case-study.html",
 }
+en_only_pages = {"en/rsna-2026.html"}
 def public_url(f):
     rel = os.path.relpath(f, root).replace(os.sep, "/")
     parts = rel.split("/")
@@ -154,7 +155,12 @@ for f in html_files:
         seo_errs.append(f"{page}: canonical mismatch ({canonical.group(1)})")
     hreflang = dict(re.findall(r'<link\b[^>]*hreflang=["\']([^"\']+)["\'][^>]*href=["\']([^"\']+)', html, re.I))
     page_path = "" if os.path.basename(f) == "index.html" else os.path.basename(f)
-    if page in zh_only_case_pages:
+    if page in en_only_pages:
+        # Event campaign has no translated counterpart. Do not advertise
+        # hreflang targets that do not exist.
+        if hreflang:
+            seo_errs.append(f"{page}: unexpected hreflang for English-only page")
+    elif page in zh_only_case_pages:
         expected_hreflang = {
             "zh-TW": "https://www.pancad.ai/" + page_path,
             "x-default": "https://www.pancad.ai/" + page_path,
