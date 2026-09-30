@@ -2,6 +2,8 @@
 
 記錄日期：2026-09-30（Asia/Taipei）
 
+各階段修正與驗證摘要見 `RSNA_2026_FIX_LOG.md`。
+
 ## 正式發布
 
 - 專案：Cloudflare Pages `pancadai-v11`，正式主域 `https://www.pancad.ai`。
