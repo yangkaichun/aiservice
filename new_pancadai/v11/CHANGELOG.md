@@ -5,6 +5,16 @@
 
 ---
 
+## v11.2.92（2026-09-30）— Cookie 同意介面與 GA4 載入控制（已部署）
+
+- 正式站原先在 44 個 HTML 頁面不等訪客選擇就載入 GA4，三語隱私權政策只提示瀏覽器封鎖 Cookie；本次移除這些即時載入碼，並在 54 個追蹤中的 HTML 頁面加入共用同意介面。
+- 中／英／日介面提供同等醒目的「接受分析」與「拒絕非必要 Cookie」、預設關閉的自訂選項，以及可重新開啟的 Cookie 設定。GA4 僅在明確同意後載入；撤回同意會刪除本站的 `_ga*` Cookie 並重新載入頁面。選擇紀錄與 GA Cookie 均設定 180 天效期。
+- 三語隱私權政策補充 GA4、必要儲存、Cloudflare 安全驗證、RSNA Turnstile 與按播放才載入的 YouTube 說明；完整查核、法源與尚待正式站驗證事項見 `COOKIE_CONSENT_AUDIT.md`。
+- `node --check`、`git diff --check`、`verify_site.py` 通過；本機三語瀏覽器及 390px 手機寬度檢查通過。依使用者回饋，英文按鈕精簡為 `Accept`／`Deny`／`Customize`，中文與日文也改為短字詞。接受鈕使用品牌藍並排在前；拒絕鈕維持相同尺寸、實心高對比與單擊可用。
+- 功能 commit `23d8e1eb2d6433d6c9e935425b37b1db677d5e79` 已推送 `main`。Cloudflare Pages 正式部署 `eddb90d9-7800-490a-91d2-d9981885d341`（`https://eddb90d9.pancadai-v11.pages.dev`）；正式主域英文頁、Cookie JS／CSS、RSNA 頁與 API 讀回正常。正式瀏覽器確認未選／拒絕時無 GA4、接受後才有約 180 天 `_ga*` Cookie，撤回後停止載入並刪除。
+- GitHub Actions Deploy `36690715668` 成功；GitHub Pages 雙路徑 Cookie JS 與發布來源雜湊一致。
+- 完整版本、發布更正、驗證及待查事項見 `COOKIE_CONSENT_RELEASE_RECORD.md`。法律文字、Cloudflare 帳戶層第三方注入與其他地區的適用要求仍需公司確認；本次不宣稱已取得全面合規認定。
+
 ## v11.2.91（2026-09-30）— RSNA 預約資料同步私人試算表
 
 - 將 RSNA 表單的預約資料先寫入公司 Google Drive 私人試算表，再由既有 Apps Script 寄至 `info@pancad.ai`；加入寄信狀態、15 分鐘重試去重與試算表公式注入防護。
