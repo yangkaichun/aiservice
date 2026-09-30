@@ -5,6 +5,16 @@
 
 ---
 
+## v11.2.90（2026-09-30）— RSNA 2026 英文活動頁與預約表單（已部署）
+
+- 變更前核對 Cloudflare Pages：487 個可公開讀取檔案 SHA-256 相同，其中 53 個 HTML 經 308 轉址後逐一讀回也相同。主域 HTML 有 Cloudflare Email Protection／Challenge 注入，位元組與原始檔不同。
+- 英文實際入口 `/en/` 會導往 `en/product.html`，於該頁加入展會訊息列及活動卡，另開 `en/rsna-2026.html`。
+- Booth 5132 依 2026-09-29 RSNA 參展名單快照；RSNA 技術展 2026-11-29 至 12-02、10:00–17:00 CT。活動頁保留 FDA 510(k) Pending 和醫師複核口徑。
+- 使用 RSNA 官方 2026 網站 PNG 與現有 PanCAD.ai SVG，產出 1600 × 900 PNG；原始標誌未重繪，產圖腳本可重建。
+- 新增角色、需求主題、時段及同意欄位；Cloudflare Turnstile → Pages Function → Google Apps Script → info@pancad.ai。Turnstile、Cloudflare Secrets 與 Apps Script Web App 已設定；本機預覽仍只驗證介面，不寄信。
+- 網站 commit `b0c55564dd41a67dcfb3a2d196ca8a0c44ea217b` 已推送 main，Cloudflare Pages 正式部署 `720c0b73-685c-4ea8-aa8f-7a1f7edad2c0`。正式站表單測試顯示送出成功，Apps Script 直接測試回應 `ok: true`；尚未以收件匣讀取確認實際收件。
+- RSNA 年會結束後的復原時間設定為 2026-12-04 08:00 台北時間，由 Codex 排程 `rsna-2026-pancad-ai` 執行並保留後續無關更新。完整部署與復原資料見 `RSNA_2026_RELEASE_RECORD.md`。
+
 ## v11.2.89（2026-09-21）— FDA 510(k) 狀態文字統一
 
 ### 📌 現行法規狀態
