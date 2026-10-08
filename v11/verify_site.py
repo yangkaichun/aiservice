@@ -84,11 +84,12 @@ else:
 # 3. i18n key 覆蓋（common + 每頁字典合併後，檢查 data-i18n* 使用的 key 都有定義）
 key_errs = []
 seo_errs = []
-zh_only_case_pages = {
+zh_only_pages = {
     "fju-st-lukes-case-study.html",
     "parkone-case-study.html",
     "ntuh-case-study.html",
     "ntuh-cancer-case-study.html",
+    "company-notice-20261008.html",
 }
 en_only_pages = {"en/rsna-2026.html"}
 def public_url(f):
@@ -160,7 +161,7 @@ for f in html_files:
         # hreflang targets that do not exist.
         if hreflang:
             seo_errs.append(f"{page}: unexpected hreflang for English-only page")
-    elif page in zh_only_case_pages:
+    elif page in zh_only_pages:
         expected_hreflang = {
             "zh-TW": "https://www.pancad.ai/" + page_path,
             "x-default": "https://www.pancad.ai/" + page_path,
