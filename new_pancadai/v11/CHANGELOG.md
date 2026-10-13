@@ -5,6 +5,15 @@
 
 ---
 
+## v11.2.97（2026-10-13）— 三語 About 文獻補齊與 FDA 標籤統一
+
+- 修正 About 獨立文獻清單未更新的遺漏；中文、英文、日文均新增 2026 年診斷前／診斷時 CT 多中心研究，置於首張研究卡，標示共 6 篇並連到同語文獻館、DOI 與 PubMed。原有五篇文獻及創辦人介紹保留。
+- About 的 title／description、OG／Twitter、語言字典、修改日期、AboutPage、六篇 ScholarlyArticle 及研究 ItemList 同步；修正 Person JSON-LD context、創辦人引用、英文分享圖路徑及日文 keywords。四份 AI 摘要與 sitemap 更新相應入口。
+- 依使用者要求，現行公開網站的 FDA 510(k)／510k 標籤統一為 FDA；FAQ、JSON-LD、metadata、字典與 AI 摘要同步，審查中／Pending、尚未取得美國上市許可、FDA Breakthrough Device Designation 與 TFDA 字號原文保留。
+- 公開案例 PDF 第 5 頁限定修改為 FDA application，保留原送件日期、審查中與尚未核准說明。維持六頁與原字體版面；其他五頁渲染逐像素相同。
+- 本機全站 verifier、三語 About 語意驗證、66 項桌機／手機寬度瀏覽器檢查通過，現行 113 個公開文字資產無 510(k)／510k 殘留。歷史版本紀錄維持原文，原始檔及 QA 證據另存備份。
+- 使用者已於本次工作授權部署；正式發布、四入口讀回與 Drive 同步結果見 V11_2_97_RELEASE_RECORD.md。
+
 ## v11.2.96（2026-10-13）— 三語文獻 SEO／GEO／AI-SEO 一致性優化（已部署）
 
 - 三語文獻頁的搜尋 title／description、H1、Open Graph、Twitter 與字典改為明確的胰臟癌／PDAC CT AI 研究主題，納入診斷前 CT、多中心驗證、影像組學和 6 篇文獻資訊；中文版 zh-page-data 同步，日文 keywords 改為日文。
