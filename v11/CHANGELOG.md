@@ -5,13 +5,14 @@
 
 ---
 
-## v11.2.96（2026-10-13）— 三語文獻 SEO／GEO／AI-SEO 一致性優化（已授權部署）
+## v11.2.96（2026-10-13）— 三語文獻 SEO／GEO／AI-SEO 一致性優化（已部署）
 
 - 三語文獻頁的搜尋 title／description、H1、Open Graph、Twitter 與字典改為明確的胰臟癌／PDAC CT AI 研究主題，納入診斷前 CT、多中心驗證、影像組學和 6 篇文獻資訊；中文版 zh-page-data 同步，日文 keywords 改為日文。
 - 三語均使用 6 個正式 ScholarlyArticle 節點，正式英文題名、DOI／PubMed 對照、CollectionPage、具穩定卡片 ID 的 ItemList 及對應語言 BreadcrumbList 一致。移除未查證的免費全文旗標；研究來源不誤歸公司出版。
 - 以 PubMed 再核對既有五篇題名、DOI、期刊與年份；新文獻完整 11 位作者／卷期頁碼保留。三語 AI 摘要與完整摘要列出全部六篇正式引用與 DOI／PubMed；sitemap 說明更新為實際 54 個 canonical URL。
 - 既有五篇卡片內容、醫療效能數字、爬蟲／Content-Signal 政策、RSNA 與 Cookie 功能維持現行版本；本次最佳化聚焦實際可讀文字、正式引用與結構化資料。
 - 使用者已明確要求部署。限定提交本次網站變更，以正式 commit archive 建立發布包，保留 Pages Functions，排除私人 gas／未追蹤預覽及備份；部署識別、正式讀回與同步結果另見 V11_2_96_RELEASE_RECORD.md。
+- 功能 commit `36f3426b` 已推送，Cloudflare `b39fcce6.pancadai-v11.pages.dev`、GitHub source Deploy 38327182708 與 Pages build 38327228494 均成功；四個入口 140 項讀回、本機 212 項語意及正式 69 項瀏覽器檢查通過。
 
 ## v11.2.95（2026-10-13）— 三語文獻館新增 2026 多中心胰臟癌 CT 研究（本機／Drive，未部署）
 

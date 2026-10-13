@@ -1,5 +1,7 @@
 # v11.2.95 文獻新增與驗證紀錄
 
+本文件記錄文獻新增的本機製作階段；後續同日已完成 v11.2.96 搜尋資料優化與正式部署，現行發布及驗證結果見 [V11_2_96_RELEASE_RECORD.md](V11_2_96_RELEASE_RECORD.md)。
+
 日期：2026-10-13（Asia/Taipei）。狀態：本機及掛載 Google Drive V11 來源更新；未 commit、push 或 deploy。
 
 ## 內容與來源
