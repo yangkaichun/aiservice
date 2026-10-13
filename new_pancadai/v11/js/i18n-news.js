@@ -8,6 +8,10 @@
     ph_title_1: "每一步，<span class=\"hl\">都有好消息。</span>",
     ph_sub: "關於 PANCREASaver® 的最新動態——從實驗室到臨床，我們持續前進。",
 
+    n_usage_d: "2026.10.13",
+    n_usage_t: "PANCREASaver® 研究與商業應用累計突破 5,500 人次",
+    n_usage_p: "截至2026-10-13，依仲智數位健康累計統計，PANCREASaver® 研究與商業應用已突破5,500人次。",
+
     n7_d: "2026.08",
     n7_t: "<a href=\"https://www.storm.mg/article/11158732\" target=\"_blank\" rel=\"noopener\" style=\"color:inherit\">2026 風傳媒 AI 醫療領航大獎（AIHIA）— PANCREASaver® 獲肯定 ↗</a>",
     n7_p: "風傳媒 AI 醫療領航大獎（AI Healthcare Innovation Awards, AIHIA）揭曉——AI 從「預防、治療」走向全台整合，8 大創新應用展現智慧醫療新里程；PANCREASaver® 以突破「癌王」早期偵測瓶頸的 AI 醫材獲獎肯定。",
@@ -51,6 +55,10 @@
     ph_title_1: "The latest <span class=\"hl\">from PanCAD.ai.</span>",
     ph_sub: "Research, deployments, regulatory updates, and company news about PANCREASaver®.",
 
+    n_usage_d: "2026.10.13",
+    n_usage_t: "PANCREASaver® exceeds 5,500 cumulative person-visits in research and commercial use",
+    n_usage_p: "As of October 13, 2026, PanCAD.ai reports more than 5,500 cumulative person-visits using PANCREASaver® across research and commercial applications.",
+
     n7_d: "2026.08",
     n7_t: "<a href=\"https://www.storm.mg/article/11158732\" target=\"_blank\" rel=\"noopener\" style=\"color:inherit\">2026 Storm Media AI Healthcare Innovation Awards (AIHIA) — PANCREASaver® recognized ↗</a>",
     n7_p: "Storm Media’s AI Healthcare Innovation Awards recognized PANCREASaver® among applications focused on healthcare innovation and earlier pancreatic cancer review.",
@@ -93,6 +101,10 @@
     ph_badge: "ニュース",
     ph_title_1: "すべての歩みに、<span class=\"hl\">良い知らせを。</span>",
     ph_sub: "PANCREASaver®の最新情報——研究室から臨床へ、前進し続けます。",
+
+    n_usage_d: "2026.10.13",
+    n_usage_t: "PANCREASaver® の研究・商用利用が延べ5,500人を突破",
+    n_usage_p: "2026年10月13日時点のPanCAD.aiの累計集計によると、PANCREASaver® の研究・商用利用は延べ5,500人を超えています。",
 
     n7_d: "2026.08",
     n7_t: "<a href=\"https://www.storm.mg/article/11158732\" target=\"_blank\" rel=\"noopener\" style=\"color:inherit\">2026 ストームメディア AI医療リーディングアワード（AIHIA）— PANCREASaver® が受賞 ↗</a>",
