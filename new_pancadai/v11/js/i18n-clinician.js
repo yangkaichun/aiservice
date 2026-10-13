@@ -2,7 +2,7 @@
 (function () {
   var zh = {
     meta_title: "AI 醫學影像與臨床證據｜胰臟癌 CT AI 導入｜PANCREASaver®",
-    meta_desc: "醫療機構評估胰臟癌 AI、AI 醫學影像與放射科 AI：AUC 0.95、<2cm 敏感度 92.1%、FDA Breakthrough、TFDA 許可、10 件專利與 5 篇期刊，並說明導入流程。",
+    meta_desc: "醫療機構評估胰臟癌 AI、AI 醫學影像與放射科 AI：AUC 0.95、<2cm 敏感度 92.1%、FDA Breakthrough、TFDA 許可、10 件專利與 6 篇期刊，並說明導入流程。",
 
     ph_badge: "For Clinicians",
     ph_title_1: "證據，<span class=\"hl\">是最好的說服。</span>",
@@ -20,10 +20,10 @@
 
     ev_k: "臨床證據",
     ev_t: "每一項數字，都有出處",
-    ev_p: "五篇國際期刊、九項大獎、兩地法規認證——PANCREASaver® 用可驗證的證據說話。",
+    ev_p: "六篇國際期刊、九項大獎、兩地法規認證——PANCREASaver® 用可驗證的證據說話。",
     ev1_t: "國際期刊背書",
-    ev1_p: "5 篇期刊論文，發表於 Lancet Digital Health、Radiology 等頂尖期刊——由台大醫院團隊主導的真實臨床驗證。",
-    ev1_go: "查看 5 篇論文",
+    ev1_p: "6 篇期刊論文，發表於 Lancet Digital Health、Radiology 等頂尖期刊——由台大醫院團隊主導的真實臨床驗證。",
+    ev1_go: "查看 6 篇論文",
     ev2_t: "美國 FDA 突破性醫材",
     ev2_p: "獲 FDA Breakthrough Device Designation，肯定其為「可顯著改善致命疾病早期偵測」的創新技術。\n<a class=\"cert-link\" href=\"https://www.fda.gov/medical-devices/how-study-and-market-your-device/breakthrough-devices-program\" target=\"_blank\" rel=\"noopener\">FDA 官方計畫頁 ↗</a>　<a class=\"cert-link\" href=\"https://health.ltn.com.tw/article/breakingnews/4481249\" target=\"_blank\" rel=\"noopener\">媒體報導：台大獲 FDA 認定 ↗</a>",
     ev3_t: "台灣 TFDA 許可",
@@ -69,7 +69,7 @@
     pub_2_t: "Radiology",
     pub_2_p: "深度學習於 CT 胰臟病灶偵測之應用",
     pub_3_t: "其他國際期刊",
-    pub_3_p: "共 5 篇，涵蓋演算法、臨床驗證與工作流程",
+    pub_3_p: "共 6 篇，涵蓋演算法、臨床驗證與工作流程",
 
     flow_k: "導入流程",
     flow_t: "與現有系統無縫整合",
@@ -89,7 +89,7 @@
   };
   var en = {
     meta_title: "Clinical Evidence for AI-Assisted Pancreatic CT Review | PANCREASaver®",
-    meta_desc: "Clinical evidence for AI-assisted pancreatic CT review: AUC 0.95, published sensitivity results for tumors under 2 cm, FDA Breakthrough Device Designation, Taiwan TFDA medical device license, 10 patents, and five publications.",
+    meta_desc: "Clinical evidence for AI-assisted pancreatic CT review: AUC 0.95, published sensitivity results for tumors under 2 cm, FDA Breakthrough Device Designation, Taiwan TFDA medical device license, 10 patents, and six publications.",
 
     ph_badge: "For Clinicians",
     ph_title_1: "Evidence <span class=\"hl\">speaks best.</span>",
@@ -107,10 +107,10 @@
 
     ev_k: "Clinical Evidence",
     ev_t: "Every number, sourced",
-    ev_p: "Five peer-reviewed publications, nine recognitions, and documented regulatory status in Taiwan and the United States.",
+    ev_p: "Six peer-reviewed publications, nine recognitions, and documented regulatory status in Taiwan and the United States.",
     ev1_t: "International publications",
-    ev1_p: "5 peer-reviewed papers in Lancet Digital Health, Radiology and other top journals — real clinical validation led by National Taiwan University Hospital.",
-    ev1_go: "View 5 papers",
+    ev1_p: "6 peer-reviewed papers in Lancet Digital Health, Radiology and other top journals — real clinical validation led by National Taiwan University Hospital.",
+    ev1_go: "View 6 papers",
     ev2_t: "FDA Breakthrough Device",
     ev2_p: "The U.S. FDA granted Breakthrough Device Designation to PANCREASaver®; this designation does not mean the device is FDA-cleared or available for U.S. marketing.\n<a class=\"cert-link\" href=\"https://www.fda.gov/medical-devices/how-study-and-market-your-device/breakthrough-devices-program\" target=\"_blank\" rel=\"noopener\">FDA official program page ↗</a>　<a class=\"cert-link\" href=\"https://health.ltn.com.tw/article/breakingnews/4481249\" target=\"_blank\" rel=\"noopener\">Media coverage: FDA breakthrough designation ↗</a>",
     ev3_t: "TFDA medical device license (Taiwan)",
@@ -156,7 +156,7 @@
     pub_2_t: "Radiology",
     pub_2_p: "Deep learning for pancreatic lesion detection on CT",
     pub_3_t: "Other international journals",
-    pub_3_p: "5 papers total, covering algorithms, clinical validation and workflow",
+    pub_3_p: "6 papers total, covering algorithms, clinical validation and workflow",
 
     flow_k: "Integration",
     flow_t: "Seamless with your existing systems",
@@ -176,7 +176,7 @@
   };
   var ja = {
     meta_title: "臨床エビデンス — 膵臓がんAI検出の性能と認証 | PANCREASaver® 助胰見®",
-    meta_desc: "AUC 0.95、2cm未満で感度92.1%、FDA画期的指定、TFDA認証、台湾・米国10件の特許、5本の論文、9つの賞。医療機関向けの意思決定情報を30秒で。",
+    meta_desc: "AUC 0.95、2cm未満で感度92.1%、FDA画期的指定、TFDA認証、台湾・米国10件の特許、6本の論文、9つの賞。医療機関向けの意思決定情報を30秒で。",
 
     ph_badge: "医療機関向け",
     ph_title_1: "エビデンスこそ、<span class=\"hl\">信頼が答えを導く</span>",
@@ -194,10 +194,10 @@
 
     ev_k: "臨床エビデンス",
     ev_t: "すべての数字に出典がある",
-    ev_p: "5本の国際論文、9つの賞、2市場の規制認証——PANCREASaver®は検証可能なエビデンスで語ります。",
+    ev_p: "6本の国際論文、9つの賞、2市場の規制認証——PANCREASaver®は検証可能なエビデンスで語ります。",
     ev1_t: "国際論文",
-    ev1_p: "Lancet Digital Health、Radiologyなど主要誌に5本——台大病院チームによる実際の臨床検証。",
-    ev1_go: "論文5本を見る",
+    ev1_p: "Lancet Digital Health、Radiologyなど主要誌に6本——台大病院チームによる実際の臨床検証。",
+    ev1_go: "論文6本を見る",
     ev2_t: "FDA画期的医療機器",
     ev2_p: "米国FDAのBreakthrough指定。致死的疾患の早期発見を有意に改善する技術として認められました。\n<a class=\"cert-link\" href=\"https://www.fda.gov/medical-devices/how-study-and-market-your-device/breakthrough-devices-program\" target=\"_blank\" rel=\"noopener\">FDA公式ページ ↗</a>　<a class=\"cert-link\" href=\"https://health.ltn.com.tw/article/breakingnews/4481249\" target=\"_blank\" rel=\"noopener\">ニュース記事：台大の認定 ↗</a>",
     ev3_t: "台湾TFDA認証",
@@ -243,7 +243,7 @@
     pub_2_t: "Radiology",
     pub_2_p: "CT膵病変検出への深層学習の応用",
     pub_3_t: "その他の国際誌",
-    pub_3_p: "全5本。アルゴリズム、臨床検証、ワークフローを網羅",
+    pub_3_p: "全6本。アルゴリズム、臨床検証、ワークフローを網羅",
 
     flow_k: "導入プロセス",
     flow_t: "既存システムとシームレスに統合",

@@ -1,15 +1,15 @@
 /* pancad.ai v11 — publications 字典（期刊論文館）?v=11 */
 (function () {
   var zh = {
-    meta_title: "胰臟癌 PDAC CT AI 研究｜醫學影像 AI 論文與 PubMed｜助胰見",
-    meta_desc: "查閱胰臟癌、胰臟腺癌（PDAC）與 CT 醫學影像 AI 的 5 篇國際期刊研究，包含 Lancet Digital Health、Radiology、研究族群與 PubMed 原文連結。",
+    meta_title: "胰臟癌 CT AI 文獻｜6 篇期刊研究與原文｜PANCREASaver®",
+    meta_desc: "查閱 6 篇胰臟癌與 PDAC 的 CT AI 同行審查研究，涵蓋診斷前影像、多中心驗證與影像組學，附摘要、DOI 與 PubMed 原文連結。",
 
     ph_badge: "期刊論文館",
-    ph_title_1: "每一行證據，<span class=\"hl\">都發表在國際期刊。</span>",
-    ph_sub: "五篇論文橫跨胰臟癌與 PDAC 的 AI 醫學影像演算法、全國人口基礎驗證與真實世界應用——點擊「閱讀原文」前往 PubMed。",
+    ph_title_1: "胰臟癌 CT AI 研究，<span class=\"hl\">每篇都有原文依據。</span>",
+    ph_sub: "6 篇同行審查研究，涵蓋胰臟癌與 PDAC 的 CT AI、診斷前影像、多中心驗證與影像組學；每篇附摘要整理與 DOI／PubMed 查證連結。",
 
-    sec_t: "5 篇國際期刊論文",
-    sec_p: "以下為 PANCREASaver® 相關的 5 篇代表學術發表，涵蓋胰臟導管腺癌（pancreatic ductal adenocarcinoma, PDAC）與 CT 醫學影像 AI；皆為臺大團隊之真實研究。摘要為整理，完整內容請見 PubMed 原文。",
+    sec_t: "6 篇國際期刊論文",
+    sec_p: "以下為 PANCREASaver® 相關的 6 篇代表學術發表，涵蓋胰臟導管腺癌（pancreatic ductal adenocarcinoma, PDAC）與 CT 醫學影像 AI；皆為臺大團隊之真實研究。摘要為整理，完整內容請見 PubMed 原文。",
 
     p1_t: "深度學習區分胰臟癌組織與非癌胰臟組織：跨種族外部驗證之回溯性研究",
     p1_t_en: "Deep learning to distinguish pancreatic cancer tissue from non-cancerous pancreatic tissue: a retrospective study with cross-racial external validation",
@@ -53,20 +53,32 @@
     p5_abs: "回顧性綜述論文，介紹機器學習與深度學習兩大 AI 方法論，並梳理 AI 在胰臟膽道疾病的研究版圖。胰膽疾病診斷與治療選擇複雜，常需整合多來源資料；AI 可應用於疾病偵測／診斷、風險分層與預後預測，輔助臨床醫師決策。",
     p5_abs_en: "A concise review of major AI methodologies (machine learning, deep learning) and the current landscape of AI research in pancreatobiliary diseases — where diagnosis and treatment selection are often complex — covering detection/diagnosis, risk stratification and prognosis prediction to supplement clinicians.",
 
+    p6_t: "人工智慧於診斷前與診斷時電腦斷層檢查中早期偵測胰臟癌：多中心回溯性病例對照研究",
+    p6_t_en: "Artificial Intelligence for Early Detection of Pancreatic Cancer in Prediagnostic and Diagnostic Computed Tomography Examinations: A Multicenter Retrospective Case-control Study",
+    p6_tag: "多中心病例對照研究",
+    p6_h1_value: "診斷前 CT",
+    p6_h1: "臨床診斷前 1–12 個月",
+    p6_h2_value: "多中心",
+    p6_h2: "回溯性研究",
+    p6_h3_value: "病例對照",
+    p6_h3: "胰臟癌偵測",
+    p6_abs: "本多中心回溯性病例對照研究以顯影增強 CT 評估 AI 工具，包含臨床診斷前 1–12 個月取得的影像，並以正常胰臟及其他胰臟疾病為對照，評估胰臟癌偵測。",
+    p6_abs_en: "A multicenter retrospective case-control study evaluated an AI tool on contrast-enhanced CT, including scans obtained 1–12 months before clinical diagnosis. It assessed pancreatic cancer detection against normal pancreas and other pancreatic diseases.",
+
     pub_link: "閱讀原文 ↗",
-    note: "摘要為譯自原文 Abstract 之整理（英文為原文精簡），完整內容請以 PubMed 原文為準。",
+    note: "摘要為原文摘要的整理與翻譯；完整研究內容請以 DOI 對應的期刊原文為準，PubMed 提供索引與摘要資訊。",
     back_btn: "回到臨床證據"
   };
 
   var en = {
-    meta_title: "Pancreatic Cancer and PDAC CT Research | PANCREASaver®",
-    meta_desc: "Five peer-reviewed papers on pancreatic cancer, pancreatic ductal adenocarcinoma (PDAC), CT detection, and AI-assisted medical imaging, with summaries and PubMed links.",
+    meta_title: "Pancreatic Cancer CT AI Research | 6 Publications | PANCREASaver®",
+    meta_desc: "Explore 6 peer-reviewed pancreatic cancer and PDAC CT AI studies, including prediagnostic imaging, multicenter validation and radiomics, with summaries, DOI and PubMed links.",
 
     ph_badge: "Publications",
-    ph_title_1: "Every line of evidence, <span class=\"hl\">published internationally.</span>",
-    ph_sub: "Five papers spanning pancreatic cancer, PDAC, AI-assisted CT review, nationwide validation, and real-world application — open the full articles on PubMed.",
+    ph_title_1: "Pancreatic cancer CT AI research,<span class=\"hl\">with links to the evidence.</span>",
+    ph_sub: "Six peer-reviewed studies on pancreatic cancer and PDAC CT AI, spanning prediagnostic imaging, multicenter validation and radiomics — with summaries and source links.",
 
-    sec_t: "5 international publications",
+    sec_t: "6 international publications",
     sec_p: "Representative PANCREASaver® publications covering pancreatic ductal adenocarcinoma (PDAC), CT detection, and AI-assisted medical imaging. The work comes from the NTU team; summaries are condensed from the original abstracts, and PubMed is authoritative.",
 
     p1_t: "Deep learning to distinguish pancreatic cancer tissue from non-cancerous pancreatic tissue: a retrospective study with cross-racial external validation",
@@ -111,21 +123,33 @@
     p5_abs: "Applications of artificial intelligence in pancreatic and biliary diseases.",
     p5_abs_en: "A concise review of major AI methodologies (machine learning, deep learning) and the current landscape of AI research in pancreatobiliary diseases — where diagnosis and treatment selection are often complex — covering detection/diagnosis, risk stratification and prognosis prediction to supplement clinicians.",
 
+    p6_t: "Artificial Intelligence for Early Detection of Pancreatic Cancer in Prediagnostic and Diagnostic Computed Tomography Examinations: A Multicenter Retrospective Case-control Study",
+    p6_t_en: "Artificial Intelligence for Early Detection of Pancreatic Cancer in Prediagnostic and Diagnostic Computed Tomography Examinations: A Multicenter Retrospective Case-control Study",
+    p6_tag: "Multicenter case-control study",
+    p6_h1_value: "Earlier CT",
+    p6_h1: "1–12 months before diagnosis",
+    p6_h2_value: "Multicenter",
+    p6_h2: "Retrospective study",
+    p6_h3_value: "Case-control",
+    p6_h3: "Pancreatic cancer detection",
+    p6_abs: "A multicenter retrospective case-control study evaluated an AI tool on contrast-enhanced CT, including scans obtained 1–12 months before clinical diagnosis. It assessed pancreatic cancer detection against normal pancreas and other pancreatic diseases.",
+    p6_abs_en: "A multicenter retrospective case-control study evaluated an AI tool on contrast-enhanced CT, including scans obtained 1–12 months before clinical diagnosis. It assessed pancreatic cancer detection against normal pancreas and other pancreatic diseases.",
+
     pub_link: "Read the paper ↗",
-    note: "Summaries are condensed from the original abstracts. The PubMed-indexed publications are the authoritative sources.",
+    note: "Summaries are condensed from the original abstracts. DOI links identify the journal articles; PubMed provides citation and abstract information.",
     back_btn: "Back to Clinical Evidence"
   };
 
   var ja = {
-    meta_title: "ジャーナル論文 — 5 編の国際論文：テーマ・抄録・リンク | PANCREASaver®",
-    meta_desc: "PANCREASaver® の学術的基盤：Lancet Digital Health、Radiology など 5 編の国際論文のテーマ、抄録と PubMed リンク。",
+    meta_title: "膵がん CT AI 研究｜6 編の論文・抄録・原文 | PANCREASaver®",
+    meta_desc: "膵がん・PDAC の CT AI に関する 6 編の査読論文。診断前画像、多施設検証、ラジオミクスの研究概要と DOI・PubMed 原文リンクを掲載しています。",
 
     ph_badge: "Publications",
-    ph_title_1: "すべてのエビデンスは、<span class=\"hl\">国際ジャーナルに。</span>",
-    ph_sub: "アルゴリズム開発、全国規模の検証、リアルワールド応用にわたる 5 編の論文 — 「論文を読む」から PubMed で全文を開けます。",
+    ph_title_1: "膵がん CT AI の研究を、<span class=\"hl\">原文で確かめる。</span>",
+    ph_sub: "膵がん・PDAC の CT AI、診断前画像、多施設検証、ラジオミクスを扱う 6 編の査読論文。研究概要と DOI／PubMed の参照リンクを掲載しています。",
 
-    sec_t: "5 編の国際論文",
-    sec_p: "PANCREASaver® に関連する代表的な 5 編の学術発表（すべて台湾大学チームによる実在の研究）。日本語訳は原文抄録に基づく整理です。",
+    sec_t: "6 編の国際論文",
+    sec_p: "PANCREASaver® に関連する代表的な 6 編の学術発表（すべて台湾大学チームによる実在の研究）。日本語訳は原文抄録に基づく整理です。",
 
     p1_t: "Deep learning to distinguish pancreatic cancer tissue from non-cancerous pancreatic tissue: a retrospective study with cross-racial external validation",
     p1_t_en: "Deep learning to distinguish pancreatic cancer tissue from non-cancerous pancreatic tissue: a retrospective study with cross-racial external validation",
@@ -169,8 +193,20 @@
     p5_abs: "Applications of artificial intelligence in pancreatic and biliary diseases.",
     p5_abs_en: "A concise review of major AI methodologies (machine learning, deep learning) and the current landscape of AI research in pancreatobiliary diseases — where diagnosis and treatment selection are often complex — covering detection/diagnosis, risk stratification and prognosis prediction to supplement clinicians.",
 
+    p6_t: "診断前および診断時の CT 検査における人工知能による膵がんの早期検出：多施設後ろ向き症例対照研究",
+    p6_t_en: "診断前および診断時の CT 検査における人工知能による膵がんの早期検出：多施設後ろ向き症例対照研究",
+    p6_tag: "多施設症例対照研究",
+    p6_h1_value: "診断前 CT",
+    p6_h1: "臨床診断の 1–12 か月前",
+    p6_h2_value: "多施設",
+    p6_h2: "後ろ向き研究",
+    p6_h3_value: "症例対照",
+    p6_h3: "膵がんの検出",
+    p6_abs: "多施設後ろ向き症例対照研究で、臨床診断の 1–12 か月前に撮影された画像を含む造影 CT を用いて AI ツールを評価しました。正常膵臓および他の膵疾患を対照として、膵がんの検出を検討しました。",
+    p6_abs_en: "多施設後ろ向き症例対照研究で、臨床診断の 1–12 か月前に撮影された画像を含む造影 CT を用いて AI ツールを評価しました。正常膵臓および他の膵疾患を対照として、膵がんの検出を検討しました。",
+
     pub_link: "論文を読む ↗",
-    note: "日本語訳は原文抄録に基づく整理です。詳細は PubMed の原文をご確認ください。",
+    note: "研究概要は原文抄録に基づく要約・翻訳です。詳細は DOI から論文原文をご確認ください。PubMed では書誌情報と抄録を参照できます。",
     back_btn: "臨床エビデンスへ戻る"
   };
 
