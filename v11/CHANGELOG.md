@@ -5,6 +5,22 @@
 
 ---
 
+## v11.2.96（2026-10-13）— 三語文獻 SEO／GEO／AI-SEO 一致性優化（已授權部署）
+
+- 三語文獻頁的搜尋 title／description、H1、Open Graph、Twitter 與字典改為明確的胰臟癌／PDAC CT AI 研究主題，納入診斷前 CT、多中心驗證、影像組學和 6 篇文獻資訊；中文版 zh-page-data 同步，日文 keywords 改為日文。
+- 三語均使用 6 個正式 ScholarlyArticle 節點，正式英文題名、DOI／PubMed 對照、CollectionPage、具穩定卡片 ID 的 ItemList 及對應語言 BreadcrumbList 一致。移除未查證的免費全文旗標；研究來源不誤歸公司出版。
+- 以 PubMed 再核對既有五篇題名、DOI、期刊與年份；新文獻完整 11 位作者／卷期頁碼保留。三語 AI 摘要與完整摘要列出全部六篇正式引用與 DOI／PubMed；sitemap 說明更新為實際 54 個 canonical URL。
+- 既有五篇卡片內容、醫療效能數字、爬蟲／Content-Signal 政策、RSNA 與 Cookie 功能維持現行版本；本次最佳化聚焦實際可讀文字、正式引用與結構化資料。
+- 使用者已明確要求部署。限定提交本次網站變更，以正式 commit archive 建立發布包，保留 Pages Functions，排除私人 gas／未追蹤預覽及備份；部署識別、正式讀回與同步結果另見 V11_2_96_RELEASE_RECORD.md。
+
+## v11.2.95（2026-10-13）— 三語文獻館新增 2026 多中心胰臟癌 CT 研究（本機／Drive，未部署）
+
+- 中文、英文、日文文獻館新增 Diagnostic and Interventional Imaging 107(7–8):265–275（2026）研究；保留使用者提供的完整作者序列、Po-Ting Chen*、原始英文題名、DOI 與 PubMed 連結（PMID 41622045）。繁中及日文摘要為出版社摘要的精簡翻譯，不新增產品效能宣稱。
+- 文獻總數由 5 篇更新為 6 篇；同步文獻頁 HTML fallback、共用字典、meta／OG、ScholarlyArticle JSON-LD、首頁／產品／臨床證據等既有總數入口、三語 AI 摘要與 sitemap 修改日期。受影響字典的載入版本遞增。
+- 修正日文文獻頁原有聯絡／專利頁 fallback，讓無 JavaScript 時也展示正確的文獻標題與說明；原有五篇文獻卡及其摘要字典未改動。
+- 修改前來源已備份；本機 checkout 與 Drive V11 修改前 30 個涉及檔案逐一比對相同。本輪同步變更檔案並保留逐檔 SHA-256 紀錄。
+- 驗證與同步證據見 PUBLICATION_UPDATE_20261013.md；本輪未 commit、push 或 deploy。
+
 ## v11.2.94（2026-10-08）— 冒名釣魚郵件資安聲明（已部署）
 
 - 依使用者提供的 20261008 合作夥伴聲明 PDF，新增繁中進站彈窗、完整聲明頁與原始 PDF 下載。全文僅修正原文「也非常感各」少一個「謝」的明顯錯字；原始 PDF 未改動。
