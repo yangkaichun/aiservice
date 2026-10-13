@@ -1,8 +1,8 @@
 /* pancad.ai v7 — about 字典（關於仲智）?v=1 */
 (function () {
   var zh = {
-    meta_title: "關於仲智數位健康 — 台大技術・台灣新創 | PANCREASaver® 助胰見®",
-    meta_desc: "仲智數位健康股份有限公司（PanCAD.ai）：台大王偉仲教授技術、台大醫院廖偉智教授臨床驗證。從實驗室到臨床，讓胰臟癌早期發現不再遙遠。",
+    meta_title: "關於仲智 PanCAD.ai｜團隊與胰臟 CT AI 研究",
+    meta_desc: "認識仲智數位健康 PanCAD.ai 的公司使命、共同創辦人與研究背景，查閱 6 篇胰臟癌 CT AI 代表期刊研究，包含 2026 年診斷前 CT 多中心研究。",
 
     ph_badge: "About PanCAD.ai",
     ph_title_1: "讓早期發現，<span class=\"hl\">不再是遙遠的事。</span>",
@@ -119,7 +119,15 @@
     cf2_exp1: "研究領域：腸胃醫學、流行病學、胰臟炎與胰臟癌。",
     cf2_exp2: "臨床專長：胰膽內視鏡（ERCP）及相關消化道內視鏡照護。",
     cf2_exp3: "學術識別：ORCID 0000-0001-5362-6953｜Scopus Author ID 56452203300。",
-    cf_pub_t: "共同代表性期刊論文（點擊閱讀原文）",
+    cf_pub_t: "6 篇代表共同研究，原文可查證",
+    cf_pub_p: "從深度學習、影像組學到診斷前 CT，這些研究呈現團隊的學術基礎；研究結果的適用範圍請以各篇原文為準。",
+    cf_pub_latest: "2026 新增研究",
+    cf_pub6_t: "人工智慧於診斷前與診斷時電腦斷層檢查中早期偵測胰臟癌：多中心回溯性病例對照研究",
+    cf_pub_doi: "期刊原文 ↗",
+    cf_pub_pubmed: "PubMed 索引 ↗",
+    cf_pub_detail: "研究摘要與完整作者 →",
+    cf_pub_other: "其他代表共同研究",
+    cf_pub_all: "查看完整 6 篇文獻 →",
     cf_pub1_t: "Lancet Digital Health 2020｜深度學習區分胰臟癌組織與非癌胰臟組織：回溯性研究與跨種族外部驗證（<2 cm 敏感度 92.1%） ↗",
     cf_pub2_t: "Radiology 2023｜全國多中心 CT 深度學習偵測胰臟癌（AUC 0.95）",
     cf_pub3_t: "Radiology: Imaging Cancer 2021｜CT 影像組學區分胰臟癌（台美雙族群）",
@@ -130,8 +138,8 @@
     cta_btn: "聯絡我們"
   };
   var en = {
-    meta_title: "About PanCAD.ai | NTU Research and Clinical Validation",
-    meta_desc: "PanCAD.ai Co., Ltd. builds on NTU research and clinical validation to develop AI-assisted medical imaging software for pancreatic CT review.",
+    meta_title: "About PanCAD.ai | Team and Pancreatic CT AI Research",
+    meta_desc: "Meet PanCAD.ai and its cofounders, and explore 6 representative peer-reviewed pancreatic CT AI studies, including the 2026 multicenter study of prediagnostic CT.",
 
     ph_badge: "About PanCAD.ai",
     ph_title_1: "Making early detection <span class=\"hl\">reachable.</span>",
@@ -231,7 +239,15 @@
     cf2_exp1: "Research interests: gastroenterology, epidemiology, pancreatitis, and pancreatic cancer.",
     cf2_exp2: "Clinical expertise: pancreaticobiliary endoscopy (ERCP) and related gastrointestinal endoscopy care.",
     cf2_exp3: "Academic identifiers: ORCID 0000-0001-5362-6953 | Scopus Author ID 56452203300.",
-    cf_pub_t: "Representative joint publications (read the originals)",
+    cf_pub_t: "6 representative joint studies, with primary sources",
+    cf_pub_p: "From deep learning and radiomics to prediagnostic CT, these studies document the team’s research foundation. Consult each original paper for its study population and scope.",
+    cf_pub_latest: "New research · 2026",
+    cf_pub6_t: "Artificial Intelligence for Early Detection of Pancreatic Cancer in Prediagnostic and Diagnostic Computed Tomography Examinations: A Multicenter Retrospective Case-control Study",
+    cf_pub_doi: "Journal article ↗",
+    cf_pub_pubmed: "PubMed citation ↗",
+    cf_pub_detail: "Study summary and full authors →",
+    cf_pub_other: "Other representative joint studies",
+    cf_pub_all: "View all 6 publications →",
     cf_pub1_t: "The Lancet Digital Health 2020 | Deep learning to distinguish pancreatic cancer tissue from non-cancerous pancreatic tissue: a retrospective study with cross-racial external validation (92.1% sensitivity for tumors under 2 cm) ↗",
     cf_pub2_t: "Radiology 2023 | Nationwide multicenter CT deep learning for pancreatic cancer detection (AUC 0.95)",
     cf_pub3_t: "Radiology: Imaging Cancer 2021 | CT radiomics distinguishing pancreatic cancer (Taiwan–U.S. cohorts)",
@@ -242,8 +258,8 @@
     cta_btn: "Contact us"
   };
   var ja = {
-    meta_title: "会社概要 — 台湾発のAIスタートアップ | PANCREASaver® 助胰見®",
-    meta_desc: "仲智デジタルヘルス（PanCAD.ai）：国立台湾大学・王教授の技術、国立台湾大学病院・廖教授の臨床検証。研究室から臨床へ——膵臓がんの早期発見を身近に。",
+    meta_title: "PanCAD.ai 会社概要｜研究チームと膵臓 CT AI",
+    meta_desc: "PanCAD.ai の使命、共同創業者、研究背景を紹介。2026 年の診断前 CT 多施設研究を含む、膵がん CT AI の代表的な査読論文 6 編を確認できます。",
 
     ph_badge: "会社概要",
     ph_title_1: "早期発見を、<span class=\"hl\">もっと身近に。</span>",
@@ -343,7 +359,15 @@
     cf2_exp1: "研究領域：消化器内科、疫学、膵炎、膵臓がん。",
     cf2_exp2: "臨床専門：膵胆道内視鏡（ERCP）と関連する消化管内視鏡診療。",
     cf2_exp3: "学術識別子：ORCID 0000-0001-5362-6953｜Scopus Author ID 56452203300。",
-    cf_pub_t: "代表的な共同論文（原文へ）",
+    cf_pub_t: "代表的な共同研究 6 編と原典",
+    cf_pub_p: "深層学習、ラジオミクス、診断前 CT の研究が、チームの学術的基盤を示しています。対象集団や適用範囲は各論文の原文をご確認ください。",
+    cf_pub_latest: "新しい研究 · 2026",
+    cf_pub6_t: "診断前および診断時の CT 検査における人工知能による膵がんの早期検出：多施設後ろ向き症例対照研究",
+    cf_pub_doi: "論文原文 ↗",
+    cf_pub_pubmed: "PubMed 書誌情報 ↗",
+    cf_pub_detail: "研究概要と全著者 →",
+    cf_pub_other: "これまでの代表的な共同研究",
+    cf_pub_all: "6 編の論文をすべて見る →",
     cf_pub1_t: "The Lancet Digital Health 2020｜深層学習による膵臓がん組織と非がん膵組織の識別：異人種間外部検証を伴う後ろ向き研究（<2 cm 感度 92.1%） ↗",
     cf_pub2_t: "Radiology 2023｜全国多施設 CT 深層学習による膵臓がん検出（AUC 0.95）",
     cf_pub3_t: "Radiology: Imaging Cancer 2021｜CT ラジオミクスによる膵臓がん判別（台湾・米国コホート）",
