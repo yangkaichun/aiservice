@@ -44,7 +44,7 @@
     nums_t: "在真實場域被驗證",
     stat_label_1: "敏感度（<2cm 腫瘤）",
     stat_label_2: "全國多中心 AUC",
-    stat_label_3: "累積判讀人次",
+    stat_label_3: "研究與商業應用累計人次",
     stat_label_4: "台美專利",
 
     cta_t: "讓「胰臟 AI 篩檢」成為您健檢服務的新招牌",
@@ -95,7 +95,7 @@
     nums_t: "Validated in real settings",
     stat_label_1: "Sensitivity for tumors under 2 cm",
     stat_label_2: "Multicenter AUC",
-    stat_label_3: "CT studies analyzed",
+    stat_label_3: "Research & commercial use (person-visits)",
     stat_label_4: "Patents (Taiwan and U.S.)",
 
     cta_t: "Add AI-assisted pancreatic CT review to your program",
@@ -104,7 +104,7 @@
   };
   var ja = {
     meta_title: "健診センター向け — 膵臓がんAI検診の導入 | PANCREASaver® 助胰見®",
-    meta_desc: "健診コースに膵臓がんAI検診を追加：4週間の導入、PACS/RISとのシームレス統合、放射線科連携、2,000件超の実績。早期発見を健診の看板に。",
+    meta_desc: "健診コースに膵臓がんAI検診を追加：4週間の導入、PACS/RISとのシームレス統合、放射線科連携。研究・商用利用は延べ5,500人を超えています。早期発見を健診の看板に。",
 
     ph_badge: "健診センター向け",
     ph_title_1: "健診を、<span class=\"hl\">もっと早く。</span>",
@@ -146,7 +146,7 @@
     nums_t: "実現場で検証済み",
     stat_label_1: "感度（2cm未満の腫瘍）",
     stat_label_2: "全国多施設AUC",
-    stat_label_3: "累計読影件数",
+    stat_label_3: "研究・商用利用の累計（延べ人数）",
     stat_label_4: "台湾・米国特許",
 
     cta_t: "「膵臓がんAI検診」を健診の新しい看板に",

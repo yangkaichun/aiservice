@@ -31,7 +31,7 @@
     tl_5_b: "2023",
     tl_5_p: "美國 FDA 突破性醫材認定；TFDA 衛部醫器製字第007946號",
     tl_6_b: "2026",
-    tl_6_p: "部署醫學中心、區域醫院與健檢中心，累積 2000+ 人次（含臨床驗證）",
+    tl_6_p: "部署醫學中心、區域醫院與健檢中心，研究與商業應用累計已突破5,500人次",
 
     tech_k: "技術源頭",
     tech_t: "AI 輔助胰臟影像分析背後的十年研究",
@@ -168,7 +168,7 @@
     tl_5_b: "2023",
     tl_5_p: "FDA Breakthrough Device Designation; TFDA medical device license No. 007946",
     tl_6_b: "2026",
-    tl_6_p: "More than 2,000 CT studies analyzed across medical centers, regional hospitals, and health centers, including clinical validation",
+    tl_6_p: "Used across medical centers, regional hospitals, and health centers, with more than 5,500 cumulative person-visits across research and commercial applications",
 
     tech_k: "Technology Origin",
     tech_t: "A decade of research behind AI-assisted pancreatic imaging",
@@ -288,7 +288,7 @@
     tl_5_b: "2023",
     tl_5_p: "FDA Breakthrough Device Designation、TFDA 医療機器許可証を取得",
     tl_6_b: "2026",
-    tl_6_p: "医学センター・地域病院・健診センターに導入、臨床検証を含め累計 2,000 件超",
+    tl_6_p: "医学センター・地域病院・健診センターに導入され、研究・商用利用は延べ5,500人を超えています",
 
     tech_k: "技術の源流",
     tech_t: "AI支援膵臓画像解析を支える10年の研究",

@@ -21,7 +21,7 @@
     hero_cta_2: "醫療機構合作",
     hero_m1: "敏感度（<2cm）",
     hero_m2: "全國多中心 AUC",
-    hero_m3: "累積判讀人次（含臨床驗證）",
+    hero_m3: "研究與商業應用累計人次",
     hero_m4: "突破性醫材認定",
     hero_scroll: "捲動探索",
 
@@ -71,13 +71,13 @@
     gate2_p: "互動證據館：AUC 0.95、<2cm 敏感度 92.1%、法規認證與導入流程，30 秒拿到決策資訊。",
     gate2_cta: "查看證據與導入",
     gate3_t: "健檢中心",
-    gate3_p: "把胰臟癌 AI 篩檢加入您的健檢套組：流程整合、放射科協作、2000+ 人次實戰經驗（含臨床驗證）。",
+    gate3_p: "把胰臟癌 AI 篩檢加入您的健檢套組：流程整合、放射科協作；PANCREASaver® 研究與商業應用累計已突破5,500人次。",
     gate3_cta: "了解篩檢方案",
 
     /* 數字帶 */
     st_label_1: "敏感度（<2cm 腫瘤）",
     st_label_2: "全國多中心 AUC",
-    st_label_3: "累積判讀人次（含臨床驗證）",
+    st_label_3: "研究與商業應用累計人次",
     st_label_4: "台美專利",
 
     /* 自測 teaser */
@@ -93,6 +93,10 @@
     /* 新聞 */
     news_k: "最新消息",
     news_t: "每一步，都有好消息",
+    n_usage_d: "2026.10.13",
+    n_usage_t: "PANCREASaver® 研究與商業應用累計突破 5,500 人次",
+    n_usage_p: "截至2026-10-13，依仲智數位健康累計統計，PANCREASaver® 研究與商業應用已突破5,500人次。",
+
     n1_d: "2026.07",
     n7_d: "2026.08",
     n7_t: "<a href=\"https://www.storm.mg/article/11158732\" target=\"_blank\" rel=\"noopener\">2026 風傳媒 AI 醫療領航大獎（AIHIA）— PANCREASaver® 獲肯定 ↗</a>",
@@ -145,7 +149,7 @@
     car5_cta: "了解認證歷程",
     car6_k: "導入流程",
     car6_t: "從簽約到上線，<span class=\"hl\">4 週完成導入。</span>",
-    car6_p: "醫學中心＋區域醫院＋健檢中心已累積 2000+ 人次判讀（含臨床驗證）——資料不出院、SaaS 訂閱、持續模型更新。",
+    car6_p: "醫學中心＋區域醫院＋健檢中心已導入 PANCREASaver®，研究與商業應用累計已突破5,500人次——資料不出院、SaaS 訂閱、持續模型更新。",
     car6_cta: "查看導入方案",
 
     /* 護胰大聯盟 Line CTA（v11.1 首頁加入） */
@@ -187,7 +191,7 @@
     hero_cta_2: "For Clinicians",
     hero_m1: "Sensitivity (under 2 cm)",
     hero_m2: "Multicenter AUC",
-    hero_m3: "CT studies analyzed (incl. clinical validation)",
+    hero_m3: "Research & commercial use (person-visits)",
     hero_m4: "FDA Breakthrough Device Designation",
     hero_scroll: "Scroll to explore",
 
@@ -239,7 +243,7 @@
 
     st_label_1: "Sensitivity for tumors under 2 cm",
     st_label_2: "Multicenter AUC",
-    st_label_3: "CT studies analyzed (incl. clinical validation)",
+    st_label_3: "Research & commercial use (person-visits)",
     st_label_4: "Patents (Taiwan and U.S.)",
 
     qt_k: "30-Second Awareness",
@@ -253,6 +257,10 @@
 
     news_k: "News",
     news_t: "The latest from PanCAD.ai",
+    n_usage_d: "2026.10.13",
+    n_usage_t: "PANCREASaver® exceeds 5,500 cumulative person-visits in research and commercial use",
+    n_usage_p: "As of October 13, 2026, PanCAD.ai reports more than 5,500 cumulative person-visits using PANCREASaver® across research and commercial applications.",
+
     n1_d: "2026.07",
     n7_d: "2026.08",
     n7_t: "<a href=\"https://www.storm.mg/article/11158732\" target=\"_blank\" rel=\"noopener\">2026 Storm Media AI Healthcare Innovation Awards (AIHIA) — PANCREASaver® recognized ↗</a>",
@@ -303,7 +311,7 @@
     car5_cta: "See certification journey",
     car6_k: "Deployment",
     car6_t: "From contract to go-live, <span class=\"hl\">implementation in about 4 weeks.</span>",
-    car6_p: "Medical centers, regional hospitals, and health centers — more than 2,000 CT studies analyzed, including clinical validation. Deployment and update options depend on the institution.",
+    car6_p: "Medical centers, regional hospitals, and health centers — more than 5,500 cumulative person-visits across research and commercial applications. Deployment and update options depend on the institution.",
     car6_cta: "View deployment plans",
 
     /* Pancreas Care Alliance LINE CTA (v11.1 homepage) */
@@ -345,7 +353,7 @@
     hero_cta_2: "医療機関の方へ",
     hero_m1: "感度（2cm未満）",
     hero_m2: "全国多施設AUC",
-    hero_m3: "累計読影件数（臨床検証含む）",
+    hero_m3: "研究・商用利用の累計（延べ人数）",
     hero_m4: "FDA画期的指定",
     hero_scroll: "スクロール",
 
@@ -392,12 +400,12 @@
     gate2_p: "インタラクティブなエビデンスホール：AUC 0.95、感度92.1%、規制認証と導入フロー——30秒で意思決定情報を。",
     gate2_cta: "エビデンスを見る",
     gate3_t: "健診センター",
-    gate3_p: "健診コースに膵臓がんAI検診を追加：ワークフロー統合、放射線科連携、2,000件超の実績。",
+    gate3_p: "健診コースに膵臓がんAI検診を追加：ワークフロー統合、放射線科連携。PANCREASaver® の研究・商用利用は延べ5,500人を超えています。",
     gate3_cta: "検診プランを見る",
 
     st_label_1: "感度（2cm未満の腫瘍）",
     st_label_2: "全国多施設AUC",
-    st_label_3: "累計読影件数（臨床検証含む）",
+    st_label_3: "研究・商用利用の累計（延べ人数）",
     st_label_4: "台湾・米国特許",
 
     qt_k: "30秒リスク意識",
@@ -411,6 +419,10 @@
 
     news_k: "ニュース",
     news_t: "すべての歩みに、良い知らせを",
+    n_usage_d: "2026.10.13",
+    n_usage_t: "PANCREASaver® の研究・商用利用が延べ5,500人を突破",
+    n_usage_p: "2026年10月13日時点のPanCAD.aiの累計集計によると、PANCREASaver® の研究・商用利用は延べ5,500人を超えています。",
+
     n1_d: "2026.07",
     n7_d: "2026.08",
     n7_t: "<a href=\"https://www.storm.mg/article/11158732\" target=\"_blank\" rel=\"noopener\">2026 ストームメディア AI医療リーディングアワード（AIHIA）— PANCREASaver® が受賞 ↗</a>",
@@ -461,7 +473,7 @@
     car5_cta: "認証の歩みを見る",
     car6_k: "導入プロセス",
     car6_t: "契約から稼働まで、<span class=\"hl\">4 週間で導入。</span>",
-    car6_p: "医学センター・地域病院・健診センターで累計 2,000 件超（臨床検証を含む）の読影実績 — データは院内完結、SaaS サブスク、継続的なモデル更新。",
+    car6_p: "医学センター・地域病院・健診センターに導入され、研究・商用利用は延べ5,500人を超えています — データは院内完結、SaaS サブスク、継続的なモデル更新。",
     car6_cta: "導入プランを見る",
 
     /* Pancreas Care Alliance LINE CTA（v11.1 ホーム） */

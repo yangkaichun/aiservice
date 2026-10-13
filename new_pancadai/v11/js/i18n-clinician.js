@@ -15,7 +15,7 @@
     auc_src: "圖來源：Radiology 2023（220152）Figure 3——全國多中心驗證（n=1,473）｜<a href=\"https://pubs.rsna.org/doi/full/10.1148/radiol.220152\" target=\"_blank\" rel=\"noopener\" style=\"color:#295daa;font-weight:700\">論文原文 ↗</a>",
     stat_label_1: "敏感度（<2cm 腫瘤）",
     stat_label_2: "全國多中心 AUC",
-    stat_label_3: "累積判讀人次（含臨床驗證）",
+    stat_label_3: "研究與商業應用累計人次",
     stat_label_4: "台美專利",
 
     ev_k: "臨床證據",
@@ -60,7 +60,7 @@
     tl_5_b: "2023",
     tl_5_p: "美國 FDA 突破性醫材認定；TFDA 衛部醫器製字第007946號",
     tl_6_b: "2026",
-    tl_6_p: "部署醫學中心、區域醫院與健檢中心，累積 2000+ 人次",
+    tl_6_p: "部署醫學中心、區域醫院與健檢中心，研究與商業應用累計已突破5,500人次",
 
     pub_k: "代表論文",
     pub_t: "發表的每一步",
@@ -102,7 +102,7 @@
     auc_src: "Figure source: Radiology 2023 (220152) Fig. 3 — nationwide multicenter validation (n=1,473) ｜<a href=\"https://pubs.rsna.org/doi/full/10.1148/radiol.220152\" target=\"_blank\" rel=\"noopener\" style=\"color:#295daa;font-weight:700\">Article ↗</a>",
     stat_label_1: "Sensitivity for tumors under 2 cm",
     stat_label_2: "Multicenter AUC",
-    stat_label_3: "CT studies analyzed (incl. clinical validation)",
+    stat_label_3: "Research & commercial use (person-visits)",
     stat_label_4: "Patents (Taiwan and U.S.)",
 
     ev_k: "Clinical Evidence",
@@ -147,7 +147,7 @@
     tl_5_b: "2023",
     tl_5_p: "FDA Breakthrough Device Designation; Taiwan TFDA license No. 007946",
     tl_6_b: "2026",
-    tl_6_p: "Used across medical centers, regional hospitals, and health centers; more than 2,000 CT studies analyzed",
+    tl_6_p: "Used across medical centers, regional hospitals, and health centers, with more than 5,500 cumulative person-visits across research and commercial applications",
 
     pub_k: "Key Publications",
     pub_t: "Every step, published",
@@ -189,7 +189,7 @@
     auc_src: "図の出典：Radiology 2023（220152）Figure 3——全国多施設検証（n=1,473）｜<a href=\"https://pubs.rsna.org/doi/full/10.1148/radiol.220152\" target=\"_blank\" rel=\"noopener\" style=\"color:#295daa;font-weight:700\">論文 ↗</a>",
     stat_label_1: "感度（2cm未満の腫瘍）",
     stat_label_2: "全国多施設AUC",
-    stat_label_3: "累計読影件数（臨床検証含む）",
+    stat_label_3: "研究・商用利用の累計（延べ人数）",
     stat_label_4: "台湾・米国特許",
 
     ev_k: "臨床エビデンス",
@@ -234,7 +234,7 @@
     tl_5_b: "2023",
     tl_5_p: "FDA画期的指定、TFDA認証取得",
     tl_6_b: "2026",
-    tl_6_p: "医学センター・地域病院・健診センターに導入、累計2,000件超",
+    tl_6_p: "医学センター・地域病院・健診センターに導入され、研究・商用利用は延べ5,500人を超えています",
 
     pub_k: "代表論文",
     pub_t: "歩みのすべてを発表",
