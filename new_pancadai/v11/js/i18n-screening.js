@@ -95,7 +95,7 @@
     nums_t: "Validated in real settings",
     stat_label_1: "Sensitivity for tumors under 2 cm",
     stat_label_2: "Multicenter AUC",
-    stat_label_3: "Research & commercial use (person-visits)",
+    stat_label_3: "Cumulative patient cases (research & commercial use)",
     stat_label_4: "Patents (Taiwan and U.S.)",
 
     cta_t: "Add AI-assisted pancreatic CT review to your program",
