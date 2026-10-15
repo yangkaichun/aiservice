@@ -168,7 +168,7 @@
     tl_5_b: "2023",
     tl_5_p: "FDA Breakthrough Device Designation; TFDA medical device license No. 007946",
     tl_6_b: "2026",
-    tl_6_p: "Used across medical centers, regional hospitals, and health centers, with more than 5,500 cumulative person-visits across research and commercial applications",
+    tl_6_p: "Used across medical centers, regional hospitals, and health centers, with cumulative use in more than 5,500 patient cases across research and commercial applications",
 
     tech_k: "Technology Origin",
     tech_t: "A decade of research behind AI-assisted pancreatic imaging",

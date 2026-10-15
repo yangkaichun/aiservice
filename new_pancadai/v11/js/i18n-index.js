@@ -191,7 +191,7 @@
     hero_cta_2: "For Clinicians",
     hero_m1: "Sensitivity (under 2 cm)",
     hero_m2: "Multicenter AUC",
-    hero_m3: "Research & commercial use (person-visits)",
+    hero_m3: "Cumulative patient cases (research & commercial use)",
     hero_m4: "FDA Breakthrough Device Designation",
     hero_scroll: "Scroll to explore",
 
@@ -243,7 +243,7 @@
 
     st_label_1: "Sensitivity for tumors under 2 cm",
     st_label_2: "Multicenter AUC",
-    st_label_3: "Research & commercial use (person-visits)",
+    st_label_3: "Cumulative patient cases (research & commercial use)",
     st_label_4: "Patents (Taiwan and U.S.)",
 
     qt_k: "30-Second Awareness",
@@ -258,8 +258,8 @@
     news_k: "News",
     news_t: "The latest from PanCAD.ai",
     n_usage_d: "2026.10.13",
-    n_usage_t: "PANCREASaver® exceeds 5,500 cumulative person-visits in research and commercial use",
-    n_usage_p: "As of October 13, 2026, PanCAD.ai reports more than 5,500 cumulative person-visits using PANCREASaver® across research and commercial applications.",
+    n_usage_t: "PANCREASaver® surpasses 5,500 patient cases across research and commercial applications",
+    n_usage_p: "As of October 13, 2026, PanCAD.ai reports that PANCREASaver® has been used in more than 5,500 patient cases across research and commercial applications.",
 
     n1_d: "2026.07",
     n7_d: "2026.08",
@@ -311,7 +311,7 @@
     car5_cta: "See certification journey",
     car6_k: "Deployment",
     car6_t: "From contract to go-live, <span class=\"hl\">implementation in about 4 weeks.</span>",
-    car6_p: "Medical centers, regional hospitals, and health centers — more than 5,500 cumulative person-visits across research and commercial applications. Deployment and update options depend on the institution.",
+    car6_p: "Medical centers, regional hospitals, and health centers — cumulative use in more than 5,500 patient cases across research and commercial applications. Deployment and update options depend on the institution.",
     car6_cta: "View deployment plans",
 
     /* Pancreas Care Alliance LINE CTA (v11.1 homepage) */

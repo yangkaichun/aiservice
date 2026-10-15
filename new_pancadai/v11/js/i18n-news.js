@@ -56,8 +56,8 @@
     ph_sub: "Research, deployments, regulatory updates, and company news about PANCREASaver®.",
 
     n_usage_d: "2026.10.13",
-    n_usage_t: "PANCREASaver® exceeds 5,500 cumulative person-visits in research and commercial use",
-    n_usage_p: "As of October 13, 2026, PanCAD.ai reports more than 5,500 cumulative person-visits using PANCREASaver® across research and commercial applications.",
+    n_usage_t: "PANCREASaver® surpasses 5,500 patient cases across research and commercial applications",
+    n_usage_p: "As of October 13, 2026, PanCAD.ai reports that PANCREASaver® has been used in more than 5,500 patient cases across research and commercial applications.",
 
     n7_d: "2026.08",
     n7_t: "<a href=\"https://www.storm.mg/article/11158732\" target=\"_blank\" rel=\"noopener\" style=\"color:inherit\">2026 Storm Media AI Healthcare Innovation Awards (AIHIA) — PANCREASaver® recognized ↗</a>",

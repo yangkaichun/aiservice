@@ -102,7 +102,7 @@
     auc_src: "Figure source: Radiology 2023 (220152) Fig. 3 — nationwide multicenter validation (n=1,473) ｜<a href=\"https://pubs.rsna.org/doi/full/10.1148/radiol.220152\" target=\"_blank\" rel=\"noopener\" style=\"color:#295daa;font-weight:700\">Article ↗</a>",
     stat_label_1: "Sensitivity for tumors under 2 cm",
     stat_label_2: "Multicenter AUC",
-    stat_label_3: "Research & commercial use (person-visits)",
+    stat_label_3: "Cumulative patient cases (research & commercial use)",
     stat_label_4: "Patents (Taiwan and U.S.)",
 
     ev_k: "Clinical Evidence",
@@ -147,7 +147,7 @@
     tl_5_b: "2023",
     tl_5_p: "FDA Breakthrough Device Designation; Taiwan TFDA license No. 007946",
     tl_6_b: "2026",
-    tl_6_p: "Used across medical centers, regional hospitals, and health centers, with more than 5,500 cumulative person-visits across research and commercial applications",
+    tl_6_p: "Used across medical centers, regional hospitals, and health centers, with cumulative use in more than 5,500 patient cases across research and commercial applications",
 
     pub_k: "Key Publications",
     pub_t: "Every step, published",
