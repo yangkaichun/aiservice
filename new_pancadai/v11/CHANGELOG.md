@@ -5,6 +5,12 @@
 
 ---
 
+## v11.2.100（2026-10-15）— 三語新聞新增經濟日報導入報導
+
+- 三語新聞頁新增 2026-10-15 經濟日報媒體卡，附同語短摘要與原文 canonical 連結；置於 2026-10-13 使用規模公告之前。英文沿用匿名客戶描述，三語均標示原文為中文報導。
+- 同步 HTML fallback、共用新聞字典、媒體摘要 Article 與原文 NewsArticle 引用、四份 AI 摘要、三語新聞頁快取版本與 sitemap；保留既有新聞、原統計日期與上一輪英文 patient cases 文案。
+- 原始報導、修改前來源及 Drive 副本已備份；驗證及發布紀錄存於 backups/v11_udn_news_9816593_20261015/，並同步 Drive 備份。依本對話已授權的網站發布流程處理。
+
 ## v11.2.99（2026-10-15）— 英文累計應用人次文案修正
 
 - 依使用者確認，將英文現行累計使用量的 person-visits 改為 patient cases，保留研究與商業應用範圍及 5,500+ 公司累計數字。法規頁統計卡採「5,500+ patient cases」／「Cumulative use across research and commercial applications」。
