@@ -1,6 +1,11 @@
 /* pancad.ai v7 — news 字典（最新消息）?v=1 */
 (function () {
   var zh = {
+    n_udn_d: "2026.10.15",
+    n_udn_t: "<a href=\"https://money.udn.com/money/story/5724/9816593\" target=\"_blank\" rel=\"noopener noreferrer\" style=\"color:inherit\">經濟日報：博田國際醫院導入 PANCREASaver® <span style=\"white-space:nowrap\">助胰見® ↗</span></a>",
+    n_udn_p: "經濟日報報導博田國際醫院導入 PANCREASaver® 助胰見®，將腹部 CT 的 AI 輔助偵測資訊納入既有判讀與健檢流程，疑似胰臟病灶由醫師複核。",
+    n_udn_source: "來源：經濟日報 · 中文報導",
+
     meta_title: "最新消息 — 仲智數位健康 | PANCREASaver® 助胰見®",
     meta_desc: "仲智數位健康最新消息：臨床數據發表、健檢中心合作、國際拓展與獲獎紀錄。",
 
@@ -48,6 +53,11 @@
     back_t: "回到首頁"
   };
   var en = {
+    n_udn_d: "2026.10.15",
+    n_udn_t: "<a href=\"https://money.udn.com/money/story/5724/9816593\" target=\"_blank\" rel=\"noopener noreferrer\" style=\"color:inherit\">Economic Daily: PANCREASaver® adoption in southern Taiwan ↗</a>",
+    n_udn_p: "Economic Daily reports that a hospital in southern Taiwan has adopted PANCREASaver® to add AI-assisted review of abdominal CT scans to its imaging and health checkup workflows, with suspicious pancreatic findings reviewed by physicians.",
+    n_udn_source: "Source: Economic Daily · Original report in Chinese",
+
     meta_title: "News — PanCAD.ai | PANCREASaver®",
     meta_desc: "Latest news from PanCAD.ai: real-world data presentations, health center partnerships, international expansion and awards.",
 
@@ -95,6 +105,11 @@
     back_t: "Back to Home"
   };
   var ja = {
+    n_udn_d: "2026.10.15",
+    n_udn_t: "<a href=\"https://money.udn.com/money/story/5724/9816593\" target=\"_blank\" rel=\"noopener noreferrer\" style=\"color:inherit\">経済日報：博田国際病院が PANCREASaver® を導入 ↗</a>",
+    n_udn_p: "台湾の経済日報は、博田国際病院による PANCREASaver® の導入を報道。腹部CTのAI支援情報を既存の読影・健診業務に取り入れ、疑わしい膵臓所見は医師が確認する運用を紹介しています。",
+    n_udn_source: "出典：経済日報 · 中国語の原文",
+
     meta_title: "ニュース — 仲智デジタルヘルス | PANCREASaver® 助胰見®",
     meta_desc: "仲智デジタルヘルスの最新情報：臨床データ発表、健診センター連携、国際展開、受賞。",
 
