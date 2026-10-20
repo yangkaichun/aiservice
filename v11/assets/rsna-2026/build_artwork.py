@@ -40,13 +40,14 @@ bold = lambda size: ImageFont.truetype(str(font_dir / "Arial Bold.ttf"), size)
 normal = lambda size: ImageFont.truetype(str(font_dir / "Arial.ttf"), size)
 d.rounded_rectangle((86, 340, 503, 389), radius=24, fill=(236, 112, 0, 255))
 d.text((111, 350), "RSNA 2026  •  CHICAGO", font=bold(24), fill="white")
-title = "Meet PANCREASaver"
+title = "Discover PANCREASaver"
 d.text((86, 425), title, font=bold(91), fill="white")
 d.text((86 + bold(91).getlength(title) + 4, 409), "®", font=bold(42), fill="white")
 d.text((86, 535), "at RSNA 2026", font=bold(91), fill="white")
 d.rounded_rectangle((86, 686, 473, 773), radius=19, fill=(255, 255, 255, 255))
 d.text((118, 700), "BOOTH 5132", font=bold(49), fill=(21, 61, 117))
 d.text((510, 714), "Nov 29–Dec 2  •  McCormick Place", font=normal(36), fill=(226, 238, 253))
-d.text((88, 829), "PANCREASaver®  |  AI-assisted pancreatic CT review", font=normal(29), fill=(189, 214, 238))
+subtitle = "AI-assisted pancreatic CT review"
+d.text((88, 809), subtitle, font=bold(46), fill=(189, 214, 238))
 im.save(OUT, optimize=True)
 print(OUT)
