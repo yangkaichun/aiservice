@@ -53,13 +53,16 @@
     back_t: "回到首頁"
   };
   var en = {
+    n_rsna_d: "2026.10.30",
+    n_rsna_t: "<a href=\"https://www.pancad.ai/en/rsna-2026\" style=\"color:inherit\">PanCAD.ai to demonstrate PANCREASaver® at RSNA 2026, Booth 5132 →</a>",
+    n_rsna_p: "Visit Booth 5132 at the RSNA 2026 Technical Exhibits in Chicago, November 29–December 2, for an in-person, nonclinical PANCREASaver® demo using authorized, de-identified CT examples. Discuss published clinical evidence, radiologist workflows, evaluation, imaging integration, and potential partnerships with our team. The U.S. FDA application is under review; PANCREASaver® is not FDA-cleared or available for sale in the United States.",
     n_udn_d: "2026.10.15",
     n_udn_t: "<a href=\"https://money.udn.com/money/story/5724/9816593\" target=\"_blank\" rel=\"noopener noreferrer\" style=\"color:inherit\">Economic Daily: PANCREASaver® adoption in southern Taiwan ↗</a>",
     n_udn_p: "Economic Daily reports that a hospital in southern Taiwan has adopted PANCREASaver® to add AI-assisted review of abdominal CT scans to its imaging and health checkup workflows, with suspicious pancreatic findings reviewed by physicians.",
     n_udn_source: "Source: Economic Daily · Original report in Chinese",
 
     meta_title: "News — PanCAD.ai | PANCREASaver®",
-    meta_desc: "Latest news from PanCAD.ai: real-world data presentations, health center partnerships, international expansion and awards.",
+    meta_desc: "PanCAD.ai news: meet the team at RSNA 2026 Booth 5132 for a PANCREASaver® CT AI demo, clinical evidence discussions, and potential partnerships.",
 
     ph_badge: "News",
     ph_title_1: "The latest <span class=\"hl\">from PanCAD.ai.</span>",
