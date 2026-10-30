@@ -5,6 +5,28 @@
 
 ---
 
+## v11.2.103（2026-10-30）— RSNA 能見度版本正式發布與 12/6 會後復原排程
+
+- 使用者明確授權部署，並確認「12/5 晚上 12:00」為 **2026-12-06 00:00 Asia/Taipei**。本次 Cloudflare Pages 正式部署為 `5fba6850.pancadai-v11.pages.dev`；包含先前尚未發布的 v11.2.101 SEO／AI-SEO／GEO 校正與 v11.2.102 RSNA 內容。正式主域英文活動頁、產品頁、AI 摘要及 sitemap 均讀回成功。
+- 保留原有表單 HTML、`js/rsna-demo.js`、兩個 Pages Functions、GAS 程式與服務端環境變數；正式 `/api/rsna-config` 回 200、`GET /api/rsna-demo` 回 405。未送出新的測試預約，也未變更私人預約資料表。
+- 原歷史文件所記排程 `rsna-2026-pancad-ai` 在目前 Codex app 已不存在；已建立新心跳排程 `pancad-ai-rsna-2026`，每天台北時間 00:00 檢查，僅於 2026-12-06 00:00 起執行會後復原，成功後停用，受阻則通知並隔日重試。復原以當時最新網站為底選擇性移除 RSNA 活動內容與新預約 API，不重設整站，不刪 GAS 專案、私人表格或歷史資料。詳細發布與跨電腦接手資訊見 `RSNA_2026_VISIBILITY_RELEASE_20261030.md`。
+
+## v11.2.102（2026-10-30）— RSNA 2026 展會內容與可搜尋問答（本機／Drive，未部署）
+
+- 依 2026-10-29 R08 行前計畫及 RSNA 官方攤位資訊，改寫英文 RSNA 頁與英文產品頁展會入口：明確標示 Booth 5132、PANCREASaver® 胰臟 CT AI 非臨床現場示範、授權去識別案例、醫師判讀流程，以及臨床案例、研究證據、系統整合與商業合作的討論主題。
+- 新增醫師／研究者、醫療機構／影像中心、影像技術與商業夥伴的討論入口；以「準備進入美國市場、可與美國臨床及商業夥伴討論評估與未來部署規劃」表述，並在主視覺與問答清楚標示 FDA 申請審查中、尚未取得美國上市許可／不可在美銷售。未對外宣稱已完成美國商業部署或預測許可時間。
+- 頁面加入可直接引用的 RSNA 問答與正式展商、文獻、法規及 2023 RSNA Margulis 獎來源連結；獎項歸屬於相關《Radiology》研究。同步 title／description／OG／Twitter／Event JSON-LD、中英文 AI 摘要、sitemap 修改日期；RSNA 頁 canonical、OG、Event 與 sitemap 統一指向正式站轉址後的 `/en/rsna-2026`，並讓 verifier 辨識該活動頁。RSNA CSS 新規則限定活動頁與英文產品頁展會區，兩頁快取版本遞增。
+- 修改前 9 個來源檔備份於 V11 外的 `Backup_RSNA_Visibility_20261030/before/`。保留原有表單、臨床資料禁止上傳提示與爬蟲內容使用政策；本輪未 commit、push 或部署。
+- 依後續文案要求，RSNA 首屏改用美式英文「See PANCREASaver® firsthand」，並在可見導言、搜尋／分享摘要、Event 描述、產品頁展會入口及中英文 AI 摘要加入與醫師複核流程一致的「AI-assisted pancreatic cancer detection on CT」用語。既有 2019 年同領域 CT AI 研究及舊版全球首創宣稱撤回紀錄使無條件「world’s first」缺乏充分比較證據，因此不作此宣稱；FDA 狀態與非臨床示範限制保留。本次仍未部署。
+
+## v11.2.101（2026-10-27）— SEO／AI-SEO／GEO 技術資料校正（本機／Drive，未部署）
+
+- 依最新 Google AI 搜尋、多語頁面與結構化資料官方指引，修正不存在的英文分享圖片／JSON-LD 圖片網址；公司實體統一為 Organization 與穩定識別，保留醫院實體，合併重複公司節點並記錄原有郵遞區號差異。
+- 校正英文／日文麵包屑與頁面實體網址，讓 FAQ 結構化資料符合既有可見問答；移除英文專屬頁不存在的翻譯宣告。英文 /en/ 既有轉址行為保留，canonical 指向實際產品入口，首頁與產品翻譯群組分開，sitemap 僅列 53 個正式 canonical URL。
+- 四份 llms 摘要明確標示為可選的機器摘要，更新正式入口與來源範圍說明；不將 llms.txt 或 FAQ 標記宣稱為 AI 排名條件。研究數字、法規狀態與歷史公告的日期及內容保持原樣。
+- 使用者確認維持現有內容使用政策，robots.txt、Content-Signal、訓練／搜尋爬蟲規則及安全設定均未變動。
+- 僅調整中繼資料、JSON-LD 與機器摘要；54 份 HTML（含未改動的歷史副本）逐檔確認 body、title、CSS 與執行腳本相同。靜態驗證、桌機／手機截圖比對、來源與 Drive 同步紀錄見 repository 的 backups/v11_geo_seo_20261027/。保留 en/product.html 與 en/rsna-2026.html 原有的 repo／Drive 可見文案差異；本輪不 commit、push 或部署。
+
 ## v11.2.100（2026-10-15）— 三語新聞新增經濟日報導入報導
 
 - 三語新聞頁新增 2026-10-15 經濟日報媒體卡，附同語短摘要與原文 canonical 連結；置於 2026-10-13 使用規模公告之前。英文沿用匿名客戶描述，三語均標示原文為中文報導。

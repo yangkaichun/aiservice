@@ -5,6 +5,8 @@
 i18n 掃描解析 common + 每頁字典（Object.assign 合併模式），抓 HTML 用了但字典沒定義的 key。"""
 import json, os, re, subprocess, glob, sys
 import xml.etree.ElementTree as ET
+from html.parser import HTMLParser
+from urllib.parse import unquote, urlsplit
 
 root = os.path.abspath(sys.argv[1] if len(sys.argv) > 1 else ".")
 errors = []
@@ -91,9 +93,15 @@ zh_only_pages = {
     "ntuh-cancer-case-study.html",
     "company-notice-20261008.html",
 }
-en_only_pages = {"en/rsna-2026.html"}
+en_only_pages = {"en/rsna-2026.html", "en/partners.html", "en/resources.html", "en/regulatory.html"}
 def public_url(f):
     rel = os.path.relpath(f, root).replace(os.sep, "/")
+    # The English index is an existing redirect, not a separate canonical page.
+    if rel == "en/index.html":
+        return "https://www.pancad.ai/en/product.html"
+    # Cloudflare serves this event page at the extensionless final URL.
+    if rel == "en/rsna-2026.html":
+        return "https://www.pancad.ai/en/rsna-2026"
     parts = rel.split("/")
     if parts[0] in ("en", "jp"):
         prefix = "/" + parts[0]
@@ -102,6 +110,37 @@ def public_url(f):
         prefix = ""
         stem = parts[0]
     return "https://www.pancad.ai" + prefix + ("/" if stem == "index.html" else "/" + stem)
+
+class SeoHead(HTMLParser):
+    def __init__(self):
+        super().__init__()
+        self.links = []
+        self.images = []
+
+    def handle_starttag(self, tag, attrs):
+        attrs = dict(attrs)
+        if tag == "link":
+            self.links.append(attrs)
+        if tag == "meta" and (attrs.get("property") in {"og:image", "og:image:url", "og:image:secure_url"} or attrs.get("name") == "twitter:image"):
+            self.images.append(attrs.get("content", ""))
+
+def local_target(url):
+    parsed = urlsplit(url)
+    if parsed.netloc != "www.pancad.ai":
+        return None
+    path = unquote(parsed.path).lstrip("/")
+    if not path or path.endswith("/"):
+        path += "index.html"
+    return os.path.join(root, path)
+
+def walk_json(value):
+    if isinstance(value, dict):
+        yield value
+        for child in value.values():
+            yield from walk_json(child)
+    elif isinstance(value, list):
+        for child in value:
+            yield from walk_json(child)
 
 # 3.1 Sitemap must enumerate the current canonical public surface exactly.
 sitemap_ns = "{http://www.sitemaps.org/schemas/sitemap/0.9}"
@@ -156,7 +195,20 @@ for f in html_files:
         seo_errs.append(f"{page}: canonical mismatch ({canonical.group(1)})")
     hreflang = dict(re.findall(r'<link\b[^>]*hreflang=["\']([^"\']+)["\'][^>]*href=["\']([^"\']+)', html, re.I))
     page_path = "" if os.path.basename(f) == "index.html" else os.path.basename(f)
-    if page in en_only_pages:
+    head = SeoHead()
+    head.feed(html.split("</head>", 1)[0])
+    alternate_links = [link for link in head.links if link.get("hreflang")]
+    if len(alternate_links) != len(hreflang):
+        seo_errs.append(f"{page}: duplicate hreflang language")
+    for link in alternate_links:
+        target = local_target(link.get("href", ""))
+        if target is None or not os.path.isfile(target):
+            seo_errs.append(f"{page}: missing hreflang target ({link.get('href')})")
+    for url in head.images:
+        target = local_target(url)
+        if target is not None and not os.path.isfile(target):
+            seo_errs.append(f"{page}: missing social image ({url})")
+    if page == "en/index.html" or page in en_only_pages:
         # Event campaign has no translated counterpart. Do not advertise
         # hreflang targets that do not exist.
         if hreflang:
@@ -177,13 +229,31 @@ for f in html_files:
             "ja": "https://www.pancad.ai/jp/" + page_path,
             "x-default": "https://www.pancad.ai/" + page_path,
         }
+        if page in {"index.html", "jp/index.html"}:
+            # English visitors land on the product page, whose translation
+            # cluster is separate from the Chinese/Japanese homepage cluster.
+            del expected_hreflang["en"]
         if set(hreflang) != set(expected_hreflang) or any(hreflang.get(k) != v for k, v in expected_hreflang.items()):
             seo_errs.append(f"{page}: hreflang mismatch")
-        if len(hreflang) < 4:
+        if len(hreflang) < len(expected_hreflang):
             seo_errs.append(f"{page}: incomplete hreflang set")
     for block in re.findall(r'<script\b[^>]*type=["\']application/ld\+json["\'][^>]*>(.*?)</script>', html, re.I | re.S):
         try:
-            json.loads(block.strip())
+            data = json.loads(block.strip())
+            for node in walk_json(data):
+                for key in ("logo", "image", "thumbnailUrl", "contentUrl"):
+                    values = node.get(key, [])
+                    if not isinstance(values, list):
+                        values = [values]
+                    for url in values:
+                        if isinstance(url, str):
+                            target = local_target(url)
+                            if target is not None and not os.path.isfile(target):
+                                seo_errs.append(f"{page}: missing JSON-LD {key} ({url})")
+                if node.get("@id") in {"https://www.pancad.ai/#org", "#org"}:
+                    seo_errs.append(f"{page}: inconsistent company entity identifier")
+                if node.get("@id") == "https://www.pancad.ai/#organization" and "name" in node and node.get("@type") != "Organization":
+                    seo_errs.append(f"{page}: company must use Organization")
         except json.JSONDecodeError as exc:
             seo_errs.append(f"{page}: invalid JSON-LD ({exc.msg})")
     used = set(re.findall(r'data-i18n(?:-html|-ph)?="([^"]+)"', html))
