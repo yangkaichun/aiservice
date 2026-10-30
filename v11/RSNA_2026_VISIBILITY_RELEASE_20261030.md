@@ -22,6 +22,7 @@
 - 發布包由 Drive V11 的公開網站檔案建立，共 509 檔、98,341,953 bytes。保留 `functions/api/rsna-config.js` 與 `functions/api/rsna-demo.js`；排除私人 `gas/`、生成檔、預覽圖、腳本與內部紀錄。`verify_site.py` 對發布包通過 JS 語法、1,919 個資源引用、API catalog、agent discovery、i18n 及 SEO/GEO 結構檢查。
 - Cloudflare 預覽：`https://d4e06fb5.pancadai-v11.pages.dev/`。Pages Functions 成功編譯；八個公開檔案與發布包逐位元組相同；`GET /api/rsna-demo` 回 405。預覽環境未設 Turnstile 公開金鑰，故預覽 `/api/rsna-config` 回 503；沒有改動正式環境的金鑰或其他表單設定。
 - Cloudflare 正式：`https://5fba6850.pancadai-v11.pages.dev/`，於 2026-10-30 發布。正式不可變版本與 `https://www.pancad.ai/` 各查八個入口，共 16 項均通過：活動頁、英文產品頁、兩份 AI 摘要、sitemap、表單 JS、兩個 API。不可變版本六個靜態資產逐位元組吻合；主域 HTML 有 Cloudflare 注入，以關鍵文案及法規提示比對。正式 `/api/rsna-config` 回 200 且含公開 site key，`GET /api/rsna-demo` 回 405；未送出真實或測試預約。
+- Google Drive 備份 `Backup_RSNA_Visibility_20261030/` 另存公開發布檔案的 SHA-256 清單 `release_manifest.json` 及正式 Cloudflare 讀回 `production_readback.json`。
 - 本次沒有修改 `js/rsna-demo.js`、兩個 Pages Functions、`gas/rsna_demo_email.gs`、`_headers`、`robots.txt` 或 Cloudflare 環境變數。表單 HTML 與 10/27 repo、Drive 及 10/30 備份的 SHA-256 均為 `37bf8bc63a28d11c5af4dd1f135b74e5a8fe0a0f93fd675b21699ce5c4cebc0a`。
 
 ## 會後復原排程
@@ -33,9 +34,11 @@
 
 ## 跨電腦接續注意
 
-- 本次 GitHub 同步狀態請見下方最終補記；若未完成，Drive V11 仍為已部署的權威來源，請先比對 GitHub `main` 與 Cloudflare 正式版本，不要直接從舊 checkout 發布。
+- GitHub `main`、兩條 GitHub Pages 鏡像與 Cloudflare 正式站的本次公開網站檔案已同步。另一台電腦接續時，先拉取最新 `main`，再核對 Drive V11 與正式站；不要使用舊機器上已損毀的 checkout。表單僅在有 Pages Functions 的 Cloudflare 正式主域上按原流程運作，GitHub Pages 是靜態鏡像。
 - 關於「world’s first」，目前網站採 `See PANCREASaver® firsthand` 與 `AI-assisted pancreatic cancer detection on CT`，沒有未限定範圍的全球第一宣稱。主視覺保留 FDA 審查中、尚未取得美國上市許可的提示。
 
 ## GitHub 同步最終補記
 
-待本次提交／推送作業完成後補記 commit、Actions 與兩個 GitHub Pages 鏡像讀回結果。
+- 功能來源 commit：`41bcf2bc266c15724e323805e7ac64584614974f`，由 GitHub `main` 的 `57896305fd142469010d339352d9493048be451c` 建立，限定 63 個網站來源／紀錄檔；未變更 GAS、Pages Functions 或表單 JS。共 509 個發布檔案與該 commit 的對應網站檔案逐一核對 SHA-256 相同。
+- GitHub source [Deploy run 41018602837](https://github.com/yangkaichun/aiservice/actions/runs/41018602837) 結果 `success`；[Pages build run 41018678551](https://github.com/yangkaichun/aiservice/actions/runs/41018678551) 結果 `success`，`gh-pages` commit `0a1aeec61582b2831d98010afc8753c070b1215f`。
+- `https://health.yangkaichun.net/new_pancadai/v11/` 與 `https://health.yangkaichun.net/v11/` 各八個檔案（RSNA、產品、兩份 AI 摘要、sitemap、CSS、表單 JS、活動圖）均 HTTP 200 且與 Cloudflare 發布包逐位元組相同；核對 JSON 存於 Drive 備份 `github_readback.json`。
