@@ -2,18 +2,18 @@
 (function () {
   var zh = {
     meta_title: "AI 醫學影像與臨床證據｜胰臟癌 CT AI 導入｜PANCREASaver®",
-    meta_desc: "醫療機構評估胰臟癌 AI、AI 醫學影像與放射科 AI：AUC 0.95、<2cm 敏感度 92.1%、FDA Breakthrough、TFDA 許可、10 件專利與 6 篇期刊，並說明導入流程。",
+    meta_desc: "醫療機構評估胰臟癌 AI：AUC 0.95；Lancet 2020 台灣本地測試集 <2cm 敏感度 92.1%（美國外部測試集 63.1%）；另有 FDA Breakthrough、TFDA 許可及臨床文獻。",
 
     ph_badge: "For Clinicians",
     ph_title_1: "證據，<span class=\"hl\">是最好的說服。</span>",
     ph_sub: "PANCREASaver® 的 AI 醫學影像效能宣稱都有文獻與法規背書——讓醫療機構在 30 秒內取得導入決策所需資訊。",
 
     auc_t: "全國多中心驗證：AUC 0.95",
-    auc_p: "滾動頁面，看 AUC 曲線繪製——在 <2cm 的小腫瘤偵測上，PANCREASaver® 達到 0.95 的曲線下面積。",
+    auc_p: "依實際文獻繪製的 ROC 曲線——Radiology 2023 全國多中心 1,473 例 CT 研究的整體 AUC 為 0.95。",
     auc_legend_ai: "PANCREASaver®",
     auc_legend_baseline: "隨機判讀（0.5）",
     auc_src: "圖來源：Radiology 2023（220152）Figure 3——全國多中心驗證（n=1,473）｜<a href=\"https://pubs.rsna.org/doi/full/10.1148/radiol.220152\" target=\"_blank\" rel=\"noopener\" style=\"color:#295daa;font-weight:700\">論文原文 ↗</a>",
-    stat_label_1: "敏感度（<2cm 腫瘤）",
+    stat_label_1: "台灣本地測試集 <2cm 敏感度（美國外部 63.1%）",
     stat_label_2: "全國多中心 AUC",
     stat_label_3: "研究與商業應用累計人次",
     stat_label_4: "台美專利",
@@ -100,7 +100,7 @@
     auc_legend_ai: "PANCREASaver®",
     auc_legend_baseline: "Random reading (0.5)",
     auc_src: "Figure source: Radiology 2023 (220152) Fig. 3 — nationwide multicenter validation (n=1,473) ｜<a href=\"https://pubs.rsna.org/doi/full/10.1148/radiol.220152\" target=\"_blank\" rel=\"noopener\" style=\"color:#295daa;font-weight:700\">Article ↗</a>",
-    stat_label_1: "Sensitivity for tumors under 2 cm",
+    stat_label_1: "Taiwan local test sets: <2 cm sensitivity (U.S. external: 63.1%)",
     stat_label_2: "Multicenter AUC",
     stat_label_3: "Cumulative patient cases (research & commercial use)",
     stat_label_4: "Patents (Taiwan and U.S.)",
@@ -176,18 +176,18 @@
   };
   var ja = {
     meta_title: "臨床エビデンス — 膵臓がんAI検出の性能と認証 | PANCREASaver® 助胰見®",
-    meta_desc: "AUC 0.95、2cm未満で感度92.1%、FDA画期的指定、TFDA認証、台湾・米国10件の特許、6本の論文、9つの賞。医療機関向けの意思決定情報を30秒で。",
+    meta_desc: "AUC 0.95。Lancet 2020の台湾国内テスト群では2cm未満の感度92.1%（米国外部テスト群63.1%）。TFDA許可、FDA画期的指定、臨床論文など医療機関向け情報。",
 
     ph_badge: "医療機関向け",
     ph_title_1: "エビデンスこそ、<span class=\"hl\">信頼が答えを導く</span>",
     ph_sub: "PANCREASaver®のすべての主張は論文と規制認証に裏付けられています——30秒で意思決定に必要な情報が揃います。",
 
     auc_t: "全国多施設検証：AUC 0.95",
-    auc_p: "スクロールするとAUC曲線が描かれます——2cm未満の小さな腫瘍の検出で0.95を達成。",
+    auc_p: "Radiology 2023の全国多施設1,473件のCT検査全体で、AUC 0.95と報告されています。",
     auc_legend_ai: "PANCREASaver®",
     auc_legend_baseline: "ランダム読影（0.5）",
     auc_src: "図の出典：Radiology 2023（220152）Figure 3——全国多施設検証（n=1,473）｜<a href=\"https://pubs.rsna.org/doi/full/10.1148/radiol.220152\" target=\"_blank\" rel=\"noopener\" style=\"color:#295daa;font-weight:700\">論文 ↗</a>",
-    stat_label_1: "感度（2cm未満の腫瘍）",
+    stat_label_1: "台湾国内テスト群・2cm未満の感度（米国外部63.1%）",
     stat_label_2: "全国多施設AUC",
     stat_label_3: "研究・商用利用の累計（延べ人数）",
     stat_label_4: "台湾・米国特許",
