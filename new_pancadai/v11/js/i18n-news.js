@@ -1,6 +1,12 @@
 /* pancad.ai v7 — news 字典（最新消息）?v=1 */
 (function () {
   var zh = {
+    n_gbi_d: "2026.11.14",
+    n_gbi_t: "<a href=\"https://news.gbimonthly.com/tw/article/show.php?num=91427\" target=\"_blank\" rel=\"noopener noreferrer\" style=\"color:inherit\">環球生技月刊：PANCREASaver<sup>®</sup> 助胰見<sup>®</sup>獲 2026 AI創新獎</a>",
+    n_gbi_p: "環球生技月刊報導助胰見®獲獎及臨床應用：分析顯影腹部 CT、標示疑似胰臟病灶，並將結果回傳院內 PACS，協助醫師判讀與覆核。",
+    n_gbi_source: "來源：環球生技月刊 · 中文報導",
+    n_gbi_cta: "閱讀原文",
+
     n_udn_d: "2026.10.15",
     n_udn_t: "<a href=\"https://money.udn.com/money/story/5724/9816593\" target=\"_blank\" rel=\"noopener noreferrer\" style=\"color:inherit\">經濟日報：博田國際醫院導入 PANCREASaver® <span style=\"white-space:nowrap\">助胰見® ↗</span></a>",
     n_udn_p: "經濟日報報導博田國際醫院導入 PANCREASaver® 助胰見®，將腹部 CT 的 AI 輔助偵測資訊納入既有判讀與健檢流程，疑似胰臟病灶由醫師複核。",
@@ -53,6 +59,12 @@
     back_t: "回到首頁"
   };
   var en = {
+    n_gbi_d: "2026.11.14",
+    n_gbi_t: "<a href=\"https://news.gbimonthly.com/tw/article/show.php?num=91427\" target=\"_blank\" rel=\"noopener noreferrer\" style=\"color:inherit\">Global Bio &amp; Investment: PANCREASaver<sup>®</sup> wins 2026 AI Innovation Award</a>",
+    n_gbi_p: "Global Bio & Investment reports on the award and PANCREASaver®’s clinical workflow: analyzing contrast-enhanced abdominal CT, marking suspected pancreatic lesions, and returning results to the hospital’s PACS for physician review.",
+    n_gbi_source: "Source: Global Bio & Investment · Original article in Chinese",
+    n_gbi_cta: "Read the original article",
+
     n_rsna_d: "2026.10.30",
     n_rsna_t: "<a href=\"https://www.pancad.ai/en/rsna-2026\" style=\"color:inherit\">PanCAD.ai to demonstrate PANCREASaver® at RSNA 2026, Booth 5132 →</a>",
     n_rsna_p: "Visit Booth 5132 at the RSNA 2026 Technical Exhibits in Chicago, November 29–December 2, for an in-person, nonclinical PANCREASaver® demo using authorized, de-identified CT examples. Discuss published clinical evidence, radiologist workflows, evaluation, imaging integration, and potential partnerships with our team. The U.S. FDA application is under review; PANCREASaver® is not FDA-cleared or available for sale in the United States.",
@@ -108,6 +120,12 @@
     back_t: "Back to Home"
   };
   var ja = {
+    n_gbi_d: "2026.11.14",
+    n_gbi_t: "<a href=\"https://news.gbimonthly.com/tw/article/show.php?num=91427\" target=\"_blank\" rel=\"noopener noreferrer\" style=\"color:inherit\">環球生技月刊：PANCREASaver<sup>®</sup> が「2026 AI Innovation Award」を受賞</a>",
+    n_gbi_p: "環球生技月刊が受賞と臨床での活用を紹介。造影腹部CTから膵臓の疑わしい病変を示し、解析結果を院内PACSへ返送して、医師の読影と確認を支援します。",
+    n_gbi_source: "出典：環球生技月刊 · 原文は中国語",
+    n_gbi_cta: "原文を読む",
+
     n_udn_d: "2026.10.15",
     n_udn_t: "<a href=\"https://money.udn.com/money/story/5724/9816593\" target=\"_blank\" rel=\"noopener noreferrer\" style=\"color:inherit\">経済日報：博田国際病院が PANCREASaver® を導入 ↗</a>",
     n_udn_p: "台湾の経済日報は、博田国際病院による PANCREASaver® の導入を報道。腹部CTのAI支援情報を既存の読影・健診業務に取り入れ、疑わしい膵臓所見は医師が確認する運用を紹介しています。",
