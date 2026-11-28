@@ -3,6 +3,9 @@
    頁面字典：Object.assign(window.PANCAD_I18N.zh, {...}) 擴充專屬 key */
 window.PANCAD_I18N = {
   zh: {
+    video_pancad_title: "認識 PANCREASaver® 助胰見",
+    video_pancad_news: "PANCREASaver® 助胰見新介紹影片上線",
+    video_pancad_desc: "仲智數位健康開發的 PANCREASaver® 助胰見，可協助放射科醫師判讀顯影腹部 CT 影像。",
     /* 導覽 */
     nav_product: "產品介紹",
     deep_float_t: "了解健康台灣深耕計畫",
@@ -68,6 +71,9 @@ window.PANCAD_I18N = {
     video_youtube_link: "在 YouTube 觀看 ↗"
   },
   en: {
+    video_pancad_title: "Introducing PANCREASaver®",
+    video_pancad_news: "A new introduction to PANCREASaver®",
+    video_pancad_desc: "PanCAD.ai developed PANCREASaver® to support radiologists reviewing contrast-enhanced abdominal CT scans.",
     nav_product: "Product",
     deep_float_t: "",
     tfda_lic: "TFDA Medical Device License: No. 007946",
@@ -129,6 +135,9 @@ window.PANCAD_I18N = {
     video_youtube_link: "Watch on YouTube ↗"
   },
   ja: {
+    video_pancad_title: "PANCREASaver® のご紹介",
+    video_pancad_news: "PANCREASaver® の新しい製品紹介動画を公開しました",
+    video_pancad_desc: "PanCAD.ai が開発した PANCREASaver® は、放射線科医による腹部造影CT画像の読影を支援します。",
     nav_product: "製品紹介",
     deep_float_t: "",
     tfda_lic: "衛福部医療機器許可証：衛部医器製字第007946号",
